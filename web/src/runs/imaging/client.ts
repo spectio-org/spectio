@@ -8,6 +8,7 @@ import { KIB, MIB } from "../preview";
 export const RANGE_MAX = 8 * MIB + 1; // the server's cap per answer (step 8); geotiff asks one byte more
 export const BUDGET = { requests: 2000, bytes: 256 * MIB }; // per opened view
 export const IN_FLIGHT = 3;
+const PROBLEM_MAX = 64 * KIB; // a problem body read for its detail
 const BLOCK = 64 * KIB; // geotiff's BlockedSource default
 const CACHE_BLOCKS = (64 * MIB) / BLOCK; // a block cache of at most 64 MiB
 
@@ -36,7 +37,7 @@ const CLOSED = /^bytes=(\d{1,15})-(\d{1,15})$/;
 export class PinnedClient {
   requests = 0;
   bytes = 0;
-  /** The first error a request threw: geotiff's BlockedSource hides it behind its own. */
+  /** The last error a request threw, aborts aside: geotiff's BlockedSource hides it behind its own. */
   failure: Error | null = null;
   private active = 0;
   private waiting: (() => void)[] = [];
@@ -64,7 +65,7 @@ export class PinnedClient {
       const contentRange = `bytes ${first}-${end}/${this.size}`;
       return { ok: true, status: 206, getHeader: (name: string) => (name.toLowerCase() === "content-range" ? contentRange : null), getData: async () => data };
     } catch (err) {
-      this.failure ??= err as Error;
+      if ((err as Error).name !== "AbortError") this.failure = err as Error;
       throw err;
     }
   }
@@ -75,13 +76,15 @@ export class PinnedClient {
       this.charge(length);
       const answer = await this.fetch(`bytes=${first}-${last}`, signal);
       if (answer.status === 503 && attempt === 0) {
+        await answer.body?.cancel();
         await new Promise((done) => setTimeout(done, 1000)); // a 503 is asked again once, after 1 s
         continue;
       }
       if (answer.status !== 206) throw new Answered(answer.status, await problem(answer));
-      const data = await answer.arrayBuffer();
-      if (data.byteLength !== length) throw new Answered(206, "not the range asked");
-      return data;
+      const declared = answer.headers.get("content-length");
+      const data = declared === null || Number(declared) === length ? await readAtMost(answer, length) : (await answer.body?.cancel(), null);
+      if (data?.byteLength !== length) throw new Answered(206, "not the range asked");
+      return data.buffer as ArrayBuffer;
     }
   }
 
@@ -115,19 +118,46 @@ function join(parts: ArrayBuffer[]): ArrayBuffer {
 }
 
 /** Runs a geotiff read on `client`, rethrowing the client's own error (Stopped, Refused,
- * Answered) instead of the AggregateError BlockedSource turns it into. */
+ * Answered) instead of the AggregateError BlockedSource turns it into; any other error (the
+ * page's own included) is rethrown as it is. */
 export async function reading<T>(client: PinnedClient, read: () => Promise<T>): Promise<T> {
   try {
     return await read();
   } catch (err) {
-    throw client.failure ?? err;
+    throw (err as Error)?.name === "AggregateError" ? (client.failure ?? err) : err;
   }
 }
 
+/** The body, read up to `max` bytes; null (and the rest cancelled) when it is longer. */
+async function readAtMost(answer: Response, max: number): Promise<Uint8Array | null> {
+  const reader = answer.body?.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const next = await reader?.read();
+    if (!next || next.done) break;
+    total += next.value.byteLength;
+    if (total > max) {
+      await reader?.cancel();
+      return null;
+    }
+    chunks.push(next.value);
+  }
+  const all = new Uint8Array(total);
+  chunks.reduce((at, c) => (all.set(c, at), at + c.byteLength), 0);
+  return all;
+}
+
+/** The detail of a problem body of at most 64 KiB; any other body is cancelled unread. */
 async function problem(answer: Response): Promise<string | null> {
+  if (!answer.headers.get("content-type")?.startsWith("application/problem+json")) {
+    await answer.body?.cancel();
+    return null;
+  }
   try {
-    const body = (await answer.json()) as { detail?: unknown };
-    return typeof body.detail === "string" ? body.detail : null;
+    const text = await readAtMost(answer, PROBLEM_MAX);
+    const body = (text && JSON.parse(new TextDecoder().decode(text))) as { detail?: unknown } | null;
+    return typeof body?.detail === "string" ? body.detail : null;
   } catch {
     return null;
   }

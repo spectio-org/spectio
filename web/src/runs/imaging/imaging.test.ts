@@ -4,13 +4,15 @@
 // each closed Range as the raw route does (step 11: 206 with Content-Range).
 import { afterEach, expect, test, vi } from "vitest";
 import { resultUrl } from "../../api";
-import { Answered, BUDGET, IN_FLIGHT, PinnedClient, RANGE_MAX, Refused, Stopped, openTiff } from "./client";
+import { Answered, BUDGET, IN_FLIGHT, PinnedClient, RANGE_MAX, Refused, Stopped, openTiff, reading } from "./client";
 import { TooLarge, Unreadable, omeFiles, walkIfds } from "./walk";
 
 const URL_ = resultUrl("run_1", "img/gel.tif", { as: "tiff" });
 
 interface Ifd {
   width?: number;
+  height?: number; // ImageLength
+  rows?: number; // RowsPerStrip
   tile?: number; // TileWidth and TileLength, instead of one strip
   bits?: number;
   format?: number; // SampleFormat
@@ -27,13 +29,13 @@ function build(ifds: Ifd[], big = false) {
   const head = big ? 16 : 8;
   const tags = (d: Ifd): [number, number, number | string][] => [
     [256, 4, d.width ?? 4],
-    [257, 4, 2],
+    [257, 4, d.height ?? 2],
     [258, 3, d.bits ?? 8],
     [259, 3, 1],
     [262, 3, 1],
     ...(d.description === undefined ? [] : [[270, 2, d.description] as [number, number, string]]),
     [277, 3, d.samples ?? 1],
-    ...(d.tile ? [[322, 4, d.tile], [323, 4, d.tile], [324, 4, 0], [325, 4, 8]] : [[273, 4, 0], [278, 4, 2], [279, 4, 8]]) as [number, number, number][],
+    ...(d.tile ? [[322, 4, d.tile], [323, 4, d.tile], [324, 4, 0], [325, 4, 8]] : [[273, 4, 0], [278, 4, d.rows ?? 2], [279, 4, 8]]) as [number, number, number][],
     ...(d.format === undefined ? [] : [[339, 3, d.format] as [number, number, number]]),
   ];
   const sizes = ifds.map((d) => count + tags(d).length * entry + word);
@@ -84,6 +86,8 @@ function serveBytes(bytes: Uint8Array, answer?: (call: number) => Response | und
   vi.stubGlobal("fetch", mock);
   return mock;
 }
+const problemAnswer = (status: number, detail: string) =>
+  new Response(JSON.stringify({ detail }), { status, headers: { "content-type": "application/problem+json" } });
 const ranges = (mock: ReturnType<typeof serveBytes>) => mock.mock.calls.map(([, init]) => new Headers(init?.headers).get("range")!);
 
 afterEach(() => {
@@ -145,6 +149,8 @@ test("the caps of each IFD are checked before any tile is read", async () => {
     [{ bits: 64, format: 3 }, "64-bit float pixels are not shown"],
     [{ bits: 32, format: 4 }, "32-bit undefined pixels are not shown"],
     [{ samples: 5 }, "5-sample pixels are not shown"],
+    [{ tile: 4096, samples: 4, bits: 32 }, "a tile over 64 MiB decoded"], // 256 MiB
+    [{ width: 20000, height: 20000, rows: 20000 }, "a tile over 64 MiB decoded"], // one strip of 400 MB
   ] as [Ifd, string][]) {
     const { bytes } = build([ifd]);
     serveBytes(bytes);
@@ -209,7 +215,7 @@ test("a 503 is asked again once, after 1 s; another answer is an error with its 
   await vi.advanceTimersByTimeAsync(1000);
   expect((await read).status).toBe(206);
   expect(mock).toHaveBeenCalledTimes(2);
-  serveBytes(bytes, () => Response.json({ detail: "not the TIFF its name says" }, { status: 422 }));
+  serveBytes(bytes, () => problemAnswer(422, "not the TIFF its name says"));
   await expect(client.request({ headers: { Range: "bytes=0-9" } })).rejects.toMatchObject({ status: 422, detail: "not the TIFF its name says" });
 });
 
@@ -255,7 +261,7 @@ test("the client's own errors reach the caller through geotiff", async () => {
   const { bytes } = build([{}]);
   serveBytes(bytes);
   await expect(openTiff(URL_, bytes.length, undefined, { requests: 10, bytes: 10 })).rejects.toEqual(new Stopped("bytes"));
-  serveBytes(bytes, () => Response.json({ detail: "not the TIFF its name says" }, { status: 422 }));
+  serveBytes(bytes, () => problemAnswer(422, "not the TIFF its name says"));
   const refused = openTiff(URL_, bytes.length);
   await expect(refused).rejects.toBeInstanceOf(Answered);
   await expect(refused).rejects.toMatchObject({ status: 422, detail: "not the TIFF its name says" });
@@ -316,4 +322,73 @@ test("a run of NULs in the description is stripped in linear time", () => {
   expect(omeFiles(`${"\0".repeat(200_000)}x`, "a.tif")).toBe("none");
   expect(omeFiles(`${ome('<TiffData IFD="0"/>')}\0\0`, "a.ome.tif")).toBe("one");
   expect(performance.now() - started).toBeLessThan(1000);
+});
+
+test("a parsererror element inside a well-formed OME document is not a parse failure", () => {
+  const foreign = '<TiffData><UUID FileName="b.ome.tif">urn:uuid:2</UUID></TiffData>';
+  expect(omeFiles(ome("<parsererror/>" + foreign), "a.ome.tif")).toBe("others");
+});
+
+test("an aborted request is not reported for a later error", async () => {
+  const bytes = new Uint8Array(100);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => {
+      throw new DOMException("aborted", "AbortError");
+    }),
+  );
+  const client = new PinnedClient(URL_, bytes.length, { requests: 1, bytes: BUDGET.bytes });
+  await expect(client.request({ headers: { Range: "bytes=0-9" } })).rejects.toMatchObject({ name: "AbortError" });
+  // geotiff's BlockedSource hides the client's error behind its own
+  const wrapped = () => client.request({ headers: { Range: "bytes=10-19" } }).catch(() => Promise.reject(new AggregateError([], "wrapped")));
+  await expect(reading(client, wrapped)).rejects.toEqual(new Stopped("requests"));
+  // a page error thrown as is is rethrown as is, not the client's earlier one
+  await expect(reading(client, () => Promise.reject(new Refused("later")))).rejects.toEqual(new Refused("later"));
+});
+
+/** An endless body that counts the bytes it was asked for, in chunks of `chunk` bytes. */
+function endless(chunk: number) {
+  const pulled = { bytes: 0 };
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      pulled.bytes += chunk;
+      controller.enqueue(new Uint8Array(chunk));
+    },
+  });
+  return { body, pulled };
+}
+
+test("a body is never read past what was asked for", async () => {
+  const other = endless(1024);
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(other.body, { status: 200, headers: { "content-type": "application/octet-stream" } })));
+  const client = new PinnedClient(URL_, 1_000_000);
+  await expect(client.request({ headers: { Range: "bytes=0-99" } })).rejects.toEqual(new Answered(200, null));
+  expect(other.pulled.bytes).toBeLessThanOrEqual(64 * 1024);
+  expect(client.bytes).toBe(100);
+
+  const problem = endless(1024);
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(problem.body, { status: 500, headers: { "content-type": "application/problem+json" } })));
+  await expect(client.request({ headers: { Range: "bytes=0-99" } })).rejects.toEqual(new Answered(500, null));
+  expect(problem.pulled.bytes).toBeLessThanOrEqual(64 * 1024 + 2 * 1024);
+
+  const longer = endless(1);
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(longer.body, { status: 206, headers: { "content-range": "bytes 0-99/1000000" } })));
+  await expect(client.request({ headers: { Range: "bytes=0-99" } })).rejects.toEqual(new Answered(206, "not the range asked"));
+  expect(longer.pulled.bytes).toBeLessThanOrEqual(100 + 2);
+
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array(200), { status: 206, headers: { "content-length": "200" } })));
+  await expect(client.request({ headers: { Range: "bytes=0-99" } })).rejects.toEqual(new Answered(206, "not the range asked"));
+});
+
+test("a 503's body is cancelled before the request is asked again", async () => {
+  vi.useFakeTimers();
+  let cancelled = false;
+  const body = new ReadableStream({ cancel: () => void (cancelled = true) });
+  const bytes = new Uint8Array(10);
+  serveBytes(bytes, (call) => (call === 1 ? new Response(body, { status: 503 }) : undefined));
+  const client = new PinnedClient(URL_, bytes.length);
+  const read = client.request({ headers: { Range: "bytes=0-9" } });
+  await vi.advanceTimersByTimeAsync(1000);
+  expect((await read).status).toBe(206);
+  expect(cancelled).toBe(true);
 });

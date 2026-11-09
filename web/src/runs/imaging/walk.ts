@@ -8,6 +8,7 @@ import { reading, type PinnedClient } from "./client";
 export const IFDS_MAX = 10000;
 const TILE_SIDE_MAX = 4096;
 const STORED_MAX = 8 * MIB; // a tile or strip as stored
+const DECODED_MAX = 64 * MIB; // a tile or strip as decoded
 const OME_XML_MAX = 4 * MIB;
 // geotiff parses every tag of an IFD at once, allocating each one's declared count, so the walk
 // reads the entry table itself first (through the charged client) and holds it to these caps.
@@ -28,7 +29,7 @@ export class TooLarge extends Error {
 export class Unreadable extends Error {}
 
 /** The tags geotiff 2.1.3 parses, by name; the ones read here only. */
-export type FileDirectory = Record<string, unknown> & { ImageWidth?: number; ImageDescription?: string };
+export type FileDirectory = Record<string, unknown> & { ImageWidth?: number; ImageLength?: number; ImageDescription?: string };
 
 const FORMATS: Record<number, string> = { 1: "unsigned", 2: "signed", 3: "float" };
 const many = (value: unknown): number[] => (value === undefined ? [] : Array.isArray(value) || ArrayBuffer.isView(value) ? Array.from(value as ArrayLike<number>) : [Number(value)]);
@@ -45,6 +46,10 @@ function check(fd: FileDirectory) {
     const [b, f] = [bits[i] ?? 1, formats[i] ?? formats[0] ?? 1];
     if (![8, 16, 32].includes(b) || !FORMATS[f] || (f === 3 && b !== 32)) throw new TooLarge(`${b}-bit ${FORMATS[f] ?? "undefined"} pixels are not shown`);
   }
+  // a tile, or a strip of ImageWidth x RowsPerStrip, decoded: each sample at the widest bits given
+  const height = Number(fd.ImageLength ?? 0);
+  const [w, h] = fd.TileWidth !== undefined ? [Number(fd.TileWidth), Number(fd.TileLength ?? 0)] : [Number(fd.ImageWidth ?? 0), Math.min(Number(fd.RowsPerStrip ?? height), height)];
+  if (w * h * samples * (Math.max(8, ...bits) / 8) > DECODED_MAX) throw new TooLarge("a tile over 64 MiB decoded");
 }
 
 type Slice = Awaited<ReturnType<GeoTIFF["getSlice"]>>;
@@ -117,7 +122,10 @@ export function omeFiles(description: string | undefined, name: string): "none" 
   while (end && description.charCodeAt(end - 1) === 0) end--;
   description = description.slice(0, end);
   const doc = new DOMParser().parseFromString(description, "application/xml");
-  if (doc.getElementsByTagName("parsererror").length || doc.documentElement.localName !== "OME") return "none";
+  // a parse failure is the parser's own error element (Firefox and jsdom: the root; Chromium and
+  // WebKit: an XHTML element inside), never an element that merely has its name
+  const failed = doc.documentElement.namespaceURI === "http://www.mozilla.org/newlayout/xml/parsererror.xml" || doc.getElementsByTagNameNS("http://www.w3.org/1999/xhtml", "parsererror").length > 0;
+  if (failed || doc.documentElement.localName !== "OME") return "none";
   const base = name.split("/").pop();
   const uuids = new Set<string>();
   for (const uuid of Array.from(doc.getElementsByTagNameNS("*", "UUID"))) {
