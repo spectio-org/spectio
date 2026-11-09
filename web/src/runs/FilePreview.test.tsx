@@ -1,0 +1,331 @@
+// The preview page of one results file (ui-spec §4.4.1, FU-P3-85c; boards LiteFilePreview,
+// MLiteFilePreview and LiteFilePreviewStates; api §5.3): stat first, then the viewer of its kind,
+// its caps, and every state.
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { DETAIL, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
+
+beforeEach(stubStream);
+afterEach(() => vi.unstubAllGlobals());
+
+const ID = "run_01JBC6Q4ZK7M8N2P3R5S7T9V1W";
+const RUN = `/api/v1/runs/${ID}`;
+const ROOT = "/g/demo-lab/rnaseq/2026-10-25";
+const T = "2026-10-31T09:02:00+00:00";
+const KIB = 1024;
+
+const stat = (path: string, size: number | null, type = "file") => ({ root: ROOT, path, name: path.split("/").pop(), type, size, mtime: T });
+const text = (body: string, init: ResponseInit = {}) => new Response(body, { status: 200, ...init, headers: { "content-type": "text/plain; charset=utf-8", ...init.headers } });
+const partial = (body: string, first: number, last: number, size: number) => text(body, { status: 206, headers: { "content-range": `bytes ${first}-${last}/${size}` } });
+const enc = (path: string) => path.split("/").map(encodeURIComponent).join("/");
+
+/** The run, the stat of `path` and its reads, by the answers given. */
+function files(path: string, size: number | null, reads: Record<string, unknown> = {}, over: Record<string, unknown> = {}) {
+  return serve({
+    [`${RUN}/results/stat/${enc(path)}`]: stat(path, size),
+    ...reads,
+    [RUN]: { ...DETAIL, ...run({ state: "succeeded", name: "rnaseq-2026-10-25", ended_at: T }), results_dir: ROOT, ...over },
+  });
+}
+const open = (path: string) => app(`/runs/${ID}/results/file?path=${encodeURIComponent(path)}`);
+const heading = (name: string) => screen.findByRole("heading", { level: 1, name });
+const rangeOf = (init?: RequestInit) => new Headers(init?.headers).get("range");
+
+test("stat first, then the whole file: facts, path, Copy path, Download, focus on the name", async () => {
+  const mock = files("pipeline_info/versions.yml", 12, { [`${RUN}/results/text/pipeline_info/versions.yml`]: () => text("a: 1\nb: 2\n") });
+  open("pipeline_info/versions.yml");
+  const h1 = await heading("versions.yml");
+  await waitFor(() => expect(h1).toHaveFocus());
+  expect(await screen.findByText("Whole file · 12 B")).toBeInTheDocument();
+  expect(screen.getByText(/^Text · 12 B · /)).toBeInTheDocument();
+  expect(screen.getByText(`${ROOT}/pipeline_info/versions.yml`)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Copy path" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Download versions.yml" }).getAttribute("href")).toBe(`${RUN}/results/raw/pipeline_info/versions.yml?download=true`);
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Start" })).toBeNull();
+  const urls = fetched(mock).filter((u) => u.includes("/results/"));
+  expect(urls[0]).toBe(`${RUN}/results/stat/pipeline_info/versions.yml`);
+  // the back link and the path bar name the folder; the page title names the file and the run
+  const folders = screen.getAllByRole("link", { name: "pipeline_info" });
+  expect(folders).toHaveLength(2); // the back link, and the path bar
+  for (const a of folders) expect(a.getAttribute("href")).toBe(`/runs/${ID}/results?path=pipeline_info`);
+  const bar = screen.getByRole("navigation", { name: "Folder" });
+  expect(within(bar).getByText("versions.yml")).toHaveAttribute("aria-current", "page");
+  await waitFor(() => expect(document.title).toBe("versions.yml · rnaseq-2026-10-25 · Spectio"));
+  // a .yml has no level filter; the lines are numbered from 1
+  expect(screen.queryByRole("group", { name: "Show lines" })).toBeNull();
+  const viewer = screen.getByLabelText(/versions.yml, whole file/, { selector: "pre" });
+  expect([...viewer.querySelectorAll("[data-gutter]")].map((g) => g.textContent)).toEqual(["1", "2"]);
+});
+
+test("a large file reads from the start; Load more reads from the Content-Range end + 1 and joins the text", async () => {
+  const size = 200 * KIB;
+  const ranges: (string | null)[] = [];
+  files("big.log", size, {
+    [`${RUN}/results/text/big.log`]: (_url: URL, init?: RequestInit) => {
+      const range = rangeOf(init);
+      ranges.push(range);
+      // the first read ends one byte short of 64 KiB, before a 2-byte é: the next starts there
+      if (range === "bytes=0-65535") return partial("line one\nhalf caf", 0, 65534, size);
+      return partial("é done\nline three\n", 65535, 131070, size);
+    },
+  });
+  open("big.log");
+  await heading("big.log");
+  expect(await screen.findByText(/… cut at 64 KiB/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Start" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: "End" })).toHaveAttribute("aria-pressed", "false");
+  const more = screen.getByRole("button", { name: "Load more" });
+  more.focus();
+  fireEvent.click(more);
+  await screen.findByText(/^half café done/);
+  expect(ranges).toEqual(["bytes=0-65535", "bytes=65535-131070"]);
+  expect(screen.queryByText(/… cut at 64 KiB/)).toBeNull();
+  expect(screen.getByText("128 KiB shown")).toHaveAttribute("aria-live", "polite");
+  expect(more).toHaveFocus();
+  // .log keeps the level filter
+  expect(screen.getByRole("group", { name: "Show lines" })).toBeInTheDocument();
+  expect(screen.getByText("Search covers the 128 KiB shown")).toBeInTheDocument();
+});
+
+test("End reads the last 64 KiB from its first whole line, with no line numbers", async () => {
+  const size = 300 * KIB;
+  files("trace.txt", size, {
+    [`${RUN}/results/text/trace.txt`]: (url: URL, init?: RequestInit) =>
+      rangeOf(init) ? partial("first\n", 0, 5, size) : url.searchParams.get("tail") === "65536" ? text("tial\nlast one\nlast two\n") : json(400, {}),
+  });
+  open("trace.txt");
+  await heading("trace.txt");
+  fireEvent.click(await screen.findByRole("button", { name: "End" }));
+  expect(await screen.findByText("Last 64 KiB of 300 KiB: line numbers not known")).toBeInTheDocument();
+  const viewer = screen.getByLabelText(/trace.txt, last 64 KiB/, { selector: "pre" });
+  expect(viewer.textContent).toBe("last one\nlast two\n");
+  expect(viewer.querySelector("[data-gutter]")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+});
+
+test("at 1 MiB shown Load more stops and focus moves to the line that says so", async () => {
+  const size = 3 * 1024 * KIB;
+  const line = `${"x".repeat(1023)}\n`;
+  files("huge.txt", size, {
+    [`${RUN}/results/text/huge.txt`]: (_url: URL, init?: RequestInit) => {
+      const [first, last] = rangeOf(init)!.slice(6).split("-").map(Number);
+      return partial(line.repeat((last - first + 1) / 1024), first, last, size);
+    },
+  });
+  open("huge.txt");
+  await heading("huge.txt");
+  for (let i = 1; i < 16; i++) {
+    fireEvent.click(await screen.findByRole("button", { name: "Load more" }));
+    await screen.findByText(`${(i + 1) * 64} KiB shown`);
+  }
+  const cap = await screen.findByText("Showing the first 1 MiB of 3 MiB. Download to see the rest.");
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+  expect(cap).toHaveAttribute("tabindex", "-1");
+  await waitFor(() => expect(cap).toHaveFocus());
+});
+
+test("at most 20,000 lines are rendered", async () => {
+  files("newlines.txt", 64 * KIB, { [`${RUN}/results/text/newlines.txt`]: () => text("\n".repeat(64 * KIB)) });
+  open("newlines.txt");
+  expect(await screen.findByText("Showing the first 20,000 lines. Download to see the rest.", {}, { timeout: 10000 })).toBeInTheDocument();
+  const viewer = screen.getByLabelText(/newlines.txt/, { selector: "pre" });
+  expect(viewer.children.length).toBe(20000);
+}, 30000);
+
+test("Wrap lines is a pressed button, off on a desktop", async () => {
+  files("a.txt", 4, { [`${RUN}/results/text/a.txt`]: () => text("abc\n") });
+  open("a.txt");
+  const wrap = await screen.findByRole("button", { name: "Wrap lines" });
+  expect(wrap).toHaveAttribute("aria-pressed", "false");
+  fireEvent.click(wrap);
+  expect(wrap).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByLabelText(/a.txt, whole file/, { selector: "pre" })).toHaveAttribute("data-wrap");
+});
+
+test("on the phone Wrap lines starts on", async () => {
+  viewport(390);
+  files("a.txt", 4, { [`${RUN}/results/text/a.txt`]: () => text("abc\n") });
+  open("a.txt");
+  expect(await screen.findByRole("button", { name: "Wrap lines" })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("JSON is formatted, with the line on what may differ, and Show as text gives it as written", async () => {
+  const body = '{"n": 12345678901234567890, "a": 1, "a": 2}';
+  files("stats.json", body.length, { [`${RUN}/results/text/stats.json`]: () => text(body) });
+  open("stats.json");
+  expect(await screen.findByText("Formatted view: large numbers and repeated keys may differ")).toBeInTheDocument();
+  const formatted = screen.getByLabelText(/stats.json, formatted/, { selector: "pre" });
+  expect(formatted.textContent).toContain('"n": 12345678901234567000');
+  expect(formatted.textContent).not.toContain('"a": 1');
+  const toggle = screen.getByRole("button", { name: "Show as text" });
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByLabelText(/stats.json, whole file/, { selector: "pre" }).textContent).toContain(body);
+});
+
+test("JSON 10,000 deep falls back to text and says why", async () => {
+  const body = "[".repeat(10000) + "]".repeat(10000);
+  files("deep.json", body.length, { [`${RUN}/results/text/deep.json`]: () => text(body) });
+  open("deep.json");
+  expect(await screen.findByText("Not shown formatted: too deeply nested or too large")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Show as text" })).toBeNull();
+});
+
+test("JSON over 1 MiB is read as text from the start", async () => {
+  const size = 2 * 1024 * KIB;
+  files("big.json", size, { [`${RUN}/results/text/big.json`]: () => partial('{"a": 1,', 0, 7, size) });
+  open("big.json");
+  expect(await screen.findByText("Not shown formatted: larger than 1 MiB")).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: "Load more" })).toBeInTheDocument();
+});
+
+test("a CSV is a table from the first 1 MiB, the first row a header until the toggle says not", async () => {
+  const body = 'sample,"reads, M"\nS01,42\nS02,"open\n';
+  const ranges: (string | null)[] = [];
+  files("counts.csv", body.length, {
+    [`${RUN}/results/text/counts.csv`]: (_url: URL, init?: RequestInit) => {
+      ranges.push(rangeOf(init));
+      return partial(body, 0, body.length - 1, body.length);
+    },
+  });
+  open("counts.csv");
+  const region = await screen.findByRole("region", { name: "counts.csv, table" });
+  expect(region).toHaveAttribute("tabindex", "0");
+  expect(ranges).toEqual([`bytes=0-${1024 * KIB - 1}`]);
+  const table = within(region).getByRole("table");
+  expect(within(table).getByRole("columnheader", { name: "reads, M" })).toBeInTheDocument();
+  expect(within(table).getAllByRole("row")).toHaveLength(3); // header, S01, S02 with its unclosed quote
+  const header = screen.getByRole("button", { name: "First row is a header" });
+  expect(header).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(header);
+  expect(within(table).getByRole("columnheader", { name: "Column 2" })).toBeInTheDocument();
+  expect(within(table).getByRole("cell", { name: "reads, M" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Show as text" }));
+  expect(await screen.findByLabelText(/counts.csv/, { selector: "pre" })).toBeInTheDocument();
+});
+
+test("a table cut at 500 rows and 50 columns says so", async () => {
+  const row = Array.from({ length: 60 }, (_, i) => `c${i}`).join(",");
+  const body = Array.from({ length: 700 }, () => row).join("\n");
+  files("wide.csv", body.length, { [`${RUN}/results/text/wide.csv`]: () => partial(body, 0, body.length - 1, body.length) });
+  open("wide.csv");
+  const region = await screen.findByRole("region", { name: "wide.csv, table" });
+  expect(screen.getByText("Showing 500 of at least 501 rows")).toBeInTheDocument();
+  expect(screen.getByText("Showing 50 of 60 columns")).toBeInTheDocument();
+  expect(within(region).getAllByRole("row")).toHaveLength(501);
+});
+
+test("an image is an <img> of the raw route with as=image; a failure is one state with Retry and Download", async () => {
+  files("plots/a?b#c%2F.png", 2000);
+  open("plots/a?b#c%2F.png");
+  const img = await screen.findByRole("img", { name: "a?b#c%2F.png" });
+  expect(img.getAttribute("src")).toBe(`${RUN}/results/raw/plots/a%3Fb%23c%252F.png?as=image`);
+  expect(screen.getByRole("button", { name: "Actual size" })).toHaveAttribute("aria-pressed", "false");
+  fireEvent.error(img);
+  expect(await screen.findByText("This image could not be shown here. Download it to open it.")).toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: "a?b#c%2F.png" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+  expect(await screen.findByRole("img", { name: "a?b#c%2F.png" })).toBeInTheDocument();
+});
+
+test("an image over its cap is never put in an <img>", async () => {
+  files("plot.svg", 5 * 1024 * KIB + 1);
+  open("plot.svg");
+  expect(await screen.findByText("This image could not be shown here. Download it to open it.")).toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: "plot.svg" })).toBeNull();
+  expect(screen.getAllByRole("link", { name: "Download plot.svg" }).length).toBeGreaterThan(0);
+});
+
+test("a PDF and a known binary are not opened; a text read answered 415 is binary", async () => {
+  files("doc.pdf", 10);
+  open("doc.pdf");
+  expect(await screen.findByText("Spectio does not open PDF files. Download it to open it.")).toBeInTheDocument();
+});
+
+test("a known-binary name is not read", async () => {
+  const mock = files("S01.bam", 10);
+  open("S01.bam");
+  expect(await screen.findByText("This file is not text. Download it to open it.")).toBeInTheDocument();
+  expect(fetched(mock).some((u) => u.includes("/text/"))).toBe(false);
+});
+
+test("a File whose text read is 415 is shown as binary", async () => {
+  files("quant.sf", 10, { [`${RUN}/results/text/quant.sf`]: () => json(415, { title: "Binary file", detail: "not text" }) });
+  open("quant.sf");
+  expect(await screen.findByText("This file is not text. Download it to open it.")).toBeInTheDocument();
+});
+
+test("an empty file says so", async () => {
+  files("empty.err", 0, { [`${RUN}/results/text/empty.err`]: () => text("") });
+  open("empty.err");
+  expect(await screen.findByText("This file is empty.")).toBeInTheDocument();
+});
+
+test.each([
+  [404, "This file is not there now", true],
+  [409, "The run's directory is not reachable", true],
+  [422, "Not a file of this run's results.", false],
+  [503, "Spectio cannot read the cluster's files right now", true],
+  [500, "The file could not be read", true],
+])("a stat answered %i says '%s'", async (status, words, retry) => {
+  serve({
+    [`${RUN}/results/stat/x.txt`]: () => json(status, { title: "No", detail: "/g/demo-lab is not reachable from login1" }),
+    [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
+  });
+  open("x.txt");
+  expect(await screen.findByText(words)).toBeInTheDocument();
+  expect(!!screen.queryByRole("button", { name: "Retry" })).toBe(retry);
+  if (status === 409 || status === 500) expect(screen.getByText(/is not reachable from login1/)).toBeInTheDocument();
+});
+
+test("Retry asks again", async () => {
+  let calls = 0;
+  serve({
+    [`${RUN}/results/stat/x.txt`]: () => (++calls === 1 ? json(503, { title: "Offline" }) : json(200, stat("x.txt", 3))),
+    [`${RUN}/results/text/x.txt`]: () => text("ok\n"),
+    [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
+  });
+  open("x.txt");
+  fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+  expect(await screen.findByText("Whole file · 3 B")).toBeInTheDocument();
+});
+
+test("a path the client refuses is never asked for nor shown", async () => {
+  const mock = serve({ [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT } });
+  open("../secret.txt");
+  expect(await screen.findByText("Not a file of this run's results.")).toBeInTheDocument();
+  expect(fetched(mock).some((u) => u.includes("/results/"))).toBe(false);
+  expect(screen.queryByText(/secret/)).toBeNull();
+});
+
+test("while the run is not ended, the facts say when the file was read, with Reload", async () => {
+  let reads = 0;
+  files("live.log", 4, { [`${RUN}/results/text/live.log`]: () => text(`v${++reads}\n`) }, { ...run({ state: "running" }), results_dir: ROOT });
+  open("live.log");
+  expect(await screen.findByText(/read at \d\d:\d\d/)).toBeInTheDocument();
+  expect(screen.getByText("The view does not follow the file on its own: Reload reads it again.")).toBeInTheDocument();
+  await screen.findByText("v1");
+  await userEvent.click(screen.getByRole("button", { name: "Reload" }));
+  expect(await screen.findByText("v2")).toBeInTheDocument();
+});
+
+test("a folder's stat opens the folder page", async () => {
+  serve({
+    [`${RUN}/results/stat/fastqc`]: stat("fastqc", null, "dir"),
+    [`${RUN}/results`]: { root: ROOT, path: "fastqc", exists: true, entries: [], truncated: false, reports: [] },
+    [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
+  });
+  const router = open("fastqc");
+  await waitFor(() => expect(router.state.location.pathname).toBe(`/runs/${ID}/results`));
+  expect(router.state.location.search).toEqual({ path: "fastqc" });
+});
+
+test("an HTML file links to the report viewer", async () => {
+  files("multiqc/multiqc_report.html", 100);
+  open("multiqc/multiqc_report.html");
+  const link = await screen.findByRole("link", { name: "Open it in the report viewer" });
+  expect(link.getAttribute("href")).toBe(`/runs/${ID}/report?path=${encodeURIComponent("multiqc/multiqc_report.html")}`);
+  await act(async () => {});
+});

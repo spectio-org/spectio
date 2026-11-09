@@ -158,3 +158,48 @@ test("a log that ends with a newline has no extra empty line (CR-P3PARD-04)", ()
   expect(within(levels).getByRole("button", { name: /INFO/ })).toHaveTextContent("2");
   expect(viewer().children).toHaveLength(2);
 });
+
+// The props of the file preview (ui-spec §4.4.1): start, levels, gutterFrom and wrap.
+
+function heights(scrollHeight: number) {
+  Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, get: () => scrollHeight });
+}
+afterEach(() => Reflect.deleteProperty(HTMLElement.prototype, "scrollHeight"));
+
+test("a log opens at its end; start top keeps the first line in view", () => {
+  heights(900);
+  const { unmount } = render(<LogViewer text={LOG} label="Engine log" />);
+  expect(viewer().scrollTop).toBe(900);
+  unmount();
+  render(<LogViewer text={LOG} label="Engine log" start="top" />);
+  expect(viewer().scrollTop).toBe(0);
+});
+
+test("levels off: no tints and no level filter; the search stays", () => {
+  render(<LogViewer text={LOG} label="Engine log" levels={false} />);
+  expect(screen.queryByRole("group", { name: "Show lines" })).toBeNull();
+  expect(viewer().querySelector("[data-tone]")).toBeNull();
+  expect(field()).toBeInTheDocument();
+});
+
+test("gutterFrom numbers the lines in an aria-hidden gutter, outside the line's text", () => {
+  render(<LogViewer text={"alpha\nbeta\n"} label="Engine log" gutterFrom={41} levels={false} />);
+  const gutter = [...viewer().querySelectorAll("[data-gutter]")];
+  expect(gutter.map((g) => g.textContent)).toEqual(["41", "42"]);
+  for (const g of gutter) expect(g).toHaveAttribute("aria-hidden", "true");
+  expect(viewer().textContent).toContain("alpha");
+});
+
+test("without gutterFrom there is no gutter (an End read)", () => {
+  render(<LogViewer text={LOG} label="Engine log" />);
+  expect(viewer().querySelector("[data-gutter]")).toBeNull();
+});
+
+test("wrap off keeps lines on one row; wrap on wraps them, numbers beside their line", () => {
+  const { unmount } = render(<LogViewer text={LOG} label="Engine log" />);
+  expect(viewer()).toHaveClass("sp-nowrap");
+  unmount();
+  render(<LogViewer text={LOG} label="Engine log" wrap gutterFrom={1} />);
+  expect(viewer()).not.toHaveClass("sp-nowrap");
+  expect(viewer()).toHaveAttribute("data-wrap");
+});

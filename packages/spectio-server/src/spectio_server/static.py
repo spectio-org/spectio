@@ -74,6 +74,7 @@ ROUTES = (
     "/runs/{run_id}",
     "/runs/{run_id}/report",
     "/runs/{run_id}/results",
+    "/runs/{run_id}/results/file",
 )
 ASSET = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,199}")
 TYPES = {
