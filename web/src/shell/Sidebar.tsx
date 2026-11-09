@@ -5,12 +5,13 @@ import { ICONS, Icon } from "../icons";
 import { useFrames } from "../live";
 import { ACTIVE, executorLabel } from "../runs/stateWord";
 
-/** The 0.0.1 sections, with the icons and section colours of LiteSidebar and MLiteTabbar (G1).
+/** The 0.0.1 sections (Environments: ui-spec §4.8.1, FU-P3-86f), with the icons and section colours of LiteSidebar and MLiteTabbar (G1).
  * Home is active on `/` only; Runs and Launch also on the pages under them (UX-PAR-06). */
 export const NAV = [
   { to: "/", label: "Home", section: "home", icon: ICONS.home, exact: true },
   { to: "/runs", label: "Runs", section: "runs", icon: ICONS.runs, exact: false },
   { to: "/launch", label: "Launch", section: "launch", icon: ICONS.launch, exact: false },
+  { to: "/environments", label: "Environments", section: "environments", icon: ICONS.server, exact: false },
 ] as const;
 
 /** The number of active runs, from `GET /runs:summary`, refreshed on stream frames (UX-PAR-07). */

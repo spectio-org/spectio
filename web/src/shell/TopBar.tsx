@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import type { ServerVersion } from "../api";
 import { ICONS, Icon } from "../icons";
 
-type To = "/" | "/runs" | "/launch";
+type To = "/" | "/runs" | "/launch" | "/environments";
 interface Crumb {
   label: string;
   to?: To;
@@ -12,6 +12,7 @@ interface Crumb {
 const SECTIONS: Record<string, { label: string; to: To }> = {
   runs: { label: "Runs", to: "/runs" },
   launch: { label: "Launch", to: "/launch" },
+  environments: { label: "Environments", to: "/environments" },
 };
 
 const RUN_PAGES: Record<string, string> = { report: "Report", results: "Results" };
@@ -25,7 +26,7 @@ export function crumbsFor(pathname: string, item: string | null = null): Crumb[]
   let previous = "";
   for (const segment of pathname.split("/").filter(Boolean)) {
     const tool = crumbs.length === 3 && crumbs[1].to === "/runs" && Object.hasOwn(RUN_PAGES, segment) ? RUN_PAGES[segment] : undefined;
-    crumbs.push(SECTIONS[segment] ?? { label: tool ?? item ?? (previous === "runs" ? "Run" : "Not found") });
+    crumbs.push((crumbs.length === 1 ? SECTIONS[segment] : undefined) ?? { label: tool ?? item ?? (previous === "runs" ? "Run" : "Not found") });
     previous = segment;
   }
   return crumbs.map((crumb, i) => (i === crumbs.length - 1 ? { label: crumb.label } : crumb));

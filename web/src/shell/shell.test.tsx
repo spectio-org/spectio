@@ -65,7 +65,7 @@ test("sidebar folds with a button[aria-expanded]", async () => {
   expect(fold).toHaveAccessibleName("Unfold the sidebar");
   expect(within(sidebar).queryByText("Workspace")).toBeNull();
   // Folded to the rail, every link keeps its name.
-  for (const name of ["Home", "Runs", "Launch"]) {
+  for (const name of ["Home", "Runs", "Launch", "Environments"]) {
     expect(within(sidebar).getByRole("link", { name })).toBeInTheDocument();
   }
   // The server's node from GET /version stays in the sidebar's foot.
