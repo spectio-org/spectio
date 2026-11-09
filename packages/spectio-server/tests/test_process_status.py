@@ -296,6 +296,16 @@ def test_rules_in_first_seen_order(settings: Settings, writer: Writer, tmp_path:
     assert pipeline_order(client) == [*seen, "merge", "report", "all", "unused"]
 
 
+def test_listed_rule_in_no_rule_file_comes_last(
+    settings: Settings, writer: Writer, tmp_path: Path
+) -> None:
+    """A rule `rules.txt` lists that no parsed rule file holds (one from a `module` or `use rule`)
+    is kept, after the rule files' rules (CR-P3FU107-02)."""
+    client = client_for(settings, writer)
+    smk_run(settings, writer, tmp_path, rules=sorted([*RULES, "from_module"]))
+    assert list(processes(client)) == [*RULES, "from_module"]
+
+
 def test_pipeline_order_without_links(settings: Settings, writer: Writer, tmp_path: Path) -> None:
     """A rule graph with no links: its rules in the order of the Snakefile, then the rules in no
     graph, in the same order."""
