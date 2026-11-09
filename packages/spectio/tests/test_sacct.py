@@ -7,6 +7,7 @@ asked for stay [to be validated] on a real SLURM.
 
 import itertools
 import json
+import logging
 import os
 import re
 import sys
@@ -669,9 +670,8 @@ def test_sacct_limiter_request_takes_follow_up() -> None:
 
 
 def test_sacct_limiter_classifies_failures() -> None:
-    """SEC-P3FU106A-01: a refused call is final; an answer over the cap splits its batch at
-    once and is final for one ID; a call that fails twice is split, so one ID that fails
-    every call cannot hold its batch-mates."""
+    """SEC-P3FU106A-01: a refused call is final; an answer over the cap splits its batch in
+    two and is final for one ID; any other failure puts the batch back unchanged."""
 
     def call(ids: list[str]) -> sacct.Found | None:
         if "9" in ids:
@@ -685,59 +685,85 @@ def test_sacct_limiter_classifies_failures() -> None:
     assert limiter.run_once() == (["9"], sacct.FINAL)
     limiter.request(["5", "6"])
     assert limiter.run_once() == (["5", "6"], None)
-    limiter.request(["5", "6"])  # the caller puts them back: halved at once
+    limiter.request(["5", "6"])  # the caller puts them back: split in two
     assert limiter.run_once() == (["5"], sacct.FINAL)
     assert limiter.run_once() == (["6"], {})
-    answered = []
     limiter.request(["1", "2", "3", "4"])
-    for _ in range(6):
-        done = limiter.run_once()
-        assert done is not None
-        if done[1] is None:
-            limiter.request(done[0])
-        else:
-            answered += done[0]
-    assert sorted(answered) == ["1", "2", "4"] and limiter.pending() == 1
+    for _ in range(5):  # a failure that is not TooMuch splits nothing
+        assert limiter.run_once() == (["1", "2", "3", "4"], None)
+        limiter.request(["1", "2", "3", "4"])
 
 
-def test_sacct_limiter_bad_id_isolated_in_busy_queue() -> None:
-    """SEC-P3FU106A-02: new IDs arriving before every call do not undo the split: once the bad
-    ID has failed twice, no call that holds it is larger than its recorded size."""
-    limiter = SacctLimiter(lambda ids: None if "9" in ids else {}, interval_s=0)
-    limiter.request(["9"])
-    fresh = itertools.count(1000)
-    failures = 0
-    for _ in range(60):
-        limiter.request(str(next(fresh)) for _ in range(30))
-        size = limiter._size.get("9", sacct.BATCH)
-        done = limiter.run_once()
-        assert done is not None
+def test_sacct_limiter_splits_until_one_over_cap() -> None:
+    """Only TooMuch splits: each half is asked on its own, a half that answers is done, and the
+    split survives a later failure of another kind (the half is not merged back)."""
+    timeouts = {"1"}
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        if "7" in ids:
+            raise sacct.TooMuch("over the cap")
+        if timeouts & set(ids):
+            timeouts.clear()
+            return None
+        return {}
+
+    limiter = SacctLimiter(call, interval_s=0)
+    asked = []
+    limiter.request(str(n) for n in range(1, 9))
+    while (done := limiter.run_once()) is not None:
+        asked.append(done)
         if done[1] is None:
-            failures += 1
-            if failures > 2:
-                assert len(done[0]) <= size
             limiter.request(done[0])  # the caller puts a failed call's IDs back
-    assert failures > 2 and limiter._size["9"] == 1
+    assert asked == [
+        (["1", "2", "3", "4", "5", "6", "7", "8"], None),
+        (["1", "2", "3", "4"], None),  # a timeout: put back, still half the batch
+        (["5", "6", "7", "8"], None),
+        (["1", "2", "3", "4"], {}),
+        (["5", "6"], {}),
+        (["7", "8"], None),
+        (["7"], sacct.FINAL),
+        (["8"], {}),
+    ]
+    assert limiter._size == {}
+
+
+def test_sacct_limiter_logs_refusal_and_retries_os_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A policy refusal is final and logged once at warning, with no traceback; an OSError of
+    the tool's stat (ENOENT, EIO, ESTALE) is retried like a timeout (CR-P3FU106A-04)."""
+    errors: list[Exception] = [sacct.Refused("sacct at /x belongs to uid 7"), OSError(5, "EIO")]
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        raise errors.pop(0)
+
+    limiter = SacctLimiter(call, interval_s=0)
+    limiter.request(["1"])
+    with caplog.at_level(logging.WARNING, logger="spectio.runner.sacct"):
+        assert limiter.run_once() == (["1"], sacct.FINAL)
+        limiter.request(["2"])
+        assert limiter.run_once() == (["2"], None)
+    assert [r.levelno for r in caplog.records] == [logging.WARNING, logging.WARNING]
+    assert all(r.exc_info is None for r in caplog.records)
+    assert "uid 7" in caplog.records[0].getMessage()
 
 
 def test_sacct_limiter_outage_not_split_down() -> None:
-    """CR-P3FU106A-05: a whole-slurmdbd outage fails every call; the failures share no ID, so
-    the batches are not halved down to one ID: once sacct answers, 100 IDs drain in a few calls."""
+    """CR-P3FU106A-05: a whole-slurmdbd outage fails every call; nothing is split, so once
+    sacct answers, 100 IDs drain in one call."""
     calls = 0
 
     def call(ids: list[str]) -> sacct.Found | None:
         nonlocal calls
         calls += 1
+        assert len(ids) == 100
         return None if calls <= 50 else {}
 
     limiter = SacctLimiter(call, interval_s=0)
     limiter.request(str(n) for n in range(1, 101))
-    answered = 0
     while limiter.pending():
         done = limiter.run_once()
         assert done is not None
         if done[1] is None:
             limiter.request(done[0])  # the caller puts a failed call's IDs back
-        else:
-            answered += 1
-    assert calls > 50 and answered <= 4
+    assert calls == 51

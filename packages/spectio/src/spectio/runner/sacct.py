@@ -13,9 +13,8 @@ launched from, SEC-P3T29-01) and its `Submit` is not before the run's launch (in
 `SUBMIT_SKEW_S`, `-E now`, never from Epoch 0 (CON-SLURM-POLL-03). `SacctLimiter` holds the
 server-wide pace: one call in flight, one call per `INTERVAL_S`, doubled up to `MAX_INTERVAL_S`
 after a failed or slow call (CON-SLURM-POLL-02; schedulers §3.8, the SLURM query budget). A
-call that would fail every time (a refused tool, too much output for one ID) is final, and a
-batch that fails twice, or says too much, is split, so one ID cannot hold the others
-(SEC-P3FU106A-01).
+call that would fail every time (a refused tool, too much output for one ID) is final; a batch
+that says too much is split in two; any other failure is retried unchanged (SEC-P3FU106A-01).
 
 The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
 returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
@@ -401,11 +400,12 @@ class SacctLimiter:
     a call that failed or took over `slow_s`, up to `max_interval_s`, and reset by a quick
     answer. `later` queues IDs once a delay has passed (a follow-up). The caller's thread runs
     the call: the server runs it on a thread of its own, never the writer's or a request's.
-    A Refused call, or one that said too much for one ID, is FINAL. Each ID of a failed call
-    keeps the size of the call it was in, halved when it said too much, or fails again while
-    in every call failed since the last answer (a bad ID; an outage fails disjoint calls and
-    halves none, CR-P3FU106A-05): a call holds at most as many IDs as the first queued one
-    allows (SEC-P3FU106A-01)."""
+    A Refused call (a policy refusal of the tool or an ID) is FINAL, logged at warning. Too much
+    output is the only failure that points at the IDs: the batch is split in two, each of its
+    IDs recorded with half its size until it is next taken, and one ID alone is FINAL. Any other
+    failure (a timeout, a non-zero exit, an OSError of the tool's stat) answers None: the
+    caller puts the batch back unchanged under the back-off, until it gives up (GIVE_UP_S in
+    `spectio_server.failure`); an outage splits nothing (SEC-P3FU106A-01, CR-P3FU106A-05)."""
 
     def __init__(
         self,
@@ -427,8 +427,7 @@ class SacctLimiter:
         self._max_pending = max_pending
         self._clock = clock
         self._pending: dict[str, None] = {}  # insertion order: first asked, first called
-        self._size: dict[str, int] = {}  # job ID of a failed call → at most this many per call
-        self._suspects: set[str] | None = None  # in every call failed since the last answer
+        self._size: dict[str, int] = {}  # job ID of a split batch → at most this many per call
         self._last: float | None = None
         self._busy = False
         self._lock = threading.Lock()
@@ -492,45 +491,40 @@ class SacctLimiter:
             if self._last is not None and self._clock() < self._last + self._interval:
                 return None
             ids: list[str] = []
-            cap = self._batch  # the smallest recorded size among the IDs taken (SEC-P3FU106A-02)
+            cap = self._batch  # the smallest recorded size among the IDs taken
             for job in self._pending:
                 cap = min(cap, self._size.get(job, self._batch))
                 if len(ids) >= cap:
                     break
                 ids.append(job)
-            failed = {job: self._size.pop(job) for job in ids if job in self._size}
+            sizes = {job: self._size.pop(job) for job in ids if job in self._size}
             for job in ids:
                 del self._pending[job]
             started = self._clock()
             self._busy, self._last = True, started
         rows: Answer = None
-        again = False  # a failed call that already failed once, or said too much
         try:
             rows = self._call(ids)
         except Refused as exc:  # the tool or an ID: every call of them would be refused
             log.warning("sacct not called for %d IDs: %s", len(ids), exc)
             rows = FINAL
-        except TooMuch as exc:  # split, until one ID alone says too much
+        except TooMuch as exc:  # split in two, until one ID alone says too much
             log.warning("%s", exc)
-            rows, again = (None, True) if len(ids) > 1 else (FINAL, False)
+            if len(ids) == 1:
+                rows = FINAL
+            else:
+                sizes = dict.fromkeys(ids, (len(ids) + 1) // 2)  # two calls, not three
+        except OSError as exc:  # the tool's stat, for now (ENOENT, EIO, ESTALE): retried
+            log.warning("sacct not called for %d IDs: %s", len(ids), exc)
         except Exception:  # a crash: those IDs get no answer, the next call runs
             log.exception("sacct call failed")
         finally:
             with self._lock:
                 self._busy = False
-                if rows is None:  # to be asked again: halved when it failed before
-                    # (and the sizes of IDs the caller gave up since are dropped)
-                    self._size = {j: n for j, n in self._size.items() if j in self._pending}
-                    if not again:  # an outage fails disjoint calls: no ID shared, no halving
-                        asked = set(ids)
-                        self._suspects = asked if self._suspects is None else self._suspects & asked
-                    suspects = self._suspects or set()
-                    for job in ids:
-                        n = min(failed.get(job, len(ids)), len(ids))
-                        halve = again or (job in failed and job in suspects)
-                        self._size[job] = max(1, n // 2) if halve else n
-                elif isinstance(rows, dict):
-                    self._suspects = None
+                # the sizes of IDs the caller gave up are dropped; a batch put back keeps its own
+                self._size = {j: n for j, n in self._size.items() if j in self._pending}
+                if rows is None:
+                    self._size.update(sizes)
                 if not isinstance(rows, dict) or self._clock() - started > self._slow:
                     self._interval = min(self._max_interval, 2 * self._interval)
                 else:

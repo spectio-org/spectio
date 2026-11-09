@@ -65,9 +65,10 @@ if os.path.exists(delay):
 if os.path.exists(os.path.join(here, "fail")):  # slurmdbd unreachable: no answer
     sys.exit(1)
 ids = sys.argv[sys.argv.index("-j") + 1].split(",")
-bad = os.path.join(here, "bad")  # an ID whose every call fails
+bad = os.path.join(here, "bad")  # an ID whose every call says over MAX_OUTPUT
 if os.path.exists(bad) and open(bad).read() in ids:
-    sys.exit(1)
+    sys.stdout.write("x" * (1048576 + 1))
+    sys.exit(0)
 lag = os.path.join(here, "lag")  # a state per call, "-" for no row; then OUT_OF_MEMORY
 text = open(lag).read() if os.path.exists(lag) else ""
 states = text.split(",") if text else []
@@ -896,10 +897,10 @@ def test_sacct_tool_briefly_missing_retried(
     assert not acct.failed(RUN, "8812401") and "8812401" in acct.rows(RUN)
 
 
-def test_sacct_bad_id_holds_no_batch(settings: Settings, writer: Writer, fakebin: Fake) -> None:
-    """SEC-P3FU106A-01: a call that fails whenever one ID is in it is split after its second
-    failure, so the other IDs of the batch are answered on later calls; the bad one is asked
-    alone until GIVE_UP_S, then given up."""
+def test_sacct_over_cap_batch_split(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """SEC-P3FU106A-01: a batch whose answer is over MAX_OUTPUT is split in two, each half
+    asked on its own, so the other IDs get their rows; the one ID still over the cap alone is
+    given up at once, not asked for a day."""
     (fakebin.dir / "bad").write_text("8812403")
     clock = Clock()
     run = Run(settings, writer)
@@ -909,16 +910,13 @@ def test_sacct_bad_id_holds_no_batch(settings: Settings, writer: Writer, fakebin
     for job in jobs:
         fakebin.at(job, run.paths.work_dir)
     acct.want(RUN, [(job, str(run.paths.work_dir)) for job in jobs], 0.0)
-    for _ in range(7):  # 8 fail, 8 fail, then 4 + 4, 2 + 2, 1 + 1
-        wait = acct._limiter.wait_s()
-        assert wait is not None
+    while (wait := acct._limiter.wait_s()) is not None:
         clock.now += wait
         assert acct.step()
+    sizes = [len(c[c.index("-j") + 1].split(",")) for c in fakebin.calls()]
+    assert sizes == [8, 4, 4, 2, 2, 1, 1]  # 8 over; 4 over, 4 fine; 2 over, 2; 1 over, 1
     assert sorted(acct.rows(RUN)) == [job for job in jobs if job != "8812403"]
-    assert acct.status(RUN, "8812403") == "pending"
-    clock.now += failure.GIVE_UP_S
-    assert acct.step() and fakebin.calls()[-1][fakebin.calls()[-1].index("-j") + 1] == "8812403"
-    assert acct.failed(RUN, "8812403") and acct._limiter.wait_s() is None
+    assert acct.failed(RUN, "8812403")
 
 
 def test_sacct_refused_tool_gives_up_at_once(

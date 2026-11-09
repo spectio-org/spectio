@@ -270,10 +270,11 @@ class Accounting:
     checked directory and read back with no link followed. A run's file is read (`load`, in
     the file pool) before any of its jobs is asked (`want`), so a cached job is never asked
     again, after a rebuild too. A job whose call failed (an error, a timeout) is put back in
-    the queue, as the limiter backs off and splits a batch that fails again, until GIVE_UP_S
-    after it ended; then it is given up in memory, never stored (CON-SLURM-POLL-02). A call
-    that would fail every time (a refused tool, too much output for one ID) gives its jobs up
-    at once (SEC-P3FU106A-01). Only a row in a TERMINAL state is kept: a job
+    the queue unchanged, as the limiter backs off, until GIVE_UP_S after it ended; then it is
+    given up in memory, never stored (CON-SLURM-POLL-02). A batch whose answer is over
+    MAX_OUTPUT is split in two by the limiter; a call that would fail every time (a refused
+    tool, too much output for one ID) gives its jobs up at once (SEC-P3FU106A-01). Only a row
+    in a TERMINAL state is kept: a job
     `sacct` does not know yet, or not as ended (slurmdbd records a job after it ends, with a
     lag, [to be validated] on `slurm-mini`, P1 Task 22), is asked once more FOLLOW_UP_S later,
     with no view; then it is kept as None when that answer had no line for it, else given up
