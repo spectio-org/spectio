@@ -2203,6 +2203,8 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Why a question:** the boards are the design source, and this split leaves the built aside behind them for one task.
 - **Assumed (2026-11-09, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a).
 
+- **Done (P3-fu86h, 2026-11-09, FU-P3-86h, on `autopilot/P3-fu86h`):** (a) is built. The aside has the summary and "Before Launch", the list of every reason, each a link to its field, with the outdir warning as a line that does not block; the preview is folded by default; both Launch buttons are described by the list; on the phone the summary comes after Parameters. Owner: [ui-spec §4.6](../specs/ui-spec.md#46-launch-and-relaunch), the aside note of 2026-11-09. [Progress](../progress/W5/P3-M9.md#fu-p3-86h-the-launch-aside-summary-and-before-launch).
+
 ### #146 · Assumed: Thomas's UI feedback of 2026-11-09 (FU-P3-109 to FU-P3-113)
 
 - **Covers:** Thomas's own try of the UI on main (2026-11-09); [ui-spec](../specs/ui-spec.md) §4.6 (Launch), §4.8.1 (Environments) and the run detail; FU-P3-86h, FU-P3-88, FU-P3-89.
