@@ -12,5 +12,5 @@ Fixes, tests first (each failed before its fix): phone cards as one link and the
 Open: CR-P3FU86F-03 to -05 (simplify), -09 (Playwright second Tab on a SLURM server, and the phone project), -10 (branch behind the base); SEC-P3FU86F-01 (the keyboard spec rewrites the file behind `SPECTIO_E2E_BASE_URL`, no cleanup), SEC-P3FU86F-02 (names not encoded in links; safe while the server enforces `^[a-z][a-z0-9-]{0,31}$`).
 
 ```text
-CODE  step=P3-fu86f  review=approve b/M/m=0/0/0  security=approve b/M/m=0/0/2  rounds=2  simplify=skipped -0/+0  tests=pass
+CODE  step=P3-fu86f  review=approve b/M/m=0/0/5  security=approve b/M/m=0/0/2  rounds=2  simplify=skipped -0/+0  tests=pass
 ```
