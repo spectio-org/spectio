@@ -1274,3 +1274,8 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Changed.** [api](../specs/api-and-data-model.md) new §5.4, §4.1 (four problem slugs), §7 (`runs.environment`), pointers in §5 and §5.2; [ui-spec](../specs/ui-spec.md) new §4.8.1, a pointer in §4.6; [dev-env](../specs/dev-environment-and-testing.md) §15.1 (one row), §15.3 req. 18 and the data-directory line; [MVP 0.0.1](../specs/mvp-0.0.1.md) (one row).
 - **Build.** FU-P3-86a to -86g, one P3 batch, server first ([inbox #133](../reviews/inbox.md#133-assumed-environments-local-slurm-define-a-new-one-fu-p3-86)).
 - **[to be validated].** That a pipeline's `clusterOptions` in a selector replaces the environment's account (nf-core/rnaseq); the Snakemake SLURM plugin's reading of quoted `slurm_partition` and `slurm_account` values, by a `slurm-mini` run; the EMBL administrators' view of small local runs on a login node; `executor.$local` on Nextflow 25.x; that a later `--cores` wins over an earlier `--jobs` or a profile's; an nf-core `process_high` task under a 2-CPU cap (nf-core/rnaseq).
+
+## 2026-11-09 — Tables in AG Grid, imaging viewers, and a shorter build cycle (Thomas)
+
+- **Decided (Thomas):** tables are displayed with AG Grid (FU-P3-101, 0.0.1, with FU-P3-88); TIFF, OME-TIFF and OME-Zarr join the list of viewers (FU-P3-102, assumed after 0.0.1). [Inbox #134](../reviews/inbox.md#134-decided-and-assumed-tables-in-ag-grid-tiff-ome-tiff-and-ome-zarr-viewers-fu-p3-101-fu-p3-102).
+- **Decided (Thomas):** a shorter build cycle: tests by scope, coupled tasks built together, re-review only what was raised, per-task docs without an agent; a CI path filter waits for Thomas as a workflow change. [Autopilot §13](../playbooks/autopilot.md#13-a-shorter-build-cycle-thomas-2026-11-09).
