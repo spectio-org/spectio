@@ -453,7 +453,7 @@ test('Launch: a wrong value shows its error on the field; each row says required
   const depth = page.getByRole('textbox', { name: 'depth (optional)' });
   await depth.fill('12');
   await expect(depth).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.getByText('Must be at most 9.')).toBeVisible();
+  await expect(page.getByText('Must be at most 9.', { exact: true })).toBeVisible(); // Before Launch says it too (FU-P3-86h)
   await expect(page.getByRole('button', { name: 'Launch', exact: true }).last()).toHaveAttribute('aria-disabled', 'true');
 });
 

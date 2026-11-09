@@ -1,6 +1,6 @@
 // Copy to a new launch (P1 Task 32 part two; ui-spec §4.4 run tools note; board LiteLaunch):
 // /launch?from=<run> prefills the form from `GET /runs/{id}:launch-template`.
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, app, fetched, json, run, serve, stubStream } from "../testing";
@@ -77,6 +77,12 @@ test("outdir warns while it is the run's own; a value that loads code says so, a
   const outdir = await screen.findByRole("textbox", { name: "outdir (optional)" });
   const warning = "Warning: same as wgs-cohort-12. Change it to keep the two runs' results apart.";
   expect(screen.getByText(warning)).toBeInTheDocument();
+  // and in Before Launch, as a warning that does not block (FU-P3-86h), linking outdir
+  const before = screen.getByRole("status", { name: "Before Launch" });
+  const link = within(before).getByRole("link", { name: "Warning, not a blocker: outdir is the same as wgs-cohort-12" });
+  expect(before).toHaveTextContent(/^Nothing is missing\./);
+  await userEvent.click(link);
+  expect(outdir).toHaveFocus();
   expect(screen.getByText("custom_config_base: loads code or configuration · writable by others")).toBeInTheDocument();
   expect(screen.getByText("Pipeline: loads code or configuration")).toBeInTheDocument();
   await userEvent.clear(outdir);

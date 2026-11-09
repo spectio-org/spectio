@@ -140,6 +140,35 @@
   align-items: center;
   gap: 12px;
 }
+/* The aside's summary and "Before Launch" (ui-spec §4.6 layout note, FU-P3-86h; LiteLaunch). */
+.launch-summary {
+  padding: 14px 16px;
+}
+.launch-summary-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.launch-missing-title {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.launch-missing {
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.launch-missing p,
+.launch-missing ul {
+  margin: 0;
+}
+.launch-missing ul {
+  padding-left: 18px;
+}
+.launch-missing li[data-warning] a {
+  color: var(--sp-state-review-fg);
+}
 .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
