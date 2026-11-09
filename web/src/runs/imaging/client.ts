@@ -1,7 +1,7 @@
 // The page's own geotiff client (api §5.3.1, dev-env §15.3 req. 19, FU-P3-102d1). geotiff.js is
 // given this client through `fromCustomClient`, never a URL: it reads only the one raw URL it is
-// pinned to (built from the `stat` route's path, with `as=tiff`), sends only one closed Range per
-// request, and counts every request and byte against the view's budget before it is sent.
+// pinned to (built from the `stat` route's path, with `as=tiff`), sends only closed Ranges of at most
+// 8 MiB + 1, and counts every request and byte against the view's budget before it is sent.
 import { fromCustomClient, type BaseClient, type GeoTIFF } from "geotiff";
 import { KIB, MIB } from "../preview";
 
@@ -36,6 +36,8 @@ const CLOSED = /^bytes=(\d{1,15})-(\d{1,15})$/;
 export class PinnedClient {
   requests = 0;
   bytes = 0;
+  /** The first error a request threw: geotiff's BlockedSource hides it behind its own. */
+  failure: Error | null = null;
   private active = 0;
   private waiting: (() => void)[] = [];
 
@@ -45,23 +47,41 @@ export class PinnedClient {
     private readonly budget = BUDGET,
   ) {}
 
+  /** One closed range inside the file; one longer than RANGE_MAX (geotiff merges consecutive
+   * blocks) is sent as several closed ranges of at most 8 MiB, each charged, answered as one. */
   async request({ headers, signal }: { headers?: HeadersInit; signal?: AbortSignal } = {}) {
-    const range = new Headers(headers).get("range") ?? "";
-    const m = CLOSED.exec(range);
-    const [first, last] = m ? [Number(m[1]), Number(m[2])] : [0, -1];
-    if (!m || last < first || last - first + 1 > RANGE_MAX || first >= this.size) throw new Refused(`not sent: ${range}`);
+    try {
+      const range = new Headers(headers).get("range") ?? "";
+      const m = CLOSED.exec(range);
+      const [first, last] = m ? [Number(m[1]), Number(m[2])] : [0, -1];
+      if (!m || last < first || first >= this.size) throw new Refused(`not sent: ${range}`);
+      const end = Math.min(last, this.size - 1);
+      const step = end - first + 1 > RANGE_MAX ? RANGE_MAX - 1 : RANGE_MAX;
+      const pieces: Promise<ArrayBuffer>[] = [];
+      for (let at = first; at <= end; at += step) pieces.push(this.piece(at, Math.min(at + step - 1, last), signal));
+      const parts = await Promise.all(pieces);
+      const data = parts.length === 1 ? parts[0] : join(parts);
+      const contentRange = `bytes ${first}-${end}/${this.size}`;
+      return { ok: true, status: 206, getHeader: (name: string) => (name.toLowerCase() === "content-range" ? contentRange : null), getData: async () => data };
+    } catch (err) {
+      this.failure ??= err as Error;
+      throw err;
+    }
+  }
+
+  private async piece(first: number, last: number, signal?: AbortSignal): Promise<ArrayBuffer> {
     const length = Math.min(last, this.size - 1) - first + 1;
     for (let attempt = 0; ; attempt++) {
       this.charge(length);
-      const answer = await this.fetch(range, signal);
+      const answer = await this.fetch(`bytes=${first}-${last}`, signal);
       if (answer.status === 503 && attempt === 0) {
         await new Promise((done) => setTimeout(done, 1000)); // a 503 is asked again once, after 1 s
         continue;
       }
       if (answer.status !== 206) throw new Answered(answer.status, await problem(answer));
       const data = await answer.arrayBuffer();
-      if (data.byteLength > length) throw new Answered(206, "longer than the range asked");
-      return { ok: true, status: 206, getHeader: (name: string) => answer.headers.get(name), getData: async () => data };
+      if (data.byteLength !== length) throw new Answered(206, "not the range asked");
+      return data;
     }
   }
 
@@ -84,6 +104,26 @@ export class PinnedClient {
   }
 }
 
+function join(parts: ArrayBuffer[]): ArrayBuffer {
+  const all = new Uint8Array(parts.reduce((n, p) => n + p.byteLength, 0));
+  let at = 0;
+  for (const p of parts) {
+    all.set(new Uint8Array(p), at);
+    at += p.byteLength;
+  }
+  return all.buffer;
+}
+
+/** Runs a geotiff read on `client`, rethrowing the client's own error (Stopped, Refused,
+ * Answered) instead of the AggregateError BlockedSource turns it into. */
+export async function reading<T>(client: PinnedClient, read: () => Promise<T>): Promise<T> {
+  try {
+    return await read();
+  } catch (err) {
+    throw client.failure ?? err;
+  }
+}
+
 async function problem(answer: Response): Promise<string | null> {
   try {
     const body = (await answer.json()) as { detail?: unknown };
@@ -94,8 +134,8 @@ async function problem(answer: Response): Promise<string | null> {
 }
 
 /** Opens the TIFF at `url` (the raw route with `as=tiff`) of `size` bytes, from the `stat` route. */
-export async function openTiff(url: string, size: number, signal?: AbortSignal): Promise<{ tiff: GeoTIFF; client: PinnedClient }> {
-  const client = new PinnedClient(url, size);
-  const tiff = await fromCustomClient(client as unknown as BaseClient, { blockSize: BLOCK, cacheSize: CACHE_BLOCKS }, signal);
+export async function openTiff(url: string, size: number, signal?: AbortSignal, budget = BUDGET): Promise<{ tiff: GeoTIFF; client: PinnedClient }> {
+  const client = new PinnedClient(url, size, budget);
+  const tiff = await reading(client, () => fromCustomClient(client as unknown as BaseClient, { blockSize: BLOCK, cacheSize: CACHE_BLOCKS }, signal));
   return { tiff, client };
 }
