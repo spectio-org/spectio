@@ -297,6 +297,10 @@ body {
 .sp-tab[data-section="launch"][aria-current="page"] svg {
   color: var(--sp-section-launch);
 }
+.sp-nav-item[data-section="environments"] svg,
+.sp-tab[data-section="environments"][aria-current="page"] svg {
+  color: var(--sp-section-environments);
+}
 .sp-nav-item[aria-current="page"],
 .sp-tab[aria-current="page"] {
   color: var(--sp-text-primary);
@@ -309,6 +313,9 @@ body {
 }
 [data-section="launch"][aria-current="page"] {
   background: var(--sp-section-launch-bg);
+}
+[data-section="environments"][aria-current="page"] {
+  background: var(--sp-section-environments-bg);
 }
 .sp-sidebar-foot {
   margin-top: auto;
@@ -440,6 +447,19 @@ body {
 .sp-tab svg {
   color: var(--sp-text-faint);
 }
+/* Four tabs keep their full label (ui-spec §4.8.1, UX-PRE-FU86-R1-09): it may wrap, hyphenated. */
+.sp-tab span {
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 339px) {
+  .sp-tab {
+    font-size: 10px;
+  }
+}
 
 /* Shared rules for the screens of Task 20. */
 
@@ -514,6 +534,10 @@ body {
 .sp-head-tile[data-section="launch"] {
   color: var(--sp-section-launch);
   background: var(--sp-section-launch-bg);
+}
+.sp-head-tile[data-section="environments"] {
+  color: var(--sp-section-environments);
+  background: var(--sp-section-environments-bg);
 }
 
 /* Engine marks (ui-spec §4.3; UX-PAR-01): on white, never recoloured. */

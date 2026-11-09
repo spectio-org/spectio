@@ -426,6 +426,8 @@ export class ApiError extends Error {
     message: string,
     readonly errors: FieldError[] = [],
     readonly reason: string | null = null,
+    /** The problem's `type` slug, such as `environment-exists` (api §5.4). */
+    readonly slug: string | null = null,
   ) {
     super(message);
   }
@@ -439,7 +441,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const detail = body?.detail ?? body?.title ?? `HTTP ${response.status}`;
     const reason = typeof body?.reason === "string" ? body.reason : null;
-    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : [], reason);
+    const slug = typeof body?.type === "string" ? body.type.replace("/problems/", "") : null;
+    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : [], reason, slug);
   }
   return body as T;
 }
@@ -625,3 +628,42 @@ export function launch(body: LaunchBody): Promise<Launched> {
     body: JSON.stringify(body),
   });
 }
+
+/** Schema `EnvironmentItem` (api §5.4): a built-in or one of `environments.toml`'s. */
+export interface EnvironmentItem {
+  name: string;
+  label: string | null;
+  executor: "local" | "slurm";
+  builtin: boolean;
+  default: boolean;
+  usable: boolean;
+  unusable_reason: string | null;
+  slurm: NonNullable<RunEnvironment["slurm"]> | null;
+  local: NonNullable<RunEnvironment["local"]> | null;
+  profiles: { nextflow: string | null; snakemake: string | null };
+  etag: string;
+}
+export type EnvironmentBody = Omit<EnvironmentItem, "builtin" | "default" | "usable" | "unusable_reason" | "etag">;
+
+/** Schema `EnvironmentList`. */
+export interface EnvironmentList {
+  items: EnvironmentItem[];
+  default: string;
+  file: { path: string; state: "missing" | "ok" | "refused" | "invalid" | "unreachable"; detail: string | null };
+}
+
+const env = (name: string) => `/environments/${encodeURIComponent(name)}`;
+const sendJson = (method: string, body: unknown, etag?: string): RequestInit => ({
+  method,
+  headers: { "content-type": "application/json", ...(etag ? { "if-match": etag } : {}) },
+  body: JSON.stringify(body),
+});
+
+export const listEnvironments = (signal?: AbortSignal): Promise<EnvironmentList> => call("/environments", { signal });
+export const getEnvironment = (name: string, signal?: AbortSignal): Promise<EnvironmentItem> => call(env(name), { signal });
+export const createEnvironment = (body: EnvironmentBody): Promise<EnvironmentItem> => call("/environments", sendJson("POST", body));
+export const replaceEnvironment = (body: EnvironmentBody, etag: string): Promise<EnvironmentItem> =>
+  call(env(body.name), sendJson("PUT", body, etag));
+export const deleteEnvironment = (name: string, etag: string): Promise<null> =>
+  call(env(name), { method: "DELETE", headers: { "if-match": etag } });
+export const makeDefault = (name: string): Promise<null> => call(`${env(name)}:make-default`, { method: "POST" });

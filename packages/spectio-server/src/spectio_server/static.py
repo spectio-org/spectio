@@ -1,7 +1,8 @@
 """The screens: the built `web/dist` (P1 Task 19), served at `/` beside the API.
 
 Only the screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}`, the report viewer
-`/runs/{run_id}/report` and the results browser `/runs/{run_id}/results`) answer `index.html`
+`/runs/{run_id}/report`, the results browser `/runs/{run_id}/results` and the Environments pages
+`/environments`, `/environments/new`, `/environments/{name}`, FU-P3-86f) answer `index.html`
 (to `GET` and `HEAD`), and
 only `/assets/<name>` answers a file: one plain name, a known web type, opened under `dist`
 with `O_NOFOLLOW` at each step, so no symlink is followed and no path leaves the directory.
@@ -79,6 +80,9 @@ ROUTES = (
     "/runs/{run_id}/results/file",
     "/runs/{run_id}/workdir",
     "/runs/{run_id}/workdir/file",
+    "/environments",
+    "/environments/new",
+    "/environments/{name}",
 )
 ASSET = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,199}")
 TYPES = {

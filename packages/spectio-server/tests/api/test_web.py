@@ -99,6 +99,14 @@ def test_file_preview_is_a_screen(web: TestClient) -> None:
     assert "img-src 'self'" in r.headers["content-security-policy"]
 
 
+def test_environments_pages_are_screens(web: TestClient) -> None:
+    """The Environments list and form answer the screens (ui-spec §4.8.1, FU-P3-86f)."""
+    for path in ("/environments", "/environments/new?from=slurm", "/environments/mylab-long"):
+        r = web.get(path)
+        assert r.status_code == 200, path
+        assert r.text == INDEX
+
+
 def test_workdir_pages_are_screens(web: TestClient) -> None:
     """The work directory's folder and file pages answer the screens (ui-spec §4.4.1,
     FU-P3-85e)."""

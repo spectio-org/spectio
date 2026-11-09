@@ -17,7 +17,7 @@ export function TabBar() {
             data-section={item.section}
           >
             <Icon path={item.icon} size={22} />
-            <span>{item.label}</span>
+            <span lang="en">{item.label}</span>
           </Link>
         ))}
       </nav>
