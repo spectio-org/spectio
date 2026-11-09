@@ -190,7 +190,8 @@ def test_req18_snapshot_ensure_tenancy_by_name(settings: Settings, writer: Write
 
 def test_req18_snapshot_migration_backfills(settings: Settings) -> None:
     """A database at 0010 gains `runs.environment` and `environments.name`: the runs it held
-    are `not_recorded`, with the executor of the one environment they ran on."""
+    are `not_recorded` with every field null, as a rebuild from their manifest writes them
+    (CR-P3FU86A-01), so an old SLURM run reads as not SLURM either way."""
     assert settings.db_dir is not None
     engine, _ = open_db(settings.db_dir)
     alembic = Config()
@@ -221,7 +222,7 @@ def test_req18_snapshot_migration_backfills(settings: Settings) -> None:
         assert not new
         with engine.connect() as conn:
             (environment,) = conn.execute(select(runs.c.environment)).scalars()
-            assert environment == {**envs.run_column(None), "executor": "slurm"}
+            assert environment == envs.run_column(None)
             assert conn.execute(select(environments.c.name)).scalar_one() == "slurm"
     finally:
         engine.dispose()

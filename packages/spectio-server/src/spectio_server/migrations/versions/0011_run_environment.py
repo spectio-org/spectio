@@ -1,9 +1,9 @@
 """The run's own environment (FU-P3-86a; api §5.4, §7 `runs`): `runs.environment`, and
 `environments.name`, the built-in name `ensure_tenancy` keys on.
 
-The runs already held get `state: not_recorded`, with the executor of the one environment row
-they were launched on: before FU-P3-86 the server had one kind. Rows of runs started from a
-terminal stay null.
+The runs already held get `state: not_recorded` with every field null, the same as a rebuild
+from their manifest writes (`spectio.environments.run_column(None)`, CR-P3FU86A-01): so a run
+from before FU-P3-86 reads as not SLURM. Rows of runs started from a terminal stay null.
 
 Revision ID: 0011
 Revises: 0010
@@ -29,26 +29,14 @@ def upgrade() -> None:
     op.add_column("environments", sa.Column("name", sa.String(), nullable=True))
     op.add_column("runs", sa.Column("environment", JSON, nullable=True))
     conn = op.get_bind()
-    envs = sa.table("environments", sa.column("id"), sa.column("kind"), sa.column("name"))
-    runs = sa.table(
-        "runs",
-        sa.column("id"),
-        sa.column("environment_id"),
-        sa.column("origin"),
-        sa.column("environment", JSON),
-    )
+    envs = sa.table("environments", sa.column("kind"), sa.column("name"))
+    runs = sa.table("runs", sa.column("origin"), sa.column("environment", JSON))
     conn.execute(sa.update(envs).values(name=envs.c.kind))
-    kinds = {i: k for i, k in conn.execute(sa.select(envs.c.id, envs.c.kind))}
-    held = sa.select(runs.c.id, runs.c.environment_id).where(
-        sa.or_(runs.c.origin.is_(None), runs.c.origin != "cli-observed")
+    conn.execute(
+        sa.update(runs)
+        .where(sa.or_(runs.c.origin.is_(None), runs.c.origin != "cli-observed"))
+        .values(environment={**dict.fromkeys(UNKNOWN), "state": "not_recorded"})
     )
-    for run_id, env_id in conn.execute(held).all():
-        snapshot = {**dict.fromkeys(UNKNOWN), "executor": kinds.get(env_id)}
-        conn.execute(
-            sa.update(runs)
-            .where(runs.c.id == run_id)
-            .values(environment={**snapshot, "state": "not_recorded"})
-        )
 
 
 def downgrade() -> None:
