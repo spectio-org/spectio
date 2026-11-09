@@ -50,7 +50,7 @@ body{margin:0}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","runs","launch"],"default":"runs"},"collapsed":{"editor":"boolean","default":false},"$preview":{"width":236,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","runs","launch","environments"],"default":"runs"},"collapsed":{"editor":"boolean","default":false},"$preview":{"width":236,"height":900}}'>
 class Component extends DCLogic {
 renderVals() {
   const active = this.props.active ?? 'runs';
@@ -59,7 +59,9 @@ renderVals() {
   const defs = [
     ['home', 'Home', 'LiteHome.dc.html', 'M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z', '#5A4FCF', '#F2F1FB'],
     ['runs', 'Runs', 'LiteRuns.dc.html', 'M5 4l14 8-14 8z', '#7750D4', '#F6F2FE'],
-    ['launch', 'Launch', 'LiteLaunch.dc.html', 'M12 3v12 M7 8l5-5 5 5 M5 21h14', '#EC5F87', '#FDF2F5']
+    ['launch', 'Launch', 'LiteLaunch.dc.html', 'M12 3v12 M7 8l5-5 5 5 M5 21h14', '#EC5F87', '#FDF2F5'],
+    // ui-spec §4.8.1: --sp-section-environments sky-600 / sky-50, the server icon.
+    ['environments', 'Environments', 'LiteEnvironments.dc.html', 'M4 4h16v6H4z M4 14h16v6H4z M8 7h.01 M8 17h.01', '#0284C7', '#F0F9FF']
   ];
   const items = defs.map(([id, label, href, icon, color, tint]) => {
     const on = id === active;

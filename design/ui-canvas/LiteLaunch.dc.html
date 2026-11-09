@@ -30,6 +30,13 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 .eng .tick{display:none}.eng[aria-pressed="true"] .tick{display:block}
 .btn-go{height:44px;padding:0 22px;border:none;border-radius:12px;background:#7750D4;color:#FFFFFF;font:600 14px 'Inter',sans-serif;cursor:pointer;flex-shrink:0}
 .btn-go:disabled{background:#C4C7D4;cursor:not-allowed}
+.env-r{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:11px;box-shadow:inset 0 0 0 1px #DFE1EA;cursor:pointer;font-size:13px}
+.env-r:has(input:checked){box-shadow:inset 0 0 0 2px #0284C7;background:#F0F9FF}
+.env-r input{width:16px;height:16px;margin:2px 0 0;flex-shrink:0;accent-color:#0369A1}
+.env-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.env-b{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;font-size:11px;font-weight:600;margin-left:6px;vertical-align:1px}
+.btn-env{align-self:flex-start;height:36px;padding:0 14px;border-radius:10px;border:none;background:#F0F9FF;color:#075985;font:600 13px 'Inter',sans-serif;cursor:pointer}
+.btn-env[aria-disabled="true"]{background:#F1F2F6;color:#4D5065;cursor:not-allowed}
 .btn-load{flex-shrink:0;height:38px;padding:0 16px;border-radius:10px;border:none;background:#F6F2FE;color:#4D368B;font:600 13px 'Inter',sans-serif;cursor:pointer}
 @media (min-width: 1200px){.launch-aside{position:sticky;top:8px}}
 /* One parameter per line (Thomas, 2026-10-31): the name with its type, default and state, the input, the help under it. */
@@ -188,14 +195,23 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 </section>
 
         <aside class="launch-aside" style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
-          <section class="cx" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><h2 id="h-where" style="margin: 0; font-size: 15px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-3" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><span style="min-width: 0;">Where it runs</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">SLURM · login1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-3"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+          <section class="cx" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><h2 id="h-where" style="margin: 0; font-size: 15px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-3" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><span style="min-width: 0;">Where it runs</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Login node · login1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-3"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
             
+            <!-- ui-spec §4.8.1: the Environment choice, first row of "Where it runs"; drawn with local selected on a SLURM server. -->
+            <fieldset style="margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px;">
+              <legend style="padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Environment</legend>
+              <label class="env-r"><input type="radio" name="env" value="slurm" aria-describedby="env-d-slurm"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;">SLURM (from spectio init)<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span><span id="env-d-slurm" style="font-size: 12px; color: #4D5065;">partition htc · SLURM account mylab</span></span></label>
+              <label class="env-r"><input type="radio" name="env" value="local" checked aria-describedby="env-d-local"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;">Login node<span class="env-sr">,</span> <span class="env-b" style="background: #F1F2F6; color: #33364A;">Local</span></span><span id="env-d-local" style="font-size: 12px; color: #4D5065;">on login1 (the login node) · at most 2 CPUs and 8 GiB</span></span></label>
+              <label class="env-r"><input type="radio" name="env" value="mylab-long" aria-describedby="env-d-long"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;">Long jobs, mylab<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span><span class="env-b" style="background: #E8F6EF; color: #157A4B;">Default</span></span><span id="env-d-long" style="font-size: 12px; color: #4D5065;">partition long · SLURM account mylab · 48 h per job · 32 GiB per job</span></span></label>
+              <span style="font-size: 12px; color: #8F5806;">Not offered: gpu-test, partition in ~/.spectio/environments.toml is not a valid name ("gpu test").</span>
+              <button type="button" class="btn-env" aria-haspopup="dialog">New environment</button>
+            </fieldset>
             <dl style="margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
               <sc-for list="{{where}}" as="w" hint-placeholder-count="4">
                 <div style="display: flex; gap: 10px; align-items: baseline;"><dt style="flex: 0 0 92px; color: #6E7287; font-size: 12px;">{{w.k}}</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;"><sc-if value="{{w.logo}}" hint-placeholder-val="{{false}}"><img src="{{w.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{w.v}}</dd></div>
               </sc-for>
             </dl>
-            <span style="font-size: 12px; color: #4D5065;">The executor, the login node and the run directory are fixed for this server: there is nothing to choose in 0.0.1.</span>
+            <span style="font-size: 12px; color: #4D5065;">The login node and the run directory are fixed for this server.</span>
           </div></div></section>
           <section class="cx" style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px;"><h2 id="h-preview" style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-4" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M10 12l-2 2 2 2 M14 12l2 2-2 2"/></svg></span><span style="min-width: 0;">params.json preview</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">values you set</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-4"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
             
@@ -211,6 +227,23 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
           <span id="launch-what" style="font-size: 12px; color: #4D5065;">Starts the engine in a new tmux session on login1 and opens the run page. The run shows Queued until the engine has started.</span>
         </aside>
       </div>
+
+      <section aria-labelledby="h-env-inv" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h2 id="h-env-inv" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Where it runs: the environments file is invalid</h2>
+          <span style="font-size: 12.5px; color: #4D5065;">ui-spec §4.8.1 (UX-PRE-FU86-R1-04): only the built-ins are offered; New environment waits with its reason.</span>
+        </div>
+        <section aria-labelledby="ei-h" style="max-width: 420px; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <h3 id="ei-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Where it runs</h3>
+          <fieldset aria-describedby="ei-why" style="margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px;">
+            <legend style="padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Environment</legend>
+            <label class="env-r"><input type="radio" name="env-inv" value="slurm" checked aria-describedby="ei-d-slurm"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;">SLURM (from spectio init)<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span><span id="ei-d-slurm" style="font-size: 12px; color: #4D5065;">partition htc · SLURM account mylab</span></span></label>
+            <label class="env-r"><input type="radio" name="env-inv" value="local" aria-describedby="ei-d-local"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;">Login node<span class="env-sr">,</span> <span class="env-b" style="background: #F1F2F6; color: #33364A;">Local</span></span><span id="ei-d-local" style="font-size: 12px; color: #4D5065;">on login1 (the login node) · at most 2 CPUs and 8 GiB</span></span></label>
+            <span id="ei-why" style="font-size: 12.5px; color: #5C3A05; background: #FEF7EC; border-radius: 9px; padding: 7px 9px; line-height: 1.45;">Your environments file has a mistake: only the built-ins are offered. See <a href="LiteEnvironments.dc.html">Environments</a></span>
+            <button type="button" class="btn-env" aria-disabled="true" aria-describedby="ei-why">New environment</button>
+          </fieldset>
+        </section>
+      </section>
 
       <section aria-labelledby="h-states" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
         <div style="display: flex; flex-direction: column; gap: 2px;">
@@ -533,17 +566,13 @@ renderVals() {
   ],
   "where": [
     {
-      "k": "Executor",
-      "v": "SLURM"
-    },
-    {
       "k": "Engine",
       "v": "Nextflow 25.10.4, in a tmux session on login1",
       "logo": "/_blob/636203cdee0bc09b61efe0fa351e239b"
     },
     {
       "k": "Tasks",
-      "v": "sent to SLURM by Nextflow (executor slurm)"
+      "v": "run on login1 by Nextflow · at most 2 CPUs"
     },
     {
       "k": "Run directory",
