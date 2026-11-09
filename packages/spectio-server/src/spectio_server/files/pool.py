@@ -12,6 +12,7 @@ A job must be whole: it opens, reads and closes, and returns data, never an open
 caller that timed out never sees what it returns.
 """
 
+import logging
 import queue
 import threading
 from collections.abc import Callable
@@ -22,6 +23,7 @@ from typing import Any, TypeVar
 from spectio.runner.types import Stalled as Stalled  # one class: the runner catches it too
 
 T = TypeVar("T")
+Job = tuple[Callable[[], Any], Future[Any], Callable[[], None] | None]
 
 WORKERS = 4
 READ_TIMEOUT_S = 5.0  # what a route waits for one listing, one read or one view's reads
@@ -32,7 +34,7 @@ class FilePool:
     def __init__(self, workers: int = WORKERS, backlog: int = BACKLOG) -> None:
         self._workers = workers
         self._slots = threading.BoundedSemaphore(workers + backlog)
-        self._jobs: queue.SimpleQueue[tuple[Callable[[], Any], Future[Any]]] = queue.SimpleQueue()
+        self._jobs: queue.SimpleQueue[Job] = queue.SimpleQueue()
         self._started = False
         self._lock = threading.Lock()
 
@@ -46,7 +48,7 @@ class FilePool:
 
     def _work(self) -> None:
         while True:
-            fn, future = self._jobs.get()
+            fn, future, on_done = self._jobs.get()
             try:
                 if future.set_running_or_notify_cancel():
                     try:
@@ -55,17 +57,33 @@ class FilePool:
                         future.set_exception(exc)
             finally:
                 self._slots.release()
+                if on_done is not None:
+                    _call(on_done)
 
-    def run(self, fn: Callable[[], T], timeout_s: float) -> T:
+    def run(
+        self, fn: Callable[[], T], timeout_s: float, on_done: Callable[[], None] | None = None
+    ) -> T:
         """`fn()` in a pool thread; its result, or its exception. Raises `Stalled` when it has
-        not answered within `timeout_s`, or at once when the pool is full."""
+        not answered within `timeout_s`, or at once when the pool is full. `on_done()` is
+        called once the job is over, run or not, even after its caller stopped waiting."""
         if not self._slots.acquire(blocking=False):
+            if on_done is not None:
+                _call(on_done)
             raise Stalled("the file system is not answering: every file reader is waiting")
         self._start()
         future: Future[T] = Future()
-        self._jobs.put((fn, future))
+        self._jobs.put((fn, future, on_done))
         try:
             return future.result(timeout_s)
         except FutureTimeout:
             future.cancel()  # a job still queued never runs
             raise Stalled(f"the file system did not answer within {timeout_s:g} s") from None
+
+
+def _call(on_done: Callable[[], None]) -> None:
+    """`on_done()`, whose failure is logged and never kills a reader nor replaces `Stalled`
+    (CR-P3FU102B-R3-02, SEC-P3FU102B-R3-03)."""
+    try:
+        on_done()
+    except Exception:
+        logging.getLogger(__name__).exception("file pool: on_done failed")

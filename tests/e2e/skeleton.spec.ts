@@ -220,7 +220,10 @@ test('the served pages carry the CSP, Referrer-Policy and COOP headers', async (
     const response = await page.goto(path);
     const headers = response!.headers();
     expect(headers['content-security-policy'], path).toContain("default-src 'none'");
-    expect(headers['content-security-policy'], path).toContain("script-src 'self';");
+    expect(headers['content-security-policy'], path).toContain("script-src 'self' 'wasm-unsafe-eval';");
+    expect(headers['content-security-policy'], path).toContain("worker-src 'self'");
+    expect(headers['content-security-policy'], path).not.toContain("'unsafe-eval'");
+    expect(headers['content-security-policy'], path).not.toContain('blob:');
     expect(headers['referrer-policy'], path).toBe('no-referrer');
     expect(headers['cross-origin-opener-policy'], path).toBe('same-origin');
   }

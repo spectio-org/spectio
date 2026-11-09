@@ -11,8 +11,10 @@ allow them), with `Referrer-Policy: no-referrer` and `Cross-Origin-Opener-Policy
 (SEC-P3T19-03). Every screen allows `frame-src 'self'`, for the report viewer's sandboxed
 report, which the API serves with the CSP of req. 14 (P1 Task 31): a CSP is the document's, and
 the viewer is also reached by in-app navigation from another screen's document (CR-P3T31-02);
-the iframe's `sandbox` attribute and that CSP carry the protection. `app.create_app` mounts
-these routes only with the API (inbox #80, #86).
+the iframe's `sandbox` attribute and that CSP carry the protection. The imaging viewers add
+`'wasm-unsafe-eval'` (WebAssembly, no `eval` of JavaScript) and `worker-src 'self'` (workers
+from `/assets/`); never `'unsafe-eval'` nor `blob:` (dev-env §15.3 req. 19).
+`app.create_app` mounts these routes only with the API (inbox #80, #86).
 """
 
 import logging
@@ -87,9 +89,9 @@ TYPES = {
     ".woff2": "font/woff2",
 }
 CSP = (
-    "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-    "img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; "
-    "form-action 'self'; frame-ancestors 'none'; frame-src 'self'"
+    "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; "
+    "style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self'; "
+    "base-uri 'none'; form-action 'self'; frame-ancestors 'none'; frame-src 'self'"
 )
 HEADERS = {
     "Content-Security-Policy": CSP,

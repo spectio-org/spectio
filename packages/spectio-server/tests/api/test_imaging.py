@@ -1,9 +1,11 @@
 """The raw routes with `as=tiff` and `as=zarr`: the imaging reads of api §5.3.1 (FU-P3-102a;
 dev-env §15.3 req. 14 and 19). One `test_req14_imaging_*` per step of §5.3.1's table; steps 0
-and 9 (script loads, read slots) are FU-P3-102b's.
+and 9 (script loads, read slots) and the session and cross-site tests are FU-P3-102b's.
 """
 
 import os
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -14,12 +16,13 @@ from fastapi.testclient import TestClient
 from spectio.config import Settings
 from spectio.runner.rundir import make_run_dirs
 from spectio_server.api import results as api_results
+from spectio_server.api import taskfiles as api_taskfiles
 from spectio_server.files import confine
 from spectio_server.files import results as files_results
 from spectio_server.store.writer import Writer
 
 from . import test_results, test_taskfiles_api
-from .conftest import add_run
+from .conftest import add_run, client_for
 from .test_results import API, MIB, RUN, TEXT_CSP, Results, attachment, problem, put
 from .test_taskfiles_api import NfTask
 
@@ -47,6 +50,38 @@ def ranged(found: Any, first: int, last: int, size: int, body: bytes) -> None:
 def range_refused(found: Any) -> None:
     problem(found, 422, "validation-failed")
     assert found.json()["errors"][0]["field"] == "Range"
+
+
+SCRIPT_DESTS = ("script", "worker", "sharedworker", "serviceworker")
+
+
+def no_script(client: TestClient, base: str) -> None:
+    """Step 0 on the raw route `base`: a script or worker load of `a.tif` (there) or `none.tif`
+    (not there) is `422`, whatever `as`; other loads never carry `Service-Worker-Allowed`."""
+    for rel in ("a.tif", "none.tif"):
+        for params in ({}, {"as": "image"}, {"as": "tiff"}, {"as": "zarr"}, {"as": "x"}):
+            for dest in SCRIPT_DESTS:
+                headers = {"Sec-Fetch-Dest": dest, "Range": "bytes=0-9"}
+                found = client.get(f"{base}/{rel}", params=params, headers=headers)
+                problem(found, 422, "file-not-allowed")
+                assert "script or a worker" in found.json()["detail"], (rel, params, dest)
+    for dest in ("empty", "document", "image"):
+        headers = {"Sec-Fetch-Dest": dest, "Range": "bytes=0-9"}
+        found = client.get(f"{base}/a.tif", params={"as": "tiff"}, headers=headers)
+        assert found.status_code in (200, 206), (dest, found.text)
+        assert "service-worker-allowed" not in found.headers
+
+
+def test_req14_imaging_no_script_or_worker(authed_client: TestClient, results: Results) -> None:
+    """Step 0 on the results raw route."""
+    put(results, "a.tif", TIFF)
+    no_script(authed_client, f"{API}/runs/{RUN}/results/raw")
+
+
+def test_req14_imaging_no_script_or_worker_workdir(nf_task: NfTask) -> None:
+    """Step 0 on the work directory's raw route."""
+    (nf_task.dir / "a.tif").write_bytes(TIFF)
+    no_script(nf_task.client, f"{API}/tasks/{nf_task.task_id}/attempts/1/workdir/raw")
 
 
 def test_req14_imaging_raw_checks_first(
@@ -134,8 +169,11 @@ def test_req14_imaging_zarr_key(authed_client: TestClient, results: Results) -> 
 
 
 def test_req14_imaging_without_fetch_dest(authed_client: TestClient, results: Results) -> None:
-    """Step 6: without `Sec-Fetch-Dest: empty` the attachment, `Range` ignored, no check."""
+    """Step 6: without `Sec-Fetch-Dest: empty` the attachment, `Range` ignored, the TIFF header
+    not checked; the names of steps 4 and 5 are checked before it (CR-P3FU102A-01)."""
     put(results, "a.tif", b"not a tiff")
+    put(results, "a.png", TIFF)
+    put(results, "i.ome.zarr/.zmetadata", b"{}")
     put(results, "i.ome.zarr/.zattrs", b"{}")
     for dest in (
         {"Sec-Fetch-Dest": ""},
@@ -145,6 +183,12 @@ def test_req14_imaging_without_fetch_dest(authed_client: TestClient, results: Re
         attachment(get(authed_client, "a.tif", "tiff", "bytes=0-1", headers=dest), "a.tif")
         attachment(
             get(authed_client, "i.ome.zarr/.zattrs", "zarr", "bytes=0-0", headers=dest), ".zattrs"
+        )
+        problem(get(authed_client, "a.png", "tiff", headers=dest), 422, "file-not-allowed")
+        problem(
+            get(authed_client, "i.ome.zarr/.zmetadata", "zarr", headers=dest),
+            422,
+            "file-not-allowed",
         )
 
 
@@ -177,6 +221,10 @@ def test_req14_imaging_range_refused(authed_client: TestClient, results: Results
         range_refused(get(authed_client, "a.tif", "tiff", rng))
         range_refused(get(authed_client, "i.ome.zarr/.zattrs", "zarr", rng))
     range_refused(get(authed_client, "a.tif", "tiff"))
+    two = [("Sec-Fetch-Dest", "empty"), ("Range", "bytes=0-1"), ("Range", "bytes=4-5")]
+    for rel, as_ in (("a.tif", "tiff"), ("i.ome.zarr/.zattrs", "zarr")):  # SEC-P3FU102A-02
+        url = f"{API}/runs/{RUN}/results/raw/{rel}"
+        range_refused(authed_client.get(url, params={"as": as_}, headers=two))
     put(results, "big.tif", b"MM\x00*" + b"\x00" * (9 * MIB))
     ranged(
         get(authed_client, "big.tif", "tiff", "bytes=0-8388608"),
@@ -337,3 +385,180 @@ def test_req14_imaging_workdir_dot_rule(nf_task: NfTask) -> None:
         found = ask(rel, "zarr")
         assert (found.status_code, found.content) == (200, b"{}"), rel
     ranged(ask("a.tif", "tiff", "bytes=0-3"), 0, 3, len(TIFF), b"II*\x00")
+
+
+def test_req14_imaging_read_slots(
+    served: str, session: dict[str, str], results: Results, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Step 9: three imaging reads held, a fourth is `503` at once; a slot comes back when its
+    answer ends."""
+    put(results, "a.tif", TIFF)
+    put(results, "i.ome.zarr/0/0", b"chunk")
+    real, go = files_results.read_chunk, threading.Event()
+
+    def held(*args: Any) -> bytes:
+        assert go.wait(10)
+        return real(*args)
+
+    monkeypatch.setattr(files_results, "read_chunk", held)
+    url = f"{API}/runs/{RUN}/results/raw/a.tif?as=tiff"
+    range_ = {**FETCH, "Range": "bytes=0-9"}
+    with httpx2.Client(base_url=served, timeout=10, cookies=session) as http:
+        opened = [http.stream("GET", url, headers=range_) for _ in range(3)]
+        streams = [s.__enter__() for s in opened]
+        assert [s.status_code for s in streams] == [206] * 3
+        busy = http.get(f"{API}/runs/{RUN}/results/raw/i.ome.zarr/0/0?as=zarr", headers=FETCH)
+        problem(busy, 503, "runner-offline")
+        assert "busy reading images" in busy.json()["detail"]
+        plain = http.get(f"{API}/runs/{RUN}/results/raw/a.tif")  # not an imaging read
+        assert plain.status_code == 200
+        go.set()
+        for s, cm in zip(streams, opened, strict=True):
+            assert s.read() == TIFF[:10]
+            cm.__exit__(None, None, None)
+        for _ in range(4):
+            assert http.get(url, headers=range_).status_code == 206
+
+
+def test_req14_imaging_slot_back_on_client_gone(
+    served: str, session: dict[str, str], results: Results, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Step 9: a slot comes back when its client goes away before the body, with no garbage
+    collection (CR-P3FU102B-01)."""
+    put(results, "a.tif", TIFF)
+    real, go = files_results.read_chunk, threading.Event()
+
+    def held(*args: Any) -> bytes:
+        assert go.wait(10)
+        return real(*args)
+
+    monkeypatch.setattr(files_results, "read_chunk", held)
+    url = f"{API}/runs/{RUN}/results/raw/a.tif?as=tiff"
+    range_ = {**FETCH, "Range": "bytes=0-9"}
+    with httpx2.Client(base_url=served, timeout=10, cookies=session) as http:
+        for _ in range(3):
+            with http.stream("GET", url, headers=range_) as s:
+                assert s.status_code == 206
+        go.set()
+        deadline = time.monotonic() + 1
+        while (found := http.get(url, headers=range_)).status_code == 503:
+            assert time.monotonic() < deadline, "the slots stayed taken"
+            time.sleep(0.05)
+        assert found.status_code == 206
+
+
+def test_req14_imaging_slot_held_while_stalled(
+    authed_client: TestClient, results: Results, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Step 9 on a stalled mount: a slot is held until its last pool job returns, not only
+    until its answer ends, so stuck imaging reads never take every file reader
+    (SEC-P3FU102B-01)."""
+    put(results, "a.tif", TIFF)
+    put(results, "notes.txt", b"hello")
+    real, go = files_results.read_chunk, threading.Event()
+
+    def stalled(*args: Any) -> bytes:
+        go.wait(10)
+        return real(*args)
+
+    monkeypatch.setattr(files_results, "read_chunk", stalled)
+    monkeypatch.setattr(api_taskfiles, "READ_TIMEOUT_S", 0.2)
+    try:
+        for _ in range(3):  # each body stalls after its headers and aborts
+            with pytest.raises(RuntimeError):
+                get(authed_client, "a.tif", "tiff", "bytes=0-9")
+        busy = get(authed_client, "a.tif", "tiff", "bytes=0-9")
+        problem(busy, 503, "runner-offline")
+        assert "busy reading images" in busy.json()["detail"]
+        text = authed_client.get(f"{API}/runs/{RUN}/results/text/notes.txt")
+        assert text.status_code == 200, text.text
+    finally:
+        go.set()
+    deadline = time.monotonic() + 2
+    while (found := get(authed_client, "a.tif", "tiff", "bytes=0-3")).status_code == 503:
+        assert time.monotonic() < deadline, "the slots stayed taken"
+        time.sleep(0.05)
+    ranged(found, 0, 3, len(TIFF), b"II*\x00")
+
+
+def test_req14_imaging_slot_back_on_abort_and_refusal(
+    authed_client: TestClient, results: Results, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A slot comes back when its answer aborts, or when a later step refuses the read."""
+    put(results, "a.tif", TIFF)
+    put(results, "b.tif", b"not a tiff")
+    for _ in range(4):
+        range_refused(get(authed_client, "a.tif", "tiff", "bytes=0-"))
+        problem(get(authed_client, "b.tif", "tiff", "bytes=0-1"), 422, "file-not-allowed")
+        problem(get(authed_client, "none.tif", "tiff", "bytes=0-1"), 404, "not-found")
+
+    def failing(*args: Any) -> bytes:
+        raise OSError("gone")
+
+    monkeypatch.setattr(files_results, "read_chunk", failing)
+    for _ in range(4):
+        with pytest.raises(RuntimeError):  # the body aborts after its headers
+            get(authed_client, "a.tif", "tiff", "bytes=0-9")
+    monkeypatch.undo()
+    ranged(get(authed_client, "a.tif", "tiff", "bytes=0-3"), 0, 3, len(TIFF), b"II*\x00")
+
+
+def session_and_site(settings: Settings, writer: Writer, client: TestClient, urls: Any) -> None:
+    """Each `(url, as)`: no session cookie is `401`; a cross-site or same-site request `403`."""
+    anon = client_for(settings, writer, signed_in=False)
+    headers = {**FETCH, "Range": "bytes=0-1"}
+    for url, as_ in urls:
+        problem(anon.get(url, params={"as": as_}, headers=headers), 401, "unauthenticated")
+        for site in ("cross-site", "same-site"):
+            site_headers = {**headers, "Sec-Fetch-Site": site}
+            found = client.get(url, params={"as": as_}, headers=site_headers)
+            assert found.status_code == 403, (url, site, found.text)
+        assert client.get(url, params={"as": as_}, headers=headers).status_code in (200, 206)
+
+
+def test_req2_req7_imaging_session_and_cross_site(
+    settings: Settings, writer: Writer, authed_client: TestClient, results: Results
+) -> None:
+    """`as=tiff` and `as=zarr` on the results raw route need the session, same origin."""
+    put(results, "a.tif", TIFF)
+    put(results, "i.ome.zarr/.zattrs", b"{}")
+    base = f"{API}/runs/{RUN}/results/raw"
+    urls = ((f"{base}/a.tif", "tiff"), (f"{base}/i.ome.zarr/.zattrs", "zarr"))
+    session_and_site(settings, writer, authed_client, urls)
+
+
+def test_req2_req7_imaging_session_and_cross_site_workdir(
+    settings: Settings, writer: Writer, nf_task: NfTask
+) -> None:
+    """The same on the work directory's raw route."""
+    (nf_task.dir / "a.tif").write_bytes(TIFF)
+    (nf_task.dir / "i.ome.zarr").mkdir()
+    (nf_task.dir / "i.ome.zarr" / "zarr.json").write_text("{}")
+    base = f"{API}/tasks/{nf_task.task_id}/attempts/1/workdir/raw"
+    urls = ((f"{base}/a.tif", "tiff"), (f"{base}/i.ome.zarr/zarr.json", "zarr"))
+    session_and_site(settings, writer, nf_task.client, urls)
+
+
+def test_req14_imaging_slot_given_back_inside_take() -> None:
+    """A finalizer giving a slot back on a thread already inside `take` does not deadlock
+    (SEC-P3FU102B-01): the slots' lock is reentrant."""
+    from spectio_server.api.results import ImagingSlots
+
+    slots = ImagingSlots(1)
+    assert slots.take()
+    with slots._lock:  # the state a finalizer would interrupt
+        slots.give()
+    assert slots.take() and not slots.take()
+
+
+def test_pool_on_done_failure_keeps_the_reader() -> None:
+    """A raising `on_done` is logged; the reader thread lives on (CR-P3FU102B-R3-02)."""
+    from spectio_server.files.pool import FilePool
+
+    pool = FilePool(1)
+
+    def boom() -> None:
+        raise RuntimeError("on_done")
+
+    assert pool.run(lambda: 1, 2.0, boom) == 1
+    assert pool.run(lambda: 2, 2.0) == 2
