@@ -2,6 +2,8 @@
 
 Step `P3-fu85-spec` on `autopilot/P3-fu85-spec`, base `90f19cbb`, 2026-11-08. The step writes the design of FU-P3-85 ([decision log](../../decisions/log.md#2026-11-08-file-explorer-and-preview-in-001-fu-p3-85-assumed), [inbox #127](../inbox.md#127-assumed-file-explorer-and-preview-fu-p3-85)); it changes no code, so `code-reviewer`, `code-simplifier` and the tests do not run.
 
+There is no `CODE` line in this record: the step changes no code, so there is no code to review.
+
 Reviewed sections:
 - [ui-spec §4.4.1](../../specs/ui-spec.md#441-file-explorer-and-preview), new;
 - [api §5.3](../../specs/api-and-data-model.md#53-run-files-explorer-and-preview), new;

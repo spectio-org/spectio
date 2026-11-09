@@ -50,7 +50,7 @@ The same card shows the work directory of a task, under the heading "Work direct
 ![Preview of quant/counts_matrix.tsv: a table of twelve samples with total, mapped and mapped_rate, under the path, Copy path and Download](../assets/shots/app-file-preview_light.webp#only-light)
 ![Preview of quant/counts_matrix.tsv: a table of twelve samples with total, mapped and mapped_rate, under the path, Copy path and Download](../assets/shots/app-file-preview_dark.webp#only-dark)
 
-*A 250-byte TSV from the same run. The heading takes focus when the page opens. In the table, the line "counts_matrix.tsv" under the header row (`sample`, `total`, `mapped`, `mapped_rate`) is the table's caption, not a row of the file: it should sit above the header. This is a known display fault in 0.0.1, with a fix planned ([follow-up FU-P3-100](../progress/W5/P3-M9.md#follow-ups-of-batch-p3-b09)).*
+*A 250-byte TSV from the same run. The heading takes focus when the page opens. In the table, the line "counts_matrix.tsv" under the header row (`sample`, `total`, `mapped`, `mapped_rate`) is the table's caption, not a row of the file: it should sit above the header. This is a known display fault in 0.0.1, with a fix planned ([follow-up FU-P3-100](../progress/W5/P3-M9.md#follow-ups-of-batch-p3-b09)). In the dark shot, the first column (`sample`) has a lighter background from the first row down. That is intended: the first column is sticky (`position: sticky; left: 0`) and has its own background, so it stays readable when you scroll the table sideways (`web/src/runs/runs.css:1817`).*
 
 The page shows the file's name, its kind, size and time, its full path with **Copy path**, **Download**, then one viewer by kind:
 
