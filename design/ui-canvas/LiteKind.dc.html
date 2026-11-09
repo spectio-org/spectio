@@ -23,7 +23,8 @@
 //   .gff .gff3 .nf .smk .py .r .sh .config) · Table (.csv .tsv .tab) · JSON (.json) · Image (.png
 //   .jpg .jpeg .gif .webp .svg) · HTML report (.html .htm in results) · HTML (not opened) (in a
 //   work directory) · PDF · Binary (the known-binary list of ui-spec §4.4.1) · File (any other
-//   name) · Link outside.
+//   name) · Link outside · TIFF (.tif .tiff) · OME-TIFF (.ome.tif .ome.tiff) · OME-Zarr (a folder
+//   named *.ome.zarr; the imaging note of 2026-11-09, FU-P3-102).
 // plain="1": the word alone, for the phone row's "Kind · size · modified" line.
 // The web client keeps the same list in web/src/runs/preview.ts (KIND_WORDS, fileKind).
 const KINDS = {
@@ -38,6 +39,9 @@ const KINDS = {
   binary: ['Binary', 'M6 3h9l4 4v14H6z M14 3v5h5 M9 12v4 M12 12h2v4h-2z'],
   file: ['File', 'M6 3h9l4 4v14H6z M14 3v5h5'],
   link: ['Link outside', 'M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6'],
+  tiff: ['TIFF', 'M4 5h16v14H4z M4 16l5-5 4 4 3-3 4 4 M15.5 9h.01'],
+  ometiff: ['OME-TIFF', 'M7 3h14v14 M4 6h14v15H4z M4 18l4-4 3 3 3-3 4 4'],
+  omezarr: ['OME-Zarr', 'M3 7h6l2 2h10v10H3z M9 12v5 M13 12v5 M17 12v5 M7 14.5h12'],
 };
 class Component extends DCLogic {
 renderVals() {
