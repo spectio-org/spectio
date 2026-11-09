@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — kind badge</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+.lk{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:#F1F2F7;color:#33364A;font:500 12px 'Inter',system-ui,sans-serif;white-space:nowrap}
+.lk svg{flex-shrink:0}
+</style>
+</helmet>
+<sc-if value="{{plain}}" hint-placeholder-val="{{false}}"><span>{{word}}</span></sc-if>
+<sc-if value="{{!plain}}" hint-placeholder-val="{{true}}"><span class="lk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{icon}}"/></svg>{{word}}</span></sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"text","default":"file"},"plain":{"editor":"text","default":""},"$preview":{"width":160,"height":32}}'>
+// The one list of kinds for every board and screen (ui-spec §4.4.1, Explorer, Kind): the word and
+// its icon. The kind comes from the name only; extensions compare without case.
+//   Folder · Text (.txt .log .out .err .yml .yaml .md .fa .fasta .fq .fastq .sam .vcf .bed .gtf
+//   .gff .gff3 .nf .smk .py .r .sh .config) · Table (.csv .tsv .tab) · JSON (.json) · Image (.png
+//   .jpg .jpeg .gif .webp .svg) · HTML report (.html .htm in results) · HTML (not opened) (in a
+//   work directory) · PDF · Binary (the known-binary list of ui-spec §4.4.1) · File (any other
+//   name) · Link outside.
+// plain="1": the word alone, for the phone row's "Kind · size · modified" line.
+// The web client keeps the same list in web/src/runs/preview.ts (KIND_WORDS, fileKind).
+const KINDS = {
+  folder: ['Folder', 'M3 7h6l2 2h10v10H3z'],
+  text: ['Text', 'M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7'],
+  table: ['Table', 'M4 5h16v14H4z M4 10h16 M4 15h16 M10 5v14'],
+  json: ['JSON', 'M9 4c-2 0-2 2-2 4s-1 4-3 4c2 0 3 2 3 4s0 4 2 4 M15 4c2 0 2 2 2 4s1 4 3 4c-2 0-3 2-3 4s0 4-2 4'],
+  image: ['Image', 'M4 5h16v14H4z M4 16l5-5 4 4 3-3 4 4 M15.5 9h.01'],
+  html: ['HTML report', 'M6 3h9l4 4v14H6z M14 3v5h5 M10 12l-2 2 2 2 M14 12l2 2-2 2'],
+  htmlnot: ['HTML (not opened)', 'M6 3h9l4 4v14H6z M14 3v5h5 M10 12l-2 2 2 2 M14 12l2 2-2 2'],
+  pdf: ['PDF', 'M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h4'],
+  binary: ['Binary', 'M6 3h9l4 4v14H6z M14 3v5h5 M9 12v4 M12 12h2v4h-2z'],
+  file: ['File', 'M6 3h9l4 4v14H6z M14 3v5h5'],
+  link: ['Link outside', 'M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6'],
+};
+class Component extends DCLogic {
+renderVals() {
+  const [word, icon] = KINDS[this.props.kind] || KINDS.file;
+  return { word, icon, plain: !!this.props.plain };
+}
+}
+</script>
+</body>
+</html>
