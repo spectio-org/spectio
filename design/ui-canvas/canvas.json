@@ -1214,6 +1214,30 @@
    "h": 844,
    "title": "0.0.1 phone · Resume sheet",
    "page": "lite"
+  },
+  "LiteFilePreview.dc.html": {
+   "x": 18720,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · File preview",
+   "page": "lite"
+  },
+  "LiteFilePreviewStates.dc.html": {
+   "x": 20280,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · File preview, every state",
+   "page": "lite"
+  },
+  "MLiteFilePreview.dc.html": {
+   "x": 5170,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · File preview",
+   "page": "lite"
   }
  },
  "order": [
@@ -1322,6 +1346,8 @@
   "LiteRunActions.dc.html",
   "LiteResults.dc.html",
   "LiteReportViewer.dc.html",
+  "LiteFilePreview.dc.html",
+  "LiteFilePreviewStates.dc.html",
   "LiteCancelDialog.dc.html",
   "LiteRunObserved.dc.html",
   "MLiteHome.dc.html",
@@ -1334,6 +1360,7 @@
   "MLiteRunObserved.dc.html",
   "MLiteCancelSheet.dc.html",
   "MLiteResumeSheet.dc.html",
+  "MLiteFilePreview.dc.html",
   "MLiteLaunch.dc.html",
   "LiteLegend.dc.html",
   "LiteStates.dc.html",
