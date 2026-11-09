@@ -809,3 +809,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Merged #213 (FU-P3-86h, plus a run icon on both Launch buttons, inbox #146 item 2) and #214 (FU-P3-109). Costs: 86h ~366k, 109 ~392k.
 - Live screenshots of Launch taken from a local `spectio serve` on its Unix socket only (Playwright relays each request over the socket, Host header kept): no TCP port. Seen: Engine head reads "Not chosen yet" in Where it runs but "a process on vm" in the summary; minor for FU-P3-108.
 - Batch P3-B11 (86f, 86g, 86h, 109; d2147ede..b35198e2) started; FU-P3-102c2 boards in flight. After B11: promote, then ask login1 for retest d.
+- 2026-11-09 — Thomas: pause at the next wave. In flight finish (batch P3-B11 docs, FU-P3-102c2 boards, their PRs, the B11 promotion); no new task starts until Thomas resumes.
