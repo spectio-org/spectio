@@ -101,6 +101,8 @@ const LIGHT = {
   "section-runs-bg": v("violet-50"),
   "section-launch": v("coral-500"),
   "section-launch-bg": v("coral-50"),
+  "section-environments": v("sky-600"),
+  "section-environments-bg": v("sky-50"),
   shadow:
     "0 0 0 1px rgba(15,16,32,0.11), 0 1px 2px rgba(15,16,32,0.05), 0 10px 28px -18px rgba(15,16,32,0.18)",
 };
@@ -141,6 +143,8 @@ const DARK: typeof LIGHT = {
   "section-runs-bg": "rgba(165,128,248,.16)",
   "section-launch": v("coral-400"),
   "section-launch-bg": "rgba(240,130,161,.14)",
+  "section-environments": v("sky-400"),
+  "section-environments-bg": "rgba(95,168,207,.16)",
   shadow: "0 0 0 1px rgba(236,237,245,.12), 0 10px 28px -18px rgba(0,0,0,.6)",
 };
 

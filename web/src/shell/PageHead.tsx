@@ -14,7 +14,7 @@ export function PageHead({
   action,
   phoneBar,
 }: {
-  section: "home" | "runs" | "launch";
+  section: (typeof NAV)[number]["section"];
   title: ReactNode;
   sub?: ReactNode;
   action?: ReactNode;

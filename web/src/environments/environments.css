@@ -1,0 +1,56 @@
+/* The Environments pages (ui-spec §4.8.1; boards LiteEnvironments, LiteEnvironmentEdit). */
+.sp-envs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 12px;
+}
+.sp-env-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+}
+.sp-env-top h2 {
+  margin: 0;
+  flex: 1 1 auto;
+  font-size: 16px;
+}
+.sp-env-top h2:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+.sp-env p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+.sp-env[data-default] {
+  box-shadow: inset 3px 0 0 var(--sp-section-environments), var(--sp-shadow);
+}
+.sp-env-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 640px;
+}
+.sp-env-form fieldset {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--sp-line-divider);
+  border-radius: 12px;
+}
+.sp-env-pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+.sp-env-hint {
+  font-size: 12.5px;
+  color: var(--sp-text-muted);
+}
+.sp-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
