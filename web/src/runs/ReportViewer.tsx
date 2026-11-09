@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { type ApiError, type RunDetail, getRun, resultUrl } from "../api";
 import { ICONS, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
+import type { Sort } from "./explorer";
+import { resultsSearch } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
 import { runName } from "./RunState";
 
@@ -14,9 +16,13 @@ import { runName } from "./RunState";
 
 const MULTIQC = "multiqc_report.html";
 
-/** `/runs/$id/report?path=<results path>` */
-export function reportSearch(search: Record<string, unknown>): { path?: string } {
-  return typeof search.path === "string" && search.path !== "" ? { path: search.path } : {};
+/** `/runs/$id/report?path=<results path>`; opened from the results browser, `&from=results` and
+ * the browser's `sort` and `q`, which its back link returns with (ui-spec §4.4.1, HTML report). */
+export function reportSearch(search: Record<string, unknown>): { path?: string; from?: "results"; sort?: Sort; q?: string } {
+  const path = typeof search.path === "string" && search.path !== "" ? { path: search.path } : {};
+  if (search.from !== "results") return path;
+  const { sort, q } = resultsSearch(search);
+  return { ...path, from: "results", ...(sort ? { sort } : {}), ...(q ? { q } : {}) };
 }
 
 /** A report's title, as the listing gives it (`files.results._report`). */
@@ -31,15 +37,18 @@ export function reportTitle(path: string): string {
 export const FORMAT_CHARS = "\\u061c\\u200b-\\u200f\\u2028-\\u202e\\u2060-\\u206f\\ufeff\\ufff9-\\ufffb";
 const UNSAFE = new RegExp(`[\\u0000-\\u001f\\u007f-\\u009f${FORMAT_CHARS}]`);
 
+/** Text with no control, bidi or format character: what a URL may put in a field or a message. */
+export const isPlainText = (text: string): boolean => !UNSAFE.test(text);
+
 /** A path below the results root as the API names one: relative, with no empty, `.` or `..`
  * part, no control character and no bidi or format character. Anything else is never asked for,
  * nor shown (SEC-P3T31-10 r4, SEC-P3G4-02, SEC-P3T32B-02, SEC-P3T32B-05). */
 export const isResultPath = (path: string): boolean =>
-  !UNSAFE.test(path) && path.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+  isPlainText(path) && path.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 
 const isReport = (path: string) => isResultPath(path) && /\.html?$/i.test(path);
 
-export function ReportViewer({ id, path }: { id: string; path?: string }) {
+export function ReportViewer({ id, path, from, sort, q }: { id: string } & ReturnType<typeof reportSearch>) {
   const [run, setRun] = useState<RunDetail | null>(null);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +75,14 @@ export function ReportViewer({ id, path }: { id: string; path?: string }) {
       </div>
     );
   }
-  const back = (
+  // opened from the results browser: back to the file's folder, its row in focus (ui-spec §4.4.1)
+  const parts = from && path && isReport(path) ? path.split("/") : null;
+  const folder = parts ? parts.slice(0, -1) : [];
+  const back = parts ? (
+    <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder.join("/") || undefined, sort, q, focus: parts[parts.length - 1] }}>
+      <Icon path={ICONS.chevronLeft} size={14} /> {folder[folder.length - 1] ?? "results"}
+    </Link>
+  ) : (
     <Link className="sp-report-back" to="/runs/$id" params={{ id }}>
       <Icon path={ICONS.chevronLeft} size={14} /> {name} · Summary
     </Link>
@@ -84,6 +100,23 @@ export function ReportViewer({ id, path }: { id: string; path?: string }) {
     <div className="sp-runs sp-report">
       {back}
       <h1 className="sp-page-title">{title}</h1>
+      {parts && (
+        <nav className="sp-pathbar" aria-label="Folder">
+          <ol>
+            {["results", ...parts].map((part, i) => (
+              <li key={i}>
+                {i < parts.length ? (
+                  <Link to="/runs/$id/results" params={{ id }} search={{ path: parts.slice(0, i).join("/") || undefined, sort }}>
+                    {part}
+                  </Link>
+                ) : (
+                  <span aria-current="page">{part}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
       <div className="sp-report-banner">
         <Icon path={ICONS.shield} size={20} />
         <div>

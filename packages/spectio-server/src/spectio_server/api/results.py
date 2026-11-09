@@ -1,11 +1,20 @@
-"""`GET /runs/{id}/results?path=` and `GET /runs/{id}/results/raw/{path}`: a run's results,
-read only (P1 Task 31; api §5 note of 2026-10-28, Results; dev-env §15.3 req. 13 and 14).
+"""`GET /runs/{id}/results?path=`, `GET /runs/{id}/results/raw/{path}`, and the `stat` and
+`text` routes of the preview: a run's results, read only (P1 Task 31; api §5 note of
+2026-10-28, Results; api §5.3, FU-P3-85a; dev-env §15.3 req. 13 and 14).
+
+`stat` answers the listing's entry for one path; `text` reads a file as the Job files read does
+(`files.taskfiles.read_text`: the tail, or one `Range`, at most 1 MiB, ended on a whole UTF-8
+sequence), with the text CSP.
 
 The listing is one folder of the results directory and the reports found below its root
 (`files.results`); the search runs once per listing while the run is active, and its result is
 kept once the run has ended. A raw file is served whole with its `Content-Length`, read in chunks
 of at most 1 MiB, each in the file pool with its timeout; a read that fails or comes back short
-once the headers are sent aborts the response (CR-P3T31-03). `.html` and `.htm` carry the
+once the headers are sent aborts the response (CR-P3T31-03). The first chunk is read at the
+first opening, which records the file's `(st_dev, st_ino)`, and is sent as the first part of the
+body; every later chunk that opens another file aborts the response too (api §5.3).
+`?as=image` with `Sec-Fetch-Dest: image` serves an image inline, in the order of api §5.3's
+table (`_image_type`, then the caps and `files.images.check`). `.html` and `.htm` carry the
 sandbox CSP of req. 14 for the report viewer's `<iframe>`; every other file, and any file asked
 with `?download=true`, is an attachment with the CSP `sandbox`. `404` when the run has no
 results directory: unknown, or a run started from a terminal (`cli-observed`), whose files
@@ -13,20 +22,29 @@ results directory: unknown, or a run started from a terminal (`cli-observed`), w
 """
 
 import logging
-from collections.abc import Iterator
-from typing import Any
+from collections.abc import Iterable, Iterator
+from pathlib import PurePosixPath
+from typing import Annotated, Any
 from urllib.parse import quote
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response, StreamingResponse
 
-from spectio_server.api.models import Results
-from spectio_server.api.problems import Problem, not_found
+from spectio_server.api.models import Results, ResultStat
+from spectio_server.api.problems import Invalid, Problem, not_found
 from spectio_server.api.runs_read import read, results_of, run_row
-from spectio_server.api.taskfiles import HEADERS, _iso, in_pool
+from spectio_server.api.taskfiles import (
+    HEADERS,
+    TEXT_CSP,
+    _byte_range,
+    _iso,
+    in_pool,
+    text_response,
+)
 from spectio_server.failure import dir_run_id
+from spectio_server.files import images
 from spectio_server.files import results as files
-from spectio_server.files.confine import NotAllowed
+from spectio_server.files.confine import MAX_READ, TAIL, NotAllowed
 from spectio_server.files.pool import READ_TIMEOUT_S
 from spectio_server.projector.runs import TERMINAL
 
@@ -34,6 +52,8 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 MAX_RAW = 1 << 30  # the largest results file served, 1 GiB
+MAX_IMAGE = 20 << 20  # the largest served as an image (api §5.3, step 6)
+MAX_SVG = 5 << 20  # the largest SVG served as an image
 KEPT_SEARCHES = 1000  # ended runs whose reports are kept in memory
 REPORT_CSP = (
     "sandbox allow-scripts allow-downloads; default-src 'none'; "
@@ -41,7 +61,6 @@ REPORT_CSP = (
     "img-src data: blob:; font-src data:; connect-src 'none'; form-action 'none'; "
     "frame-ancestors 'self'"
 )
-ATTACHMENT_CSP = "sandbox; default-src 'none'"
 
 
 def _where(request: Request, run_id: str) -> tuple[files.Where, bool]:
@@ -87,10 +106,7 @@ def run_results(request: Request, run_id: str, path: str = "") -> Response:
             "root": where.results_dir,
             "path": path,
             "exists": exists,
-            "entries": [
-                {"name": e.name, "type": e.type, "size": e.size, "mtime": _iso(e.mtime)}
-                for e in entries
-            ],
+            "entries": entry_dicts(entries),
             "truncated": truncated,
             "reports": [{"path": r.path, "title": r.title, "group": r.group} for r in reports],
         }
@@ -98,38 +114,141 @@ def run_results(request: Request, run_id: str, path: str = "") -> Response:
     return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
 
 
-@router.get("/runs/{run_id}/results/raw/{path:path}", response_class=Response)
-def result_file(request: Request, run_id: str, path: str, download: bool = False) -> Response:
-    where, _ = _where(request, run_id)
+def entry_dicts(entries: Iterable[Any]) -> list[dict[str, Any]]:
+    """The listing's entries, as the `Results` and `WorkDir` models take them."""
+    return [
+        {"name": e.name, "type": e.type, "size": e.size, "mtime": _iso(e.mtime)} for e in entries
+    ]
+
+
+def stat_response(root: str | None, path: str, e: Any) -> Response:
+    """The `ResultStat` answer for the entry `e` of `path` under `root`."""
+    body = ResultStat.model_validate(
+        {
+            "root": root,
+            "path": path,
+            "name": e.name,
+            "type": e.type,
+            "size": e.size,
+            "mtime": _iso(e.mtime),
+        }
+    )
+    return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
+
+
+def _file_rel(path: str) -> Any:
     rel = _rel(path)
     if rel is None:
         raise Problem(422, "file-not-allowed", "File not allowed", "not a file")
-    size = in_pool(request, lambda: files.file_size(where, rel), missing="not-found")
-    if size > MAX_RAW:
+    return rel
+
+
+@router.get("/runs/{run_id}/results/stat/{path:path}", response_model=ResultStat)
+def result_stat(request: Request, run_id: str, path: str) -> Response:
+    where, _ = _where(request, run_id)
+    rel = _file_rel(path)
+    e = in_pool(request, lambda: files.stat_result(where, rel), missing="not-found")
+    return stat_response(where.results_dir, path, e)
+
+
+@router.get("/runs/{run_id}/results/text/{path:path}", response_class=Response)
+def result_text(
+    request: Request,
+    run_id: str,
+    path: str,
+    tail: Annotated[int, Query(ge=1, le=MAX_READ)] = TAIL,
+) -> Response:
+    where, _ = _where(request, run_id)
+    rel = _file_rel(path)
+    byte_range = _byte_range(request.headers.get("range"))
+    served = in_pool(
+        request,
+        lambda: files.read_result_text(where, rel, max_bytes=tail, byte_range=byte_range),
+        missing="not-found",
+    )
+    return text_response(served, HEADERS)
+
+
+def _image_type(
+    request: Request, rel: PurePosixPath, download: bool, as_: str | None
+) -> str | None:
+    """Steps 2 to 5 of the image table (api §5.3): the type to serve the file as an image with,
+    or None for the raw route's other answers. `Sec-Fetch-Dest` decides only how a file is
+    served: a request without `image` (a navigation, or a client that sends no Fetch Metadata)
+    gets the attachment."""
+    if download or as_ is None:
+        return None
+    if as_ != "image":
+        raise Invalid("as", "the only value is `image`")
+    media = images.MEDIA.get(rel.suffix.lower())
+    if media is None:
+        raise Problem(422, "file-not-allowed", "File not allowed", "not an image's name")
+    if request.headers.get("sec-fetch-dest") != "image":
+        return None
+    return media
+
+
+@router.get("/runs/{run_id}/results/raw/{path:path}", response_class=Response)
+def result_file(
+    request: Request,
+    run_id: str,
+    path: str,
+    download: bool = False,
+    as_: Annotated[str | None, Query(alias="as")] = None,
+) -> Response:
+    where, _ = _where(request, run_id)
+    return raw_response(request, where, _file_rel(path), download, as_, reports=True)
+
+
+def raw_response(
+    request: Request,
+    where: files.Tree,
+    rel: PurePosixPath,
+    download: bool,
+    as_: str | None,
+    *,
+    reports: bool,
+) -> StreamingResponse:
+    """The raw route's answer for the file `rel` below `where` (results, or a work directory,
+    FU-P3-85e): the image of api §5.3's table, a report with the sandbox CSP when `reports`,
+    else an attachment."""
+    raw = in_pool(request, lambda: files.open_raw(where, rel, MAX_RAW), missing="not-found")
+    if raw.size > MAX_RAW:
         raise Problem(413, "file-too-large", "File too large", f"more than {MAX_RAW} bytes")
-    headers = dict(HEADERS)
-    if rel.suffix.lower() in files.REPORT_SUFFIXES and not download:
+    media = _image_type(request, rel, download, as_)
+    headers = {**HEADERS, "Vary": "Sec-Fetch-Dest", "Content-Length": str(raw.size)}
+    if media is not None:
+        cap = MAX_SVG if media == images.SVG else MAX_IMAGE
+        if raw.size > cap:
+            raise Problem(413, "file-too-large", "File too large", f"an image over {cap} bytes")
+        try:
+            images.check(media, raw.first)
+        except NotAllowed as exc:
+            raise Problem(422, "file-not-allowed", "File not allowed", str(exc)) from None
+        headers["Content-Security-Policy"] = TEXT_CSP
+    elif reports and rel.suffix.lower() in files.REPORT_SUFFIXES and not download:
         media = "text/html; charset=utf-8"
         headers["Content-Security-Policy"] = REPORT_CSP
     else:
         media = "application/octet-stream"
-        headers["Content-Security-Policy"] = ATTACHMENT_CSP
+        headers["Content-Security-Policy"] = TEXT_CSP
         headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(rel.name, safe='')}"
 
-    headers["Content-Length"] = str(size)
-
     def chunks() -> Iterator[bytes]:
-        start = 0
-        while start < size:
+        if raw.first:
+            yield raw.first  # the bytes checked are the bytes sent: no second open
+        start = len(raw.first)
+        while start < raw.size:
             try:
                 data = in_pool(
-                    request, lambda at=start: files.read_chunk(where, rel, at, size - at)
+                    request,
+                    lambda at=start: files.read_chunk(where, rel, at, raw.size - at, raw.ident),
                 )
             except Problem as exc:
-                log.warning("results file %s of %s cut at %d: %s", rel, run_id, start, exc)
+                log.warning("%s cut at %d: %s", request.url.path, start, exc)
                 raise
             if not data:
-                log.warning("results file %s of %s cut at %d: it shrank", rel, run_id, start)
+                log.warning("%s cut at %d: it shrank", request.url.path, start)
                 raise ShortFile(f"{rel}: shrank at {start}")
             yield data
             start += len(data)

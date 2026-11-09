@@ -15,25 +15,27 @@ the file system is meant to run in the file pool (`files.pool`).
 import os
 import re
 import stat
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Literal
+from typing import BinaryIO, Literal
 
 from spectio.runner.rundir import open_private, run_paths
 from spectio_server.files.confine import (
     MAX_READ,
     TAIL,
+    Entry,
     NotAllowed,
     NotFound,
     Root,
     open_confined,
+    open_dir,
     read_at,
     safe_rel,
+    servable_name,
     size_of,
     stat_confined,
-    tail,
 )
 from spectio_server.files.redact import redact_command_run, strip_escapes
 
@@ -107,6 +109,7 @@ class AttemptFiles:
     runs_root: Path
     outputs: tuple[str, ...] | None = None  # Snakemake: its `job_info` outputs (P1 Task 34)
     recorded_root: str | None = None  # the runs root the run was recorded under (FU-P3-81)
+    observed: bool = False  # a run started from a terminal (origin `cli-observed`)
 
 
 @dataclass(frozen=True)
@@ -361,6 +364,64 @@ def _output_state(attempt: AttemptFiles, root: Root, path: str) -> State:
     return "not_yet" if attempt.state in OPEN_STATES else "absent"
 
 
+# --- The work directory as a root (FU-P3-85e) -------------------------------------------------
+
+
+@dataclass(frozen=True)
+class TaskDir:
+    """A Nextflow attempt's work directory as a root of the explorer (api §5.3): the reads of
+    `files.results` take it as they take a results directory. Its names that start with `.`
+    (the job files, `.command.*` and `.exitcode`) are never listed nor served here; a last-
+    component link is followed only into a task directory of the same run (req. 13 note of
+    2026-11-08), as a published result is."""
+
+    attempt: AttemptFiles
+
+    def roots(self) -> AbstractContextManager[tuple[Root | None, Root | None]]:
+        return _task_roots(self.attempt)
+
+    @staticmethod
+    def shown(entry: Entry) -> bool:
+        return not entry.name.startswith(".") and servable_name(entry.name)
+
+
+def check_work_rel(path: str) -> PurePosixPath | None:
+    """`path` as a relative path below a work directory, None for the directory itself (`""`);
+    raises NotAllowed as `safe_rel` does, and for a part that starts with `.`."""
+    if path == "":
+        return None
+    rel = safe_rel(path)
+    if any(part.startswith(".") for part in rel.parts):
+        raise NotAllowed("not served here: a name that starts with '.'")
+    return rel
+
+
+@contextmanager
+def _task_roots(attempt: AttemptFiles) -> Iterator[tuple[Root | None, Root | None]]:
+    """The attempt's work directory (None while a running attempt's is not visible yet) and the
+    run's, its links' only target. NotFound for a Snakemake attempt, one of a run started from
+    a terminal or with no work directory recorded; Cleaned once an ended attempt's is gone;
+    Unreachable as the Job files routes (FU-P3-81)."""
+    if attempt.engine != "nextflow" or attempt.observed:
+        raise NotFound("no work directory Spectio can show for this attempt")
+    rel = _work_rel(attempt)
+    if rel is None:
+        raise NotFound("no work directory recorded for this attempt")
+    with _root(attempt, "work") as work:
+        task: Root | None
+        try:
+            task = open_dir(work, rel)
+        except NotFound:
+            if attempt.state not in OPEN_STATES:
+                raise Cleaned(f"the work directory was cleaned: tried {attempt.work_dir}") from None
+            task = None  # not visible yet on a shared file system
+        try:
+            yield task, work
+        finally:
+            if task is not None:
+                os.close(task.fd)
+
+
 # --- Reading --------------------------------------------------------------------------------
 
 
@@ -413,33 +474,66 @@ def read_task_file(
                 "deleted_after_success": "deleted by the SLURM executor plugin after success",
             }.get(missing.state, "not there")
             raise NotFound(f"{name}: {reason}") from None
-        if b"\x00" in read_at(f, 0, SNIFF):
-            raise Binary(name)
-        if kind == "wrapper":  # hidden from its start, so the lexer sees the whole file
-            hidden = redact_command_run(read_at(f, 0, MAX_READ).decode("utf-8", "replace"))
-            return _cut(hidden.encode(), max_bytes, byte_range)
-        size = size_of(f)
-        if byte_range is not None:
-            start, last = byte_range
-            if start >= size:
-                return Served("", size, size, size, True)
-            end = min(size, start + MAX_READ, size if last is None else last + 1)
-            data = read_at(f, start, end - start)
-            return Served(_text(data), start, start + len(data), size, True)
-        data = tail(f, max_bytes)
-        return Served(_text(data), size - len(data), size, size, False)
+        hide = redact_command_run if kind == "wrapper" else None
+        return read_text(f, name, max_bytes=max_bytes, byte_range=byte_range, hide=hide)
 
 
-def _cut(data: bytes, max_bytes: int, byte_range: tuple[int, int | None] | None) -> Served:
-    """The tail or the range of text already read whole (the hidden `.command.run`)."""
-    size = len(data)
-    if byte_range is not None:
-        start, last = byte_range
-        start = min(start, size)
-        end = min(size, start + MAX_READ, size if last is None else last + 1)
-        return Served(_text(data[start:end]), start, end, size, True)
-    start = max(0, size - min(max_bytes, MAX_READ))
-    return Served(_text(data[start:]), start, size, size, False)
+def read_text(
+    f: BinaryIO,
+    name: str,
+    *,
+    max_bytes: int = TAIL,
+    byte_range: tuple[int, int | None] | None = None,
+    hide: Callable[[str], str] | None = None,
+) -> Served:
+    """The one reader of the text routes, Job files and results (api §5.3): the last
+    `max_bytes` of an open file, or `byte_range` (start, last or None), at most MAX_READ bytes,
+    with escape sequences removed. A range read inside the file ends at its last whole UTF-8
+    sequence; an empty file is an empty read, never a range. `hide` is applied to the file's
+    first MAX_READ bytes before any cut (`.command.run`, whose offsets are then those of the
+    hidden text). Raises Binary for a NUL in the first SNIFF bytes."""
+    if b"\x00" in read_at(f, 0, SNIFF):
+        raise Binary(name)
+    if hide is None:
+        return _served(lambda at, n: read_at(f, at, n), size_of(f), max_bytes, byte_range)
+    hidden = hide(read_at(f, 0, MAX_READ).decode("utf-8", "replace")).encode()
+    return _served(lambda at, n: hidden[at : at + n], len(hidden), max_bytes, byte_range)
+
+
+def _served(
+    read: Callable[[int, int], bytes],
+    size: int,
+    max_bytes: int,
+    byte_range: tuple[int, int | None] | None,
+) -> Served:
+    if size == 0:
+        return Served("", 0, 0, 0, False)  # 200 with an empty body, a Range too
+    if byte_range is None:
+        start = max(0, size - min(max_bytes, MAX_READ))
+        data = read(start, size - start)
+        return Served(_text(data), start, start + len(data), size, False)
+    start, last = byte_range
+    if start >= size:
+        return Served("", start, start, size, True)  # refused by the route (422)
+    end = min(size, start + MAX_READ, size if last is None else last + 1)
+    data = read(start, end - start)
+    if start + len(data) < size:
+        data = data[: _whole_utf8(data)]
+    return Served(_text(data), start, start + len(data), size, True)
+
+
+def _whole_utf8(data: bytes) -> int:
+    """The length of `data` without a UTF-8 sequence cut at its end, so the next read starts on
+    a whole character; all of it when that would leave nothing, or the bytes are not UTF-8."""
+    for back in range(1, min(4, len(data)) + 1):
+        byte = data[-back]
+        if byte < 0x80:
+            return len(data)
+        if byte >= 0xC0:  # the lead byte of the last sequence
+            need = 2 if byte < 0xE0 else 3 if byte < 0xF0 else 4
+            cut = len(data) - back
+            return cut if need > back and cut > 0 else len(data)
+    return len(data)
 
 
 def _text(data: bytes) -> str:

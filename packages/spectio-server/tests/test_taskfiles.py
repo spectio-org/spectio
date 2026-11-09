@@ -354,6 +354,25 @@ def test_req13_strip_bidi_and_8bit_escapes() -> None:
     assert strip_escapes("tab\tkept, é kept\n") == "tab\tkept, é kept\n"
 
 
+def test_req13_strip_unterminated_osc_keeps_the_text() -> None:
+    """An OSC with no terminator within 4 KiB loses its introducer only, not the rest of the
+    text (SEC-PRE-FU85-R1-11); one that ends within 4 KiB is removed whole."""
+    text = "line1\nline2 \x9d hidden\nline3\nline4\n"
+    assert strip_escapes(text) == "line1\nline2  hidden\nline3\nline4\n"
+    assert strip_escapes("a\x1b]0;" + "t" * 4000 + "\x07b") == "ab"
+    far = "a\x1b]0;" + "t" * 4100 + "\x07b"
+    assert strip_escapes(far) == "a0;" + "t" * 4100 + "b"
+    assert strip_escapes("a\x9dx\x9dy\x9cz") == "axz"  # the second introducer ends the first
+
+
+def test_req13_strip_escapes_linear() -> None:
+    """A text of introducers with no terminator is read once, not 4 KiB per introducer."""
+    for text in ("\x9d" * 1048576, ("\x9d" + "t" * 4095) * 256, "\x1b]" * 524288):
+        started = time.monotonic()
+        strip_escapes(text)
+        assert time.monotonic() - started < 1.0
+
+
 def test_req13_web_refuses_the_same_format_chars() -> None:
     """The web client's `FORMAT_CHARS` (`web/src/runs/ReportViewer.tsx`) is the server's, so a
     path the server refuses is never shown before it answers (SEC-P3T32B-05, FU-P3-37)."""

@@ -740,3 +740,37 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-08T21:5xZ · FU-P3-83 merged (#179, squash 68e24c02) after a merge of integration and a fence fix; all checks green. Thomas decided: the five login1 items join 0.0.1 (FU-P3-85..89), engine polling unchanged (decision log 2026-11-08).
 
 - 2026-11-08T23:2xZ · Batch P3-B08 docs: workflow done (simplify -12/+4, doc-reviewer approve 13/14); PR #180 opened and subscribed. New major DW-P3B08-01 (a rule after a checkpoint sorts first), follow-up FU-P3-90; FU-P3-91 minors. Cost recorded: 30 USD.
+
+- 2026-11-08T22:5xZ · Batch P3-B08 merged (#180, squash b1974f73) and promoted to main (#181, merge 17c488fb), checks green. Next: FU-P3-90 (rule after a checkpoint sorts first), then FU-P3-85 file preview and explorer (spec note first).
+
+- 2026-11-08T23:2xZ · P3-fu90 (FU-P3-90) built: review approve 0/0/1, security approve 0/0/1, round 1. PR #182 opened, subscribed. Inbox #126 assumed (a rule in no graph comes after the graph rules). Cost recorded: 12 USD.
+
+- 2026-11-08T23:3xZ · FU-P3-90 merged (#182, squash 157a2e75), checks green. Next: FU-P3-85 design note (spec first).
+
+- 2026-11-09T00:0xZ · FU-P3-85 design (P3-fu85-spec): note written, independent pre-review R1 (security changes 0/2/9, ux changes 0/5/15) all applied (1603104c). PR #183 opened, subscribed. Inbox #127 assumed. Build plan FU-P3-85a..e. Cost recorded: 25 USD.
+
+- 2026-11-09T00:1xZ · FU-P3-85 design merged (#183, squash 2b23c415). Next: FU-P3-85a (server: results stat and text routes, strip_escapes fix, CORP).
+
+- 2026-11-09T00:3xZ · P3-fu85a (FU-P3-85a) built: review approve 0/0/1, security approve 0/0/3, round 1. PR #184 opened, subscribed. Inbox #128 assumed. FU-P3-93 opened. Cost recorded: 18 USD.
+
+- 2026-11-09T00:5xZ · FU-P3-85a merged (#184, squash b01788f0). Next: FU-P3-85b (image mode of the raw route).
+
+- 2026-11-09T01:1xZ · P3-fu85b (FU-P3-85b) built: review approve 0/0/1, security approve 0/0/3, round 1. A wrong attribution trailer on the docs commit was fixed before the push. PR #185 opened, subscribed. Inbox #129 assumed. Cost recorded: 16 USD.
+
+- 2026-11-09T01:4xZ · FU-P3-85b merged (#185, squash 0426dc8e). Next: FU-P3-85c (UI preview page).
+
+- 2026-11-09T02:5xZ · P3-fu85c (FU-P3-85c) built: review approve 0/0/3, security approve 0/0/0, 4 rounds. The ci.yml line for preview.spec.ts is moved to branch autopilot/ci-preview-e2e (its PR opens after #186 merges and waits for Thomas). PR #186 opened, subscribed. Inbox #130 assumed. FU-P3-94, FU-P3-95 opened. Cost recorded: 20 USD.
+
+- 2026-11-09T02:0xZ · FU-P3-85c merged (#186, squash ebdb3d60). PR #187 (ci: preview.spec.ts in the e2e job) opened; it touches .github/workflows/ and waits for Thomas. Next: FU-P3-85d (explorer card, sort, filter, URL state).
+
+- 2026-11-09T02:4xZ · P3-fu85d (FU-P3-85d) built: review approve 0/0/8, security approve 0/0/2, 2 rounds. PR #188 opened, subscribed. Inbox #131 assumed. FU-P3-96, FU-P3-97 opened. PR #187 CI green (e2e-local runs preview.spec.ts), waits for Thomas. Cost recorded: 12 USD.
+
+- 2026-11-09T03:0xZ · FU-P3-85d merged (#188, squash 3b7b7093). e2e-local failed twice on the old results-browser test; the test follows the explorer now (two commits on the branch). Next: FU-P3-85e (work-directory routes and UI).
+
+- 2026-11-09T03:5xZ · P3-fu85e (FU-P3-85e) built: review approve 0/0/7, security approve 0/0/2, 2 rounds. PR #189 opened, subscribed. Inbox #132 assumed. FU-P3-98 opened. Safety check-ins for #164 and #111 stopped after 3 empty ones. Cost recorded: 16 USD.
+
+- 2026-11-09T04:0xZ · FU-P3-85e merged (#189, squash a89d6fde). FU-P3-85 complete (85a-e). Next: batch P3-B09 (FU-P3-90, 85 design, 85a-e), then promotion to main.
+
+- 2026-11-09T04:4xZ · Batch P3-B09 built: simplify -61/+54 (re-review approve 0/0/2, security 0/0/1), figure, 4 shots, guide browse-and-preview-files, doc-reviewer approve 13/14 (required change applied). PR #190 opened, subscribed. Seen on the shot app-workdir: the topbar breadcrumb repeats the run name instead of ending with "Work directory"; added to FU-P3-98. Cost recorded: 14 USD.
+
+- 2026-11-09T05:0xZ · Batch P3-B09 merged (#190, squash f0a070cb). Promotion to main opened.

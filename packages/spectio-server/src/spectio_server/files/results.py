@@ -17,6 +17,10 @@ seconds; of the reports found, MultiQC's come first and `MAX_REPORTS` are kept (
 SEC-157; CR-P3T31-01: a cap on the search would drop a MultiQC report found late). Every
 function that touches the file system runs in the file pool (`files.pool`) and returns data,
 never an open file.
+
+The reads below the root (`list_results`, `stat_result`, `open_raw`, `read_chunk`,
+`read_result_text`) take any `Tree`: a results directory (`Where`), or a Nextflow attempt's work
+directory (`files.taskfiles.TaskDir`, FU-P3-85e), each with its own roots and hidden names.
 """
 
 import os
@@ -25,10 +29,10 @@ import stat
 import time
 from collections import deque
 from collections.abc import Iterator, Mapping
-from contextlib import ExitStack, contextmanager
+from contextlib import AbstractContextManager, ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, Protocol
 
 from spectio.runner.rundir import run_paths
 from spectio_server.files.confine import (
@@ -37,6 +41,7 @@ from spectio_server.files.confine import (
     NotAllowed,
     NotFound,
     Root,
+    entry_confined,
     list_confined,
     open_confined,
     open_dir,
@@ -44,9 +49,8 @@ from spectio_server.files.confine import (
     read_at,
     safe_rel,
     servable_name,
-    size_of,
 )
-from spectio_server.files.taskfiles import run_root
+from spectio_server.files.taskfiles import Served, read_text, run_root
 
 MAX_ENTRIES = 1000  # of one listing
 MAX_REPORTS = 50
@@ -57,8 +61,19 @@ CHUNK = MAX_READ  # one read of a raw file
 REPORT_SUFFIXES = (".html", ".htm")
 ENGINE_DIRS = frozenset({".spectio", ".snakemake", ".nextflow"})  # never part of a results path
 MULTIQC = "multiqc_report.html"
+MISSING = "the directory does not exist yet"
 
 clock = time.monotonic  # the search's clock (a test moves it)
+
+
+class Tree(Protocol):
+    """A root the reads below it are confined to: `roots()` opens it (None while it does not
+    exist yet) with the run's work directory its links may point into; `shown` keeps the
+    entries a listing shows."""
+
+    def roots(self) -> AbstractContextManager[tuple[Root | None, Root | None]]: ...
+
+    def shown(self, entry: Entry) -> bool: ...
 
 
 @dataclass(frozen=True)
@@ -69,6 +84,13 @@ class Where:
     runs_root: Path
     run_id: str
     results_dir: str
+
+    def roots(self) -> AbstractContextManager[tuple[Root | None, Root | None]]:
+        return _roots(self)
+
+    def shown(self, entry: Entry) -> bool:
+        """Not an engine directory, and a name the raw route serves (SEC-P3T31-04)."""
+        return entry.name.casefold() not in ENGINE_DIRS and servable_name(entry.name)
 
 
 @dataclass(frozen=True)
@@ -223,21 +245,16 @@ def _refuse_aliases(fd: int, runs_root: Path) -> None:
 # --- Listing and search ------------------------------------------------------------------
 
 
-def _shown(entry: Entry) -> bool:
-    """Not an engine directory, and a name the raw route serves (SEC-P3T31-04)."""
-    return entry.name.casefold() not in ENGINE_DIRS and servable_name(entry.name)
-
-
-def list_results(where: Where, rel: PurePosixPath | None) -> tuple[bool, list[Entry], bool]:
+def list_results(where: Tree, rel: PurePosixPath | None) -> tuple[bool, list[Entry], bool]:
     """(exists, entries folders first then by name, truncated) of one folder; raises NotFound
     for a missing folder below an existing root, NotAllowed for a refused one."""
-    with _roots(where) as (root, work):
+    with where.roots() as (root, work):
         if root is None:
             if rel is None:
                 return False, [], False
-            raise NotFound("the results directory does not exist yet")
+            raise NotFound(MISSING)
         found = list_confined(root, rel or PurePosixPath("."), MAX_ENTRIES, work=work)
-    entries = sorted(filter(_shown, found.entries), key=lambda e: (e.type != "dir", e.name))
+    entries = sorted(filter(where.shown, found.entries), key=lambda e: (e.type != "dir", e.name))
     return True, entries, found.truncated
 
 
@@ -246,6 +263,18 @@ def _report(rel: PurePosixPath) -> Report:
     title = "MultiQC report" if multiqc else rel.name.rsplit(".", 1)[0]
     group = None if str(rel.parent) == "." else str(rel.parent)
     return Report(str(rel), title, group)
+
+
+def stat_result(where: Tree, rel: PurePosixPath) -> Entry:
+    """The listing's entry for `rel` (`stat` route, api §5.3); raises NotFound when the listing
+    would not show it, NotAllowed for a refused folder on the way."""
+    with where.roots() as (root, work):
+        if root is None:
+            raise NotFound(MISSING)
+        found = entry_confined(root, rel, work=work)
+    if found is None:
+        raise NotFound(f"{rel}: no such entry")
+    return found
 
 
 def find_reports(where: Where) -> list[Report]:
@@ -313,19 +342,56 @@ def _kind(root: Root, rel: PurePosixPath, dir_fd: int, work: Root | None) -> str
 # --- Raw files ---------------------------------------------------------------------------
 
 
-def file_size(where: Where, rel: PurePosixPath) -> int:
-    """The size of the results file `rel`; raises NotFound or NotAllowed."""
-    with _roots(where) as (root, work):
-        if root is None:
-            raise NotFound("the results directory does not exist yet")
-        with open_confined(root, rel, work=work) as f:
-            return size_of(f)
+@dataclass(frozen=True)
+class Raw:
+    """A results file at its first opening: its size, its identity, and its first chunk."""
+
+    size: int
+    ident: tuple[int, int]  # (st_dev, st_ino), compared on every later chunk
+    first: bytes  # at most `CHUNK` bytes from the start; empty for a file over the cap
 
 
-def read_chunk(where: Where, rel: PurePosixPath, start: int, n: int) -> bytes:
-    """At most `n` bytes (at most `CHUNK`) of the results file `rel` from `start`."""
-    with _roots(where) as (root, work):
+class Replaced(NotAllowed):
+    """The file read for a later chunk is not the one first opened (api §5.3)."""
+
+
+def open_raw(where: Tree, rel: PurePosixPath, cap: int) -> Raw:
+    """The file `rel` at its first opening, its first chunk read only when its size is at most
+    `cap`; raises NotFound or NotAllowed."""
+    with where.roots() as (root, work):
         if root is None:
-            raise NotFound("the results directory does not exist yet")
+            raise NotFound(MISSING)
         with open_confined(root, rel, work=work) as f:
+            st = os.fstat(f.fileno())
+            first = read_at(f, 0, min(st.st_size, CHUNK)) if st.st_size <= cap else b""
+            return Raw(st.st_size, (st.st_dev, st.st_ino), first)
+
+
+def read_chunk(
+    where: Tree, rel: PurePosixPath, start: int, n: int, ident: tuple[int, int]
+) -> bytes:
+    """At most `n` bytes (at most `CHUNK`) of the file `rel` from `start`; raises Replaced when
+    the file opened is not `ident`."""
+    with where.roots() as (root, work):
+        if root is None:
+            raise NotFound(MISSING)
+        with open_confined(root, rel, work=work) as f:
+            st = os.fstat(f.fileno())
+            if (st.st_dev, st.st_ino) != ident:
+                raise Replaced(f"{rel}: replaced while it was read")
             return read_at(f, start, min(n, CHUNK))
+
+
+def read_result_text(
+    where: Tree,
+    rel: PurePosixPath,
+    *,
+    max_bytes: int,
+    byte_range: tuple[int, int | None] | None,
+) -> Served:
+    """The text of the file `rel`, by the Job files reader (api §5.3)."""
+    with where.roots() as (root, work):
+        if root is None:
+            raise NotFound(MISSING)
+        with open_confined(root, rel, work=work) as f:
+            return read_text(f, rel.name, max_bytes=max_bytes, byte_range=byte_range)

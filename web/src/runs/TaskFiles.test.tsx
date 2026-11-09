@@ -257,6 +257,7 @@ test("Snakemake: the launch directory, the SLURM log first, and no job script", 
   expect(await within(sheet).findByText(/mem_process_seqs/)).toBeInTheDocument();
   expect(fetched(mock)).toContain(`${FILES}/2/files/.snakemake/slurm_logs/rule_bwa_mem/WGS-07/48731209.log`);
   expect(within(sheet).getByText("Snakemake keeps no job script; the rule's command is in the Snakefile.")).toBeInTheDocument();
+  expect(within(sheet).queryByRole("link", { name: "Browse work directory" })).toBeNull(); // FU-P3-85e: Nextflow only
 });
 
 test("on the phone the files are a native select labelled File", async () => {
@@ -320,7 +321,7 @@ test("Outputs tab: a removed temporary output reads 'deleted by Snakemake (tempo
   expect(tab.tagName).toBe("BUTTON");
   await userEvent.click(tab);
   const panel = within(sheet).getByRole("tabpanel");
-  const rows = within(panel).getAllByRole("listitem").map((li) => li.textContent);
+  const rows = within(panel).getAllByRole("listitem").map((li) => li.firstElementChild?.textContent);
   expect(rows[0]).toBe("counts/S19.tsv · present · write-protected");
   expect(rows[1]).toMatch(/^sorted\/S19\.bam · deleted by Snakemake \(temporary\) · /);
   expect(rows[2]).toBe("segmentation/<TBD> · decided after the checkpoint");
@@ -335,7 +336,7 @@ test("a Snakemake attempt with no log file opens on its Outputs tab", async () =
   const { sheet } = await openFiles();
   const tab = await within(sheet).findByRole("tab", { name: "Outputs (1)" });
   expect(tab).toHaveAttribute("aria-selected", "true");
-  const rows = within(within(sheet).getByRole("tabpanel")).getAllByRole("listitem").map((li) => li.textContent);
+  const rows = within(within(sheet).getByRole("tabpanel")).getAllByRole("listitem").map((li) => li.firstElementChild?.textContent);
   expect(rows).toEqual(["counts/S19.tsv · present · write-protected"]);
   expect(within(sheet).queryByText("This attempt has no file to show.")).toBeNull();
 });
@@ -348,4 +349,79 @@ test("with cleanup = true a cleaned work directory says cleanup removed it", asy
   );
   const { sheet } = await openFiles();
   expect(within(sheet).getByText("This job's work directory was removed by cleanup = true")).toBeInTheDocument();
+});
+
+const SNAKEMAKE = { workflow: { engine: "snakemake", engine_version: "9.5.1", location: "/g/x", name: null, version: null } };
+
+test("Outputs: a present output inside the results gets Preview, named after its path; any other output Copy path only (FU-P3-85d)", async () => {
+  const outputs = [
+    { path: "counts/S19.tsv", state: "present", protected: false, removed_at: null },
+    { path: "counts", state: "present", protected: false, removed_at: null },
+    { path: "/abs/S19.bam", state: "present", protected: false, removed_at: null },
+    { path: "../up/S19.txt", state: "present", protected: false, removed_at: null },
+    { path: "sorted/S19.bam", state: "temp_removed", protected: false, removed_at: "2026-10-31T08:50:00+00:00" },
+  ];
+  detail({ [`${FILES}/2/files`]: { ...listing([]), outputs } }, SNAKEMAKE);
+  const { sheet } = await openFiles();
+  const panel = await within(sheet).findByRole("tabpanel");
+  const preview = within(panel).getByRole("link", { name: "Preview counts/S19.tsv" });
+  const url = new URL(preview.getAttribute("href")!, "http://x");
+  expect(url.pathname).toBe(`/runs/${ID}/results/file`);
+  expect(Object.fromEntries(url.searchParams)).toEqual({ path: "counts/S19.tsv", task: "tsk_19", attempt: "2" });
+  // a folder goes through the same page, which sends a folder to the folder page
+  expect(within(panel).getByRole("link", { name: "Preview counts" })).toBeInTheDocument();
+  expect(within(panel).getAllByRole("link", { name: /^Preview / })).toHaveLength(2);
+  for (const path of outputs.map((o) => o.path)) expect(within(panel).getByRole("button", { name: `Copy ${path}` })).toBeInTheDocument();
+});
+
+test("the run's URL with &task= and &attempt= reopens the sheet on that attempt, focus on its title (FU-P3-85d)", async () => {
+  const mock = detail({
+    [`${FILES}/1/files/.command.log`]: text("first try\n"),
+    [`${FILES}/1/files`]: listing([file(".command.log", "job_log")], 1),
+  });
+  const router = app(`/runs/${ID}?task=tsk_19&attempt=1`);
+  const sheet = await screen.findByRole("dialog", { name: "SUBREAD_FEATURECOUNTS (S19)" });
+  expect(await within(sheet).findByRole("combobox", { name: "Attempt" })).toHaveValue("1");
+  const title = within(sheet).getByRole("heading", { name: "SUBREAD_FEATURECOUNTS (S19)" });
+  await waitFor(() => expect(title.contains(document.activeElement)).toBe(true));
+  expect(await within(sheet).findByText("first try")).toBeInTheDocument();
+  expect(fetched(mock)).toContain(`${FILES}/1/files`);
+  // closing the sheet drops them from the URL, with a history replace
+  const before = router.history.length;
+  await userEvent.click(within(sheet).getByRole("button", { name: "Close" }));
+  await waitFor(() => expect(router.state.location.search).toEqual({}));
+  expect(router.history.length).toBe(before);
+});
+
+test("a task the run's listing does not have opens no sheet and says so (CR-P3FU85D-01)", async () => {
+  detail({ [`${FILES}/2/files`]: listing([]) });
+  app(`/runs/${ID}?task=tsk_99&attempt=1`);
+  await screen.findByRole("heading", { level: 1 });
+  expect(await screen.findByText("This job's sheet could not be reopened.")).toHaveAttribute("role", "status");
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+test("a Nextflow attempt with a work directory: Browse work directory beside Copy, to the folder page (FU-P3-85e)", async () => {
+  detail({ [`${FILES}/2/files`]: listing(NF_FILES) });
+  const { sheet } = await openFiles();
+  const browse = await within(sheet).findByRole("link", { name: "Browse work directory" });
+  const href = new URL(browse.getAttribute("href")!, "http://x");
+  expect(href.pathname).toBe(`/runs/${ID}/workdir`);
+  expect(Object.fromEntries(href.searchParams)).toEqual({ task: "tsk_19", attempt: "2" });
+  expect(within(sheet).getByRole("button", { name: "Copy the work directory" })).toBeInTheDocument();
+});
+
+test("a cleaned work directory: 'The work directory was removed' in place of Browse (FU-P3-85e)", async () => {
+  detail({ [`${FILES}/2/files`]: listing([file(".command.log", "job_log", { state: "cleaned", size: null, mtime: null }), file(".exitcode", "exit", { state: "cleaned", size: null, mtime: null })]) });
+  const { sheet } = await openFiles();
+  const row = await within(sheet).findByText(WORK);
+  await waitFor(() => expect(row.parentElement).toHaveTextContent("The work directory was removed"));
+  expect(within(sheet).queryByRole("link", { name: "Browse work directory" })).toBeNull();
+});
+
+test("no Browse for a run started from a terminal, nor for Snakemake (FU-P3-85e)", async () => {
+  detail({ [`${FILES}/2/files`]: listing(NF_FILES) }, { origin: "cli-observed" });
+  const { sheet } = await openFiles();
+  await within(sheet).findByText(WORK);
+  expect(within(sheet).queryByRole("link", { name: "Browse work directory" })).toBeNull();
 });

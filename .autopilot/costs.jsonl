@@ -76,3 +76,11 @@
 {"at": 1794173648.0347645, "usd": 9.0, "kind": "build-task", "step": "P3-fu79"}
 {"at": 1794173765.985729, "usd": 11.0, "kind": "build-task", "step": "P3-fu83"}
 {"at": 1794177598.173826, "usd": 30.0, "kind": "batch", "step": "P3-B08"}
+{"at": 1794179759.4628806, "usd": 12.0, "kind": "build-task", "step": "P3-fu90"}
+{"at": 1794181609.1070845, "usd": 25.0, "kind": "review", "step": "P3-fu85-spec"}
+{"at": 1794183106.0732298, "usd": 18.0, "kind": "build-task", "step": "P3-fu85a"}
+{"at": 1794184530.3477097, "usd": 16.0, "kind": "build-task", "step": "P3-fu85b"}
+{"at": 1794189094.6386096, "usd": 20.0, "kind": "build-task", "step": "P3-fu85c"}
+{"at": 1794192021.634111, "usd": 12.0, "kind": "build-task", "step": "P3-fu85d"}
+{"at": 1794195864.7387195, "usd": 16.0, "kind": "build-task", "step": "P3-fu85e"}
+{"at": 1794198527.6640453, "usd": 14.0, "kind": "batch", "step": "P3-B09"}

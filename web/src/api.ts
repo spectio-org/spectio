@@ -154,6 +154,17 @@ export interface ResultReport {
   group: string | null;
 }
 
+/** Schema `ResultStat`: the listing's entry for one results path, with the root and the path the
+ * server answered for (api §5.3). */
+export interface ResultStat {
+  root: string;
+  path: string;
+  name: string;
+  type: "dir" | "file" | "link_outside";
+  size: number | null;
+  mtime: string | null;
+}
+
 /** `GET /api/v1/runs/{id}/results?path=` (P1 Task 31). */
 export interface Results {
   root: string;
@@ -161,6 +172,7 @@ export interface Results {
   exists: boolean;
   entries: ResultEntry[];
   truncated: boolean;
+  /** Absent from a work directory's listing. */
   reports: ResultReport[];
 }
 
@@ -492,9 +504,19 @@ export function getLaunchTemplate(id: string, signal?: AbortSignal): Promise<Lau
   return call(`${run(id)}:launch-template`, { signal });
 }
 
-/** One folder of the run's results, `path` relative to its root ("" for the root). */
-export function listResults(id: string, path: string, signal?: AbortSignal): Promise<Results> {
-  return call(`${run(id)}/results${query({ path })}`, { signal });
+/** A Nextflow attempt's work directory, read in place of the run's results by the same calls
+ * (`GET /tasks/{id}/attempts/{n}/workdir`, api §5.3, FU-P3-85e): no reports, no report viewer. */
+export interface WorkRoot {
+  task: string;
+  attempt: number;
+}
+const tree = (id: string, work?: WorkRoot) =>
+  work ? `/tasks/${encodeURIComponent(work.task)}/attempts/${work.attempt}/workdir` : `${run(id)}/results`;
+
+/** One folder of the run's results, or of `work`, `path` relative to its root ("" for the root);
+ * a work directory's listing has no `reports`. */
+export function listResults(id: string, path: string, signal?: AbortSignal, work?: WorkRoot): Promise<Results> {
+  return call(`${tree(id, work)}${query({ path })}`, { signal });
 }
 
 /** Where a run log's text is served: the same origin, text/plain (the Logs tab's Open raw). */
@@ -532,10 +554,52 @@ export async function getTaskFile(taskId: string, n: number, name: string, signa
   return response.text();
 }
 
+/** A results path in a URL: each part encoded, so `?`, `#`, `%` and `%2F` stay in the name. */
+const resultPath = (path: string) => path.split("/").map(encodeURIComponent).join("/");
+
 /** Where a results file is served: an HTML report with the sandbox CSP of req. 14 (for the
- * report viewer's iframe), any other file, or `download`, as an attachment. */
-export const resultUrl = (id: string, path: string, opts: { download?: boolean } = {}) =>
-  `${API}${run(id)}/results/raw/${path.split("/").map(encodeURIComponent).join("/")}${query({ download: opts.download ? "true" : null })}`;
+ * report viewer's iframe), any other file, or `download`, as an attachment; `as: "image"` for
+ * the preview's `<img>` (api §5.3). */
+export const resultUrl = (id: string, path: string, opts: { download?: boolean; as?: "image" } = {}, work?: WorkRoot) =>
+  `${API}${tree(id, work)}/raw/${resultPath(path)}${query({ download: opts.download ? "true" : null, as: opts.as })}`;
+
+/** Where a results file is read as text (api §5.3). */
+export const resultTextUrl = (id: string, path: string, tail?: number, work?: WorkRoot) => `${API}${tree(id, work)}/text/${resultPath(path)}${query({ tail })}`;
+
+/** The facts of one results path (api §5.3). */
+export function statResult(id: string, path: string, signal?: AbortSignal, work?: WorkRoot): Promise<ResultStat> {
+  return call(`${tree(id, work)}/stat/${resultPath(path)}`, { signal });
+}
+
+/** A text read: `next` is the byte after the last one read (the `Content-Range` last byte + 1)
+ * and `size` the file's, for a Range read; both null for a tail read. */
+export interface TextRead {
+  text: string;
+  next: number | null;
+  size: number | null;
+}
+
+const CONTENT_RANGE = /^bytes (\d+)-(\d+)\/(\d+)$/;
+
+/** A results file as text: bytes `from` to `to` with one Range, or its last `tail` bytes. A
+ * refusal is an ApiError with its status and the server's text. */
+export async function readResultText(
+  id: string,
+  path: string,
+  opts: { from?: number; to?: number; tail?: number },
+  signal?: AbortSignal,
+  work?: WorkRoot,
+): Promise<TextRead> {
+  const headers = opts.from === undefined ? undefined : { range: `bytes=${opts.from}-${opts.to ?? ""}` };
+  const response = await fetch(resultTextUrl(id, path, opts.tail, work), { signal, headers });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body?.detail ?? body?.title ?? `HTTP ${response.status}`);
+  }
+  const text = await response.text();
+  const range = CONTENT_RANGE.exec(response.headers.get("content-range") ?? "");
+  return range ? { text, next: Number(range[2]) + 1, size: Number(range[3]) } : { text, next: null, size: null };
+}
 
 export function launch(body: LaunchBody): Promise<Launched> {
   return call("/runs", {

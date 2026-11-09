@@ -32,8 +32,9 @@ const levelOf = (tone: string | undefined): Level => (tone === "failed" ? "error
 
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** One line, its matches marked; `current` is the index of the current match in `hits`, or -1. */
-const Line = memo(function Line({ text, tone, hits = [], size, current }: { text: string; tone?: string; hits?: number[]; size: number; current: number }) {
+/** One line, its matches marked; `current` is the index of the current match in `hits`, or -1.
+ * `n`: its number, in a gutter that is aria-hidden and not selected, so not copied. */
+const Line = memo(function Line({ text, tone, hits = [], size, current, n }: { text: string; tone?: string; hits?: number[]; size: number; current: number; n?: number }) {
   const parts: ReactNode[] = [];
   let at = 0;
   hits.forEach((start, i) => {
@@ -46,6 +47,19 @@ const Line = memo(function Line({ text, tone, hits = [], size, current }: { text
     at = start + size;
   });
   parts.push(text.slice(at));
+  if (n !== undefined) {
+    return (
+      <span className="sp-log-row" data-tone={tone}>
+        <span className="sp-log-n" data-gutter aria-hidden="true">
+          {n}
+        </span>
+        <span>
+          {parts}
+          {"\n"}
+        </span>
+      </span>
+    );
+  }
   return (
     <span data-tone={tone}>
       {parts}
@@ -59,20 +73,42 @@ export function LogLines({ text }: { text: string }) {
   return splitLines(text).map((line, i) => <Line key={i} text={line} tone={level(line)} size={0} current={-1} />);
 }
 
-/** The whole viewer: the search and level tools, then the lines, opened at their end. */
-export function LogViewer({ text, label }: { text: string | null; label: string }) {
+/** The whole viewer: the search and level tools, then the lines. A run log opens at its end with
+ * level tints and filter; the file preview (ui-spec §4.4.1) passes `start: "top"`, `levels`
+ * only for .log, .out and .err, `gutterFrom` (the first line's number; no gutter for an End
+ * read), `wrap`, and on the phone `searchButton`: the search behind a Search button. */
+export function LogViewer({
+  text,
+  label,
+  start = "end",
+  levels = true,
+  gutterFrom,
+  wrap = false,
+  searchButton = false,
+}: {
+  text: string | null;
+  label: string;
+  start?: "top" | "end";
+  levels?: boolean;
+  gutterFrom?: number;
+  wrap?: boolean;
+  searchButton?: boolean;
+}) {
   const [typed, setTyped] = useState("");
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState<Level>("all");
   const [current, setCurrent] = useState(0);
+  const [searching, setSearching] = useState(false);
+  const open = !searchButton || searching; // a desktop always shows the field; the phone, once Search is pressed
   const viewer = useRef<HTMLPreElement>(null);
+  const field = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setQuery(typed), 150);
     return () => clearTimeout(timer);
   }, [typed]);
 
-  const lines = useMemo(() => splitLines(text ?? "").map((line) => ({ text: line, tone: level(line) })), [text]);
+  const lines = useMemo(() => splitLines(text ?? "").map((line) => ({ text: line, tone: levels ? level(line) : undefined })), [text, levels]);
   const counts = useMemo(() => {
     const found: Record<Level, number> = { all: lines.length, info: 0, warn: 0, error: 0 };
     for (const line of lines) found[levelOf(line.tone)] += 1;
@@ -103,10 +139,14 @@ export function LogViewer({ text, label }: { text: string | null; label: string 
   useEffect(() => {
     viewer.current?.querySelector("mark[data-current]")?.scrollIntoView?.({ block: "center", inline: "nearest" });
   }, [at, matches]);
-  // opened at the end: the newest lines
+  // a log opens at the end: the newest lines
   useEffect(() => {
-    if (text !== null && viewer.current) viewer.current.scrollTop = viewer.current.scrollHeight;
-  }, [text]);
+    if (start === "end" && text !== null && viewer.current) viewer.current.scrollTop = viewer.current.scrollHeight;
+  }, [text, start]);
+
+  useEffect(() => {
+    if (searching) field.current?.focus(); // Search pressed: focus moves into the field
+  }, [searching]);
 
   const step = (by: number) => matches.length && setCurrent((at + by + matches.length) % matches.length);
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -124,40 +164,52 @@ export function LogViewer({ text, label }: { text: string | null; label: string 
   return (
     <>
       <div className="sp-filters sp-log-search">
-        <label className="sp-search-field">
-          <Icon path={ICONS.search} size={16} />
-          <input
-            type="search"
-            aria-label={`Search the ${name}`}
-            placeholder={`Search the ${name}`}
-            value={typed}
-            onChange={(e) => setTyped(e.currentTarget.value)}
-            onKeyDown={onKey}
-            spellCheck={false}
-            autoComplete="off"
-          />
-        </label>
-        <span className="sp-muted sp-log-count" data-testid="log-search-count" aria-live="polite">
-          {query ? (matches.length ? `${at + 1} / ${matches.length}` : "No match") : ""}
-        </span>
-        <span className="sp-actions">
-          <button type="button" className="sp-key" aria-label="Previous match" disabled={!matches.length} onClick={() => step(-1)}>
-            <Icon path={ICONS.chevronLeft} size={16} />
+        {searchButton && (
+          <button type="button" className="sp-key" aria-expanded={open} onClick={() => setSearching(!open)}>
+            Search
           </button>
-          <button type="button" className="sp-key" aria-label="Next match" disabled={!matches.length} onClick={() => step(1)}>
-            <Icon path={ICONS.chevronRight} size={16} />
-          </button>
-        </span>
-        <div className="sp-segments" role="group" aria-label="Show lines">
-          {LEVELS.map((l) => (
-            <button key={l.key} type="button" aria-pressed={shown === l.key} data-tone={l.tone} onClick={() => setShown(l.key)}>
-              {l.label}
-              <span className="sp-count">{counts[l.key]}</span>
-            </button>
-          ))}
-        </div>
+        )}
+        {open && (
+          <>
+            <label className="sp-search-field">
+              <Icon path={ICONS.search} size={16} />
+              <input
+                ref={field}
+                type="search"
+                aria-label={`Search the ${name}`}
+                placeholder={`Search the ${name}`}
+                value={typed}
+                onChange={(e) => setTyped(e.currentTarget.value)}
+                onKeyDown={onKey}
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </label>
+            <span className="sp-muted sp-log-count" data-testid="log-search-count" aria-live="polite">
+              {query ? (matches.length ? `${at + 1} / ${matches.length}` : "No match") : ""}
+            </span>
+            <span className="sp-actions">
+              <button type="button" className="sp-key" aria-label="Previous match" disabled={!matches.length} onClick={() => step(-1)}>
+                <Icon path={ICONS.chevronLeft} size={16} />
+              </button>
+              <button type="button" className="sp-key" aria-label="Next match" disabled={!matches.length} onClick={() => step(1)}>
+                <Icon path={ICONS.chevronRight} size={16} />
+              </button>
+            </span>
+          </>
+        )}
+        {levels && (
+          <div className="sp-segments" role="group" aria-label="Show lines">
+            {LEVELS.map((l) => (
+              <button key={l.key} type="button" aria-pressed={shown === l.key} data-tone={l.tone} onClick={() => setShown(l.key)}>
+                {l.label}
+                <span className="sp-count">{counts[l.key]}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-      <pre ref={viewer} className="sp-log sp-nowrap" tabIndex={0} aria-label={label}>
+      <pre ref={viewer} className={wrap ? "sp-log" : "sp-log sp-nowrap"} data-wrap={wrap || undefined} tabIndex={0} aria-label={label}>
         {text === null
           ? "Loading…"
           : visible.length === 0
@@ -170,6 +222,7 @@ export function LogViewer({ text, label }: { text: string | null; label: string 
                   hits={hits.get(i)}
                   size={query.length}
                   current={at >= 0 && matches[at][0] === i ? matches[at][1] : -1}
+                  n={gutterFrom === undefined ? undefined : gutterFrom + i}
                 />
               ))}
       </pre>

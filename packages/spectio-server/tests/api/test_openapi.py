@@ -51,6 +51,9 @@ MODELS = {
     ("/api/v1/runs/{run_id}/stages", "get", "200"): "StageList",
     ("/api/v1/runs/{run_id}/tasks", "get", "200"): "TaskList",
     ("/api/v1/tasks/{task_id}/attempts/{n}/files", "get", "200"): "TaskFiles",
+    ("/api/v1/runs/{run_id}/results/stat/{path}", "get", "200"): "ResultStat",
+    ("/api/v1/tasks/{task_id}/attempts/{n}/workdir", "get", "200"): "WorkDir",
+    ("/api/v1/tasks/{task_id}/attempts/{n}/workdir/stat/{path}", "get", "200"): "ResultStat",
 }
 
 

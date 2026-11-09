@@ -1916,3 +1916,95 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   6. after this step's PR is in: whether the same view now answers 409 or still 410, with its `detail`.
 - **Recommendation:** run the checks; the answer decides whether a further fix is needed.
 - **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the 409 answer is built; nothing else is changed until the checks come back. FU-P3-84: a stale index after a change of `runs_root` (`rebuild_index` only adds rows): list, or mark at boot, the rows whose `launch_dir` is not under the current runs root, so they are not shown as runs of this root. Next follow-up number: FU-P3-85 (FU-P3-82 is taken by another branch; renumber at the merge if the order changes).
+
+### #126 · Assumed: where a rule that is in no rule graph is listed (FU-P3-90)
+
+- **Covers:** step P3-fu90 (`autopilot/P3-fu90`); finding [DW-P3B08-01](code/P3-B08.md#findings); [ui-spec §4.4](../specs/ui-spec.md#44-run-detail), note 2026-11-08 (By process order), amended the same day; the [review record](code/P3-fu90.md).
+- **Context:** a rule that joins the DAG after a checkpoint (the demo run's `align`, which runs after `split`) is in no rule graph, because Snakemake 9.27.1 logs one graph per invocation and none after a later checkpoint re-evaluation. It has no link, so it cannot be placed by the graph. It was listed first, before the rules it reads from.
+- **Options:**
+  - (a) after every rule that is in a graph, in the list's order (built): on the demo run `align` comes after `all`, the target rule;
+  - (b) right after its checkpoint, found from the `is_checkpoint` item or from the output prefix it shares with a graph rule: closer to the true order, but a guess that the graph does not confirm;
+  - (c) place nothing: keep it first (the old behaviour, wrong).
+- **Recommendation:** (a) now; (b) once a later Snakemake logs the graph after the re-evaluation, which would make the rule appear in a graph and be placed by its links. **Assumed:** (a).
+- **Why a question:** the order is correct for every rule that is in a graph; for the rule in none, (a) never lists it before the rules it reads from, but it also lists it after the rules that read it (`merge`, `all` on the demo run), and a reader may expect it next to `split`.
+
+### #127 · Assumed: file explorer and preview (FU-P3-85)
+
+- **Covers:** Thomas's login1 item 1 ([decision log](../decisions/log.md#2026-11-08-file-explorer-and-preview-in-001-fu-p3-85-assumed)); [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview); [api §5.3](../specs/api-and-data-model.md#53-run-files-explorer-and-preview); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13 and req. 14, notes 2026-11-08; the [pre-review record](code/P3-fu85-spec.md), with the independent round R1.
+- **Context:** the design is written and was revised after the independent pre-review R1 (`security-reviewer` changes 0/2/9, `ux-reviewer` changes 0/5/15). Nothing is built. In unattended mode each recommendation below is what FU-P3-85a to -85e build; an answer here changes the plan before the task it names.
+- **Open choices, each with the recommendation (assumed):**
+  1. **Where a preview opens.** (a) a page of its own, `/runs/<id>/results/file?path=` (same on the phone, in the URL, no new focus trap); (b) a pane beside the list on a wide screen. **(a)**, which R1 agreed with; (b) Later.
+  2. **Tree or one folder.** (a) one folder under the path bar, as today; (b) a folder tree. **(a)**: the server lists one folder at a time with a 1,000-entry cap, and a tree does not fit the phone. The folder tree of the RunOutputs board stays the 1.0 direction; the rows, kind badges and actions of FU-P3-85d are built so they can be reused there.
+  3. **Roots.** (a) results plus a Nextflow attempt's work directory, dot names hidden, staged copies and same-run links served like outputs (FU-P3-85e, req. 13 note of 2026-11-08); (b) results only; (c) also the launch directory. **(a)**: the work directory is where a task's outputs are before they are published; FU-P3-85e is the last task and the first to cut if the batch runs long. (c) Later.
+  4. **SVG.** (a) through `<img>` only, served as an image only to a request with `Sec-Fetch-Dest: image` (with `Vary`), the CSP `sandbox` and `nosniff`, 5 MiB at most; (b) not shown, Download only. **(a)**: a browser runs no script in an SVG loaded as an image, and a navigation to the URL still gets an attachment (Playwright on three engines).
+  5. **PDF.** (a) Download only; (b) the browser's viewer in a sandboxed frame; (c) pdf.js with scripting off. **(a)** in 0.0.1: (b) depends on each browser's PDF viewer under `sandbox` **[to be validated]**; (c) adds a large dependency. (c) Later.
+  6. **HTML.** (a) the report viewer, unchanged, from results; "HTML (not opened)" and Download from a work directory. **(a)**.
+  7. **Text caps.** (a) whole file up to 64 KiB; otherwise Start / End, Load more by 64 KiB up to 1 MiB, at most 20,000 lines rendered, line numbers only from the start, wrap off on a desktop and on on the phone. **(a)**; a virtualised viewer Later.
+  8. **Table caps.** (a) CSV and TSV from the first 1 MiB, 500 rows and 50 columns shown, cells cut at 1,000 characters, first row a header (a toggle); (b) higher caps with a virtual list. **(a)**: 25,000 cells render without a virtual list.
+  9. **Image caps.** (a) PNG, JPEG, GIF and WebP up to 20 MiB and 50 megapixels, SVG up to 5 MiB, raster bytes checked against their signature. **(a)**.
+  10. **Compressed files** (`.fastq.gz`, `.vcf.gz`). (a) Download only in 0.0.1; (b) the first 64 KiB decompressed. **(a)**: (b) needs a cap on decompressed bytes and a review of its own. (b) Later.
+  11. **JSON formatting.** (a) `JSON.parse` and `JSON.stringify`, with the line "Formatted view: large numbers and repeated keys may differ" and Show as text; (b) a formatter that keeps every token as written. **(a)**; (b) Later.
+- **Build plan** (one P3 batch, each task one PR, TDD, server before UI; boards before a screen's code):
+  - **FU-P3-85a · server, results reads.** The `stat` and `text` routes of results, on one reader shared with the Job files read (tail, one `Range`, 1 MiB, the UTF-8 seam, an empty file `200`, `415`); `strip_escapes` keeps the text after an unterminated OSC; `Cross-Origin-Resource-Policy` in the shared headers and the CSP `sandbox` on the Job files read; `test_req13_results_text_*`, `test_req7_*` and session tests; OpenAPI snapshot. Security review: yes.
+  - **FU-P3-85b · server, image mode and raw hardening.** `?as=image` in the order of api §5.3's table (`Vary`, extension list, 20 MiB and 5 MiB, the signature and 50-megapixel check on the first chunk, sent as the first part of the body); the raw route's `(st_dev, st_ino)` check on every chunk; one `test_req14_image_*` per row, a 60000 × 60000 PNG, a file replaced between chunks. Security review: yes.
+  - **FU-P3-85c · UI, preview page.** Boards LiteFilePreview, MLiteFilePreview and LiteFilePreviewStates first (rendered and looked at); then `/runs/<id>/results/file` (added to `static.ROUTES`): `stat` first, kinds, `LogViewer` props (`start`, `levels`, `gutterFrom`, `wrap`), Start / End and Load more, the 20,000-line cap, JSON with the depth pre-scan and 2 MiB cap, the CSV and TSV table, the image, PDF and binary states, every state of §4.4.1; Vitest (1 MiB of newlines, JSON 10,000 deep, a CSV with an unclosed quote, a big integer and a repeated key, joining chunks, names with `?`, `#`, `%` and `%2F`); Playwright on Chromium, Firefox and WebKit: an SVG in `<img>` runs and fetches nothing, a navigation to it downloads.
+  - **FU-P3-85d · UI, explorer.** Board LiteResults redone as the RunOutputs-style card, MLiteResults made, LiteReportViewer's back link; kind badges, a file opening its preview, the Download icon button, sort with `aria-sort`, `&sort=`, `&q=` and `&focus=` in the URL, the filter and its empty state, the 1,000-entry text, phone rows; `runSearch` keeps `&task=` and `&attempt=`; the Snakemake Outputs tab's Preview through `stat`; Vitest and the Playwright smoke on the results browser.
+  - **FU-P3-85e · server then UI, work directory.** The four `workdir` routes (listing, `stat`, `text`, `raw`; dot parts refused, staged inputs as the req. 13 note says, `410` and `409` as the Job files routes) with `test_req13_workdir_*`; then Browse work directory or "The work directory was removed" in the task sheet, the two `workdir` pages (in `static.ROUTES`) on the components of -85c and -85d, back to the sheet; boards LiteWorkdir, LiteTaskFiles and MLiteTaskFilesSheet. Security review: yes.
+  - After the batch: `p3-batch` (simplify, Progress page, one figure, doc review); the guide [States, outputs and efficiency](../usage/states-outputs-efficiency.md) gains a "Files and previews" section.
+- **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** every recommendation above.
+- **Built differently (2026-11-09):** FU-P3-85e heads the work directory's card with the counts, not the task and the attempt: [#132](#132-assumed-the-work-directory-card-heading-keeps-the-counts-fu-p3-85e).
+
+### #128 · Assumed: how much an escape sequence in a previewed file may hide (FU-P3-85a)
+
+- **Covers:** step P3-fu85a (`autopilot/P3-fu85a`); finding [SEC-P3FU85A-02](code/P3-fu85a.md#findings); [api §5.3](../specs/api-and-data-model.md#53-run-files-explorer-and-preview), Shared changes (`strip_escapes`); the [review record](code/P3-fu85a.md).
+- **Context:** `strip_escapes` removes an OSC (`ESC ]` or `0x9d`, up to a BEL, ST or `ESC \`) whole when its terminator comes within 4096 characters; otherwise only its introducer goes. The body may hold newlines, so a file can hide up to 4 KiB of whole lines from the preview (`strip_escapes('a\x1b]0;t\nsecret\nmore\x07b') == 'ab'`). The raw route and Download still give the file as it is. Before this step an OSC with no terminator hid the rest of the text, so the hidden span is smaller than it was.
+- **Options:**
+  - (a) keep 4096 characters, newlines included (built, as api §5.3 says);
+  - (b) the OSC body stops at a newline, so a line is never hidden whole; a real OSC (a title, a hyperlink) has none **[to be validated]**;
+  - (c) show a visible mark where a sequence was removed.
+- **Recommendation:** (a) for 0.0.1, because the spec is built and tested; (b) in FU-P3-93 if Thomas wants the preview to be a faithful view of lines. **Assumed:** (a).
+- **Why a question:** the choice is between hiding nothing a reader can see in the file's lines and keeping the one rule that also serves run logs and Job files, where a terminal program may print a long title.
+
+### #129 · Assumed: the image size check (GIF first frame, zero sizes) and the file identity (FU-P3-85b)
+
+- **Covers:** step P3-fu85b (`autopilot/P3-fu85b`); findings [SEC-P3FU85B-01, -02 and -03](code/P3-fu85b.md#findings); [api §5.3](../specs/api-and-data-model.md#53-run-files-explorer-and-preview), table step 7 and "Shared changes"; the [review record](code/P3-fu85b.md).
+- **Context:** the image check reads the size a header declares in the first chunk. Three gaps, all matching the spec as written: (1) a GIF declaring a 1 x 1 screen and a first frame of 60000 x 60000 passes, and some decoders grow the canvas to the frame **[to be validated]**; (2) a width or height of 0 passes (`0 * n` is under 50 megapixels), and a JPEG with height 0 gets its height from a later DNL marker; (3) the file identity `(st_dev, st_ino)` is compared on a fresh open per chunk, so a delete-and-recreate that reuses the inode, or a rewrite in place, is not seen. The worst case of (1) and (2) is the tab of the user who opens the run's own output running out of memory. For (3) the checked header bytes are sent from memory, so only a GIF's later frames and the body after the header can change.
+- **Options:**
+  - (a) keep the check as the spec says and built (advisory; the safety against sniffing is `nosniff` and the CSP `sandbox`);
+  - (b) in FU-P3-93: refuse a size of 0 for PNG, JPEG, WebP and a GIF screen; for a GIF also read the first image descriptor when it is in the chunk and refuse if its offset plus size is over the cap;
+  - (c) in FU-P3-93: make the identity stronger, with `st_size` and `st_mtime_ns` added to it, or one descriptor held open for the whole response (a descriptor per streaming response in the file pool, which has a limit **[to be validated]**).
+- **Recommendation:** (a) for 0.0.1, because the spec is built and tested; (b) is cheap and is the first to take into FU-P3-93; (c) with `st_size` and `st_mtime_ns` only if Thomas wants a stricter abort, since a descriptor per response costs pool slots. **Assumed:** (a).
+- **Why a question:** the choice is between a preview check that stays a short, header-only rule and one that models each decoder's rules for a size the header does not give.
+
+### #130 · Assumed: the file preview as built, open caps and phone gaps (FU-P3-85c)
+
+- **Covers:** step P3-fu85c (`autopilot/P3-fu85c`); the open findings of its [review record](code/P3-fu85c.md#findings); [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview), note of 2026-11-09.
+- **Context:** the preview is built and approved after four rounds. What stays open is minor: the 2 MiB cap on formatted JSON is checked after `JSON.stringify` (1 MiB of JSON, 63 levels deep, becomes about 68 million characters in 285 ms on the reviewers' host, so a phone tab can stall); search matches have no cap; the phone breadcrumb is not shortened; Reload does not read an image again; the `h1` takes no focus after a refusal; Firefox and WebKit were not run for the SVG check, which [api §5.3](../specs/api-and-data-model.md#53-run-files-explorer-and-preview) asks for.
+- **Options:**
+  - (a) ship 0.0.1 as built and take every item in FU-P3-94 after it;
+  - (b) take the JSON cap and the search-match cap into FU-P3-94 before 0.0.1, since they are the only items that spend CPU or memory on a hostile file, and leave the rest for later;
+  - (c) also add Firefox and WebKit to the preview spec in CI before 0.0.1.
+- **Recommendation:** (b). The two caps are cheap (estimate the formatted size before building it, or lower the input size for the formatter; stop the search at a fixed number of matches) and the DOM and CPU budget is a stated rule of §4.4.1. (c) when the CI minutes allow, since the SVG check is the one that needs a real browser engine. **Assumed:** (b), by the standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30); until FU-P3-94 is built the preview stays as built.
+- **Why a question:** the choice is between releasing a preview that can stall a tab on a hostile 1 MiB results file and holding 0.0.1 for a cap.
+
+### #131 · Assumed: the status line of a lost task sheet follows the engine's words (FU-P3-85d)
+
+- **Covers:** step P3-fu85d (`autopilot/P3-fu85d`); finding [CR-P3FU85D-r2-02](code/P3-fu85d.md#findings); [ui-spec §4.4](../specs/ui-spec.md#44-run-detail), "The engine's words" (UX-PAR-20), and §4.4.1, "Back to the task sheet".
+- **Context:** when the task sheet cannot be reopened from `&task=&attempt=`, the page shows "This job's sheet could not be reopened." The line is built with "job's" for every engine, and its test runs on a Nextflow run. A Nextflow run reads "task" everywhere else on the screen.
+- **Options:**
+  - (a) keep "job's" for every engine, as built;
+  - (b) the line takes the engine's word (`words(run.workflow.engine)`): "task's" on Nextflow, "job's" on Snakemake, with the test on both engines;
+  - (c) a neutral line with no noun: "The sheet could not be reopened."
+- **Recommendation:** (b), in FU-P3-97 or with FU-P3-96, which touches the same lines. It is the rule of the screen, and it costs one call and one test. **Assumed:** (b); until then the line is built as (a).
+- **Why a question:** the choice is between one word that is wrong on one engine and a rule the rest of the screen already follows.
+
+### #132 · Assumed: the work-directory card heading keeps the counts (FU-P3-85e)
+
+- **Covers:** step P3-fu85e (`autopilot/P3-fu85e`); finding [CR-P3FU85E-02](code/P3-fu85e.md#findings); [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview), Layout and the note of 2026-11-09; board `LiteWorkdir`; part of the plan of [#127](#127-assumed-file-explorer-and-preview-fu-p3-85).
+- **Context:** the spec says the work directory "uses the same card, headed 'Work directory · <task name> · attempt <n>'". The page's `h1` already reads that. The build and the board head the card "Work directory · n folders, m files", as the results card does.
+- **Options:**
+  - (a) keep the counts in the card heading, and read the spec's sentence as the `h1` (built);
+  - (b) head the card with the task and the attempt, as the spec says, and drop the counts from the work directory;
+  - (c) head the card with both, "Work directory · <task name> · attempt <n> · n folders, m files".
+- **Recommendation:** (a). The counts say how much is listed, which the `h1` does not; (b) repeats the `h1` one line below it; (c) makes a long line. **Assumed:** (a); the ui-spec note says so.
+- **Why a question:** the choice is between the spec's words and a card that matches the results card.

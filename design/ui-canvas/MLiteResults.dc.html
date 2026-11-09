@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — results browser (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.fp-btn{min-height:44px;padding:0 14px;border-radius:12px;border:none;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font:600 14px 'Inter',sans-serif;color:#22253A;cursor:pointer}
+.mr-card{border-radius:16px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.11);overflow:hidden}
+.mr-head{padding:10px 12px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid #EEEFF5}
+.mr-list{list-style:none;margin:0;padding:0}
+.mr-list li + li{border-top:1px solid #EEEFF5}
+.mr-row{min-height:44px;box-sizing:border-box;padding:8px 12px;display:flex;flex-direction:column;gap:2px;text-decoration:none;color:#0F1020}
+.mr-first{display:flex;gap:8px;align-items:flex-start}
+.mr-first svg{flex-shrink:0;margin-top:1px}
+.mr-name{font-size:14px;font-weight:600;color:#6344B2;overflow-wrap:anywhere;min-width:0}
+.mr-static .mr-name{color:#0F1020;font-weight:500}
+.mr-second{font-size:12.5px;color:#4D5065;padding-left:26px}
+.mr-field{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border-radius:12px;box-shadow:inset 0 0 0 1px #DFE1EA;color:#6E7287;box-sizing:border-box}
+.mr-field input{border:none;outline:none;font:inherit;font-size:15px;color:#0F1020;min-width:0;flex-grow:1;background:transparent}
+.mr-select{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#33364A}
+.mr-select select{flex-grow:1;min-height:44px;border-radius:12px;border:none;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font:500 14px 'Inter',sans-serif;color:#0F1020;padding:0 10px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" hint-size="390px,48px"></dc-import></div>
+  <main style="position: absolute; top: 48px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 10px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <a href="MLiteRunDetail.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none; min-height: 44px; display: flex; align-items: center;">← rnaseq-2026-10-25 · Summary</a>
+    <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 24px;">Results</h1>
+    <nav aria-label="Folder" style="font-size: 13px; color: #4D5065; display: flex; gap: 4px; flex-wrap: wrap;"><a href="#">results</a><span aria-hidden="true">/</span><span aria-current="page">fastqc</span></nav>
+    <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #33364A; overflow-wrap: anywhere; background: #FFFFFF; border-radius: 10px; padding: 8px 10px; box-shadow: inset 0 0 0 1px #EEEFF5;">/g/demo-lab/rnaseq/2026-10-25/fastqc</code>
+    <button type="button" class="fp-btn">Copy path</button>
+    <section class="mr-card" aria-labelledby="mr-title">
+      <div class="mr-head">
+        <h2 id="mr-title" style="margin: 0; font-size: 15px; font-weight: 600;">Results · 1 folder, 8 files</h2>
+        <label class="mr-field"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg><span class="vh">Filter this folder</span><input type="search" placeholder="Filter this folder"></label>
+        <label class="mr-select">Sort by <select><option selected>Name, A to Z</option><option>Name, Z to A</option><option>Size, smallest first</option><option>Size, largest first</option><option>Modified, oldest first</option><option>Modified, newest first</option></select></label>
+      </div>
+      <ul class="mr-list" aria-label="fastqc">
+      <li><a class="mr-row" href="LiteResults.dc.html"><span class="mr-first"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"/></svg><span class="mr-name">zips</span></span><span class="mr-second"><dc-import name="LiteKind" kind="folder" plain="1" hint-size="90px,18px" style="display: inline;"></dc-import> · today 09:02</span></a></li>
+      <li><a class="mr-row" href="LiteReportViewer.dc.html"><span class="mr-first"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><span class="mr-name">S01_1_fastqc.html</span></span><span class="mr-second"><dc-import name="LiteKind" kind="html" plain="1" hint-size="90px,18px" style="display: inline;"></dc-import> · 612 KiB · today 08:04</span></a></li>
+      <li><a class="mr-row" href="MLiteFilePreview.dc.html"><span class="mr-first"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><span class="mr-name">S11_GSM4567890_rep2_trimmed_R1_val_1_fastqc_data_and_summary.tsv</span></span><span class="mr-second"><dc-import name="LiteKind" kind="table" plain="1" hint-size="90px,18px" style="display: inline;"></dc-import> · 3.4 KiB · today 08:06</span></a></li>
+      <li><a class="mr-row" href="LiteFilePreview.dc.html"><span class="mr-first"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><span class="mr-name">fastqc_summary.tsv</span></span><span class="mr-second"><dc-import name="LiteKind" kind="table" plain="1" hint-size="90px,18px" style="display: inline;"></dc-import> · 3.2 KiB · today 08:05</span></a></li>
+      <li><a class="mr-row" href="LiteFilePreview.dc.html"><span class="mr-first"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><span class="mr-name">per_base_quality.png</span></span><span class="mr-second"><dc-import name="LiteKind" kind="image" plain="1" hint-size="90px,18px" style="display: inline;"></dc-import> · 48.6 KiB · today 08:05</span></a></li>
+      <li><a class="mr-row" href="LiteFilePreview.dc.html"><span class="mr-first"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><span class="mr-name">versions.yml</span></span><span class="mr-second"><dc-import name="LiteKind" kind="text" plain="1" hint-size="90px,18px" style="display: inline;"></dc-import> · 84 B · today 08:05</span></a></li>
+      <li><a class="mr-row" href="LiteFilePreview.dc.html"><span class="mr-first"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><span class="mr-name">README</span></span><span class="mr-second"><dc-import name="LiteKind" kind="file" plain="1" hint-size="90px,18px" style="display: inline;"></dc-import> · 1.4 KiB · today 08:05</span></a></li>
+      <li><div class="mr-row mr-static"><span class="mr-first"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><span class="mr-name">latest</span></span><span class="mr-second"><dc-import name="LiteKind" kind="link" plain="1" hint-size="90px,18px" style="display: inline;"></dc-import> · today 08:05</span><span class="mr-second">not followed</span></div></li>
+
+      </ul>
+    </section>
+    <span style="font-size: 11px; color: #6E7287; line-height: 1.4;">Data: the LiteResults fixture, with one long name that wraps anywhere. Rows instead of a table: each row is one link at least 44 px high, the name with its icon, then "Kind · size · modified" (the kind word from LiteKind). Download is in the preview only. Sort is a native select; folders stay first in every sort (ui-spec §4.4.1, Phone).</span>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="runs" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>

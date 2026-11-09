@@ -228,6 +228,18 @@ def list_confined(root: Root, rel: PurePosixPath, cap: int, *, work: Root | None
     return Listing(entries, truncated)
 
 
+def entry_confined(root: Root, rel: PurePosixPath, *, work: Root | None = None) -> Entry | None:
+    """The listing's entry for `rel` below `root`, None when a listing would not show it (no
+    such entry, another owner's, a FIFO); raises NotAllowed or NotFound for a folder on the way,
+    as a listing of its parent would."""
+    rel = safe_rel(str(rel))
+    dir_fd = _walk_dirs(root, rel.parts[:-1])
+    try:
+        return _entry(root, rel, dir_fd, work)
+    finally:
+        os.close(dir_fd)
+
+
 def _entry(root: Root, rel: PurePosixPath, dir_fd: int, work: Root | None) -> Entry | None:
     try:
         st = os.stat(rel.name, dir_fd=dir_fd, follow_symlinks=False)

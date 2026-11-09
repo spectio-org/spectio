@@ -8,9 +8,12 @@ import {
   useRouterState,
   useSearch,
 } from "@tanstack/react-router";
+import { useMemo } from "react";
+import type { WorkRoot } from "./api";
 import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
 import { useRecentRuns } from "./launch/TryPipelines";
+import { FilePreview } from "./runs/FilePreview";
 import { ReportViewer, reportSearch } from "./runs/ReportViewer";
 import { ResultsBrowser, resultsSearch } from "./runs/ResultsBrowser";
 import { NotFound, RUN_ID, RunDetailPage, runSearch } from "./runs/RunDetailPage";
@@ -19,7 +22,8 @@ import { AppShell } from "./shell/AppShell";
 
 // The four routes of 0.0.1 (mvp-0.0.1 §1) in the Paper shell (G4): home, the runs list and the
 // run detail (P1 Task 20), and the launch form (Task 19); and the report viewer (Task 31) and the
-// results browser (Task 32).
+// results browser (Task 32), and the preview of one results file (FU-P3-85c); the same two on a
+// Nextflow attempt's work directory (FU-P3-85e), which need `task` and `attempt`.
 
 /** `/launch?location=<pipeline>`: Launch opens on that pipeline (Home's pipeline links);
  * `/launch?from=<run ID>`: Copy to a new launch, prefilled from that run. */
@@ -53,14 +57,42 @@ function RunRoute() {
 
 function ReportRoute() {
   const { id } = useParams({ from: "/runs/$id/report" });
-  const { path } = reportSearch(useSearch({ from: "/runs/$id/report" }));
-  return <ReportViewer key={id} id={id} path={path} />;
+  const search = reportSearch(useSearch({ from: "/runs/$id/report" }));
+  return <ReportViewer key={id} id={id} {...search} />;
 }
 
 function ResultsRoute() {
   const { id } = useParams({ from: "/runs/$id/results" });
-  const { path } = resultsSearch(useSearch({ from: "/runs/$id/results" }));
-  return <ResultsBrowser key={id} id={id} path={path} />;
+  const search = resultsSearch(useSearch({ from: "/runs/$id/results" }));
+  return <ResultsBrowser key={id} id={id} search={search} />;
+}
+
+function FileRoute() {
+  const { id } = useParams({ from: "/runs/$id/results/file" });
+  const search = resultsSearch(useSearch({ from: "/runs/$id/results/file" }));
+  return <FilePreview key={`${id}:${search.path ?? ""}`} id={id} search={search} />;
+}
+
+/** The work directory of a page's `task` and `attempt`, one object while they stay the same (the
+ * viewers' reads depend on it); null without both. */
+function useWork({ task, attempt }: { task?: string; attempt?: number }): WorkRoot | null {
+  return useMemo(() => (task && attempt ? { task, attempt } : null), [task, attempt]);
+}
+
+function WorkdirRoute() {
+  const { id } = useParams({ from: "/runs/$id/workdir" });
+  const search = resultsSearch(useSearch({ from: "/runs/$id/workdir" }));
+  const work = useWork(search);
+  if (!work) return <NotFound run={false} />;
+  return <ResultsBrowser key={`${id}:${work.task}:${work.attempt}`} id={id} search={search} work={work} />;
+}
+
+function WorkdirFileRoute() {
+  const { id } = useParams({ from: "/runs/$id/workdir/file" });
+  const search = resultsSearch(useSearch({ from: "/runs/$id/workdir/file" }));
+  const work = useWork(search);
+  if (!work) return <NotFound run={false} />;
+  return <FilePreview key={`${id}:${work.task}:${work.attempt}:${search.path ?? ""}`} id={id} search={search} work={work} />;
 }
 
 function NotFoundRoute() {
@@ -76,6 +108,9 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/runs/$id", component: RunRoute, validateSearch: runSearch }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id/report", component: ReportRoute, validateSearch: reportSearch }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id/results", component: ResultsRoute, validateSearch: resultsSearch }),
+  createRoute({ getParentRoute: () => root, path: "/runs/$id/results/file", component: FileRoute, validateSearch: resultsSearch }),
+  createRoute({ getParentRoute: () => root, path: "/runs/$id/workdir", component: WorkdirRoute, validateSearch: resultsSearch }),
+  createRoute({ getParentRoute: () => root, path: "/runs/$id/workdir/file", component: WorkdirFileRoute, validateSearch: resultsSearch }),
 ];
 
 const routeTree = root.addChildren(routes);

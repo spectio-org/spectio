@@ -42,6 +42,9 @@ export const ICONS = {
   shield: "M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M9 12l2 2 4-4",
   building: "M4 21V7l8-4 8 4v14 M9 21v-5h6v5 M8 10h.01 M12 10h.01 M16 10h.01",
   externalLink: "M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6",
+  table: "M4 5h16v14H4z M4 10h16 M4 15h16 M10 5v14",
+  braces: "M9 4c-2 0-2 2-2 4s-1 4-3 4c2 0 3 2 3 4s0 4 2 4 M15 4c2 0 2 2 2 4s1 4 3 4c-2 0-3 2-3 4s0 4-2 4",
+  image: "M4 5h16v14H4z M4 16l5-5 4 4 3-3 4 4 M15.5 9h.01",
 } as const;
 
 export function Icon({ path, size = 24, stroke = 1.8 }: { path: string; size?: number; stroke?: number }) {

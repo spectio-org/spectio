@@ -461,8 +461,8 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
                 .group_by(tasks.c.process_or_rule)
             ).all()
         )
-        graph = _rulegraph(conn, run)
-        facts = _run_facts(conn, run, graph)
+        graphs = _rulegraphs(conn, run)
+        facts = _run_facts(conn, run, graphs[-1] if graphs else {})
         jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, None, context(request))
     by_process: dict[str, dict[str, int]] = {}
     for process, state, n in counts:
@@ -474,7 +474,7 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     order: dict[str, str | None] = {r.name: r.stage_id for r in known}
     for process, stage_id in from_tasks:
         order.setdefault(process, stage_id)
-    ranks = {name: n for n, name in enumerate(_pipeline_order(list(order), graph.get("links")))}
+    ranks = {name: n for n, name in enumerate(_pipeline_order(list(order), graphs))}
     items = []
     for process, stage_id in order.items():
         r = rows.get(process)
@@ -499,51 +499,69 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     return {"items": items}
 
 
-def _pipeline_order(names: list[str], links: Any) -> list[str]:
-    """`names` (in their recorded order) in topological order of the rule graph's `links`
-    (`sourcerule` before `targetrule`; tests/fixtures/engine-events/
+def _pipeline_order(names: list[str], graphs: list[dict[str, Any]]) -> list[str]:
+    """`names` (in their recorded order) in topological order of the links of every rule graph
+    of the run (`sourcerule` before `targetrule`; tests/fixtures/engine-events/
     snakemake-9.27.1_checkpoint_flaky_retry.spool.jsonl:4), ties broken by the recorded order.
-    No links (Nextflow, an older plugin): the recorded order. A cycle, which a rule graph should
-    not have, leaves its rules at the end in the recorded order."""
-    rank = {name: n for n, name in enumerate(names)}
-    after: dict[str, set[str]] = {name: set() for name in names}
-    for link in links if isinstance(links, list) else []:
+    A rule in no graph's nodes (one that joined the DAG after a checkpoint, FU-P3-90) comes after
+    every graph rule, in the recorded order; with no graph (Nextflow, an older plugin), all do.
+    A cycle, which a rule graph should not have, leaves its rules after the others of the graph
+    in the recorded order."""
+    in_graph: set[str] = set()
+    links: list[Any] = []
+    for graph in graphs:
+        nodes, found = graph.get("nodes"), graph.get("links")
+        for node in nodes if isinstance(nodes, list) else []:
+            if isinstance(node, dict) and isinstance(node.get("rule"), str):
+                in_graph.add(node["rule"])
+        links += found if isinstance(found, list) else []
+    members = [name for name in names if name in in_graph]
+    rank = {name: n for n, name in enumerate(members)}
+    after: dict[str, set[str]] = {name: set() for name in members}
+    for link in links:
         if not isinstance(link, dict):
             continue
         source, target = link.get("sourcerule"), link.get("targetrule")
         if isinstance(source, str) and isinstance(target, str) and source != target:
             if source in rank and target in rank:
                 after[source].add(target)
-    waiting = {name: 0 for name in names}
+    waiting = {name: 0 for name in members}
     for targets in after.values():
         for target in targets:
             waiting[target] += 1
-    ready = [rank[name] for name in names if waiting[name] == 0]
+    ready = [rank[name] for name in members if waiting[name] == 0]
     heapq.heapify(ready)
     done: list[str] = []
     while ready:
-        name = names[heapq.heappop(ready)]
+        name = members[heapq.heappop(ready)]
         done.append(name)
         for target in after[name]:
             waiting[target] -= 1
             if waiting[target] == 0:
                 heapq.heappush(ready, rank[target])
     placed = set(done)
-    return done + [name for name in names if name not in placed]
+    return (
+        done
+        + [name for name in members if name not in placed]
+        + [name for name in names if name not in in_graph]
+    )
 
 
-def _rulegraph(conn: Connection, run: Row[Any]) -> dict[str, Any]:
-    """The last rule graph the Snakemake logger plugin sent (`{}` for none, or for Nextflow)."""
+def _rulegraphs(conn: Connection, run: Row[Any]) -> list[dict[str, Any]]:
+    """Every rule graph the Snakemake logger plugin sent, oldest first (none for Nextflow).
+    Snakemake 9.27.1 logs one per invocation, after the DAG is built and its checkpoint
+    dependencies updated (snakemake/workflow.py:1274-1279, `log_rulegraph`); the plugin sends
+    each one as is (engine-bridges/snakemake-logger-plugin-spectio/
+    snakemake_logger_plugin_spectio/__init__.py:178-180)."""
     if run.engine != "snakemake":
-        return {}
-    payload = conn.execute(
+        return []
+    payloads = conn.execute(
         select(events.c.payload)
         .where(events.c.run_id == run.id, events.c.type == RULEGRAPH)
-        .order_by(events.c.seq.desc())
-        .limit(1)
-    ).scalar()
-    graph = (payload or {}).get("rulegraph")
-    return graph if isinstance(graph, dict) else {}
+        .order_by(events.c.seq)
+    ).scalars()
+    graphs = [(payload or {}).get("rulegraph") for payload in payloads]
+    return [graph for graph in graphs if isinstance(graph, dict)]
 
 
 def _run_facts(conn: Connection, run: Row[Any], graph: dict[str, Any]) -> RunFacts:

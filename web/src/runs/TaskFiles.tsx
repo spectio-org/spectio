@@ -1,4 +1,5 @@
 import { Button } from "@mantine/core";
+import { Link } from "@tanstack/react-router";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
@@ -15,6 +16,8 @@ import { ICONS, Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
 import { LogLines } from "./LogViewer";
+import { OFFLINE, OFFLINE_WHY } from "./explorer";
+import { isResultPath } from "./ReportViewer";
 import { duration, when } from "./stateWord";
 
 // Each job's files (P1 Task 32; ui-spec §4.4 note 2026-10-28, Job files; boards LiteTaskFiles,
@@ -48,7 +51,6 @@ const WHY: Record<Exclude<TaskFile["state"], "present">, [string, string]> = {
     "Its files are gone, for example after nextflow clean or a scratch purge. The run's results and logs are not affected.",
   ],
 };
-const OFFLINE = "Spectio cannot read the cluster's files right now";
 const CLEANUP: [string, string] = [
   "This job's work directory was removed by cleanup = true",
   "Nextflow removes the work directories after a successful run when cleanup = true. The run's results are not affected.",
@@ -65,16 +67,29 @@ const OUTPUT_WORDS: Record<TaskOutput["state"], string> = {
   tbd: "decided after the checkpoint",
 };
 
-function OutputsPanel({ outputs }: { outputs: TaskOutput[] }) {
+/** Each output with Copy path; a present one inside the results (Snakemake: the launch directory)
+ * also gets Preview: the preview page asks `stat`, and sends a folder to the folder page; both
+ * come back to this sheet on this attempt (ui-spec §4.4.1, Snakemake outputs). */
+function OutputsPanel({ run, task, n, outputs }: { run: RunDetail; task: Task; n: number; outputs: TaskOutput[] }) {
   if (!outputs.length) return <p className="sp-muted">This job declares no output.</p>;
   return (
     <>
       <ul className="sp-sheet-list sp-outputs" aria-label="Outputs">
         {outputs.map((o) => (
           <li key={o.path} className="sp-sheet-row">
-            {[o.path, OUTPUT_WORDS[o.state], o.state === "temp_removed" && o.removed_at ? when(o.removed_at) : null, o.protected ? "write-protected" : null]
-              .filter(Boolean)
-              .join(" · ")}
+            <span className="sp-grow">
+              {[o.path, OUTPUT_WORDS[o.state], o.state === "temp_removed" && o.removed_at ? when(o.removed_at) : null, o.protected ? "write-protected" : null]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+            <span className="sp-actions">
+              {o.state === "present" && isResultPath(o.path) && (
+                <Link to="/runs/$id/results/file" params={{ id: run.id }} search={{ path: o.path, task: task.id, attempt: n }} aria-label={`Preview ${o.path}`}>
+                  Preview
+                </Link>
+              )}
+              <CopyButton text={o.path} label="Copy path" name={`Copy ${o.path}`} />
+            </span>
           </li>
         ))}
       </ul>
@@ -165,7 +180,7 @@ function FilePanel({ task, n, file, running, cleanup, onReload }: { task: Task; 
     const [title, body] = cleanup ? CLEANUP : WHY.cleaned;
     return <Refused title={title} body={body} />;
   }
-  if (error?.status === 503) return <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={() => setReads((r) => r + 1)} />;
+  if (error?.status === 503) return <Refused title={OFFLINE} body={OFFLINE_WHY} onRetry={() => setReads((r) => r + 1)} />;
   if (error?.status === 404) return <Refused title="This file is not there now" body="It was listed, then not found: reload the list." onRetry={() => (onReload(), setReads((r) => r + 1))} />;
   if (error) return <Refused title="The file could not be read" body={error.message} onRetry={() => setReads((r) => r + 1)} />;
   const size = file.size ?? 0;
@@ -202,13 +217,14 @@ function FilePanel({ task, n, file, running, cleanup, onReload }: { task: Task; 
   );
 }
 
-/** The files of the task's last attempt, or of an earlier one picked in Attempt. */
-export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
+/** The files of the task's last attempt, or of an earlier one picked in Attempt; `attempt`: the
+ * one to open on (the sheet reopened from a URL). */
+export function TaskFiles({ run, task, attempt }: { run: RunDetail; task: Task; attempt?: number }) {
   const phone = usePhone();
   const base = useId();
   const snakemake = run.workflow.engine === "snakemake";
   const last = task.attempt_n;
-  const [n, setN] = useState(last ?? 1);
+  const [n, setN] = useState(Math.min(attempt ?? last ?? 1, last ?? 1));
   const [listing, setListing] = useState<Listing | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [lists, setLists] = useState(0);
@@ -239,6 +255,10 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
   const visible = files.filter((f) => more || !MORE.has(f.kind) || f === shown);
   const hasMore = files.some((f) => MORE.has(f.kind));
   const directory = listing?.work_dir ?? null;
+  // a Nextflow attempt's work directory opens its own page (FU-P3-85e), unless the listing says it
+  // was cleaned; a run started from a terminal has no such route
+  const browsable = !snakemake && run.origin !== "cli-observed";
+  const cleaned = files.length > 0 && files.every((f) => f.state === "cleaned");
   // the tabs: the files shown, then Outputs on a Snakemake attempt
   const outputsLabel = outputs ? `Outputs (${outputs.length})` : "";
   const tabList = [...visible.map((f) => ({ key: f.name, label: label(f), state: f.state as string })), ...(outputs ? [{ key: OUTPUTS, label: outputsLabel, state: "present" }] : [])];
@@ -273,9 +293,17 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
           <span className="sp-muted">{snakemake ? "Launch directory" : "Work directory"}</span>
           <code>{directory}</code>
           <CopyButton text={directory} label="Copy" name={`Copy the ${snakemake ? "launch" : "work"} directory`} />
+          {browsable &&
+            (cleaned ? (
+              <span className="sp-muted">The work directory was removed</span>
+            ) : (
+              <Link to="/runs/$id/workdir" params={{ id: run.id }} search={{ task: task.id, attempt: n }}>
+                Browse work directory
+              </Link>
+            ))}
         </div>
       )}
-      {error && error.status === 503 && <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={reload} />}
+      {error && error.status === 503 && <Refused title={OFFLINE} body={OFFLINE_WHY} onRetry={reload} />}
       {error && error.status !== 503 && <Refused title="The files could not be listed" body={error.message} onRetry={reload} />}
       {!error && listing?.attempt !== n && <p className="sp-muted">Loading the files…</p>}
       {!error && listing?.attempt === n && files.length === 0 && outputs === null && <p className="sp-muted">This attempt has no file to show.</p>}
@@ -337,7 +365,7 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
                 onReload={reload}
               />
             ) : (
-              <OutputsPanel outputs={outputs ?? []} />
+              <OutputsPanel run={run} task={task} n={n} outputs={outputs ?? []} />
             )}
           </div>
         </>

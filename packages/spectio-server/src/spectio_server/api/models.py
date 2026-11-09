@@ -433,10 +433,33 @@ class ResultEntry(BaseModel):
     mtime: str | None
 
 
+class ResultStat(BaseModel):
+    """The listing's entry for one results path (api §5.3), with the root and the path the
+    server answered for."""
+
+    root: str
+    path: str
+    name: str
+    type: Literal["dir", "file", "link_outside"]
+    size: int | None
+    mtime: str | None
+
+
 class ResultReport(BaseModel):
     path: str  # relative to the results root
     title: str
     group: str | None  # the folder it shares with other reports, such as FastQC's
+
+
+class WorkDir(BaseModel):
+    """One folder of a Nextflow attempt's work directory (api §5.3, FU-P3-85e): the results
+    listing without `reports`, names that start with `.` hidden."""
+
+    root: str
+    path: str
+    exists: bool
+    entries: list[ResultEntry]
+    truncated: bool
 
 
 class Results(BaseModel):

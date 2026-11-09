@@ -15,6 +15,7 @@ spectio_server/api/runs_read.py
 spectio_server/api/runs_write.py
 spectio_server/api/stream.py
 spectio_server/api/taskfiles.py
+spectio_server/api/workdir.py
 spectio_server/api/workflows.py
 spectio_server/app.py
 spectio_server/auth/__init__.py
@@ -30,6 +31,7 @@ spectio_server/efficiency.py
 spectio_server/failure.py
 spectio_server/files/__init__.py
 spectio_server/files/confine.py
+spectio_server/files/images.py
 spectio_server/files/pool.py
 spectio_server/files/redact.py
 spectio_server/files/results.py
