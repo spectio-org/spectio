@@ -24,14 +24,16 @@ results directory: unknown, or a run started from a terminal (`cli-observed`), w
 order of api §5.3.1's table (`_imaging`): a TIFF by one closed `Range`, past the 1 GiB cap; a
 Zarr key below a `.ome.zarr` folder, whole or by one `Range`, at most 16 MiB. A range is read
 from its own first byte (the TIFF's 4-byte header aside), each chunk with the identity check.
-Each imaging read holds one of the server's `IMAGING_SLOTS` until its body ends or aborts; with
-none free it is `503` at once (step 9). No raw file is served to a script or a worker (step 0).
+Each imaging read holds one of the server's `IMAGING_SLOTS` until its body ends or aborts and
+its last pool job has returned, so reads stuck on a stalled mount never take every file reader
+(SEC-P3FU102B-01); with none free it is `503` at once (step 9). No raw file is served to a
+script or a worker (step 0).
 """
 
 import logging
 import re
 import threading
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from pathlib import PurePosixPath
 from typing import Annotated, Any
 from urllib.parse import quote
@@ -323,26 +325,58 @@ def _imaging(
     request: Request, where: files.Tree, rel: PurePosixPath, as_: str, range_: str | None
 ) -> StreamingResponse:
     """An imaging read, holding a read slot (step 9, taken before the pool) until its response
-    ends, aborts or loses its client: the TIFF range or the Zarr key, never an attachment."""
-    slot: threading.BoundedSemaphore = request.app.state.imaging_slots
-    if not slot.acquire(blocking=False):
+    ends, aborts or loses its client and its last pool job has returned: the TIFF range or the
+    Zarr key, never an attachment."""
+    sem: threading.BoundedSemaphore = request.app.state.imaging_slots
+    if not sem.acquire(blocking=False):
         raise Problem(503, "runner-offline", "Busy reading images", "busy reading images")
+    slot = _Slot(sem)
     try:
-        body, status, headers = _imaging_body(request, where, rel, as_, range_)
+        body, status, headers = _imaging_body(request, where, rel, as_, range_, slot)
     except BaseException:
-        slot.release()
+        slot.drop()
         raise
     return _Held(slot, body, status_code=status, headers=headers)
 
 
+class _Slot:
+    """One imaging read slot, given back when its last holder lets go: the response, and each
+    pool job it started, which may outlive the request on a stalled mount (SEC-P3FU102B-01)."""
+
+    def __init__(self, sem: threading.BoundedSemaphore) -> None:
+        self._sem, self._refs, self._lock = sem, 1, threading.Lock()
+
+    def take(self) -> Callable[[], None]:
+        """One more holder; the callback it returns lets go, once."""
+        with self._lock:
+            self._refs += 1
+        return self.drop
+
+    def drop(self) -> None:
+        with self._lock:
+            self._refs -= 1
+            if self._refs == 0:
+                self._sem.release()
+
+
 def _imaging_body(
-    request: Request, where: files.Tree, rel: PurePosixPath, as_: str, range_: str | None
+    request: Request,
+    where: files.Tree,
+    rel: PurePosixPath,
+    as_: str,
+    range_: str | None,
+    slot: _Slot,
 ) -> tuple[Iterator[bytes], int, dict[str, str]]:
     """Steps 1, 4, 5, 7, 8, 10 and 11 of api §5.3.1: the body, status and headers. The 1 GiB
     cap is lifted only for a TIFF range, whose read step 8 caps."""
     cap = None if as_ == "tiff" and range_ is not None else MAX_RAW
     head = 4 if as_ == "tiff" else 0 if range_ is not None else files.CHUNK
-    raw = in_pool(request, lambda: files.open_raw(where, rel, cap, head), missing="not-found")
+    raw = in_pool(
+        request,
+        lambda: files.open_raw(where, rel, cap, head),
+        missing="not-found",
+        on_done=slot.take(),
+    )
     if cap is not None and raw.size > cap:
         raise Problem(413, "file-too-large", "File too large", f"more than {cap} bytes")
     _imaging_name(rel, as_)
@@ -352,7 +386,8 @@ def _imaging_body(
     headers["Content-Security-Policy"] = TEXT_CSP
     if as_ == "zarr" and range_ is None:
         headers["Content-Length"] = str(raw.size)
-        return _chunks(request, where, rel, raw, raw.first, len(raw.first), raw.size), 200, headers
+        body = _chunks(request, where, rel, raw, raw.first, len(raw.first), raw.size, slot)
+        return body, 200, headers
     if len(request.headers.getlist("range")) > 1:  # two fields are two ranges (SEC-P3FU102A-02)
         raise Invalid("Range", "one closed range, bytes=<first>-<last>")
     first, last = _closed_range(range_, raw.size)
@@ -360,21 +395,21 @@ def _imaging_body(
         raise Problem(422, "file-not-allowed", "File not allowed", "not the TIFF its name says")
     headers["Content-Length"] = str(last + 1 - first)
     headers["Content-Range"] = f"bytes {first}-{last}/{raw.size}"
-    return _chunks(request, where, rel, raw, b"", first, last + 1), 206, headers
+    return _chunks(request, where, rel, raw, b"", first, last + 1, slot), 206, headers
 
 
 class _Held(StreamingResponse):
-    """An imaging answer: its read slot is given back once, when the response ends, fails or
+    """An imaging answer: it lets go of its read slot once, when the response ends, fails or
     its client goes away (CR-P3FU102B-01), or when a response never sent is dropped."""
 
     def __init__(
         self,
-        slot: threading.BoundedSemaphore,
+        slot: _Slot,
         body: Iterator[bytes],
         status_code: int,
         headers: dict[str, str],
     ) -> None:
-        self._slot: threading.BoundedSemaphore | None = slot
+        self._slot: _Slot | None = slot
         super().__init__(body, status_code, headers, "application/octet-stream")
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -386,7 +421,7 @@ class _Held(StreamingResponse):
     def _release(self) -> None:
         slot, self._slot = self._slot, None
         if slot is not None:
-            slot.release()
+            slot.drop()
 
     __del__ = _release
 
@@ -399,9 +434,11 @@ def _chunks(
     prefix: bytes,
     start: int,
     end: int,
+    slot: _Slot | None = None,
 ) -> Iterator[bytes]:
     """`prefix`, then bytes `start` to `end` of the file first opened as `raw`, chunk by chunk;
-    a chunk that fails, comes back empty or opens another file aborts the response."""
+    a chunk that fails, comes back empty or opens another file aborts the response. Each
+    chunk's pool job holds `slot`, when given, until it returns."""
     if prefix:
         yield prefix  # the bytes checked are the bytes sent: no second open
     while start < end:
@@ -409,6 +446,7 @@ def _chunks(
             data = in_pool(
                 request,
                 lambda at=start: files.read_chunk(where, rel, at, end - at, raw.ident),
+                on_done=None if slot is None else slot.take(),
             )
         except Problem as exc:
             log.warning("%s cut at %d: %s", request.url.path, start, exc)

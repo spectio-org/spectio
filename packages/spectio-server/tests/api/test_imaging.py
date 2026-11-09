@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from spectio.config import Settings
 from spectio.runner.rundir import make_run_dirs
 from spectio_server.api import results as api_results
+from spectio_server.api import taskfiles as api_taskfiles
 from spectio_server.files import confine
 from spectio_server.files import results as files_results
 from spectio_server.store.writer import Writer
@@ -444,6 +445,40 @@ def test_req14_imaging_slot_back_on_client_gone(
             assert time.monotonic() < deadline, "the slots stayed taken"
             time.sleep(0.05)
         assert found.status_code == 206
+
+
+def test_req14_imaging_slot_held_while_stalled(
+    authed_client: TestClient, results: Results, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Step 9 on a stalled mount: a slot is held until its last pool job returns, not only
+    until its answer ends, so stuck imaging reads never take every file reader
+    (SEC-P3FU102B-01)."""
+    put(results, "a.tif", TIFF)
+    put(results, "notes.txt", b"hello")
+    real, go = files_results.read_chunk, threading.Event()
+
+    def stalled(*args: Any) -> bytes:
+        go.wait(10)
+        return real(*args)
+
+    monkeypatch.setattr(files_results, "read_chunk", stalled)
+    monkeypatch.setattr(api_taskfiles, "READ_TIMEOUT_S", 0.2)
+    try:
+        for _ in range(3):  # each body stalls after its headers and aborts
+            with pytest.raises(RuntimeError):
+                get(authed_client, "a.tif", "tiff", "bytes=0-9")
+        busy = get(authed_client, "a.tif", "tiff", "bytes=0-9")
+        problem(busy, 503, "runner-offline")
+        assert "busy reading images" in busy.json()["detail"]
+        text = authed_client.get(f"{API}/runs/{RUN}/results/text/notes.txt")
+        assert text.status_code == 200, text.text
+    finally:
+        go.set()
+    deadline = time.monotonic() + 2
+    while (found := get(authed_client, "a.tif", "tiff", "bytes=0-3")).status_code == 503:
+        assert time.monotonic() < deadline, "the slots stayed taken"
+        time.sleep(0.05)
+    ranged(found, 0, 3, len(TIFF), b"II*\x00")
 
 
 def test_req14_imaging_slot_back_on_abort_and_refusal(

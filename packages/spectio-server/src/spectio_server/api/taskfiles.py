@@ -174,15 +174,17 @@ def in_pool(
     timeout_s: float | None = None,
     missing: str = "log-not-found",
     refused_missing: bool = False,
+    on_done: Any = None,
 ) -> Any:
     """`job()` in the routes' file pool, its refusals mapped to problems (one mapping for every
     file route: CR-P3T28-01 r4): `503 runner-offline`, `415 binary-file`, `410 log-cleaned`,
     `409 run-dir-unreachable`,
     `422 file-not-allowed` (`404 <missing>` with `refused_missing`, as a run log answers it),
-    and `404 <missing>`. Any other file system error is `503` for `EIO` and `ESTALE`, else
+    and `404 <missing>`. `on_done()` runs once the pool job is over (`FilePool.run`). Any
+    other file system error is `503` for `EIO` and `ESTALE`, else
     `404`, with a fixed text, and is logged (CR-P3T28-02 r4)."""
     try:
-        return request.app.state.files.run(job, timeout_s or READ_TIMEOUT_S)
+        return request.app.state.files.run(job, timeout_s or READ_TIMEOUT_S, on_done)
     except Stalled as exc:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
     except Binary as exc:
