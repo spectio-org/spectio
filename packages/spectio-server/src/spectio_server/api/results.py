@@ -10,7 +10,11 @@ The listing is one folder of the results directory and the reports found below i
 (`files.results`); the search runs once per listing while the run is active, and its result is
 kept once the run has ended. A raw file is served whole with its `Content-Length`, read in chunks
 of at most 1 MiB, each in the file pool with its timeout; a read that fails or comes back short
-once the headers are sent aborts the response (CR-P3T31-03). `.html` and `.htm` carry the
+once the headers are sent aborts the response (CR-P3T31-03). The first chunk is read at the
+first opening, which records the file's `(st_dev, st_ino)`, and is sent as the first part of the
+body; every later chunk that opens another file aborts the response too (api §5.3).
+`?as=image` with `Sec-Fetch-Dest: image` serves an image inline, in the order of api §5.3's
+table (`_image_type`, then the caps and `files.images.check`). `.html` and `.htm` carry the
 sandbox CSP of req. 14 for the report viewer's `<iframe>`; every other file, and any file asked
 with `?download=true`, is an attachment with the CSP `sandbox`. `404` when the run has no
 results directory: unknown, or a run started from a terminal (`cli-observed`), whose files
@@ -19,6 +23,7 @@ results directory: unknown, or a run started from a terminal (`cli-observed`), w
 
 import logging
 from collections.abc import Iterator
+from pathlib import PurePosixPath
 from typing import Annotated, Any
 from urllib.parse import quote
 
@@ -26,10 +31,11 @@ from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response, StreamingResponse
 
 from spectio_server.api.models import Results, ResultStat
-from spectio_server.api.problems import Problem, not_found
+from spectio_server.api.problems import Invalid, Problem, not_found
 from spectio_server.api.runs_read import read, results_of, run_row
 from spectio_server.api.taskfiles import HEADERS, _byte_range, _iso, in_pool, text_response
 from spectio_server.failure import dir_run_id
+from spectio_server.files import images
 from spectio_server.files import results as files
 from spectio_server.files.confine import MAX_READ, TAIL, NotAllowed
 from spectio_server.files.pool import READ_TIMEOUT_S
@@ -39,6 +45,8 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 MAX_RAW = 1 << 30  # the largest results file served, 1 GiB
+MAX_IMAGE = 20 << 20  # the largest served as an image (api §5.3, step 6)
+MAX_SVG = 5 << 20  # the largest SVG served as an image
 KEPT_SEARCHES = 1000  # ended runs whose reports are kept in memory
 REPORT_CSP = (
     "sandbox allow-scripts allow-downloads; default-src 'none'; "
@@ -146,15 +154,50 @@ def result_text(
     return text_response(served, HEADERS)
 
 
+def _image_type(
+    request: Request, rel: PurePosixPath, download: bool, as_: str | None
+) -> str | None:
+    """Steps 2 to 5 of the image table (api §5.3): the type to serve the file as an image with,
+    or None for the raw route's other answers. `Sec-Fetch-Dest` decides only how a file is
+    served: a request without `image` (a navigation, or a client that sends no Fetch Metadata)
+    gets the attachment."""
+    if download or as_ is None:
+        return None
+    if as_ != "image":
+        raise Invalid("as", "the only value is `image`")
+    media = images.MEDIA.get(rel.suffix.lower())
+    if media is None:
+        raise Problem(422, "file-not-allowed", "File not allowed", "not an image's name")
+    if request.headers.get("sec-fetch-dest") != "image":
+        return None
+    return media
+
+
 @router.get("/runs/{run_id}/results/raw/{path:path}", response_class=Response)
-def result_file(request: Request, run_id: str, path: str, download: bool = False) -> Response:
+def result_file(
+    request: Request,
+    run_id: str,
+    path: str,
+    download: bool = False,
+    as_: Annotated[str | None, Query(alias="as")] = None,
+) -> Response:
     where, _ = _where(request, run_id)
     rel = _file_rel(path)
-    size = in_pool(request, lambda: files.file_size(where, rel), missing="not-found")
-    if size > MAX_RAW:
+    raw = in_pool(request, lambda: files.open_raw(where, rel, MAX_RAW), missing="not-found")
+    if raw.size > MAX_RAW:
         raise Problem(413, "file-too-large", "File too large", f"more than {MAX_RAW} bytes")
-    headers = dict(HEADERS)
-    if rel.suffix.lower() in files.REPORT_SUFFIXES and not download:
+    media = _image_type(request, rel, download, as_)
+    headers = {**HEADERS, "Vary": "Sec-Fetch-Dest", "Content-Length": str(raw.size)}
+    if media is not None:
+        cap = MAX_SVG if media == images.SVG else MAX_IMAGE
+        if raw.size > cap:
+            raise Problem(413, "file-too-large", "File too large", f"an image over {cap} bytes")
+        try:
+            images.check(media, raw.first)
+        except NotAllowed as exc:
+            raise Problem(422, "file-not-allowed", "File not allowed", str(exc)) from None
+        headers["Content-Security-Policy"] = ATTACHMENT_CSP
+    elif rel.suffix.lower() in files.REPORT_SUFFIXES and not download:
         media = "text/html; charset=utf-8"
         headers["Content-Security-Policy"] = REPORT_CSP
     else:
@@ -162,14 +205,15 @@ def result_file(request: Request, run_id: str, path: str, download: bool = False
         headers["Content-Security-Policy"] = ATTACHMENT_CSP
         headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(rel.name, safe='')}"
 
-    headers["Content-Length"] = str(size)
-
     def chunks() -> Iterator[bytes]:
-        start = 0
-        while start < size:
+        if raw.first:
+            yield raw.first  # the bytes checked are the bytes sent: no second open
+        start = len(raw.first)
+        while start < raw.size:
             try:
                 data = in_pool(
-                    request, lambda at=start: files.read_chunk(where, rel, at, size - at)
+                    request,
+                    lambda at=start: files.read_chunk(where, rel, at, raw.size - at, raw.ident),
                 )
             except Problem as exc:
                 log.warning("results file %s of %s cut at %d: %s", rel, run_id, start, exc)

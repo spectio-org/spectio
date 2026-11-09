@@ -1963,3 +1963,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - (c) show a visible mark where a sequence was removed.
 - **Recommendation:** (a) for 0.0.1, because the spec is built and tested; (b) in FU-P3-93 if Thomas wants the preview to be a faithful view of lines. **Assumed:** (a).
 - **Why a question:** the choice is between hiding nothing a reader can see in the file's lines and keeping the one rule that also serves run logs and Job files, where a terminal program may print a long title.
+
+### #129 · Assumed: the image size check (GIF first frame, zero sizes) and the file identity (FU-P3-85b)
+
+- **Covers:** step P3-fu85b (`autopilot/P3-fu85b`); findings [SEC-P3FU85B-01, -02 and -03](code/P3-fu85b.md#findings); [api §5.3](../specs/api-and-data-model.md#53-run-files-explorer-and-preview), table step 7 and "Shared changes"; the [review record](code/P3-fu85b.md).
+- **Context:** the image check reads the size a header declares in the first chunk. Three gaps, all matching the spec as written: (1) a GIF declaring a 1 x 1 screen and a first frame of 60000 x 60000 passes, and some decoders grow the canvas to the frame **[to be validated]**; (2) a width or height of 0 passes (`0 * n` is under 50 megapixels), and a JPEG with height 0 gets its height from a later DNL marker; (3) the file identity `(st_dev, st_ino)` is compared on a fresh open per chunk, so a delete-and-recreate that reuses the inode, or a rewrite in place, is not seen. The worst case of (1) and (2) is the tab of the user who opens the run's own output running out of memory. For (3) the checked header bytes are sent from memory, so only a GIF's later frames and the body after the header can change.
+- **Options:**
+  - (a) keep the check as the spec says and built (advisory; the safety against sniffing is `nosniff` and the CSP `sandbox`);
+  - (b) in FU-P3-93: refuse a size of 0 for PNG, JPEG, WebP and a GIF screen; for a GIF also read the first image descriptor when it is in the chunk and refuse if its offset plus size is over the cap;
+  - (c) in FU-P3-93: make the identity stronger, with `st_size` and `st_mtime_ns` added to it, or one descriptor held open for the whole response (a descriptor per streaming response in the file pool, which has a limit **[to be validated]**).
+- **Recommendation:** (a) for 0.0.1, because the spec is built and tested; (b) is cheap and is the first to take into FU-P3-93; (c) with `st_size` and `st_mtime_ns` only if Thomas wants a stricter abort, since a descriptor per response costs pool slots. **Assumed:** (a).
+- **Why a question:** the choice is between a preview check that stays a short, header-only rule and one that models each decoder's rules for a size the header does not give.
