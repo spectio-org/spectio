@@ -795,3 +795,10 @@ One entry per tick: time, steps started and finished, verification results, tria
 ## 2026-11-09 — 205, 206, 207 merged; 106a simplified
 - Merged #205 (FU-P3-107), #206 (FU-P3-102d1), #207 (FU-P3-86e4) into autopilot/integration.
 - FU-P3-106a (old p3-task workflow, about 1.0M subagent tokens): review loop spiralled on a per-ID sacct batch-halving heuristic (each fix opened a new major). Decision: replace it with the simplest rule (split only an over-cap batch; retry timeouts and non-zero exits unchanged under the global back-off; policy refusals final, stat errors retried). Lesson kept in the lean policy: fix a defect-minor with the simplest rule, never grow a heuristic across rounds.
+
+## 2026-11-09 — 106a, 86f, B10 merged; promotion P3-B10 (#212)
+- Merged #208 (FU-P3-106a), #209 (FU-P3-86f), #210 (batch P3-B10 docs), then promoted integration to main (#212, merge 9819372b).
+- Costs (subagent tokens): 106a ~1.15M (old workflow plus the simplification), 86f ~525k and 86g ~555k (p3-lean), B10 ~960k (batch plus fixes).
+- #210 pr-body: the tool that posts PR bodies turns an embedded image into a plain link, so the batch figure cannot be embedded; used the no-figure label with the reason in the body. Question for Thomas: keep that, or let tools/docs/check.py accept a link to docs/assets/diagrams/*.png.
+- Follow-up: test_local_launcher.py::test_cancel_with_a_stale_ref_after_the_launch failed once on #210 (the `started` file exists after a cancel) and passed on its one re-run; not in the batch diff. Root-cause it (race between launch and cancel).
+- #211 (FU-P3-86g): e2e-local fails on phone, the Load button of Launch sits under the Pipeline input; fix in progress.
