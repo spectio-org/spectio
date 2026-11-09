@@ -40,8 +40,9 @@ interface Props {
   /** A line under the head, the button's description. */
   sub?: ReactNode;
   defaultOpen?: boolean;
-  /** Opens the section when it turns true: a server error on one of its fields. */
-  reveal?: boolean;
+  /** Opens the section when it changes to a truthy value: a server error on one of its fields
+   * (true), or a "Before Launch" link ("link", so it still opens a group already failed). */
+  reveal?: boolean | string;
   /** A card ("sp-card") or a plain section. */
   card?: boolean;
   /** More classes on the section: "launch-preview-card", the dark preview card. */

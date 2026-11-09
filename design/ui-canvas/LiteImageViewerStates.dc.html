@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — image viewer states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.fp-card{border-radius:18px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);padding:14px 16px;display:flex;flex-direction:column;gap:9px;min-width:0;background:#FFFFFF}
+.fp-key{font-size:11.5px;font-weight:600;color:#6E7287;letter-spacing:0.02em}
+.fp-head{display:flex;flex-direction:column;gap:2px}
+.fp-head strong{font-size:14.5px;font-weight:600;overflow-wrap:anywhere}
+.fp-head span{font-size:12.5px;color:#4D5065}
+.fp-btn{height:32px;padding:0 10px;border-radius:8px;border:none;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font:600 12.5px 'Inter',sans-serif;color:#22253A;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.fp-note{border-radius:12px;background:#F7F7FB;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.fp-note strong{font-size:13.5px;font-weight:600;line-height:1.4}
+.fp-note .fp-why{font-size:12.5px;color:#33364A;line-height:1.5}
+.fp-acts{display:flex;gap:8px;flex-wrap:wrap}
+.fp-aside{font-size:12px;color:#4D5065;line-height:1.45}
+.fp-h2{margin:6px 0 0;font-family:'Outfit',sans-serif;font-weight:600;font-size:18px}
+.iv-flat{background:#F4F4F6;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.iv-flat img{display:block;max-width:100%}
+.iv-status{display:flex;align-items:center;gap:10px;min-height:32px;flex-wrap:wrap}
+.iv-status [role=status]{font-size:13px;color:#8A4B06;font-weight:500}
+.iv-view{border-radius:12px;background:#000000;overflow:hidden;display:flex;align-items:center;justify-content:center;height:200px}
+.iv-view img{display:block;max-width:100%;height:100%;object-fit:contain}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="LiteTopbar" crumbs="Runs / mcmicro-2026-11-02 / Results" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="LiteSidebar" active="runs" hint-size="236px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; background: #FBFBFD;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Image viewer: every state</h1>
+        <span style="font-size: 14px; color: #4D5065;">Each panel is the viewer's place on the preview page (LiteImageViewer), under the file name and its facts. One state at a time; every state says itself in words.</span>
+      </div>
+
+      <h2 class="fp-h2">Before the first tile is drawn</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px;">
+        <section aria-label="A · loading" class="fp-card">
+          <span class="fp-key">A · LOADING</span>
+          <div class="fp-head"><strong>lunaphore_example.ome.tiff</strong><span>OME-TIFF · 1.84 GiB · modified 2 Nov 14:20</span></div>
+          <p role="status" style="margin: 0; font-size: 13px; color: #4D5065;">Loading the image…</p>
+        </section>
+        <section aria-label="B · empty" class="fp-card">
+          <span class="fp-key">B · EMPTY</span>
+          <div class="fp-head"><strong>ROI_07_mask.tif</strong><span>TIFF · 0 B · modified 2 Nov 15:02</span></div>
+          <div role="note" class="fp-note"><strong>This file is empty.</strong><div class="fp-acts"><a href="#" download class="fp-btn" aria-label="Download ROI_07_mask.tif">Download</a></div></div>
+        </section>
+        <section aria-label="C · too large, a cap of the page" class="fp-card">
+          <span class="fp-key">C · TOO LARGE (A CAP)</span>
+          <div class="fp-head"><strong>gel_scan_2026-11-02_full.tif</strong><span>TIFF · 412.0 MiB · modified 2 Nov 11:48</span></div>
+          <div role="note" class="fp-note"><strong>This image is too large to show here (a plane over 50 megapixels). Download it to open it.</strong><div class="fp-acts"><a href="#" download class="fp-btn" aria-label="Download gel_scan_2026-11-02_full.tif">Download</a></div></div>
+          <span class="fp-aside">The reason names the cap that stopped it: "a plane over 50 megapixels" · "tiles larger than 4,096 px" · "a tile over 8 MiB" · "over 10,000 planes" · "over 10,000 IFDs" · "float64 pixels are not shown" (the type named).</span>
+        </section>
+        <section aria-label="D · too large, 413 on a plain read" class="fp-card">
+          <span class="fp-key">D · TOO LARGE (413, A PLAIN READ)</span>
+          <div class="fp-head"><strong>stitched_strips.ome.tiff</strong><span>OME-TIFF · 3.2 GiB · modified 2 Nov 13:05</span></div>
+          <div role="note" class="fp-note"><strong>This image is too large to show here (over 1 GiB). Download it to open it.</strong><div class="fp-acts"><a href="#" download class="fp-btn" aria-label="Download stitched_strips.ome.tiff">Download</a></div></div>
+        </section>
+        <section aria-label="E · too large, 413 on a Zarr chunk" class="fp-card">
+          <span class="fp-key">E · TOO LARGE (413, A ZARR CHUNK)</span>
+          <div class="fp-head"><strong>lightsheet_brain.ome.zarr</strong><span>OME-Zarr · folder · modified 2 Nov 16:30</span></div>
+          <div role="note" class="fp-note"><strong>This image is too large to show here (a Zarr chunk over 16 MiB). Download it to open it.</strong><div class="fp-acts"><button type="button" class="fp-btn" aria-label="Copy path of lightsheet_brain.ome.zarr">Copy path</button><a href="LiteResults.dc.html" class="fp-btn">Browse folder</a></div></div>
+          <span class="fp-aside">A folder has no Download: Copy path takes its place.</span>
+        </section>
+        <section aria-label="F · not supported, compression" class="fp-card">
+          <span class="fp-key">F · NOT SUPPORTED (COMPRESSION)</span>
+          <div class="fp-head"><strong>slide_0042_jp2k.ome.tiff</strong><span>OME-TIFF · 860.4 MiB · modified 2 Nov 12:31</span></div>
+          <div role="note" class="fp-note"><strong>Spectio cannot decode JPEG 2000 compression.</strong><div class="fp-acts"><a href="#" download class="fp-btn" aria-label="Download slide_0042_jp2k.ome.tiff">Download</a></div></div>
+          <span class="fp-aside">The compression is named as the file's TIFF tag gives it.</span>
+        </section>
+        <section aria-label="G · not supported, names other files" class="fp-card">
+          <span class="fp-key">G · NOT SUPPORTED (SEVERAL FILES)</span>
+          <div class="fp-head"><strong>tubhiswt_C0.ome.tif</strong><span>OME-TIFF · 22.4 MiB · modified 2 Nov 10:12</span></div>
+          <div role="note" class="fp-note"><strong>This OME-TIFF names other files: Spectio shows one file at a time.</strong><div class="fp-acts"><a href="#" download class="fp-btn" aria-label="Download tubhiswt_C0.ome.tif">Download</a></div></div>
+        </section>
+        <section aria-label="H · not OME, an OME-TIFF without OME-XML" class="fp-card">
+          <span class="fp-key">H · NOT OME (OME-TIFF)</span>
+          <div class="fp-head"><strong>BR00109990_C2_plain.ome.tif</strong><span>OME-TIFF · 4.1 MiB · modified 2 Nov 09:58</span></div>
+          <div role="note" class="fp-note"><strong>This file has no OME metadata: shown as a TIFF.</strong></div>
+          <div><button type="button" class="fp-btn" aria-pressed="false">Actual size</button></div>
+          <div class="iv-flat"><img src="/_blob/e168e18296cbb3625c210b80c0a9af86" alt="BR00109990_C2_plain.ome.tif" width="240"><span style="font-size: 12px; color: #4D5065;">1,040 × 776 px · Contrast stretched for display</span></div>
+        </section>
+        <section aria-label="I · not OME, an OME-Zarr folder without multiscales" class="fp-card">
+          <span class="fp-key">I · NOT OME (OME-ZARR)</span>
+          <div class="fp-head"><strong>features.ome.zarr</strong><span>OME-Zarr · folder · modified 2 Nov 16:02</span></div>
+          <div role="note" class="fp-note"><strong>This folder has no OME-Zarr image metadata.</strong><div class="fp-acts"><a href="LiteResults.dc.html" class="fp-btn">Browse folder</a><button type="button" class="fp-btn" aria-label="Copy path of features.ome.zarr">Copy path</button></div></div>
+        </section>
+        <section aria-label="J · an HCS plate" class="fp-card">
+          <span class="fp-key">J · PLATE</span>
+          <div class="fp-head"><strong>plate_BR00109990.ome.zarr</strong><span>OME-Zarr · folder · modified 2 Nov 17:20</span></div>
+          <div role="note" class="fp-note"><strong>Spectio does not show OME-Zarr plates or labels yet.</strong><div class="fp-acts"><a href="LiteResults.dc.html" class="fp-btn">Browse folder</a><button type="button" class="fp-btn" aria-label="Copy path of plate_BR00109990.ome.zarr">Copy path</button></div></div>
+          <span class="fp-aside">An HCS plate: the store's top group has <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">plate</code> and no <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">multiscales</code>.</span>
+        </section>
+        <section aria-label="K · a labels group" class="fp-card">
+          <span class="fp-key">K · LABELS</span>
+          <div class="fp-head"><strong>cells.ome.zarr / labels</strong><span>OME-Zarr · folder · modified 2 Nov 17:24</span></div>
+          <div role="note" class="fp-note"><strong>Spectio does not show OME-Zarr plates or labels yet.</strong><div class="fp-acts"><a href="LiteResults.dc.html" class="fp-btn">Browse folder</a><button type="button" class="fp-btn" aria-label="Copy path of labels">Copy path</button></div></div>
+          <span class="fp-aside">A labels group reads as a plate does: one sentence for both.</span>
+        </section>
+        <section aria-label="L · Zarr v2 in a work directory" class="fp-card">
+          <span class="fp-key">L · WORK DIRECTORY, ZARR V2</span>
+          <div class="fp-head"><strong>segmentation.ome.zarr</strong><span>Work directory · S3SEGMENTER (ROI1) · attempt 1 · OME-Zarr · folder</span></div>
+          <div role="note" class="fp-note"><strong>This OME-Zarr uses Zarr v2, which a work directory does not serve.</strong><span class="fp-why">Open it from the results once it is published.</span><div class="fp-acts"><button type="button" class="fp-btn" aria-label="Copy path of segmentation.ome.zarr">Copy path</button></div></div>
+        </section>
+        <section aria-label="M · published as a link, Zarr v3" class="fp-card">
+          <span class="fp-key">M · PUBLISHED AS A LINK, ZARR V3</span>
+          <div class="fp-head"><strong>registered.ome.zarr</strong><span>OME-Zarr · folder · published as a link</span></div>
+          <div role="note" class="fp-note"><strong>This OME-Zarr was published as a link.</strong><span class="fp-why">Open it from the task's work directory.</span><div class="fp-acts"><button type="button" class="fp-btn" aria-label="Copy path of registered.ome.zarr">Copy path</button></div></div>
+          <span class="fp-aside">The results refuse the keys below a link; the work directory serves a Zarr v3 store (api §5.3.1).</span>
+        </section>
+        <section aria-label="N · published as a link, Zarr v2" class="fp-card">
+          <span class="fp-key">N · PUBLISHED AS A LINK, ZARR V2 (FINAL)</span>
+          <div class="fp-head"><strong>registered_v2.ome.zarr</strong><span>OME-Zarr · folder · published as a link</span></div>
+          <div role="note" class="fp-note"><strong>Spectio cannot open this OME-Zarr here (published as a link, Zarr v2).</strong><div class="fp-acts"><button type="button" class="fp-btn" aria-label="Copy path of registered_v2.ome.zarr">Copy path</button></div></div>
+          <span class="fp-aside">Final: neither the results (a link) nor the work directory (Zarr v2) can serve it, so nothing else is offered.</span>
+        </section>
+        <section aria-label="O · WebGL missing" class="fp-card">
+          <span class="fp-key">O · WEBGL MISSING (THE FLAT VIEW)</span>
+          <div class="fp-head"><strong>lunaphore_example.ome.tiff</strong><span>OME-TIFF · 1.84 GiB · modified 2 Nov 14:20</span></div>
+          <div role="note" class="fp-note"><strong>This browser cannot open the image viewer: it needs WebGL 2, which is off or missing.</strong><div class="fp-acts"><a href="#" download class="fp-btn" aria-label="Download lunaphore_example.ome.tiff">Download</a></div></div>
+          <div><button type="button" class="fp-btn" aria-pressed="false">Actual size</button></div>
+          <div class="iv-flat"><img src="/_blob/d1bdd816bbf05fc0dcd16ad21682772e" alt="lunaphore_example.ome.tiff, channel 1, first plane" width="220" style="filter: grayscale(1);"><span style="font-size: 12px; color: #4D5065;">Shown: channel 1, first plane · Contrast stretched for display</span></div>
+          <span class="fp-aside">Also when the WebGL context is lost during the view.</span>
+        </section>
+        <section aria-label="P · could not be decoded" class="fp-card">
+          <span class="fp-key">P · DECODE FAILURE OR TIMEOUT</span>
+          <div class="fp-head"><strong>ROI_03_truncated.ome.tiff</strong><span>OME-TIFF · 118.0 MiB · modified 2 Nov 14:41</span></div>
+          <div role="note" class="fp-note"><strong>This image could not be decoded.</strong><div class="fp-acts"><button type="button" class="fp-btn">Retry</button><a href="#" download class="fp-btn" aria-label="Download ROI_03_truncated.ome.tiff">Download</a></div></div>
+        </section>
+        <section aria-label="Q · not an image Spectio can read (422)" class="fp-card">
+          <span class="fp-key">Q · NOT AN IMAGE SPECTIO CAN READ (422)</span>
+          <div class="fp-head"><strong>qc_overview.tiff</strong><span>TIFF · 2.3 MiB · modified 2 Nov 15:40</span></div>
+          <div role="note" class="fp-note"><strong>Not an image Spectio can read: the IFD offset points past the end of the file.</strong><div class="fp-acts"><button type="button" class="fp-btn">Retry</button><a href="#" download class="fp-btn" aria-label="Download qc_overview.tiff">Download</a></div></div>
+          <span class="fp-aside">After the colon: the server's text, as text.</span>
+        </section>
+        <section aria-label="R · not the TIFF its name says (422)" class="fp-card">
+          <span class="fp-key">R · NOT THE TIFF ITS NAME SAYS (422)</span>
+          <div class="fp-head"><strong>ROI_05.tif</strong><span>TIFF · 640 KiB · modified 2 Nov 15:44</span></div>
+          <div role="note" class="fp-note"><strong>This file is not the TIFF its name says.</strong><div class="fp-acts"><button type="button" class="fp-btn">Retry</button><a href="#" download class="fp-btn" aria-label="Download ROI_05.tif">Download</a></div></div>
+        </section>
+        <section aria-label="S · not there (404)" class="fp-card">
+          <span class="fp-key">S · NOT THERE (404)</span>
+          <div class="fp-head"><strong>ROI_09.ome.tiff</strong><span>OME-TIFF</span></div>
+          <div role="note" class="fp-note"><strong>This file is not there now</strong><span class="fp-why">It may have been moved or deleted since the folder was listed. A Zarr chunk's 404 is not this state: it is the fill value.</span><div class="fp-acts"><button type="button" class="fp-btn">Retry</button></div></div>
+        </section>
+        <section aria-label="T · directory not reachable (409)" class="fp-card">
+          <span class="fp-key">T · DIRECTORY NOT REACHABLE (409)</span>
+          <div class="fp-head"><strong>lunaphore_example.ome.tiff</strong><span>OME-TIFF</span></div>
+          <div role="note" class="fp-note"><strong>The run's directory is not reachable</strong><span class="fp-why">The server says: /g/demo-lab/mcmicro/2026-11-02 is not reachable from login1 (stale NFS handle).</span><div class="fp-acts"><button type="button" class="fp-btn">Retry</button></div></div>
+        </section>
+        <section aria-label="U · work directory removed (410)" class="fp-card">
+          <span class="fp-key">U · WORK DIRECTORY REMOVED (410)</span>
+          <div class="fp-head"><strong>ROI1_registered.ome.tif</strong><span>Work directory · ASHLAR (ROI1) · attempt 1 · OME-TIFF</span></div>
+          <div role="note" class="fp-note"><strong>The work directory was removed</strong><span class="fp-why">Its files are gone, for example after nextflow clean or a scratch purge. The run's results are not affected.</span></div>
+          <span class="fp-aside">As on the file page: no Retry and no Download, the files are gone.</span>
+        </section>
+        <section aria-label="V · cluster files offline (503)" class="fp-card">
+          <span class="fp-key">V · CLUSTER FILES OFFLINE (503)</span>
+          <div class="fp-head"><strong>registered.ome.zarr</strong><span>OME-Zarr · folder</span></div>
+          <div role="note" class="fp-note"><strong>Spectio cannot read the cluster's files right now</strong><span class="fp-why">The file system does not answer. Nothing was lost; try again in a moment.</span><div class="fp-acts"><button type="button" class="fp-btn">Retry</button></div></div>
+        </section>
+        <section aria-label="W · any other refusal" class="fp-card">
+          <span class="fp-key">W · ANY OTHER REFUSAL</span>
+          <div class="fp-head"><strong>ROI_11.ome.tiff</strong><span>OME-TIFF</span></div>
+          <div role="note" class="fp-note"><strong>The file could not be read</strong><span class="fp-why">The server says: internal error while reading the file.</span><div class="fp-acts"><button type="button" class="fp-btn">Retry</button></div></div>
+        </section>
+      </div>
+
+      <h2 class="fp-h2">During the view: the status line</h2>
+      <span style="font-size: 13px; color: #4D5065;">A problem after the first tile does not replace the viewer: the tiles drawn stay, and the status line above the canvas (role="status") says what stopped.</span>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px;">
+        <section aria-label="X · read budget reached, reads" class="fp-card">
+          <span class="fp-key">X · BUDGET REACHED (READS)</span>
+          <div class="iv-status"><div role="status">Spectio stopped reading tiles: 2,000 reads.</div><button type="button" class="fp-btn">Reload</button></div>
+          <section class="iv-view" tabindex="0" aria-label="MB0002_1_345_ROI1.ome.tiff, image viewer"><img src="/_blob/0c61d97636fa086331f08925f1cddbcd" alt=""></section>
+          <span class="fp-aside">Reload starts a new budget and keeps the plane, the channels and the zoom.</span>
+        </section>
+        <section aria-label="Y · read budget reached, bytes" class="fp-card">
+          <span class="fp-key">Y · BUDGET REACHED (BYTES)</span>
+          <div class="iv-status"><div role="status">Spectio stopped reading tiles: 256 MiB read.</div><button type="button" class="fp-btn">Reload</button></div>
+          <section class="iv-view" tabindex="0" aria-label="lunaphore_example.ome.tiff, image viewer"><img src="/_blob/d1bdd816bbf05fc0dcd16ad21682772e" alt=""></section>
+          <span class="fp-aside">The limits are FU-P3-102e's to set from a measured fixture (ui-spec §4.4.1, [to be validated]).</span>
+        </section>
+        <section aria-label="Z · some tiles could not be read" class="fp-card">
+          <span class="fp-key">Z · TILE ERRORS</span>
+          <div class="iv-status"><div role="status">Some tiles could not be read.</div><button type="button" class="fp-btn">Retry</button></div>
+          <section class="iv-view" tabindex="0" aria-label="9798462_HE.ome.tiff, image viewer"><img src="/_blob/a91b5322f5ea72154e36c66323b2aa70" alt=""></section>
+          <span class="fp-aside">Retry asks those tiles again; the budget is not reset.</span>
+        </section>
+      </div>
+      <span style="font-size: 11.5px; color: #6E7287; line-height: 1.5;">Data: fixture names shaped on nf-core/mcmicro and IDR; the pictures are the board thumbnails of design/ui-canvas/images (SOURCES.md), as LiteImageViewer. Texts, caps and the link cases from ui-spec §4.4.1 (imaging note of 2026-11-09, States) and dev-environment-and-testing §15.3 req. 19; the data path from api §5.3.1. A state in the viewer's place has the role of the file page's other states (role="note" here, as LiteFilePreviewStates, until FU-P3-98 settles it); it offers Download where the file is one file and Copy path for a folder; 404, 409, 410, 503 and any other follow the file page's mapping. Every button is a native &lt;button&gt; or &lt;a&gt;; Copy path on a folder is named after it. Phone: MLiteImageViewer.</span>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>

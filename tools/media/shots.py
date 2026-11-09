@@ -50,18 +50,18 @@ class Shot:
 
 # P3 UI parity D: the pipeline is picked from "Try a test pipeline" (the server's recent runs), and the
 # copy's nextflow_schema.json builds the form; before, the path was typed and a parameter added by hand.
-APP_LAUNCH = ("wait:Try a test pipeline", "click:Use spectio/synthetic-scenarios, $SPECTIO_DEMO_PIPELINE",
+APP_LAUNCH = ("wait:Try a test pipeline", "click:Use Test pipeline (Nextflow), $SPECTIO_DEMO_PIPELINE",
               "wait:form from nextflow_schema.json")
 
 # P1 Task 32: Launch checks each value before sending. `scale` has "minimum": 1, so 0 shows its error.
 APP_LAUNCH_CHECKED = APP_LAUNCH + ("open:Scenario", "fill:scale=0", "wait:Must be at least 1", "view:Must be at least 1")
 
 # The synthetic Snakemake pipeline (tests/pipelines/synthetic/snakemake) copied to
-# $SPECTIO_DEMO_SMK_PIPELINE, with a config/config.yaml of the Snakefile's own defaults plus a nested
-# map `ref` (tools/media/README.md, live shots). Its two sections are opened, one dotted field is set.
-# Since UI parity C the Parameters card folds too, so its first group is named with its status.
+# $SPECTIO_DEMO_SMK_PIPELINE (tools/media/README.md, live shots). Its schema (workflow/schemas) names four
+# groups, each a folded section; two are opened and one value is set. The nested map `ref` of the demo
+# config.yaml is not in that schema, so the form no longer shows a dotted-key section (DW-P3B11-01 follow-up).
 APP_LAUNCH_SMK = ("fill:Pipeline=$SPECTIO_DEMO_SMK_PIPELINE", "click:Load", "wait:Config preview, as YAML",
-                  "open:Parameters defaults", "open:ref", "fill:outdir=results-smk", "fill:ref.release=114")
+                  "open:Input/output options", "open:Scenario", "fill:outdir=results-smk")
 
 # The report viewer, on the MultiQC fixture (tests/fixtures/results/multiqc-1.35_custom_content_report.html.gz).
 REPORT_VIEWER = ("wait:Untrusted report", "frame:/data/demo/mqc/in")
@@ -100,7 +100,7 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-runs-phone", "/runs", 390, 844, "0.0.1, live: the runs list on a phone, one card per run",
              live=("wait:Succeeded",)),
         Shot("app-launch-snakemake", "/launch", 1440, 1380,
-             "0.0.1, live: the launch form with the synthetic Snakemake pipeline loaded, its config as YAML",
+             "0.0.1, live: the launch form with the synthetic Snakemake pipeline loaded, its schema groups opened",
              live=APP_LAUNCH_SMK),
         Shot("app-run-detail", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
              "0.0.1, live: a finished run of the synthetic Nextflow pipeline, its processes and facts",
@@ -214,6 +214,24 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-workdir", "/runs/$SPECTIO_DEMO_RUN/workdir?task=$SPECTIO_DEMO_TASK&attempt=1", 1440, 1000,
              "0.0.1, live: the work directory of one Nextflow task attempt, in the same explorer, with the way back to the task's sheet",
              themes=("light", "dark"), live=("wait:treatA_vs_ctrl.tsv",)),
+        # Batch P3-B11 (FU-P3-86f to -86h): a local server (`spectio init --local`) with `environments.toml` holding
+        # two-cores (2 CPUs, 4 GiB, made the default) and eight-cores (8 CPUs, 16 GiB). $SPECTIO_DEMO_RUN is a finished
+        # run of the synthetic Nextflow pipeline launched from the UI's body with `environment` eight-cores.
+        Shot("app-environments", "/environments", 1440, 900,
+             "0.0.1, live: Environments, the built-in and two of the user's, one of them the default",
+             themes=("light", "dark"), live=("wait:Eight cores",)),
+        Shot("app-environments-phone", "/environments", 390, 844,
+             "0.0.1, live: the same list on a phone, one card per environment, each a link to its page",
+             themes=("light", "dark"), live=("wait:Eight cores",)),
+        Shot("app-environment-edit", "/environments/two-cores", 1440, 900,
+             "0.0.1, live: one environment's form on a local server: the executor is fixed, the local caps and the default profiles",
+             themes=("light", "dark"), live=("wait:Default profiles",)),
+        Shot("app-launch-environment", "/launch", 1440, 1400,
+             "0.0.1, live: Launch with Where it runs (the environment as radio cards), and the aside: Summary and Before Launch, here with a field error",
+             themes=("light", "dark"), live=APP_LAUNCH_CHECKED + ("top:",)),
+        Shot("app-run-environment", "/runs/$SPECTIO_DEMO_RUN", 1440, 700,
+             "0.0.1, live: a run's Facts, with the Environment it ran with, from the copy stored at launch",
+             themes=("light", "dark"), live=("wait:65 / 65 tasks", "wait:eight-cores")),
     )
 }
 

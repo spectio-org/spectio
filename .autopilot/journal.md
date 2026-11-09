@@ -795,3 +795,18 @@ One entry per tick: time, steps started and finished, verification results, tria
 ## 2026-11-09 — 205, 206, 207 merged; 106a simplified
 - Merged #205 (FU-P3-107), #206 (FU-P3-102d1), #207 (FU-P3-86e4) into autopilot/integration.
 - FU-P3-106a (old p3-task workflow, about 1.0M subagent tokens): review loop spiralled on a per-ID sacct batch-halving heuristic (each fix opened a new major). Decision: replace it with the simplest rule (split only an over-cap batch; retry timeouts and non-zero exits unchanged under the global back-off; policy refusals final, stat errors retried). Lesson kept in the lean policy: fix a defect-minor with the simplest rule, never grow a heuristic across rounds.
+
+## 2026-11-09 — 106a, 86f, B10 merged; promotion P3-B10 (#212)
+- Merged #208 (FU-P3-106a), #209 (FU-P3-86f), #210 (batch P3-B10 docs), then promoted integration to main (#212, merge 9819372b).
+- Costs (subagent tokens): 106a ~1.15M (old workflow plus the simplification), 86f ~525k and 86g ~555k (p3-lean), B10 ~960k (batch plus fixes).
+- #210 pr-body: the tool that posts PR bodies turns an embedded image into a plain link, so the batch figure cannot be embedded; used the no-figure label with the reason in the body. Question for Thomas: keep that, or let tools/docs/check.py accept a link to docs/assets/diagrams/*.png.
+- Follow-up: test_local_launcher.py::test_cancel_with_a_stale_ref_after_the_launch failed once on #210 (the `started` file exists after a cancel) and passed on its one re-run; not in the batch diff. Root-cause it (race between launch and cancel).
+- #211 (FU-P3-86g): e2e-local fails on phone, the Load button of Launch sits under the Pipeline input; fix in progress.
+- #211 merged (squash be551cfc) after the fix 401f1274: `.launch-grid` gets `minmax(0, 1fr)` below 1200 px so the long test-pipeline path no longer widens the card; full e2e locally 52 passed, 6 skipped. Next: FU-P3-86h (Launch aside, inbox #145) and FU-P3-102c2 (boards), at most 2 in flight.
+
+## 2026-11-09 — Thomas's UI feedback, 213 and 214 merged, batch P3-B11 started
+- Thomas's own try of the UI and the login1 retest c (main 9819372b) placed in inbox #146: FU-P3-109 (defects) built now; FU-P3-110 resources (spec first), 111 environments UX, 112 profile page, 113 notifications added to 0.0.1; run-detail items into FU-P3-88.
+- Merged #213 (FU-P3-86h, plus a run icon on both Launch buttons, inbox #146 item 2) and #214 (FU-P3-109). Costs: 86h ~366k, 109 ~392k.
+- Live screenshots of Launch taken from a local `spectio serve` on its Unix socket only (Playwright relays each request over the socket, Host header kept): no TCP port. Seen: Engine head reads "Not chosen yet" in Where it runs but "a process on vm" in the summary; minor for FU-P3-108.
+- Batch P3-B11 (86f, 86g, 86h, 109; d2147ede..b35198e2) started; FU-P3-102c2 boards in flight. After B11: promote, then ask login1 for retest d.
+- 2026-11-09 — Thomas: pause at the next wave. In flight finish (batch P3-B11 docs, FU-P3-102c2 boards, their PRs, the B11 promotion); no new task starts until Thomas resumes.

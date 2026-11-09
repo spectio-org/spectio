@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { type Run, listRuns } from "../api";
 import { PipelineMark } from "../shell/EngineMark";
+import { engineName } from "../runs/stateWord";
 
 // "Try a test pipeline" (P3-parD, Thomas 2026-10-31: "pas de wf par défaut de test dans launch pour
 // tester"): the pipelines this server ran recently, newest first, from GET /runs; nothing invented.
@@ -8,6 +9,11 @@ import { PipelineMark } from "../shell/EngineMark";
 // of example pipelines would be an API change (a follow-up).
 
 const DOCS = "https://spectio.pages.dev/specs/dev-environment-and-testing/#101-synthetic-scenario-pipelines-testspipelinessynthetic";
+
+/** The synthetic pipelines of dev-env §10.1 (tests/pipelines/synthetic/<engine>): the Nextflow one
+ * by its manifest name, the Snakemake one, which has none, by its directory. */
+export const isSynthetic = (w: Run["workflow"]) =>
+  (w.name ?? "").startsWith("spectio/synthetic") || /\/pipelines\/synthetic\/(nextflow|snakemake)\/?$/.test(w.location);
 
 /** The distinct pipeline locations of `runs` (newest first, as GET /runs sorts them), at most five. */
 export function recentPipelines(runs: Run[]): Run[] {
@@ -32,6 +38,7 @@ export function TryPipelines({ runs, onPick }: { runs: Run[] | null; onPick: (lo
   const id = useId();
   if (runs === null) return null;
   const pipelines = recentPipelines(runs);
+  const synthetic = pipelines.some((r) => isSynthetic(r.workflow));
   if (!pipelines.length) {
     return (
       <p className="launch-try-none">
@@ -49,15 +56,19 @@ export function TryPipelines({ runs, onPick }: { runs: Run[] | null; onPick: (lo
       </span>
       {pipelines.map((run) => {
         const w = run.workflow;
-        const name = w.name ?? w.location;
+        // "scenario" is a developer word (FU-P3-109): the synthetic ones are "Test pipeline"
+        const test = isSynthetic(w);
+        const name = test ? "Test pipeline" : (w.name ?? w.location);
+        const label = test && w.engine ? `${name} (${engineName(w.engine)})` : name;
         return (
-          <button key={w.location} type="button" className="launch-try-item" aria-label={`Use ${name}, ${w.location}`} onClick={() => onPick(w.location)}>
-            <PipelineMark engine={w.engine} name={w.name} size={18} />
+          <button key={w.location} type="button" className="launch-try-item" aria-label={`Use ${label}, ${w.location}`} onClick={() => onPick(w.location)}>
+            <PipelineMark engine={w.engine} name={test ? null : w.name} size={18} />
             <span className="launch-try-name">{name}</span>
             <span className="launch-try-where">{w.location}</span>
           </button>
         );
       })}
+      {synthetic && <p className="launch-try-what">Test pipelines are synthetic pipelines shipped with Spectio for trying it.</p>}
     </div>
   );
 }

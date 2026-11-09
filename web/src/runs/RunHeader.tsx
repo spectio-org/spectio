@@ -2,6 +2,7 @@ import { Button } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode, Ref } from "react";
 import type { Process, RunDetail, ServerVersion, Stage } from "../api";
+import { runEnvName, summary as envSummary } from "../environments/fields";
 import { ICONS } from "../icons";
 import { LiveStatus } from "../live";
 import { toYaml } from "../launch/schemaFields";
@@ -78,6 +79,32 @@ function engineSettings(run: RunDetail): [string, ReactNode][] {
   return said.length ? [["Engine settings", <span className="sp-lines">{said.map((t) => <span key={t}>{t}</span>)}</span>]] : [];
 }
 
+/** The run's environment, from its own snapshot (ui-spec §4.8.1, Run detail): no row for a run
+ * started from a terminal, and the Executor row reads the same snapshot, never `GET /version`. */
+function environmentFacts(run: RunDetail, server: ServerVersion | null): [string, ReactNode][] {
+  const env = run.environment;
+  const word = !env || env.state === "not_recorded" ? "not recorded" : env.state === "not_readable" ? "cannot be read" : null;
+  if (!env || word) return [...(env ? [["Environment", word] as [string, ReactNode]] : []), ["Executor", word]];
+  const profile = run.workflow.engine === "snakemake" && env.executor === "slurm" ? run.profiles[0] : undefined;
+  const sub = profile
+    ? `resources and partition from the profile ${profile} (this environment's are not passed)`
+    : envSummary({ executor: env.executor ?? "slurm", slurm: env.slurm, local: env.local }, run.head?.node ?? server?.node ?? "the server", server?.executor ?? "slurm");
+  const executor = executorLabel(env.executor ?? "");
+  const value = (
+    <span className="sp-lines">
+      <span>
+        {runEnvName(env)}
+        <span className="sp-chip sp-env-badge">
+          <span className="sp-sr"> · </span>
+          {executor}
+        </span>
+      </span>
+      <span className="sp-muted">{sub}</span>
+    </span>
+  );
+  return [["Environment", value], ["Executor", executor]];
+}
+
 function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
   const w = run.workflow;
   const ended = isTerminal(run.state);
@@ -113,7 +140,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
       </span>,
     ],
     ["Run directory", <span className="sp-mono">{runDirectory(run, server) ?? "—"}</span>],
-    ["Executor", server ? executorLabel(server.executor) : "—"],
+    ...environmentFacts(run, server),
     ...engineSettings(run),
     ["Failure", run.state === "failed" ? failureText(run) : "—"],
   ];

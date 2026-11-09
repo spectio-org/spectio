@@ -2,6 +2,7 @@ import { Button, Drawer, Modal } from "@mantine/core";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { ApiError, type RunDetail, type ServerVersion, resumeRun } from "../api";
+import { runEnvName } from "../environments/fields";
 import { ICONS, Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { engineName, isTerminal, runWord, words } from "./stateWord";
@@ -49,6 +50,18 @@ export function refusedWords(reason: string, run: RunDetail, server: ServerVersi
   }
 }
 
+/** Where the resume runs, from the run's snapshot (ui-spec §4.8.1 Resume, api §5.4); a run with
+ * no snapshot (started from a terminal) says nothing. */
+function whereWords(run: RunDetail, server: ServerVersion | null): string | null {
+  const env = run.environment;
+  if (!env || env.state === "not_readable") return null;
+  if (env.state === "not_recorded") return `This run has no recorded environment: it resumes on the server's default (${server?.executor ?? "slurm"}).`;
+  if (env.executor === "local" && server?.executor === "slurm" && !env.local?.cpus && !env.local?.mem_mib) {
+    return "It runs with the login node's limits (2 CPUs, 8 GiB).";
+  }
+  return `Runs on ${runEnvName(env)} as before.`;
+}
+
 /** The dialog's text: where the new run starts and what the engine reuses. The launch directory
  * is named only for a run that is not itself a resume: a resume runs in its first run's. */
 function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
@@ -56,6 +69,7 @@ function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) 
   const { units } = words(run.workflow.engine);
   const where = server && !run.parent_run_id ? `${server.runs_root}/${run.id}/launch` : null;
   const head = run.head;
+  const runsOn = whereWords(run, server);
   return (
     <>
       <p>
@@ -64,6 +78,7 @@ function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) 
         run stays {runWord(run.state)}.
       </p>
       {where && <code className="sp-resume-path">{where}</code>}
+      {runsOn && <p>{runsOn}</p>}
       {head && !head.alive && (
         <p className="sp-note">The head of this run has ended on {head.node} (checked): Spectio unlocks the directory first.</p>
       )}
@@ -77,8 +92,11 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
   const [asking, setAsking] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<ReactNode>(null);
-  const { allowed, reason } = run.actions.resume;
-  const why = allowed ? null : (refusedWords(reason ?? "", run, server) ?? "Resume is not possible now.");
+  const unreadable = run.environment?.state === "not_readable";
+  const allowed = run.actions.resume.allowed && !unreadable;
+  const why = unreadable
+    ? "Its recorded environment cannot be read."
+    : allowed ? null : (refusedWords(run.actions.resume.reason ?? "", run, server) ?? "Resume is not possible now.");
 
   const close = () => {
     setAsking(false);

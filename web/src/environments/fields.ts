@@ -112,8 +112,8 @@ export function fromItem(item: EnvironmentItem): Draft {
 const memWords = (n: number) => (n % 1024 === 0 ? `${n / 1024} GiB` : `${n} MiB`);
 const timeWords = (t: number) => [t >= 60 ? `${Math.floor(t / 60)} h` : "", t % 60 ? `${t % 60} min` : ""].filter(Boolean).join(" ");
 
-/** The card's summary line, in words; an unset value is left out. */
-export function summary(item: EnvironmentItem, node: string, serverExecutor: string): string {
+/** The card's summary line, in words; an unset value is left out. Also a run's snapshot's. */
+export function summary(item: Pick<EnvironmentItem, "executor" | "slurm" | "local">, node: string, serverExecutor: string): string {
   if (item.executor === "slurm") {
     const s = item.slurm;
     const parts = [
@@ -130,3 +130,7 @@ export function summary(item: EnvironmentItem, node: string, serverExecutor: str
 }
 
 export const label = (item: EnvironmentItem) => item.label ?? item.name;
+
+/** A run's environment as its facts name it: the name, or a built-in's label (LiteStatesRun). */
+export const runEnvName = (env: { name: string | null; label: string | null }) =>
+  (env.name === "local" || env.name === "slurm" ? env.label : null) ?? env.name ?? "";
