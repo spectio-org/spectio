@@ -1974,3 +1974,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - (c) in FU-P3-93: make the identity stronger, with `st_size` and `st_mtime_ns` added to it, or one descriptor held open for the whole response (a descriptor per streaming response in the file pool, which has a limit **[to be validated]**).
 - **Recommendation:** (a) for 0.0.1, because the spec is built and tested; (b) is cheap and is the first to take into FU-P3-93; (c) with `st_size` and `st_mtime_ns` only if Thomas wants a stricter abort, since a descriptor per response costs pool slots. **Assumed:** (a).
 - **Why a question:** the choice is between a preview check that stays a short, header-only rule and one that models each decoder's rules for a size the header does not give.
+
+### #130 · Assumed: the file preview as built, open caps and phone gaps (FU-P3-85c)
+
+- **Covers:** step P3-fu85c (`autopilot/P3-fu85c`); the open findings of its [review record](code/P3-fu85c.md#findings); [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview), note of 2026-11-09.
+- **Context:** the preview is built and approved after four rounds. What stays open is minor: the 2 MiB cap on formatted JSON is checked after `JSON.stringify` (1 MiB of JSON, 63 levels deep, becomes about 68 million characters in 285 ms on the reviewers' host, so a phone tab can stall); search matches have no cap; the phone breadcrumb is not shortened; Reload does not read an image again; the `h1` takes no focus after a refusal; Firefox and WebKit were not run for the SVG check, which [api §5.3](../specs/api-and-data-model.md#53-run-files-explorer-and-preview) asks for.
+- **Options:**
+  - (a) ship 0.0.1 as built and take every item in FU-P3-94 after it;
+  - (b) take the JSON cap and the search-match cap into FU-P3-94 before 0.0.1, since they are the only items that spend CPU or memory on a hostile file, and leave the rest for later;
+  - (c) also add Firefox and WebKit to the preview spec in CI before 0.0.1.
+- **Recommendation:** (b). The two caps are cheap (estimate the formatted size before building it, or lower the input size for the formatter; stop the search at a fixed number of matches) and the DOM and CPU budget is a stated rule of §4.4.1. (c) when the CI minutes allow, since the SVG check is the one that needs a real browser engine. **Assumed:** (b), by the standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30); until FU-P3-94 is built the preview stays as built.
+- **Why a question:** the choice is between releasing a preview that can stall a tab on a hostile 1 MiB results file and holding 0.0.1 for a cap.
