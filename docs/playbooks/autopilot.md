@@ -301,3 +301,14 @@ Thomas, in the session of 2026-11-08: "Je veux des screenshots des amélioration
 2. **What.** A screen change: the real UI, rendered with `tools/media/shots.py` or Playwright from the built wheel, desktop and, when the change touches it, phone. A CLI, test or CI change: a terminal capture of the real command output (the `RESULT` lines, the test summary). Before and after when there is a before.
 3. **Where.** Scratchpad PNGs are enough for the session. Shots that a Progress page or guide keeps go through `docs/assets/media.yaml` in the batch docs (§11), as before.
 4. **Hygiene.** Demo data only: no real hostnames, users, tokens or paths (documentation-system rules for media).
+
+## 13. A shorter build cycle (Thomas, 2026-11-09)
+
+Thomas, 2026-11-09: "Réduis encore le cycle développement niveau ci et testing, bcp trop long". Measured on FU-P3-86a: CI takes about 4.5 minutes; the agent loop (build, two reviews, two fix rounds, re-reviews, docs) took about 75 minutes. The loop is what is cut. It changes §11 for P3 tasks.
+
+1. **Tests by scope.** The worker runs the tests of the files it touched and the test files the task names, then ruff and mypy on the touched packages. The full suite runs in CI only. Reviewers run only the step's test files.
+2. **Coupled tasks build together.** Tasks of one plan that touch the same module and are reviewed against the same spec section run as one `p3-task` (example: FU-P3-86b, -86c and -86d), so they pay one review loop.
+3. **Re-review only what was raised.** After a fix round, only the reviewer that raised a blocker or major re-reviews, and only on the fix diff.
+4. **Docs per task without an agent.** The orchestrator writes the task's review record, Progress lines and PR body from the reviewers' reports; `doc-writer` runs once per batch.
+5. **Target (Thomas, 2026-11-09, later the same day):** "je veux du 10 15 min si possible et 30min grand max" for one task, from start to merge. So a task is sized to fit: one module and at most about 300 changed lines; a larger plan item is split before it starts. One review pass per task: `code-reviewer`, plus `security-reviewer` in parallel only on sensitive paths. One fix round, checked by the tests and by the reviewer that raised the item only when it was a blocker. A task over 30 minutes is stopped at its next step and split.
+6. **CI.** A path filter that skips the engine and e2e jobs on docs-only PRs would cut CI further. It changes `.github/workflows/`, so it is prepared as its own PR and waits for Thomas.
