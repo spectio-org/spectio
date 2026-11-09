@@ -5,7 +5,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { app, fetched, run, serve, stubStream, viewport } from "../testing";
-import { recentPipelines } from "./TryPipelines";
+import { isSynthetic, recentPipelines } from "./TryPipelines";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -117,4 +117,11 @@ test("on the phone, the test pipelines are native buttons too", async () => {
   app("/launch");
   const group = await screen.findByRole("group", { name: "Try a test pipeline" });
   expect((await within(group).findByRole("button", { name: "Use a, /p/a" })).tagName).toBe("BUTTON");
+});
+
+test("CR-P3FU109-05: a synthetic pipeline's location matches with or without a trailing slash", () => {
+  const w = (location: string) => ({ ...run().workflow, name: null, location });
+  expect(isSynthetic(w("/opt/spectio/tests/pipelines/synthetic/snakemake/"))).toBe(true);
+  expect(isSynthetic(w("/opt/spectio/tests/pipelines/synthetic/snakemake"))).toBe(true);
+  expect(isSynthetic(w("/opt/spectio/tests/pipelines/synthetic/snakemake-x"))).toBe(false);
 });

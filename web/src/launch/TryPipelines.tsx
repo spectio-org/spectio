@@ -12,7 +12,7 @@ const DOCS = "https://spectio.pages.dev/specs/dev-environment-and-testing/#101-s
 /** The synthetic pipelines of dev-env §10.1 (tests/pipelines/synthetic/<engine>): the Nextflow one
  * by its manifest name, the Snakemake one, which has none, by its directory. */
 export const isSynthetic = (w: Run["workflow"]) =>
-  (w.name ?? "").startsWith("spectio/synthetic") || /\/pipelines\/synthetic\/(nextflow|snakemake)$/.test(w.location);
+  (w.name ?? "").startsWith("spectio/synthetic") || /\/pipelines\/synthetic\/(nextflow|snakemake)\/?$/.test(w.location);
 const ENGINE: Record<string, string> = { nextflow: "Nextflow", snakemake: "Snakemake" };
 
 /** The distinct pipeline locations of `runs` (newest first, as GET /runs sorts them), at most five. */

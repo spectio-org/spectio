@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -677,23 +678,73 @@ def test_inspect_symlinked_profile_not_listed(authed_client: TestClient, tmp_pat
     assert response.json()["profiles"] == ["local"]
 
 
+def _fake_checks(monkeypatch: pytest.MonkeyPatch, found: dict[str, str | None]) -> list[str]:
+    checks: list[str] = []
+
+    def check(engine: str, cmd: str | None = None) -> EngineInfo:
+        checks.append(engine)
+        version = found[engine]
+        if version is None:
+            raise OSError("not on PATH")
+        return EngineInfo(f"/bin/{engine}", version)
+
+    monkeypatch.setattr(wf, "check_engine", check)
+    return checks
+
+
 def test_engine_versions_are_checked_once_per_ttl_not_on_every_inspect(
     settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """FU-P3-109: each check is a login shell (and a JVM for Nextflow), about a second or more
     per inspect; the versions are kept for `ttl_s`, then checked again (an engine upgrade shows)."""
-    checks: list[str] = []
-
-    def check(engine: str, cmd: str | None = None) -> EngineInfo:
-        checks.append(engine)
-        return EngineInfo(f"/bin/{engine}", "26.10.4" if engine == "nextflow" else "9.1.0")
-
-    monkeypatch.setattr(wf, "check_engine", check)
+    checks = _fake_checks(monkeypatch, {"nextflow": "26.10.4", "snakemake": "9.1.0"})
     now = [100.0]
-    versions = wf.engine_versions(settings, ttl_s=60, clock=lambda: now[0])
+    versions = wf.EngineVersions(settings, ttl_s=60, clock=lambda: now[0], spawn=lambda f: f())
     first = versions()
     assert versions() == first == {"nextflow": "26.10.4", "snakemake": "9.1.0"}
-    assert checks == ["nextflow", "snakemake"]
+    assert sorted(checks) == ["nextflow", "snakemake"]
     now[0] += 61
     versions()
-    assert checks == ["nextflow", "snakemake", "nextflow", "snakemake"]
+    assert sorted(checks) == ["nextflow", "nextflow", "snakemake", "snakemake"]
+
+
+def test_stale_engine_versions_return_at_once_and_refresh_in_the_background(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3FU109-01: a stale answer is returned as is; the check runs off the request thread,
+    one refresh at a time. `warm` fills the answer at server start."""
+    checks = _fake_checks(monkeypatch, {"nextflow": "26.10.4", "snakemake": "9.1.0"})
+    now = [100.0]
+    spawned: list[Callable[[], None]] = []
+    versions = wf.EngineVersions(settings, ttl_s=60, clock=lambda: now[0], spawn=spawned.append)
+    versions.warm()
+    assert len(spawned) == 1 and checks == []
+    spawned.pop()()  # the warm-up thread
+    assert sorted(checks) == ["nextflow", "snakemake"]
+    now[0] += 61
+    checks.clear()
+    assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"}  # the old answer
+    assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"}
+    assert checks == [] and len(spawned) == 1  # no check on this thread, one refresh only
+    spawned.pop()()
+    assert sorted(checks) == ["nextflow", "snakemake"]
+    assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"} and spawned == []
+
+
+def test_a_failed_engine_check_is_kept_only_briefly(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3FU109-03: an engine not found (a timeout, a module not loaded yet) is checked again
+    after `failed_ttl_s`, not after the full `ttl_s`."""
+    found: dict[str, str | None] = {"nextflow": None, "snakemake": "9.1.0"}
+    checks = _fake_checks(monkeypatch, found)
+    now = [100.0]
+    versions = wf.EngineVersions(
+        settings, ttl_s=300, failed_ttl_s=10, clock=lambda: now[0], spawn=lambda f: f()
+    )
+    assert versions() == {"nextflow": None, "snakemake": "9.1.0"}
+    found["nextflow"] = "26.10.4"
+    now[0] += 11
+    versions()  # stale: the refresh runs (inline here)
+    assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"}
+    assert len(checks) == 4
