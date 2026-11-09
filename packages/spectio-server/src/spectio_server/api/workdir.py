@@ -23,6 +23,7 @@ from spectio_server.api.results import (
     RangeHeader,
     entry_dicts,
     raw_response,
+    refuse_script,
     stat_response,
 )
 from spectio_server.api.taskfiles import (
@@ -111,5 +112,6 @@ def workdir_raw(
     as_: AsQuery = None,
     range_: RangeHeader = None,
 ) -> Response:
+    refuse_script(request)
     tree, _ = _tree(request, task_id, n)
     return raw_response(request, tree, _rel(path), download, as_, range_, reports=False)

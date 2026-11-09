@@ -24,17 +24,23 @@ results directory: unknown, or a run started from a terminal (`cli-observed`), w
 order of api §5.3.1's table (`_imaging`): a TIFF by one closed `Range`, past the 1 GiB cap; a
 Zarr key below a `.ome.zarr` folder, whole or by one `Range`, at most 16 MiB. A range is read
 from its own first byte (the TIFF's 4-byte header aside), each chunk with the identity check.
+Each imaging read holds one of the server's `IMAGING_SLOTS` until its body ends or aborts and
+its last pool job has returned, so reads stuck on a stalled mount never take every file reader
+(SEC-P3FU102B-01); with none free it is `503` at once (step 9). No raw file is served to a
+script or a worker (step 0).
 """
 
 import logging
 import re
-from collections.abc import Iterable, Iterator
+import threading
+from collections.abc import Callable, Iterable, Iterator
 from pathlib import PurePosixPath
 from typing import Annotated, Any
 from urllib.parse import quote
 
 from fastapi import APIRouter, Header, Query, Request
 from fastapi.responses import Response, StreamingResponse
+from starlette.types import Receive, Scope, Send
 
 from spectio_server.api.models import Results, ResultStat
 from spectio_server.api.problems import Invalid, Problem, not_found
@@ -63,6 +69,8 @@ MAX_SVG = 5 << 20  # the largest SVG served as an image
 MAX_KEY = 16 << 20  # the largest Zarr key (api §5.3.1, step 7)
 MAX_RANGE = (8 << 20) + 1  # the most bytes of one imaging range (step 8)
 AS = ("image", "tiff", "zarr")
+IMAGING_SLOTS = 3  # imaging reads at once, per server (step 9)
+SCRIPT_DESTS = frozenset({"script", "worker", "sharedworker", "serviceworker"})  # step 0
 TIFF_HEADS = (b"II*\x00", b"MM\x00*", b"II+\x00", b"MM\x00+")  # TIFF 6.0 and BigTIFF (step 10)
 _CLOSED = re.compile(r"bytes=([0-9]{1,19})-([0-9]{1,19})")
 _KEY_PART = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,254}")  # a middle part of a Zarr key
@@ -220,8 +228,18 @@ def result_file(
     as_: AsQuery = None,
     range_: RangeHeader = None,
 ) -> Response:
+    refuse_script(request)
     where, _ = _where(request, run_id)
     return raw_response(request, where, _file_rel(path), download, as_, range_, reports=True)
+
+
+def refuse_script(request: Request) -> None:
+    """Step 0 of api §5.3.1, first on every raw route: no run file becomes a script or a worker
+    (dev-env §15.3 req. 19, SEC-PRE-FU102-R1-07)."""
+    if request.headers.get("sec-fetch-dest") in SCRIPT_DESTS:
+        raise Problem(
+            422, "file-not-allowed", "File not allowed", "not served to a script or a worker"
+        )
 
 
 def raw_response(
@@ -237,17 +255,19 @@ def raw_response(
     """The raw route's answer for the file `rel` below `where` (results, or a work directory,
     FU-P3-85e): the image of api §5.3's table, an imaging read of §5.3.1's, a report with the
     sandbox CSP when `reports`, else an attachment."""
-    fetched = request.headers.get("sec-fetch-dest") == "empty" and not download
-    cap = None if as_ == "tiff" and fetched and range_ is not None else MAX_RAW  # step 1
-    head = 4 if as_ == "tiff" else 0 if as_ == "zarr" and range_ is not None else files.CHUNK
-    raw = in_pool(request, lambda: files.open_raw(where, rel, cap, head), missing="not-found")
-    if cap is not None and raw.size > cap:
-        raise Problem(413, "file-too-large", "File too large", f"more than {cap} bytes")
+    fetched = request.headers.get("sec-fetch-dest") == "empty"
+    # One decision lifts the cap and dispatches: an uncapped read is never an attachment
+    # (SEC-P3FU102A-01).
+    if as_ in ("tiff", "zarr") and not download and fetched:
+        return _imaging(request, where, rel, as_, range_)
+    raw = in_pool(
+        request, lambda: files.open_raw(where, rel, MAX_RAW, files.CHUNK), missing="not-found"
+    )
+    if raw.size > MAX_RAW:
+        raise Problem(413, "file-too-large", "File too large", f"more than {MAX_RAW} bytes")
     media = _image_type(request, rel, download, as_)
     if as_ in ("tiff", "zarr") and not download:
-        _imaging_name(rel, as_)
-        if fetched:
-            return _imaging(request, where, rel, raw, as_, range_)
+        _imaging_name(rel, as_)  # steps 4 and 5, before step 6's attachment (CR-P3FU102A-01)
     headers = {**HEADERS, "Vary": "Sec-Fetch-Dest", "Content-Length": str(raw.size)}
     if media is not None:
         cap = MAX_SVG if media == images.SVG else MAX_IMAGE
@@ -302,32 +322,129 @@ def _closed_range(value: str | None, size: int) -> tuple[int, int]:
 
 
 def _imaging(
+    request: Request, where: files.Tree, rel: PurePosixPath, as_: str, range_: str | None
+) -> StreamingResponse:
+    """An imaging read, holding a read slot (step 9, taken before the pool) until its response
+    ends, aborts or loses its client and its last pool job has returned: the TIFF range or the
+    Zarr key, never an attachment."""
+    slots: ImagingSlots = request.app.state.imaging_slots
+    if not slots.take():
+        raise Problem(503, "runner-offline", "Busy reading images", "busy reading images")
+    slot = _Slot(slots)
+    try:
+        body, status, headers = _imaging_body(request, where, rel, as_, range_, slot)
+    except BaseException:
+        slot.drop()
+        raise
+    return _Held(slot, body, status_code=status, headers=headers)
+
+
+class ImagingSlots:
+    """The server's imaging read slots (step 9). Its lock is reentrant because `_Held.__del__`
+    can give a slot back from a finalizer on a thread already inside `take` or `give`, which a
+    `BoundedSemaphore` (a plain `Lock` inside) would deadlock on (SEC-P3FU102B-01)."""
+
+    def __init__(self, n: int) -> None:
+        self._free, self._lock = n, threading.RLock()
+
+    def take(self) -> bool:
+        with self._lock:
+            if self._free == 0:
+                return False
+            self._free -= 1
+            return True
+
+    def give(self) -> None:
+        with self._lock:
+            self._free += 1
+
+
+class _Slot:
+    """One imaging read slot, given back when its last holder lets go: the response, and each
+    pool job it started, which may outlive the request on a stalled mount (SEC-P3FU102B-01).
+    Reentrant for the same finalizer reason as `ImagingSlots`."""
+
+    def __init__(self, slots: ImagingSlots) -> None:
+        self._slots, self._refs, self._lock = slots, 1, threading.RLock()
+
+    def take(self) -> Callable[[], None]:
+        """One more holder; the callback it returns lets go, once."""
+        with self._lock:
+            self._refs += 1
+        return self.drop
+
+    def drop(self) -> None:
+        with self._lock:
+            self._refs -= 1
+            if self._refs == 0:
+                self._slots.give()
+
+
+def _imaging_body(
     request: Request,
     where: files.Tree,
     rel: PurePosixPath,
-    raw: files.Raw,
     as_: str,
     range_: str | None,
-) -> StreamingResponse:
-    """Steps 7, 8, 10 and 11 of api §5.3.1: the TIFF range or the Zarr key, never an
-    attachment."""
+    slot: _Slot,
+) -> tuple[Iterator[bytes], int, dict[str, str]]:
+    """Steps 1, 4, 5, 7, 8, 10 and 11 of api §5.3.1: the body, status and headers. The 1 GiB
+    cap is lifted only for a TIFF range, whose read step 8 caps."""
+    cap = None if as_ == "tiff" and range_ is not None else MAX_RAW
+    head = 4 if as_ == "tiff" else 0 if range_ is not None else files.CHUNK
+    raw = in_pool(
+        request,
+        lambda: files.open_raw(where, rel, cap, head),
+        missing="not-found",
+        on_done=slot.take(),
+    )
+    if cap is not None and raw.size > cap:
+        raise Problem(413, "file-too-large", "File too large", f"more than {cap} bytes")
+    _imaging_name(rel, as_)
     if as_ == "zarr" and raw.size > MAX_KEY:
         raise Problem(413, "file-too-large", "File too large", f"a Zarr key over {MAX_KEY} bytes")
     headers = {**HEADERS, "Vary": "Sec-Fetch-Dest", "Accept-Ranges": "bytes"}
     headers["Content-Security-Policy"] = TEXT_CSP
     if as_ == "zarr" and range_ is None:
         headers["Content-Length"] = str(raw.size)
-        body = _chunks(request, where, rel, raw, raw.first, len(raw.first), raw.size)
-        return StreamingResponse(body, media_type="application/octet-stream", headers=headers)
+        body = _chunks(request, where, rel, raw, raw.first, len(raw.first), raw.size, slot)
+        return body, 200, headers
+    if len(request.headers.getlist("range")) > 1:  # two fields are two ranges (SEC-P3FU102A-02)
+        raise Invalid("Range", "one closed range, bytes=<first>-<last>")
     first, last = _closed_range(range_, raw.size)
     if as_ == "tiff" and raw.first not in TIFF_HEADS:
         raise Problem(422, "file-not-allowed", "File not allowed", "not the TIFF its name says")
     headers["Content-Length"] = str(last + 1 - first)
     headers["Content-Range"] = f"bytes {first}-{last}/{raw.size}"
-    body = _chunks(request, where, rel, raw, b"", first, last + 1)
-    return StreamingResponse(
-        body, status_code=206, media_type="application/octet-stream", headers=headers
-    )
+    return _chunks(request, where, rel, raw, b"", first, last + 1, slot), 206, headers
+
+
+class _Held(StreamingResponse):
+    """An imaging answer: it lets go of its read slot once, when the response ends, fails or
+    its client goes away (CR-P3FU102B-01), or when a response never sent is dropped."""
+
+    def __init__(
+        self,
+        slot: _Slot,
+        body: Iterator[bytes],
+        status_code: int,
+        headers: dict[str, str],
+    ) -> None:
+        self._slot: _Slot | None = slot
+        super().__init__(body, status_code, headers, "application/octet-stream")
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            self._release()
+
+    def _release(self) -> None:
+        slot, self._slot = self._slot, None
+        if slot is not None:
+            slot.drop()
+
+    __del__ = _release
 
 
 def _chunks(
@@ -338,9 +455,11 @@ def _chunks(
     prefix: bytes,
     start: int,
     end: int,
+    slot: _Slot | None = None,
 ) -> Iterator[bytes]:
     """`prefix`, then bytes `start` to `end` of the file first opened as `raw`, chunk by chunk;
-    a chunk that fails, comes back empty or opens another file aborts the response."""
+    a chunk that fails, comes back empty or opens another file aborts the response. Each
+    chunk's pool job holds `slot`, when given, until it returns."""
     if prefix:
         yield prefix  # the bytes checked are the bytes sent: no second open
     while start < end:
@@ -348,6 +467,7 @@ def _chunks(
             data = in_pool(
                 request,
                 lambda at=start: files.read_chunk(where, rel, at, end - at, raw.ident),
+                on_done=None if slot is None else slot.take(),
             )
         except Problem as exc:
             log.warning("%s cut at %d: %s", request.url.path, start, exc)
