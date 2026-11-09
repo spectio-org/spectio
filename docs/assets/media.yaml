@@ -558,6 +558,14 @@ media:
       - docs/assets/diagrams/p3-b08-login1-followups_dark.svg
       - docs/assets/diagrams/p3-b08-login1-followups_light.png
       - docs/assets/diagrams/p3-b08-login1-followups_dark.png
+  - id: p3-b09-file-explorer
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b09_file_explorer.py
+    outputs:
+      - docs/assets/diagrams/p3-b09-file-explorer_light.svg
+      - docs/assets/diagrams/p3-b09-file-explorer_dark.svg
+      - docs/assets/diagrams/p3-b09-file-explorer_light.png
+      - docs/assets/diagrams/p3-b09-file-explorer_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
