@@ -13,7 +13,7 @@ Outside `docs/`: 24 files, +1,181 −94 over the base (`git diff --shortstat 0ad
 
 ## Review rounds
 
-Finding IDs restart in each round, so a bare `CR-P3FU86A-04` is ambiguous: the table below says the round. The reports were relayed in summary, so the text of a finding is as relayed; where a finding's text was not relayed, it says so.
+Finding IDs restart in each round, so a bare `CR-P3FU86A-04` is ambiguous: the table below says the round.
 
 | Round | Head | code-reviewer | security-reviewer | Fix |
 |---|---|---|---|---|
@@ -48,11 +48,12 @@ uv run --locked pytest packages/spectio-server/tests/api/test_environment_snapsh
 
 | Id | Round | Severity | Finding | Status |
 |---|---|---|---|---|
-| CR-P3FU86A-01 | 1 | not relayed | Migration `0011` wrote `executor` from the `environments` row, while a rebuild from the manifest writes it null, so an old SLURM run changed reading after an index rebuild. | fixed in `ad5e2719`: the backfill writes exactly `run_column(None)` |
-| CR-P3FU86A-02, -03 | 1 | not relayed | The round 1 summary named these two IDs and the counts (1 major, 4 minors) but not their text or severity. | see the round 2 findings, which reuse the numbers |
+| CR-P3FU86A-01 | 1 | major | Migration `0011` wrote `executor` from the `environments` row, while a rebuild from the manifest writes it null, so an old SLURM run changed reading after an index rebuild. | fixed in `ad5e2719`: the backfill writes exactly `run_column(None)` |
+| CR-P3FU86A-02 | 1 | minor | In `web/src/api.ts` the `RunEnvironment` block sat between the `Run` doc comment and `interface Run`. | fixed in round 2 (807ef5b1) |
+| CR-P3FU86A-03 | 1 | minor | `RunManifest.environment` typed as an object, so a manifest with a non-object `environment` failed the whole manifest instead of reading `not_readable`. | fixed in `ad5e2719` (`JsonValue`, rebuild test with `[1]`) |
 | CR-P3FU86A-04 | 1 | minor | `nextflow_config` passed partition and account to `_groovy` without the `slurm_name` check the Snakemake path applies. | fixed in `807ef5b1`: `slurm_name(...)` first; `test_nextflow_config_on_slurm` |
 | CR-P3FU86A-05 | 1 | minor | A 0.0.1 database re-initialised from local to SLURM holds one `environments` row per built-in kind; runs keep referencing the oldest. | recorded in [inbox #133](../inbox.md#133-assumed-environments-local-slurm-define-a-new-one-fu-p3-86), no code change: no decision reads that row |
-| CR-P3FU86A-06 | 1 | simplify | A simplification of the step's own diff; its text was not relayed. | open: left to the batch `code-simplifier` |
+| CR-P3FU86A-06 | 1 | simplify | `ensure_tenancy` selects then updates `kind=kind`; one `update(...).where(name == kind)` with a `rowcount` check does the same. | open: left to the batch `code-simplifier` |
 | SEC-P3FU86A-01 | 1 | minor | The Nextflow re-check: partition and account must be checked again where the config file is built (the same point as CR-04). | fixed in `807ef5b1` (with CR-04 above) |
 | SEC-P3FU86A-02 | 1 | minor | `--local-cores 2` could be lifted by `extra_args`. | fixed in `807ef5b1`: last argument; `test_snakemake_slurm_local_cores_last` |
 | SEC-P3FU86A-03 | 1 | minor | The migration copied the `environments` row's `kind` into the snapshot unchecked (the `executor` of the backfilled runs). | closed by `ad5e2719`: the backfill no longer reads `kind` into the snapshot |
@@ -62,7 +63,7 @@ uv run --locked pytest packages/spectio-server/tests/api/test_environment_snapsh
 | CR-P3FU86A-04 | 2 | minor | The `Run` schema comment in `web/src/api.ts` had moved away from `export interface Run`. | fixed in `807ef5b1` |
 | SEC-P3FU86A-01 | 2 | minor | The copied command of a `not_recorded` run on a SLURM server was the local one. | fixed in `807ef5b1`, with CR-02 |
 | CR-P3FU86A-R3-01 | 3 | minor | The `not_readable` to `not_found` mapping of a run's resources was only in the inbox, not in [api §5.4](../../specs/api-and-data-model.md#54-environments-001) (the `efficiency` reasons, line 238 of the spec, list `not_found`). | closed in this task's docs: note "Built 2026-11-09, FU-P3-86a" in api §5.4 |
-| CR-P3FU86A-R3-02 | 3 | simplify | A test-readability simplification in the step's tests; its text was not relayed beyond that. | open: left to the batch `code-simplifier` |
+| CR-P3FU86A-R3-02 | 3 | simplify | `test_snakemake_slurm_local_cores_last` counts with `1 + (given[0] == "--local-cores")`; split into two cases with literal counts. | open: left to the batch `code-simplifier` |
 | SEC-P3FU86A-R3-01 | 3 | minor | A bare `--` in a Snakemake `extra_args` turns the trailing `--local-cores 2` into a target, so the cap is lost again. | open: FU-P3-86c ([inbox #133](../inbox.md#133-assumed-environments-local-slurm-define-a-new-one-fu-p3-86)) |
 | SEC-P3FU86A-R3-02 | 3 | minor | `runner/loop.py:284` (Resume) still builds the SLURM values from `settings` (`slurm=self.settings.slurm if self.settings.executor == "slurm" else None`), not from the run's snapshot; and there is no `422` on `environment` for a `not_readable` parent. | open: FU-P3-86c (its Resume rules) |
 
