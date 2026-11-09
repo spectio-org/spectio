@@ -803,3 +803,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Follow-up: test_local_launcher.py::test_cancel_with_a_stale_ref_after_the_launch failed once on #210 (the `started` file exists after a cancel) and passed on its one re-run; not in the batch diff. Root-cause it (race between launch and cancel).
 - #211 (FU-P3-86g): e2e-local fails on phone, the Load button of Launch sits under the Pipeline input; fix in progress.
 - #211 merged (squash be551cfc) after the fix 401f1274: `.launch-grid` gets `minmax(0, 1fr)` below 1200 px so the long test-pipeline path no longer widens the card; full e2e locally 52 passed, 6 skipped. Next: FU-P3-86h (Launch aside, inbox #145) and FU-P3-102c2 (boards), at most 2 in flight.
+
+## 2026-11-09 — Thomas's UI feedback, 213 and 214 merged, batch P3-B11 started
+- Thomas's own try of the UI and the login1 retest c (main 9819372b) placed in inbox #146: FU-P3-109 (defects) built now; FU-P3-110 resources (spec first), 111 environments UX, 112 profile page, 113 notifications added to 0.0.1; run-detail items into FU-P3-88.
+- Merged #213 (FU-P3-86h, plus a run icon on both Launch buttons, inbox #146 item 2) and #214 (FU-P3-109). Costs: 86h ~366k, 109 ~392k.
+- Live screenshots of Launch taken from a local `spectio serve` on its Unix socket only (Playwright relays each request over the socket, Host header kept): no TCP port. Seen: Engine head reads "Not chosen yet" in Where it runs but "a process on vm" in the summary; minor for FU-P3-108.
+- Batch P3-B11 (86f, 86g, 86h, 109; d2147ede..b35198e2) started; FU-P3-102c2 boards in flight. After B11: promote, then ask login1 for retest d.
