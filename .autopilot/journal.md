@@ -776,3 +776,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T05:0xZ · Batch P3-B09 merged (#190, squash f0a070cb). Promotion to main opened.
 
 - 2026-11-09T05:1xZ · Promotion to main merged (#191, merge f31a3a6e): batch P3-B09. Next: FU-P3-86 environments, design step running (spec note, inbox item, R1 security and UX review before code).
+
+- 2026-11-09 · P3-fu86-spec merged (#192): design of FU-P3-86, environments in 0.0.1 (inbox #133, assumed). R1 independent: security changes 0/2/10, UX changes 0/7/16, all applied except UX-PRE-FU86-R1-21 (Later). Build plan FU-P3-86a..g; next FU-P3-86a (per-run environment snapshot).
