@@ -425,9 +425,11 @@ def get_run(request: Request, run_id: str) -> dict[str, Any]:
 
 @router.get("/runs/{run_id}/processes", response_model=models.ProcessList)
 def list_processes(request: Request, run_id: str) -> dict[str, Any]:
-    """One item per process or rule: those the projector recorded (`onProcessCreate`, the rule
-    files at the freeze, a first task), in that order, with the stage they froze with; then any
-    known from tasks only (a database from before P1 Task 27), in their first task's order.
+    """One item per process or rule in first-seen order (ui-spec §4.4): for Snakemake the rules
+    by their first job, then those the freeze recorded in the rule files' order (FU-P3-107);
+    for Nextflow those the projector recorded (`onProcessCreate`, a first task), in that order;
+    then any known from tasks only (a database from before P1 Task 27), in their first task's
+    order. Each keeps the stage it froze with.
     Each has its `status`, the `efficiency` of its jobs (P1 Task 34), and its `pipeline_order`
     (FU-P3-82)."""
     with read(request) as conn:
@@ -473,10 +475,14 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     for job in jobs.values():
         of_process.setdefault(job["process"], []).append(job)
     rows = {r.name: r for r in known}
-    order: dict[str, str | None] = {r.name: r.stage_id for r in known}
-    for process, stage_id in from_tasks:
-        order.setdefault(process, stage_id)
-    ranks = {name: n for n, name in enumerate(_pipeline_order(list(order), graphs))}
+    task_stage: dict[str, str | None] = dict(from_tasks)  # in first task's order
+    # Snakemake's rules recorded at the freeze are not seen yet: first-seen is the first job
+    seen = list(task_stage) if run.engine == "snakemake" else []
+    order: dict[str, str | None] = {}
+    for name in [*seen, *rows, *task_stage]:
+        order.setdefault(name, rows[name].stage_id if name in rows else task_stage[name])
+    pipeline = _pipeline_order(list(order), graphs, set(seen))
+    ranks = {name: n for n, name in enumerate(pipeline)}
     items = []
     for process, stage_id in order.items():
         r = rows.get(process)
@@ -501,15 +507,17 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     return {"items": items}
 
 
-def _pipeline_order(names: list[str], graphs: list[dict[str, Any]]) -> list[str]:
+def _pipeline_order(names: list[str], graphs: list[dict[str, Any]], seen: set[str]) -> list[str]:
     """`names` (in their recorded order) in topological order of the links of every rule graph
     of the run (`sourcerule` before `targetrule`; tests/fixtures/engine-events/
     snakemake-9.27.1_checkpoint_flaky_retry.spool.jsonl:4), ties broken by the recorded order.
     A rule in no graph's nodes (one that joined the DAG after a checkpoint, FU-P3-90) comes after
-    every graph rule, in the recorded order; with no graph (Nextflow, an older plugin), all do.
+    every graph rule, in the recorded order; with no graph (Nextflow, an older plugin), all do;
+    once `seen` (it has a job) it is a graph rule with no links, placed by its first job
+    (FU-P3-107).
     A cycle, which a rule graph should not have, leaves its rules after the others of the graph
     in the recorded order."""
-    in_graph: set[str] = set()
+    in_graph = set(seen)
     links: list[Any] = []
     for graph in graphs:
         nodes, found = graph.get("nodes"), graph.get("links")
