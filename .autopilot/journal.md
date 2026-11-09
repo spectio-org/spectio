@@ -768,3 +768,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T03:0xZ · FU-P3-85d merged (#188, squash 3b7b7093). e2e-local failed twice on the old results-browser test; the test follows the explorer now (two commits on the branch). Next: FU-P3-85e (work-directory routes and UI).
 
 - 2026-11-09T03:5xZ · P3-fu85e (FU-P3-85e) built: review approve 0/0/7, security approve 0/0/2, 2 rounds. PR #189 opened, subscribed. Inbox #132 assumed. FU-P3-98 opened. Safety check-ins for #164 and #111 stopped after 3 empty ones. Cost recorded: 16 USD.
+
+- 2026-11-09T04:0xZ · FU-P3-85e merged (#189, squash a89d6fde). FU-P3-85 complete (85a-e). Next: batch P3-B09 (FU-P3-90, 85 design, 85a-e), then promotion to main.
