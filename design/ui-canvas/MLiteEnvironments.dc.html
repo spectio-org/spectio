@@ -64,8 +64,7 @@ renderVals() {
     env({ name: 'local', label: 'Login node', badges: [B.local, B.built], summary: 'on login1 (the login node) · at most 2 CPUs and 8 GiB' }),
     env({ name: 'mylab-long', label: 'Long jobs, mylab', badges: [B.slurm, B.def], rail: '#0284C7',
       summary: 'partition long · SLURM account mylab · 48 h per job · 32 GiB per job', profiles: 'Profiles: Nextflow singularity · Snakemake slurm' }),
-    env({ name: 'gpu-test', label: 'gpu-test', badges: [B.slurm], bg: '#FFFDF8', rail: '#D18A12',
-      summary: 'partition gpu test · 16 GiB per job', unusable: 'partition in ~/.spectio/environments.toml is not a valid name ("gpu test"): edit it' })
+    env({ name: 'gpu-test', label: 'gpu-test', badges: [B.slurm], summary: 'partition gpu · 16 GiB per job' })
   ] };
 }
 }
