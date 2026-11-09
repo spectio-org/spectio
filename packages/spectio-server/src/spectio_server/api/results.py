@@ -24,10 +24,13 @@ results directory: unknown, or a run started from a terminal (`cli-observed`), w
 order of api §5.3.1's table (`_imaging`): a TIFF by one closed `Range`, past the 1 GiB cap; a
 Zarr key below a `.ome.zarr` folder, whole or by one `Range`, at most 16 MiB. A range is read
 from its own first byte (the TIFF's 4-byte header aside), each chunk with the identity check.
+Each imaging read holds one of the server's `IMAGING_SLOTS` until its body ends or aborts; with
+none free it is `503` at once (step 9). No raw file is served to a script or a worker (step 0).
 """
 
 import logging
 import re
+import threading
 from collections.abc import Iterable, Iterator
 from pathlib import PurePosixPath
 from typing import Annotated, Any
@@ -63,6 +66,8 @@ MAX_SVG = 5 << 20  # the largest SVG served as an image
 MAX_KEY = 16 << 20  # the largest Zarr key (api §5.3.1, step 7)
 MAX_RANGE = (8 << 20) + 1  # the most bytes of one imaging range (step 8)
 AS = ("image", "tiff", "zarr")
+IMAGING_SLOTS = 3  # imaging reads at once, per server (step 9)
+SCRIPT_DESTS = frozenset({"script", "worker", "sharedworker", "serviceworker"})  # step 0
 TIFF_HEADS = (b"II*\x00", b"MM\x00*", b"II+\x00", b"MM\x00+")  # TIFF 6.0 and BigTIFF (step 10)
 _CLOSED = re.compile(r"bytes=([0-9]{1,19})-([0-9]{1,19})")
 _KEY_PART = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,254}")  # a middle part of a Zarr key
@@ -220,8 +225,18 @@ def result_file(
     as_: AsQuery = None,
     range_: RangeHeader = None,
 ) -> Response:
+    refuse_script(request)
     where, _ = _where(request, run_id)
     return raw_response(request, where, _file_rel(path), download, as_, range_, reports=True)
+
+
+def refuse_script(request: Request) -> None:
+    """Step 0 of api §5.3.1, first on every raw route: no run file becomes a script or a worker
+    (dev-env §15.3 req. 19, SEC-PRE-FU102-R1-07)."""
+    if request.headers.get("sec-fetch-dest") in SCRIPT_DESTS:
+        raise Problem(
+            422, "file-not-allowed", "File not allowed", "not served to a script or a worker"
+        )
 
 
 def raw_response(
@@ -237,17 +252,19 @@ def raw_response(
     """The raw route's answer for the file `rel` below `where` (results, or a work directory,
     FU-P3-85e): the image of api §5.3's table, an imaging read of §5.3.1's, a report with the
     sandbox CSP when `reports`, else an attachment."""
-    fetched = request.headers.get("sec-fetch-dest") == "empty" and not download
-    cap = None if as_ == "tiff" and fetched and range_ is not None else MAX_RAW  # step 1
-    head = 4 if as_ == "tiff" else 0 if as_ == "zarr" and range_ is not None else files.CHUNK
-    raw = in_pool(request, lambda: files.open_raw(where, rel, cap, head), missing="not-found")
-    if cap is not None and raw.size > cap:
-        raise Problem(413, "file-too-large", "File too large", f"more than {cap} bytes")
+    fetched = request.headers.get("sec-fetch-dest") == "empty"
+    # One decision lifts the cap and dispatches: an uncapped read is never an attachment
+    # (SEC-P3FU102A-01).
+    if as_ in ("tiff", "zarr") and not download and fetched:
+        return _imaging(request, where, rel, as_, range_)
+    raw = in_pool(
+        request, lambda: files.open_raw(where, rel, MAX_RAW, files.CHUNK), missing="not-found"
+    )
+    if raw.size > MAX_RAW:
+        raise Problem(413, "file-too-large", "File too large", f"more than {MAX_RAW} bytes")
     media = _image_type(request, rel, download, as_)
     if as_ in ("tiff", "zarr") and not download:
-        _imaging_name(rel, as_)
-        if fetched:
-            return _imaging(request, where, rel, raw, as_, range_)
+        _imaging_name(rel, as_)  # steps 4 and 5, before step 6's attachment (CR-P3FU102A-01)
     headers = {**HEADERS, "Vary": "Sec-Fetch-Dest", "Content-Length": str(raw.size)}
     if media is not None:
         cap = MAX_SVG if media == images.SVG else MAX_IMAGE
@@ -302,32 +319,78 @@ def _closed_range(value: str | None, size: int) -> tuple[int, int]:
 
 
 def _imaging(
-    request: Request,
-    where: files.Tree,
-    rel: PurePosixPath,
-    raw: files.Raw,
-    as_: str,
-    range_: str | None,
+    request: Request, where: files.Tree, rel: PurePosixPath, as_: str, range_: str | None
 ) -> StreamingResponse:
-    """Steps 7, 8, 10 and 11 of api §5.3.1: the TIFF range or the Zarr key, never an
-    attachment."""
+    """An imaging read, holding a read slot (step 9, taken before the pool) until its body ends,
+    aborts or is dropped: the TIFF range or the Zarr key, never an attachment."""
+    slot: threading.BoundedSemaphore = request.app.state.imaging_slots
+    if not slot.acquire(blocking=False):
+        raise Problem(503, "runner-offline", "Busy reading images", "busy reading images")
+    try:
+        body, status, headers = _imaging_body(request, where, rel, as_, range_)
+    except BaseException:
+        slot.release()
+        raise
+    return StreamingResponse(
+        _Held(slot, body),
+        status_code=status,
+        media_type="application/octet-stream",
+        headers=headers,
+    )
+
+
+def _imaging_body(
+    request: Request, where: files.Tree, rel: PurePosixPath, as_: str, range_: str | None
+) -> tuple[Iterator[bytes], int, dict[str, str]]:
+    """Steps 1, 4, 5, 7, 8, 10 and 11 of api §5.3.1: the body, status and headers. The 1 GiB
+    cap is lifted only for a TIFF range, whose read step 8 caps."""
+    cap = None if as_ == "tiff" and range_ is not None else MAX_RAW
+    head = 4 if as_ == "tiff" else 0 if range_ is not None else files.CHUNK
+    raw = in_pool(request, lambda: files.open_raw(where, rel, cap, head), missing="not-found")
+    if cap is not None and raw.size > cap:
+        raise Problem(413, "file-too-large", "File too large", f"more than {cap} bytes")
+    _imaging_name(rel, as_)
     if as_ == "zarr" and raw.size > MAX_KEY:
         raise Problem(413, "file-too-large", "File too large", f"a Zarr key over {MAX_KEY} bytes")
     headers = {**HEADERS, "Vary": "Sec-Fetch-Dest", "Accept-Ranges": "bytes"}
     headers["Content-Security-Policy"] = TEXT_CSP
     if as_ == "zarr" and range_ is None:
         headers["Content-Length"] = str(raw.size)
-        body = _chunks(request, where, rel, raw, raw.first, len(raw.first), raw.size)
-        return StreamingResponse(body, media_type="application/octet-stream", headers=headers)
+        return _chunks(request, where, rel, raw, raw.first, len(raw.first), raw.size), 200, headers
+    if len(request.headers.getlist("range")) > 1:  # two fields are two ranges (SEC-P3FU102A-02)
+        raise Invalid("Range", "one closed range, bytes=<first>-<last>")
     first, last = _closed_range(range_, raw.size)
     if as_ == "tiff" and raw.first not in TIFF_HEADS:
         raise Problem(422, "file-not-allowed", "File not allowed", "not the TIFF its name says")
     headers["Content-Length"] = str(last + 1 - first)
     headers["Content-Range"] = f"bytes {first}-{last}/{raw.size}"
-    body = _chunks(request, where, rel, raw, b"", first, last + 1)
-    return StreamingResponse(
-        body, status_code=206, media_type="application/octet-stream", headers=headers
-    )
+    return _chunks(request, where, rel, raw, b"", first, last + 1), 206, headers
+
+
+class _Held:
+    """An imaging answer's body: its read slot is given back once, when the body ends or fails,
+    or when the response drops it unread (a client gone before the first chunk)."""
+
+    def __init__(self, slot: threading.BoundedSemaphore, body: Iterator[bytes]) -> None:
+        self._slot: threading.BoundedSemaphore | None = slot
+        self._body = body
+
+    def __iter__(self) -> "_Held":
+        return self
+
+    def __next__(self) -> bytes:
+        try:
+            return next(self._body)
+        except BaseException:  # StopIteration too: the body ended
+            self.release()
+            raise
+
+    def release(self) -> None:
+        slot, self._slot = self._slot, None
+        if slot is not None:
+            slot.release()
+
+    __del__ = release
 
 
 def _chunks(
