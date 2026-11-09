@@ -1529,6 +1529,132 @@
   flex-shrink: 0;
   margin-top: 3px;
 }
+.sp-result-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The results explorer (ui-spec §4.4.1, Explorer; LiteResults, MLiteResults): one card, its head
+   with the counts, the filter and (phone) Sort by; Kind as a text badge with an icon; header sort
+   buttons; on the phone one 44 px link per row, the name wrapping anywhere. */
+.sp-vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.sp-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  overflow: hidden;
+}
+.sp-explorer > .sp-note,
+.sp-explorer > p {
+  margin: 0 16px 12px;
+}
+.sp-explorer .sp-note p {
+  margin: 0 0 4px;
+}
+.sp-explorer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+.sp-card .sp-explorer-head h2 {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 15px;
+}
+.sp-explorer-head .sp-search-field {
+  flex: 0 1 260px;
+}
+.sp-explorer-table {
+  border-radius: 0;
+  box-shadow: none;
+}
+.sp-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-subtle);
+}
+.sp-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: -4px -6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  background: none;
+  cursor: pointer;
+}
+.sp-sort[data-on] {
+  color: var(--sp-text-link);
+}
+.sp-explorer-act {
+  width: 44px;
+  text-align: right;
+}
+.sp-explorer-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sp-explorer-rows li + li {
+  border-top: 1px solid var(--sp-line-divider);
+}
+.sp-explorer-row,
+.sp-explorer-rows .sp-explorer-link {
+  min-height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.sp-explorer-first {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.sp-explorer-first svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--sp-text-muted);
+}
+.sp-explorer-first [data-name] {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.sp-explorer-rows .sp-explorer-link [data-name] {
+  color: var(--sp-text-link);
+}
+.sp-explorer-first + .sp-muted {
+  padding-left: 26px;
+  font-size: 12.5px;
+}
 
 /* Resume's question (LiteRunActions, MLiteResumeSheet): the launch directory in its own block, wrapped
    anywhere; on the phone a bottom sheet as tall as its content, its top corners rounded. */

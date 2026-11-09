@@ -19,7 +19,8 @@ import { type Shown, isTerminal, lastSegment, neededFirst, processState, refresh
 // next, and Back returns. A task shows its attempt, its resources and its files (TaskFiles, P1
 // Task 32 on Tasks 28 and 29's routes).
 
-export type Detail = { kind: "stage"; id: string } | { kind: "process"; name: string } | { kind: "task"; task: Task };
+/** `attempt`: a task's sheet reopened from the run's URL, on that attempt, focus on its title. */
+export type Detail = { kind: "stage"; id: string } | { kind: "process"; name: string } | { kind: "task"; task: Task; attempt?: number };
 
 interface Props {
   run: RunDetail;
@@ -221,7 +222,7 @@ function Pair({ asked, used, near }: { asked: string; used: string; near?: boole
   );
 }
 
-function TaskView({ run, stages, processes, task, onOpen }: { run: RunDetail; stages: Stage[]; processes: Process[]; task: Task; onOpen: Props["onOpen"] }) {
+function TaskView({ run, stages, processes, task, attempt, onOpen }: { run: RunDetail; stages: Stage[]; processes: Process[]; task: Task; attempt?: number; onOpen: Props["onOpen"] }) {
   const w = words(run.workflow.engine);
   const known = processes.some((p) => p.process === task.process);
   const r = task.resources;
@@ -251,7 +252,7 @@ function TaskView({ run, stages, processes, task, onOpen }: { run: RunDetail; st
       <Facts facts={facts} />
       <SlurmFacts task={task} />
       <h3 className="sp-sheet-h">Files</h3>
-      <TaskFiles run={run} task={task} />
+      <TaskFiles run={run} task={task} attempt={attempt} />
     </>
   );
 }
@@ -276,7 +277,7 @@ export function DetailSheet({ run, stages, processes, views, onOpen, onBack, onC
     const stage = stages.find((s) => s.id === view.id);
     body = stage ? <StageView run={run} stage={stage} processes={processes} onOpen={onOpen} /> : null;
   } else if (view?.kind === "task") {
-    body = <TaskView run={run} stages={stages} processes={processes} task={view.task} onOpen={onOpen} />;
+    body = <TaskView run={run} stages={stages} processes={processes} task={view.task} attempt={view.attempt} onOpen={onOpen} />;
   }
   return (
     <Drawer
@@ -284,7 +285,8 @@ export function DetailSheet({ run, stages, processes, views, onOpen, onBack, onC
       onClose={onClose}
       position="right"
       size={phone ? "100%" : 560}
-      title={name}
+      // reopened from the URL, the focus trap starts on the title (data-autofocus), not on Close
+      title={view?.kind === "task" && view.attempt ? <span data-autofocus tabIndex={-1}>{name}</span> : name}
       returnFocus
       closeButtonProps={{ "aria-label": "Close" }}
       classNames={{ title: "sp-sheet-title" }}
