@@ -494,6 +494,39 @@ The **default** environment is the built-in of the server's own kind (`slurm`, o
 - **Open, none blocking** (FU-P3-103): the `invalid` detail can echo a location part or a dangling `default` that matches a name; the runner checks the snapshot for types but not against its own server kind; a write waits for its lock inside a file-pool worker, so a hung write can make reads `Stalled` for 5 s per further write.
 - Every Snakemake SLURM launch ends with `--local-cores 2`, after `extra_args` and with a workflow profile too. A bare `--` in `extra_args` makes that argument a target; this and the Resume rules of a `not_readable` parent (the `422` above) are for FU-P3-86c (inbox #133).
 
+*Note 2026-11-09, FU-P3-105 (planned for 0.0.2; assumed, [inbox #139](../reviews/inbox.md#139-assumed-performance-per-run-and-across-runs-fu-p3-105) choice 4):* a `slurm` environment gains one optional boolean, `efficiency_report` (default `false`), honoured only when the server's `[slurm] accounting` is off: the head script then passes the Snakemake SLURM plugin's `--slurm-efficiency-report` and its path, as [schedulers §3.7](schedulers-and-monitoring.md#37-performance-measures-per-attempt) says. It is ignored for Nextflow and for `local`.
+
+### 5.5 Performance (0.0.2)
+
+*Note 2026-11-09, design of FU-P3-105, in 0.0.2 (Thomas, 2026-11-09); the rest assumed — pending Thomas ([inbox #139](../reviews/inbox.md#139-assumed-performance-per-run-and-across-runs-fu-p3-105); [decision log](../decisions/log.md#2026-11-09-performance-per-run-and-across-runs-fu-p3-105)):* the stored measures and the routes behind the Performance tab and page of [ui-spec §4.12](ui-spec.md#412-performance-002). What is measured, from which source and the no-new-SLURM-load rule: [schedulers §3.7](schedulers-and-monitoring.md#37-performance-measures-per-attempt); the efficiency formulas: [schedulers §3.6](schedulers-and-monitoring.md#36-efficiency-per-job-and-per-process-or-rule). Nothing here is built. Every route below reads Spectio's database only: none calls `sacct`, the runner or the engine.
+
+**Stored: one table, `attempt_metrics`** (a migration with the next free number when FU-P3-105a is built; `0012` after `0011_run_environment` at the time of writing). One row per attempt that ended (succeeded, failed or killed; a cached or up-to-date task has none), primary key `attempt_id`, deleted with its run. Typed numeric columns, not JSON, so that SQLite and Postgres can filter and sort on them:
+- identity, copied from the run when the row is written (a run's values do not change): `run_id`, `task_id`, `attempt`, `process_or_rule`, `engine`, `pipeline` (the workflow name of the run), `pipeline_version`, `environment_id`, `owner_id`, `run_state` (updated when the run ends);
+- `state` (the attempt's final state), `submitted_at`, `started_at`, `ended_at` (UTC);
+- `partition` (text, null when local or unknown), `source` (`trace`, `benchmark`, `sacct`, `slurm_report`);
+- requested: `cpus`, `mem_bytes`, `time_limit_s`;
+- measured: `cpu_percent`, `cpu_eff`, `peak_rss_bytes`, `peak_vmem_bytes`, `mem_eff`, `realtime_s`, `time_eff`, `wait_s`, `rchar_bytes`, `wchar_bytes`, `read_bytes`, `write_bytes`; ratios as 0.63 for 63 %, never clamped (schedulers §3.6); a value the source does not give is null.
+
+Why a table and not columns on `attempts` or the `attempts.resources` JSON: the across-runs filters need indexes on typed values over many runs, and `attempts` stays the engine's record. `attempts.resources` is unchanged; the `sacct` cache (`sacct.json`, §7 note 2026-11-01) stays the cache, and this table holds the values Spectio took from it, so the across-runs page needs no call. Size: about 200 bytes a row, 20 MB for 100,000 attempts **[to be validated]** on SQLite. Rows of runs from before the migration are filled once by the migration from `attempts.resources` (Nextflow's six values, Snakemake's request) and `sacct.json`, with no `sacct` call.
+
+**Indexes** (in §7 with the migration): `(ended_at)`; `(process_or_rule, ended_at)`; `(pipeline, process_or_rule, ended_at)`; `(partition, ended_at)`; `(run_id)`; `(owner_id, ended_at)` where multi-user.
+
+**`GET /runs/{id}/performance`** (session, the run's read right):
+- Query: `process=` (repeatable, at most 50), `metrics=` (comma list of the measured columns above; default all), `points=true|false` (default `true`), `attempts=last|all` (default `last`: each task's last attempt, as §3.6's aggregate).
+- Answer: `{run_id, measured, pending_accounting, processes: [{process_or_rule, stage_id, pipeline_order, n, measured, sources: {<source>: n}, requested: <the §5 efficiency `requested`>, stats: {<metric>: {n, min, q1, median, q3, max, mean} | null}, waste: [{metric: "mem_eff" | "cpu_eff", below: 0.25, jobs: n}]}], points: {items: [{task_id, attempt, process_or_rule, tag, partition, source, <metric>: value}], truncated: bool, stride: n}}`. `pending_accounting` counts the attempts whose `sacct` answer is still awaited (§3.6 timing step 3); the screen says the numbers may change.
+- Quartiles by linear interpolation between the closest ranks (the method of `numpy.percentile`'s default) **[to be validated]** against Nextflow's report on one run, computed on read over every measured attempt, never over the capped points.
+- Caps: `points.items` at most 2,000 per process and 20,000 per answer; above, every `stride`-th attempt in task order, `truncated: true`. A run with more than 200 processes answers the first 200 by `pipeline_order` and `processes_truncated: true`.
+- The waste line is §3.6's, one rule for the Run detail aside and this tab.
+
+**`GET /performance:summary`** (across runs; session; the caller's visible runs, §6):
+- Filters: `since`, `until` (ISO 8601 date-times, UTC; default the last 30 days; at most 366 days apart, else `422` on `until`), `pipeline`, `pipeline_version`, `process` (repeatable, at most 20), `partition` (repeatable), `environment` (repeatable), `engine` (`nextflow`, `snakemake`), `state` (the attempt's: `succeeded` default, `failed`, `all`), `run_state` (repeatable), `user` (only where multi-user, §6; `me` default; ignored in single-user mode), `attempts=last|all`. A filter on `ended_at`.
+- `group_by=process|partition|pipeline|run|day|week` (one or two, e.g. `process,day` for a trend), `metrics=` as above.
+- Answer: `{groups: [{key: {process_or_rule?, partition?, …, period_start?}, runs, n, stats: {<metric>: {n, min, q1, median, q3, max, mean}}}], truncated, scanned}`. At most 500 groups (`truncated: true` above, largest `n` first); at most 1,000,000 rows scanned, else `422 range-too-wide` with the count, so the screen asks for a narrower range. `day` and `week` periods are in UTC; the screen shows local time.
+- **`GET /performance/attempts`**: the same filters, the rows of `attempt_metrics` joined to the run's name, paged as every list (`{items, next}`, 50 a page, at most 500), sort `-ended_at` (default), `cpu_eff`, `mem_eff`, `-peak_rss_bytes`, `-realtime_s`, `-wait_s`.
+- **`GET /performance/facets`**: the distinct `pipeline`, `pipeline_version`, `process_or_rule`, `partition`, `environment_id` and `engine` values in the range, at most 500 each, for the filter menus.
+
+All three answer `{items: []}` or empty `groups` with `200` when nothing matches; a filter value that matches nothing is not an error. OpenAPI snapshot: new paths only.
+
 ## 6. Identity, tenancy and permissions
 
 Sign-in methods, sessions, tokens, magic links, share links and pipeline provisioning are specified in [`authentication-and-access.md`](authentication-and-access.md). This section owns principals, tenancy and roles.
@@ -637,6 +670,8 @@ Computed run fields, returned by `GET /runs` and `GET /runs/{id}` and never stor
 Informational metrics on a review are checks with severity `info` *(assumed — pending Thomas, inbox #39)*.
 
 Indexes on `(project_id, created_at)` for every list, `(run_id, seq)` for events, `(state, project_id)` for runs and gates, and `ref` for external references. Every `idempotency_key` column (`runs`, `decisions`) is unique per caller scope, method and route (§4), never across the instance.
+
+*Note 2026-11-09 (planned for 0.0.2, FU-P3-105a; assumed — pending Thomas, [inbox #139](../reviews/inbox.md#139-assumed-performance-per-run-and-across-runs-fu-p3-105)):* a table `attempt_metrics`, one row per ended attempt, with its columns and its six indexes, as [§5.5](#55-performance-002) gives them; the migration takes the next free number (`0012` at the time of writing) and fills the rows of existing runs from `attempts.resources` and `sacct.json`, with no `sacct` call.
 
 ### 7.1 Run and gate state machines
 
