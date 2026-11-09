@@ -19,15 +19,21 @@ sandbox CSP of req. 14 for the report viewer's `<iframe>`; every other file, and
 with `?download=true`, is an attachment with the CSP `sandbox`. `404` when the run has no
 results directory: unknown, or a run started from a terminal (`cli-observed`), whose files
 0.0.1 does not serve.
+
+`?as=tiff` and `?as=zarr` with `Sec-Fetch-Dest: empty` serve the imaging viewers' reads in the
+order of api §5.3.1's table (`_imaging`): a TIFF by one closed `Range`, past the 1 GiB cap; a
+Zarr key below a `.ome.zarr` folder, whole or by one `Range`, at most 16 MiB. A range is read
+from its own first byte (the TIFF's 4-byte header aside), each chunk with the identity check.
 """
 
 import logging
+import re
 from collections.abc import Iterable, Iterator
 from pathlib import PurePosixPath
 from typing import Annotated, Any
 from urllib.parse import quote
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Header, Query, Request
 from fastapi.responses import Response, StreamingResponse
 
 from spectio_server.api.models import Results, ResultStat
@@ -54,6 +60,14 @@ router = APIRouter()
 MAX_RAW = 1 << 30  # the largest results file served, 1 GiB
 MAX_IMAGE = 20 << 20  # the largest served as an image (api §5.3, step 6)
 MAX_SVG = 5 << 20  # the largest SVG served as an image
+MAX_KEY = 16 << 20  # the largest Zarr key (api §5.3.1, step 7)
+MAX_RANGE = (8 << 20) + 1  # the most bytes of one imaging range (step 8)
+AS = ("image", "tiff", "zarr")
+TIFF_HEADS = (b"II*\x00", b"MM\x00*", b"II+\x00", b"MM\x00+")  # TIFF 6.0 and BigTIFF (step 10)
+_CLOSED = re.compile(r"bytes=([0-9]{1,19})-([0-9]{1,19})")
+_KEY_PART = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,254}")  # a middle part of a Zarr key
+_CHUNK_PART = re.compile(r"c|[0-9]{1,10}(\.[0-9]{1,10}){0,9}")
+_METADATA = frozenset({".zattrs", ".zgroup", ".zarray", "zarr.json"})  # no `.zmetadata`
 KEPT_SEARCHES = 1000  # ended runs whose reports are kept in memory
 REPORT_CSP = (
     "sandbox allow-scripts allow-downloads; default-src 'none'; "
@@ -178,8 +192,10 @@ def _image_type(
     gets the attachment."""
     if download or as_ is None:
         return None
+    if as_ not in AS:
+        raise Invalid("as", "one of `image`, `tiff`, `zarr`")
     if as_ != "image":
-        raise Invalid("as", "the only value is `image`")
+        return None
     media = images.MEDIA.get(rel.suffix.lower())
     if media is None:
         raise Problem(422, "file-not-allowed", "File not allowed", "not an image's name")
@@ -188,16 +204,24 @@ def _image_type(
     return media
 
 
+AsQuery = Annotated[str | None, Query(alias="as", json_schema_extra={"enum": list(AS)})]
+RangeHeader = Annotated[
+    str | None,
+    Header(alias="range", description="with as=tiff or as=zarr: one closed bytes=<first>-<last>"),
+]
+
+
 @router.get("/runs/{run_id}/results/raw/{path:path}", response_class=Response)
 def result_file(
     request: Request,
     run_id: str,
     path: str,
     download: bool = False,
-    as_: Annotated[str | None, Query(alias="as")] = None,
+    as_: AsQuery = None,
+    range_: RangeHeader = None,
 ) -> Response:
     where, _ = _where(request, run_id)
-    return raw_response(request, where, _file_rel(path), download, as_, reports=True)
+    return raw_response(request, where, _file_rel(path), download, as_, range_, reports=True)
 
 
 def raw_response(
@@ -206,16 +230,24 @@ def raw_response(
     rel: PurePosixPath,
     download: bool,
     as_: str | None,
+    range_: str | None,
     *,
     reports: bool,
 ) -> StreamingResponse:
     """The raw route's answer for the file `rel` below `where` (results, or a work directory,
-    FU-P3-85e): the image of api §5.3's table, a report with the sandbox CSP when `reports`,
-    else an attachment."""
-    raw = in_pool(request, lambda: files.open_raw(where, rel, MAX_RAW), missing="not-found")
-    if raw.size > MAX_RAW:
-        raise Problem(413, "file-too-large", "File too large", f"more than {MAX_RAW} bytes")
+    FU-P3-85e): the image of api §5.3's table, an imaging read of §5.3.1's, a report with the
+    sandbox CSP when `reports`, else an attachment."""
+    fetched = request.headers.get("sec-fetch-dest") == "empty" and not download
+    cap = None if as_ == "tiff" and fetched and range_ is not None else MAX_RAW  # step 1
+    head = 4 if as_ == "tiff" else 0 if as_ == "zarr" and range_ is not None else files.CHUNK
+    raw = in_pool(request, lambda: files.open_raw(where, rel, cap, head), missing="not-found")
+    if cap is not None and raw.size > cap:
+        raise Problem(413, "file-too-large", "File too large", f"more than {cap} bytes")
     media = _image_type(request, rel, download, as_)
+    if as_ in ("tiff", "zarr") and not download:
+        _imaging_name(rel, as_)
+        if fetched:
+            return _imaging(request, where, rel, raw, as_, range_)
     headers = {**HEADERS, "Vary": "Sec-Fetch-Dest", "Content-Length": str(raw.size)}
     if media is not None:
         cap = MAX_SVG if media == images.SVG else MAX_IMAGE
@@ -233,27 +265,98 @@ def raw_response(
         media = "application/octet-stream"
         headers["Content-Security-Policy"] = TEXT_CSP
         headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(rel.name, safe='')}"
+    body = _chunks(request, where, rel, raw, raw.first, len(raw.first), raw.size)
+    return StreamingResponse(body, media_type=media, headers=headers)
 
-    def chunks() -> Iterator[bytes]:
-        if raw.first:
-            yield raw.first  # the bytes checked are the bytes sent: no second open
-        start = len(raw.first)
-        while start < raw.size:
-            try:
-                data = in_pool(
-                    request,
-                    lambda at=start: files.read_chunk(where, rel, at, raw.size - at, raw.ident),
-                )
-            except Problem as exc:
-                log.warning("%s cut at %d: %s", request.url.path, start, exc)
-                raise
-            if not data:
-                log.warning("%s cut at %d: it shrank", request.url.path, start)
-                raise ShortFile(f"{rel}: shrank at {start}")
-            yield data
-            start += len(data)
 
-    return StreamingResponse(chunks(), media_type=media, headers=headers)
+def _imaging_name(rel: PurePosixPath, as_: str) -> None:
+    """Steps 4 and 5 of api §5.3.1: a TIFF's name, or a Zarr key below a `.ome.zarr` folder."""
+    if as_ == "tiff" and not rel.name.lower().endswith((".tif", ".tiff")):
+        raise Problem(422, "file-not-allowed", "File not allowed", "not a TIFF's name")
+    if as_ == "zarr" and not _zarr_key(rel.parts):
+        raise Problem(422, "file-not-allowed", "File not allowed", "not a key of an OME-Zarr")
+
+
+def _zarr_key(parts: tuple[str, ...]) -> bool:
+    """The parts after the first `.ome.zarr` part before the last are a Zarr key."""
+    for i, part in enumerate(parts[:-1]):
+        if part.lower().endswith(".ome.zarr"):
+            *middle, last = parts[i + 1 :]
+            if not all(_KEY_PART.fullmatch(p) for p in middle):
+                return False
+            return last in _METADATA or _CHUNK_PART.fullmatch(last) is not None
+    return False
+
+
+def _closed_range(value: str | None, size: int) -> tuple[int, int]:
+    """Step 8: the one closed range asked, its last byte capped at the file's end."""
+    found = None if value is None else _CLOSED.fullmatch(value)
+    if found is None:
+        raise Invalid("Range", "one closed range, bytes=<first>-<last>")
+    first, last = int(found[1]), int(found[2])
+    if last < first or last - first + 1 > MAX_RANGE:
+        raise Invalid("Range", f"from 1 to {MAX_RANGE} bytes, first to last")
+    if first >= size:
+        raise Invalid("Range", "starts at or past the end of the file")
+    return first, min(last, size - 1)
+
+
+def _imaging(
+    request: Request,
+    where: files.Tree,
+    rel: PurePosixPath,
+    raw: files.Raw,
+    as_: str,
+    range_: str | None,
+) -> StreamingResponse:
+    """Steps 7, 8, 10 and 11 of api §5.3.1: the TIFF range or the Zarr key, never an
+    attachment."""
+    if as_ == "zarr" and raw.size > MAX_KEY:
+        raise Problem(413, "file-too-large", "File too large", f"a Zarr key over {MAX_KEY} bytes")
+    headers = {**HEADERS, "Vary": "Sec-Fetch-Dest", "Accept-Ranges": "bytes"}
+    headers["Content-Security-Policy"] = TEXT_CSP
+    if as_ == "zarr" and range_ is None:
+        headers["Content-Length"] = str(raw.size)
+        body = _chunks(request, where, rel, raw, raw.first, len(raw.first), raw.size)
+        return StreamingResponse(body, media_type="application/octet-stream", headers=headers)
+    first, last = _closed_range(range_, raw.size)
+    if as_ == "tiff" and raw.first not in TIFF_HEADS:
+        raise Problem(422, "file-not-allowed", "File not allowed", "not the TIFF its name says")
+    headers["Content-Length"] = str(last + 1 - first)
+    headers["Content-Range"] = f"bytes {first}-{last}/{raw.size}"
+    body = _chunks(request, where, rel, raw, b"", first, last + 1)
+    return StreamingResponse(
+        body, status_code=206, media_type="application/octet-stream", headers=headers
+    )
+
+
+def _chunks(
+    request: Request,
+    where: files.Tree,
+    rel: PurePosixPath,
+    raw: files.Raw,
+    prefix: bytes,
+    start: int,
+    end: int,
+) -> Iterator[bytes]:
+    """`prefix`, then bytes `start` to `end` of the file first opened as `raw`, chunk by chunk;
+    a chunk that fails, comes back empty or opens another file aborts the response."""
+    if prefix:
+        yield prefix  # the bytes checked are the bytes sent: no second open
+    while start < end:
+        try:
+            data = in_pool(
+                request,
+                lambda at=start: files.read_chunk(where, rel, at, end - at, raw.ident),
+            )
+        except Problem as exc:
+            log.warning("%s cut at %d: %s", request.url.path, start, exc)
+            raise
+        if not data:
+            log.warning("%s cut at %d: it shrank", request.url.path, start)
+            raise ShortFile(f"{rel}: shrank at {start}")
+        yield data
+        start += len(data)
 
 
 class ShortFile(Exception):
