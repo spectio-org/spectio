@@ -73,18 +73,26 @@ export class PinnedClient {
   private async piece(first: number, last: number, signal?: AbortSignal): Promise<ArrayBuffer> {
     const length = Math.min(last, this.size - 1) - first + 1;
     for (let attempt = 0; ; attempt++) {
+      if (attempt) await new Promise((done) => setTimeout(done, 1000)); // a 503 is asked again once, after 1 s
       this.charge(length);
-      const answer = await this.fetch(`bytes=${first}-${last}`, signal);
-      if (answer.status === 503 && attempt === 0) {
-        await answer.body?.cancel();
-        await new Promise((done) => setTimeout(done, 1000)); // a 503 is asked again once, after 1 s
-        continue;
+      // the slot is held across the fetch and the body read: the server has 3 imaging slots
+      while (this.active >= IN_FLIGHT) await new Promise<void>((go) => this.waiting.push(go));
+      this.active++;
+      try {
+        const answer = await fetch(this.url, { headers: { Range: `bytes=${first}-${last}` }, signal, credentials: "same-origin" });
+        if (answer.status === 503 && attempt === 0) {
+          await answer.body?.cancel();
+          continue;
+        }
+        if (answer.status !== 206) throw new Answered(answer.status, await problem(answer));
+        const declared = answer.headers.get("content-length");
+        const data = declared === null || Number(declared) === length ? await readAtMost(answer, length) : (await answer.body?.cancel(), null);
+        if (data?.byteLength !== length) throw new Answered(206, "not the range asked");
+        return data.buffer as ArrayBuffer;
+      } finally {
+        this.active--;
+        this.waiting.shift()?.();
       }
-      if (answer.status !== 206) throw new Answered(answer.status, await problem(answer));
-      const declared = answer.headers.get("content-length");
-      const data = declared === null || Number(declared) === length ? await readAtMost(answer, length) : (await answer.body?.cancel(), null);
-      if (data?.byteLength !== length) throw new Answered(206, "not the range asked");
-      return data.buffer as ArrayBuffer;
     }
   }
 
@@ -93,17 +101,6 @@ export class PinnedClient {
     if (this.bytes + length > this.budget.bytes) throw new Stopped("bytes");
     this.requests++;
     this.bytes += length;
-  }
-
-  private async fetch(range: string, signal?: AbortSignal) {
-    while (this.active >= IN_FLIGHT) await new Promise<void>((go) => this.waiting.push(go));
-    this.active++;
-    try {
-      return await fetch(this.url, { headers: { Range: range }, signal, credentials: "same-origin" });
-    } finally {
-      this.active--;
-      this.waiting.shift()?.();
-    }
   }
 }
 

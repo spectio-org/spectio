@@ -34,22 +34,37 @@ export type FileDirectory = Record<string, unknown> & { ImageWidth?: number; Ima
 const FORMATS: Record<number, string> = { 1: "unsigned", 2: "signed", 3: "float" };
 const many = (value: unknown): number[] => (value === undefined ? [] : Array.isArray(value) || ArrayBuffer.isView(value) ? Array.from(value as ArrayLike<number>) : [Number(value)]);
 
+/** A sizing tag as one positive safe integer (geotiff keeps a tag of count != 1 as an array);
+ * `fallback` when the tag is absent and may be; anything else is unreadable. */
+function scalar(fd: FileDirectory, name: string, fallback?: number): number {
+  const value = fd[name];
+  if (value === undefined && fallback !== undefined) return fallback;
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) throw new Unreadable(`${name} is not one positive integer`);
+  return value;
+}
+
 /** The caps one IFD is held to before any of its tiles is read. */
 function check(fd: FileDirectory) {
-  if (Number(fd.TileWidth ?? 0) > TILE_SIDE_MAX || Number(fd.TileLength ?? 0) > TILE_SIDE_MAX) throw new TooLarge("tiles larger than 4,096 px");
+  const tiled = fd.TileWidth !== undefined;
+  const [tw, tl] = tiled ? [scalar(fd, "TileWidth"), scalar(fd, "TileLength")] : [0, 0];
+  if (tw > TILE_SIDE_MAX || tl > TILE_SIDE_MAX) throw new TooLarge("tiles larger than 4,096 px");
   for (const stored of [...many(fd.TileByteCounts), ...many(fd.StripByteCounts)]) if (stored > STORED_MAX) throw new TooLarge("a tile over 8 MiB");
-  const samples = Number(fd.SamplesPerPixel ?? 1);
+  const samples = scalar(fd, "SamplesPerPixel", 1);
   if (samples > 4) throw new TooLarge(`${samples}-sample pixels are not shown`);
   const bits = many(fd.BitsPerSample);
   const formats = many(fd.SampleFormat);
-  for (let i = 0; i < Math.max(bits.length, 1); i++) {
-    const [b, f] = [bits[i] ?? 1, formats[i] ?? formats[0] ?? 1];
+  for (const list of [bits, formats]) if (list.length > 1 && list.length !== samples) throw new Unreadable(`${list.length} values for ${samples} samples`);
+  let widest = 8;
+  for (let i = 0; i < samples; i++) {
+    const [b, f] = [bits[bits.length > 1 ? i : 0] ?? 1, formats[formats.length > 1 ? i : 0] ?? 1];
     if (![8, 16, 32].includes(b) || !FORMATS[f] || (f === 3 && b !== 32)) throw new TooLarge(`${b}-bit ${FORMATS[f] ?? "undefined"} pixels are not shown`);
+    widest = Math.max(widest, b);
   }
   // a tile, or a strip of ImageWidth x RowsPerStrip, decoded: each sample at the widest bits given
-  const height = Number(fd.ImageLength ?? 0);
-  const [w, h] = fd.TileWidth !== undefined ? [Number(fd.TileWidth), Number(fd.TileLength ?? 0)] : [Number(fd.ImageWidth ?? 0), Math.min(Number(fd.RowsPerStrip ?? height), height)];
-  if (w * h * samples * (Math.max(8, ...bits) / 8) > DECODED_MAX) throw new TooLarge("a tile over 64 MiB decoded");
+  const width = scalar(fd, "ImageWidth");
+  const height = scalar(fd, "ImageLength");
+  const [w, h] = tiled ? [tw, tl] : [width, Math.min(scalar(fd, "RowsPerStrip", height), height)];
+  if (w * h * samples * (widest / 8) > DECODED_MAX) throw new TooLarge("a tile over 64 MiB decoded");
 }
 
 type Slice = Awaited<ReturnType<GeoTIFF["getSlice"]>>;

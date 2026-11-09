@@ -401,3 +401,50 @@ test("the OME-XML check decides from the content, whatever the root or the parse
   expect(omeFiles(wrapped("Wrapper"), "a.ome.tif")).toBe("others");
   expect(omeFiles("ImageJ=1.54f\nimages=3\nslices=3", "a.tif")).toBe("none");
 });
+
+test("at most 3 answers stream at once: a slot is held until the body ends", async () => {
+  let open = 0;
+  let most = 0;
+  const release: (() => void)[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => {
+      most = Math.max(most, ++open);
+      const body = new ReadableStream<Uint8Array>({
+        async pull(controller) {
+          await new Promise<void>((done) => release.push(done)); // the body stays open until released
+          open--;
+          controller.enqueue(new Uint8Array(1));
+          controller.close();
+        },
+      });
+      return new Response(body, { status: 206, headers: { "content-range": "bytes 0-0/100" } });
+    }),
+  );
+  const client = new PinnedClient(URL_, 100);
+  let done = false;
+  const all = Promise.all([0, 1, 2, 3, 4].map(() => client.request({ headers: { Range: "bytes=0-0" } }))).finally(() => (done = true));
+  for (let i = 0; !done && i < 1000; i++) {
+    await new Promise((r) => setTimeout(r, 0));
+    release.shift()?.();
+  }
+  await all;
+  expect(most).toBe(IN_FLIGHT);
+});
+
+test("a sizing tag that is not one positive integer is unreadable, not passed", async () => {
+  const strip: [number, number, number, number][] = [[256, 4, 1, 4], [257, 4, 1, 2], [258, 3, 1, 8], [273, 4, 1, 0], [278, 4, 1, 2], [279, 4, 1, 8]];
+  const huge = 1_000_000; // BitsPerSample values, 2 MB, under the 8 MiB tag cap
+  const hugeBits = raw([[256, 4, 1, 4], [257, 4, 1, 2], [258, 3, huge, 128], [273, 4, 1, 0], [278, 4, 1, 2], [279, 4, 1, 8]], 128 + 2 * huge);
+  new Uint16Array(hugeBits.buffer, 128, huge).fill(8);
+  for (const bytes of [
+    raw([...strip, [322, 3, 2, 8192 | (8192 << 16)], [323, 4, 1, 16]]), // TileWidth of count 2
+    raw([...strip, [322, 4, 1, 0], [323, 4, 1, 16]]), // TileWidth 0
+    raw([...strip, [277, 3, 2, 5 | (5 << 16)]]), // SamplesPerPixel of count 2
+    hugeBits,
+  ]) {
+    serveBytes(bytes);
+    const { tiff, client } = await openTiff(URL_, bytes.length);
+    await expect(walkIfds(tiff, client)).rejects.toBeInstanceOf(Unreadable);
+  }
+});
