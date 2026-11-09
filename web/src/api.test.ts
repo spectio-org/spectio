@@ -166,6 +166,8 @@ const SAMPLES: Record<string, object> = {
     params: {},
     non_default: [],
     code_loading: [],
+    environment: "local",
+    environment_notice: null,
   } satisfies LaunchTemplate,
   TemplateWorkflow: { location: "", revision: null, engine: "nextflow" },
   Failure: failure,

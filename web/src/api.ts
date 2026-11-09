@@ -206,6 +206,10 @@ export interface LaunchTemplate {
   /** The top-level parameters that differ from the pipeline's schema defaults. */
   non_default: string[];
   code_loading: CodeLoading[];
+  /** The run's environment by name, or the default when that name is gone (FU-P3-86c). */
+  environment: string;
+  /** Why the default is chosen instead of the run's environment. */
+  environment_notice: string | null;
 }
 
 /** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */

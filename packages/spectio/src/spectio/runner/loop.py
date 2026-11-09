@@ -26,6 +26,7 @@ from typing import TypeVar
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from spectio.config import Settings
+from spectio.environments import Snapshot, as_snapshot, launch_fields, server_builtin, snapshot
 from spectio.runner.engines import EngineError, check_engine
 from spectio.runner.local import checkable, same_process
 from spectio.runner.observed import check_observed_launch_dir, end_pointer, scan_observed
@@ -83,7 +84,9 @@ class ResumePayload(BaseModel):
 
 
 class LaunchPayload(BaseModel):
-    """The payload of a `launch` command (written by P1 Tasks 17 and 30)."""
+    """The payload of a `launch` command (written by P1 Tasks 17 and 30). `environment` is the
+    run's snapshot (FU-P3-86c), checked again here with the routes' strict model; a command
+    written before it has none, and runs on the built-in of the server's kind (api §5.4)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -91,6 +94,7 @@ class LaunchPayload(BaseModel):
     profiles: list[str] = []
     params: dict[str, JsonValue] = {}
     resume_of: ResumePayload | None = None
+    environment: Snapshot | None = None
 
 
 def _now() -> str:
@@ -266,6 +270,9 @@ class RunnerLoop:
             payload = LaunchPayload.model_validate(command.payload)
             if not Path(payload.location).is_absolute():
                 raise ValueError(f"{payload.location!r} is not an absolute path")
+            environment = payload.environment or as_snapshot(
+                snapshot(server_builtin(self.settings).environment)
+            )
             asked = payload.resume_of
             resume = None if asked is None else self._resume_source(ref, asked)
             engines = self.settings.engines
@@ -281,7 +288,7 @@ class RunnerLoop:
                 work_dir=paths.work_dir,
                 profiles=payload.profiles,
                 params=payload.params,
-                slurm=self.settings.slurm if self.settings.executor == "slurm" else None,
+                **launch_fields(environment),  # the run's own, never the server's (req. 18)
                 nxf_opts=engines.nxf_opts,
                 extra_args=engines.extra_args.get(ref.engine, []),
                 resume_of=resume,

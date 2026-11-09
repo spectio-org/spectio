@@ -94,6 +94,40 @@ class RunEnvironment(BaseModel):
     state: Literal["recorded", "not_recorded", "not_readable"]
 
 
+class EnvironmentProfiles(BaseModel):
+    nextflow: str | None
+    snakemake: str | None
+
+
+class EnvironmentItem(BaseModel):
+    """One environment of `GET /environments` (FU-P3-86d, api §5.4): a built-in or one of the
+    file's; `usable: false` with its reason, such as a SLURM one on a local server."""
+
+    name: str
+    label: str | None
+    executor: Literal["local", "slurm"]
+    builtin: bool
+    default: bool
+    usable: bool
+    unusable_reason: str | None
+    slurm: EnvironmentSlurm | None
+    local: EnvironmentLocal | None
+    profiles: EnvironmentProfiles
+    etag: str
+
+
+class EnvironmentsFile(BaseModel):
+    path: str
+    state: Literal["missing", "ok", "refused", "invalid", "unreachable"]
+    detail: str | None
+
+
+class EnvironmentList(BaseModel):
+    items: list[EnvironmentItem]
+    default: str
+    file: EnvironmentsFile
+
+
 class Run(BaseModel):
     id: str
     name: str | None
@@ -225,6 +259,8 @@ class LaunchTemplate(BaseModel):
     params: dict[str, JsonValue]
     non_default: list[str]
     code_loading: list[CodeLoading]
+    environment: str  # the run's, preselected by name, or the default when it is gone (§5.4)
+    environment_notice: str | None  # why the default is preselected instead
 
 
 class RunList(BaseModel):

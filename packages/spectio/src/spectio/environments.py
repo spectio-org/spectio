@@ -18,13 +18,14 @@ from typing import Annotated, Any, Literal
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from spectio.config import Settings, SlurmName
-from spectio.runner.headscript import PROFILE
 
+PROFILE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}")  # never a path, a comma or an option
 NAME = re.compile(r"[a-z][a-z0-9-]{0,31}")
 RESERVED = frozenset({"local", "slurm", "new"})  # the built-ins, and the screen route `new`
 # Controls, format characters (the bidi overrides among them), separators, unassigned and
 # private-use code points: a label is shown as text, and none of these reads as text.
 _NOT_TEXT = frozenset({"Cc", "Cf", "Cn", "Co", "Cs", "Zl", "Zp"})
+NO_SLURM = "This server was set up with spectio init --local: it has no SLURM"
 LOCAL_CAPS = {"cpus": 2, "mem_mib": 8192}  # the built-in `local` on a login node (audit §7)
 SnapshotState = Literal["recorded", "not_recorded", "not_readable"]
 
@@ -172,3 +173,38 @@ def executor_of(column: dict[str, Any] | None) -> str | None:
     """The run's executor from its `runs.environment`; None when unknown (a run started from a
     terminal, a manifest without a snapshot or one that fails the validators)."""
     return None if column is None else column.get("executor")
+
+
+def as_snapshot(column: dict[str, Any]) -> Snapshot:
+    """A `runs.environment` column, or a `snapshot()`, as the model, through the validators."""
+    return Snapshot.model_validate({k: v for k, v in column.items() if k != "state"})
+
+
+def launch_fields(env: Snapshot) -> dict[str, Any]:
+    """`LaunchSpec`'s `environment`, `slurm` and `local` from a run's snapshot (FU-P3-86c)."""
+    slurm = (env.slurm or SlurmValues()) if env.executor == "slurm" else None
+    return {"environment": env.name, "slurm": slurm, "local": env.local if slurm is None else None}
+
+
+class NotAllowed(ValueError):
+    """A snapshot that this server's launch rules refuse; the message says why."""
+
+
+def resume_snapshot(column: dict[str, Any] | None, settings: Settings) -> Snapshot:
+    """What a Resume runs with: the launch rules applied again to the parent's `runs.environment`
+    (api §5.4, Resume; SEC-PRE-FU86-R1-03). Raises NotAllowed for a `not_readable` parent, or a
+    SLURM one on a server with no SLURM. A `local` parent without caps on a SLURM server gets the
+    built-in `local` caps; a `not_recorded` one the built-in of the server's kind (`read_as`)."""
+    own = read_as(column, settings)
+    if own is None:
+        raise NotAllowed("This run's environment cannot be read: copy it to a new launch instead")
+    env = as_snapshot(own)
+    if env.executor == "slurm" and settings.executor != "slurm":
+        raise NotAllowed("This run ran on SLURM; this server has no SLURM")
+    if env.executor == "local" and settings.executor == "slurm" and not _capped(env.local):
+        return env.model_copy(update={"local": LocalValues(**LOCAL_CAPS)})
+    return env
+
+
+def _capped(local: LocalValues | None) -> bool:
+    return local is not None and (local.cpus is not None or local.mem_mib is not None)

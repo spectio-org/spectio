@@ -252,8 +252,9 @@ def test_launch_creates_run_and_command(
 
     (leased,) = StoreSink(writer, settings.runs_root).lease_commands()  # what the runner gets
     assert leased.launch.engine == "nextflow"
-    assert LaunchPayload.model_validate(leased.payload) == LaunchPayload(
-        location=location, profiles=["local"], params={"chunks": 2}
+    local = {"name": "local", "label": "This machine", "executor": "local"}
+    assert LaunchPayload.model_validate(leased.payload) == LaunchPayload.model_validate(
+        {"location": location, "profiles": ["local"], "params": {"chunks": 2}, "environment": local}
     )
 
 

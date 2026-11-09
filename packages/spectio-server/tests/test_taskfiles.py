@@ -21,7 +21,8 @@ from typing import Any
 import pytest
 from sqlalchemy import select
 
-from spectio.config import Settings, SlurmOpts
+from spectio.config import Settings
+from spectio.environments import SlurmValues
 from spectio.runner.headscript import engine_args, engine_env, render_head_script
 from spectio.runner.rundir import make_run_dirs
 from spectio.runner.types import LaunchSpec, SpoolBatch
@@ -784,7 +785,7 @@ def test_walk_refuses_names() -> None:
 # --- The head script's engine log (Task 9) --------------------------------------------------
 
 
-def spec(tmp_path: Path, engine: str, slurm: SlurmOpts | None) -> LaunchSpec:
+def spec(tmp_path: Path, engine: str, slurm: SlurmValues | None) -> LaunchSpec:
     launch = tmp_path / "launch"
     return LaunchSpec(
         run_id=RUN,
@@ -807,6 +808,6 @@ def test_engine_log_per_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     script = render_head_script(nf)
     assert "unset NXF_DEBUG" in script
     assert "NXF_LOG_FILE=" in script
-    slurm = SlurmOpts(partition=None, account=None)
+    slurm = SlurmValues()
     assert "--slurm-keep-successful-logs" in engine_args(spec(tmp_path, "snakemake", slurm))
     assert "--slurm-keep-successful-logs" not in engine_args(spec(tmp_path, "snakemake", None))
