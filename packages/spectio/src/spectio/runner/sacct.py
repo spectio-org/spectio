@@ -402,8 +402,10 @@ class SacctLimiter:
     answer. `later` queues IDs once a delay has passed (a follow-up). The caller's thread runs
     the call: the server runs it on a thread of its own, never the writer's or a request's.
     A Refused call, or one that said too much for one ID, is FINAL. Each ID of a failed call
-    keeps the size of the call it was in, halved when it fails again or said too much: a call
-    holds at most as many IDs as the first queued one allows (SEC-P3FU106A-01)."""
+    keeps the size of the call it was in, halved when it said too much, or fails again while
+    in every call failed since the last answer (a bad ID; an outage fails disjoint calls and
+    halves none, CR-P3FU106A-05): a call holds at most as many IDs as the first queued one
+    allows (SEC-P3FU106A-01)."""
 
     def __init__(
         self,
@@ -426,6 +428,7 @@ class SacctLimiter:
         self._clock = clock
         self._pending: dict[str, None] = {}  # insertion order: first asked, first called
         self._size: dict[str, int] = {}  # job ID of a failed call → at most this many per call
+        self._suspects: set[str] | None = None  # in every call failed since the last answer
         self._last: float | None = None
         self._busy = False
         self._lock = threading.Lock()
@@ -518,9 +521,16 @@ class SacctLimiter:
                 if rows is None:  # to be asked again: halved when it failed before
                     # (and the sizes of IDs the caller gave up since are dropped)
                     self._size = {j: n for j, n in self._size.items() if j in self._pending}
+                    if not again:  # an outage fails disjoint calls: no ID shared, no halving
+                        asked = set(ids)
+                        self._suspects = asked if self._suspects is None else self._suspects & asked
+                    suspects = self._suspects or set()
                     for job in ids:
                         n = min(failed.get(job, len(ids)), len(ids))
-                        self._size[job] = max(1, n // 2) if again or job in failed else n
+                        halve = again or (job in failed and job in suspects)
+                        self._size[job] = max(1, n // 2) if halve else n
+                elif isinstance(rows, dict):
+                    self._suspects = None
                 if not isinstance(rows, dict) or self._clock() - started > self._slow:
                     self._interval = min(self._max_interval, 2 * self._interval)
                 else:

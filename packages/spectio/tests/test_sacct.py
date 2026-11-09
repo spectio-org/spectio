@@ -718,3 +718,26 @@ def test_sacct_limiter_bad_id_isolated_in_busy_queue() -> None:
                 assert len(done[0]) <= size
             limiter.request(done[0])  # the caller puts a failed call's IDs back
     assert failures > 2 and limiter._size["9"] == 1
+
+
+def test_sacct_limiter_outage_not_split_down() -> None:
+    """CR-P3FU106A-05: a whole-slurmdbd outage fails every call; the failures share no ID, so
+    the batches are not halved down to one ID: once sacct answers, 100 IDs drain in a few calls."""
+    calls = 0
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        nonlocal calls
+        calls += 1
+        return None if calls <= 50 else {}
+
+    limiter = SacctLimiter(call, interval_s=0)
+    limiter.request(str(n) for n in range(1, 101))
+    answered = 0
+    while limiter.pending():
+        done = limiter.run_once()
+        assert done is not None
+        if done[1] is None:
+            limiter.request(done[0])  # the caller puts a failed call's IDs back
+        else:
+            answered += 1
+    assert calls > 50 and answered <= 4
