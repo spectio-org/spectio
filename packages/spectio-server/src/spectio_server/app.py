@@ -21,7 +21,6 @@ else `/` stays this plain page and says why (`static`), behind the session too.
 import os
 import pwd
 import shutil
-import threading
 from importlib.metadata import version
 from pathlib import Path
 
@@ -132,7 +131,7 @@ def create_app(
     app.state.settings = settings
     app.state.writer = writer
     app.state.files = FilePool() if files is None else files  # dev-env §15.3 req. 13
-    app.state.imaging_slots = threading.BoundedSemaphore(results.IMAGING_SLOTS)  # api §5.3.1
+    app.state.imaging_slots = results.ImagingSlots(results.IMAGING_SLOTS)  # api §5.3.1
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)

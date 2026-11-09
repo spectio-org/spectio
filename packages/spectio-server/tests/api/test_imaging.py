@@ -537,3 +537,28 @@ def test_req2_req7_imaging_session_and_cross_site_workdir(
     base = f"{API}/tasks/{nf_task.task_id}/attempts/1/workdir/raw"
     urls = ((f"{base}/a.tif", "tiff"), (f"{base}/i.ome.zarr/zarr.json", "zarr"))
     session_and_site(settings, writer, nf_task.client, urls)
+
+
+def test_req14_imaging_slot_given_back_inside_take() -> None:
+    """A finalizer giving a slot back on a thread already inside `take` does not deadlock
+    (SEC-P3FU102B-01): the slots' lock is reentrant."""
+    from spectio_server.api.results import ImagingSlots
+
+    slots = ImagingSlots(1)
+    assert slots.take()
+    with slots._lock:  # the state a finalizer would interrupt
+        slots.give()
+    assert slots.take() and not slots.take()
+
+
+def test_pool_on_done_failure_keeps_the_reader() -> None:
+    """A raising `on_done` is logged; the reader thread lives on (CR-P3FU102B-R3-02)."""
+    from spectio_server.files.pool import FilePool
+
+    pool = FilePool(1)
+
+    def boom() -> None:
+        raise RuntimeError("on_done")
+
+    assert pool.run(lambda: 1, 2.0, boom) == 1
+    assert pool.run(lambda: 2, 2.0) == 2

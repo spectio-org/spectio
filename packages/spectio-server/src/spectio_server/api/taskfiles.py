@@ -21,6 +21,7 @@ UTF-8 sequence, an empty file is `200`, and the answer carries the text CSP.
 import errno
 import logging
 import re
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -174,7 +175,7 @@ def in_pool(
     timeout_s: float | None = None,
     missing: str = "log-not-found",
     refused_missing: bool = False,
-    on_done: Any = None,
+    on_done: Callable[[], None] | None = None,
 ) -> Any:
     """`job()` in the routes' file pool, its refusals mapped to problems (one mapping for every
     file route: CR-P3T28-01 r4): `503 runner-offline`, `415 binary-file`, `410 log-cleaned`,

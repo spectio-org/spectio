@@ -327,10 +327,10 @@ def _imaging(
     """An imaging read, holding a read slot (step 9, taken before the pool) until its response
     ends, aborts or loses its client and its last pool job has returned: the TIFF range or the
     Zarr key, never an attachment."""
-    sem: threading.BoundedSemaphore = request.app.state.imaging_slots
-    if not sem.acquire(blocking=False):
+    slots: ImagingSlots = request.app.state.imaging_slots
+    if not slots.take():
         raise Problem(503, "runner-offline", "Busy reading images", "busy reading images")
-    slot = _Slot(sem)
+    slot = _Slot(slots)
     try:
         body, status, headers = _imaging_body(request, where, rel, as_, range_, slot)
     except BaseException:
@@ -339,12 +339,33 @@ def _imaging(
     return _Held(slot, body, status_code=status, headers=headers)
 
 
+class ImagingSlots:
+    """The server's imaging read slots (step 9). Its lock is reentrant because `_Held.__del__`
+    can give a slot back from a finalizer on a thread already inside `take` or `give`, which a
+    `BoundedSemaphore` (a plain `Lock` inside) would deadlock on (SEC-P3FU102B-01)."""
+
+    def __init__(self, n: int) -> None:
+        self._free, self._lock = n, threading.RLock()
+
+    def take(self) -> bool:
+        with self._lock:
+            if self._free == 0:
+                return False
+            self._free -= 1
+            return True
+
+    def give(self) -> None:
+        with self._lock:
+            self._free += 1
+
+
 class _Slot:
     """One imaging read slot, given back when its last holder lets go: the response, and each
-    pool job it started, which may outlive the request on a stalled mount (SEC-P3FU102B-01)."""
+    pool job it started, which may outlive the request on a stalled mount (SEC-P3FU102B-01).
+    Reentrant for the same finalizer reason as `ImagingSlots`."""
 
-    def __init__(self, sem: threading.BoundedSemaphore) -> None:
-        self._sem, self._refs, self._lock = sem, 1, threading.Lock()
+    def __init__(self, slots: ImagingSlots) -> None:
+        self._slots, self._refs, self._lock = slots, 1, threading.RLock()
 
     def take(self) -> Callable[[], None]:
         """One more holder; the callback it returns lets go, once."""
@@ -356,7 +377,7 @@ class _Slot:
         with self._lock:
             self._refs -= 1
             if self._refs == 0:
-                self._sem.release()
+                self._slots.give()
 
 
 def _imaging_body(
