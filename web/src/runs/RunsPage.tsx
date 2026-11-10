@@ -1,12 +1,15 @@
 import { Button } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMediaQuery } from "@mantine/hooks";
+import type { ColDef } from "ag-grid-community";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { type Page, type Run, type ServerVersion, type Summary, listRuns, runsSummary } from "../api";
 import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
+import type GridOf from "./DataGrid";
 import { Pipeline, RunLink, StateWord, stateContext, tasksText } from "./RunState";
 import { ACTIVE, duration, isTerminal, shortId, tone, when, words } from "./stateWord";
 
@@ -85,6 +88,44 @@ export function RunCard({ run }: { run: Run }) {
   );
 }
 
+// AG Grid is its own chunk, loaded with the desktop list; the phone keeps its cards (ui-spec §4.13).
+const DataGrid = lazy(() => import("./DataGrid")) as unknown as typeof GridOf;
+
+/** The 0.0.1 columns (ui-spec §4.3), in the API's order: none sorts or filters on its own (the
+ * page's filters ask the API). The state rail is the row's left edge, in its tone. */
+const COLUMNS: ColDef<Run>[] = [
+  {
+    headerName: "Run",
+    flex: 1.4,
+    cellRenderer: ({ data: run }: { data: Run }) => (
+      <>
+        <RunLink run={run} />
+        <br />
+        {run.origin === "cli-observed" && (
+          <span className="sp-chip">
+            <Icon path={ICONS.terminal} size={12} /> From a terminal
+          </span>
+        )}
+        <span className="sp-id">{shortId(run.id)}</span>
+      </>
+    ),
+  },
+  {
+    headerName: "State",
+    flex: 1.6,
+    cellRenderer: ({ data: run }: { data: Run }) => (
+      <>
+        <StateWord state={run.state} />
+        <span className="sp-muted">{stateContext(run)}</span>
+      </>
+    ),
+  },
+  { headerName: "Workflow", flex: 1.4, cellRenderer: ({ data: run }: { data: Run }) => <Pipeline run={run} /> },
+  { headerName: "Tasks", cellRenderer: ({ data: run }: { data: Run }) => <TasksCell run={run} /> },
+  { headerName: "Started", valueGetter: ({ data: run }) => (run ? when(run.started_at ?? run.created_at) : "") },
+  { headerName: "Duration", valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : "") },
+];
+
 const PAGE = 50;
 
 type List = { rows: Run[]; next: string | null };
@@ -132,6 +173,8 @@ export function RunsPage() {
   const setFilter = (i: number) => setSearch({ state: FILTERS[i].states ? FILTERS[i].key : undefined });
   const server = useServer();
   const phone = usePhone();
+  // UX-G3a-05: Started drops below 1100 px, so the grid fits at 1024 px without a sideways scroll.
+  const narrow = useMediaQuery("(max-width: 1099.98px)") ?? false;
   const [typed, setTyped] = useState(q);
   // The q this page last wrote: a q from elsewhere (a link that drops it) re-seeds the box, while
   // the page's own write never trims what the user is still typing (CR-P3PARA-09).
@@ -263,50 +306,18 @@ export function RunsPage() {
         </ul>
       )}
       {!!runs?.length && !phone && (
-        <div className="sp-table-wrap">
-          <table className="sp-table">
-            <thead>
-              <tr>
-                <th scope="col">Run</th>
-                <th scope="col">State</th>
-                <th scope="col">Workflow</th>
-                <th scope="col">Tasks</th>
-                <th scope="col" data-wide="">
-                  Started
-                </th>
-                <th scope="col">Duration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.map((run) => (
-                <tr key={run.id}>
-                  <td data-rail="" data-tone={tone(run.state)}>
-                    <RunLink run={run} />
-                    <br />
-                    {run.origin === "cli-observed" && (
-                      <span className="sp-chip">
-                        <Icon path={ICONS.terminal} size={12} /> From a terminal
-                      </span>
-                    )}
-                    <span className="sp-id">{shortId(run.id)}</span>
-                  </td>
-                  <td>
-                    <StateWord state={run.state} />
-                    <span className="sp-muted">{stateContext(run)}</span>
-                  </td>
-                  <td>
-                    <Pipeline run={run} />
-                  </td>
-                  <td>
-                    <TasksCell run={run} />
-                  </td>
-                  <td data-wide="">{when(run.started_at ?? run.created_at)}</td>
-                  <td>{duration(run.started_at, run.ended_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Suspense fallback={<p className="sp-muted">Loading the runs…</p>}>
+          <DataGrid<Run>
+            label="Runs"
+            className="sp-grid-runs"
+            rowData={runs}
+            columnDefs={COLUMNS.filter((c) => !(narrow && c.headerName === "Started"))}
+            defaultColDef={{ sortable: false, autoHeight: true, wrapText: true, flex: 1, minWidth: 110, suppressHeaderMenuButton: true }}
+            getRowId={({ data }) => data.id}
+            getRowStyle={({ data }) => (data ? { "--tone": `var(--sp-state-${tone(data.state)})` } : undefined)}
+            domLayout="autoHeight"
+          />
+        </Suspense>
       )}
       {!!runs?.length && (
         <p className="sp-foot-line">

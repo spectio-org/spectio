@@ -1802,35 +1802,16 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.sp-file-table {
-  max-height: min(70vh, 640px);
-  overflow: auto;
-  border-radius: 12px;
-  box-shadow: 0 0 0 1px var(--sp-line-border);
+/* The preview's grid (ui-spec §4.13): past 15 rows a fixed height, so AG Grid scrolls its rows
+   virtually; cells keep their spaces and line breaks. */
+.sp-file-table[data-scroll] {
+  height: min(70vh, 640px);
 }
-.sp-file-table caption {
-  caption-side: top;
-  text-align: left;
-  padding: 6px 10px;
+.sp-file-table[data-scroll] .sp-grid {
+  height: 100%;
 }
-.sp-file-table td,
-.sp-file-table th {
+.sp-file-table .ag-cell {
   white-space: pre;
-}
-.sp-file-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--sp-surface-subtle);
-}
-.sp-file-table tr > :first-child {
-  position: sticky;
-  left: 0;
-  background: var(--sp-surface-raised);
-}
-.sp-file-table thead tr > :first-child {
-  z-index: 2;
-  background: var(--sp-surface-subtle);
 }
 /* an image sits on a fixed light backdrop in both themes */
 .sp-file-backdrop {

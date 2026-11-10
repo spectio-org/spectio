@@ -76,6 +76,7 @@ spectio_server/store/runs.py
 spectio_server/store/schema.py
 spectio_server/store/writer.py
 spectio_server/web/THIRD_PARTY_NOTICES.txt
+spectio_server/web/assets/DataGrid-*.js
 spectio_server/web/assets/OmeView-*.js
 spectio_server/web/assets/decoder.worker-*.js
 spectio_server/web/assets/deflate-*.js

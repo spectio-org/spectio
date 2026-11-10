@@ -72,3 +72,31 @@ test('Load more keeps focus while it loads and after', async ({ page }) => {
   await expect(page.getByText('192 KiB shown', { exact: true })).toBeVisible();
   await expect(more).toBeFocused();
 });
+
+test('a TSV preview is an AG Grid under the CSP: no violation, sorts and moves from the keyboard', async ({ page }) => {
+  // AG Grid writes its theme in <style> elements (style-src 'unsafe-inline' already allows them);
+  // its icon set is left out (data: images, refused by img-src 'self') and it compiles no code.
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { cspSeen: string[] }).cspSeen = seen;
+    document.addEventListener('securitypolicyviolation', (e) => seen.push(`${e.violatedDirective} ${e.blockedURI}`));
+  });
+  const requests: string[] = [];
+  page.on('request', (r) => requests.push(r.url()));
+  await page.goto(`/runs/${SEEDED}/results/file?path=${encodeURIComponent('multiqc/align_mqc.tsv')}`);
+  const grid = page.getByRole('region', { name: 'align_mqc.tsv, table' }).getByRole('grid', { name: 'align_mqc.tsv' });
+  await expect(grid).toBeVisible();
+  const aligned = grid.getByRole('columnheader', { name: 'Aligned' });
+  await aligned.focus();
+  await page.keyboard.press('Enter');
+  await expect(aligned).toHaveAttribute('aria-sort', 'ascending');
+  await page.keyboard.press('ArrowDown'); // the filter row
+  await page.keyboard.press('ArrowDown'); // the first row: the lowest Aligned
+  await expect(page.locator(':focus')).toHaveAttribute('role', 'gridcell');
+  await expect(page.locator(':focus')).toHaveText('89.7');
+  await grid.getByRole('textbox', { name: 'Sample Filter Input' }).fill('S01');
+  await expect(grid.getByRole('gridcell', { name: 'S02' })).toHaveCount(0);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => (window as unknown as { cspSeen: string[] }).cspSeen)).toEqual([]);
+  expect(requests.filter((u) => !u.startsWith(new URL(page.url()).origin))).toEqual([]); // no font, licence or telemetry call
+});
