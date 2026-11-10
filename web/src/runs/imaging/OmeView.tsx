@@ -89,7 +89,7 @@ export default function OmeView({ url, size, name, fallback, stateView }: Props)
       restored.current = true; // the first open only: a Reload of the open keeps the view it has
       setShown({ z: url.z, t: url.t });
       setPlane({ z: url.z, t: url.t });
-      setChans(initialChannels(opened.pixels.colours, url.ch, opened.pixels.channels.length));
+      setChans(initialChannels(opened.pixels.colours, opened.pixels.rgb ? null : url.ch, opened.pixels.channels.length)); // RGB has one channel and no panel to undo a URL's ch
     }
     return () => {
       v.destroy();

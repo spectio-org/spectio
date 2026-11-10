@@ -2,6 +2,7 @@
 // file with no OME-XML gets the flat view, and a WebGL failure ends the viewer and the open before
 // the flat view takes its place. Viv, deck.gl and the open are mocked: jsdom has no WebGL.
 import { MantineProvider } from "@mantine/core";
+import { RouterProvider, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 
@@ -24,7 +25,7 @@ vi.mock("./pool", () => ({
 }));
 vi.mock("@hms-dbmi/viv", () => ({
   loadOmeTiff: m.loadOmeTiff,
-  isInterleaved: () => false,
+  isInterleaved: (shape: number[]) => shape.at(-1) === 3, // as Viv: an interleaved RGB source ends with its 3 samples
   getImageSize: (s: { shape: number[] }) => ({ height: s.shape[3], width: s.shape[4] }),
   getDefaultInitialViewState: () => ({ target: [0, 0, 0], zoom: 0 }),
   MultiscaleImageLayer: class {
@@ -44,18 +45,37 @@ vi.mock("@deck.gl/core", () => ({
   },
 }));
 
+import { resultsSearch } from "../ResultsBrowser";
 import OmeView from "./OmeView";
 
 const client = { size: 100, onBusy: null, failure: null };
 const tiff = { parseFileDirectoryAt: vi.fn() };
 const ifd = { ImageWidth: 100, ImageLength: 50 };
 
+const ome = () => <OmeView url="/raw" size={100} name="a.ome.tif" fallback={<p>the flat view</p>} stateView={(s) => <p>{"title" in s ? s.title : "problem"}</p>} />;
+
 function view() {
+  return render(<MantineProvider>{ome()}</MantineProvider>);
+}
+
+/** The viewer under a real router on the browser's history, with the file route's search. */
+function routed() {
+  const root = createRootRoute();
+  const file = createRoute({ getParentRoute: () => root, path: "/runs/$id/results/file", component: ome, validateSearch: resultsSearch });
+  const router = createRouter({ routeTree: root.addChildren([file]) });
   return render(
     <MantineProvider>
-      <OmeView url="/raw" size={100} name="a.ome.tif" fallback={<p>the flat view</p>} stateView={(s) => <p>{"title" in s ? s.title : "problem"}</p>} />
+      <RouterProvider router={router} />
     </MantineProvider>,
   );
+}
+
+function multi() {
+  m.loadOmeTiff.mockResolvedValue({
+    data: [{ shape: [2, 3, 3, 50, 100], tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
+    metadata: { Pixels: { SizeX: 100, SizeY: 50, SizeC: 3, SizeZ: 3, SizeT: 2, Type: "uint8", Channels: [{ Name: "DAPI" }, {}, {}] } },
+  });
+  m.openWalked.mockResolvedValue({ tiff, client, ifds: Array(18).fill(ifd), files: "one", walked: { offsets: [8], values: 0 } });
 }
 
 beforeEach(() => {
@@ -91,11 +111,7 @@ test("a WebGL failure ends the viewer (its deck and its context) and the open's 
 });
 
 test("the view comes from the URL, is written back with a replace, and a reload keeps it", async () => {
-  m.loadOmeTiff.mockResolvedValue({
-    data: [{ shape: [2, 3, 3, 50, 100], tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
-    metadata: { Pixels: { SizeX: 100, SizeY: 50, SizeC: 3, SizeZ: 3, SizeT: 2, Type: "uint8", Channels: [{ Name: "DAPI" }, {}, {}] } },
-  });
-  m.openWalked.mockResolvedValue({ tiff, client, ifds: Array(18).fill(ifd), files: "one", walked: { offsets: [8], values: 0 } });
+  multi();
   window.history.replaceState(null, "", "/runs/r1/results/file?path=a.ome.tif&z=2&t=NaN&ch=2,9&zoom=1&x=10&y=5");
   const push = vi.spyOn(window.history, "pushState");
   const first = view();
@@ -111,4 +127,27 @@ test("the view comes from the URL, is written back with a replace, and a reload 
   first.unmount();
   view(); // a reload: the URL gives the view back
   await waitFor(() => expect(m.layers.at(-1)?.selections).toEqual([{ z: 2, t: 0, c: 2 }, { z: 2, t: 0, c: 0 }]));
+});
+
+// the router keeps the keys its validateSearch leaves out (@tanstack/router-core 1.170.46
+// `dist/esm/router.js:913-925`, `{ ...result, ...validated }`), so its first commit does not strip them
+test("a pasted link keeps the view through the router: the file route keeps z, t, ch, zoom, x and y (CR-P3FU102F-01)", async () => {
+  multi();
+  window.history.replaceState(null, "", "/runs/r1/results/file?path=a.ome.tif&z=2&ch=2,0&zoom=1&x=10&y=5");
+  routed();
+  await waitFor(() => expect(m.layers.at(-1)?.selections).toEqual([{ z: 1, t: 0, c: 2 }, { z: 1, t: 0, c: 0 }]));
+  expect(screen.getByRole("slider", { name: /^Z plane/ })).toHaveValue("2");
+  expect(screen.getByText("Zoom 200 %")).toBeInTheDocument();
+  await waitFor(() => expect(window.location.search).toBe("?path=a.ome.tif&z=2&t=1&ch=2,0&zoom=1&x=10&y=5"));
+});
+
+test.each(["", "0,1,2"])("an RGB image ignores the URL's ch=%s: one selection, channel 0 (CR-P3FU102F-02)", async (ch) => {
+  m.loadOmeTiff.mockResolvedValue({
+    data: [{ shape: [1, 1, 1, 50, 100, 3], tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
+    metadata: { Pixels: { SizeX: 100, SizeY: 50, SizeC: 3, SizeZ: 1, SizeT: 1, Type: "uint8" } },
+  });
+  m.openWalked.mockResolvedValue({ tiff, client, ifds: [{ ...ifd, SamplesPerPixel: 3 }], files: "one", walked: { offsets: [8], values: 0 } });
+  window.history.replaceState(null, "", `/runs/r1/results/file?path=a.ome.tif&ch=${ch}`);
+  view();
+  await waitFor(() => expect(m.layers.at(-1)?.selections).toEqual([{ z: 0, t: 0, c: 0 }]));
 });
