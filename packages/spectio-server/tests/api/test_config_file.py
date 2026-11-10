@@ -232,6 +232,20 @@ def test_req20_config_file_home_link_both_prefixes(
         assert found.status_code == 201, found.text
 
 
+def test_req20_config_file_home_link_with_trailing_slash(
+    authed_client: TestClient, pipe: Callable[[str], Path], tmp_path: Path
+) -> None:
+    """A passwd home written with a trailing '/' that is a link (CR-P3FU110A-01)."""
+    real = tmp_path / "nfs" / "u"
+    real.mkdir(parents=True, mode=0o700)
+    link = tmp_path / "u"
+    link.symlink_to(real)
+    authed_client.app.state.home = (f"{link}/", str(real))  # type: ignore[attr-defined]
+    write(real / "x.config")
+    found = nf(authed_client, pipe, config_file=f"{link}/x.config")
+    assert found.status_code == 201, found.text
+
+
 def test_req20_config_file_home_from_the_password_database(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

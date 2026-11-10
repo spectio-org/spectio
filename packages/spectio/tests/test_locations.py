@@ -62,6 +62,15 @@ def test_req20_config_file_longest_root_wins() -> None:
     assert (root, parts) == ("/home/u/p", ("x.config",))
 
 
+def test_req20_config_file_root_returned_as_given() -> None:
+    """The root comes back as passed, a trailing '/' kept (CR-P3FU110A-01)."""
+    root, parts = locations.check_config_file(
+        "/home/u/x.config", ["/home/u/", "/nfs/home/u"], "nextflow"
+    )
+    assert (root, parts) == ("/home/u/", ("x.config",))
+    assert locations.check_config_file("/x.config", ["/"], "nextflow") == ("/", ("x.config",))
+
+
 @pytest.mark.parametrize(
     ("value", "engine", "why"),
     [

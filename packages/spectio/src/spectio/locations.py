@@ -110,18 +110,19 @@ def check_params_file(value: str) -> str:
 def check_config_file(value: str, roots: Sequence[str], engine: str) -> tuple[str, tuple[str, ...]]:
     """The extra config file of a launch (api §5.7, FU-P3-110a): an absolute path under one of
     `roots` (the user's home, both as written and resolved, and the pipeline's directory), then
-    1 to `MAX_CONFIG_PARTS` PART names, the last with a suffix of `engine`. Returns the root,
-    the longest that holds the path, and the parts after it; reads nothing."""
+    1 to `MAX_CONFIG_PARTS` PART names, the last with a suffix of `engine`. Returns the root
+    as given in `roots` (a trailing '/' kept), the longest that holds the path, and the parts
+    after it; reads nothing."""
     if len(value) > MAX_LOCATION:
         raise ValueError(f"longer than {MAX_LOCATION} characters")
     refuse_control(value)
     if not value.startswith("/"):
         raise ValueError("an absolute path, starting with '/'")
-    under = [r.rstrip("/") for r in roots if value.startswith(r.rstrip("/") + "/")]
+    under = [r for r in roots if value.startswith(r.rstrip("/") + "/")]
     if not under:
         raise ValueError(OUTSIDE_ROOTS)
-    root = max(under, key=len)
-    parts = tuple(value[len(root) + 1 :].split("/"))
+    root = max(under, key=lambda r: len(r.rstrip("/")))
+    parts = tuple(value[len(root.rstrip("/")) + 1 :].split("/"))
     if len(parts) > MAX_CONFIG_PARTS or not all(PART.fullmatch(p) for p in parts):
         raise ValueError(
             f"1 to {MAX_CONFIG_PARTS} plain names after the directory: no '.', '..' or ''"
@@ -129,4 +130,4 @@ def check_config_file(value: str, roots: Sequence[str], engine: str) -> tuple[st
     suffixes = CONFIG_SUFFIXES[engine]
     if not parts[-1].endswith(suffixes):
         raise ValueError(f"a {' or '.join(suffixes)} file")
-    return root or "/", parts
+    return root, parts
