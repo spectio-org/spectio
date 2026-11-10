@@ -309,6 +309,15 @@
   font-weight: 600;
   color: var(--sp-text-link);
 }
+/* a link in running text or beside a button: the app's link colour, as in Results (FU-P3-104) */
+.sp-text-link {
+  font-weight: 600;
+  color: var(--sp-text-link);
+  text-decoration: none;
+}
+.sp-text-link:hover {
+  text-decoration: underline;
+}
 
 .sp-counts {
   display: flex;

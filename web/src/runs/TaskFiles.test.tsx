@@ -368,6 +368,7 @@ test("Outputs: a present output inside the results gets Preview, named after its
   const url = new URL(preview.getAttribute("href")!, "http://x");
   expect(url.pathname).toBe(`/runs/${ID}/results/file`);
   expect(Object.fromEntries(url.searchParams)).toEqual({ path: "counts/S19.tsv", task: "tsk_19", attempt: "2" });
+  expect(getComputedStyle(preview).color).toBe("var(--sp-text-link)"); // FU-P3-104: the app's link style
   // a folder goes through the same page, which sends a folder to the folder page
   expect(within(panel).getByRole("link", { name: "Preview counts" })).toBeInTheDocument();
   expect(within(panel).getAllByRole("link", { name: /^Preview / })).toHaveLength(2);
@@ -408,6 +409,7 @@ test("a Nextflow attempt with a work directory: Browse work directory beside Cop
   const href = new URL(browse.getAttribute("href")!, "http://x");
   expect(href.pathname).toBe(`/runs/${ID}/workdir`);
   expect(Object.fromEntries(href.searchParams)).toEqual({ task: "tsk_19", attempt: "2" });
+  expect(getComputedStyle(browse).color).toBe("var(--sp-text-link)"); // FU-P3-104: the app's link style
   expect(within(sheet).getByRole("button", { name: "Copy the work directory" })).toBeInTheDocument();
 });
 

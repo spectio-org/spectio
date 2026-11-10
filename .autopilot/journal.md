@@ -847,6 +847,13 @@ Orchestrator session session_01MF8RxQASDmXaFjVA49aybZ. Lean helpers: p3-lean per
 
 **In flight:** 87d (#228), 102f. **Next:** promote B12, then the login1 retest; batch B13 (87a, 106b, 87b, 87c, 102e).
 
+## 2026-11-10 — FU-P3-104 hand-off: FU-P3-104b after FU-P3-101a
+
+FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and the bare links of the run's pages. Three items of the login1 retest of 2026-11-09 wait for FU-P3-101a, which replaces the preview table and changes `web/src/runs/FilePreview.tsx`. They are follow-up **FU-P3-104b**, to start once FU-P3-101a has merged (CR-P3FU104-02; ui-spec §4.4.1, status note of 2026-11-10):
+- the table's caption: already the table's first child, so check it on screen inside the sticky scroll region;
+- Browse folder, on the preview page: takes `.sp-text-link`;
+- Open it in the report viewer, on the preview page: takes `.sp-text-link`.
+
 ## 2026-11-10 — 228 to 233 merged; promotion P3-B12 (#232); 102g, 110-spec, 101a in flight
 - Merged #228 (FU-P3-87d), #229 (batch P3-B12 docs), #230 (FU-P3-102f), #231 (FU-P3-87e), #233 (FU-P3-88a) into autopilot/integration; promoted integration to main with #232 (main 5f3bdd25, #218–#230).
 - #229: the SAST rule on argv reaching `subprocess` in `tools/media/tiff_demo.py` was fixed by iterating a constant tuple of shot names. As in B11, the figure is cited in text with the `no-figure` label, because the body tool rewrites image embeds.
