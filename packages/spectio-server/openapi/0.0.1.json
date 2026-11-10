@@ -1061,6 +1061,105 @@
         "title": "LocalValues",
         "type": "object"
       },
+      "Me": {
+        "description": "`GET /me` in 0.0.1 (api \u00a75.8): paths only, never a secret or a file's contents.",
+        "properties": {
+          "paths": {
+            "$ref": "#/components/schemas/MePaths"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          },
+          "session": {
+            "$ref": "#/components/schemas/MeSession"
+          }
+        },
+        "required": [
+          "principal",
+          "session",
+          "paths"
+        ],
+        "title": "Me",
+        "type": "object"
+      },
+      "MePaths": {
+        "properties": {
+          "config_file": {
+            "title": "Config File",
+            "type": "string"
+          },
+          "data_dir": {
+            "title": "Data Dir",
+            "type": "string"
+          },
+          "db_dir": {
+            "title": "Db Dir",
+            "type": "string"
+          },
+          "observed_dir": {
+            "title": "Observed Dir",
+            "type": "string"
+          }
+        },
+        "required": [
+          "config_file",
+          "data_dir",
+          "db_dir",
+          "observed_dir"
+        ],
+        "title": "MePaths",
+        "type": "object"
+      },
+      "MeSession": {
+        "properties": {
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          }
+        },
+        "required": [
+          "started_at",
+          "expires_at"
+        ],
+        "title": "MeSession",
+        "type": "object"
+      },
+      "Principal": {
+        "properties": {
+          "uid": {
+            "title": "Uid",
+            "type": "integer"
+          },
+          "user": {
+            "title": "User",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user",
+          "uid"
+        ],
+        "title": "Principal",
+        "type": "object"
+      },
       "Process": {
         "properties": {
           "counts": {
@@ -3497,6 +3596,20 @@
         ]
       }
     },
+    "/api/v1/auth/session:sign-out": {
+      "post": {
+        "operationId": "sign_out_api_v1_auth_session_sign_out_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sign Out",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/catalog": {
       "get": {
         "operationId": "list_catalog_api_v1_catalog_get",
@@ -3878,6 +3991,27 @@
           }
         },
         "summary": "Events Stream"
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Me",
+        "tags": [
+          "me"
+        ]
       }
     },
     "/api/v1/runs": {

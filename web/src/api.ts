@@ -61,6 +61,14 @@ export interface ServerVersion {
   executor: string;
 }
 
+/** `GET /api/v1/me` in 0.0.1 (schema `Me`, api §5.8): paths only, never a secret. */
+export interface Me {
+  principal: { user: string; uid: number };
+  /** `expires_at` null: the session ends when the server stops. */
+  session: { started_at: string | null; expires_at: string | null };
+  paths: { config_file: string; data_dir: string; db_dir: string; observed_dir: string };
+}
+
 /** api §7.1 (schema `Run.state`). */
 export type RunState =
   | "queued"
@@ -462,6 +470,10 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 export function getVersion(signal?: AbortSignal): Promise<ServerVersion> {
   return call("/version", { signal });
 }
+
+export const getMe = (): Promise<Me> => call("/me");
+/** Ends this session only (api §5.8); the cookie is cleared. */
+export const signOut = (): Promise<null> => call("/auth/session:sign-out", { method: "POST" });
 
 export function inspect(
   location: string,

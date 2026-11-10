@@ -88,7 +88,7 @@ const SEARCH = ICONS.search;
 const BELL = "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0";
 const MOON = "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z";
 const SUN = "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.2 4.2l1.4 1.4 M18.4 18.4l1.4 1.4 M1 12h2 M21 12h2 M4.2 19.8l1.4-1.4 M18.4 5.6l1.4-1.4";
-const PERSON = "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0";
+export const PERSON = "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0";
 
 /** A native switch: the label stays "Dark theme", `aria-checked` says whether it is on. */
 function ThemeSwitch() {
@@ -108,7 +108,7 @@ function ThemeSwitch() {
   );
 }
 
-/** 0.0.1 has no search, notifications or accounts: disabled placeholders with their names (G1). */
+/** 0.0.1 has no search or notifications: disabled placeholders with their names (G1). */
 function Placeholder({ name, path, className = "sp-key" }: { name: string; path: string; className?: string }) {
   return (
     <button type="button" className={className} disabled aria-label={`${name} (not in 0.0.1)`}>
@@ -116,6 +116,17 @@ function Placeholder({ name, path, className = "sp-key" }: { name: string; path:
         <Icon path={path} size={19} />
       </span>
     </button>
+  );
+}
+
+/** The avatar: a link to the Profile page (ui-spec §4.10.1, FU-P3-112). */
+function Avatar() {
+  return (
+    <Link to="/profile" className="sp-key sp-avatar" aria-label="Profile">
+      <span className="sp-key-face">
+        <Icon path={PERSON} size={19} />
+      </span>
+    </Link>
   );
 }
 
@@ -147,7 +158,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
           <Placeholder name="Search" path={SEARCH} className="sp-key sp-narrow-hide" />
           <Placeholder name="Notifications" path={BELL} className="sp-key sp-narrow-hide" />
           <ThemeSwitch />
-          <Placeholder name="Account" path={PERSON} className="sp-key sp-avatar" />
+          <Avatar />
         </div>
         {/* The page's title row (PhoneTitle); hidden while empty, as on Home (MLiteHome). */}
         <div className="sp-mtitle" ref={titleRow} />
@@ -169,7 +180,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
       </button>
       <Placeholder name="Notifications" path={BELL} />
       <ThemeSwitch />
-      <Placeholder name="Account" path={PERSON} className="sp-key sp-avatar" />
+      <Avatar />
     </header>
   );
 }
