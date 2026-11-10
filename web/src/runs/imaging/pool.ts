@@ -73,9 +73,14 @@ export class DecoderPool {
     this.next();
   }
 
-  /** Ends every worker; decodes waiting are refused. */
+  /** Ends every worker; decodes running or waiting are refused. */
   destroy() {
-    for (const slot of this.slots) slot.worker.terminate();
+    for (const slot of this.slots) {
+      clearTimeout(slot.timer);
+      slot.job?.reject(new NotDecoded("the view was closed"));
+      slot.job = undefined;
+      slot.worker.terminate();
+    }
     for (const job of this.queue.splice(0)) job.reject(new NotDecoded("the view was closed"));
   }
 }

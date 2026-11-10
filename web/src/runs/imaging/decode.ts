@@ -14,11 +14,16 @@ type Fd = Record<string, unknown>;
 const many = (value: unknown): number[] => (value === undefined ? [] : ArrayBuffer.isView(value) || Array.isArray(value) ? Array.from(value as ArrayLike<number>) : [Number(value)]);
 const num = (fd: Fd, name: string) => Number(fd[name]);
 
-/** The bytes a tile (or a strip of RowsPerStrip rows) holds once decoded. */
-export function declaredSize(fd: Fd): number {
+/** The width and rows of a tile (or a strip of RowsPerStrip rows). */
+function extent(fd: Fd): [number, number] {
   const tiled = fd.TileWidth !== undefined;
   const width = num(fd, tiled ? "TileWidth" : "ImageWidth");
-  const rows = tiled ? num(fd, "TileLength") : Math.min(num(fd, "RowsPerStrip") || Infinity, num(fd, "ImageLength"));
+  return [width, tiled ? num(fd, "TileLength") : Math.min(num(fd, "RowsPerStrip") || Infinity, num(fd, "ImageLength"))];
+}
+
+/** The bytes a tile (or a strip of RowsPerStrip rows) holds once decoded. */
+export function declaredSize(fd: Fd): number {
+  const [width, rows] = extent(fd);
   const samples = num(fd, "SamplesPerPixel") || 1;
   const listed = many(fd.BitsPerSample);
   const bits = listed.length > 1 ? listed : Array<number>(samples).fill(listed[0] ?? 1);
@@ -79,7 +84,7 @@ function getByte(array: Uint8Array, position: number, length: number): number {
 
 /** The length geotiff's LZW decoder writes, counted code by code as it would read them (its
  * `decompress`, entry lengths only); refused past `max`, and where geotiff would throw or loop. */
-function lzwLength(input: Uint8Array, max: number) {
+export function lzwLength(input: Uint8Array, max: number): number {
   const lengths = new Uint16Array(4093).fill(1, 0, 258); // geotiff's dictionary arrays hold 4093
   let [size, width, position, total] = [258, 9, 0, 0];
   let old: number | undefined;
@@ -100,7 +105,8 @@ function lzwLength(input: Uint8Array, max: number) {
       size++;
       old = code;
     } else {
-      if (old === undefined || code >= 4093) throw corrupt();
+      // only the next entry (KwKwK): a code past it would make geotiff link entries into a cycle
+      if (old === undefined || code !== size || code >= 4093) throw corrupt();
       total += lengths[old] + 1;
       if (size < 4093) lengths[size] = lengths[old] + 1;
       size++;
@@ -109,6 +115,7 @@ function lzwLength(input: Uint8Array, max: number) {
     if (total > max) throw past(max);
     if (size + 1 >= 2 ** width) width === 12 ? (old = undefined) : width++;
   }
+  return total;
 }
 
 /** geotiff's PackBits writes header + 1 bytes per run or literal, whatever the tile. */
@@ -123,9 +130,14 @@ function packBitsLength(input: Uint8Array, max: number) {
 }
 
 /** geotiff's JPEG writes its frame's width x height x components, and allocates every frame it
- * meets (in JPEGTables and the tile). Any 0xFF 0xC0-0xC2 pair counts as a frame: entropy-coded data
- * never holds one, so this sees every frame geotiff can (a pair inside another segment refuses). */
+ * meets (in JPEGTables and the tile), 256 bytes per block rounded up to whole MCUs (its
+ * `prepareComponents`): so a frame is held to the tile's extent and samples, sampling 1 to 4.
+ * Any 0xFF 0xC0-0xC2 pair counts as a frame: entropy-coded data never holds one, so this sees
+ * every frame geotiff can (a pair inside another segment refuses). */
 function jpegFrames(tile: Uint8Array, max: number, fd: Fd) {
+  const [tileWidth, rows] = extent(fd);
+  const samples = fd.PlanarConfiguration === 2 ? 1 : num(fd, "SamplesPerPixel") || 1;
+  const mismatch = () => new NotDecoded("the JPEG frame does not match the tile");
   let frames = 0;
   for (const data of [fd.JPEGTables ? new Uint8Array(fd.JPEGTables as ArrayLike<number>) : new Uint8Array(), tile])
     for (let i = 0; i + 9 < data.length; i++) {
@@ -133,6 +145,11 @@ function jpegFrames(tile: Uint8Array, max: number, fd: Fd) {
       if (++frames > 1) throw new NotDecoded("more than one JPEG frame");
       const [lines, width, components] = [(data[i + 5] << 8) | data[i + 6], (data[i + 7] << 8) | data[i + 8], data[i + 9]];
       if (lines * width * components > max) throw past(max);
+      if (width > tileWidth || lines > rows || components > samples || i + 10 + 3 * components > data.length) throw mismatch();
+      for (let k = 0; k < components; k++) {
+        const [h, v] = [data[i + 11 + 3 * k] >> 4, data[i + 11 + 3 * k] & 15];
+        if (h < 1 || h > 4 || v < 1 || v > 4) throw mismatch();
+      }
     }
 }
 

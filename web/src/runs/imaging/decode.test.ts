@@ -5,7 +5,7 @@
 import { fromArrayBuffer, type Pool } from "geotiff";
 import { deflate } from "pako";
 import { afterEach, expect, test, vi } from "vitest";
-import { NotDecoded, answer, decodeTile, geotiffs } from "./decode";
+import { NotDecoded, answer, decodeTile, geotiffs, lzwLength } from "./decode";
 import { DECODE_TIMEOUT, DecoderPool } from "./pool";
 
 const tile = (Compression: number, side = 16, extra: Record<string, unknown> = {}) => ({ Compression, TileWidth: side, TileLength: side, BitsPerSample: [8], SamplesPerPixel: 1, ...extra });
@@ -40,6 +40,12 @@ function lzw(data: Uint8Array): Uint8Array {
   return Uint8Array.from(out);
 }
 
+/** Raw 9-bit LZW codes, MSB first (streams short enough that the code width never grows). */
+function codes(list: number[]): Uint8Array {
+  const bits = list.map((c) => c.toString(2).padStart(9, "0")).join("");
+  return Uint8Array.from({ length: Math.ceil(bits.length / 8) }, (_, i) => parseInt(bits.slice(i * 8, i * 8 + 8).padEnd(8, "0"), 2));
+}
+
 /** A JPEG of one 8-bit component: DQT, then one SOF0 per `frames` entry (height x width), no scan. */
 const jpeg = (...frames: [number, number][]) =>
   buf([0xff, 0xd8, 0xff, 0xdb, 0, 67, 0, ...Array(64).fill(1), ...frames.flatMap(([h, w]) => [0xff, 0xc0, 0, 11, 8, h >> 8, h & 255, w >> 8, w & 255, 1, 1, 0x11, 0]), 0xff, 0xd9]);
@@ -69,6 +75,34 @@ test("LZW is geotiff's own decoder, held to the tile's declared size", async () 
   await expect(decodeTile(tile(5), buf([0x96, 0x00]))).rejects.toThrow("the LZW data is corrupt"); // a first code of 300, past the dictionary: geotiff alone loops
 });
 
+test("an LZW code past the next dictionary entry is refused: forward references build cycles geotiff walks forever", async () => {
+  const cycles = [
+    [256, 1, 300, ...Array(40).fill(1), 259, 1, 259, 257],
+    [65, 300, 1, ...Array(38).fill(2), 260, 1, 260, 257],
+  ];
+  for (const stream of cycles) await expect(decodeTile(tile(5), codes(stream).buffer as ArrayBuffer)).rejects.toThrow("the LZW data is corrupt");
+  expect(new Uint8Array(await decodeTile(tile(5, 1, { TileLength: 3 }), codes([256, 7, 258, 257]).buffer as ArrayBuffer))).toEqual(new Uint8Array([7, 7, 7])); // KwKwK: the code is the next entry
+});
+
+test("every LZW stream lzwLength passes decodes to the length it predicts with geotiff", async () => {
+  const Lzw = await geotiffs[5];
+  let passed = 0;
+  for (let n = 0; n < 2000; n++) {
+    // before code j the dictionary holds 258 + j - 1 entries: high codes land around its end
+    const pick = (_: unknown, j: number) => (Math.random() < 0.7 ? Math.floor(Math.random() * 256) : 258 + j - 1 + Math.floor(Math.random() * 5) - 3);
+    const stream = codes([256, ...Array.from({ length: 30 }, pick), 257]);
+    let predicted: number;
+    try {
+      predicted = lzwLength(stream, 1 << 20);
+    } catch {
+      continue;
+    }
+    passed++;
+    expect(new Lzw(tile(5)).decodeBlock(stream.slice().buffer).byteLength).toBe(predicted);
+  }
+  expect(passed).toBeGreaterThan(50);
+});
+
 test("PackBits is bounded by its run headers, not the tile: held to the declared size", async () => {
   const runs = buf(Array(4).fill([0x81, 7]).flat()); // 4 runs of 128 bytes from 8 bytes
   expect(await original(tile(32773), runs)).toBe(512);
@@ -82,6 +116,21 @@ test("JPEG output is its own frame's size, not the tile's: a larger frame or a s
   await expect(decodeTile(tile(7), jpeg([16, 16], [16, 16]))).rejects.toThrow("more than one JPEG frame");
   await expect(decodeTile(tile(7, 16, { JPEGTables: new Uint8Array(jpeg([16, 16])) }), jpeg([16, 16]))).rejects.toThrow("more than one JPEG frame");
   expect((await decodeTile(tile(7), jpeg([16, 16]))).byteLength).toBe(256);
+});
+
+/** A JPEG whose SOF0 is `lines` x `width` with `components` components of sampling `h` x `v`. */
+const frame = (lines: number, width: number, components: number, h = 1, v = 1) =>
+  buf([0xff, 0xd8, 0xff, 0xc0, 0, 8 + 3 * components, 8, lines >> 8, lines & 255, width >> 8, width & 255, components, ...Array.from({ length: components }, (_, k) => [k, (h << 4) | v, 0]).flat(), 0xff, 0xd9]);
+
+test("a JPEG frame geotiff would allocate past the tile for is refused: its size, components and sampling", async () => {
+  const rgba = tile(7, 4096, { SamplesPerPixel: 4, BitsPerSample: [8, 8, 8, 8] });
+  await expect(decodeTile(rgba, frame(1, 65535, 255, 15, 15))).rejects.toThrow("the JPEG frame does not match the tile"); // within 64 MiB of output, about 8 GB of blocks
+  await expect(decodeTile(rgba, frame(1, 4096, 20, 1, 1))).rejects.toThrow("the JPEG frame does not match the tile"); // more components than samples
+  await expect(decodeTile(rgba, frame(1, 4096, 4, 15, 15))).rejects.toThrow("the JPEG frame does not match the tile"); // sampling past 4
+  await expect(decodeTile(rgba, frame(8, 4097, 1))).rejects.toThrow("the JPEG frame does not match the tile"); // wider than the tile
+  await expect(decodeTile(rgba, frame(4097, 8, 1))).rejects.toThrow("the JPEG frame does not match the tile"); // taller than the tile
+  await expect(decodeTile(tile(7, 16, { SamplesPerPixel: 3, BitsPerSample: [8, 8, 8], PlanarConfiguration: 2 }), frame(4, 4, 3))).rejects.toThrow("the JPEG frame does not match the tile"); // one sample per plane
+  await expect(decodeTile(tile(7), buf([0xff, 0xd8, 0xff, 0xc0, 0, 11, 8, 0, 16, 0, 16, 1, 1]))).rejects.toThrow("the JPEG frame does not match the tile"); // its components cut off
 });
 
 test("the worker's answer: the decoded tile with its id, or the reason", async () => {
@@ -135,6 +184,21 @@ test("a decode past 10 s ends: the worker is terminated and replaced", async () 
   expect(workers[0].terminated).toBe(true);
   expect(new Uint8Array(await queued)).toEqual(new Uint8Array([2])); // on the replacement
   expect(workers).toHaveLength(2);
+});
+
+test("closing the view during a decode ends it: no worker replaces the closed one, the decode is refused as closed", async () => {
+  vi.useFakeTimers();
+  const workers: FakeWorker[] = [];
+  const pool = new DecoderPool(1, () => (workers.push(new FakeWorker(true)), workers.at(-1) as unknown as Worker));
+  const hung = pool.decode(tile(1, 1), buf([1]));
+  const outcome = hung.catch((err: Error) => err);
+  pool.destroy();
+  vi.advanceTimersByTime(DECODE_TIMEOUT);
+  expect(workers).toHaveLength(1);
+  expect(workers[0].terminated).toBe(true);
+  const err = await outcome;
+  expect(err).toBeInstanceOf(NotDecoded);
+  expect((err as Error).message).toBe("the view was closed");
 });
 
 test("a crafted TIFF whose Deflate strip is a bomb ends in NotDecoded through geotiff and the pool", async () => {
