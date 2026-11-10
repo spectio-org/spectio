@@ -43,6 +43,7 @@ from spectio_server.api import (
     problems,
     relaunch,
     results,
+    runs_manage,
     runs_read,
     runs_write,
     stream,
@@ -179,6 +180,7 @@ def create_app(
         routers = (
             workflows,
             runs_write,
+            runs_manage,
             relaunch,
             runs_read,
             logs,
