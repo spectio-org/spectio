@@ -411,3 +411,19 @@ def test_req18_file_doctor_prints_path_state_default(
     path.chmod(0o666)
     found = line(doctor(capsys, settings)[1], "environments")
     assert found.startswith(f"warn environments {path}: refused (") and "default local" in found
+
+
+def test_req18_catalog_file_doctor_prints_path_state(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """FU-P3-87a (api §5.6): the catalog file's path and state; a bad value written by hand is
+    `invalid`, a warning, never a crash, and its detail never quotes the value."""
+    settings = configured(home, executor="local")
+    path = home / ".spectio" / "catalog.toml"
+    assert line(doctor(capsys, settings)[1], "catalog") == f"ok catalog {path}: missing"
+    path.write_text('[pipelines.x]\nengine = "nextflow"\nlocation = "/srv/x"\n')
+    path.chmod(0o600)
+    assert line(doctor(capsys, settings)[1], "catalog") == f"ok catalog {path}: ok"
+    path.write_text('[pipelines.x]\nengine = "nextflow"\nlocation = "http://h/SECRET"\n')
+    found = line(doctor(capsys, settings)[1], "catalog")
+    assert found.startswith(f"warn catalog {path}: invalid (") and "SECRET" not in found

@@ -49,6 +49,10 @@ MODELS = {
     ("/api/v1/environments/{name}", "get", "200"): "EnvironmentItem",
     ("/api/v1/environments", "post", "201"): "EnvironmentItem",
     ("/api/v1/environments/{name}", "put", "200"): "EnvironmentItem",
+    ("/api/v1/catalog", "get", "200"): "CatalogList",  # FU-P3-87b
+    ("/api/v1/catalog/{name}", "get", "200"): "CatalogItem",
+    ("/api/v1/catalog", "post", "201"): "CatalogItem",
+    ("/api/v1/catalog/{name}", "put", "200"): "CatalogItem",
     ("/api/v1/runs:summary", "get", "200"): "Summary",
     ("/api/v1/version", "get", "200"): "ServerVersion",
     ("/api/v1/runs/{run_id}/processes", "get", "200"): "ProcessList",
