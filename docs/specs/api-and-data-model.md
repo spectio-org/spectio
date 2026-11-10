@@ -660,6 +660,40 @@ All four answer `{items: []}` or empty `groups` with `200` when nothing matches;
 - **FU-P3-110c · UI, boards.** The Resources and Extra config rows on LiteLaunch, LiteLaunchSnakemake and MLiteLaunch (360 and 320 px), their errors, the summary lines and the Run detail facts on LiteRunDetail; rendered and looked at; `ux-reviewer`.
 - **FU-P3-110d · UI, the form, the summary and Run detail.** The rows, only the leaves set in a Snakemake `params.json` with an extra file, the reasons of "Before Launch", the summary, Copy to a new launch and Resume lines, the Run detail facts and the kept file's view; Vitest and the Playwright launch smoke with an extra file.
 
+### 5.8 Workflow graph (0.0.2, flag `graph_view`)
+
+*Added 2026-11-10, issue [#160](https://github.com/spectio-org/spectio/issues/160) (Thomas, 2026-11-10: interactive graph, views by subworkflow / stage / process / jobs, dynamic layouts, search, live params and outputs; build in 0.0.2 behind a flag). Spike: [MetroFlow](../research/spike-metroflow-2026-11-10.md). Decision: [log](../decisions/log.md#2026-11-10-workflow-graph-in-002-behind-a-flag-160-thomas). Screens: [ui-spec §4.14](ui-spec.md#414-workflow-graph-002-flag-graph_view).* This section owns the graph document and its routes.
+
+**Flag.** `server.features` (TOML) or `SPECTIO_SERVER_FEATURES` (comma-separated) contains `graph_view`. `GET /features` returns `{"features": [...]}`. When the flag is off, each graph route answers `404` with problem type `feature-disabled`.
+
+**Graph document, version 1.** The document is engine-neutral. The same shape serves Nextflow and Snakemake, and later CWL and WDL.
+
+| Field | Content |
+|---|---|
+| `version` | `1` |
+| `engine` | `nextflow` or `snakemake` |
+| `producer` | `nf-dag` (the runtime DAG from `nf-spectio`), `smk-rulegraph` (Snakemake's rule graphs), `bioflow-insight` (static analysis of Nextflow code), or `stages-only` (nodes with no edges). The list runs from most to least trusted |
+| `complete` | `false` when the edges are unknown or estimated, or when the DAG can still grow (an open checkpoint) |
+| `groups[]` | `{id, kind: stage\|subworkflow, name, parent, condition}`, outermost first. Nextflow subworkflows come from the `:` segments of the qualified process name. Snakemake rules get one group per rule file when they come from several files |
+| `nodes[]` | `{id, name, kind: process\|rule\|checkpoint\|gate, stage_id, subworkflow, source, condition, params[]}`. `id` is the stored process or rule name, so a node joins `/processes` and `/tasks?process=` directly. `params` lists the `params.<x>` names that the node's code reads, when a static producer can tell |
+| `edges[]` | `{source, target, condition?}`. Edges can form cycles: static analysis does (see the [spike](../research/spike-metroflow-2026-11-10.md#3-measurements)). Every client algorithm must tolerate them |
+
+The run graph adds a runtime overlay to each node. It holds `status`, `counts`, `retries` and `pipeline_order` (as in `/processes`), plus `metrics {duration_s, cpu_mean, mem_max, failed}` and `first_start`, `last_end`. All of these values are computed and never stored.
+
+**Routes.**
+
+| Route | Returns |
+|---|---|
+| `GET /runs/{id}/graph` | the document with its overlay. Producer order: Snakemake uses the union of the run's rule graphs (§7, `snakemake.rulegraph`) and grows on `dag_updated`. Nextflow uses `payload.dag` of the run's first `nextflow.onFlowBegin`, then BioFlow-Insight on the run's local workflow, then `stages-only` |
+| `GET /workflows:graph?location=&revision=` | a static document for Launch, with no overlay. The location is checked as for `/workflows:inspect` |
+| `GET /runs/{id}/processes/{name}/outputs` | `{items: [{path, task_id, attempt_n, state: present\|removed\|missing\|unknown, temp}]}`. Snakemake reads `attempts.outputs`. Nextflow reads publish events, or else the work directory. A removed `temp()` file is listed but cannot be downloaded (ui-spec §5.2) |
+
+**`nf-spectio` `onFlowBegin`.** `dag: {processes: [...], edges: [[from, to], ...]}`, collapsed to processes from `session.dag`: walks through operators and channels. Bounded at 2000 processes and 20000 edges, beyond which it sends `{truncated: true}`. Any error leaves the field out, and the run is not affected.
+
+**BioFlow-Insight.** An optional install extra, `spectio-server[graph]`, which pins `bioflow-insight` (MIT). It needs Java and Graphviz. It runs on the server host, on the local workflow directory, in a subprocess with a 60 s timeout and a temporary output directory. Code is never sent to the hosted service.
+
+**Untrusted text.** Names, conditions and paths come from pipeline code. Clients render them as text only.
+
 ## 6. Identity, tenancy and permissions
 
 Sign-in methods, sessions, tokens, magic links, share links and pipeline provisioning are specified in [`authentication-and-access.md`](authentication-and-access.md). This section owns principals, tenancy and roles.

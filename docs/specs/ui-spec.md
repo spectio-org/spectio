@@ -731,6 +731,60 @@ A separate, simpler layout below 768 px (depictio's phone model), not a squeezed
 - **Phone (360 px).** The runs list stays one card per run (§4.11), so the phone never loads the grid for it. The preview keeps its table on a phone, as before: the grid scrolls sideways inside its region, the filter boxes included.
 - **Bundle cost.** AG Grid is its own lazy chunk (`DataGrid-*.js`, listed in `tests/packaging/contents/spectio_server.wheel.txt`), loaded with the first table: 824,919 bytes, about 232 kB gzipped (Vite 7.3.7 build, 2026-11-10). The main chunk goes from 679,248 to 679,982 bytes. Only the modules used are registered: client-side rows, text filter, row auto height, row style and the render API.
 
+### 4.14 Workflow graph (0.0.2, flag `graph_view`)
+
+*Added 2026-11-10, issue [#160](https://github.com/spectio-org/spectio/issues/160) (Thomas, 2026-11-10). Data: [api §5.8](api-and-data-model.md#58-workflow-graph-002-flag-graph_view). Spike and renderer choice: [MetroFlow](../research/spike-metroflow-2026-11-10.md). Board: `design/ui-canvas/RunGraph.dc.html`. Code: `web/src/runs/graph/`. Shown only when `GET /features` lists `graph_view`.* This section owns the graph screens.
+
+**Where it appears.**
+- A **Graph** tab in Run detail, next to Summary, Tasks, Parameters and Logs (§4.4), with its state in the URL (`?tab=graph&level=&layout=&q=&node=`).
+- A **Workflow map** panel on Launch (§4.6), drawn from the static document before any run exists.
+
+**Levels.**
+- **Stage**: one node per stage, with edges merged.
+- **Subworkflow**: Nextflow subworkflows, or Snakemake rule files.
+- **Process**: one node per process or rule. This is the default.
+- **Jobs**: the chosen nodes expanded into their tasks, loaded from `/tasks?process=`.
+
+A compound node can be collapsed or expanded in place.
+
+**Layouts**, switchable at any time; the choice is kept per user:
+- **Layered**, top-down or left-right;
+- **Metro**: one lane per stage or subworkflow, with x the topological rank;
+- **Compact**: a grid per stage;
+- **Upstream**: BioFlow-Insight's own positions, offered only when that producer drew the graph.
+
+**Search.** Search by name, kind, state, parameter or output file. Matches are highlighted and the other nodes dimmed. Enter goes to the next match and Escape clears the search. The query is kept in the URL.
+
+**Overlays.**
+- **State** (default): the status colours of §3, with the words of §5.2.
+- **Heatmap**: duration, CPU, memory or failures, each with a legend that gives the scale.
+- **Critical path**: the longest path by duration, with back edges dropped first.
+
+**Run tools.**
+- **Diff** against another run of the same workflow: nodes added or removed, the change in duration, cached versus re-run.
+- **Lineage**: the ancestors and descendants of a node, or of the node that produced a chosen output.
+- **Replay**: a time scrubber from the first task start to the last task end that colours each node by its state at that time.
+- **Minimap**.
+- **Export** as SVG or PNG.
+
+**Node sheet.** Opening a node shows:
+- its status and counts;
+- the parameters it reads, with this run's values;
+- its outputs, live from `/processes/{name}/outputs`, where a removed temporary file is shown as removed;
+- its tasks, each opening the task sheet of §4.4;
+- its source file and line, and its condition.
+
+The sheet is `aria-modal`, and focus returns to the node when it closes.
+
+**Live.** The graph refetches on the run's frames (`useFrames`). Nodes keep their positions. A node added after a checkpoint is appended, and the header reads "DAG grows" while `complete` is false (§5.2).
+
+**Estimates.** When `producer` is `bioflow-insight` or `stages-only`, a banner says "Static estimate from the code — edges may be approximate" or "Edges unknown — showing stages and processes".
+
+**Accessibility and phone.**
+- Every node is a native `<button>` whose accessible name gives its name, kind and state, for example "ALIGN, process, running, 3 of 10 done".
+- Level and layout pickers are `<button role="tab">` groups, and overlays are `<button role="switch" aria-checked>`.
+- A **List** view gives the same content as a table and is the default on phones (§4.11). Nothing is hover-only.
+
 ## 5. Engine specifics surfaced in the UI
 - Nextflow: stages from `match` globs, stopped by a generated `ext.when` config (§5.1); tasks filtered by `when:` shown as "not scheduled" (`nf-spectio`); job arrays grouped under their parent job; published files and workflow outputs.
 - Snakemake: checkpoints shown as "DAG grows — at least N tasks"; temporary files with lifecycle (created → removed); group jobs; benchmark-based resource usage.

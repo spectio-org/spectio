@@ -176,6 +176,7 @@ nav:
           - "Spike t3-ci: sind SLURM on CI runners": research/spike-t3-ci-2026-10-28.md
           - "Spike t4-ci: kind and Kueue on CI runners": research/spike-t4-ci-2026-10-28.md
           - "Spike: stage detection": research/spike-stage-detection-2026-10-28.md
+          - "Spike: MetroFlow and the workflow graph": research/spike-metroflow-2026-11-10.md
           - "Checkpoints, temp outputs and SLURM efficiency": research/dag-temp-slurm-efficiency-2026-11-07.md
           - EMBL login node audit: research/2026-11-08-embl-login-node-audit.md
   - Roadmap: roadmap/index.md

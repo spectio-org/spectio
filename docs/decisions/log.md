@@ -1344,3 +1344,19 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Kept:** `code-reviewer` on every task; `security-reviewer` on sensitive paths; test-first builds; the full CI on code PRs and on `main`; the human gates of `pipeline.yaml`.
 - **Changed.** [autopilot.md](../playbooks/autopilot.md) new §14 and notes in §11 and §13; [documentation-system §3.5](../specs/documentation-system.md#35-docs-per-batch-of-p3-tasks-thomas-2026-11-04); `.claude/skills/autopilot/SKILL.md` §4b; `tools/autopilot/lean/p3-lean.js`, `p3-batch.js` and README; `.github/workflows/ci.yml`; `CLAUDE.md`.
 - **To check after two runs.** Features merged per run and cost per feature (`costs.jsonl`, by kind), against the 11-10 run.
+
+## 2026-11-10 — Workflow graph in 0.0.2 behind a flag (#160, Thomas)
+
+- **Context.** Issue [#160](https://github.com/spectio-org/spectio/issues/160) asks for a MetroFlow-style explorable workflow map. Thomas, 2026-11-10, asked for: an interactive graph; views by subworkflow or Spectio stage, by process, and split into all jobs; dynamic layouts; search; parameters and outputs viewed live. His extras were the critical path and heatmap, a diff of runs on the graph, file lineage, and replay with a minimap. Also from him: fork MetroFlow first, then analyse, then implement; pick the renderer after the spike; build in 0.0.2 behind a flag.
+- **Spike** ([note](../research/spike-metroflow-2026-11-10.md)):
+  - BioFlow-Insight is MIT and has been vendored to `spikes/metroflow/upstream/`.
+  - The MetroFlow renderer is in a private repository.
+  - BioFlow-Insight reads Nextflow only. Its static edges can contain cycles (nf-core/fetchngs).
+- **Decided:**
+  - Spectio's own engine-neutral graph document ([api §5.8](../specs/api-and-data-model.md#58-workflow-graph-002-flag-graph_view)) and its own renderer, React Flow + dagre (both MIT) ([ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view)).
+  - Producers, from most to least trusted: the Nextflow runtime DAG from `nf-spectio` `onFlowBegin`, the Snakemake rule graph, BioFlow-Insight as an optional extra, and stages only.
+  - The flag is `graph_view` and is off by default.
+  - Code is never sent to the hosted BioFlow-Insight.
+- **Changed.** [api §5.8](../specs/api-and-data-model.md#58-workflow-graph-002-flag-graph_view), [ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view), [dev environment §15.1](../specs/dev-environment-and-testing.md) (Visualisation row).
+- **Open.** Ask the MetroFlow authors about the renderer's licence. Measure BioFlow-Insight at nf-core scale (rnaseq). OME-NGFF badges on imaging nodes ([#246](https://github.com/spectio-org/spectio/issues/246)).
+
