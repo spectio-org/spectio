@@ -1,6 +1,7 @@
 """A launch's `default_resources` and `config_file` (FU-P3-110a, api §5.7; dev-env §15.3
 req. 20): the strict checks of `POST /runs`, the path rule and the read, what the manifest and
-`runs` keep, `GET /runs/{id}` and the launch template. The runner's side is FU-P3-110b."""
+`runs` keep, `GET /runs/{id}` and the launch template; what the runner gets, Resume's copy and
+`GET /runs/{id}/config-file` (FU-P3-110b)."""
 
 import hashlib
 import os
@@ -15,15 +16,21 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from spectio.config import Settings, SlurmOpts
-from spectio.runner.rundir import read_run_manifest, run_paths
+from spectio.environments import DefaultResources
+from spectio.runner import loop
+from spectio.runner.engines import EngineInfo
+from spectio.runner.rundir import make_run_dirs, read_run_manifest, run_paths
+from spectio.runner.types import ExtraFile
 from spectio_server.api import extras
 from spectio_server.files.pool import Stalled
 from spectio_server.rebuild import rebuild_index
+from spectio_server.sink import StoreSink
 from spectio_server.store.schema import runner_commands, runs
 from spectio_server.store.writer import Writer
 
 from ..test_serve import make_run, run_id
-from .test_launch import fields, launch, table
+from .test_launch import RecordingLauncher, fields, launch, table
+from .test_relaunch import end, resume
 
 API = "/api/v1"
 NF_TEXT = "process.memory = '2 GB'\nincludeConfig 'other.config'\n"
@@ -95,9 +102,8 @@ def test_req20_resources_bounds_and_kept(
     assert run["config_file"] is None
     template = authed_client.get(f"{API}/runs/{rid}:launch-template").json()
     assert template["default_resources"] == values and template["config_file"] is None
-    # nothing reaches the runner before FU-P3-110b
     (command,) = table(writer, runner_commands)
-    assert "default_resources" not in command.payload
+    assert command.payload["default_resources"] == values
 
 
 @pytest.mark.parametrize("body", [None, {}])
@@ -193,7 +199,12 @@ def test_req20_config_file_kept(
         "code_loading"
     ]
     (command,) = table(writer, runner_commands)
-    assert "config_file" not in command.payload  # the bytes go to the runner in FU-P3-110b
+    assert command.payload["config_file"] == {
+        "kept_as": "extra.config",
+        "sha256": kept["sha256"],
+        "size": kept["size"],
+        "text": NF_TEXT,
+    }
 
 
 def test_req20_config_file_in_the_pipeline_under_tmp(
@@ -410,3 +421,128 @@ def test_req20_rebuild_reads_both_fields(settings: Settings, writer: Writer) -> 
     res, cfg = column(writer, run_id(3))
     assert res == {"cpus": None, "mem_mib": None, "time_min": None, "state": "not_readable"}
     assert cfg["state"] == "not_readable" and cfg["path"] is None
+
+
+# --- FU-P3-110b: the runner, Resume and the kept file -----------------------------------------
+
+
+def launched_with_file(
+    client: TestClient, pipe: Callable[[str], Path], home: Path, **body: Any
+) -> str:
+    path = write(home / "conf" / "extra.config")
+    found = nf(client, pipe, config_file=str(path), **body)
+    assert found.status_code == 201, found.text
+    return str(found.json()["id"])
+
+
+def kept_path(settings: Settings, rid: str) -> Path:
+    return run_paths(settings.runs_root, rid).launch_dir / ".spectio" / "extra.config"
+
+
+def keep(settings: Settings, rid: str, text: str = NF_TEXT) -> Path:
+    """What the runner leaves: the snapshot in the run's `.spectio/`, 0600."""
+    make_run_dirs(settings.runs_root, rid)
+    return write(kept_path(settings, rid), text)
+
+
+def test_req20_runner_gets_the_values_and_the_bytes_then_cleared(
+    authed_client: TestClient,
+    pipe: Callable[[str], Path],
+    home: Path,
+    settings: Settings,
+    writer: Writer,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rid = launched_with_file(authed_client, pipe, home, default_resources={"mem_mib": 100})
+    monkeypatch.setattr(loop, "check_engine", lambda engine, cmd: EngineInfo(engine, "26.10.4"))
+    launcher = RecordingLauncher()
+    loop.RunnerLoop(StoreSink(writer, settings.runs_root), launcher, settings).tick()
+    (spec,) = launcher.specs
+    assert spec.run_id == rid and spec.default_resources == DefaultResources(mem_mib=100)
+    sha = hashlib.sha256(NF_TEXT.encode()).hexdigest()
+    assert spec.config_file == ExtraFile("extra.config", sha, NF_TEXT)
+    # once the command is answered, no row holds the bytes (SEC-P3FU110-SPEC-01)
+    (command,) = table(writer, runner_commands)
+    assert command.state == "done" and command.payload["config_file"]["text"] is None
+    assert command.payload["config_file"]["sha256"] == sha
+    # the copied command names the kept file, read from the payload without its bytes
+    argv = authed_client.get(f"{API}/runs/{rid}").json()["command"]["argv"]
+    own = run_paths(settings.runs_root, rid).launch_dir / ".spectio"
+    assert argv[argv.index("-c") + 1] == f"{own}/extra.config,{own}/spectio.config"
+
+
+def test_req20_resume_copies_the_kept_file(
+    authed_client: TestClient,
+    pipe: Callable[[str], Path],
+    home: Path,
+    settings: Settings,
+    writer: Writer,
+) -> None:
+    rid = launched_with_file(authed_client, pipe, home, default_resources={"time_min": 5})
+    end(writer, settings, rid)
+    keep(settings, rid)
+    (home / "conf" / "extra.config").write_text("process.cpus = 64\n")  # changes no run
+    found = resume(authed_client, rid)
+    assert found.status_code == 201, found.text
+    child = found.json()["id"]
+    commands = {c.run_id: c.payload for c in table(writer, runner_commands)}
+    assert commands[child]["config_file"]["text"] == NF_TEXT
+    assert commands[child]["default_resources"] == {"cpus": None, "mem_mib": None, "time_min": 5}
+    manifest = read_run_manifest(run_paths(settings.runs_root, child).run_dir)
+    assert (
+        manifest.config_file
+        == read_run_manifest(run_paths(settings.runs_root, rid).run_dir).config_file
+    )
+    assert manifest.default_resources == {"cpus": None, "mem_mib": None, "time_min": 5}
+
+
+@pytest.mark.parametrize("change", ["edited", "missing", "link"])
+def test_req20_resume_refuses_a_changed_copy(
+    authed_client: TestClient,
+    pipe: Callable[[str], Path],
+    home: Path,
+    settings: Settings,
+    writer: Writer,
+    change: str,
+) -> None:
+    rid = launched_with_file(authed_client, pipe, home)
+    end(writer, settings, rid)
+    if change == "edited":
+        keep(settings, rid, "process.cpus = 64\n")
+    elif change == "link":
+        kept_path(settings, rid).symlink_to(home / "conf" / "extra.config")
+    found = resume(authed_client, rid)
+    assert fields(found) == ["config_file"]
+    assert "use Copy to a new launch" in message(found)
+
+
+def test_req20_get_config_file(
+    authed_client: TestClient,
+    pipe: Callable[[str], Path],
+    home: Path,
+    settings: Settings,
+    writer: Writer,
+) -> None:
+    rid = launched_with_file(authed_client, pipe, home)
+    assert authed_client.get(f"{API}/runs/{rid}/config-file").status_code == 404  # not kept yet
+    path = keep(settings, rid)
+    found = authed_client.get(f"{API}/runs/{rid}/config-file")
+    assert found.status_code == 200, found.text
+    assert found.text == NF_TEXT
+    assert found.headers["content-type"] == "text/plain; charset=utf-8"
+    assert found.headers["etag"] == f'"{hashlib.sha256(NF_TEXT.encode()).hexdigest()}"'
+    assert found.headers["content-security-policy"] == "sandbox; default-src 'none'"
+    assert found.headers["cross-origin-resource-policy"] == "same-origin"
+    assert found.headers["x-content-type-options"] == "nosniff"
+    path.write_text("edited by hand\n")
+    changed = authed_client.get(f"{API}/runs/{rid}/config-file")
+    edited = hashlib.sha256(b"edited by hand\n").hexdigest()
+    assert changed.headers["etag"] == f'"{edited}"'
+    path.unlink()
+    path.symlink_to(home / "conf" / "extra.config")
+    assert authed_client.get(f"{API}/runs/{rid}/config-file").status_code == 404
+    write(path.with_name("big"), "x" * (extras.MAX_CONFIG_FILE + 1)).replace(path)
+    assert authed_client.get(f"{API}/runs/{rid}/config-file").status_code == 404
+    other = nf(authed_client, pipe).json()["id"]
+    assert authed_client.get(f"{API}/runs/{other}/config-file").status_code == 404
+    assert authed_client.get(f"{API}/runs/run_nope/config-file").status_code == 404

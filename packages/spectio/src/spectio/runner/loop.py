@@ -21,12 +21,19 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from spectio.config import Settings
-from spectio.environments import Snapshot, as_snapshot, launch_fields, server_builtin, snapshot
+from spectio.environments import (
+    DefaultResources,
+    Snapshot,
+    as_snapshot,
+    launch_fields,
+    server_builtin,
+    snapshot,
+)
 from spectio.runner.engines import EngineError, check_engine
 from spectio.runner.local import checkable, same_process
 from spectio.runner.observed import check_observed_launch_dir, end_pointer, scan_observed
@@ -44,6 +51,7 @@ from spectio.runner.rundir import (
 from spectio.runner.spool import SPOOL_REFUSED, SPOOL_STALLED, try_read_spool
 from spectio.runner.types import (
     Command,
+    ExtraFile,
     Failure,
     FileRunner,
     HeadReport,
@@ -83,6 +91,18 @@ class ResumePayload(BaseModel):
     inode: int
 
 
+class ConfigFilePayload(BaseModel):
+    """The launch command's extra config file (api §5.7): its bytes in `text`, set to null once
+    the command is answered (`sink.ack`), so no lasting row holds a possible secret."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    kept_as: Literal["extra.config", "extra.yaml", "extra.json"]
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    size: int = Field(ge=0, le=256 * 1024)
+    text: str | None
+
+
 class LaunchPayload(BaseModel):
     """The payload of a `launch` command (written by P1 Tasks 17 and 30). `environment` is the
     run's snapshot (FU-P3-86c), checked again here with the routes' strict model; a command
@@ -95,6 +115,13 @@ class LaunchPayload(BaseModel):
     params: dict[str, JsonValue] = {}
     resume_of: ResumePayload | None = None
     environment: Snapshot | None = None
+    default_resources: DefaultResources | None = None  # api §5.7 (FU-P3-110b)
+    config_file: ConfigFilePayload | None = None
+
+
+def extra_file(payload: LaunchPayload) -> ExtraFile | None:
+    kept = payload.config_file
+    return None if kept is None else ExtraFile(kept.kept_as, kept.sha256, kept.text)
 
 
 def _now() -> str:
@@ -306,6 +333,8 @@ class RunnerLoop:
                 nxf_opts=engines.nxf_opts,
                 extra_args=engines.extra_args.get(ref.engine, []),
                 resume_of=resume,
+                default_resources=payload.default_resources,
+                config_file=extra_file(payload),
             )
             status, detail = runs_disk(self.settings.runs_root)
             if status == "warn":  # never refused: the engine may still fit (FU-P3-74)

@@ -6,8 +6,9 @@ the password database, or the pipeline's directory; `spectio.locations.check_con
 which): each part after the root is opened with O_NOFOLLOW, so a symbolic link is refused, and
 the root, each directory and the file are checked with `fstat`. Every refusal is a ValueError
 in words that never quotes the file's bytes; an I/O error is an OSError, which the route
-answers with `503`. The run keeps the path, the name the runner will keep it as, its SHA-256,
-its size and whether it holds `includeConfig`; the bytes reach the runner in FU-P3-110b.
+answers with `503`. The run keeps the path, the name the runner keeps it as, its SHA-256,
+its size and whether it holds `includeConfig`; the bytes reach the runner in the launch command
+(FU-P3-110b), which keeps them in the run's `.spectio/`: `read_kept` reads that copy back.
 """
 
 import contextlib
@@ -17,13 +18,15 @@ import json
 import os
 import pwd
 import stat
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
 import yaml
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, ValidationError
 
-from spectio.environments import Environment, MemMib
+from spectio.environments import DefaultResources, Environment
 from spectio.locations import refuse_control
+from spectio.runner.rundir import private_dir
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import NO_ALIASES, load_yaml
 
@@ -37,16 +40,6 @@ KEPT_AS = {
 _DIR = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 _FILE = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
 _OTHERS = stat.S_IWGRP | stat.S_IWOTH
-
-
-class DefaultResources(BaseModel):
-    """api §5.7, in the units of §5.4."""
-
-    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
-
-    cpus: Annotated[int, Field(ge=1, le=256)] | None = None
-    mem_mib: MemMib | None = None
-    time_min: Annotated[int, Field(ge=1, le=43_200)] | None = None
 
 
 def _text(value: str) -> str:
@@ -157,7 +150,8 @@ def read_config_file(
     start: str, parts: tuple[str, ...], engine: str, uid: int | None = None
 ) -> dict[str, Any]:
     """`start/parts…` read as api §5.7 says (run it in the file pool): its `kept_as`, `sha256`,
-    `size` and `includes`. Raises ValueError for a refusal, OSError for an I/O error."""
+    `size` and `includes`, and the bytes as `text`, for the launch command only. Raises
+    ValueError for a refusal, OSError for an I/O error."""
     raw = _read(start, parts, os.geteuid() if uid is None else uid)
     if len(raw) > MAX_CONFIG_FILE:
         raise ValueError("the file is larger than 256 KiB")
@@ -175,7 +169,30 @@ def read_config_file(
         "sha256": hashlib.sha256(raw).hexdigest(),
         "size": len(raw),
         "includes": engine == "nextflow" and "includeConfig" in text,  # a search, not a parse
+        "text": text,
     }
+
+
+def read_kept(runs_root: Path, run_id: str, kept_as: str) -> bytes | None:
+    """The run's kept copy (api §5.7), `<run>/launch/.spectio/<kept_as>`, through its private
+    directories and opened with O_NOFOLLOW (req. 10, 13); None when it is not there, not a
+    regular file of this user writable by no one else, or over 256 KiB. Run it in the file pool:
+    an I/O error is an OSError."""
+    if kept_as not in KEPT_AS.values():
+        return None
+    try:
+        with private_dir(runs_root, run_id, "launch", ".spectio") as at:
+            fd = os.open(kept_as, _FILE, dir_fd=at)
+    except OSError as exc:
+        if isinstance(exc, PermissionError) or exc.errno in (errno.ENOENT, errno.ELOOP):
+            return None
+        raise
+    with os.fdopen(fd, "rb") as f:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode) or st.st_uid != os.geteuid() or st.st_mode & _OTHERS:
+            return None
+        data = f.read(MAX_CONFIG_FILE + 1)
+    return None if len(data) > MAX_CONFIG_FILE else data
 
 
 def _data_only(text: str, suffix: str) -> None:

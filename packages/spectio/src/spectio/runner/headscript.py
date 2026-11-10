@@ -9,6 +9,7 @@ quoted with `shlex.quote` (Review Focus 1). Only `engine_cmd`, from `spectio.tom
 """
 
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -21,7 +22,7 @@ from spectio.environments import PROFILE, LocalValues, SlurmValues
 from spectio.loginshell import KEEP
 from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
 from spectio.runner.rundir import RUN_ID, private_dir, write_file
-from spectio.runner.types import LaunchSpec
+from spectio.runner.types import ExtraFile, LaunchSpec
 
 ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # Snakemake 9 refuses to run without --cores (local) or --jobs (remote executors):
@@ -69,6 +70,9 @@ _ENGINE = "( [ -e {cancel} ] && exit 143; {command} )\n"
 SESSION_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 LOCK = ".spectio-launch.lock"  # in the engine's directory, while a head of Spectio runs there
 LOCKED = 75  # head.exit's code when another head holds the lock
+# The names a run's extra config file is kept as in `.spectio/`, by engine (api §5.7).
+KEPT_AS = {"nextflow": ("extra.config",), "snakemake": ("extra.yaml", "extra.json")}
+SHA256 = re.compile(r"[0-9a-f]{64}")
 
 # The outer script: {launch}, {inner} and {keep} are quoted by `render_head_script`. Both
 # shells trap INT and TERM (a trap, not an ignored signal, which the engine would inherit), so
@@ -126,6 +130,26 @@ def _spectio(spec: LaunchSpec) -> Path:
     return spec.launch_dir / ".spectio"
 
 
+def _extra(spec: LaunchSpec) -> Path | None:
+    """Where the run's extra config file is kept (api §5.7), its name and hash checked again."""
+    kept = spec.config_file
+    if kept is None:
+        return None
+    if kept.kept_as not in KEPT_AS[spec.engine] or not SHA256.fullmatch(kept.sha256):
+        raise ValueError(f"the config file's name {kept.kept_as[:40]!r} or hash is not allowed")
+    return _spectio(spec) / kept.kept_as
+
+
+def _extra_bytes(kept: ExtraFile) -> bytes:
+    """The bytes of the launch command, checked against their SHA-256 before they are kept."""
+    if kept.text is None:
+        raise ValueError("the config file's bytes are not in the launch command")
+    data = kept.text.encode()
+    if hashlib.sha256(data).hexdigest() != kept.sha256:
+        raise ValueError("the config file's bytes do not match their SHA-256")
+    return data
+
+
 def engine_args(spec: LaunchSpec) -> list[str]:
     """The engine's arguments after `engine_cmd`, each one word."""
     spectio = _spectio(spec)
@@ -138,7 +162,11 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         raise ValueError("a Snakemake launch takes one profile")
     if spec.engine == "nextflow":
         args = ["run", str(spec.location), "-params-file", params]
-        args += ["-c", str(spectio / "spectio.config"), "-work-dir", str(spec.engine_work_dir)]
+        # The user's file first, Spectio's own last, so that its generic keys win (api §5.7).
+        configs = [str(p) for p in (_extra(spec), spectio / "spectio.config") if p is not None]
+        if len(configs) > 1 and "," in str(spectio):
+            raise ValueError("a comma in the launch directory would split -c's list of files")
+        args += ["-c", ",".join(configs), "-work-dir", str(spec.engine_work_dir)]
         if profiles:
             args += ["-profile", ",".join(profiles)]
         if spec.resume_of is not None:
@@ -147,6 +175,11 @@ def engine_args(spec: LaunchSpec) -> list[str]:
                 raise ValueError(f"engine_session_id {session!r} is not a UUID (req. 16)")
             args += ["-resume", *([session] if session else [])]
     else:
+        run = _run(spec)
+        if "cpus" in run:  # refused by `POST /runs` too (api §5.7)
+            raise ValueError("Snakemake takes CPUs from each rule's threads")
+        if run and profiles:
+            raise ValueError(f"the profile {profiles[0]} sets the resources")
         args = [*_snakemake_base(spec), "--logger", "spectio"]
         if spec.resume_of is not None:  # `snakemake/cli.py:919-922`, v9.27.1
             args.append("--rerun-incomplete")
@@ -161,7 +194,7 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             args += ["--workflow-profile", str(spec.location / "profiles" / profiles[0])]
         else:
             if spec.slurm is not None:
-                resources = _slurm_resources(spec.slurm)
+                resources = _slurm_resources(spec.slurm, run)
                 if resources:
                     args += ["--default-resources", *resources]
             if not any(_sets_concurrency(arg) for arg in spec.extra_args):
@@ -180,7 +213,7 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         if spec.slurm is not None:
             args += ["--local-cores", str(LOCAL_CORES)]
         else:
-            args += _local_caps(spec.local)
+            args += _local_caps(spec.local, _run(spec))
     return args
 
 
@@ -193,6 +226,17 @@ def _int(value: object, low: int, high: int) -> int:
 
 
 MEM_MIB = (1, 4_194_304)
+TIME_MIN = (1, 43_200)
+_RUN_BOUNDS = {"cpus": (1, 256), "mem_mib": MEM_MIB, "time_min": TIME_MIN}
+
+
+def _run(spec: LaunchSpec) -> dict[str, int]:
+    """The run's `default_resources` that are set (api §5.7), each checked again here."""
+    found = spec.default_resources
+    if found is None:
+        return {}
+    values = {key: getattr(found, key) for key in _RUN_BOUNDS}
+    return {k: _int(v, *_RUN_BOUNDS[k]) for k, v in values.items() if v is not None}
 
 
 def _cap(local: LocalValues | None, key: str) -> int | None:
@@ -202,28 +246,34 @@ def _cap(local: LocalValues | None, key: str) -> int | None:
     return _int(value, *((1, 256) if key == "cpus" else MEM_MIB))
 
 
-def _slurm_resources(slurm: SlurmValues) -> list[str]:
+def _slurm_resources(slurm: SlurmValues, run: dict[str, int]) -> list[str]:
     """`--default-resources` values: partition and account as Python string literals, since
     Snakemake evaluates each value after expanding `~` and `$` (9.27.1 `resources.py:801-825`)
-    and a SLURM name holds no quote (SEC-PRE-FU86-01), checked again here; integers as such."""
+    and a SLURM name holds no quote (SEC-PRE-FU86-01), checked again here; integers as such.
+    The run's time and memory replace the environment's, in this one list (api §5.7)."""
     found = [
         f"slurm_{key}='{slurm_name(value)}'"
         for key, value in (("partition", slurm.partition), ("account", slurm.account))
         if value
     ]
-    if slurm.time_min is not None:
-        found.append(f"runtime={_int(slurm.time_min, 1, 43_200)}")
-    if slurm.mem_mib is not None:
-        found.append(f"mem_mb={_int(slurm.mem_mib, *MEM_MIB)}")
+    if (time := run.get("time_min", slurm.time_min)) is not None:
+        found.append(f"runtime={_int(time, *TIME_MIN)}")
+    if (mem := run.get("mem_mib", slurm.mem_mib)) is not None:
+        found.append(f"mem_mb={_int(mem, *MEM_MIB)}")
     return found
 
 
-def _local_caps(local: LocalValues | None) -> list[str]:
-    """The caps of a `local` environment: a bare `--default-resources` (Snakemake's own, so a
-    rule that declares no memory still counts some) then `--resources mem_mb`, and `--cores`."""
+def _local_caps(local: LocalValues | None, run: dict[str, int]) -> list[str]:
+    """The caps of a `local` environment: one `--default-resources` list, bare (Snakemake's
+    own, so a rule that declares no memory still counts some) or with the run's values (api
+    §5.7), then `--resources mem_mb`, and `--cores`."""
     args = []
-    if (mem := _cap(local, "mem_mib")) is not None:
-        args += ["--default-resources", "--resources", f"mem_mb={mem}"]
+    mem = _cap(local, "mem_mib")
+    own = [f"{n}={run[k]}" for k, n in (("mem_mib", "mem_mb"), ("time_min", "runtime")) if k in run]
+    if mem is not None or own:
+        args += ["--default-resources", *own]
+    if mem is not None:
+        args += ["--resources", f"mem_mb={mem}"]
     if (cpus := _cap(local, "cpus")) is not None:
         args += ["--cores", str(cpus)]
     return args
@@ -233,14 +283,16 @@ def _snakemake_base(spec: LaunchSpec) -> list[str]:
     snakefile = spec.location / "workflow" / "Snakefile"
     if not snakefile.is_file():
         snakefile = spec.location / "Snakefile"
-    params = str(_spectio(spec) / "params.json")
+    # "Multiple files overwrite each other in the given order" (api §5.7): the user's, then
+    # the form's
+    files = [str(p) for p in (_extra(spec), _spectio(spec) / "params.json") if p is not None]
     return [
         "--snakefile",
         str(snakefile),
         "--directory",
         str(spec.engine_dir),
         "--configfile",
-        params,
+        *files,
     ]
 
 
@@ -339,22 +391,29 @@ def _groovy(value: str) -> str:
 def nextflow_config(spec: LaunchSpec) -> str:
     """`.spectio/spectio.config`: the environment's executor and values (api §5.4); never a
     `plugins` block, which would replace the pipeline's plugins (inbox #69). Generic `process`
-    settings, so the pipeline's selectors still win."""
+    settings, so the pipeline's selectors still win. The run's `default_resources` replace the
+    environment's time and memory, key by key (api §5.7)."""
     lines = ["// Written by Spectio for this launch."]
-    if spec.slurm is not None:
-        slurm = spec.slurm
+    run = _run(spec)
+    slurm = spec.slurm
+    if slurm is not None:
         lines.append("process.executor = 'slurm'")
         if slurm.partition:
             lines.append(f"process.queue = {_groovy(slurm_name(slurm.partition))}")
         if slurm.account:
             account = "--account=" + slurm_name(slurm.account)  # SEC-PRE-FU86-01, again
             lines.append(f"process.clusterOptions = {_groovy(account)}")
-        if slurm.time_min is not None:
-            lines.append(f"process.time = '{_int(slurm.time_min, 1, 43_200)}m'")
-        if slurm.mem_mib is not None:
-            lines.append(f"process.memory = '{_int(slurm.mem_mib, *MEM_MIB)} MB'")
+    else:
+        lines.append("process.executor = 'local'")
+    own = slurm or SlurmValues()
+    if (cpus := run.get("cpus")) is not None:
+        lines.append(f"process.cpus = {_int(cpus, 1, 256)}")
+    if (mem := run.get("mem_mib", own.mem_mib)) is not None:
+        lines.append(f"process.memory = '{_int(mem, *MEM_MIB)} MB'")
+    if (time := run.get("time_min", own.time_min)) is not None:
+        lines.append(f"process.time = '{_int(time, *TIME_MIN)}m'")
+    if slurm is not None:
         return "\n".join(lines) + "\n"
-    lines.append("process.executor = 'local'")
     caps = []
     if (cpus := _cap(spec.local, "cpus")) is not None:
         caps.append(f"    cpus = {cpus}")
@@ -366,9 +425,19 @@ def nextflow_config(spec: LaunchSpec) -> str:
 
 
 def banner(spec: LaunchSpec) -> str | None:
-    """The first line of head.out: the environment and its values (SEC-PRE-FU86-R1-10)."""
-    if spec.environment is None:
-        return None
+    """The first line of head.out: the environment and its values (SEC-PRE-FU86-R1-10), the
+    run's default resources and its extra config file (api §5.7)."""
+    parts = [] if spec.environment is None else [_environment_text(spec)]
+    names = (("cpus", "cpus {}"), ("mem_mib", "memory {} MiB"), ("time_min", "time {} min"))
+    run = _run(spec)
+    if run:
+        parts.append("run: " + ", ".join(text.format(run[k]) for k, text in names if k in run))
+    if (kept := _extra(spec)) is not None and spec.config_file is not None:
+        parts.append(f"config {kept.name} (sha256 {spec.config_file.sha256[:12]})")
+    return "Spectio: " + "; ".join(parts) if parts else None
+
+
+def _environment_text(spec: LaunchSpec) -> str:
     if spec.slurm is not None:
         values = [(k, getattr(spec.slurm, k)) for k in ("partition", "account")]
         named = [f"{k} {v}" for k, v in values if v]
@@ -385,7 +454,7 @@ def banner(spec: LaunchSpec) -> str | None:
             named.append(f"memory {mem} MiB")
         kind = "local"
     values_text = f"{kind}: {', '.join(named)}" if named else kind
-    return f"Spectio: environment {spec.environment} ({values_text})"
+    return f"environment {spec.environment} ({values_text})"
 
 
 def write_launch_files(spec: LaunchSpec) -> Path:
@@ -397,11 +466,14 @@ def write_launch_files(spec: LaunchSpec) -> Path:
     refuses (`resume.check_dirs`, CR-P3T30-02)."""
     script = render_head_script(spec).encode()
     params = json.dumps(spec.params, ensure_ascii=False).encode()
+    kept = None if spec.config_file is None else _extra_bytes(spec.config_file)
     if spec.engine == "nextflow":
         with contextlib.suppress(FileExistsError):  # a symlink there is refused at Resume
             os.mkdir(spec.engine_dir / ".nextflow", 0o700)
     with private_dir(spec.launch_dir, ".spectio") as fd:
         write_file(fd, "params.json", params)
+        if spec.config_file is not None and kept is not None:  # the run's snapshot (api §5.7)
+            write_file(fd, spec.config_file.kept_as, kept)
         if spec.engine == "nextflow":
             write_file(fd, "spectio.config", nextflow_config(spec).encode())
             unpack_nf_spectio({**os.environ, **spec.env})
