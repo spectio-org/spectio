@@ -73,13 +73,7 @@ class StoreSink:
     def ack(self, command_id: str, ok: bool, detail: str | None) -> None:
         if detail:
             log.info("command %s: %s", command_id, detail)
-        self._do(
-            lambda conn: conn.execute(
-                update(runner_commands)
-                .where(runner_commands.c.id == command_id)
-                .values(state="done" if ok else "failed", lease_until=None)
-            )
-        )
+        self._do(lambda conn: _answer(conn, command_id, ok))
 
     def active_launches(self) -> list[LaunchRef]:
         """The launches of every run that has not ended, and of every head not yet reported
@@ -142,6 +136,8 @@ class StoreSink:
             ref = refs.get(row.launch_id)
             if ref is None:  # no launch, or one the runner cannot run: never delivered
                 values: dict[str, Any] = {"state": "failed"}
+                if (cleared := _cleared(row.payload)) is not None:
+                    values["payload"] = cleared
             else:
                 values = {"state": "leased", "lease_until": now + LEASE}
                 commands.append(Command(row.id, row.kind, ref, row.payload or {}))
@@ -209,3 +205,24 @@ def _launch_query() -> Any:
         .join(workflow_versions, workflow_versions.c.id == runs.c.workflow_version_id)
         .join(workflows, workflows.c.id == workflow_versions.c.workflow_id)
     )
+
+
+def _answer(conn: Connection, command_id: str, ok: bool) -> None:
+    """The command `done` or `failed`, and in the same transaction the bytes of its extra
+    config file set to null (api §5.7, SEC-P3FU110-SPEC-01): a lease that expires keeps them."""
+    values: dict[str, Any] = {"state": "done" if ok else "failed", "lease_until": None}
+    payload = conn.execute(
+        select(runner_commands.c.payload).where(runner_commands.c.id == command_id)
+    ).scalar()
+    if (cleared := _cleared(payload)) is not None:
+        values["payload"] = cleared
+    conn.execute(update(runner_commands).where(runner_commands.c.id == command_id).values(**values))
+
+
+def _cleared(payload: Any) -> dict[str, Any] | None:
+    """The payload with the bytes of its extra config file set to null; None when it holds none.
+    Every path that ends a command `done` or `failed` writes it (api §5.7, SEC-P3FU110-SPEC-01)."""
+    kept = payload.get("config_file") if isinstance(payload, dict) else None
+    if isinstance(kept, dict) and kept.get("text") is not None:
+        return {**payload, "config_file": {**kept, "text": None}}
+    return None

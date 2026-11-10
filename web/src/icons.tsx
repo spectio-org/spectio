@@ -45,6 +45,7 @@ export const ICONS = {
   table: "M4 5h16v14H4z M4 10h16 M4 15h16 M10 5v14",
   braces: "M9 4c-2 0-2 2-2 4s-1 4-3 4c2 0 3 2 3 4s0 4 2 4 M15 4c2 0 2 2 2 4s1 4 3 4c-2 0-3 2-3 4s0 4-2 4",
   image: "M4 5h16v14H4z M4 16l5-5 4 4 3-3 4 4 M15.5 9h.01",
+  pin: "M12 17v5 M9 4h6 M10 4v6l-3 4v3h10v-3l-3-4V4",
 } as const;
 
 export function Icon({ path, size = 24, stroke = 1.8 }: { path: string; size?: number; stroke?: number }) {

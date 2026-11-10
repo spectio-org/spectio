@@ -167,6 +167,23 @@ test('a run of the synthetic happy shows no stage, only its processes (P1 Task 2
   await expect(page.getByRole(info.project.name === 'phone' ? 'list' : 'table', { name: 'Processes' })).toBeVisible();
 });
 
+test('FU-P3-115b: an ended run is selected in the list and deleted, and leaves the API', async ({ page, request }) => {
+  test.skip(!ENGINES, NEEDS_ENGINES);
+  test.setTimeout(180_000);
+  const id = await launch(request, ['test']);
+  await reach(request, id, ['succeeded']);
+  const name = (await (await request.get(`/api/v1/runs/${id}`)).json()).name;
+  await page.goto(`/runs?q=${encodeURIComponent(name)}`);
+  await page.getByRole('checkbox', { name: `Select run ${name}` }).check();
+  await page.getByRole('button', { name: 'Delete…' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Delete 1 run?' });
+  await expect(sheet.getByRole('listitem')).toHaveText(`${name} · Succeeded`);
+  await sheet.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.getByRole('status').getByText('1 run deleted')).toBeVisible();
+  await expect(page.getByRole('link', { name: `Open run ${name}` })).toHaveCount(0);
+  expect((await request.get(`/api/v1/runs/${id}`)).status()).toBe(404);
+});
+
 test('a seeded rnaseq run shows 8 detected stages above its processes (P1 Task 27)', async ({ page, request }) => {
   test.skip(!IS_SEEDED, NEEDS_SEED);
   await reach(request, SEEDED, ['succeeded']);

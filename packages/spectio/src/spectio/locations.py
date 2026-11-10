@@ -12,6 +12,7 @@ nor a revision may hold a control character (SEC-P3T09-R5-05), and a revision ne
 
 import re
 import unicodedata
+from collections.abc import Sequence
 from urllib.parse import urlsplit
 
 GIT_SCHEMES: tuple[str, ...] = ("https", "ssh")
@@ -23,6 +24,9 @@ HOST = re.compile(r"[a-z0-9]([a-z0-9.-]{0,252}[a-z0-9])?")
 PART = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,99}")  # never "", "." or ".."
 REVISION = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._/-]{0,199}")  # never an option, never a path
 PARAMS_SUFFIXES = (".json", ".yaml", ".yml")
+CONFIG_SUFFIXES = {"nextflow": (".config",), "snakemake": PARAMS_SUFFIXES}  # api §5.7
+MAX_CONFIG_PARTS = 32
+OUTSIDE_ROOTS = "Choose a file in your home directory or in the pipeline"
 
 
 def refuse_control(value: str) -> None:
@@ -101,3 +105,29 @@ def check_params_file(value: str) -> str:
     if not value.endswith(PARAMS_SUFFIXES):
         raise ValueError("a .json, .yaml or .yml file")
     return value
+
+
+def check_config_file(value: str, roots: Sequence[str], engine: str) -> tuple[str, tuple[str, ...]]:
+    """The extra config file of a launch (api §5.7, FU-P3-110a): an absolute path under one of
+    `roots` (the user's home, both as written and resolved, and the pipeline's directory), then
+    1 to `MAX_CONFIG_PARTS` PART names, the last with a suffix of `engine`. Returns the root
+    as given in `roots` (a trailing '/' kept), the longest that holds the path, and the parts
+    after it; reads nothing."""
+    if len(value) > MAX_LOCATION:
+        raise ValueError(f"longer than {MAX_LOCATION} characters")
+    refuse_control(value)
+    if not value.startswith("/"):
+        raise ValueError("an absolute path, starting with '/'")
+    under = [r for r in roots if value.startswith(r.rstrip("/") + "/")]
+    if not under:
+        raise ValueError(OUTSIDE_ROOTS)
+    root = max(under, key=lambda r: len(r.rstrip("/")))
+    parts = tuple(value[len(root.rstrip("/")) + 1 :].split("/"))
+    if len(parts) > MAX_CONFIG_PARTS or not all(PART.fullmatch(p) for p in parts):
+        raise ValueError(
+            f"1 to {MAX_CONFIG_PARTS} plain names after the directory: no '.', '..' or ''"
+        )
+    suffixes = CONFIG_SUFFIXES[engine]
+    if not parts[-1].endswith(suffixes):
+        raise ValueError(f"a {' or '.join(suffixes)} file")
+    return root, parts

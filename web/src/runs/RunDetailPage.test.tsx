@@ -842,3 +842,22 @@ test("a Nextflow process with no task reads 'No task (condition or empty input)'
   expect(screen.getByText(/Processes the script does not call in this run are not listed\./)).toBeInTheDocument();
   expect(within(await runHeader()).getByText("Work directory cleaned after success (cleanup = true)")).toBeInTheDocument();
 });
+
+test("UX-P3FU115B-04: Delete… on Run detail returns to Runs with what the delete said, focused there", async () => {
+  detail(
+    { state: "succeeded", ended_at: "2026-10-31T09:00:00+00:00" },
+    {
+      "/api/v1/runs:delete": () => json(200, { deleted: [ID], directories: [{ id: ID, result: "failed" }] }),
+      "/api/v1/runs:summary": { groups: [] },
+      "/api/v1/runs": { items: [], next: null },
+    },
+  );
+  const router = app(`/runs/${ID}`);
+  await userEvent.click(within(await runHeader()).getByRole("button", { name: "Delete…" }));
+  const sheet = await screen.findByRole("dialog", { name: "Delete 1 run?" });
+  await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
+  await waitFor(() => expect(router.state.location.pathname).toBe("/runs"));
+  const said = (await screen.findByText("1 run deleted")).closest(".sp-said")!;
+  expect(said).toHaveTextContent(/could not be removed/);
+  await waitFor(() => expect(document.activeElement).toHaveTextContent("1 run deleted"));
+});

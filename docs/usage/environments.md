@@ -5,7 +5,7 @@ icon: material/server-network-outline
 
 !!! note "Built on the integration branch, not released yet"
 
-    The server side (steps FU-P3-86a to FU-P3-86d, batch [P3-B10](../progress/W5/P3-M9.md#batch-p3-b10)) and the screens (FU-P3-86f to FU-P3-86h, batch [P3-B11](../progress/W5/P3-M9.md#batch-p3-b11)) work today from a checkout, 2026-11-09. The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). **Everything here ran on a local executor only** (`spectio init --local`): no SLURM environment was created or launched, so the SLURM form is not shown (see [Not shown](#not-shown)).
+    The server side (steps FU-P3-86a to FU-P3-86d, batch [P3-B10](../progress/W5/P3-M9.md#batch-p3-b10)) the screens (FU-P3-86f to FU-P3-86h, batch [P3-B11](../progress/W5/P3-M9.md#batch-p3-b11)) and the kind icons, the table view and Duplicate to edit (FU-P3-111, batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14)) work today from a checkout, 2026-11-09. The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). **Everything here ran on a local executor only** (`spectio init --local`): no SLURM environment was created or launched, so the SLURM form is not shown (see [Not shown](#not-shown)).
 
 An **environment** is a named set of launch defaults for one executor: where the engine sends its tasks, and how much it may ask for. It never changes where Spectio's own head runs. The fields, the rules and the routes are owned by [api §5.4](../specs/api-and-data-model.md#54-environments-001); the behaviour of the screens by [ui-spec §4.8.1](../specs/ui-spec.md#481-environments-in-001).
 
@@ -51,8 +51,8 @@ The pages are in the sidebar under **Environments**, and the form of a new one o
 [![The Environments page: the built-in and two environments, one the default](../assets/shots/app-environments_light.webp#only-light)](../assets/shots/app-environments_light.webp)
 [![The Environments page, dark](../assets/shots/app-environments_dark.webp#only-dark)](../assets/shots/app-environments_dark.webp)
 
-- One card per environment: its label, its name, its executor, and what it caps ("this machine · at most 2 CPUs and 4 GiB"). Chips say **Default** and **Built-in**.
-- The built-in has **Duplicate** and **Make default**, no Edit and no Delete. Yours also have **Edit** and **Delete**.
+- One card per environment: an icon for its kind, its label, its name, its executor, and what it caps ("this machine · at most 2 CPUs and 4 GiB"). Chips say **Local** or **SLURM**, **Default** and **Built-in**. The icon (`terminal` for Local, `server` for SLURM) only decorates: the chip says the kind.
+- The built-in has **Duplicate to edit** and **Make default**, no Edit and no Delete. Yours have **Edit**, **Duplicate** and **Delete**, and **Make default** unless it is the default already.
 - **Make default** changed the line under the title from "the default is two-cores" to "the default is local" at once (it was clicked on the built-in's card).
 - **Delete** asks first: "Delete eight-cores? Runs that used it keep their settings." After the confirmation the environment was gone from the file, and `GET /runs/<id>` of a run that used it still gave `"name": "eight-cores"`, `"state": "recorded"`.
 - The path of `environments.toml` is shown under the cards.
@@ -62,6 +62,26 @@ On a phone a card is one link to the environment's page, which carries the actio
 
 [![The Environments page on a phone](../assets/shots/app-environments-phone_light.webp#only-light)](../assets/shots/app-environments-phone_light.webp)
 [![The Environments page on a phone, dark](../assets/shots/app-environments-phone_dark.webp#only-dark)](../assets/shots/app-environments-phone_dark.webp)
+
+### Cards or a table
+
+*Step FU-P3-111, batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14). Owner: [ui-spec §4.8.1](../specs/ui-spec.md#481-environments-in-001).*
+
+A switch under the title, **Show environments as** Cards or Table, changes the list's view. The view is kept in the address (`/environments?view=table`; cards when absent), so Reload and a copied link keep it, and Save or Cancel on a form returns to the view the list last showed.
+
+[![Environments as a table: This machine (built-in), Eight cores and Two cores (the default), each with its kind icon and chip, its settings, its state and its actions](../assets/shots/app-environments-table_light.webp#only-light)](../assets/shots/app-environments-table_light.webp)
+[![Environments as a table, dark](../assets/shots/app-environments-table_dark.webp#only-dark)](../assets/shots/app-environments-table_dark.webp)
+
+- **One real `<table>`** with the columns Environment, Kind, Settings, State and Actions. The default row has the coloured rail the card has.
+- **Actions are named per row** ("Edit eight-cores", "Delete eight-cores", "Make default eight-cores"), so a screen reader hears which row each belongs to.
+- **Duplicate to edit** on the built-in opens `/environments/new?from=local` with the built-in's values filled in and a free name, here `local-copy`. The built-in's label is not copied. **Duplicate** on your own environment does the same and copies its label. Nothing is written until you press Save. The new-environment page without `?from=` reads no list.
+
+[![The form opened by Duplicate to edit on the built-in local environment: the name local-copy, an empty label, the executor fixed to Local, and the local caps and default profiles](../assets/shots/app-environment-duplicate_light.webp#only-light)](../assets/shots/app-environment-duplicate_light.webp)
+[![The form opened by Duplicate to edit, dark](../assets/shots/app-environment-duplicate_dark.webp#only-dark)](../assets/shots/app-environment-duplicate_dark.webp)
+
+*The built-in `local` has no limit, so the CPU and memory fields are empty. The page title reads "New environment": a duplicate is a new one.*
+
+- **Not drawn as the boards draw it** (open minors): the board's switch buttons carry icons and the app's do not; a table row has no "Not usable: <reason>" in its State column; the phone table view and "Duplicate to edit" exist on the board only as footnotes ([P3-fu111](../reviews/code/P3-fu111.md)).
 
 ### The form
 

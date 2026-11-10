@@ -82,14 +82,14 @@ body {
   align-items: center;
   justify-content: center;
 }
-/* The account placeholder: a dashed ring inside the key's hit area. */
+/* The avatar, a link to Profile (FU-P3-112): a ring inside the key's hit area. */
 .sp-avatar .sp-key-face {
   width: 34px;
   height: 34px;
   box-sizing: border-box;
   border-radius: 50%;
   background: var(--sp-surface-subtle);
-  border: 1px dashed var(--sp-line-input);
+  border: 1px solid var(--sp-line-input);
 }
 
 /* Desktop and tablet top bar: a floating paper bar. */
@@ -684,4 +684,131 @@ body {
   .sp-link-button {
     min-height: 44px;
   }
+}
+/* Search (FU-P3-89): the dialog's input, count, error and grouped results. */
+.sp-search-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 10px;
+  background: var(--sp-surface-subtle);
+  color: var(--sp-text-primary);
+  font: 400 14px var(--sp-font-body);
+}
+.sp-search-count {
+  margin: 8px 0 0;
+  min-height: 1.2em;
+  font-size: 12px;
+  color: var(--sp-text-muted);
+}
+.sp-search-error {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--sp-state-failed-fg);
+}
+.sp-search-group {
+  margin: 12px 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sp-text-muted);
+}
+.sp-search-hits {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-search-hit {
+  display: flex;
+  width: 100%;
+  gap: 12px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sp-text-primary);
+  font: 400 14px var(--sp-font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.sp-search-hit:hover,
+.sp-search-hit:focus-visible {
+  background: var(--sp-surface-subtle);
+}
+.sp-search-detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--sp-text-muted);
+}
+
+/* Notifications (FU-P3-113): the bell's unread count, and its panel at the top right. */
+.sp-bell {
+  position: relative;
+}
+.sp-bell-count {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: var(--sp-state-failed-fg);
+  color: var(--sp-surface-raised); /* inverts with the theme, so the count keeps its contrast */
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+.sp-notif-inner {
+  justify-content: flex-end;
+  padding-right: 16px;
+}
+.sp-link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--sp-text-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.sp-notif-empty {
+  margin: 0;
+  color: var(--sp-text-secondary);
+}
+.sp-notif-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-notif-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.sp-notif-item:hover,
+.sp-notif-item:focus-visible {
+  background: var(--sp-surface-subtle);
+}
+.sp-notif-when {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+}
+.sp-notif-new {
+  font-weight: 600;
+  color: var(--sp-text-primary);
 }

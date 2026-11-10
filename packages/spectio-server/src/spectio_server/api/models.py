@@ -94,6 +94,29 @@ class RunEnvironment(BaseModel):
     state: Literal["recorded", "not_recorded", "not_readable"]
 
 
+class RunDefaultResources(BaseModel):
+    """A launch's `default_resources` (FU-P3-110a, api §5.7); its fields are null unless `state`
+    is `recorded`."""
+
+    cpus: int | None
+    mem_mib: int | None
+    time_min: int | None
+    state: Literal["recorded", "not_readable"]
+
+
+class RunConfigFile(BaseModel):
+    """What a run keeps of its extra config file (FU-P3-110a, api §5.7): the user's `path`, the
+    name `kept_as` in its `.spectio/`, the SHA-256 and size of the bytes, and `includes` when a
+    Nextflow file holds `includeConfig`; null fields unless `state` is `recorded`."""
+
+    path: str | None
+    kept_as: Literal["extra.config", "extra.yaml", "extra.json"] | None
+    sha256: str | None
+    size: int | None
+    includes: bool | None
+    state: Literal["recorded", "not_readable"]
+
+
 class EnvironmentProfiles(BaseModel):
     nextflow: str | None
     snakemake: str | None
@@ -158,6 +181,7 @@ class Run(BaseModel):
     workflow: WorkflowRef
     profiles: list[str]
     environment: RunEnvironment | None  # null for a run started from a terminal
+    pinned: bool  # first in the runs list (FU-P3-115a)
     failure: dict[str, JsonValue] | None
     head: Head | None
     task_counts: dict[str, int]
@@ -251,6 +275,8 @@ class RunDetail(Run):
     actions: Actions
     results_dir: str | None  # null when unknown, and for a run started from a terminal
     engine_settings: EngineSettings
+    default_resources: RunDefaultResources | None  # null when the launch set none (api §5.7)
+    config_file: RunConfigFile | None
 
 
 class TemplateWorkflow(BaseModel):
@@ -280,6 +306,8 @@ class LaunchTemplate(BaseModel):
     code_loading: list[CodeLoading]
     environment: str  # the run's, preselected by name, or the default when it is gone (§5.4)
     environment_notice: str | None  # why the default is preselected instead
+    default_resources: dict[str, int | None] | None  # as sent (api §5.7)
+    config_file: str | None  # the original path, read again at the new launch
 
 
 class RunList(BaseModel):
@@ -302,6 +330,51 @@ class ServerVersion(BaseModel):
     runs_root: str
     account: str
     executor: str
+
+
+class Principal(BaseModel):
+    user: str
+    uid: int
+
+
+class MeSession(BaseModel):
+    started_at: str | None
+    expires_at: str | None
+
+
+class MePaths(BaseModel):
+    config_file: str
+    data_dir: str
+    db_dir: str
+    observed_dir: str
+
+
+class Me(BaseModel):
+    """`GET /me` in 0.0.1 (api §5.8): paths only, never a secret or a file's contents."""
+
+    principal: Principal
+    session: MeSession
+    paths: MePaths
+
+
+NotificationKind = Literal["run_succeeded", "run_failed", "run_cancelled", "gate_waiting"]
+
+
+class Notification(BaseModel):
+    id: str
+    kind: NotificationKind
+    run_id: str
+    run_name: str | None
+    at: str
+    read: bool
+
+
+class Notifications(BaseModel):
+    """`GET /me/notifications` in 0.0.1 (api §5.9): derived from the run records."""
+
+    items: list[Notification]
+    unread: int
+    read_up_to: str | None
 
 
 ProcessStatus = Literal[

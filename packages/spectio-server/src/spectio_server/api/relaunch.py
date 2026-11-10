@@ -14,8 +14,12 @@ the `reason` of `actions.resume`. The session (req. 2) and the Origin check of r
 `GET /runs/{id}:launch-template` is the `POST /runs` body of the run, for Copy to a new launch,
 with `non_default` (the parameters that differ from the pipeline's schema defaults) and
 `code_loading` (the values that load code or configuration, req. 16).
+
+`GET /runs/{id}/config-file` serves the run's kept extra config file (api §5.7), the copy in its
+own `.spectio/`, never a command row.
 """
 
+import hashlib
 import os
 import shutil
 import stat
@@ -40,8 +44,11 @@ from spectio.runner.rundir import (
 )
 from spectio_server.api import models
 from spectio_server.api.environments import view
-from spectio_server.api.problems import Invalid, Problem
+from spectio_server.api.extras import read_kept
+from spectio_server.api.problems import Invalid, Problem, not_found
 from spectio_server.api.runs_read import context, read, run_detail, run_row
+from spectio_server.api.runs_write import extras_payload
+from spectio_server.api.taskfiles import HEADERS, TEXT_CSP
 from spectio_server.api.workflows import inspect_dir, resolve, schema_defaults
 from spectio_server.failure import dir_run_id
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
@@ -177,6 +184,8 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
     except Invalid as exc:
         raise exc.under("workflow") from None
 
+    resources, config, config_bytes = _parent_extras(request, parent)
+
     child_id = new_id("run")
     now = datetime.now(UTC)
     manifest = RunManifest(
@@ -188,6 +197,8 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         created_at=now,
         parent_run_id=run_id,
         environment=environment,
+        default_resources=resources,
+        config_file=config,
     )
     payload = {
         "location": str(resolved.directory),
@@ -201,6 +212,7 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
             "inode": inode,
         },
         "environment": environment,
+        **extras_payload(resources, config_bytes),
     }
     paths = run_paths(settings.runs_root, child_id)
     write_run_manifest(paths.run_dir, manifest)
@@ -217,6 +229,59 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
     response.headers["Location"] = f"/api/v1/runs/{child_id}"
     with read(request) as conn:
         return run_detail(conn, child_id, ctx)
+
+
+CHANGED = "The kept config file of the parent changed: use Copy to a new launch"
+
+
+def _kept(request: Request, run_id: str, kept_as: str) -> bytes | None:
+    """`read_kept` in the file pool; `503` when the file system does not answer."""
+    runs_root = request.app.state.settings.runs_root
+    try:
+        return request.app.state.files.run(  # type: ignore[no-any-return]
+            lambda: read_kept(runs_root, run_id, kept_as), READ_TIMEOUT_S
+        )
+    except (Stalled, OSError) as exc:
+        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+
+
+def _parent_extras(
+    request: Request, parent: Any
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
+    """The parent's `default_resources` and `config_file` for the child's manifest, and the
+    launch command's bytes, copied from the parent's run directory and checked against its
+    recorded SHA-256 (api §5.7, Resume). A field that is not readable, or a changed copy, is
+    `422`: Copy to a new launch reads the user's file again."""
+    for field in ("default_resources", "config_file"):
+        found = getattr(parent, field)
+        if found is not None and found.get("state") != "recorded":
+            raise Invalid(field, f"The parent's {field} cannot be read: use Copy to a new launch")
+    resources, config = _recorded(parent.default_resources), _recorded(parent.config_file)
+    if config is None:
+        return resources, None, None
+    data = _kept(request, parent.id, config["kept_as"])
+    if data is None or hashlib.sha256(data).hexdigest() != config["sha256"]:
+        raise Invalid("config_file", CHANGED)
+    sent = {"kept_as": config["kept_as"], "sha256": config["sha256"], "size": len(data)}
+    return resources, config, {**sent, "text": data.decode()}
+
+
+@router.get("/runs/{run_id}/config-file", response_class=Response)
+def config_file(request: Request, run_id: str) -> Response:
+    """The run's kept extra config file as text (api §5.7), with the text routes' headers and an
+    `ETag` that is the SHA-256 of the bytes served; `404` when the run has none kept."""
+    with read(request) as conn:
+        row = run_row(conn, run_id)
+    config = _recorded(row.config_file)
+    data = None if config is None else _kept(request, row.id, config["kept_as"])
+    if data is None:
+        raise not_found(f"no kept config file for run {row.id}")
+    headers = {
+        **HEADERS,
+        "Content-Security-Policy": TEXT_CSP,
+        "ETag": f'"{hashlib.sha256(data).hexdigest()}"',
+    }
+    return Response(data, media_type="text/plain; charset=utf-8", headers=headers)
 
 
 # --- Copy to a new launch -----------------------------------------------------------------
@@ -306,10 +371,23 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
     defaults = schema_defaults(found.schema if found.schema_source != "inferred" else None)
     extra = settings.engines.extra_args.get(row.engine, [])
     local = resolved.source == "local"
+    resources, config = _recorded(row.default_resources), _recorded(row.config_file)
+    path = None if config is None else config["path"]
+
+    def loads() -> list[dict[str, Any]]:
+        found = code_loading(row.location, local, params, row.engine, extra)
+        if path is not None:  # api §5.7, code_loading
+            found.append(
+                {
+                    "field": "config_file",
+                    "value": path,
+                    "writable_by_others": writable_by_others(path),
+                }
+            )
+        return found
+
     try:
-        loading = request.app.state.files.run(
-            lambda: code_loading(row.location, local, params, row.engine, extra), READ_TIMEOUT_S
-        )
+        loading = request.app.state.files.run(loads, READ_TIMEOUT_S)
     except Stalled as exc:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
     name, notice = _template_environment(request, row.environment)
@@ -321,7 +399,16 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         "code_loading": loading,
         "environment": name,
         "environment_notice": notice,
+        "default_resources": resources,
+        "config_file": path,
     }
+
+
+def _recorded(column: dict[str, Any] | None) -> dict[str, Any] | None:
+    """A `recorded` column of api §5.7 without its `state`; None otherwise."""
+    if column is None or column.get("state") != "recorded":
+        return None
+    return {k: v for k, v in column.items() if k != "state"}
 
 
 def _template_environment(
