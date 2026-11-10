@@ -87,6 +87,7 @@ ROUTES = (
     "/catalog",
     "/catalog/new",
     "/catalog/{name}",
+    "/profile",
 )
 ASSET = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,199}")
 TYPES = {

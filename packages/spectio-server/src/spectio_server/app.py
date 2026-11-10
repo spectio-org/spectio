@@ -41,6 +41,7 @@ from spectio_server.api import (
     extras,
     logs,
     me,
+    notifications,
     problems,
     relaunch,
     results,
@@ -193,6 +194,7 @@ def create_app(
             environments,
             catalog,
             me,
+            notifications,
         )
         for module in (*routers, stream):
             app.include_router(module.router, prefix=API)

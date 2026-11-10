@@ -141,6 +141,8 @@ principals = Table(
     Column("kind", String, nullable=False),
     Column("display_name", String),
     Column("disabled_at", UTCDateTime()),
+    # Notifications newer than this are unread (FU-P3-113, api §5.9; migration 0013)
+    Column("notifications_read_at", UTCDateTime()),
     _check("principals", "kind", PRINCIPAL_KINDS),
 )
 
