@@ -14,8 +14,9 @@ import { EMPTY, fromItem, label, summary } from "./fields";
 // The Environments pages (FU-P3-86f; ui-spec §4.8.1; boards LiteEnvironments, LiteEnvironmentEdit,
 // LiteEnvironmentsStates): the list with Delete and Make default, and the form's page.
 
-/** What the list says and focuses when it opens next: after Save, "Saved <name>". */
-let next: { focus: string | null; say: string } | null = null;
+/** What the list says and focuses when it opens next: after Save, "Saved <name>"; after Cancel,
+ * the opener (its label: "Edit <name>", "New environment"), else the card's heading. */
+let next: { focus: string | null; say: string; opener?: string } | null = null;
 
 const FILE_LINES: Record<string, (path: string, detail: string) => string> = {
   refused: (p, d) => `Spectio does not read ${p}: ${d}. Fix it with the command shown; Spectio will not change it.`,
@@ -33,8 +34,10 @@ const PROBLEMS: Record<string, string> = {
 };
 const problem = (e: Error) => (e instanceof ApiError ? (PROBLEMS[String(e.status)] ?? PROBLEMS[e.slug ?? ""]) : undefined) ?? e.message;
 const headingId = (name: string) => `env-${name}`;
-const focusHeading = (name: string | null) =>
-  requestAnimationFrame(() => (document.getElementById(name ? headingId(name) : "") ?? document.querySelector("h1"))?.focus());
+const byLabel = (label: string) =>
+  [...document.querySelectorAll<HTMLElement>("a, button")].find((el) => (el.getAttribute("aria-label") ?? el.textContent) === label);
+const focusHeading = (name: string | null, opener?: string) =>
+  requestAnimationFrame(() => ((opener && byLabel(opener)) || document.getElementById(name ? headingId(name) : "") || document.querySelector("h1"))?.focus());
 
 /** A link or, while the file is not usable, a button described by why it waits (§4.6 pattern). */
 function Waiting({ why, to, children, primary, ...rest }: { why: string | null; to: string; children: string; primary?: boolean; "aria-label"?: string }) {
@@ -85,7 +88,7 @@ export function EnvironmentsPage() {
   const load = useCallback(() => listEnvironments().then(setData, (e: Error) => setError(e.message)), []);
   useEffect(() => {
     load().then(() => {
-      if (next) (setSaid(next.say), focusHeading(next.focus));
+      if (next) (setSaid(next.say), focusHeading(next.focus, next.opener));
       next = null;
     });
   }, [load]);
@@ -199,6 +202,11 @@ export function EnvironmentPage({ name, from }: { name: string | null; from?: st
   const [moreError, setMoreError] = useState<string | null>(null);
   const wanted = name ?? from ?? null;
   usePageCrumb(name ?? "New environment");
+  // New, Edit and Duplicate open with focus on the page's heading (§4.8.1, inbox #146 item 10)
+  const ready = !wanted || !!item || !!failed;
+  useEffect(() => {
+    if (ready) document.querySelector<HTMLElement>("h1")?.focus();
+  }, [ready]);
   useEffect(() => {
     if (wanted)
       getEnvironment(wanted).then(setItem, (e: Error) =>
@@ -206,11 +214,12 @@ export function EnvironmentPage({ name, from }: { name: string | null; from?: st
       );
   }, [wanted, round]);
   const reload = () => setRound((r) => r + 1);
-  const toList = (say: string, focus: string | null) => ((next = { focus, say }), navigate({ to: "/environments" }));
+  const toList = (say: string, focus: string | null, opener?: string) => ((next = { focus, say, opener }), navigate({ to: "/environments" }));
+  const opener = name ? `Edit ${name}` : from ? `Duplicate ${from}` : "New environment";
   if (failed?.missing) {
     return (
       <div className="sp-page">
-        <h1 className="sp-page-title">{failed.text}</h1>
+        <h1 className="sp-page-title" tabIndex={-1}>{failed.text}</h1>
         <p>It may have been deleted in another tab. <Link to="/environments">All environments</Link></p>
       </div>
     );
@@ -258,7 +267,7 @@ export function EnvironmentPage({ name, from }: { name: string | null; from?: st
         etag={name ? (item?.etag ?? null) : null}
         readOnly={builtin}
         onSaved={(saved) => toList(`Saved ${saved.name}`, saved.name)}
-        onCancel={() => navigate({ to: "/environments" })}
+        onCancel={() => toList("", wanted, opener)}
         onReload={reload}
       />
       {more}
