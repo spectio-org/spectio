@@ -28,6 +28,8 @@ export interface ResultsSearch {
   sort?: Sort;
   q?: string;
   focus?: string;
+  /** the preview shows an HTML file as text, not in the report viewer (FU-P3-88a) */
+  view?: "text";
   task?: string;
   attempt?: number;
 }
@@ -37,16 +39,18 @@ const Q_MAX = 200;
 /** `/runs/$id/results?path=<folder>` (no path: the results root), and the preview's
  * `/runs/$id/results/file?path=<file>`. The view is kept in the URL (ui-spec §4.4.1): `sort` (name,
  * the default, is never written), the filter `q`, the row to `focus` on the way back from a preview,
- * and the `task` and `attempt` a Preview of the task sheet's Outputs returns to. A URL's text is
+ * `view=text` for the source of an HTML file, and the `task` and `attempt` a Preview of the task
+ * sheet's Outputs returns to. A URL's text is
  * shown only in the filter field and its no-match line, so `q` and `focus` with a control, bidi or
  * format character are dropped (SEC-P3T32B-02). */
 export function resultsSearch(search: Record<string, unknown>): ResultsSearch {
-  const { path, sort, q, focus } = search;
+  const { path, sort, q, focus, view } = search;
   return {
     ...(typeof path === "string" && path !== "" ? { path } : {}),
     ...(SORTS.includes(sort as Sort) && sort !== "name" ? { sort: sort as Sort } : {}),
     ...(typeof q === "string" && q !== "" && q.length <= Q_MAX && isPlainText(q) ? { q } : {}),
     ...(typeof focus === "string" && isResultPath(focus) && !focus.includes("/") ? { focus } : {}),
+    ...(view === "text" ? { view } : {}),
     ...taskSearch(search),
   };
 }

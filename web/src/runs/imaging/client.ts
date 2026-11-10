@@ -129,7 +129,7 @@ export async function reading<T>(client: PinnedClient, read: () => Promise<T>): 
 }
 
 /** The body, read up to `max` bytes; null (and the rest cancelled) when it is longer. */
-async function readAtMost(answer: Response, max: number): Promise<Uint8Array | null> {
+export async function readAtMost(answer: Response, max: number): Promise<Uint8Array | null> {
   const reader = answer.body?.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -149,7 +149,7 @@ async function readAtMost(answer: Response, max: number): Promise<Uint8Array | n
 }
 
 /** The detail of a problem body of at most 64 KiB; any other body is cancelled unread. */
-async function problem(answer: Response): Promise<string | null> {
+export async function problem(answer: Response): Promise<string | null> {
   if (!answer.headers.get("content-type")?.startsWith("application/problem+json")) {
     await answer.body?.cancel();
     return null;

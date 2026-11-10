@@ -846,3 +846,22 @@ Orchestrator session session_01MF8RxQASDmXaFjVA49aybZ. Lean helpers: p3-lean per
 **Costs** (subagent tokens): 106b ~383k, 87b ~425k, 87c ~486k + ux-reviewer ~115k, 102e ~596k + docs ~72k, 87d ~485k, 102f ~375k, B12 ~836k.
 
 **In flight:** 87d (#228), 102f. **Next:** promote B12, then the login1 retest; batch B13 (87a, 106b, 87b, 87c, 102e).
+
+## 2026-11-10 — FU-P3-104 hand-off: FU-P3-104b after FU-P3-101a
+
+FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and the bare links of the run's pages. Three items of the login1 retest of 2026-11-09 wait for FU-P3-101a, which replaces the preview table and changes `web/src/runs/FilePreview.tsx`. They are follow-up **FU-P3-104b**, to start once FU-P3-101a has merged (CR-P3FU104-02; ui-spec §4.4.1, status note of 2026-11-10):
+- the table's caption: already the table's first child, so check it on screen inside the sticky scroll region;
+- Browse folder, on the preview page: takes `.sp-text-link`;
+- Open it in the report viewer, on the preview page: takes `.sp-text-link`.
+
+## 2026-11-10 — 228 to 233 merged; promotion P3-B12 (#232); 102g, 110-spec, 101a in flight
+- Merged #228 (FU-P3-87d), #229 (batch P3-B12 docs), #230 (FU-P3-102f), #231 (FU-P3-87e), #233 (FU-P3-88a) into autopilot/integration; promoted integration to main with #232 (main 5f3bdd25, #218–#230).
+- #229: the SAST rule on argv reaching `subprocess` in `tools/media/tiff_demo.py` was fixed by iterating a constant tuple of shot names. As in B11, the figure is cited in text with the `no-figure` label, because the body tool rewrites image embeds.
+- FU-P3-102g (#234): numcodecs needs `'unsafe-eval'` for Blosc and LZ4, which is reserved for Thomas. The viewer therefore refuses them (fail-closed state) and the choice goes to inbox #150 (recommendation: our own pure-JS decoder, FU-P3-102h). zod runs jitless, so there is no CSP report. CSP unchanged.
+- FU-P3-110 spec (#235): inbox #151 (renumbered from #150, which 102g took) and a decision-log entry; docs only.
+- pr-body re-runs reuse the event's stale empty label list; removing and re-adding the label starts a fresh run.
+- login1 retest e (main 5f3bdd25) not delivered: the session could not be verified and the fallback is inactive. To resend with the next promotion.
+- **Next:** merge 234, 235, 101a; batch B13 (87e, 88a, 102g, 101a, 110-spec); promote; login1 retest.
+- 2026-11-10 later: merged #234 (102g), #235 (110-spec, inbox #151), #236 (101a), #237 (FU-P3-104), #238 (FU-P3-111; ux-reviewer approve 0/0/5, UX-02 fixed). To send to the local session on Thomas's Mac, this session needed Thomas's approval (a trusted-device card), so retest e was undelivered until then. Thomas allowed it, and retest e came back green; it is inbox #146 item 12.
+- Batch P3-B13 (87e, 88a, 102g, 110-spec, 101a): the simplifier found nothing; the orchestrator dropped the dead `data-wide` CSS (CR-P3FU101A-04). doc-reviewer approved at 13. Open: 87a–87d, 102e, 102f and 106b were never batched (DW-P3B13-01), so they go in B14 with 104, 111 and 112.
+- Costs (subagent tokens): 110-spec ~554k, 101a ~502k, 104 ~371k, 111 ~339k + ux ~53k.

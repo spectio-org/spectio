@@ -382,3 +382,57 @@
   font-size: 13px;
   color: var(--sp-state-review-fg);
 }
+
+/* The catalog picker (ui-spec §4.7.1; LiteLaunch, MLiteLaunch): Manage catalog beside the select on
+   a desktop, under it and full width, at least 44 px, on the phone (UX-P3FU87C-08). */
+.launch-cat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.launch-cat p {
+  margin: 0;
+}
+.launch-cat-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.launch-cat-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+@media (max-width: 767.98px) {
+  .launch-cat-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .launch-cat-row .mantine-Button-root {
+    min-height: 44px;
+  }
+  .launch-loaded {
+    flex-wrap: wrap;
+  }
+}
+
+/* AG Grid (ui-spec §4.13; runs/DataGrid.tsx): the theme takes the app's tokens; these add the run
+   rows' state rail, their multi-line cells, the sort arrows and a visible keyboard focus. */
+.sp-grid-runs .ag-row {
+  box-shadow: inset 4px 0 0 var(--tone, transparent);
+}
+.sp-grid-runs .ag-cell {
+  padding-block: 10px;
+  line-height: 1.45;
+}
+.sp-grid-icon {
+  display: block;
+}
+.sp-grid .ag-cell:focus-visible,
+.sp-grid .ag-header-cell:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: -2px;
+}

@@ -13,7 +13,9 @@ report viewer's check (P1 Task 31, req. 14): a real MultiQC 1.35 report at
 `multiqc/multiqc_report.html` and a hostile one at `hostile/hostile_report.html`; and a hostile SVG
 at `hostile/hostile_image.svg` for the file preview's check (FU-P3-85c, api §5.3); and a 200 KiB
 `logs/big.log`, over one 64 KiB read, for its Load more focus check; and `imaging/cells.ome.tif`,
-a small OME-TIFF (2 channels, 3 Z planes, 64 x 48 px) for the WebGL viewer's CSP check (FU-P3-102e).
+a small OME-TIFF (2 channels, 3 Z planes, 64 x 48 px) for the WebGL viewer's CSP check (FU-P3-102e);
+and `imaging/cells.ome.zarr`, a Zarr v2 OME-Zarr (2 channels, 64 x 48 px, a raw level and a zlib
+level) for the same check through the page's Zarr store (FU-P3-102g).
 """
 
 import gzip
@@ -21,6 +23,7 @@ import json
 import socket
 import struct
 import sys
+import zlib
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -60,6 +63,39 @@ def spool_lines() -> bytes:
         }
         lines.append(json.dumps(event) + "\n")
     return "".join(lines).encode()
+
+
+def ome_zarr(folder: Path, width: int = 64, height: int = 48, channels: int = 2) -> None:
+    """A Zarr v2 OME-Zarr (NGFF 0.4, axes c, y, x, uint8): level 0 in raw chunks (no
+    compressor), level 1 at half size in zlib chunks. No Blosc: the page refuses it, as
+    numcodecs' Blosc decoder needs 'unsafe-eval' (inbox #135)."""
+    folder.mkdir()
+    axes = [
+        {"name": "c", "type": "channel"},
+        {"name": "y", "type": "space"},
+        {"name": "x", "type": "space"},
+    ]
+    attrs = {
+        "multiscales": [
+            {"version": "0.4", "axes": axes, "datasets": [{"path": "0"}, {"path": "1"}]}
+        ],
+        "omero": {
+            "channels": [{"label": "DNA", "color": "0000FF"}, {"label": "Actin", "color": "00FF00"}]
+        },
+    }
+    (folder / ".zgroup").write_text(json.dumps({"zarr_format": 2}))
+    (folder / ".zattrs").write_text(json.dumps(attrs))
+    for level, (w, h, compressor) in enumerate(
+        [(width, height, None), (width // 2, height // 2, {"id": "zlib", "level": 1})]
+    ):
+        (folder / str(level)).mkdir()
+        meta = {"zarr_format": 2, "shape": [channels, h, w], "chunks": [1, h, w], "dtype": "|u1"}
+        meta |= {"compressor": compressor, "fill_value": 0, "order": "C", "filters": None}
+        (folder / str(level) / ".zarray").write_text(json.dumps(meta))
+        for c in range(channels):
+            plane = bytes((x * 4 + y * 2 + c * 100) % 256 for y in range(h) for x in range(w))
+            chunk = plane if compressor is None else zlib.compress(plane)
+            (folder / str(level) / f"{c}.0.0").write_bytes(chunk)
 
 
 def ome_tiff(width: int = 64, height: int = 48, channels: int = 2, planes: int = 3) -> bytes:
@@ -128,6 +164,7 @@ def main(runs_root: Path) -> None:
     (results / "logs" / "big.log").write_text(big)
     (results / "imaging").mkdir()
     (results / "imaging" / "cells.ome.tif").write_bytes(ome_tiff())
+    ome_zarr(results / "imaging" / "cells.ome.zarr")
     print(SEEDED)
 
 

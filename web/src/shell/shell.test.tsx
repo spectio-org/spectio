@@ -4,7 +4,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createAppRouter } from "../routes";
-import { viewport } from "../testing";
+import { DETAIL, json, run, serve, viewport } from "../testing";
 import { THEME_KEY, providerProps } from "./theme";
 
 const VERSION = {
@@ -109,6 +109,31 @@ test("breadcrumbs follow the route", async () => {
   await router.navigate({ to: "/launch" });
   expect(await within(crumbs).findByText("Launch")).toHaveAttribute("aria-current", "page");
   expect(within(crumbs).queryByRole("link", { name: "Runs" })).toBeNull();
+});
+
+test.each([
+  ["/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/results/file?path=counts.tsv", "Results", "File"],
+  ["/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/workdir?task=tsk_19&attempt=2", "Work directory", null],
+  ["/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/workdir/file?task=tsk_19&attempt=2&path=a.txt", "Work directory", "File"],
+])("FU-P3-104: the breadcrumb of %s names the run once", async (path, page, last) => {
+  // the run's name loads; its files and tasks are not there (the page's own state does not matter here)
+  serve({ "/api/v1/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W": { ...run(), ...DETAIL }, "/api/v1/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/": () => json(404, { title: "Not found" }) });
+  app(path);
+  const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
+  await within(crumbs).findAllByText("rnaseq-a");
+  const items = within(crumbs).getAllByRole("listitem").map((li) => li.textContent);
+  expect(items).toEqual(["Home", "Runs", "rnaseq-a", page, ...(last ? [last] : [])]);
+});
+
+test("CR-P3FU104-01: a file page's breadcrumb ends with the name the server answered for, not the URL's", async () => {
+  const id = "run_01JBC6Q4ZK7M8N2P3R5S7T9V1W";
+  const stat = { root: "/g/demo-lab/rnaseq", path: "tables/counts.tsv", name: "counts.tsv", type: "file", size: 12, mtime: "2026-11-10T09:00:00Z" };
+  serve({ [`/api/v1/runs/${id}`]: { ...run(), ...DETAIL }, [`/api/v1/runs/${id}/`]: () => json(404, { title: "Not found" }), [`/api/v1/runs/${id}/results/stat/`]: stat });
+  app(`/runs/${id}/results/file?path=tables/counts.tsv`);
+  const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
+  expect(await within(crumbs).findByText("counts.tsv")).toHaveAttribute("aria-current", "page");
+  expect(within(crumbs).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["Home", "Runs", "rnaseq-a", "Results", "counts.tsv"]);
+  expect(within(crumbs).queryByText("tables/counts.tsv")).toBeNull();
 });
 
 test("a malformed percent sequence keeps the shell (CR-P3G4-01)", async () => {

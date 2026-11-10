@@ -5,24 +5,30 @@
 // buttons for the zoom, Z and T ranges, and a status line for what stopped the reading. The
 // channel list and the view in the URL (FU-P3-102f): read once when the viewer opens, written back
 // with a history replace after a pause, so a Reload of the page or of the open keeps the view.
+// An OME-Zarr folder (FU-P3-102g) is read through our own store instead, key by key (`zarr`).
 import { Button } from "@mantine/core";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { ApiError } from "../../api";
-import { type PinnedClient, Stopped } from "./client";
+import { Stopped } from "./client";
 import { type ImageState, imageState, openWalked } from "./flat";
 import { type ChannelState, Channels, initialChannels } from "./Channels";
 import { DecoderPool } from "./pool";
 import { ZOOM, parseView, writeView } from "./url-state";
-import { type Pixels, type Stats, type ViewState, Viewer, openPixels } from "./viv";
+import { type Pixels, type Stats, type ViewState, Viewer, openPixels, openZarrPixels } from "./viv";
 import { guardParses } from "./walk";
+import { ZarrStore } from "./zarr";
 
-type Opened = { pixels: Pixels; client: PinnedClient };
+type Opened = { pixels: Pixels; client: { failure: Error | null } }; // the TIFF's pinned client or the Zarr store
 type Status = { title: string; action: "reload" | "retry" } | null;
 
 interface Props {
   url: string;
   size: number;
   name: string;
+  /** An OME-Zarr folder: the raw route's URL of each key below it (as=zarr); `url` and `size` unused. */
+  zarr?: (key: string) => string;
+  /** The folder is in a work directory, which serves no Zarr v2 metadata. */
+  workdir?: boolean;
   /** The flat view, shown when WebGL fails or the file has no OME-XML. */
   fallback: ReactNode;
   /** A problem before the first tile, as the file page shows it. */
@@ -41,7 +47,7 @@ function Plane({ label, value, count, onChange }: { label: string; value: number
   );
 }
 
-export default function OmeView({ url, size, name, fallback, stateView }: Props) {
+export default function OmeView({ url, size, name, zarr, workdir = false, fallback, stateView }: Props) {
   const [opens, setOpens] = useState(0); // Reload: a new open, so a new budget; the view is kept
   const [opened, setOpened] = useState<Opened | null>(null);
   const [state, setState] = useState<ImageState | { problem: ApiError } | null>(null);
@@ -63,17 +69,26 @@ export default function OmeView({ url, size, name, fallback, stateView }: Props)
     setStatus(null);
     if (flatOnly) return;
     const controller = new AbortController();
-    const pool = new DecoderPool();
+    let pool: DecoderPool | undefined; // the TIFF's decoder workers; a Zarr needs none
     (async () => {
+      if (zarr) {
+        const store = new ZarrStore(zarr, controller.signal);
+        store.work = workdir;
+        store.onBusy = (b) => controller.signal.aborted || setBusy(b);
+        const pixels = await openZarrPixels(store);
+        return controller.signal.aborted || setOpened({ pixels, client: store });
+      }
       const { tiff, client, ifds, files, walked } = await openWalked(url, size, name, true, controller.signal);
       if (files === "none") return controller.signal.aborted || setFlatOnly(true); // the flat view says "no OME metadata"
       guardParses(tiff, client, walked);
       client.onBusy = (b) => controller.signal.aborted || setBusy(b);
+      if (controller.signal.aborted) return; // the cleanup has run: no pool left behind it
+      pool = new DecoderPool();
       const pixels = await openPixels(tiff, pool, name, ifds);
       if (!controller.signal.aborted) setOpened({ pixels, client });
     })().catch((err) => controller.signal.aborted || setState(imageState(err)));
-    return () => (controller.abort(), pool.destroy());
-  }, [url, size, name, opens, flatOnly]);
+    return () => (controller.abort(), pool?.destroy());
+  }, [url, size, name, zarr, workdir, opens, flatOnly]);
 
   useEffect(() => {
     if (flatOnly || !opened || !canvas.current) return;

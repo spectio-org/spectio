@@ -129,6 +129,7 @@ test("a resume in progress links to the child that runs", async () => {
   expect(resume).toHaveAccessibleDescription("A resume of this run is already running: wgs-cohort-12-T9C2D.");
   const link = within(await header()).getAllByRole("link", { name: /wgs-cohort-12-T9C2D/ })[0];
   expect(link.getAttribute("href")).toBe(`/runs/${CHILD}`);
+  expect(getComputedStyle(link).color).toBe("var(--sp-text-link)"); // FU-P3-104: the app's link style
 });
 
 test("the facts link a resumed run and its parent both ways", async () => {
@@ -137,6 +138,7 @@ test("the facts link a resumed run and its parent both ways", async () => {
   const facts = await screen.findByRole("region", { name: "Facts" });
   const child = within(facts).getByRole("link", { name: "wgs-cohort-12-T9C2D · Succeeded" });
   expect(child.getAttribute("href")).toBe(`/runs/${CHILD}`);
+  expect(getComputedStyle(child).color).toBe("var(--sp-text-link)"); // FU-P3-104: the app's link style
   expect(within(facts).getByText("Resumed as")).toBeInTheDocument();
 });
 
@@ -151,7 +153,9 @@ test("a resumed run's facts say Resume of its parent", async () => {
   });
   app(`/runs/${CHILD}`);
   const facts = await screen.findByRole("region", { name: "Facts" });
-  expect(within(facts).getByRole("link", { name: "run 7T9V1W" }).getAttribute("href")).toBe(`/runs/${ID}`);
+  const parent = within(facts).getByRole("link", { name: "run 7T9V1W" });
+  expect(parent.getAttribute("href")).toBe(`/runs/${ID}`);
+  expect(getComputedStyle(parent).color).toBe("var(--sp-text-link)"); // FU-P3-104: the app's link style
   expect(within(facts).getByText("Resume of")).toBeInTheDocument();
 });
 

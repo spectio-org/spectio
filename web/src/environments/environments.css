@@ -87,3 +87,44 @@
   gap: 16px;
   min-width: 0;
 }
+/* FU-P3-111: the kind's icon tile, the view switch and the table view. */
+.sp-env-kind {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  color: var(--sp-section-environments);
+  background: var(--sp-section-environments-bg);
+}
+.sp-env-kind[data-kind="local"] {
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-sunken);
+}
+.sp-env-views {
+  align-self: flex-start;
+}
+.sp-env-table th[scope="row"] {
+  background: none;
+  color: var(--sp-text-primary);
+  font-size: 14px;
+}
+.sp-env-table tr[data-default] th[scope="row"] {
+  box-shadow: inset 3px 0 0 var(--sp-section-environments);
+}
+.sp-env-table th[scope="row"]:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: -2px;
+}
+.sp-env-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sp-env-line {
+  display: block;
+  margin-top: 4px;
+}

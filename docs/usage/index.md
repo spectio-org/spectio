@@ -47,6 +47,7 @@ The stop Spectio will generate, shown with plain Snakemake (`snakemake --until`)
 - [Runs started from a terminal](runs-from-a-terminal.md): see a run you started by hand.
 - [States, outputs and efficiency](states-outputs-efficiency.md): checkpoints, temporary files, CPU and memory use.
 - [Browsing and previewing files](browse-and-preview-files.md): the results and work directories, and a viewer for text, tables, JSON and images.
+- [Your pipeline catalog](pipeline-catalog.md): saved pipelines, picked on Launch.
 - [Environments](environments.md): where a run's tasks go, kept in a file you own.
 - [Features](../features/index.md): what each part does.
 - [API and CLI](../api/index.md): doing it without the web interface.
