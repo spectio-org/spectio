@@ -136,6 +136,8 @@ class StoreSink:
             ref = refs.get(row.launch_id)
             if ref is None:  # no launch, or one the runner cannot run: never delivered
                 values: dict[str, Any] = {"state": "failed"}
+                if (cleared := _cleared(row.payload)) is not None:
+                    values["payload"] = cleared
             else:
                 values = {"state": "leased", "lease_until": now + LEASE}
                 commands.append(Command(row.id, row.kind, ref, row.payload or {}))
@@ -212,7 +214,15 @@ def _answer(conn: Connection, command_id: str, ok: bool) -> None:
     payload = conn.execute(
         select(runner_commands.c.payload).where(runner_commands.c.id == command_id)
     ).scalar()
-    kept = payload.get("config_file") if isinstance(payload, dict) else None
-    if isinstance(payload, dict) and isinstance(kept, dict) and kept.get("text") is not None:
-        values["payload"] = {**payload, "config_file": {**kept, "text": None}}
+    if (cleared := _cleared(payload)) is not None:
+        values["payload"] = cleared
     conn.execute(update(runner_commands).where(runner_commands.c.id == command_id).values(**values))
+
+
+def _cleared(payload: Any) -> dict[str, Any] | None:
+    """The payload with the bytes of its extra config file set to null; None when it holds none.
+    Every path that ends a command `done` or `failed` writes it (api §5.7, SEC-P3FU110-SPEC-01)."""
+    kept = payload.get("config_file") if isinstance(payload, dict) else None
+    if isinstance(kept, dict) and kept.get("text") is not None:
+        return {**payload, "config_file": {**kept, "text": None}}
+    return None

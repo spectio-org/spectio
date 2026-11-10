@@ -57,6 +57,12 @@ jobs:
           . dev/versions.env
           uv run --locked --python "$PYTHON_VERSION" \
             --directory engine-bridges/snakemake-logger-plugin-spectio pytest -v
+      - name: The order of the extra config file on Snakemake (api §5.7)
+        if: matrix.engine == 'snakemake'
+        run: |
+          . dev/versions.env
+          uv run --locked --python "$PYTHON_VERSION" pytest -v -m engines -k req20_order \
+            packages/spectio/tests/test_headscript.py
       - name: Run scenarios
         # --golden check: task outcomes must match golden/<engine>-<version>/. A missing directory, an unreadable
         # engine version or a missing fixture for a PR scenario fails the job; only nightly scenarios may have none.

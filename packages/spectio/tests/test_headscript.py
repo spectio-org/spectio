@@ -968,7 +968,8 @@ def test_req20_banner_names_the_run_values_and_the_file(home: Path, bridges: Pat
     )
 
 
-def test_req20_order_on_nextflow(home: Path, tmp_path: Path) -> None:
+@pytest.mark.engines
+def test_req20_order_on_nextflow(home: Path, tmp_path: Path, bridges: Path) -> None:
     """The [to be validated] of api §5.7: in `-c a,b` the later file wins over the same generic
     key, and the user's `withName` still wins over both."""
     nextflow = os.environ.get("NEXTFLOW") or shutil.which("nextflow")
@@ -982,16 +983,18 @@ def test_req20_order_on_nextflow(home: Path, tmp_path: Path) -> None:
     args = engine_args(spec)
     files = args[args.index("-c") + 1]
     done = subprocess.run(
-        [nextflow, "config", "-flat", "-c", files, str(spec.location)],
+        # -c is a launcher option: before `config` (checked on Nextflow 25.10.9)
+        [nextflow, "-q", "-c", files, "config", "-flat", str(spec.location)],
         capture_output=True,
         text=True,
         check=True,
         timeout=300,
     )
     assert "process.memory = '2048 MB'" in done.stdout
-    assert "process.withName:BIG.memory = '3 GB'" in done.stdout
+    assert "process.'withName:BIG'.memory = '3 GB'" in done.stdout
 
 
+@pytest.mark.engines
 def test_req20_order_on_snakemake(home: Path, bridges: Path) -> None:
     """The deep merge of api §5.7: the workflow's own `configfile:`, then the extra file, then
     the form's params, key by key."""

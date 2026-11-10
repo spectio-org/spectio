@@ -13,7 +13,7 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from spectio.config import Settings, SlurmOpts
 from spectio.environments import DefaultResources
@@ -25,7 +25,7 @@ from spectio_server.api import extras
 from spectio_server.files.pool import Stalled
 from spectio_server.rebuild import rebuild_index
 from spectio_server.sink import StoreSink
-from spectio_server.store.schema import runner_commands, runs
+from spectio_server.store.schema import runner_commands, runs, workflows
 from spectio_server.store.writer import Writer
 
 from ..test_serve import make_run, run_id
@@ -471,6 +471,23 @@ def test_req20_runner_gets_the_values_and_the_bytes_then_cleared(
     assert argv[argv.index("-c") + 1] == f"{own}/extra.config,{own}/spectio.config"
 
 
+def test_req20_unrunnable_launch_fails_without_the_bytes(
+    authed_client: TestClient,
+    pipe: Callable[[str], Path],
+    home: Path,
+    settings: Settings,
+    writer: Writer,
+) -> None:
+    """A launch command the runner cannot run ends `failed` at lease time, never answered by
+    `ack`: its row keeps no bytes either (SEC-P3FU110-SPEC-01, CR-P3FU110B-02)."""
+    launched_with_file(authed_client, pipe, home)
+    writer.submit(lambda c: c.execute(update(workflows).values(engine="cwl"))).result()
+    assert StoreSink(writer, settings.runs_root).lease_commands() == []
+    (command,) = table(writer, runner_commands)
+    assert command.state == "failed" and command.payload["config_file"]["text"] is None
+    assert command.payload["config_file"]["sha256"] == hashlib.sha256(NF_TEXT.encode()).hexdigest()
+
+
 def test_req20_resume_copies_the_kept_file(
     authed_client: TestClient,
     pipe: Callable[[str], Path],
@@ -542,6 +559,9 @@ def test_req20_get_config_file(
     path.symlink_to(home / "conf" / "extra.config")
     assert authed_client.get(f"{API}/runs/{rid}/config-file").status_code == 404
     write(path.with_name("big"), "x" * (extras.MAX_CONFIG_FILE + 1)).replace(path)
+    assert authed_client.get(f"{API}/runs/{rid}/config-file").status_code == 404
+    shutil.rmtree(path.parent)
+    write(path.parent)  # `.spectio` replaced by a file: ENOTDIR, a 404 (CR-P3FU110B-05)
     assert authed_client.get(f"{API}/runs/{rid}/config-file").status_code == 404
     other = nf(authed_client, pipe).json()["id"]
     assert authed_client.get(f"{API}/runs/{other}/config-file").status_code == 404

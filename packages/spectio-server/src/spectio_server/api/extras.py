@@ -173,6 +173,9 @@ def read_config_file(
     }
 
 
+_ABSENT = (errno.ENOENT, errno.ELOOP, errno.ENOTDIR)
+
+
 def read_kept(runs_root: Path, run_id: str, kept_as: str) -> bytes | None:
     """The run's kept copy (api §5.7), `<run>/launch/.spectio/<kept_as>`, through its private
     directories and opened with O_NOFOLLOW (req. 10, 13); None when it is not there, not a
@@ -184,7 +187,8 @@ def read_kept(runs_root: Path, run_id: str, kept_as: str) -> bytes | None:
         with private_dir(runs_root, run_id, "launch", ".spectio") as at:
             fd = os.open(kept_as, _FILE, dir_fd=at)
     except OSError as exc:
-        if isinstance(exc, PermissionError) or exc.errno in (errno.ENOENT, errno.ELOOP):
+        # ENOTDIR: `.spectio` replaced by a file, or by a link to one (CR-P3FU110B-05)
+        if isinstance(exc, PermissionError) or exc.errno in _ABSENT:
             return None
         raise
     with os.fdopen(fd, "rb") as f:
