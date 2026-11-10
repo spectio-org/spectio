@@ -17,9 +17,17 @@ a{color:#6344B2}a:hover{color:#4D368B}
 a:focus-visible,button:focus-visible,h2:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .env-badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:7px;font-size:11.5px;font-weight:600}
-.env-act{height:36px;padding:0 14px;border-radius:10px;border:none;background:#F1F2F6;color:#22253A;font:600 13px 'Inter',sans-serif;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
+.env-act{height:36px;padding:0 14px;border-radius:10px;border:none;background:#F1F2F6;color:#22253A;font:600 13px 'Inter',sans-serif;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap}
 .env-act:hover{background:#E6E7EF;color:#0F1020}
 .env-act.danger{background:#FDF0F0;color:#B02A2A}
+.env-kind{flex-shrink:0;width:30px;height:30px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center}
+.env-seg{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:#F1F2F6}
+.env-seg button{min-height:36px;padding:0 14px;border:0;border-radius:9px;background:none;font:500 14px 'Inter',sans-serif;color:#4D5065;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.env-seg button[aria-pressed="true"]{background:#FFFFFF;color:#0F1020;font-weight:600;box-shadow:0 1px 2px rgba(15,16,32,.12)}
+.env-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.env-table th,.env-table td{text-align:left;padding:10px 14px;border-bottom:1px solid #E6E7EF;vertical-align:middle}
+.env-table thead th{font-size:12.5px;font-weight:600;color:#4D5065;background:#F7F7FB}
+.env-table tbody th{font-weight:600}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -38,12 +46,18 @@ a:focus-visible,button:focus-visible,h2:focus-visible{outline:2px solid #7750D4;
         <a href="LiteEnvironmentEdit.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #0369A1; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center;">New environment</a>
       </div>
 
+      <div role="group" aria-label="Show environments as" class="env-seg" style="align-self: flex-start;">
+        <button type="button" aria-pressed="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Cards</button>
+        <button type="button" aria-pressed="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z M4 10h16 M4 15h16 M10 5v14"/></svg>Table</button>
+      </div>
+
       <div role="status" aria-live="polite" class="sr"></div>
 
       <ul aria-label="Environments, built-ins first" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px;">
         <sc-for list="{{envs}}" as="e" hint-placeholder-count="4">
           <li style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11){{e.ring}}; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; background: {{e.bg}};">
             <div style="display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+              <span class="env-kind" style="background: {{e.kbg}}; color: {{e.kfg}};"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{e.icon}}"/></svg></span>
               <div style="flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
                 <h2 id="{{e.hid}}" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600;">{{e.label}}</h2>
                 <sc-if value="{{e.label !== e.name}}" hint-placeholder-val="{{true}}"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">{{e.name}}</span></sc-if>
@@ -59,7 +73,7 @@ a:focus-visible,button:focus-visible,h2:focus-visible{outline:2px solid #7750D4;
             </sc-if>
             <div role="group" aria-label="Actions for {{e.name}}" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
               <sc-if value="{{e.editable}}" hint-placeholder-val="{{true}}"><a class="env-act" href="LiteEnvironmentEdit.dc.html" aria-label="Edit {{e.name}}">Edit</a></sc-if>
-              <a class="env-act" href="LiteEnvironmentEdit.dc.html" aria-label="Duplicate {{e.name}}">Duplicate</a>
+              <a class="env-act" href="LiteEnvironmentEdit.dc.html" aria-label="{{e.dup}} {{e.name}}">{{e.dup}}</a>
               <sc-if value="{{e.canDefault}}" hint-placeholder-val="{{true}}"><button type="button" class="env-act" aria-label="Make {{e.name}} the default">Make default</button></sc-if>
               <sc-if value="{{e.editable}}" hint-placeholder-val="{{true}}"><button type="button" class="env-act danger" aria-label="Delete {{e.name}}" aria-haspopup="dialog">Delete</button></sc-if>
             </div>
@@ -71,6 +85,32 @@ a:focus-visible,button:focus-visible,h2:focus-visible{outline:2px solid #7750D4;
 
       <section aria-labelledby="h-states" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
         <h2 id="h-states" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">ON THIS BOARD, ALSO</h2>
+        <section aria-labelledby="s-table-h" style="display: flex; flex-direction: column; gap: 8px;">
+          <h3 id="s-table-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">The Table view (?view=table): the same environments, one row each</h3>
+          <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow-x: auto;">
+            <table class="env-table">
+              <caption class="sr">Environments, built-ins first</caption>
+              <thead><tr><th scope="col">Environment</th><th scope="col">Kind</th><th scope="col">Settings</th><th scope="col">State</th><th scope="col">Actions</th></tr></thead>
+              <tbody>
+                <sc-for list="{{envs}}" as="e" hint-placeholder-count="4">
+                  <tr style="box-shadow: {{e.rowRing}};">
+                    <th scope="row" tabindex="-1"><span style="display: flex; align-items: center; gap: 10px;"><span class="env-kind" style="background: {{e.kbg}}; color: {{e.kfg}};"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{e.icon}}"/></svg></span><span style="display: flex; flex-direction: column;">{{e.label}}<sc-if value="{{e.label !== e.name}}" hint-placeholder-val="{{true}}"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #4D5065;">{{e.name}}</span></sc-if></span></span></th>
+                    <td><span class="env-badge" style="background: {{e.badges[0].bg}}; color: {{e.badges[0].fg}};">{{e.badges[0].t}}</span></td>
+                    <td style="color: #22253A; line-height: 1.45;">{{e.summary}}<sc-if value="{{e.profiles}}" hint-placeholder-val="{{false}}"><span style="display: block; font-size: 12.5px; color: #4D5065;">{{e.profiles}}</span></sc-if></td>
+                    <td><sc-for list="{{e.states}}" as="b" hint-placeholder-count="1"><span class="env-badge" style="background: {{b.bg}}; color: {{b.fg}};">{{b.t}}</span></sc-for></td>
+                    <td><span style="display: flex; gap: 6px; flex-wrap: nowrap;">
+                      <sc-if value="{{e.editable}}" hint-placeholder-val="{{true}}"><a class="env-act" href="LiteEnvironmentEdit.dc.html" aria-label="Edit {{e.name}}">Edit</a></sc-if>
+                      <a class="env-act" href="LiteEnvironmentEdit.dc.html" aria-label="{{e.dup}} {{e.name}}">{{e.dup}}</a>
+                      <sc-if value="{{e.canDefault}}" hint-placeholder-val="{{true}}"><button type="button" class="env-act" aria-label="Make {{e.name}} the default">Make default</button></sc-if>
+                      <sc-if value="{{e.editable}}" hint-placeholder-val="{{true}}"><button type="button" class="env-act danger" aria-label="Delete {{e.name}}" aria-haspopup="dialog">Delete</button></sc-if>
+                    </span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <span style="font-size: 12px; color: #6E7287;">ui-spec §4.8.1 (FU-P3-111): Cards and Table are two native buttons with aria-pressed, kept in the URL query; the row's header takes the heading's focus. Icons per kind: SLURM the server icon, Local the terminal icon, always beside the text badge. Duplicate to edit opens the form as slurm-copy, a new file environment; a built-in never gets Edit or Delete.</span>
+        </section>
         <section aria-labelledby="s-empty-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; max-width: 760px;">
           <h3 id="s-empty-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">No environment of your own yet (slurm is the default)</h3>
           <p style="margin: 0; font-size: 13.5px; color: #22253A; line-height: 1.45;">Only the built-in environments so far. New environment saves your partition, account and limits under a name.</p>
@@ -92,7 +132,12 @@ class Component extends DCLogic {
 renderVals() {
   const B = { slurm: { t: 'SLURM', bg: '#F0F9FF', fg: '#075985' }, local: { t: 'Local', bg: '#F1F2F6', fg: '#33364A' },
     def: { t: 'Default', bg: '#E8F6EF', fg: '#157A4B' }, built: { t: 'Built-in', bg: '#F1F2F6', fg: '#4D5065' } };
-  const env = (o) => ({ ring: '', bg: '#FFFFFF', profiles: '', unusable: '', editable: true, canDefault: true, hid: 'env-' + o.name, ...o });
+  // FU-P3-111: one icon per kind (web/src/icons.tsx server and terminal); a built-in's Duplicate is "Duplicate to edit".
+  const K = { slurm: { icon: 'M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01', kbg: '#F0F9FF', kfg: '#0284C7' },
+    local: { icon: 'M4 5h16v14H4z M7 9l3 3-3 3 M12 15h5', kbg: '#F1F2F6', kfg: '#4D5065' } };
+  const env = (o) => ({ ring: '', bg: '#FFFFFF', profiles: '', unusable: '', editable: true, canDefault: true, hid: 'env-' + o.name,
+    ...K[o.badges[0] === B.local ? 'local' : 'slurm'], dup: o.editable === false ? 'Duplicate to edit' : 'Duplicate',
+    states: o.badges.slice(1), rowRing: o.ring ? 'inset 4px 0 0 #0284C7' : 'none', ...o });
   // ui-spec §4.8.1: built-ins first; the label (or the name) is the heading; badges are text, never colour alone.
   return { envs: [
     env({ name: 'slurm', label: 'SLURM (from spectio init)', badges: [B.slurm, B.built], editable: false,

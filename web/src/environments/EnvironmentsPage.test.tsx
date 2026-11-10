@@ -56,8 +56,10 @@ test("the list: one card per environment, badges in words, actions named with th
   expect(within(card).queryByRole("button", { name: "Make default mylab-long" })).toBeNull();
   const builtin = screen.getByRole("heading", { name: "SLURM (from spectio init)" }).closest("article")!;
   expect(within(builtin).getByText("Built-in")).toBeInTheDocument();
-  expect(within(builtin).queryByRole("link", { name: /Edit/ })).toBeNull();
-  expect(within(builtin).getByRole("link", { name: "Duplicate slurm" })).toHaveAttribute("href", "/environments/new?from=slurm");
+  expect(within(builtin).queryByRole("link", { name: /^Edit/ })).toBeNull();
+  expect(within(builtin).queryByRole("button", { name: /Delete/ })).toBeNull();
+  expect(within(builtin).getByRole("link", { name: "Duplicate to edit slurm" })).toHaveAttribute("href", "/environments/new?from=slurm");
+  expect(within(card).getByRole("link", { name: "Duplicate mylab-long" })).toBeInTheDocument();
   expect(screen.getByText("on login1 (the login node) · at most 2 CPUs and 8 GiB")).toBeInTheDocument();
   expect(screen.getByText(/Saved in/)).toHaveTextContent("Saved in /home/amartin/.spectio/environments.toml");
 });
@@ -69,7 +71,7 @@ test("an invalid file: its line above the cards, New environment waits with its 
   const create = screen.getByRole("button", { name: "New environment" });
   expect(create).toHaveAttribute("aria-disabled", "true");
   expect(create).toHaveAccessibleDescription(/waits until the mistake in the file is fixed/);
-  expect(screen.getByRole("button", { name: "Duplicate slurm" })).toHaveAttribute("aria-disabled", "true");
+  expect(screen.getByRole("button", { name: "Duplicate to edit slurm" })).toHaveAttribute("aria-disabled", "true");
 });
 
 test("Delete asks first; after it, focus on the next card's heading and a polite line", async () => {
@@ -187,12 +189,12 @@ test("a missing environment is a 404 page with a link to the list", async () => 
   expect(screen.getByRole("link", { name: "All environments" })).toHaveAttribute("href", "/environments");
 });
 
-test("a built-in opens read only, with Duplicate", async () => {
+test("a built-in opens read only, with Duplicate to edit", async () => {
   serve({ "/api/v1/version": SLURM, [`${API}/slurm`]: BUILTINS[0], [API]: list(BUILTINS) });
   app("/environments/slurm");
   expect(await screen.findByLabelText("Partition")).toHaveAttribute("readonly");
   expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
-  expect(screen.getByRole("link", { name: "Duplicate slurm" })).toHaveAttribute("href", "/environments/new?from=slurm");
+  expect(screen.getByRole("link", { name: "Duplicate to edit slurm" })).toHaveAttribute("href", "/environments/new?from=slurm");
 });
 
 test("a 422 on a field the form does not show is a banner", async () => {
@@ -223,11 +225,94 @@ test("an environment that cannot be read is an alert with Retry, not a missing o
   expect(await screen.findByLabelText("Name")).toHaveValue("gpu-test");
 });
 
-test("duplicating a built-in clears its name and its label", async () => {
-  serve({ "/api/v1/version": SLURM, [`${API}/slurm`]: BUILTINS[0], [API]: list(BUILTINS) });
+test("FU-P3-111: Duplicate to edit names the copy <name>-copy, unique, clears a built-in's label, and saves a new file environment", async () => {
+  const bodies: Record<string, unknown>[] = [];
+  serve({
+    "/api/v1/version": SLURM,
+    [`${API}/slurm`]: BUILTINS[0],
+    [API]: (_u: URL, init?: RequestInit) => {
+      if (init?.method !== "POST") return json(200, list([...BUILTINS, item("slurm-copy")]));
+      bodies.push(JSON.parse(String(init.body)));
+      return json(201, item("slurm-copy-2"));
+    },
+  });
   app("/environments/new?from=slurm");
-  expect(await screen.findByLabelText("Name")).toHaveValue("");
+  expect(await screen.findByLabelText("Name")).toHaveValue("slurm-copy-2");
+  expect(screen.getByLabelText("Name")).not.toHaveAttribute("readonly");
   expect(screen.getByLabelText("Label (optional)")).toHaveValue("");
+  expect(screen.getByLabelText("Partition")).toHaveValue("htc");
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(bodies[0]).toMatchObject({ name: "slurm-copy-2", executor: "slurm", slurm: { partition: "htc", account: "mylab" } }));
+});
+
+test("FU-P3-111: a duplicate's name stays within 32 characters", async () => {
+  const long = item("a-very-long-environment-name-xyz");
+  serve({ "/api/v1/version": SLURM, [`${API}/${long.name}`]: long, [API]: list([...BUILTINS, long]) });
+  app(`/environments/new?from=${long.name}`);
+  expect(await screen.findByLabelText("Name")).toHaveValue("a-very-long-environment-nam-copy");
+});
+
+test("FU-P3-111: each kind has its icon; Cards and Table are a pressed pair kept in the URL", async () => {
+  serve({ [API]: list([...BUILTINS, ...MINE]), "/api/v1/version": SLURM });
+  const router = app("/environments");
+  const card = (await screen.findByRole("heading", { name: "Long jobs, mylab" })).closest("article")!;
+  expect(card.querySelector('[data-kind="slurm"] svg')).toHaveAttribute("aria-hidden", "true");
+  const local = screen.getByRole("heading", { name: "Login node" }).closest("article")!;
+  expect(local.querySelector('[data-kind="local"] svg')).not.toBeNull();
+  const views = screen.getByRole("group", { name: "Show environments as" });
+  const cards = within(views).getByRole("button", { name: "Cards" });
+  const table = within(views).getByRole("button", { name: "Table" });
+  expect(cards).toHaveAttribute("aria-pressed", "true");
+  expect(table).toHaveAttribute("aria-pressed", "false");
+  await userEvent.click(table);
+  await waitFor(() => expect(router.state.location.search).toEqual({ view: "table" }));
+  expect(table).toHaveAttribute("aria-pressed", "true");
+  const grid = screen.getByRole("table", { name: "Environments, built-ins first" });
+  expect(within(grid).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Environment", "Kind", "Settings", "State", "Actions"]);
+  const row = within(grid).getByRole("rowheader", { name: /Long jobs, mylab/ }).closest("tr")!;
+  expect(row).toHaveTextContent("partition htc · SLURM account mylab");
+  expect(within(row).getByRole("link", { name: "Edit mylab-long" })).toBeInTheDocument();
+  const builtin = within(grid).getByRole("rowheader", { name: /SLURM \(from spectio init\)/ }).closest("tr")!;
+  expect(within(builtin).getByRole("link", { name: "Duplicate to edit slurm" })).toBeInTheDocument();
+  expect(within(builtin).queryByRole("link", { name: /^Edit/ })).toBeNull();
+  expect(screen.queryByRole("article")).toBeNull();
+  await userEvent.click(cards);
+  await waitFor(() => expect(router.state.location.search).toEqual({}));
+  expect(screen.queryByRole("table")).toBeNull();
+});
+
+test("FU-P3-111: ?view=table opens the table; Make default focuses the row's header", async () => {
+  let def = "mylab-long";
+  serve({
+    "/api/v1/version": SLURM,
+    [`${API}/gpu-test:make-default`]: () => ((def = "gpu-test"), new Response(null, { status: 204 })),
+    [API]: () => json(200, list([...BUILTINS, ...MINE].map((i) => ({ ...i, default: i.name === def })))),
+  });
+  app("/environments?view=table");
+  await userEvent.click(await screen.findByRole("button", { name: "Make default gpu-test" }));
+  await waitFor(() => expect(screen.getByRole("rowheader", { name: /gpu-test/ })).toHaveFocus());
+});
+
+test("FU-P3-111: Cancel from the form returns to the table view", async () => {
+  serve({ "/api/v1/version": SLURM, [`${API}/gpu-test`]: MINE[1], [API]: list([...BUILTINS, ...MINE]) });
+  const router = app("/environments?view=table");
+  await userEvent.click(await screen.findByRole("link", { name: "Edit gpu-test" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(router.state.location.search).toEqual({ view: "table" }));
+  expect(await screen.findByRole("table")).toBeInTheDocument();
+});
+
+test("FU-P3-111 phone: cards by default; the table has no Actions and its names are links", async () => {
+  viewport(390);
+  serve({ [API]: list([...BUILTINS, ...MINE]), "/api/v1/version": SLURM });
+  app("/environments");
+  await screen.findByRole("link", { name: "Long jobs, mylab" });
+  expect(screen.getByRole("button", { name: "Cards" })).toHaveAttribute("aria-pressed", "true");
+  await userEvent.click(screen.getByRole("button", { name: "Table" }));
+  const grid = await screen.findByRole("table");
+  expect(within(grid).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Environment", "Kind", "Settings", "State"]);
+  expect(within(grid).queryAllByRole("button")).toEqual([]);
+  expect(within(grid).getByRole("link", { name: "Long jobs, mylab" })).toHaveAttribute("href", "/environments/mylab-long");
 });
 
 test("an invalid file: no empty line beside the file line", async () => {
@@ -279,6 +364,14 @@ test("phone: the page stacks its actions, named with the environment, Delete las
   expect(screen.queryByRole("link", { name: "gpu-test" })).toBeNull();
 });
 
+test("FU-P3-111 phone: a built-in's page offers Duplicate to edit, and no Delete", async () => {
+  viewport(390);
+  serve({ "/api/v1/version": SLURM, [`${API}/slurm`]: BUILTINS[0], [API]: list(BUILTINS) });
+  app("/environments/slurm");
+  const more = await screen.findByRole("group", { name: "More for this environment" });
+  expect([...more.querySelectorAll("a, button")].map((b) => b.textContent)).toEqual(["Make default slurm", "Duplicate to edit slurm"]);
+});
+
 test("FU-P3-108b: Edit and New move focus to the form's heading; Cancel returns it to the opener", async () => {
   serve({ "/api/v1/version": SLURM, [`${API}/gpu-test`]: MINE[1], [API]: list([...BUILTINS, ...MINE]) });
   app("/environments");
@@ -290,4 +383,15 @@ test("FU-P3-108b: Edit and New move focus to the form's heading; Cancel returns 
   await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "New environment" })).toHaveFocus());
   await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await waitFor(() => expect(screen.getByRole("link", { name: "New environment" })).toHaveFocus());
+});
+
+test("CR-P3FU111-02: New does not read the list, only a duplicate does", async () => {
+  const reads: string[] = [];
+  serve({
+    "/api/v1/version": SLURM,
+    [API]: (u: URL, init?: RequestInit) => (init?.method !== "POST" && reads.push(u.pathname), json(200, list(BUILTINS))),
+  });
+  app("/environments/new");
+  await screen.findByLabelText("Name");
+  expect(reads).toEqual([]);
 });

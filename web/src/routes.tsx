@@ -11,7 +11,7 @@ import {
 import { useMemo } from "react";
 import type { WorkRoot } from "./api";
 import { CatalogEntryPage, CatalogPage } from "./catalog/CatalogPage";
-import { EnvironmentPage, EnvironmentsPage } from "./environments/EnvironmentsPage";
+import { EnvironmentPage, EnvironmentsPage, envListSearch } from "./environments/EnvironmentsPage";
 import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
 import { ProfilePage } from "./profile/ProfilePage";
@@ -134,7 +134,7 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/runs/$id/results/file", component: FileRoute, validateSearch: resultsSearch }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id/workdir", component: WorkdirRoute, validateSearch: resultsSearch }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id/workdir/file", component: WorkdirFileRoute, validateSearch: resultsSearch }),
-  createRoute({ getParentRoute: () => root, path: "/environments", component: EnvironmentsPage }),
+  createRoute({ getParentRoute: () => root, path: "/environments", component: EnvironmentsPage, validateSearch: envListSearch }),
   createRoute({ getParentRoute: () => root, path: "/environments/new", component: NewEnvironmentRoute, validateSearch: envSearch }),
   createRoute({ getParentRoute: () => root, path: "/environments/$name", component: EnvironmentRoute }),
   createRoute({ getParentRoute: () => root, path: "/catalog", component: CatalogPage }),

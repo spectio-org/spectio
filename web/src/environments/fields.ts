@@ -134,3 +134,13 @@ export const label = (item: EnvironmentItem) => item.label ?? item.name;
 /** A run's environment as its facts name it: the name, or a built-in's label (LiteStatesRun). */
 export const runEnvName = (env: { name: string | null; label: string | null }) =>
   (env.name === "local" || env.name === "slurm" ? env.label : null) ?? env.name ?? "";
+
+/** A duplicate's name (FU-P3-111): `<name>-copy`, then `-copy-2`, `-3`…, unique among `taken`
+ * and within the 32 characters of a name (the base is cut, never the suffix). */
+export function copyName(name: string, taken: string[]): string {
+  for (let i = 1; ; i++) {
+    const suffix = i === 1 ? "-copy" : `-copy-${i}`;
+    const candidate = name.slice(0, 32 - suffix.length).replace(/-+$/, "") + suffix;
+    if (!taken.includes(candidate)) return candidate;
+  }
+}
