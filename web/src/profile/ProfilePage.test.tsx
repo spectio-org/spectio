@@ -66,6 +66,7 @@ test("Sign out of this session posts, then says how to sign in again", async () 
   expect(said).toHaveAttribute("role", "status");
   expect(said).toHaveTextContent("spectio login --print-link");
   expect(screen.queryByRole("button", { name: "Sign out of this session" })).toBeNull();
+  expect(said).toHaveFocus(); // UX-P3FU112-01: the focused button is gone, its status takes focus
 });
 
 test("a failed sign-out stays signed in and says why", async () => {
@@ -120,6 +121,8 @@ test("a failed read says why and retries; the theme still works", async () => {
   fail = false;
   await userEvent.click(screen.getByRole("button", { name: "Retry" }));
   await waitFor(() => expect(screen.getByText("amartin")).toBeInTheDocument());
+  // UX-P3FU112-01: Retry is gone once the profile loads, so focus moves to the first card's heading
+  expect(screen.getByRole("heading", { name: "Who the server runs as" })).toHaveFocus();
 });
 
 test("phone (360 px): the title is the top bar's h1 and the avatar links to /profile", async () => {

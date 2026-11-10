@@ -31,10 +31,12 @@ const THEMES: { value: MantineColorScheme; label: string }[] = [
   { value: "auto", label: "System" },
 ];
 
-function Card({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+const focusIt = (el: HTMLElement | null) => el?.focus();
+
+function Card({ id, title, focus, children }: { id: string; title: string; focus?: boolean; children: ReactNode }) {
   return (
     <section className="sp-card sp-prof-card" aria-labelledby={id}>
-      <h2 id={id}>{title}</h2>
+      <h2 id={id} tabIndex={focus ? -1 : undefined} ref={focus ? focusIt : undefined}>{title}</h2>
       {children}
     </section>
   );
@@ -92,6 +94,9 @@ export function ProfilePage() {
   const [out, setOut] = useState<"no" | "busy" | "failed" | "yes">("no");
   const [outError, setOutError] = useState("");
   usePageCrumb(TITLE);
+  // UX-P3FU112-01: the control that had focus is replaced (Retry by "Loading…", Sign out by its
+  // status), so focus moves to the text that replaces it rather than falling back to the page.
+  const [retried, setRetried] = useState(false);
   const load = useCallback(() => {
     setError(null);
     getMe().then(setMe, (e: Error) => setError(e.message));
@@ -124,13 +129,13 @@ export function ProfilePage() {
       {error ? (
         <>
           <p role="alert" className="sp-note sp-alert">Your profile could not be read. {error}</p>
-          <Button variant="default" style={{ alignSelf: "flex-start" }} onClick={load}>Retry</Button>
+          <Button variant="default" style={{ alignSelf: "flex-start" }} onClick={() => (setRetried(true), load())}>Retry</Button>
         </>
       ) : !me ? (
-        <p role="status" className="sp-sub">Loading your profile…</p>
+        <p role="status" className="sp-sub" tabIndex={-1} ref={retried ? focusIt : undefined}>Loading your profile…</p>
       ) : (
         <>
-          <Card id="prof-who" title="Who the server runs as">
+          <Card id="prof-who" title="Who the server runs as" focus={retried}>
             <dl className="sp-facts">
               <div><dt>Unix user</dt><dd>{me.principal.user}</dd></div>
               <div><dt>UID</dt><dd>{me.principal.uid}</dd></div>
@@ -139,7 +144,7 @@ export function ProfilePage() {
           </Card>
           <Card id="prof-session" title="This session">
             {out === "yes" ? (
-              <p role="status" className="sp-note">{SIGNED_OUT}</p>
+              <p role="status" className="sp-note" tabIndex={-1} ref={focusIt}>{SIGNED_OUT}</p>
             ) : (
               <>
                 <dl className="sp-facts">
