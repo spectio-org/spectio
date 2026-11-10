@@ -556,3 +556,85 @@ class Results(BaseModel):
     entries: list[ResultEntry]
     truncated: bool
     reports: list[ResultReport]
+
+
+# --- The workflow graph (issue #160; api §5.8), behind the `graph_view` feature -------------
+
+
+class Features(BaseModel):
+    features: list[str]
+
+
+class GraphGroup(BaseModel):
+    id: str  # `stage:<id>`, `sub:<A:B>` (Nextflow), `file:<path>` (Snakemake rule file)
+    kind: Literal["stage", "subworkflow"]
+    name: str
+    parent: str | None
+    condition: str | None
+
+
+class GraphSource(BaseModel):
+    file: str
+    line: int | None
+
+
+class GraphLayout(BaseModel):
+    x: float
+    y: float
+
+
+class GraphMetrics(BaseModel):
+    duration_s: float | None
+    cpu_mean: float | None
+    mem_max: float | None
+    failed: int
+
+
+class GraphNode(BaseModel):
+    id: str  # the stored process or rule name
+    name: str
+    kind: Literal["process", "rule", "checkpoint", "gate"]
+    stage_id: str | None
+    subworkflow: str | None
+    source: GraphSource | None
+    condition: str | None
+    params: list[str]
+    layout: GraphLayout | None = None  # BioFlow-Insight's position, when it produced the graph
+    # The runtime overlay: on `/runs/{id}/graph` only
+    status: ProcessStatus | None = None
+    counts: dict[str, int] | None = None
+    retries: int | None = None
+    pipeline_order: int | None = None
+    metrics: GraphMetrics | None = None
+    first_start: str | None = None
+    last_end: str | None = None
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    condition: str | None  # BioFlow-Insight's `if` around the link, when it gave one
+
+
+class GraphDocument(BaseModel):
+    version: Literal[1]
+    engine: str
+    producer: Literal["smk-rulegraph", "nf-dag", "bioflow-insight", "stages-only"]
+    complete: bool
+    estimate: bool  # static edges (BioFlow-Insight): may hold cycles or miss runtime links
+    groups: list[GraphGroup]
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
+class ProcessOutput(BaseModel):
+    path: str  # relative to `root`, else absolute
+    root: Literal["launch", "results", "absolute"]
+    task_id: str | None
+    attempt_n: int | None
+    state: Literal["present", "missing", "removed", "unknown"]
+    temp: bool
+
+
+class ProcessOutputs(BaseModel):
+    items: list[ProcessOutput]
