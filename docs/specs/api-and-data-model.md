@@ -674,8 +674,9 @@ All four answer `{items: []}` or empty `groups` with `200` when nothing matches;
 | `engine` | `nextflow` or `snakemake` |
 | `producer` | `nf-dag` (the runtime DAG from `nf-spectio`), `smk-rulegraph` (Snakemake's rule graphs), `bioflow-insight` (static analysis of Nextflow code), or `stages-only` (nodes with no edges). The list runs from most to least trusted |
 | `complete` | `false` when the edges are unknown or estimated, or when the DAG can still grow (an open checkpoint) |
-| `groups[]` | `{id, kind: stage\|subworkflow, name, parent, condition}`, outermost first. Nextflow subworkflows come from the `:` segments of the qualified process name. Snakemake rules get one group per rule file when they come from several files |
-| `nodes[]` | `{id, name, kind: process\|rule\|checkpoint\|gate, stage_id, subworkflow, source, condition, params[]}`. `id` is the stored process or rule name, so a node joins `/processes` and `/tasks?process=` directly. `params` lists the `params.<x>` names that the node's code reads, when a static producer can tell |
+| `estimate` | `true` when the edges come from static analysis (`bioflow-insight`). Clients show it as an estimate |
+| `groups[]` | `{id, kind: stage\|subworkflow, name, parent, condition}`, outermost first. Nextflow subworkflows come from the `:` segments of the qualified process name. Snakemake Launch graphs get one group per rule file. Run graphs do not, because detected Snakemake stages are already one per file. `layout` holds BioFlow-Insight's x/y positions. Gate nodes come later: 0.0.1 stores no gates |
+| `nodes[]` | `{id, name, kind: process\|rule\|checkpoint, stage_id, subworkflow, source, condition, params[], layout?}`. `id` is the stored process or rule name, so a node joins `/processes` and `/tasks?process=` directly. `params` lists the `params.<x>` names that the node's code reads, when a static producer can tell |
 | `edges[]` | `{source, target, condition?}`. Edges can form cycles: static analysis does (see the [spike](../research/spike-metroflow-2026-11-10.md#3-measurements)). Every client algorithm must tolerate them |
 
 The run graph adds a runtime overlay to each node. It holds `status`, `counts`, `retries` and `pipeline_order` (as in `/processes`), plus `metrics {duration_s, cpu_mean, mem_max, failed}` and `first_start`, `last_end`. All of these values are computed and never stored.
@@ -685,12 +686,12 @@ The run graph adds a runtime overlay to each node. It holds `status`, `counts`, 
 | Route | Returns |
 |---|---|
 | `GET /runs/{id}/graph` | the document with its overlay. Producer order: Snakemake uses the union of the run's rule graphs (§7, `snakemake.rulegraph`) and grows on `dag_updated`. Nextflow uses `payload.dag` of the run's first `nextflow.onFlowBegin`, then BioFlow-Insight on the run's local workflow, then `stages-only` |
-| `GET /workflows:graph?location=&revision=` | a static document for Launch, with no overlay. The location is checked as for `/workflows:inspect` |
-| `GET /runs/{id}/processes/{name}/outputs` | `{items: [{path, task_id, attempt_n, state: present\|removed\|missing\|unknown, temp}]}`. Snakemake reads `attempts.outputs`. Nextflow reads publish events, or else the work directory. A removed `temp()` file is listed but cannot be downloaded (ui-spec §5.2) |
+| `GET /workflows:graph?location=&revision=` | a static document for Launch, with no overlay. The location is checked as for `/workflows:inspect`. Nextflow uses BioFlow-Insight, else `stages-only`. Snakemake lists the rules read from the rule files, with no edges (`stages-only`, `complete: false`). The server never runs `snakemake --rulegraph`, because that executes the Snakefile's Python |
+| `GET /runs/{id}/processes/{name}/outputs` | `{items: [{path, root: launch\|results\|absolute, task_id, attempt_n, state: present\|removed\|missing\|unknown, temp}]}`. Snakemake reads `attempts.outputs`. Nextflow reads publish events, or else the work directory. A removed `temp()` file is listed but cannot be downloaded (ui-spec §5.2) |
 
 **`nf-spectio` `onFlowBegin`.** `dag: {processes: [...], edges: [[from, to], ...]}`, collapsed to processes from `session.dag`: walks through operators and channels. Bounded at 2000 processes and 20000 edges, beyond which it sends `{truncated: true}`. Any error leaves the field out, and the run is not affected.
 
-**BioFlow-Insight.** An optional install extra, `spectio-server[graph]`, which pins `bioflow-insight` (MIT). It needs Java and Graphviz. It runs on the server host, on the local workflow directory, in a subprocess with a 60 s timeout and a temporary output directory. Code is never sent to the hosted service.
+**BioFlow-Insight.** Optional. The server uses a `bioflow-insight` executable on `PATH`, installed with `uv tool install bioflow-insight==2.1.1` (MIT), together with Graphviz `dot` and Java. It is not a package extra, because its pins (numpy, sympy, jpype1) do not fit the workspace lock. Run graphs never use it. It runs on the server host, on the local workflow directory, in a subprocess with a 60 s timeout and a temporary output directory. Code is never sent to the hosted service.
 
 **Untrusted text.** Names, conditions and paths come from pipeline code. Clients render them as text only.
 

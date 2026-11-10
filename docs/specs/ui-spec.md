@@ -778,7 +778,7 @@ The sheet is `aria-modal`, and focus returns to the node when it closes.
 
 **Live.** The graph refetches on the run's frames (`useFrames`). Nodes keep their positions. A node added after a checkpoint is appended, and the header reads "DAG grows" while `complete` is false (§5.2).
 
-**Estimates.** When `producer` is `bioflow-insight` or `stages-only`, a banner says "Static estimate from the code — edges may be approximate" or "Edges unknown — showing stages and processes".
+**Estimates.** When `estimate` is true or `producer` is `stages-only`, a banner says "Static estimate from the code — edges may be approximate" or "Edges unknown — showing stages and processes".
 
 **Accessibility and phone.**
 - Every node is a native `<button>` whose accessible name gives its name, kind and state, for example "ALIGN, process, running, 3 of 10 done".
