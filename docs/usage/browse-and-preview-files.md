@@ -5,7 +5,7 @@ icon: material/file-search-outline
 
 !!! note "Built on the integration branch, not released yet"
 
-    This works today from a checkout (steps FU-P3-85a to FU-P3-85e, batch [P3-B09](../progress/W5/P3-M9.md#batch-p3-b09), 2026-11-09; tables in AG Grid, the HTML report and OME-Zarr added by batch [P3-B13](../progress/W5/P3-M9.md#batch-p3-b13), 2026-11-10). The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). **It ran on a local executor only, on a `.tsv` file:** no image, PDF or HTML state was captured, no SLURM run and no real cluster work directory was opened (see [Not shown](#not-shown)).
+    This works today from a checkout (steps FU-P3-85a to FU-P3-85e, batch [P3-B09](../progress/W5/P3-M9.md#batch-p3-b09), 2026-11-09; tables in AG Grid, the HTML report and OME-Zarr added by batch [P3-B13](../progress/W5/P3-M9.md#batch-p3-b13), 2026-11-10; the OME-TIFF viewer and the breadcrumb of a file page by batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14), 2026-11-10). The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). **It ran on a local executor only, on a `.tsv` file:** no image, PDF or HTML state was captured, no SLURM run and no real cluster work directory was opened (see [Not shown](#not-shown)).
 
 You can look at a run's files from the run page, with no terminal. There are two places to browse, and one page to preview a file. The rules are owned by [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview); the routes by [api §5.3](../specs/api-and-data-model.md#53-run-files-explorer-and-preview); confinement and headers by [development environment §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), requirements 13 and 14. Everything here is read-only.
 
@@ -60,12 +60,14 @@ The page shows the file's name, its kind, size and time, its full path with **Co
 | Table (`.csv`, `.tsv`, `.tab`) | a table in AG Grid, parsed in your browser from the first 1 MiB: at most 500 rows and 50 columns, **First row is a header**, **Show as text**, sort and filter on each column. See [Tables](#tables) |
 | JSON | formatted, with **Show as text**; a file over 1 MiB, nested over 64 levels or not valid JSON is shown as text, with the reason |
 | Image | the image itself (20 MiB at most, an SVG 5 MiB), on a light backdrop, with **Actual size**. An image that cannot be shown says so and offers Download |
-| TIFF, OME-TIFF | the first plane drawn on a canvas, with **Actual size** and a line of facts under it. See [TIFF files](#tiff-files) |
+| TIFF | the first plane drawn on a canvas, with **Actual size** and a line of facts under it. See [TIFF files](#tiff-files) |
+| OME-TIFF (a file named `*.ome.tif` or `*.ome.tiff`) | on a desktop with WebGL 2, the image viewer with its channels; on a phone, or without WebGL 2, the flat view of the TIFF. See [OME-TIFF files](#ome-tiff-files) |
 | HTML report | in the results, the report viewer, in a sandbox, opened for you. In a work directory, a note and Download. See [HTML files](#html-files) |
 | OME-Zarr (a folder named `*.ome.zarr`) | the image viewer, with its channels. See [OME-Zarr](#ome-zarr) |
 | PDF, binary | the facts and Download. Spectio does not open them |
 
 - **Text is shown as text.** A file's content is never run as HTML, and an SVG is shown only in an `<img>`, where its scripts do nothing.
+- **The breadcrumb names the file.** At the top of the page it reads "Home › Runs › demo-imaging › Results › cells.ome.tif": the run once, then Results or Work directory, then the file's name as the server answered it, never the name typed in the address. It reads "File" until the server has answered ([FU-P3-104](../progress/W5/P3-M9.md#fu-p3-104-the-breadcrumb-and-the-bare-links); the shot of [OME-TIFF files](#ome-tiff-files) shows it).
 - **Escape sequences** in a text file are removed before it is shown. An unterminated one loses only its introducer; a terminated one can hide up to 4 KiB of lines ([inbox #128](../reviews/inbox.md#128-assumed-how-much-an-escape-sequence-in-a-previewed-file-may-hide-fu-p3-85a), assumed).
 - **While the run is not over,** the page says when it read the file and has **Reload**. It does not follow a growing file on its own.
 - **Limits** are 1 MiB of text or 20,000 lines, whichever comes first; then **Load more** stops, a line says so and Download gives the whole file.
@@ -79,7 +81,7 @@ On a phone the viewer comes after the facts, Copy path and Download; **Load more
 
 *Built on the integration branch (steps FU-P3-102d2 and -102d3, batch [P3-B12](../progress/W5/P3-M9.md#batch-p3-b12), 2026-11-10). The shots below are of a seeded demo run, see [Not shown](#not-shown). The rules are owned by [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview).*
 
-A `.tif` or `.tiff` file, and an OME-TIFF, opens as one flat picture: the first plane, in your browser.
+A `.tif` or `.tiff` file opens as one flat picture: the first plane, in your browser. An OME-TIFF opens the same way on a phone, in a browser without WebGL 2 and when it has no OME metadata; otherwise it opens in the image viewer of [OME-TIFF files](#ome-tiff-files).
 
 ![Preview of imaging/cells.tif: a 512 by 384 plane of bright spots on black, on a light backdrop, under Actual size, with the line "512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff_light.webp#only-light)
 ![Preview of imaging/cells.tif: a 512 by 384 plane of bright spots on black, on a light backdrop, under Actual size, with the line "512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff_dark.webp#only-dark)
@@ -93,7 +95,7 @@ A `.tif` or `.tiff` file, and an OME-TIFF, opens as one flat picture: the first 
 
 - **What you see.** The plane on a light backdrop, **Actual size**, and a line of facts: the size in pixels, "Shown: page 1 of N" for a multi-page file, "Contrast stretched for display" when the values were not 8-bit.
 - **Contrast.** A file that is not 8-bit is stretched from its 0.1 and 99.9 percentiles to the screen's range. The file itself is not changed.
-- **OME-TIFF.** It shows its first plane, "channel 1, first plane". This page describes the flat view. An OME-TIFF also opens in the image viewer of the [OME-Zarr section](#ome-zarr) on a desktop (steps FU-P3-102e and -102f, merged before batch P3-B13 and not yet covered by a batch of their own). A file named `.ome.tif` with no OME metadata is shown as a TIFF, and says so. An OME-TIFF that names other files is not opened.
+- **OME-TIFF in the flat view.** It shows its first plane, "channel 1, first plane". A file named `.ome.tif` with no OME metadata is shown as a TIFF, and says so. An OME-TIFF that names other files is not opened.
 - **On a phone.** The largest reduced level that fits in 2,048 px a side is drawn, with "Open on a larger screen" and **Copy link**. If no level fits, the page says "This image is too large to show on a phone." and offers **Copy link** and **Download**.
 - **Decoding is capped.** It runs in a worker of Spectio's own, with a size cap per tile, and only a short list of compressions is read: none, LZW, Deflate, PackBits and JPEG. A plane over 50 megapixels, or a file over 1 GiB, is not drawn.
 
@@ -109,6 +111,28 @@ A `.tif` or `.tiff` file, and an OME-TIFF, opens as one flat picture: the first 
 | A tile did not decode | "This image could not be decoded." | Retry, Download |
 
 The wordings are in `web/src/runs/imaging/flat.ts` (`imageState`), checked by `flat.test.ts` and `FilePreview.test.tsx`.
+
+## OME-TIFF files
+
+*Built on the integration branch (steps FU-P3-102e and -102f, batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14), 2026-11-10). The rules are owned by [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview), the limits by [api §5.3.1](../specs/api-and-data-model.md) and [development environment §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), requirement 19.*
+
+A file named `*.ome.tif` or `*.ome.tiff` opens in the image viewer on a desktop or a tablet, in a browser with WebGL 2. The viewer is [Viv](https://github.com/hms-dbmi/viv) 0.23.0 on deck.gl 9.4.1, in a lazy chunk (`OmeView-*.js`), so the main bundle does not carry it.
+
+![Preview of imaging/cells.ome.tif: three channels (DAPI blue, GFP green, Actin magenta) drawn together on a black canvas, with the channel list on the right, each with a contrast range and Reset contrast; the breadcrumb ends with cells.ome.tif](../assets/shots/app-file-preview-ome-tiff_light.webp#only-light)
+![Preview of imaging/cells.ome.tif: three channels drawn together on a black canvas, with the channel list on the right, each with a contrast range and Reset contrast; the breadcrumb ends with cells.ome.tif](../assets/shots/app-file-preview-ome-tiff_dark.webp#only-dark)
+
+*A demo OME-TIFF (three 16-bit channels of 512 by 384 pixels, 128-pixel tiles, no compression, a hand-written OME-XML), made by `tools/media/b14_demo.py`; channels 2 and 3 are the first one flipped and shifted. It is a seeded run, not a pipeline run. Captured in headless Chromium with its software WebGL 2. The canvas stays black in both themes.*
+
+- **What is read.** The page asks the server for byte ranges of the file, through its own client, and hands Viv the opened file, never a URL. It walks the file's directories first with the caps of the flat view, then checks the OME-XML: sizes must be positive whole numbers that match the first plane, and channels × planes × time points at most 10,000. A pyramid has at most 20 levels. Over a cap, the page says so before it draws.
+- **Channels.** A list headed "Channels · 3 of 3 on". Each row has a switch ("Show channel 2, GFP"), its colour name and, while on, a **Low** and a **High** contrast range, the file's range, and **Reset contrast**. At most 6 channels are on at once: a seventh says "At most 6 channels at once: switch one off first." The colour is the file's when no other channel on uses it, else the first free one of Blue, Green, Magenta, Yellow, Cyan, Orange. A list of more than 12 channels has a **Filter channels** box. The first 6 channels are on when the page opens.
+- **Contrast.** It starts from the 0.1 and 99.9 percentiles of each channel's lowest level when that level has at most 2,048 × 2,048 pixels, else of its first tile, for every pixel type (`viv.ts`, `STATS_MAX`). The file is not changed.
+- **Planes.** A **Z plane** and a **Time point** range show only when the file has more than one, "2 of 5".
+- **Moving.** Arrows pan, `+` or `=` zooms in, `-` zooms out, `0` fits. **Zoom in**, **Zoom out** and **Fit** do the same, and "Zoom 100 %" says where you are. The canvas is a focusable region named "cells.ome.tif, image viewer".
+- **The address keeps the view.** `&z=` and `&t=` (counted from 1), `&ch=` (the channels on, counted from 0, such as `ch=0,2`), `&zoom=`, `&x=` and `&y=` (the centre, in pixels of the full image). They are read once when the viewer opens and written back with a replace after a short pause, so **Reload** keeps the view and Back is not flooded. A value out of range is dropped and the default used. An RGB image has one channel and no panel, so `&ch=` is ignored for it.
+- **Status line.** "Loading the image…", then "Reading tiles…" while tiles load. "Some tiles could not be read." has **Retry**; a stop by the read budget has **Reload**.
+- **Flat view instead.** A phone, a browser without WebGL 2, a viewer error from deck.gl, and an `.ome.tif` with no OME-XML ("no OME metadata") show the [flat view](#tiff-files) and release the WebGL context.
+
+Not built: **Open in the image viewer** for a plain `.tif` that has OME-XML (it stays in the flat view). A real pipeline's OME-TIFF was not opened, and the viewer test on Firefox and WebKit has not run ([inbox #148](../reviews/inbox.md#148-assumed-the-viewers-audit-gate-met-with-overrides-and-the-viewer-test-on-firefox-and-webkit-not-run-yet-fu-p3-102e)).
 
 ## Tables
 
@@ -179,4 +203,5 @@ $ GET /api/v1/tasks/<task>/attempts/1/workdir/stat/.command.env
 - **A real Nextflow work directory on a cluster,** and any SLURM run: not done.
 - **A task past the run's first 2,000:** the page cannot reopen its sheet and says "This job's sheet could not be reopened." (follow-up FU-P3-96).
 - **Firefox and WebKit:** `preview.spec.ts` has not run on them.
+- **Batch P3-B14 shot of the OME-TIFF viewer is of a seeded record** (`tools/media/b14_demo.py`, a hand-written file). Not shown: a channel switched off or its contrast changed, a Z or time range (the demo has one plane per channel), the `&ch=` address, the flat fallbacks, a file over a cap, and the phone.
 - **Batch P3-B13 shots are of seeded records, not pipeline runs** (`tools/media/b13_demo.py`). Not shown: the grid on a phone, a column sorted or filtered, the HTML file opening in the report viewer, an OME-Zarr in the Unsupported, too-large or work-directory states, the phone and no-WebGL notes, and a Zarr store from a real pipeline. Firefox and WebKit did not run the viewer ([inbox #148](../reviews/inbox.md#148-assumed-the-viewers-audit-gate-met-with-overrides-and-the-viewer-test-on-firefox-and-webkit-not-run-yet-fu-p3-102e)).

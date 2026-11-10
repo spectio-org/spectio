@@ -95,6 +95,7 @@ nav:
       - States, outputs and efficiency: usage/states-outputs-efficiency.md
       - Browsing and previewing files: usage/browse-and-preview-files.md
       - Environments: usage/environments.md
+      - Your profile: usage/profile.md
       - Your pipeline catalog: usage/pipeline-catalog.md
   - Features:
       - features/index.md
