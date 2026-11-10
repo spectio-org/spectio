@@ -422,11 +422,16 @@ test("a folder's stat opens the folder page", async () => {
 test("an *.ome.zarr folder stays on the preview page, which holds the viewer's place", async () => {
   serve({
     [`${RUN}/results/stat/cells.ome.zarr`]: stat("cells.ome.zarr", null, "dir"),
+    [`${RUN}/results`]: { root: ROOT, path: "cells.ome.zarr", exists: true, entries: [], truncated: false, reports: [] },
     [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
   });
   const router = open("cells.ome.zarr");
-  expect(await screen.findByText("Image viewer: coming")).toBeInTheDocument();
+  // jsdom has no WebGL 2: the viewer's WebGL-missing state, with Browse folder (a folder has no Download)
+  expect(await screen.findByText("This browser cannot open the image viewer: it needs WebGL 2, which is off or missing.")).toBeInTheDocument();
   expect(router.state.location.pathname).toBe(`/runs/${ID}/results/file`);
+  await userEvent.click(screen.getByRole("link", { name: "Browse folder" }));
+  await waitFor(() => expect(router.state.location.pathname).toBe(`/runs/${ID}/results`));
+  expect(router.state.location.search).toMatchObject({ path: "cells.ome.zarr" });
 });
 
 /** A 4 x 2 TIFF of one 8-bit sample, one uncompressed strip (pixels 0, 40, ... 280 % 256). */

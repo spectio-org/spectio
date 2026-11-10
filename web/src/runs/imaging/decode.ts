@@ -58,7 +58,7 @@ function capped(check: (data: Uint8Array, max: number, fd: Fd) => void, Original
 }
 
 /** A chunked inflate that stops at the first chunk past `max`. */
-function inflate(buffer: ArrayBuffer, max: number): ArrayBuffer {
+export function inflate(buffer: ArrayBuffer, max: number): ArrayBuffer {
   const out = new Uint8Array(max);
   let at = 0;
   const inflator = new Inflate({ chunkSize: 64 * 1024 });
