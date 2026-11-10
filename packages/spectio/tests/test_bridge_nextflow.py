@@ -456,14 +456,15 @@ def v = { type, name -> new Expando(type: type, label: name, process: null) }
 def e = { a, b -> new Expando(from: a, to: b) }
 def dag = { vs, es -> new Expando(vertices: vs, edges: es) }
 def a = v('PROCESS', 'A'), op = v('OPERATOR', 'map'), b = v('PROCESS', 'B'), o = v('ORIGIN', null)
+def pd = spectio.SpectioObserver.&processDag
 def out = [:]
-out.chain = spectio.SpectioObserver.processDag(dag([o, a, op, b], [e(o, a), e(a, op), e(op, b), e(b, null)]))
+out.chain = pd(dag([o, a, op, b], [e(o, a), e(a, op), e(op, b), e(b, null)]))
 def many = (1..1400).collect { v('PROCESS', "P$it") }
-out.values = spectio.SpectioObserver.processDag(dag(many, (1..<1400).collect { e(many[it - 1], many[it]) }))
+out.values = pd(dag(many, (1..<1400).collect { e(many[it - 1], many[it]) }))
 def wide = (1..3).collect { v('PROCESS', 'W' * 20000 + it) }
-out.bytes = spectio.SpectioObserver.processDag(dag(wide, []))
-out.notList = spectio.SpectioObserver.processDag(dag(null, []))
-out.throws = spectio.SpectioObserver.processDag(new Expando(getVertices: { throw new IllegalStateException('x') }))
+out.bytes = pd(dag(wide, []))
+out.notList = pd(dag(null, []))
+out.throws = pd(new Expando(getVertices: { throw new IllegalStateException('x') }))
 println JsonOutput.toJson(out)
 """
 
