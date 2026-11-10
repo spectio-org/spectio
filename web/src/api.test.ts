@@ -3,7 +3,7 @@
 // be the schema's properties, so a field added to or dropped from a response model fails here.
 import { expect, test } from "vitest";
 import snapshot from "../../packages/spectio-server/openapi/0.0.1.json";
-import type { RunEnvironment, CodeLoading, Efficiency, EngineSettings, Failure, LaunchTemplate, Process, ProcessEfficiency, ResultEntry, ResultReport, ResultStat, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Slurm, SlurmAllocated, SlurmRequest, Stage, Task, TaskFile, TaskFiles, TaskOutput } from "./api";
+import type { RunEnvironment, CodeLoading, Efficiency, EngineSettings, Failure, LaunchTemplate, Me, Process, ProcessEfficiency, ResultEntry, ResultReport, ResultStat, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Slurm, SlurmAllocated, SlurmRequest, Stage, Task, TaskFile, TaskFiles, TaskOutput } from "./api";
 
 const schemas = snapshot.components.schemas as unknown as Record<
   string,
@@ -39,6 +39,12 @@ const run = {
     dag_updates: 0,
   },
 } satisfies Run;
+
+const me = {
+  principal: { user: "", uid: 0 },
+  session: { started_at: null, expires_at: null },
+  paths: { config_file: "", data_dir: "", db_dir: "", observed_dir: "" },
+} satisfies Me;
 
 const scheduler = {
   state: null,
@@ -181,6 +187,10 @@ const SAMPLES: Record<string, object> = {
   RunSummary: run.summary,
   TaskSummary: run.summary.tasks,
   ServerVersion: { version: "", node: "", runs_root: "", account: "", executor: "" } satisfies ServerVersion,
+  Me: me,
+  Principal: me.principal,
+  MeSession: me.session,
+  MePaths: me.paths,
   Process: {
     process: "",
     stage_id: null,

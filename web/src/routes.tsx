@@ -14,6 +14,7 @@ import { CatalogEntryPage, CatalogPage } from "./catalog/CatalogPage";
 import { EnvironmentPage, EnvironmentsPage } from "./environments/EnvironmentsPage";
 import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
+import { ProfilePage } from "./profile/ProfilePage";
 import { useRecentRuns } from "./launch/TryPipelines";
 import { FilePreview } from "./runs/FilePreview";
 import { ReportViewer, reportSearch } from "./runs/ReportViewer";
@@ -26,7 +27,7 @@ import { AppShell } from "./shell/AppShell";
 // run detail (P1 Task 20), and the launch form (Task 19); and the report viewer (Task 31) and the
 // results browser (Task 32), and the preview of one results file (FU-P3-85c); the same two on a
 // Nextflow attempt's work directory (FU-P3-85e), which need `task` and `attempt`; and the
-// Environments list and form (FU-P3-86f); the Catalog list and form (FU-P3-87d).
+// Environments list and form (FU-P3-86f); the Catalog list and form (FU-P3-87d); Profile (FU-P3-112).
 
 /** `/launch?location=<pipeline>`: Launch opens on that pipeline (Home's pipeline links);
  * `/launch?from=<run ID>`: Copy to a new launch, prefilled from that run. */
@@ -139,6 +140,7 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/catalog", component: CatalogPage }),
   createRoute({ getParentRoute: () => root, path: "/catalog/new", component: () => <CatalogEntryPage name={null} /> }),
   createRoute({ getParentRoute: () => root, path: "/catalog/$name", component: CatalogEntryRoute }),
+  createRoute({ getParentRoute: () => root, path: "/profile", component: ProfilePage }),
 ];
 
 const routeTree = root.addChildren(routes);
