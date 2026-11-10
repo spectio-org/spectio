@@ -1859,6 +1859,19 @@
 .sp-file-natural {
   font-size: 12px;
 }
+/* the WebGL viewer: a black backdrop in both themes, the focus ring outside the canvas */
+.sp-ome-region {
+  position: relative; /* deck.gl places its canvas absolutely */
+  height: 60vh;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+  outline-offset: 2px;
+}
+.sp-ome-canvas {
+  width: 100%;
+  height: 100%;
+}
 @media (max-width: 767.98px) {
   .sp-file-pager {
     flex-direction: column;

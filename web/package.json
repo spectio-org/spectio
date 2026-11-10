@@ -8,6 +8,17 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@deck.gl/core": "9.4.1",
+    "@deck.gl/geo-layers": "9.4.1",
+    "@deck.gl/layers": "9.4.1",
+    "@deck.gl/react": "9.4.1",
+    "@deck.gl/widgets": "9.4.1",
+    "@hms-dbmi/viv": "0.23.0",
+    "@luma.gl/constants": "9.4.2",
+    "@luma.gl/core": "9.4.2",
+    "@luma.gl/engine": "9.4.2",
+    "@luma.gl/shadertools": "9.4.2",
+    "@luma.gl/webgl": "9.4.2",
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",
     "@tanstack/react-router": "1.170.46",
@@ -28,5 +39,16 @@
     "typescript": "5.9.3",
     "vite": "7.3.7",
     "vitest": "4.1.12"
+  },
+  "overrides": {
+    "@vivjs/loaders": {
+      "zod": "4.6.7"
+    },
+    "@loaders.gl/compression": {
+      "fflate": "0.8.3"
+    },
+    "texture-compressor": {
+      "image-size": "2.0.3"
+    }
   }
 }

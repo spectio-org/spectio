@@ -38,6 +38,13 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
 .sum > div{display:flex;gap:10px;align-items:baseline}
 .sum dt{flex:0 0 88px;color:#6E7287;font-size:12px}
 .sum dd{margin:0;font-weight:500;overflow-wrap:anywhere;min-width:0}
+/* ui-spec §4.7.1, FU-P3-87c: the catalog picker and its sheet; every control at least 44 px. */
+.mcat-sel{font:15px 'Inter',sans-serif;border-radius:12px;border:1px solid #C4C7D4;padding:10px 12px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%;min-height:44px}
+.mcat-btn{min-height:44px;width:100%;padding:0 14px;border-radius:12px;border:none;background:#F6F2FE;color:#4D368B;font:600 14px 'Inter',sans-serif;cursor:pointer}
+.mcat-mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:#4D5065;overflow-wrap:anywhere;line-height:1.4}
+.mcat-line{margin:0;font-size:12.5px;color:#33364A;background:#F7F7FB;border-radius:10px;padding:7px 10px;line-height:1.45;overflow-wrap:anywhere}
+.mcat-pnl{border-radius:16px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.07),0 1px 2px rgba(15,16,32,0.05);padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.mcat-card{min-height:44px;width:100%;box-sizing:border-box;text-align:left;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.11);padding:10px 12px;display:flex;flex-direction:column;gap:3px;font:inherit;color:inherit;cursor:pointer}
 .btn-load{height:44px;border-radius:12px;border:none;background:#F6F2FE;color:#4D368B;font:600 14px 'Inter',sans-serif;cursor:pointer}
 </style>
 </helmet>
@@ -46,6 +53,12 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
   <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 168px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
     <span style="font-size: 13.5px; color: #4D5065; padding: 2px 2px 0; line-height: 1.4;">A directory or a Git repository, then the engine.</span>
     <section class="cx" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 8px 14px 12px;"><h2 id="m-h-pipeline" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><span style="min-width: 0;">Pipeline</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">nf-core/rnaseq 3.27.0 · singularity</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+        <!-- ui-spec §4.7.1: the picker above the Pipeline field; None here (no entry has this location). -->
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="m-cat" style="font-size: 13.5px; font-weight: 600;">From your catalog</label>
+          <select id="m-cat" class="mcat-sel"><option selected>None</option><option>Liver time course QC · Snakemake</option><option>rnaseq-test · Nextflow</option><option>Strand-seq QC · Snakemake</option></select>
+        </div>
+        <button type="button" class="mcat-btn" aria-haspopup="dialog">Manage catalog</button>
         <div style="display: flex; flex-direction: column; gap: 5px;">
           <label for="m-location" style="font-size: 13.5px; font-weight: 600;">Pipeline</label>
           <input id="m-location" value="/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" aria-describedby="m-location-help" style="font: 15px 'Inter', sans-serif; border-radius: 12px; border: 1px solid #C4C7D4; padding: 10px 12px; background: #FFFFFF; color: #0F1020; box-sizing: border-box; width: 100%; min-height: 44px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
@@ -57,9 +70,9 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
           <span id="m-revision-help" style="font-size: 12px; color: #4D5065;">Read as a directory: no revision.</span>
         </div>
         <button type="button" class="btn-load">Load</button>
-        <div role="status" style="display: flex; align-items: center; gap: 10px; border-radius: 12px; background: #F7F7FB; padding: 9px 11px;">
-          <img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="20" height="20" alt="" style="display: block; flex-shrink: 0;">
-          <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">nf-core/rnaseq 3.27.0</span><span style="font-size: 12px; color: #4D5065;">A directory on this machine · form from nextflow_schema.json</span></span>
+        <div style="display: flex; flex-direction: column; gap: 8px; border-radius: 12px; background: #F7F7FB; padding: 9px 11px;">
+          <span style="display: flex; align-items: center; gap: 10px; min-width: 0;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="20" height="20" alt="" style="display: block; flex-shrink: 0;"><span role="status" style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">nf-core/rnaseq 3.27.0 <span style="color: #157A4B; font-size: 12.5px;">· Loaded</span></span><span style="font-size: 12px; color: #4D5065;">A directory on this machine · form from nextflow_schema.json</span></span></span>
+          <button type="button" class="mcat-btn" aria-haspopup="dialog">Save to catalog</button>
         </div>
         <div role="group" aria-labelledby="m-eng-l" style="display: flex; flex-direction: column; gap: 6px;">
           <span id="m-eng-l" style="font-size: 13.5px; font-weight: 600;">Engine</span>
@@ -202,6 +215,63 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
           <span id="s2-revision-help" style="font-size: 12px; color: #4D5065;">Tag, branch or commit; required for a Git repository.</span>
         </div>
         <button type="button" class="btn-load" aria-describedby="s2-h">Load</button>
+    </section>
+    <h2 id="mc-h" style="margin: 10px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">PIPELINE SECTION · FROM YOUR CATALOG</h2>
+    <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">ui-spec §4.7.1, the states of LiteLaunch at phone width. Options stay short (label · engine); the location is the line under the select (UX-PRE-FU87-08). Choosing only fills the form; Load starts the inspect.</span>
+    <section aria-labelledby="mc1-h" class="mcat-pnl">
+        <h3 id="mc1-h" style="margin: 0; font-size: 14px; font-weight: 600;">An entry chosen, then Load</h3>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="mc1-cat" style="font-size: 13.5px; font-weight: 600;">From your catalog</label>
+          <select id="mc1-cat" class="mcat-sel" aria-describedby="mc1-cat-loc"><option>None</option><option>Liver time course QC · Snakemake</option><option selected>rnaseq-test · Nextflow</option><option>Strand-seq QC · Snakemake</option></select>
+          <span id="mc1-cat-loc" class="mcat-mono">nf-core/rnaseq @ 3.27.0</span>
+        </div>
+        <button type="button" class="mcat-btn" aria-haspopup="dialog">Manage catalog</button>
+        <p role="status" class="mcat-line">From the catalog: rnaseq-test · profile test · parameters from conf/test.yaml</p>
+        <div style="display: flex; flex-direction: column; gap: 6px; border-radius: 12px; background: #F7F7FB; padding: 9px 11px;">
+          <span role="status" style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">nf-core/rnaseq 3.27.0 <span style="color: #157A4B; font-size: 12.5px;">· Loaded</span></span><span style="font-size: 12px; color: #4D5065;">A Git repository, fetched at 3.27.0</span></span>
+          <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><span style="flex-grow: 1; font-size: 12.5px; color: #4D5065;">In your catalog as rnaseq-test</span><button type="button" class="mcat-btn" aria-haspopup="dialog" aria-label="Edit rnaseq-test" style="width: auto; padding: 0 16px;">Edit</button></span>
+        </div>
+        <span style="font-size: 12.5px; color: #4D5065;">Engine: Nextflow, from the catalog entry · Profile: test, from the catalog entry</span>
+        <p role="status" aria-live="polite" class="mcat-line" style="background: #FEF7EC; color: #5C3A05;">2 values of conf/test.yaml have no field in this form, and are not sent: config_profile_name, config_profile_description</p>
+    </section>
+    <section aria-labelledby="mc3-h" class="mcat-pnl">
+        <h3 id="mc3-h" style="margin: 0; font-size: 14px; font-weight: 600;">An entry whose pipeline is gone</h3>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="mc3-cat" style="font-size: 13.5px; font-weight: 600;">From your catalog</label>
+          <select id="mc3-cat" class="mcat-sel" aria-describedby="mc3-cat-loc"><option>None</option><option>rnaseq-test · Nextflow</option><option selected>wgs-2024 · Nextflow</option></select>
+          <span id="mc3-cat-loc" class="mcat-mono">/g/demo-lab/pipelines/wgs-2024</span>
+        </div>
+        <button type="button" class="mcat-btn" aria-haspopup="dialog">Manage catalog</button>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="mc3-location" style="font-size: 13.5px; font-weight: 600;">Pipeline</label>
+          <input id="mc3-location" value="/g/demo-lab/pipelines/wgs-2024" spellcheck="false" aria-invalid="true" aria-describedby="mc3-location-err" class="mcat-sel" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; border-color: #DC3B3B; box-shadow: 0 0 0 1px #DC3B3B;">
+          <span id="mc3-location-err" role="alert" style="font-size: 12.5px; font-weight: 600; color: #B02A2A; line-height: 1.4; overflow-wrap: anywhere;">/g/demo-lab/pipelines/wgs-2024 is not a directory this account can read. From your catalog entry wgs-2024: edit it in Manage catalog.</span>
+        </div>
+    </section>
+    <section aria-labelledby="mc2-h" class="mcat-pnl">
+        <h3 id="mc2-h" style="margin: 0; font-size: 14px; font-weight: 600;">Your catalog is empty</h3>
+        <p role="status" style="margin: 0; font-size: 13.5px; color: #33364A; line-height: 1.45;">Your catalog is empty. Load a pipeline, then Save to catalog.</p>
+        <button type="button" class="mcat-btn" aria-haspopup="dialog">Manage catalog</button>
+    </section>
+    <section aria-labelledby="mc5-h" class="mcat-pnl">
+        <h3 id="mc5-h" style="margin: 0; font-size: 14px; font-weight: 600;">Manage catalog, the full-height sheet</h3>
+        <div style="border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+          <section role="dialog" aria-modal="true" aria-labelledby="mc5-title" style="background: #FFFFFF; display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-bottom: 1px solid #ECEDF2;">
+              <h4 id="mc5-title" tabindex="-1" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px; outline: 2px solid #7750D4; outline-offset: 2px; border-radius: 4px;">Manage catalog</h4>
+              <span style="flex-grow: 1;"></span>
+              <button type="button" aria-label="Close Manage catalog" style="width: 44px; height: 44px; border: none; border-radius: 12px; background: #F1F2F6; color: #22253A; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg></button>
+            </div>
+            <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <button type="button" class="mcat-btn" style="background: #7750D4; color: #FFFFFF;">Add pipeline</button>
+              <button type="button" class="mcat-card" aria-labelledby="mc5-n1" aria-describedby="mc5-d1"><span id="mc5-n1" style="font-size: 15px; font-weight: 600;">Liver time course QC · Snakemake</span><span id="mc5-d1" class="mcat-mono">/g/demo-lab/pipelines/liver-tc-qc</span></button>
+              <button type="button" class="mcat-card" aria-labelledby="mc5-n2" aria-describedby="mc5-d2"><span id="mc5-n2" style="font-size: 15px; font-weight: 600;">rnaseq-test · Nextflow</span><span id="mc5-d2" class="mcat-mono">nf-core/rnaseq @ 3.27.0</span></button>
+              <button type="button" class="mcat-card" aria-labelledby="mc5-n3" aria-describedby="mc5-d3"><span id="mc5-n3" style="font-size: 15px; font-weight: 600;">Strand-seq QC · Snakemake</span><span id="mc5-d3" class="mcat-mono">ssh://git@git.demo-lab.org/mylab/strandseq-qc.git @ v1.4.0</span></button>
+              <span style="font-size: 12px; color: #6E7287; overflow-wrap: anywhere;">Saved in <span style="font-family: 'JetBrains Mono', monospace;">~/.spectio/catalog.toml</span></span>
+            </div>
+          </section>
+        </div>
+        <span style="font-size: 12px; color: #4D5065; line-height: 1.4;">Drawn inside this frame; on the page it covers the whole screen, the tab bar included. Focus on its heading (ring drawn), back to Manage catalog on Close or Escape. Each card opens the entry's form in the sheet, with Back, Save and Delete last (UX-PRE-FU87-09); the Launch form behind is kept.</span>
     </section>
     <h2 style="margin: 10px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">WHERE IT RUNS · THE ENVIRONMENTS FILE IS INVALID</h2>
     <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">ui-spec §4.8.1 (UX-PRE-FU86-R1-04): only the built-ins are offered; New environment waits with its reason. The same state as LiteLaunch, full width.</span>
