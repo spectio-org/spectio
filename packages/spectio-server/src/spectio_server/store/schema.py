@@ -238,6 +238,10 @@ runs = Table(
     # The run's own environment, {name, label, executor, slurm, local, state} (FU-P3-86a, api
     # §5.4): the source of every per-run executor decision; null for a run from a terminal.
     Column("environment", Json),
+    # The launch's `default_resources` and `config_file`, with a `state` (FU-P3-110a, api §5.7);
+    # null when the run has none.
+    Column("default_resources", Json),
+    Column("config_file", Json),
     _check("runs", "state", RUN_STATES),
     _check("runs", "origin", RUN_ORIGINS, nullable=True),
     Index("ix_runs_project_created", "project_id", "created_at"),
