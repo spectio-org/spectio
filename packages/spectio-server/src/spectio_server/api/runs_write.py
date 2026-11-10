@@ -25,10 +25,10 @@ from referencing.exceptions import Unresolvable
 from sqlalchemy import Connection, insert
 
 from spectio import locations
-from spectio.environments import PROFILE, Environment, Name, snapshot
+from spectio.environments import PROFILE, DefaultResources, Environment, Name, snapshot
 from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
 from spectio_server.api.environments import choose, offline
-from spectio_server.api.extras import DefaultResources, check_resources, read_config_file
+from spectio_server.api.extras import check_resources, read_config_file
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import (
     ENTRY_FILES,
@@ -142,7 +142,7 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     chosen = choose(request, body.environment)
     environment = snapshot(chosen)
     resources = _resources(body, chosen)
-    config_file = _config_file(request, body, resolved)
+    config_file, config_bytes = _config_file(request, body, resolved)
 
     runs_root = request.app.state.settings.runs_root
     run_id = new_id("run")
@@ -166,6 +166,7 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         "profiles": body.profiles,
         "params": body.params,
         "environment": environment,
+        **extras_payload(resources, config_bytes),
     }
     writer: Writer = request.app.state.writer
     try:
@@ -204,12 +205,23 @@ def _resources(body: LaunchIn, env: Environment) -> dict[str, Any] | None:
     return found.model_dump(mode="json")
 
 
-def _config_file(request: Request, body: LaunchIn, resolved: Resolved) -> dict[str, Any] | None:
+def extras_payload(
+    resources: dict[str, Any] | None, config_bytes: dict[str, Any] | None
+) -> dict[str, Any]:
+    """The launch command's `default_resources` and `config_file` (api §5.7), when set."""
+    found = {"default_resources": resources, "config_file": config_bytes}
+    return {k: v for k, v in found.items() if v is not None}
+
+
+def _config_file(
+    request: Request, body: LaunchIn, resolved: Resolved
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     """The extra config file, checked (`locations.check_config_file`) and read in the file pool
-    (api §5.7): what the run keeps of it. The home is accepted as written and resolved, and read
-    from the resolved one; the pipeline's directory as `resolve` gives it."""
+    (api §5.7): what the run keeps of it, and the launch command's `{kept_as, sha256, size,
+    text}`. The home is accepted as written and resolved, and read from the resolved one; the
+    pipeline's directory as `resolve` gives it."""
     if body.config_file is None:
-        return None
+        return None, None
     engine = body.workflow.engine
     written, real = request.app.state.home
     starts = {str(resolved.directory): str(resolved.directory), written: real, real: real}
@@ -224,7 +236,9 @@ def _config_file(request: Request, body: LaunchIn, resolved: Resolved) -> dict[s
         raise Invalid("config_file", str(exc)) from None
     except OSError as exc:
         raise offline(OSError(f"the config file cannot be read: {exc.strerror}")) from None
-    return {"path": body.config_file, **kept}
+    text = kept.pop("text")
+    sent = {k: kept[k] for k in ("kept_as", "sha256", "size")}
+    return {"path": body.config_file, **kept}, {**sent, "text": text}
 
 
 def _insert(
