@@ -15,8 +15,9 @@ server-wide pace: one call in flight, one call per `INTERVAL_S`, doubled up to `
 after a failed or slow call (CON-SLURM-POLL-02; schedulers §3.8, the SLURM query budget). A
 call that would fail every time (a refused tool, too much output for one ID) is final; a batch
 that says too much is split in two; any other failure is retried unchanged (SEC-P3FU106A-01).
-A window the site's `MaxQueryTimeRange` refuses fails whatever the IDs, so it is final too
-(FU-P3-106b): read from the first `MAX_STDERR` bytes of its error text, `TOO_WIDE`.
+A window the site's `MaxQueryTimeRange` refuses is final for the jobs whose launch set `-S`
+(FU-P3-106b, SEC-P3FU106B-01): read from the first `MAX_STDERR` bytes of its error text,
+`TOO_WIDE`.
 
 The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
 returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
@@ -421,7 +422,8 @@ class SacctLimiter:
     answer. `later` queues IDs once a delay has passed (a follow-up). The caller's thread runs
     the call: the server runs it on a thread of its own, never the writer's or a request's.
     A Refused call (a policy refusal of the tool or an ID) is FINAL, logged at warning, and
-    one sacct refused for the site's `MaxQueryTimeRange` (TooWide) is SITE_LIMIT, final too.
+    one sacct refused for the site's `MaxQueryTimeRange` (TooWide) is SITE_LIMIT: the caller
+    gives up the jobs whose launch set `-S` and puts the rest back (SEC-P3FU106B-01).
     Too much output is the only failure that points at the IDs: the batch is split in two, each
     of its IDs recorded with half its size until it is next taken, and one ID alone is FINAL.
     Any other failure (a timeout, a non-zero exit, an OSError of the tool's stat) answers None:
@@ -529,7 +531,7 @@ class SacctLimiter:
         except Refused as exc:  # the tool or an ID: every call of them would be refused
             log.warning("sacct not called for %d IDs: %s", len(ids), exc)
             rows = FINAL
-        except TooWide as exc:  # the site's window limit: any batch would be refused
+        except TooWide as exc:  # the site's window limit: the caller gives up the oldest jobs
             log.warning("%s", exc)
             rows = SITE_LIMIT
         except TooMuch as exc:  # split in two, until one ID alone says too much

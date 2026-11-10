@@ -64,7 +64,9 @@ if os.path.exists(delay):
     time.sleep(float(open(delay).read()))
 if os.path.exists(os.path.join(here, "fail")):  # slurmdbd unreachable: no answer
     sys.exit(1)
-if os.path.exists(os.path.join(here, "toowide")):  # over the site's MaxQueryTimeRange
+toowide = os.path.join(here, "toowide")  # over the site's MaxQueryTimeRange: any -S, or
+oldest = open(toowide).read() if os.path.exists(toowide) else None  # one before this UTC time
+if oldest is not None and (not oldest or sys.argv[sys.argv.index("-S") + 1] < oldest):
     sys.stderr.write("sacct: error: Too wide of a date range in query\\n")
     sys.exit(1)
 ids = sys.argv[sys.argv.index("-j") + 1].split(",")
@@ -934,6 +936,34 @@ def test_sacct_refused_tool_gives_up_at_once(
     acct.want(RUN, [("8812401", str(run.paths.work_dir))], 0.0)
     assert acct.step() and fakebin.calls() == []
     assert acct.failed(RUN, "8812401") and acct._limiter.wait_s() is None
+
+
+def test_sacct_site_limit_gives_up_only_the_oldest_run(
+    settings: Settings, writer: Writer, fakebin: Fake
+) -> None:
+    """SEC-P3FU106B-01: a window over the site's MaxQueryTimeRange is set by the earliest
+    launch of the call's jobs, so only those jobs are given up; a recent run that shared the
+    batch is asked again with a narrower -S and gets its row, in two calls."""
+    day = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(time.time() - 86400))
+    (fakebin.dir / "toowide").write_text(day)  # -S before a day ago is refused
+    run = Run(settings, writer)
+    recent = "run_01K8T2F1XTVRES0000000000G0"
+    recent_dir = make_run_dirs(settings.runs_root, recent).run_dir
+    (recent_dir / ".spectio").mkdir(mode=0o700)
+    fakebin.at("8812401", run.paths.work_dir)
+    fakebin.at("8812402", recent_dir)
+    acct = accounting(settings, fakebin)
+    for rid in (RUN, recent):
+        acct.load(rid)
+    acct.want(RUN, [("8812401", str(run.paths.work_dir))], 0.0)  # launched in 1970
+    acct.want(recent, [("8812402", str(recent_dir))], time.time() - 3600)
+    while acct._limiter.wait_s() is not None:
+        assert acct.step()
+    assert len(fakebin.calls()) == 2
+    assert acct.failed(RUN, "8812401") == "max_query_time_range"
+    assert acct.failed(recent, "8812402") is None
+    row = acct.rows(recent)["8812402"]
+    assert row is not None and row.state == "OUT_OF_MEMORY"
 
 
 def test_sacct_live_run_asks_failures_and_opened_panel(

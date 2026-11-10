@@ -381,8 +381,9 @@ class Accounting:
     def failed(self, run_id: str, job: str) -> str | None:
         """Why `job` was given up, None when it was not: `not_found` when its calls failed
         until GIVE_UP_S after it ended or its follow-up found it in no terminal state,
-        `max_query_time_range` when the site refused its window (FU-P3-106b). This process does
-        not ask it again."""
+        `max_query_time_range` when the site refused the window its run's launch set
+        (FU-P3-106b; the call's other jobs are asked again with a narrower -S,
+        SEC-P3FU106B-01). This process does not ask it again."""
         with self._lock:
             return self._failed.get(run_id, {}).get(job)
 
@@ -517,6 +518,7 @@ class Accounting:
         with self._lock:
             called, self._called = self._called, {}
             now = self._clock()
+            low = min((since for _, since in called.values()), default=0.0)  # the call's -S
             for job in ids:
                 answer = found.get(job, {}) if isinstance(found, dict) else {}
                 again, follow = set(), set()  # the runs that wait: asked now, or later
@@ -525,10 +527,12 @@ class Accounting:
                     if key not in called:  # asked during the call: not in it, no follow-up
                         again.add(run_id)
                         continue
-                    if isinstance(found, sacct.Unanswered):  # it would fail every time: given up
+                    # the site's window limit: only the jobs whose launch set -S are refused
+                    later = found is sacct.SITE_LIMIT and called[key][1] > low
+                    if isinstance(found, sacct.Unanswered) and not later:  # fails every time
                         self._give_up(key, found.value if found is sacct.SITE_LIMIT else None)
                         continue
-                    if found is None:  # no answer: asked again, as the limiter backs off
+                    if found is None or later:  # asked again, as the limiter backs off
                         if now < self._deadline.get(key, now):
                             again.add(run_id)
                         else:
