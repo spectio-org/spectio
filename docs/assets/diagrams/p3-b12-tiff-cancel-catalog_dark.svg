@@ -681,7 +681,7 @@
   <circle cx="832.0" cy="354.0" r="4.5" fill="#ffd43b"/>
   <circle cx="846.0" cy="354.0" r="4.5" fill="#69db7c"/>
   <text x="817.0" y="384.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">( [ -e cancel ] &amp;&amp; exit 143; cmd )</text>
-  <text x="803.0" y="408.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">head gone to cancelled, 2.2 px a s</text>
+  <text x="803.0" y="408.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">head gone to cancelled, bars to scale</text>
   <path d="M853.0,416.0 L985.0,416.0 L985.0,428.0 L853.0,428.0 Z" fill="#6b4a26" stroke="none"/>
   <path d="M852.8,416.1 C897.0,416.0 940.8,415.7 985.0,416.1" fill="none" stroke="#e3e3e3" stroke-width="1.2" stroke-linecap="round"/>
   <path d="M985.2,415.9 C985.2,420.3 985.3,423.7 985.0,428.1" fill="none" stroke="#e3e3e3" stroke-width="1.2" stroke-linecap="round"/>
@@ -1085,7 +1085,7 @@
   <path d="M1178.5,705.5 C1179.8,668.6 1178.8,631.7 1178.7,594.1" fill="none" stroke="#585e6b" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
   <text x="1189.0" y="617.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#e3e3e3" text-anchor="start" font-weight="normal">no blocker, no major</text>
   <text x="1189.0" y="637.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">1 round · CR approve, SEC approve</text>
-  <text x="1189.0" y="657.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">7 minors open: every sample decoded,</text>
+  <text x="1189.0" y="657.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">6 minors open: every sample decoded,</text>
   <text x="1189.0" y="677.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">a second pixel copy, the IFDs parsed</text>
   <text x="1189.0" y="697.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">again after the walk · 10 tests added</text>
   <rect x="1179.0" y="716.0" width="356.0" height="72.0" rx="4" fill="#282b33" fill-opacity="0.45"/>

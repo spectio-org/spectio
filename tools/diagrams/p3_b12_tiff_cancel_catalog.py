@@ -38,7 +38,8 @@ f148e430). Steps are numbered in merge order:
   `imageState` TooLarge, Unsupported, Unreadable, Stopped with Reload, 413 "over 1 GiB", 422, else
   "could not be decoded"); FilePreview.tsx `TiffView` (2D canvas, Actual size, "Contrast stretched
   for display", the phone's "too large to show on a phone" with Copy link and Download); 10 tests;
-  record P3-fu102d3.md (no blocker or major, 7 minors, CR-P3FU102D3-02 the simplify one);
+  record P3-fu102d3.md (no blocker or major, 6 distinct open minors: CR-01 and SEC-01 are one,
+  DW-P3B12-04; CR-P3FU102D3-02 the simplify one);
 - 5, P3-fu108b, PR 222: EnvironmentsPage.tsx (New, Edit and Duplicate focus the h1 once loaded;
   Cancel to the opener "Edit <name>", "Duplicate <from>", "New environment", else the card's
   heading, then the h1); PageHead.tsx h1 tabIndex -1; LaunchPage.tsx `focusField(to, frames = 10)`
@@ -276,7 +277,7 @@ def build(theme: Theme) -> Sketch:
     s.terminal(x + 2, top + 148, CW - 2, 50, ("( [ -e cancel ] && exit 143; cmd )",), size=12.5,
                line_h=20)
     k = 2.2  # px per second
-    s.text(x + 2, top + 216, f"head gone to cancelled, {k} px a s", size=11.5, anchor="start")
+    s.text(x + 2, top + 216, "head gone to cancelled, bars to scale", size=11.5, anchor="start")
     bar(s, x + 52, top + 224, 60 * k, 12, "bar_orange")
     s.text(x + 2, top + 235, "before", size=11, anchor="start", colour=t.dim)
     s.text(x + 58 + 60 * k, top + 235, "up to 60 s grace", size=11, anchor="start")
@@ -335,7 +336,7 @@ def build(theme: Theme) -> Sketch:
                            "a side, else too large, with Copy link"))
     y = note(s, x, pin_y, ("no blocker, no major",
                            "1 round · CR approve, SEC approve",
-                           "7 minors open: every sample decoded,",
+                           "6 minors open: every sample decoded,",
                            "a second pixel copy, the IFDs parsed",
                            "again after the walk · 10 tests added"))
     note(s, x, y + 10, ("until FU-P3-102e: an OME-TIFF shows",

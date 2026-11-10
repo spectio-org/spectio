@@ -76,9 +76,19 @@ On a phone the viewer comes after the facts, Copy path and Download; **Load more
 
 ## TIFF files
 
-*Built on the integration branch (steps FU-P3-102d2 and -102d3, batch [P3-B12](../progress/W5/P3-M9.md#batch-p3-b12), 2026-11-10). **Not shown on screen yet:** no shot of it was taken, see [Not shown](#not-shown). The rules are owned by [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview).*
+*Built on the integration branch (steps FU-P3-102d2 and -102d3, batch [P3-B12](../progress/W5/P3-M9.md#batch-p3-b12), 2026-11-10). The shots below are of a seeded demo run, see [Not shown](#not-shown). The rules are owned by [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview).*
 
 A `.tif` or `.tiff` file, and an OME-TIFF, opens as one flat picture: the first plane, in your browser.
+
+![Preview of imaging/cells.tif: a 512 by 384 plane of bright spots on black, on a light backdrop, under Actual size, with the line "512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff_light.webp#only-light)
+![Preview of imaging/cells.tif: a 512 by 384 plane of bright spots on black, on a light backdrop, under Actual size, with the line "512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff_dark.webp#only-dark)
+
+*A 16-bit grayscale TIFF of 512 by 384 pixels (a demo file, written for this shot), so the page says "Contrast stretched for display". The backdrop stays light in the dark theme.*
+
+![The same TIFF on a phone, with the line "Shown: 512 × 384 of 512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff-phone_light.webp#only-light)
+![The same TIFF on a phone, with the line "Shown: 512 × 384 of 512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff-phone_dark.webp#only-dark)
+
+*On a phone the line starts with "Shown:" and gives the size drawn against the size of the file, here the same.*
 
 - **What you see.** The plane on a light backdrop, **Actual size**, and a line of facts: the size in pixels, "Shown: page 1 of N" for a multi-page file, "Contrast stretched for display" when the values were not 8-bit.
 - **Contrast.** A file that is not 8-bit is stretched from its 0.1 and 99.9 percentiles to the screen's range. The file itself is not changed.
@@ -89,9 +99,11 @@ A `.tif` or `.tiff` file, and an OME-TIFF, opens as one flat picture: the first 
 | When | What the page says | What you can do |
 |---|---|---|
 | The file is empty | "This file is empty." | Download |
-| Over the caps | "This image is too large to show here (…). Download it to open it." | Download |
-| A compression not on the list, or an OME-TIFF with other files | "Unsupported", with the reason | Download |
-| Not a TIFF, or not readable | "Not an image Spectio can read: …" | Retry, Download |
+| Over the caps, or a file over 1 GiB | "This image is too large to show here (…). Download it to open it." The brackets give the reason, for example "over 1 GiB" | Download |
+| A compression not on the list | "Spectio cannot decode LERC compression." (the compression's name, or "compression 99" for an unnamed code) | Download |
+| An OME-TIFF that names other files | "This OME-TIFF names other files: Spectio shows one file at a time." | Download |
+| The server says the file is not the TIFF its name says (422) | "This file is not the TIFF its name says." | Retry, Download |
+| The file cannot be read as a TIFF (a damaged directory, or any other 422) | "Not an image Spectio can read: …" and the reason, for example "an IFD at 99, past the end" | Retry, Download |
 | Too many reads | "Spectio stopped reading tiles: …" on the status line | Reload |
 | A tile did not decode | "This image could not be decoded." | Retry, Download |
 
@@ -112,7 +124,7 @@ $ GET /api/v1/tasks/<task>/attempts/1/workdir/stat/.command.env
 
 ## Not shown
 
-- **A TIFF or OME-TIFF, in any of its states:** no shot, no real run with one. The step was checked by `vitest` (`decode.test.ts`, `flat.test.ts`, `FilePreview.test.tsx`: 544 tests pass) and not driven in a browser. The session that wrote this page had no Nextflow, no Snakemake and no Python Playwright, so it could not start a run to put a TIFF in. Taking the shots is a follow-up with no FU number yet, for a session that can run a pipeline.
+- **A TIFF, in one state only.** The two shots above show the plane in the browser, taken from a server that `tools/media/tiff_demo.py` seeds: a finished run record with `results/imaging/cells.tif` written by hand, and no pipeline run (the host had no Nextflow and no Snakemake). The server and the screens are the real ones, so the pixels are drawn by the browser. Not shown: the other states of the table above (too large, a compression not on the list, not a TIFF, stopped, empty), an 8-bit and an RGB file, a multi-page file, an OME-TIFF and the phone's "too large" case. They are covered by `vitest` (`flat.test.ts`, `FilePreview.test.tsx`: 544 tests pass), which draws no pixels. The shots of those states are follow-up FU-P3-114.
 - **An image, a PDF and an HTML file in a work directory:** the synthetic run writes none. They are covered by tests (`test_results.py`, `FilePreview.test.tsx`, and `preview.spec.ts`, a Playwright test of the hostile SVG that runs on Chromium only).
 - **A big file with Load more,** a JSON file and the cap lines: no shot. `preview.spec.ts` loads a 200 KiB log.
 - **A real Nextflow work directory on a cluster,** and any SLURM run: not done.

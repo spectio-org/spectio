@@ -851,6 +851,16 @@ media:
     # live, as app-file-preview at 390 x 844
     generator: python3 tools/media/shots.py run --shot app-file-preview-phone --theme both
     outputs: [docs/assets/shots/app-file-preview-phone_light.webp, docs/assets/shots/app-file-preview-phone_dark.webp]
+  - id: app-file-preview-tiff
+    kind: screenshot
+    # a seeded server, no pipeline: one finished run record and results/imaging/cells.tif (16-bit, 512 x 384) at 1440 x 1000; tiff_demo.py runs shots.py itself (batch P3-B12, DW-P3B12-01)
+    generator: python3 tools/media/tiff_demo.py --shot app-file-preview-tiff
+    outputs: [docs/assets/shots/app-file-preview-tiff_light.webp, docs/assets/shots/app-file-preview-tiff_dark.webp]
+  - id: app-file-preview-tiff-phone
+    kind: screenshot
+    # as app-file-preview-tiff, at 390 x 844
+    generator: python3 tools/media/tiff_demo.py --shot app-file-preview-tiff-phone
+    outputs: [docs/assets/shots/app-file-preview-tiff-phone_light.webp, docs/assets/shots/app-file-preview-tiff-phone_dark.webp]
   - id: app-workdir
     kind: screenshot
     # live, the COMPARE (treatA_vs_ctrl) task's work directory at 1440 x 1000, with SPECTIO_DEMO_TASK its task ID: the same explorer on a second root (batch P3-B09, FU-P3-85e)
