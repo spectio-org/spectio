@@ -16,6 +16,10 @@ main > *{flex-shrink:0}
 a{color:#6344B2}
 a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
 .menv-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.menv-kind{flex-shrink:0;width:30px;height:30px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center}
+.menv-seg{display:flex;gap:2px;padding:3px;border-radius:12px;background:#E9EAF0}
+.menv-seg button{flex:1 1 0;min-height:44px;border:0;border-radius:9px;background:none;font:500 14px 'Inter',sans-serif;color:#4D5065}
+.menv-seg button[aria-pressed="true"]{background:#FFFFFF;color:#0F1020;font-weight:600;box-shadow:0 1px 2px rgba(15,16,32,.12)}
 .menv-badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:7px;font-size:11.5px;font-weight:600}
 </style>
 </helmet>
@@ -24,6 +28,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
   <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="Environments" sub="4 environments · default mylab-long" hint-size="100%,104px"></dc-import></div>
   <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
     <a href="MLiteEnvironmentEdit.dc.html" style="min-height: 48px; border-radius: 14px; background: #0369A1; color: #FFFFFF; font-weight: 600; font-size: 15px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>New environment</a>
+    <div role="group" aria-label="Show environments as" class="menv-seg"><button type="button" aria-pressed="true">Cards</button><button type="button" aria-pressed="false">Table</button></div>
     <ul aria-label="Environments, built-ins first" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px;">
       <sc-for list="{{envs}}" as="e" hint-placeholder-count="4">
         <li>
@@ -31,6 +36,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
             <span style="width: 4px; flex-shrink: 0; background: {{e.rail}};"></span>
             <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
               <span style="display: flex; align-items: flex-start; gap: 8px;">
+                <span class="menv-kind" style="background: {{e.kbg}}; color: {{e.kfg}};"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{e.icon}}"/></svg></span>
                 <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
                   <span id="{{e.nid}}" style="font-size: 16px; font-weight: 600; overflow-wrap: anywhere;">{{e.label}}<span class="menv-sr">,</span></span>
                   <sc-if value="{{e.label !== e.name}}" hint-placeholder-val="{{true}}"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">{{e.name}}</span></sc-if>
@@ -48,7 +54,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         </li>
       </sc-for>
     </ul>
-    <p style="margin: 0; font-size: 12px; color: #6E7287; overflow-wrap: anywhere;">Saved in <span style="font-family: 'JetBrains Mono', monospace;">~/.spectio/environments.toml</span>. Open an environment for Edit, Duplicate, Make default and Delete.</p>
+    <p style="margin: 0; font-size: 12px; color: #6E7287; overflow-wrap: anywhere;">Saved in <span style="font-family: 'JetBrains Mono', monospace;">~/.spectio/environments.toml</span>. Open an environment for Edit, Duplicate, Make default and Delete; a built-in's page offers Duplicate to edit. Table (?view=table) keeps the names as links and drops the Actions column, scrolling inside its frame.</p>
   </main>
   <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="environments" hint-size="100%,72px"></dc-import></div>
 </div>
@@ -59,7 +65,10 @@ renderVals() {
   const B = { slurm: { t: 'SLURM', bg: '#F0F9FF', fg: '#075985' }, local: { t: 'Local', bg: '#F1F2F6', fg: '#33364A' },
     def: { t: 'Default', bg: '#E8F6EF', fg: '#157A4B' }, built: { t: 'Built-in', bg: '#F1F2F6', fg: '#4D5065' } };
   // Name = label and badges ("Long jobs, mylab, SLURM, Default"); the summary is the description only (CR-P3FU86E-03).
-  const env = (o) => ({ bg: '#FFFFFF', rail: 'transparent', profiles: '', unusable: '', did: 'menv-' + o.name,
+  // FU-P3-111: one icon per kind (web/src/icons.tsx server and terminal), beside the text badge.
+  const K = { slurm: { icon: 'M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01', kbg: '#F0F9FF', kfg: '#0284C7' },
+    local: { icon: 'M4 5h16v14H4z M7 9l3 3-3 3 M12 15h5', kbg: '#F1F2F6', kfg: '#4D5065' } };
+  const env = (o) => ({ ...K[o.badges[0] === B.local ? 'local' : 'slurm'], bg: '#FFFFFF', rail: 'transparent', profiles: '', unusable: '', did: 'menv-' + o.name,
     nid: 'menv-n-' + o.name, bid: 'menv-b-' + o.name, ...o, badges: o.badges.map((b, i) => ({ ...b, sep: i ? ',' : '' })) });
   // Same fixture as LiteEnvironments; on the phone a card is a link to the environment's page (UX-PRE-FU86-R1-22).
   return { envs: [
