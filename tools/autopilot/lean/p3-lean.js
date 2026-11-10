@@ -1,11 +1,11 @@
 export const meta = {
   name: 'p3-lean',
-  description: 'Build one P3 task cheaply: scoped TDD build, one review, one fix round, a verify-only check of the fixes, short docs',
-  whenToUse: 'Default per-task workflow since 2026-11-09 (Thomas: optimise, simplify, cut costs). Simplify, figure, doc review and promotion stay once per batch (p3-batch).',
+  description: 'Build one P3 feature slice cheaply: scoped TDD build, one review, one fix round for blockers and majors, review record and PR body',
+  whenToUse: 'Default per-task workflow since 2026-11-09, feature-sized since 2026-11-10 (autopilot.md §14). Simplify and the Progress page run once per batch (p3-batch); figure and doc review once per milestone.',
   phases: [
     { title: 'Build', detail: 'worker in its own worktree, tests in scope only' },
-    { title: 'Review', detail: 'one review (security only on sensitive paths), one fix round, verify-only' },
-    { title: 'Docs', detail: 'review record, short Progress section, owning spec, PR body' },
+    { title: 'Review', detail: 'one review (security only on sensitive paths), one fix round, verify-only after a blocker' },
+    { title: 'Docs', detail: 'review record, owning spec, PR body' },
   ],
 }
 
@@ -78,9 +78,11 @@ const verdicts = (await parallel([
 ])).filter(Boolean)
 if (!verdicts.length) throw new Error('no reviewer returned')
 
-// One fix round: blockers, majors and defect minors together. Then a verify-only check of those IDs on the
-// fix diff; it never opens new findings (anything new is a minor for the batch).
-const toFix = verdicts.flatMap(v => v.findings).filter(f => f.severity !== 'minor' || f.defect)
+// One fix round, only when a blocker or major was found; defect minors ride along in it, otherwise they go
+// to the batch's follow-up list (autopilot.md §14). A verify-only check runs only when a blocker was fixed;
+// the tests and CI check the rest. It never opens new findings.
+const all = verdicts.flatMap(v => v.findings)
+const toFix = all.some(f => f.severity !== 'minor') ? all.filter(f => f.severity !== 'minor' || f.defect) : []
 let check = null
 if (toFix.length) {
   const before = build.head
@@ -88,7 +90,7 @@ if (toFix.length) {
     `In the worktree ${wt} (branch ${branch}), fix these findings of step ${A.step}, minimally, test-first for code, then commit:\n${toFix.map(f => `- ${f.id} (${f.severity}) ${f.summary} ${f.where || ''} Fix: ${f.fix || ''}`).join('\n')}
 If a finding is wrong, say why instead of changing anything. ${gate} ${trailer}`,
     { label: 'fix', phase: 'Review', agentType: 'general-purpose', schema: BUILD })
-  check = await agent(
+  if (toFix.some(f => f.severity === 'blocker')) check = await agent(
     `In ${wt}, check ONLY whether each of these findings is resolved by the diff ${before}..HEAD (or rightly rejected by the worker: ${build.report.slice(0, 1500)}). Do not review anything else and do not report new findings.\n${toFix.map(f => `- ${f.id}: ${f.summary}`).join('\n')}`,
     { label: 'verify fixes', phase: 'Review', agentType: 'code-reviewer', schema: VERIFY, effort: 'low' })
   const openBad = (check?.unresolved || []).filter(u => toFix.find(f => f.id === u.id && f.severity !== 'minor'))
@@ -100,10 +102,9 @@ const rec = `Round 1: ${verdicts.map(v => `${v.verdict}: ${v.findings.map(f => `
 const docs = await agent(`Write the short per-task docs for step ${A.step}, worktree ${wt}, branch ${branch}, BASE ${A.base} (git log/diff BASE..HEAD).
 Worker report:\n${build.report}\nSecurity review: ${sec ? 'ran' : 'skipped (no sensitive path)'}. Reviews:\n${rec}
 Write only, briefly (documentation-system §3.5, per-task part):
-- docs/reviews/code/${A.step}.md with its CODE line (rounds=${toFix.length ? 2 : 1}; security=skipped when it did not run);
-- a short section in the milestone's Progress page under docs/progress/W5/ (3 to 5 bullets, the CODE line, links); no figure;
-- the owning spec only where behaviour was decided; an inbox entry only for a real question with no safe default (take the next free number on the base).
-Run python3 tools/docs/check.py and uvx --with mkdocs-material mkdocs build --strict. Write the PR body (title "${A.title}") to docs-pr-body.md at the worktree root, uncommitted, with sections ## Summary (with one "**Type:** <type of the title>" line), ## Docs ("Figure: in the batch docs PR"), ## Evidence (the CODE line in a \`\`\`text block), ## Checks, then the footer "🤖 Generated with [Claude Code](https://claude.com/claude-code)", a blank line, and ${A.session}. Check it with \`python3 tools/docs/check.py --only pr-body --pr-title "${A.title}" --pr-body docs-pr-body.md --changed <(git diff --name-only ${A.base}..HEAD) --labels no-figure\`. Return at most 10 lines. ${trailer}`,
+- docs/reviews/code/${A.step}.md with its CODE line (rounds=${toFix.length ? 2 : 1}; security=skipped when it did not run) and the assumptions the task made;
+- the owning spec only where behaviour was decided; an inbox entry only for a question with no safe default or a reserved item (triage-policy.md); no Progress section (the batch writes it), no figure.
+Do not build the site: CI's docs-gate does. Write the PR body (title "${A.title}") to docs-pr-body.md at the worktree root, uncommitted, with sections ## Summary (with one "**Type:** <type of the title>" line), ## Docs ("Figure: in the batch docs PR"), ## Evidence (the CODE line in a \`\`\`text block), ## Checks, then the footer "🤖 Generated with [Claude Code](https://claude.com/claude-code)", a blank line, and ${A.session}. Check it with \`python3 tools/docs/check.py --only pr-body --pr-title "${A.title}" --pr-body docs-pr-body.md --changed <(git diff --name-only ${A.base}..HEAD) --labels no-figure\`. Return at most 10 lines. ${trailer}`,
   { label: 'doc-writer', phase: 'Docs', agentType: 'doc-writer', effort: 'low' })
 
-return { status: 'done', step: A.step, branch, worktree: wt, head: build.head, tests: build.tests, security: sec ? 'ran' : 'skipped', fixed: toFix.map(f => f.id), check, minors: verdicts.flatMap(v => v.findings).filter(f => f.severity === 'minor' && !f.defect).map(f => f.id), docs }
+return { status: 'done', step: A.step, branch, worktree: wt, head: build.head, tests: build.tests, security: sec ? 'ran' : 'skipped', fixed: toFix.map(f => f.id), check, minors: all.filter(f => f.severity === 'minor' && !toFix.includes(f)).map(f => f.id), docs }
