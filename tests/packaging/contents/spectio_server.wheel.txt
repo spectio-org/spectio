@@ -6,6 +6,7 @@ spectio_server/__init__.py
 spectio_server/api/__init__.py
 spectio_server/api/browser.py
 spectio_server/api/cancel.py
+spectio_server/api/catalog.py
 spectio_server/api/environments.py
 spectio_server/api/logs.py
 spectio_server/api/models.py

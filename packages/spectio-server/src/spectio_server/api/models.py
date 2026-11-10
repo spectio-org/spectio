@@ -128,6 +128,25 @@ class EnvironmentList(BaseModel):
     file: EnvironmentsFile
 
 
+class CatalogItem(BaseModel):
+    """One entry of `GET /catalog` (FU-P3-87b, api §5.6): a named pipeline location with its
+    launch defaults."""
+
+    name: str
+    label: str | None
+    engine: Literal["nextflow", "snakemake"]
+    location: str
+    revision: str | None
+    profile: str | None
+    params_file: str | None
+    etag: str
+
+
+class CatalogList(BaseModel):
+    items: list[CatalogItem]
+    file: EnvironmentsFile  # the same five states as environments.toml
+
+
 class Run(BaseModel):
     id: str
     name: str | None
