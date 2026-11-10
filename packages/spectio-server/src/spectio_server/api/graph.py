@@ -14,8 +14,8 @@ graph). With `graph_view` off, every graph route is `404 feature-disabled`.
 """
 
 import os
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from pathlib import PurePosixPath
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -37,14 +37,13 @@ from spectio_server.api.workflows import inspect_dir, resolve
 from spectio_server.failure import dir_run_id
 from spectio_server.files.confine import NotAllowed, NotFound, open_root, safe_rel, stat_confined
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
-from spectio_server.graph import document, static
+from spectio_server.graph import bioflow, document, static
 from spectio_server.store.schema import attempts, events, run_output_events, run_stages, tasks
 
 router = APIRouter()
 
 FEATURE = "graph_view"
 FLOW_BEGIN = "spectio.engine.nextflow.onFlowBegin"
-TASK_COMPLETE = "spectio.engine.nextflow.onTaskComplete"
 FILE_PUBLISH = "spectio.engine.nextflow.onFilePublish"
 MAX_OUTPUTS = 500
 OPEN = ("pending", "submitted", "running")
@@ -247,37 +246,24 @@ def _smk_outputs(conn: Connection, run: Row[Any], name: str) -> list[dict[str, A
     return found
 
 
-def _work_key(path: str) -> str | None:
-    """`…/work/c5/9654ea…/file` → `c5/9654ea…`: a task's work directory is its hash."""
-    parts = PurePosixPath(path).parts
-    for i in range(len(parts) - 2, 0, -1):
-        if parts[i - 1] == "work" and len(parts[i]) == 2:
-            return f"{parts[i]}/{parts[i + 1]}" if i + 1 < len(parts) else None
-    return None
-
-
 def _nf_outputs(conn: Connection, run: Row[Any], name: str) -> list[dict[str, Any]]:
-    mine = events.c.run_id == run.id
-    hashes: dict[str, dict[str, Any]] = {}
-    for payload in conn.execute(
-        select(events.c.payload).where(mine, events.c.type == TASK_COMPLETE)
-    ).scalars():
-        p = payload or {}
-        h = p.get("hash")
-        if p.get("process") == name and isinstance(h, str) and len(h) > 2:
-            hashes[f"{h[:2]}/{h[2:]}"] = p
-    if not hashes:
-        return []
-    task_ids = {
-        (r.tag, r.name): r.id
+    """The files the process's attempts published: a publish event's `source` lies in an
+    attempt's work directory (`attempts.work_dir`, any `-w`), which names its task and attempt."""
+    dirs = {
+        r.work_dir.rstrip("/") + "/": (r.id, r.n)
         for r in conn.execute(
-            select(tasks.c.id, tasks.c.tag, tasks.c.name).where(
-                tasks.c.run_id == run.id, tasks.c.process_or_rule == name
+            select(tasks.c.id, attempts.c.n, attempts.c.work_dir)
+            .join(attempts, attempts.c.task_id == tasks.c.id)
+            .where(
+                tasks.c.run_id == run.id,
+                tasks.c.process_or_rule == name,
+                attempts.c.work_dir.is_not(None),
             )
         )
     }
-    by_tag = {tag: i for (tag, _), i in task_ids.items() if tag is not None}
-    by_name = {n: i for (_, n), i in task_ids.items() if n is not None}
+    if not dirs:
+        return []
+    mine = events.c.run_id == run.id
     results = results_of(run)
     found = []
     for payload in conn.execute(
@@ -285,10 +271,11 @@ def _nf_outputs(conn: Connection, run: Row[Any], name: str) -> list[dict[str, An
     ).scalars():
         p = payload or {}
         source, target = p.get("source"), p.get("target")
-        key = _work_key(source) if isinstance(source, str) else None
-        if key not in hashes or not isinstance(target, str):
+        if not isinstance(source, str) or not isinstance(target, str):
             continue
-        task = hashes[key]
+        owner = next((v for d, v in dirs.items() if source.startswith(d)), None)
+        if owner is None:
+            continue
         path, root = target, "absolute"
         if results and target.startswith(results.rstrip("/") + "/"):
             path, root = target[len(results.rstrip("/")) + 1 :], "results"
@@ -296,8 +283,8 @@ def _nf_outputs(conn: Connection, run: Row[Any], name: str) -> list[dict[str, An
             {
                 "path": path,
                 "root": root,
-                "task_id": by_tag.get(task.get("tag")) or by_name.get(task.get("name")),
-                "attempt_n": task.get("attempt") if isinstance(task.get("attempt"), int) else None,
+                "task_id": owner[0],
+                "attempt_n": owner[1],
                 "state": "unknown",
                 "temp": False,
             }
@@ -361,17 +348,27 @@ def process_outputs(request: Request, run_id: str, name: str) -> dict[str, Any]:
 # --- Before a run: the Launch form -----------------------------------------------------------
 
 
+def _in_pool(request: Request, build: Callable[[], dict[str, Any]]) -> dict[str, Any]:
+    """The pipeline's files read in the file pool, so a stalled mount answers 503 (SEC-160-03)."""
+    try:
+        return request.app.state.files.run(build, READ_TIMEOUT_S)  # type: ignore[no-any-return]
+    except Stalled as exc:
+        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+
+
 @router.get("/workflows:graph", response_model=models.GraphDocument)
 def workflow_graph(request: Request, location: str, revision: str | None = None) -> dict[str, Any]:
     require_graph(request)
     settings: Settings = request.app.state.settings
     resolved = resolve(settings.data_dir, location, revision)
     found = inspect_dir(resolved.directory, resolved.default_name)
+    root = resolved.directory
     if found.engine == "snakemake":
         entry = next(f for f in found.engine_files if "Snakefile" in f)
-        return static.snakemake_graph(resolved.directory, entry)
+        return _in_pool(request, lambda: static.snakemake_graph(root, entry))
     if found.engine == "nextflow":
-        return static.nextflow_graph(resolved.directory, found.name)
+        metro = bioflow.metro_map(root / "main.nf")  # its own timeout, one at a time
+        return _in_pool(request, lambda: static.nextflow_graph(root, found.name, metro))
     raise Problem(
         422,
         "validation-failed",

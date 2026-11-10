@@ -3,7 +3,11 @@ flag, the run graph from Snakemake's rule graphs and Nextflow's `onFlowBegin` DA
 outputs, and the Launch graph (rule files, BioFlow-Insight's metro map)."""
 
 import json
+import os
 import shutil
+import tempfile
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +15,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from spectio.config import ServerOpts, Settings
-from spectio_server.graph import bioflow, document
+from spectio.runner.rundir import run_paths
+from spectio_server.graph import bioflow, document, static
 from spectio_server.store.writer import Writer
 
 from ..test_process_status import job, smk_run
@@ -161,16 +166,26 @@ def test_nextflow_dag_truncated(settings: Settings, writer: Writer) -> None:
     assert doc["producer"] == "stages-only"
 
 
-def test_nextflow_outputs(settings: Settings, writer: Writer, replayed_flaky: str) -> None:
-    """QC_STATS's outputs: the files published from its tasks' work directories."""
-    items = got(
-        graph_client(settings, writer), f"/runs/{replayed_flaky}/processes/QC_STATS/outputs"
-    )["items"]
+def test_nextflow_outputs(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """QC_STATS's outputs: the files published from its attempts' work directories, matched by
+    the stored `attempts.work_dir`, which names the task and the attempt (CR-1)."""
+    launch_id = add_run(writer, settings, FLAKY_RUN, "rnaseq-flaky")
+    paths = run_paths(settings.runs_root, FLAKY_RUN)
+    subs = {"<launch>/work": str(paths.work_dir), "<launch>": str(paths.launch_dir)}
+    replay(
+        writer,
+        tmp_path,
+        launch_id,
+        "nextflow-26.10.4_plugin_flaky.spool.jsonl",
+        FLAKY_RUN,
+        subs,
+        settings.runs_root,
+    )
+    client = graph_client(settings, writer)
+    items = got(client, f"/runs/{FLAKY_RUN}/processes/QC_STATS/outputs")["items"]
     assert items and all(i["path"].endswith(".qc.json") for i in items)
-    assert all(i["task_id"] for i in items)
-    assert not got(
-        graph_client(settings, writer), f"/runs/{replayed_flaky}/processes/MAKE_READS/outputs"
-    )["items"]  # not published
+    assert all(i["task_id"] and i["attempt_n"] for i in items)
+    assert not got(client, f"/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs")["items"]
 
 
 # --- The pure document -----------------------------------------------------------------------
@@ -243,6 +258,7 @@ def test_launch_nextflow_without_bioflow(
     nodes = {n["id"]: n for n in doc["nodes"]}
     assert {"MAKE_READS", "ALIGN", "FINAL_REPORT"} <= set(nodes)
     assert nodes["ALIGN"]["source"]["file"] == "main.nf"
+    assert nodes["ALIGN"]["stage_id"] is None  # bare names: detection needs qualified ones
 
 
 def test_launch_nextflow_with_bioflow(
@@ -273,3 +289,68 @@ def test_launch_location_checked(settings: Settings, writer: Writer) -> None:
 def test_bioflow_real() -> None:  # pragma: no cover - only where the tool is installed
     metro = bioflow.metro_map(SYNTHETIC / "nextflow" / "main.nf")
     assert metro is not None and document.from_metro(metro)["edges"]
+
+
+def _fake_tool(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: str) -> None:
+    """A fake `bioflow-insight` (and `dot`) first on PATH."""
+    bin_ = tmp_path / "bin"
+    bin_.mkdir()
+    for name, text in (("bioflow-insight", body), ("dot", "exit 0")):
+        exe = bin_ / name
+        exe.write_text(f"#!/bin/sh\n{text}\n")
+        exe.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_}:{os.environ['PATH']}")
+
+
+def test_bioflow_timeout_kills_the_whole_group(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-160-01: a timeout kills the tool's children too, not only the tool."""
+    pidfile = tmp_path / "child.pid"
+    _fake_tool(tmp_path, monkeypatch, f"sleep 600 & echo $! > {pidfile}; sleep 600")
+    started = time.monotonic()
+    assert bioflow.metro_map(tmp_path / "main.nf", timeout_s=1) is None
+    assert time.monotonic() - started < 10
+    child = int(pidfile.read_text())
+    time.sleep(0.2)
+    status = Path(f"/proc/{child}/status")
+    # gone, or a zombie waiting for a reaper that is not us (container PID 1)
+    assert not status.exists() or "\nState:\tZ" in status.read_text()
+
+
+def test_bioflow_one_at_a_time_and_private_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-160-01/-02: a second call while one runs falls back (None) at once; HOME is a
+    private temporary directory, and no proxy or JAVA_TOOL_OPTIONS reaches the tool."""
+    envfile = tmp_path / "env.txt"
+    _fake_tool(tmp_path, monkeypatch, f"env > {envfile}; sleep 2")
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.invalid")
+    monkeypatch.setenv("JAVA_TOOL_OPTIONS", "-Dx=y")
+    first = threading.Thread(target=bioflow.metro_map, args=(tmp_path / "main.nf",))
+    first.start()
+    time.sleep(0.5)
+    started = time.monotonic()
+    assert bioflow.metro_map(tmp_path / "main.nf") is None
+    assert time.monotonic() - started < 1
+    first.join()
+    env = dict(line.split("=", 1) for line in envfile.read_text().splitlines() if "=" in line)
+    assert env["HOME"].startswith(tempfile.gettempdir()) and "spectio-bfi-" in env["HOME"]
+    assert not {k for k in env if k.lower().endswith("_proxy") or k == "JAVA_TOOL_OPTIONS"}
+
+
+def test_launch_walk_is_bounded(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """SEC-160-03: a huge tree beside main.nf is not walked in full; output dirs are skipped."""
+    pipeline = tmp_path / "nf"
+    shutil.copytree(SYNTHETIC / "nextflow", pipeline)
+    hidden = pipeline / "results" / "late.nf"
+    hidden.parent.mkdir()
+    hidden.write_text("process HIDDEN {\n}\n")
+    big = pipeline / "data"
+    big.mkdir()
+    for i in range(static.MAX_WALK_ENTRIES + 10):
+        (big / f"f{i}").touch()
+    started = time.monotonic()
+    doc = got(graph_client(settings, writer), f"/workflows:graph?location={pipeline}")
+    assert time.monotonic() - started < 10
+    assert "HIDDEN" not in {n["id"] for n in doc["nodes"]}

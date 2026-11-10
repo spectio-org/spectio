@@ -6,7 +6,6 @@ P1 Task 16 (inbox #86). `client` is the same app on a machine that looks shared,
 not mounted. `served` is the app on a real port, and `session` the cookie a browser holds there.
 """
 
-import shutil
 import subprocess
 import threading
 from collections.abc import Iterator
@@ -28,6 +27,7 @@ from spectio_server import app as app_mod
 from spectio_server.app import create_app
 from spectio_server.auth.middleware import cookie_name
 from spectio_server.projector.ingest import ingest
+from spectio_server.stages.freeze import StageSources
 from spectio_server.store.runs import insert_run
 from spectio_server.store.schema import run_stages, runs, tasks
 from spectio_server.store.writer import Writer
@@ -108,17 +108,31 @@ def add_run(
     return writer.submit(write).result()
 
 
-def replay(writer: Writer, tmp_path: Path, launch_id: str, fixture: str, run_id: str) -> None:
-    """A T2 fixture read through the real spool reader and ingested, batch by batch."""
+def replay(
+    writer: Writer,
+    tmp_path: Path,
+    launch_id: str,
+    fixture: str,
+    run_id: str,
+    subs: dict[str, str] | None = None,
+    runs_root: Path | None = None,
+) -> None:
+    """A T2 fixture read through the real spool reader and ingested, batch by batch, with each
+    `subs` key (a placeholder such as `<launch>/work`) replaced by its value, in order;
+    `runs_root`: the projector keeps the event paths under that root (attempt work dirs)."""
     launch_dir = tmp_path / "spool-launch"
     (launch_dir / ".spectio" / "events").mkdir(mode=0o700, parents=True)
     (launch_dir / ".spectio").chmod(0o700)
     target = launch_dir / ".spectio" / "events" / "nf-spectio-1-0001.jsonl"
-    shutil.copyfile(FIXTURES / fixture, target)
+    text = (FIXTURES / fixture).read_text()
+    for old, new in (subs or {}).items():
+        text = text.replace(old, new)
+    target.write_text(text)
     target.chmod(0o600)
     cursor: dict[str, int] = {}
     while (batch := read_spool(launch_dir, run_id, 1, cursor, max_lines=100)).events:
-        writer.submit(partial(ingest, launch_id=launch_id, batch=batch)).result()
+        sources = None if runs_root is None else StageSources(None, runs_root)
+        writer.submit(partial(ingest, launch_id=launch_id, batch=batch, sources=sources)).result()
         cursor = batch.cursor
 
 

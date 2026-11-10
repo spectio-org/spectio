@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from spectio_server.graph import bioflow, document
+from spectio_server.graph import document
 from spectio_server.stages.assign import Overlap, StageDef, assign
 from spectio_server.stages.detect_nf import detect_nextflow
 from spectio_server.stages.detect_smk import (
@@ -27,6 +27,9 @@ from spectio_server.stages.detect_smk import (
 log = logging.getLogger(__name__)
 
 MAX_NF_FILES = 500
+MAX_WALK_ENTRIES = 20000  # directories and files visited, all told (SEC-160-03)
+MAX_WALK_DEPTH = 8
+_SKIPPED_DIRS = {"work", "results", "conda", "envs", "node_modules"}  # outputs and environments
 _PROCESS = re.compile(r"^\s*process\s+([A-Za-z_]\w*)\s*\{", re.MULTILINE)
 
 
@@ -84,8 +87,17 @@ def _nf_processes(root: Path) -> list[tuple[str, str]]:
     real_root = Path(os.path.realpath(root))
     found: dict[str, str] = {}
     seen = 0
+    visited = 0
     for dirpath, dirnames, filenames in os.walk(real_root):
-        dirnames[:] = sorted(d for d in dirnames if not d.startswith(".") and d != "work")
+        visited += 1 + len(dirnames) + len(filenames)
+        if visited > MAX_WALK_ENTRIES:
+            break
+        depth = len(Path(dirpath).relative_to(real_root).parts)
+        dirnames[:] = (
+            []
+            if depth >= MAX_WALK_DEPTH
+            else sorted(d for d in dirnames if not d.startswith(".") and d not in _SKIPPED_DIRS)
+        )
         for name in sorted(filenames):
             if not name.endswith(".nf"):
                 continue
@@ -102,8 +114,11 @@ def _nf_processes(root: Path) -> list[tuple[str, str]]:
     return list(found.items())
 
 
-def nextflow_graph(root: Path, manifest_name: str | None) -> dict[str, Any]:
-    metro = bioflow.metro_map(root / "main.nf")
+def nextflow_graph(
+    root: Path, manifest_name: str | None, metro: dict[str, Any] | None
+) -> dict[str, Any]:
+    """`metro`: BioFlow-Insight's map (`bioflow.metro_map`), run by the caller outside the file
+    pool, whose reads time out sooner than the tool."""
     if metro is not None:
         mapped = document.from_metro(metro)
         names = list(mapped["nodes"])
@@ -127,9 +142,17 @@ def nextflow_graph(root: Path, manifest_name: str | None) -> dict[str, Any]:
             conditions=mapped["groups"],
             edge_conditions=mapped["edge_conditions"],
         )
+    found = _nf_processes(root)
+    stages = detect_nextflow([name for name, _ in found], manifest_name, {})
     nodes = [
-        {"id": name, "source": {"file": file, "line": None}} for name, file in _nf_processes(root)
+        {"id": name, "stage_id": _stage_of(stages, name), "source": {"file": file, "line": None}}
+        for name, file in found
     ]
     return document.build(
-        engine="nextflow", producer="stages-only", complete=False, nodes=nodes, edges=[], stages=[]
+        engine="nextflow",
+        producer="stages-only",
+        complete=False,
+        nodes=nodes,
+        edges=[],
+        stages=_stages(stages),
     )
