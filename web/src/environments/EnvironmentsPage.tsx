@@ -282,11 +282,11 @@ export function EnvironmentPage({ name, from }: { name: string | null; from?: st
   }, [ready]);
   useEffect(() => {
     // A duplicate reads the list too, for a name no environment has (FU-P3-111); without it, `<name>-copy`.
+    if (!wanted) return;
     const names = name ? Promise.resolve([]) : listEnvironments().then((l) => l.items.map((i) => i.name), () => []);
-    if (wanted)
-      Promise.all([getEnvironment(wanted), names]).then(([found, all]) => (setTaken(all), setItem(found)), (e: Error) =>
-        setFailed(e instanceof ApiError && e.status === 404 ? { missing: true, text: `No environment named ${wanted}` } : { missing: false, text: e.message }),
-      );
+    Promise.all([getEnvironment(wanted), names]).then(([found, all]) => (setTaken(all), setItem(found)), (e: Error) =>
+      setFailed(e instanceof ApiError && e.status === 404 ? { missing: true, text: `No environment named ${wanted}` } : { missing: false, text: e.message }),
+    );
   }, [wanted, round]);
   const reload = () => setRound((r) => r + 1);
   const toList = (say: string, focus: string | null, opener?: string) => ((next = { focus, say, opener }), navigate({ to: "/environments", search: shownView }));

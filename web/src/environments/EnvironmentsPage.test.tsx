@@ -384,3 +384,14 @@ test("FU-P3-108b: Edit and New move focus to the form's heading; Cancel returns 
   await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await waitFor(() => expect(screen.getByRole("link", { name: "New environment" })).toHaveFocus());
 });
+
+test("CR-P3FU111-02: New does not read the list, only a duplicate does", async () => {
+  const reads: string[] = [];
+  serve({
+    "/api/v1/version": SLURM,
+    [API]: (u: URL, init?: RequestInit) => (init?.method !== "POST" && reads.push(u.pathname), json(200, list(BUILTINS))),
+  });
+  app("/environments/new");
+  await screen.findByLabelText("Name");
+  expect(reads).toEqual([]);
+});
