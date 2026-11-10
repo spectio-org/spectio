@@ -22,7 +22,7 @@ beforeEach(() => viewport(1440));
 afterEach(() => vi.unstubAllGlobals());
 
 async function openByButton() {
-  const opener = await screen.findByRole("button", { name: "Search" });
+  const opener = await screen.findByRole("button", { name: "Search runs, pipelines and pages" });
   await userEvent.click(opener);
   return { opener, dialog: await screen.findByRole("dialog", { name: "Search" }) };
 }
@@ -42,7 +42,7 @@ test("the top-bar button opens a modal dialog with a labelled input; Escape clos
 test("Ctrl+K and ⌘K open the dialog", async () => {
   backend();
   app("/environments");
-  await screen.findByRole("button", { name: "Search" });
+  await screen.findByRole("button", { name: "Search runs, pipelines and pages" });
   await userEvent.keyboard("{Control>}k{/Control}");
   expect(await screen.findByRole("dialog", { name: "Search" })).toBeInTheDocument();
   await userEvent.keyboard("{Escape}");

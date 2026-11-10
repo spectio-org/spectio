@@ -170,7 +170,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
             <span className="sp-dot" aria-hidden="true" />
             <span aria-hidden="true">{server?.node ?? (down ? "offline" : "…")}</span>
           </span>
-          <button type="button" className="sp-key" aria-label="Search" onClick={() => setSearching(true)}>
+          <button type="button" className="sp-key" aria-label="Search runs, pipelines and pages" onClick={() => setSearching(true)}>
             <span className="sp-key-face">
               <Icon path={SEARCH} size={19} />
             </span>
@@ -193,7 +193,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
       </Link>
       <span className="sp-rule" aria-hidden="true" />
       <Breadcrumbs crumb={crumb} />
-      <button type="button" className="sp-search" aria-label="Search" aria-keyshortcuts="Meta+K Control+K" onClick={() => setSearching(true)}>
+      <button type="button" className="sp-search" aria-label="Search runs, pipelines and pages" aria-keyshortcuts="Meta+K Control+K" onClick={() => setSearching(true)}>
         <Icon path={SEARCH} size={16} />
         <span className="sp-search-text">Search</span>
         <kbd aria-hidden="true">⌘K</kbd>
