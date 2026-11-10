@@ -125,7 +125,7 @@ export interface Run {
   profiles: string[];
   /** Null for a run started from a terminal; read by the run's facts and Resume (FU-P3-86g). */
   environment?: RunEnvironment | null;
-  /** First in the runs list (FU-P3-115a); its screen is FU-P3-115b. */
+  /** First in every sort of the runs list but `-ended_at` (api §5, FU-P3-115a). */
   pinned?: boolean;
   failure: { [key: string]: Json } | null;
   /** `checked` false: a run started from a terminal on another host or boot, whose head the
@@ -524,16 +524,40 @@ const query = (params: Record<string, string | number | null | undefined>) => {
 };
 const run = (id: string) => `/runs/${encodeURIComponent(id)}`;
 
+/** `GET /runs` `sort=` (api §5, note of 2026-11-10): a key, `-` for descending. */
+export type RunsSort =
+  | "-created_at"
+  | "-ended_at"
+  | `${"" | "-"}${"name" | "state" | "started_at" | "duration"}`;
+
 export interface RunsQuery {
   state?: string;
   q?: string;
-  sort?: "-created_at" | "-ended_at";
+  sort?: RunsSort;
   limit?: number;
   cursor?: string | null;
 }
 
 export function listRuns(params: RunsQuery, signal?: AbortSignal): Promise<Page<Run>> {
   return call(`/runs${query({ ...params })}`, { signal });
+}
+
+/** `POST /runs:delete`: soft deletes ended runs, all or none; `directories` also removes each
+ * run's own directory (api §5, note of 2026-11-10). */
+export function deleteRuns(
+  ids: string[],
+  directories: boolean,
+): Promise<{ deleted: string[]; directories: { id: string; result: "removed" | "missing" | "failed" }[] }> {
+  return call("/runs:delete", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ids, directories }),
+  });
+}
+
+/** `PATCH /runs/{id}` `{pinned}`: answers the run as `GET /runs/{id}`. */
+export function setPinned(id: string, pinned: boolean): Promise<RunDetail> {
+  return call(run(id), { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ pinned }) });
 }
 
 export function runsSummary(signal?: AbortSignal): Promise<Summary> {
