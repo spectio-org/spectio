@@ -294,12 +294,15 @@ def read_params(root: Path, rel: str) -> dict[str, Any]:
         raise ValueError(f"{rel} is larger than {MAX_PARAMS_FILE} bytes")
     kind = "JSON" if rel.endswith(".json") else "YAML"
     try:
-        values = json.loads(raw.decode()) if kind == "JSON" else load_yaml(raw.decode())
+        text = raw.decode()
+        values = _jsonable(json.loads(text)) if kind == "JSON" else load_yaml(text)
     except UnicodeDecodeError:
         raise ValueError(f"{rel} is not UTF-8 text") from None
     except RecursionError:
         raise ValueError(f"{rel} is nested too deep to be read") from None
-    except (ValueError, yaml.YAMLError) as exc:  # their messages quote the file: not shown
+    # Their messages quote the file: not shown. TypeError: a key that is not a string, such
+    # as a YAML date (SEC-P3FU87B-01).
+    except (ValueError, TypeError, yaml.YAMLError) as exc:
         why = NO_ALIASES if str(exc) == NO_ALIASES else f"not {kind}"
         raise ValueError(f"{rel} cannot be read: {why}") from None
     if not isinstance(values, dict):
@@ -310,8 +313,10 @@ def read_params(root: Path, rel: str) -> dict[str, Any]:
 
 
 def _jsonable(value: Any) -> Any:
-    """YAML dates and the like as strings, so that the response can carry them."""
-    return json.loads(json.dumps(value, default=str))
+    """YAML dates and the like as strings, so that the response can carry them. Raises
+    ValueError on NaN or an infinity, which JSON cannot carry (CR-P3FU87B-01), and TypeError on
+    a key that is not a string, a number, a boolean or null."""
+    return json.loads(json.dumps(value, default=str, allow_nan=False))
 
 
 def load_yaml(text: str) -> Any:
@@ -439,7 +444,7 @@ def inspect_dir(directory: Path, default_name: str) -> Found:
     try:
         name, version, nf_profiles = nextflow_config(directory)
         schema, source = schema_of(directory)
-    except (ValueError, RecursionError, yaml.YAMLError) as exc:  # JSONDecodeError: ValueError
+    except (ValueError, TypeError, RecursionError, yaml.YAMLError) as exc:  # JSONDecodeError
         raise Invalid("location", f"the pipeline's files cannot be read: {exc}") from None
     profiles = {"nextflow": nf_profiles, "snakemake": snakemake_profiles(directory)}
     shown = [p for e in (engines if engine is None else [engine]) for p in profiles[e]]
