@@ -24,6 +24,16 @@ export interface Inspected {
   schema: JSONSchema | null;
   schema_source: "nextflow_schema.json" | "config.schema.yaml" | "inferred" | "none";
   profiles: string[];
+  /** Asked with `params_file` (api §5.6): every top-level key of the file, or `values: null` and
+   * an `error` in words; what in it, or the file itself, loads code. */
+  params_file: ParamsFile | null;
+}
+
+export interface ParamsFile {
+  path: string;
+  values: Record<string, unknown> | null;
+  code_loading: CodeLoading[];
+  error: string | null;
 }
 
 /** The body of `POST /api/v1/runs` (api §5 note of 2026-10-30). */
@@ -457,9 +467,11 @@ export function inspect(
   location: string,
   revision: string | null,
   signal?: AbortSignal,
+  paramsFile?: string | null,
 ): Promise<Inspected> {
   const query = new URLSearchParams({ location });
   if (revision) query.set("revision", revision);
+  if (paramsFile) query.set("params_file", paramsFile);
   return call(`/workflows:inspect?${query}`, { signal });
 }
 

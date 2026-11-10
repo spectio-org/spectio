@@ -34,10 +34,12 @@ export function useRecentRuns(): Run[] | null {
   return runs;
 }
 
-export function TryPipelines({ runs, onPick }: { runs: Run[] | null; onPick: (location: string) => void }) {
+/** `saved`: the locations of the catalog's directory entries, left out (ui-spec §4.7.1); a run
+ * records no revision, so a repository entry cannot be matched and is not. */
+export function TryPipelines({ runs, onPick, saved = [] }: { runs: Run[] | null; onPick: (location: string) => void; saved?: string[] }) {
   const id = useId();
   if (runs === null) return null;
-  const pipelines = recentPipelines(runs);
+  const pipelines = recentPipelines(runs.filter((r) => !saved.includes(r.workflow.location)));
   const synthetic = pipelines.some((r) => isSynthetic(r.workflow));
   if (!pipelines.length) {
     return (
