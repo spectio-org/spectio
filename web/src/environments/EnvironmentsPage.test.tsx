@@ -278,3 +278,16 @@ test("phone: the page stacks its actions, named with the environment, Delete las
   expect(await screen.findByText("Deleted gpu-test")).toHaveAttribute("role", "status");
   expect(screen.queryByRole("link", { name: "gpu-test" })).toBeNull();
 });
+
+test("FU-P3-108b: Edit and New move focus to the form's heading; Cancel returns it to the opener", async () => {
+  serve({ "/api/v1/version": SLURM, [`${API}/gpu-test`]: MINE[1], [API]: list([...BUILTINS, ...MINE]) });
+  app("/environments");
+  await userEvent.click(await screen.findByRole("link", { name: "Edit gpu-test" }));
+  await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "gpu-test" })).toHaveFocus());
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.getByRole("link", { name: "Edit gpu-test" })).toHaveFocus());
+  await userEvent.click(screen.getByRole("link", { name: "New environment" }));
+  await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "New environment" })).toHaveFocus());
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.getByRole("link", { name: "New environment" })).toHaveFocus());
+});

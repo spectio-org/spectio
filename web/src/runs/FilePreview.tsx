@@ -1,6 +1,6 @@
 import { Button } from "@mantine/core";
 import { Link, Navigate } from "@tanstack/react-router";
-import { type ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { type ApiError, type ResultStat, type RunDetail, type TextRead, type WorkRoot, getRun, readResultText, resultUrl, statResult } from "../api";
 import { ICONS, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
@@ -26,6 +26,8 @@ import {
   wholeLines,
 } from "./preview";
 import { isResultPath } from "./ReportViewer";
+import { type Flat, type ImageState, imageState, readFlat } from "./imaging/flat";
+import { DecoderPool } from "./imaging/pool";
 import { OFFLINE, OFFLINE_WHY, hasDotPart, join } from "./explorer";
 import { BackToRun, Crumbs, type ResultsSearch, useTaskName } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
@@ -389,6 +391,98 @@ function ImageView({ id, file }: { id: string; file: ResultStat }) {
   );
 }
 
+const px = (w: number, h: number) => `${w.toLocaleString("en-US")} × ${h.toLocaleString("en-US")}`;
+
+/** A TIFF, or an OME-TIFF's first plane until FU-P3-102e: the flat view on a 2D canvas (ui-spec
+ * §4.4.1, imaging), read through the pinned client and our decoder pool, or the state that stopped it. */
+function TiffView({ id, file, ome }: { id: string; file: ResultStat; ome: boolean }) {
+  const work = useContext(Work);
+  const phone = usePhone();
+  const [tries, setTries] = useState(0);
+  const [flat, setFlat] = useState<Flat | null>(null);
+  const [state, setState] = useState<ImageState | { problem: ApiError } | "phone" | null>(null);
+  const [actual, setActual] = useState(false);
+  const empty = (file.size ?? 0) === 0;
+  useEffect(() => {
+    if (empty) return;
+    const controller = new AbortController();
+    const pool = new DecoderPool();
+    setFlat(null);
+    setState(null);
+    readFlat(resultUrl(id, file.path, { as: "tiff" }, work), file.size ?? 0, file.name, ome, phone, pool, controller.signal)
+      .then((read) => controller.signal.aborted || (read ? setFlat(read) : setState("phone")))
+      .catch((err) => controller.signal.aborted || setState(imageState(err)));
+    return () => (controller.abort(), pool.destroy());
+  }, [id, file, ome, phone, work, tries, empty]);
+  const paint = useCallback(
+    (canvas: HTMLCanvasElement | null) => {
+      const context = flat && canvas?.getContext("2d");
+      if (!flat || !canvas || !context) return;
+      [canvas.width, canvas.height] = [flat.width, flat.height];
+      const image = context.createImageData(flat.width, flat.height);
+      image.data.set(flat.rgba);
+      context.putImageData(image, 0, 0);
+    },
+    [flat],
+  );
+
+  const retry = () => setTries((t) => t + 1);
+  const download = <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />;
+  const copyLink = <CopyButton text={window.location.href} label="Copy link" name="Copy link" />;
+  if (empty) return <Note title="This file is empty." actions={download} />;
+  if (state === "phone") return <Note title="This image is too large to show on a phone." actions={<>{copyLink}{download}</>} />;
+  if (state && "problem" in state) return <Problem error={state.problem} onRetry={retry} />;
+  if (state) {
+    const again = state.action && (
+      <Button variant="default" size="xs" onClick={retry}>
+        {state.action === "retry" ? "Retry" : "Reload"}
+      </Button>
+    );
+    if (state.status) return <div className="sp-file-line"><span role="status">{state.title}</span>{again}</div>;
+    return <Note title={state.title} actions={(again || state.download) && <>{again}{state.download && download}</>} />;
+  }
+  if (!flat) return <p className="sp-muted">Loading the image…</p>;
+
+  const asOme = ome && !flat.noOme;
+  const [W, H] = flat.full;
+  const facts = [
+    phone ? `Shown: ${asOme ? "channel 1, first plane, " : ""}${px(flat.width, flat.height)} of ${px(W, H)} px` : `${px(W, H)} px`,
+    !phone && asOme ? "Shown: channel 1, first plane" : null,
+    !asOme && flat.pages > 1 ? `Shown: page 1 of ${flat.pages}` : null,
+    flat.note,
+    flat.stretched ? "Contrast stretched for display" : null,
+  ];
+  const canvas = <canvas ref={paint} className="sp-file-image" data-actual={actual || undefined} role="img" aria-label={file.name} />;
+  return (
+    <div className="sp-file-viewer">
+      {flat.noOme && <p className="sp-muted">This file has no OME metadata: shown as a TIFF.</p>}
+      <div className="sp-actions">
+        <Button variant="default" size="xs" aria-pressed={actual} onClick={() => setActual(!actual)}>
+          Actual size
+        </Button>
+      </div>
+      <div className="sp-file-backdrop">
+        {actual ? (
+          <div className="sp-file-scroll" role="region" tabIndex={0} aria-label={`${file.name}, image`}>
+            {canvas}
+          </div>
+        ) : (
+          canvas
+        )}
+        <span className="sp-file-natural">{facts.filter(Boolean).join(" · ")}</span>
+      </div>
+      {phone && (
+        <div className="sp-file-line">
+          <span>
+            <strong>Open on a larger screen</strong> to see every channel, plane and time point: the viewer needs 768 px and WebGL 2.
+          </span>
+          {copyLink}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Binary({ id, file }: { id: string; file: ResultStat }) {
   const work = useContext(Work);
   return <Note title="This file is not text. Download it to open it." actions={<DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />} />;
@@ -419,8 +513,9 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
       return <ImageView id={id} file={file} />;
     case "tiff":
     case "ometiff":
+      return <TiffView id={id} file={file} ome={kind === "ometiff"} />;
     case "omezarr":
-      return <Note title="Image viewer: coming" />; // FU-P3-102d2 and later
+      return <Note title="Image viewer: coming" />; // FU-P3-102g
 
     case "json":
       return <JsonView id={id} file={file} retry={retry} />;
