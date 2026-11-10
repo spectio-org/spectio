@@ -527,6 +527,26 @@ function OmeTiffView({ id, file }: { id: string; file: ResultStat }) {
   );
 }
 
+/** An OME-Zarr folder: the WebGL viewer reading its keys through our store, with Browse folder
+ * where a file has Download. On a phone or without WebGL 2, a note: the flat Zarr view is not built yet. */
+function OmeZarrView({ id, file }: { id: string; file: ResultStat }) {
+  const work = useContext(Work);
+  const phone = usePhone();
+  const zarr = useCallback((key: string) => resultUrl(id, `${file.path}/${key}`, { as: "zarr" }, work), [id, file.path, work]);
+  const browse = work ? (
+    <Link to="/runs/$id/workdir" params={{ id }} search={{ path: file.path, task: work.task, attempt: work.attempt }}>Browse folder</Link>
+  ) : (
+    <Link to="/runs/$id/results" params={{ id }} search={{ path: file.path }}>Browse folder</Link>
+  );
+  if (phone) return <Note title="Open on a larger screen: Spectio shows an OME-Zarr in the image viewer only." actions={browse} />;
+  if (!hasWebgl2()) return <Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />;
+  return (
+    <Suspense fallback={<p className="sp-muted">Loading the image…</p>}>
+      <OmeView key={file.path} url="" size={0} zarr={zarr} workdir={!!work} name={file.name} fallback={<Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />} stateView={(state, retry) => <ImageStateView state={state} retry={retry} download={browse} />} />
+    </Suspense>
+  );
+}
+
 function Binary({ id, file }: { id: string; file: ResultStat }) {
   const work = useContext(Work);
   return <Note title="This file is not text. Download it to open it." actions={<DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />} />;
@@ -566,8 +586,7 @@ function Viewer({ id, file, kind, retry, search }: { id: string; file: ResultSta
     case "ometiff":
       return <OmeTiffView id={id} file={file} />;
     case "omezarr":
-      return <Note title="Image viewer: coming" />; // FU-P3-102g
-
+      return <OmeZarrView id={id} file={file} />;
     case "json":
       return <JsonView id={id} file={file} retry={retry} />;
     case "table":

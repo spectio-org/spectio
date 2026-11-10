@@ -7,6 +7,12 @@ const viv = vi.hoisted(() => ({ loadOmeTiff: vi.fn(), layers: [] as Record<strin
 const decks = vi.hoisted(() => [] as { props: Record<string, unknown>; finalize: ReturnType<typeof vi.fn> }[]);
 vi.mock("@hms-dbmi/viv", () => ({
   loadOmeTiff: viv.loadOmeTiff,
+  ZarrPixelSource: class {
+    labels = ["c", "y", "x"];
+    onTileError(err: Error) {
+      if (err.message !== "out of bounds") throw err; // as Viv's: its BoundsCheckError only is no error
+    }
+  },
   isInterleaved: (shape: number[]) => shape[shape.length - 1] === 3,
   getImageSize: (s: { shape: number[] }) => ({ height: s.shape[3], width: s.shape[4] }),
   getDefaultInitialViewState: () => ({ target: [50, 25, 0], zoom: -1 }),
@@ -29,12 +35,14 @@ vi.mock("@deck.gl/core", () => ({
   },
 }));
 
-import { Viewer, openPixels } from "./viv";
+import { ZarrPixelSource } from "@hms-dbmi/viv";
+import { type Pixels, Viewer, openPixels } from "./viv";
 import { Unreadable } from "./walk";
 
 const source = (levels: number[][]) =>
   levels.map((shape) => ({
     shape,
+    labels: ["t", "c", "z", "y", "x"],
     tileSize: 512,
     getRaster: vi.fn(async () => ({ data: new Uint16Array(4).map((_, i) => 100 * i) })),
     getTile: vi.fn(async () => ({ data: new Float32Array(4).map((_, i) => -0.5 + i * 0.25), width: 2, height: 2 })),
@@ -131,4 +139,20 @@ test("a lowest level over 4 megapixels takes its contrast from one tile, not fro
   const { limits } = await opened.stats(0);
   expect(limits[0]).toBeLessThan(0);
   expect(limits[1]).toBeGreaterThan(0);
+});
+
+test("an OME-Zarr level's out-of-bounds tile is no error, as Viv's own handler says; any other is the status line's", () => {
+  const canvas = document.createElement("canvas");
+  canvas.getContext = (() => null) as never;
+  const events = { onView: vi.fn(), onTileError: vi.fn(), onError: vi.fn() };
+  const pixels = { data: [new (ZarrPixelSource as never as new () => object)()], rgb: false, cacheTiles: 1 } as unknown as Pixels;
+  const viewer = new Viewer(canvas, pixels, events);
+  viewer.draw({ target: [0, 0, 0], zoom: 0 }, { z: 0, t: 0 }, 0, [{ c: 1, colour: [0, 0, 255], limits: [0, 9] }]);
+  expect(viv.layers[0].selections).toEqual([{ c: 1 }]); // no z or t axis
+  const onTileError = viv.layers[0].onTileError as (err: Error) => void;
+  onTileError(new Error("out of bounds"));
+  expect(events.onTileError).not.toHaveBeenCalled();
+  onTileError(new Error("answered 500"));
+  expect(events.onTileError).toHaveBeenCalledOnce();
+  viewer.destroy();
 });
