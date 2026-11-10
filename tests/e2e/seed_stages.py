@@ -12,12 +12,14 @@ The run's `params.outdir` is `results`, which holds the reports of `tests/fixtur
 report viewer's check (P1 Task 31, req. 14): a real MultiQC 1.35 report at
 `multiqc/multiqc_report.html` and a hostile one at `hostile/hostile_report.html`; and a hostile SVG
 at `hostile/hostile_image.svg` for the file preview's check (FU-P3-85c, api §5.3); and a 200 KiB
-`logs/big.log`, over one 64 KiB read, for its Load more focus check.
+`logs/big.log`, over one 64 KiB read, for its Load more focus check; and `imaging/cells.ome.tif`,
+a small OME-TIFF (2 channels, 3 Z planes, 64 x 48 px) for the WebGL viewer's CSP check (FU-P3-102e).
 """
 
 import gzip
 import json
 import socket
+import struct
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -60,6 +62,36 @@ def spool_lines() -> bytes:
     return "".join(lines).encode()
 
 
+def ome_tiff(width: int = 64, height: int = 48, channels: int = 2, planes: int = 3) -> bytes:
+    """A little-endian OME-TIFF, one uncompressed 8-bit strip per plane, Z fastest (XYZCT)."""
+    xml = (
+        '<?xml version="1.0"?><OME xmlns="http://www.openmicroscopy.org/Schemas/OME/2016-06">'
+        '<Image ID="Image:0" Name="cells"><Pixels ID="Pixels:0" DimensionOrder="XYZCT" Type="uint8"'
+        f' SizeX="{width}" SizeY="{height}" SizeZ="{planes}" SizeC="{channels}" SizeT="1">'
+        + "".join(f'<Channel ID="Channel:0:{c}" SamplesPerPixel="1"/>' for c in range(channels))
+        + "<TiffData/></Pixels></Image></OME>\0"
+    ).encode()
+    count = channels * planes
+    pixels = width * height
+    out = bytearray(b"II*\0" + struct.pack("<I", 8))
+    data_at = 8 + count * (2 + 10 * 12 + 4)
+    xml_at = data_at + count * pixels
+    for i in range(count):
+        tags = [(256, 4, 1, width), (257, 4, 1, height), (258, 3, 1, 8), (259, 3, 1, 1)]
+        tags += [(262, 3, 1, 1), (270, 2, len(xml) if i == 0 else 1, xml_at if i == 0 else 0)]
+        tags += [(273, 4, 1, data_at + i * pixels), (277, 3, 1, 1), (278, 4, 1, height)]
+        tags += [(279, 4, 1, pixels)]
+        out += struct.pack("<H", len(tags))
+        for tag, kind, n, value in tags:
+            out += struct.pack("<HHI", tag, kind, n) + struct.pack(
+                "<I" if kind == 4 or n > 1 else "<Hxx", value
+            )
+        out += struct.pack("<I", len(out) + 4 if i + 1 < count else 0)
+    for i in range(count):
+        out += bytes((x * 4 + i * 40) % 256 for x in range(pixels))
+    return bytes(out + xml)
+
+
 def main(runs_root: Path) -> None:
     paths = make_run_dirs(runs_root, SEEDED)
     manifest = RunManifest(
@@ -94,6 +126,8 @@ def main(runs_root: Path) -> None:
     (results / "logs").mkdir()
     big = "".join(f"line {i:06d} {'x' * 51}\n" for i in range(200 * 1024 // 64))
     (results / "logs" / "big.log").write_text(big)
+    (results / "imaging").mkdir()
+    (results / "imaging" / "cells.ome.tif").write_bytes(ome_tiff())
     print(SEEDED)
 
 

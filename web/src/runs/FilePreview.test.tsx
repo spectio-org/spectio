@@ -562,3 +562,14 @@ test("a folder opened from the task sheet's Outputs keeps the way back to the sh
   await waitFor(() => expect(router.state.location.pathname).toBe(`/runs/${ID}/results`));
   expect(router.state.location.search).toEqual({ path: "counts", task: "tsk_19", attempt: 2 });
 });
+
+test("WebGL 2 is probed once per page, and the probe's context is lost at once", async () => {
+  vi.resetModules();
+  const lose = vi.fn();
+  const probe = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((() => ({ getExtension: (n: string) => (n === "WEBGL_lose_context" ? { loseContext: lose } : null) })) as never);
+  const { hasWebgl2 } = await import("./FilePreview");
+  expect(hasWebgl2()).toBe(true);
+  expect(hasWebgl2()).toBe(true);
+  expect(probe).toHaveBeenCalledOnce();
+  expect(lose).toHaveBeenCalledOnce();
+});

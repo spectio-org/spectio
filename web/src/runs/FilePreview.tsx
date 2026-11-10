@@ -1,6 +1,6 @@
 import { Button } from "@mantine/core";
 import { Link, Navigate } from "@tanstack/react-router";
-import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { type ApiError, type ResultStat, type RunDetail, type TextRead, type WorkRoot, getRun, readResultText, resultUrl, statResult } from "../api";
 import { ICONS, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
@@ -393,7 +393,7 @@ function ImageView({ id, file }: { id: string; file: ResultStat }) {
 
 const px = (w: number, h: number) => `${w.toLocaleString("en-US")} × ${h.toLocaleString("en-US")}`;
 
-/** A TIFF, or an OME-TIFF's first plane until FU-P3-102e: the flat view on a 2D canvas (ui-spec
+/** A TIFF, or an OME-TIFF's first plane on a phone or without WebGL 2: the flat view on a 2D canvas (ui-spec
  * §4.4.1, imaging), read through the pinned client and our decoder pool, or the state that stopped it. */
 function TiffView({ id, file, ome }: { id: string; file: ResultStat; ome: boolean }) {
   const work = useContext(Work);
@@ -431,16 +431,7 @@ function TiffView({ id, file, ome }: { id: string; file: ResultStat; ome: boolea
   const copyLink = <CopyButton text={window.location.href} label="Copy link" name="Copy link" />;
   if (empty) return <Note title="This file is empty." actions={download} />;
   if (state === "phone") return <Note title="This image is too large to show on a phone." actions={<>{copyLink}{download}</>} />;
-  if (state && "problem" in state) return <Problem error={state.problem} onRetry={retry} />;
-  if (state) {
-    const again = state.action && (
-      <Button variant="default" size="xs" onClick={retry}>
-        {state.action === "retry" ? "Retry" : "Reload"}
-      </Button>
-    );
-    if (state.status) return <div className="sp-file-line"><span role="status">{state.title}</span>{again}</div>;
-    return <Note title={state.title} actions={(again || state.download) && <>{again}{state.download && download}</>} />;
-  }
+  if (state) return <ImageStateView state={state} retry={retry} download={download} />;
   if (!flat) return <p className="sp-muted">Loading the image…</p>;
 
   const asOme = ome && !flat.noOme;
@@ -483,6 +474,58 @@ function TiffView({ id, file, ome }: { id: string; file: ResultStat; ome: boolea
   );
 }
 
+/** A problem before the first tile is drawn, in the viewer's place (flat view and WebGL viewer). */
+function ImageStateView({ state, retry, download }: { state: ImageState | { problem: ApiError }; retry: () => void; download: ReactNode }) {
+  if ("problem" in state) return <Problem error={state.problem} onRetry={retry} />;
+  const again = state.action && (
+    <Button variant="default" size="xs" onClick={retry}>
+      {state.action === "retry" ? "Retry" : "Reload"}
+    </Button>
+  );
+  if (state.status) return <div className="sp-file-line"><span role="status">{state.title}</span>{again}</div>;
+  return <Note title={state.title} actions={(again || state.download) && <>{again}{state.download && download}</>} />;
+}
+
+// the WebGL viewer, with Viv and deck.gl: a lazy chunk, out of the main bundle
+const OmeView = lazy(() => import("./imaging/OmeView"));
+// probed once per page, and the probe's context lost at once: it would count against the
+// browser's context limit, which evicts the oldest context, the live viewer's (req. 19 WebGL)
+let webgl2: boolean | undefined;
+export const hasWebgl2 = () => {
+  if (webgl2 === undefined) {
+    try {
+      const gl = document.createElement("canvas").getContext("webgl2");
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+      webgl2 = !!gl;
+    } catch {
+      webgl2 = false;
+    }
+  }
+  return webgl2;
+};
+
+/** An OME-TIFF: the WebGL viewer on a desktop or tablet with WebGL 2, else the flat view. */
+function OmeTiffView({ id, file }: { id: string; file: ResultStat }) {
+  const work = useContext(Work);
+  const phone = usePhone();
+  const webgl = hasWebgl2();
+  const flat = <TiffView id={id} file={file} ome />;
+  if (phone || !webgl || (file.size ?? 0) === 0) return flat;
+  const download = <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />;
+  return (
+    <Suspense fallback={<p className="sp-muted">Loading the image…</p>}>
+      <OmeView
+        key={file.path}
+        url={resultUrl(id, file.path, { as: "tiff" }, work)}
+        size={file.size ?? 0}
+        name={file.name}
+        fallback={flat}
+        stateView={(state, retry) => <ImageStateView state={state} retry={retry} download={download} />}
+      />
+    </Suspense>
+  );
+}
+
 function Binary({ id, file }: { id: string; file: ResultStat }) {
   const work = useContext(Work);
   return <Note title="This file is not text. Download it to open it." actions={<DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />} />;
@@ -512,8 +555,9 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
     case "image":
       return <ImageView id={id} file={file} />;
     case "tiff":
+      return <TiffView id={id} file={file} ome={false} />;
     case "ometiff":
-      return <TiffView id={id} file={file} ome={kind === "ometiff"} />;
+      return <OmeTiffView id={id} file={file} />;
     case "omezarr":
       return <Note title="Image viewer: coming" />; // FU-P3-102g
 

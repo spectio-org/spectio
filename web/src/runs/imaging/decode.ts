@@ -153,10 +153,15 @@ function jpegFrames(tile: Uint8Array, max: number, fd: Fd) {
     }
 }
 
-addDecoder([8, 32946], capped(() => {}));
-addDecoder(5, capped(lzwLength, geotiffs[5]));
-addDecoder(32773, capped(packBitsLength, geotiffs[32773]));
-addDecoder(7, capped(jpegFrames, geotiffs[7]));
+/** Our capped decoders in geotiff's registry; again after Viv's chunk, whose import puts its
+ * WebAssembly LZW in their place (@vivjs/loaders 0.23.0 `dist/index.mjs:921`). */
+export function registerCapped() {
+  addDecoder([8, 32946], capped(() => {}));
+  addDecoder(5, capped(lzwLength, geotiffs[5]));
+  addDecoder(32773, capped(packBitsLength, geotiffs[32773]));
+  addDecoder(7, capped(jpegFrames, geotiffs[7]));
+}
+registerCapped();
 
 /** One tile, decoded if its compression is allowed, within its declared size. */
 export async function decodeTile(fd: Fd, buffer: ArrayBuffer): Promise<ArrayBuffer> {

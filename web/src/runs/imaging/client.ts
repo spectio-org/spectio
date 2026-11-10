@@ -39,6 +39,8 @@ export class PinnedClient {
   bytes = 0;
   /** The last error a request threw, aborts aside: geotiff's BlockedSource hides it behind its own. */
   failure: Error | null = null;
+  /** Told when the first request starts and when the last one ends (the viewer's "Reading tiles…"). */
+  onBusy?: (busy: boolean) => void;
   private active = 0;
   private waiting: (() => void)[] = [];
 
@@ -77,7 +79,7 @@ export class PinnedClient {
       this.charge(length);
       // the slot is held across the fetch and the body read: the server has 3 imaging slots
       while (this.active >= IN_FLIGHT) await new Promise<void>((go) => this.waiting.push(go));
-      this.active++;
+      if (this.active++ === 0) this.onBusy?.(true);
       try {
         const answer = await fetch(this.url, { headers: { Range: `bytes=${first}-${last}` }, signal, credentials: "same-origin" });
         if (answer.status === 503 && attempt === 0) {
@@ -92,6 +94,7 @@ export class PinnedClient {
       } finally {
         this.active--;
         this.waiting.shift()?.();
+        if (this.active === 0 && !this.waiting.length) this.onBusy?.(false);
       }
     }
   }
