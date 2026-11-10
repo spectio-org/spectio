@@ -311,17 +311,22 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         payload = launch_payload(conn, run_id)
     target = None if row.target is None else RunTarget.model_validate(row.target)
     name, notice = _template_environment(request, row.environment)
-    template = {
-        "workflow": {"location": row.location, "revision": row.revision, "engine": row.engine},
+    module = target is not None and target.kind == "module"  # a Copy keeps its version (§5.9)
+    template: dict[str, Any] = {
+        # a module's version is the target's, not a revision
+        "workflow": {
+            "location": row.location,
+            "revision": None if module else row.revision,
+            "engine": row.engine,
+        },
         "profiles": _profiles(settings.runs_root, run_id, payload) or [],
         "params": params,
         "environment": name,
         "environment_notice": notice,
         "target": None if target is None else _target_in(target),
     }
-    if target is not None and target.kind == "module":  # a Copy keeps its version (§5.9)
-        workflow = {**template["workflow"], "revision": None}  # the version is the target's
-        return {**template, "workflow": workflow, "non_default": list(params), "code_loading": []}
+    if module:
+        return {**template, "non_default": list(params), "code_loading": []}
     try:
         resolved = resolve(settings.data_dir, row.location, row.revision)
         found = inspect_dir(resolved.directory, resolved.default_name)
