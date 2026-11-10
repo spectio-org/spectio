@@ -73,6 +73,10 @@ class RunManifest(BaseModel):
     # the validators of `spectio.environments`, so a bad one makes it `not_readable`, not the
     # run unreadable; none before FU-P3-86 (`not_recorded`).
     environment: dict[str, JsonValue] | None = None
+    # The launch's `default_resources` and `config_file` (FU-P3-110a, api §5.7): read at rebuild
+    # with the routes' validators, so a bad one is `not_readable` for that field only.
+    default_resources: dict[str, JsonValue] | None = None
+    config_file: dict[str, JsonValue] | None = None
 
 
 def run_paths(runs_root: Path, run_id: str) -> RunPaths:

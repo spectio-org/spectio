@@ -84,6 +84,8 @@ _RUN_COLUMNS = (
     runs.c.engine_settings,
     runs.c.environment,
     runs.c.pinned,
+    runs.c.default_resources,
+    runs.c.config_file,
     workflows.c.engine,
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
@@ -298,6 +300,8 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
             "cleanup": (row.engine_settings or {}).get("cleanup"),
             "notemp": None,
         },
+        "default_resources": row.default_resources,  # api §5.7 (FU-P3-110a)
+        "config_file": row.config_file,
     }
 
 
