@@ -12,9 +12,17 @@ import { isTerminal, runWord } from "../stateWord";
 import { GraphView, Links, formatSeconds, kindWord, progress, statusTone, statusWord } from "./GraphView";
 import { type NodeDiff, type View, type ViewNode, collapse, diffGraphs, durationOf, lineage, timeSpan } from "./model";
 import { type GraphSearch, type GraphSettings, searchOf, settingsOf } from "./settings";
-import { type GraphDocument, type NodeOutput, getNodeOutputs, getRunGraph } from "./types";
+import { type GraphDocument, type GraphNode, type NodeOutput, getNodeOutputs, getRunGraph } from "./types";
 
 const MAX_JOB_PROCESSES = 40;
+
+/** The steps the Jobs level expands: those running or failed, then those the user opened. */
+export function expandedSteps(doc: GraphDocument, opened: string[]): GraphNode[] {
+  const busy = (n: GraphNode) => (n.counts?.running ?? 0) + (n.counts?.failed ?? 0) > 0;
+  const steps = doc.nodes.filter((n) => n.kind !== "gate");
+  const picked = [...steps.filter(busy), ...steps.filter((n) => opened.includes(n.id) && !busy(n))];
+  return picked.slice(0, MAX_JOB_PROCESSES);
+}
 const JOBS_PER_PROCESS = 100;
 
 const PRODUCER_NOTES: Record<GraphDocument["producer"], string | null> = {
@@ -284,17 +292,25 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   useEffect(load, [load]);
   useFrames(load, run.id, live);
 
-  // the Jobs level: the jobs of the first processes, refreshed with the graph
-  const wantJobs = settings.level === "jobs" && doc !== null;
-  const processes = useMemo(() => (doc ? doc.nodes.filter((n) => n.kind !== "gate").slice(0, MAX_JOB_PROCESSES).map((n) => n.id) : []), [doc]);
+  // the Jobs level (CR-2): the expanded steps only, the busy ones (running or failed) and those
+  // the user opened, at most MAX_JOB_PROCESSES; refetched only when their counts change
+  const [opened, setOpened] = useState<string[]>([]);
   useEffect(() => {
-    if (!wantJobs) return;
+    const id = settings.node;
+    if (settings.level === "jobs" && id && !id.startsWith("job:")) setOpened((o) => (o.includes(id) ? o : [...o, id]));
+  }, [settings.level, settings.node]);
+  const wantJobs = settings.level === "jobs" && doc !== null;
+  const expanded = doc ? expandedSteps(doc, opened) : [];
+  const jobsKey = wantJobs ? expanded.map((n) => `${n.id}=${JSON.stringify(n.counts ?? {})}`).join("\n") : "";
+  useEffect(() => {
+    if (!jobsKey) return setJobs({});
+    const ids = jobsKey.split("\n").map((line) => line.slice(0, line.lastIndexOf("=")));
     const controller = new AbortController();
-    Promise.all(processes.map((p) => listTasks(run.id, { process: p, limit: JOBS_PER_PROCESS }, controller.signal).then((page) => [p, page.items ?? []] as const)))
+    Promise.all(ids.map((p) => listTasks(run.id, { process: p, limit: JOBS_PER_PROCESS }, controller.signal).then((page) => [p, page.items ?? []] as const)))
       .then((pairs) => setJobs(Object.fromEntries(pairs)))
       .catch(() => controller.signal.aborted || setJobs({}));
     return () => controller.abort();
-  }, [wantJobs, processes, run.id]);
+  }, [jobsKey, run.id]);
 
   useEffect(() => {
     if (!compareId) return setOther(null);
@@ -318,7 +334,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   const task = selected?.kind === "job" ? Object.values(jobs).flat().find((t) => `job:${t.id}` === selected.id) ?? null : null;
   const removed = diff ? [...diff].filter(([, d]) => d.change === "removed").map(([id]) => other?.nodes.find((n) => n.id === id)?.name ?? id) : [];
   const note = PRODUCER_NOTES[doc.producer];
-  const capped = settings.level === "jobs" && doc.nodes.length > MAX_JOB_PROCESSES;
+  const capped = settings.level === "jobs";
 
   return (
     <>
@@ -341,7 +357,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
           <>
             {note && <p className="sp-gnote">{note}</p>}
             {!doc.complete && doc.producer !== "stages-only" && <p className="sp-gnote">The graph can still grow: steps after an open checkpoint join it once the checkpoint ends.</p>}
-            {capped && <p className="sp-gnote">{`Jobs are shown for the first ${MAX_JOB_PROCESSES} steps, at most ${JOBS_PER_PROCESS} each; the Tasks tab lists them all.`}</p>}
+            {capped && <p className="sp-gnote">{`Jobs are shown for the steps running or failed and those you open (at most ${MAX_JOB_PROCESSES} steps, ${JOBS_PER_PROCESS} jobs each); the Tasks tab lists them all.`}</p>}
             {removed.length > 0 && <p className="sp-gnote">Only in the compared run: {removed.join(", ")}.</p>}
             {traced && trace && (
               <p className="sp-gnote">

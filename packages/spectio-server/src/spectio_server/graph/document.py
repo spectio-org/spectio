@@ -6,7 +6,6 @@ conditions, file paths) is data: the screens render it as text only.
 """
 
 import re
-from collections.abc import Iterable
 from typing import Any
 
 VERSION = 1
@@ -109,21 +108,6 @@ def from_metro(metro: dict[str, Any]) -> dict[str, Any]:
         "edge_conditions": {e: edges[e] for e in kept if edges[e]},
         "groups": groups,
     }
-
-
-def match(names: Iterable[str], known: dict[str, Any]) -> dict[str, str]:
-    """Each of `names` mapped to a key of `known`: the same qualified name, else the same last
-    segment when only one key has it."""
-    by_last: dict[str, list[str]] = {}
-    for key in known:
-        by_last.setdefault(key.rsplit(":", 1)[-1], []).append(key)
-    found = {}
-    for name in names:
-        if name in known:
-            found[name] = name
-        elif len(candidates := by_last.get(name.rsplit(":", 1)[-1], [])) == 1:
-            found[name] = candidates[0]
-    return found
 
 
 def build(

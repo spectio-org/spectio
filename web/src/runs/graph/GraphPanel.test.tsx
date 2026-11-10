@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, FakeEventSource, app, fetched, run, serve, stubStream, viewport } from "../../testing";
 import { resetFeatures } from "./features";
 import { DOC } from "./fixture";
+import type { GraphDocument } from "./types";
 
 beforeEach(stubStream);
 beforeEach(resetFeatures);
@@ -208,4 +209,19 @@ test("a disabled graph on the server says so", async () => {
   });
   app(`/runs/${ID}?tab=graph`);
   expect(await screen.findByRole("alert")).toHaveTextContent("The graph is turned off on this server.");
+});
+
+test("the Jobs level expands the busy and the opened steps only (CR-2)", async () => {
+  const { expandedSteps } = await import("./GraphPanel");
+  const doc: GraphDocument = {
+    ...DOC,
+    nodes: [
+      { ...DOC.nodes[0], id: "A", counts: { succeeded: 3 } },
+      { ...DOC.nodes[0], id: "B", counts: { running: 1 } },
+      { ...DOC.nodes[0], id: "C", counts: { failed: 1 } },
+      { ...DOC.nodes[0], id: "D", counts: {} },
+    ],
+  };
+  expect(expandedSteps(doc, []).map((n) => n.id)).toEqual(["B", "C"]);
+  expect(expandedSteps(doc, ["D", "B"]).map((n) => n.id)).toEqual(["B", "C", "D"]);
 });

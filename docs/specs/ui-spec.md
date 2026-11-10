@@ -743,17 +743,17 @@ A separate, simpler layout below 768 px (depictio's phone model), not a squeezed
 - **Stage**: one node per stage, with edges merged.
 - **Subworkflow**: Nextflow subworkflows, or Snakemake rule files.
 - **Process**: one node per process or rule. This is the default.
-- **Jobs**: the chosen nodes expanded into their tasks, loaded from `/tasks?process=`.
+- **Jobs**: the nodes the user expands, each showing its tasks, loaded from `/tasks?process=` when expanded and refreshed when its counts change.
 
 A compound node can be collapsed or expanded in place.
 
-**Layouts**, switchable at any time; the choice is kept per user:
+**Layouts**, switchable at any time; the choice is kept in the URL:
 - **Layered**, top-down or left-right;
 - **Metro**: one lane per stage or subworkflow, with x the topological rank;
 - **Compact**: a grid per stage;
 - **Upstream**: BioFlow-Insight's own positions, offered only when that producer drew the graph.
 
-**Search.** Search by name, kind, state, parameter or output file. Matches are highlighted and the other nodes dimmed. Enter goes to the next match and Escape clears the search. The query is kept in the URL.
+**Search.** Search by name, kind (`kind:`), state (`state:`), parameter (`param:`) or source file (`file:`). Matches are highlighted and the other nodes dimmed. Enter goes to the next match and Escape clears the search. The query is kept in the URL.
 
 **Overlays.**
 - **State** (default): the status colours of §3, with the words of §5.2.
@@ -762,7 +762,7 @@ A compound node can be collapsed or expanded in place.
 
 **Run tools.**
 - **Diff** against another run of the same workflow: nodes added or removed, the change in duration, cached versus re-run.
-- **Lineage**: the ancestors and descendants of a node, or of the node that produced a chosen output.
+- **Lineage**: the ancestors and descendants of a node (Trace upstream / Trace downstream in its sheet). Starting from an output file is later.
 - **Replay**: a time scrubber from the first task start to the last task end that colours each node by its state at that time.
 - **Minimap**.
 - **Export** as SVG or PNG.
@@ -776,9 +776,9 @@ A compound node can be collapsed or expanded in place.
 
 The sheet is `aria-modal`, and focus returns to the node when it closes.
 
-**Live.** The graph refetches on the run's frames (`useFrames`). Nodes keep their positions. A node added after a checkpoint is appended, and the header reads "DAG grows" while `complete` is false (§5.2).
+**Live.** The graph refetches on the run's frames (`useFrames`). The layout is computed again from the document, so a node added after a checkpoint can move the others; keeping positions stable is later. A notice says the graph can still grow while `complete` is false (§5.2).
 
-**Estimates.** When `estimate` is true or `producer` is `stages-only`, a banner says "Static estimate from the code — edges may be approximate" or "Edges unknown — showing stages and processes".
+**Estimates.** When `estimate` is true, a notice says the edges are a static estimate from the code and may be wrong. When `producer` is `stages-only`, it says the links between steps are not known and the steps are grouped by stage. With no edges, every layout but Upstream is the wrapped grid per stage.
 
 **Accessibility and phone.**
 - Every node is a native `<button>` whose accessible name gives its name, kind and state, for example "ALIGN, process, running, 3 of 10 done".

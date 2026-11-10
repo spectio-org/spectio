@@ -209,14 +209,6 @@ def test_metro_map_synthetic_params() -> None:
     assert "verbosity" in mapped["nodes"]["ALIGN"]["params"]
 
 
-def test_match_by_last_segment() -> None:
-    known = {"A:B:FASTQC": 1, "A:MULTIQC": 2, "X:DUP": 3, "Y:DUP": 4}
-    assert document.match(["A:B:FASTQC", "FASTQC", "DUP", "NONE"], known) == {
-        "A:B:FASTQC": "A:B:FASTQC",
-        "FASTQC": "A:B:FASTQC",
-    }
-
-
 def test_build_drops_dangling_edges_and_unknown_stages() -> None:
     doc = document.build(
         engine="snakemake",
