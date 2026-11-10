@@ -2258,3 +2258,10 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   2. **Firefox and WebKit.** (a) `viewer.spec.ts` is a test of the `firefox` and `webkit` projects too, and fails on any `URL.createObjectURL` call; the runs on those engines wait until a session or a CI job has their browsers and a seeded server (CI installs Chromium only, and `.github/` is not changed by this step); (b) hold the viewer until they have run. **(a)**: in those engines a `blob:` worker would be refused (fail closed); only a gap in their `'wasm-unsafe-eval'` support would show there, and the viewer then falls back to the flat view on a WebGL error. The stop rule of req. 19 (inbox #135) still applies when they run.
 - **Why a question:** req. 19 states the audit as a literal gate and the three engines as the CSP check; Thomas can ask for the waiver instead, or for the Firefox and WebKit runs before the merge.
 - **Assumed (2026-11-10, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a), (2a).
+
+### #149 · Assumed: the other TIFF states on screen (FU-P3-114)
+
+- **Covers:** [FU-P3-114](../progress/W5/P3-M9.md#follow-ups-of-batch-p3-b12), found by `doc-writer` in batch P3-B12 ([DW-P3B12-01](code/P3-B12.md#findings), closed for one state); [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview), [guide](../usage/browse-and-preview-files.md#not-shown).
+- **Context:** the TIFF flat view has two shots, of one 16-bit grayscale file on a seeded server (`tools/media/tiff_demo.py`). Its other states are checked by Vitest in jsdom, which draws no pixels, so they are not seen: too large, unsupported, not a TIFF, stopped, 8-bit, RGB, multi-page, OME-TIFF.
+- **Plan (minor, not blocking):** extend `tiff_demo.py` with one file per state and take the shots with `shots.py`, light and dark, desktop and phone for the "too large" case. No question for Thomas; it is listed here so a later P3 batch picks it up.
+- **Assumed (2026-11-10, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the plan above.
