@@ -104,11 +104,14 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
+SHOTS = ("app-file-preview-tiff", "app-file-preview-tiff-phone")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--shot", action="append")
+    ap.add_argument("--shot", action="append", choices=SHOTS)
     args = ap.parse_args()
-    args.shot = args.shot or ["app-file-preview-tiff", "app-file-preview-tiff-phone"]
+    wanted = set(args.shot or SHOTS)
     demo_identity()
     shutil.rmtree(ROOT, ignore_errors=True)
     data_dir, db_dir, runs_root = ROOT / "data", ROOT / "db", ROOT / "runs"
@@ -147,7 +150,7 @@ def main() -> None:
         "SPECTIO_SESSION_COOKIE": f"{cookie_name(f'127.0.0.1:{port}')}={app.state.sessions.create()}",
     }
     try:
-        for shot in args.shot:
+        for shot in (s for s in SHOTS if s in wanted):  # the names come from SHOTS, not from argv
             subprocess.run([sys.executable, str(REPO / "tools/media/shots.py"), "run", "--shot", shot, "--theme", "both"],
                            check=True, env=env, cwd=REPO)
     finally:
