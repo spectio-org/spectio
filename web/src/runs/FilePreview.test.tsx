@@ -37,6 +37,13 @@ function files(path: string, size: number | null, reads: Record<string, unknown>
 const open = (path: string) => app(`/runs/${ID}/results/file?path=${encodeURIComponent(path)}`);
 const heading = (name: string) => screen.findByRole("heading", { level: 1, name });
 const rangeOf = (init?: RequestInit) => new Headers(init?.headers).get("range");
+// The grid's body cells in row order (the filter row's cells are gridcells too), and one column's.
+const bodyCells = (grid: HTMLElement) => within(grid).getAllByRole("gridcell").filter((c) => !c.closest(".ag-header"));
+const cellTexts = (grid: HTMLElement) => bodyCells(grid).map((c) => c.textContent);
+const column = (grid: HTMLElement, i: number) =>
+  bodyCells(grid)
+    .filter((c) => c.getAttribute("aria-colindex") === String(i + 1))
+    .map((c) => c.textContent);
 
 test("stat first, then the whole file: facts, path, Copy path, Download, focus on the name", async () => {
   const mock = files("pipeline_info/versions.yml", 12, { [`${RUN}/results/text/pipeline_info/versions.yml`]: () => text("a: 1\nb: 2\n") });
@@ -278,7 +285,7 @@ test("JSON over 1 MiB is read as text from the start", async () => {
   expect(await screen.findByRole("button", { name: "Load more" })).toBeInTheDocument();
 });
 
-test("a CSV is a table from the first 1 MiB, the first row a header until the toggle says not", async () => {
+test("a CSV is a grid from the first 1 MiB, the first row a header until the toggle says not", async () => {
   const body = 'sample,"reads, M"\nS01,42\nS02,"open\n';
   const ranges: (string | null)[] = [];
   files("counts.csv", body.length, {
@@ -289,16 +296,17 @@ test("a CSV is a table from the first 1 MiB, the first row a header until the to
   });
   open("counts.csv");
   const region = await screen.findByRole("region", { name: "counts.csv, table" });
-  expect(region).toHaveAttribute("tabindex", "0");
   expect(ranges).toEqual([`bytes=0-${1024 * KIB - 1}`]);
-  const table = within(region).getByRole("table");
-  expect(within(table).getByRole("columnheader", { name: "reads, M" })).toBeInTheDocument();
-  expect(within(table).getAllByRole("row")).toHaveLength(3); // header, S01, S02 with its unclosed quote
+  const grid = await within(region).findByRole("grid", { name: "counts.csv" });
+  expect(within(grid).getByRole("columnheader", { name: "reads, M" })).toBeInTheDocument();
+  expect(grid).toHaveAttribute("aria-rowcount", "4"); // the names and the filters, then S01, S02 with its unclosed quote
+  expect(cellTexts(grid)).toEqual(["S01", "42", "S02", "open\n"]);
   const header = screen.getByRole("button", { name: "First row is a header" });
   expect(header).toHaveAttribute("aria-pressed", "true");
   fireEvent.click(header);
-  expect(within(table).getByRole("columnheader", { name: "Column 2" })).toBeInTheDocument();
-  expect(within(table).getByRole("cell", { name: "reads, M" })).toBeInTheDocument();
+  const plain = await within(region).findByRole("grid", { name: "counts.csv" });
+  expect(await within(plain).findByRole("columnheader", { name: "Column 2" })).toBeInTheDocument();
+  expect(within(plain).getByRole("gridcell", { name: "reads, M" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Show as text" }));
   expect(await screen.findByLabelText(/counts.csv/, { selector: "pre" })).toBeInTheDocument();
 });
@@ -311,7 +319,41 @@ test("a table cut at 500 rows and 50 columns says so", async () => {
   const region = await screen.findByRole("region", { name: "wide.csv, table" });
   expect(screen.getByText("Showing 500 of at least 501 rows")).toBeInTheDocument();
   expect(screen.getByText("Showing 50 of 60 columns")).toBeInTheDocument();
-  expect(within(region).getAllByRole("row")).toHaveLength(501);
+  const grid = await within(region).findByRole("grid", { name: "wide.csv" });
+  expect(grid).toHaveAttribute("aria-rowcount", "502"); // two header rows, then 500
+  expect(grid).toHaveAttribute("aria-colcount", "50");
+  expect(within(grid).getAllByRole("columnheader")).toHaveLength(50);
+});
+
+test("a column sorts from the keyboard, numbers as numbers, and focus moves to a cell with the arrows", async () => {
+  const body = "n,name\n10,ten\n9,nine\n100,hundred\nx,ex\n";
+  files("n.csv", body.length, { [`${RUN}/results/text/n.csv`]: () => partial(body, 0, body.length - 1, body.length) });
+  open("n.csv");
+  const grid = await screen.findByRole("grid", { name: "n.csv" });
+  const n = within(grid).getByRole("columnheader", { name: "n" });
+  expect(n).toHaveAttribute("aria-sort", "none");
+  act(() => n.focus());
+  await userEvent.keyboard("{Enter}");
+  await waitFor(() => expect(n).toHaveAttribute("aria-sort", "ascending"));
+  expect(column(grid, 0)).toEqual(["9", "10", "100", "x"]);
+  await userEvent.keyboard("{Enter}");
+  await waitFor(() => expect(n).toHaveAttribute("aria-sort", "descending"));
+  expect(column(grid, 0)).toEqual(["x", "100", "10", "9"]);
+  // the header row, the filter row, then the first row's cell
+  await userEvent.keyboard("{ArrowDown}{ArrowDown}");
+  await waitFor(() => expect(document.activeElement).toHaveAttribute("role", "gridcell"));
+  expect(document.activeElement).toHaveTextContent("x");
+});
+
+test("a column filters on what its box contains; cells are text, never markup", async () => {
+  const body = "id,note\na1,<b>bold</b>\nb2,plain\na3,other\n";
+  files("f.csv", body.length, { [`${RUN}/results/text/f.csv`]: () => partial(body, 0, body.length - 1, body.length) });
+  open("f.csv");
+  const grid = await screen.findByRole("grid", { name: "f.csv" });
+  expect(within(grid).getByRole("gridcell", { name: "<b>bold</b>" })).toBeInTheDocument();
+  expect(grid.querySelector("b")).toBeNull();
+  await userEvent.type(within(grid).getByRole("textbox", { name: "id Filter Input" }), "a");
+  await waitFor(() => expect(column(grid, 0)).toEqual(["a1", "a3"]));
 });
 
 test("an image is an <img> of the raw route with as=image; a failure is one state with Retry and Download", async () => {
