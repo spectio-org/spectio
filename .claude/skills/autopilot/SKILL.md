@@ -111,7 +111,7 @@ Give every worker:
 
 **Commit** on the integration branch, one commit per finished step: `autopilot(<id>): <one line>`.
 
-**Push** if a remote exists and pushing is allowed. Open or update one PR `autopilot/integration → main` whose description is the latest journal entry plus the Progress pages of the steps it carries. Merge it with a merge commit (`gh pr merge --merge`, never squash, so `autopilot/integration` stays an ancestor of `main`) once `gh pr checks` reports every check passed and doc-reviewer approved; Thomas allows this for now (inbox #3, 2026-10-26). A failed or pending check leaves the PR open. If Thomas withdraws it, fall back to auto-merge only when the repository variable `AUTOMERGE_MAIN` is `true`.
+**Push** if a remote exists and pushing is allowed. Open or update one PR `autopilot/integration → main` whose description is the latest journal entry plus the Progress pages of the steps it carries. Merge it with a merge commit (`gh pr merge --merge`, never squash, so `autopilot/integration` stays an ancestor of `main`) once `gh pr checks` reports every check passed and doc-reviewer approved (for P3, the doc-reviewer of the last milestone batch, if the run closed one: `autopilot.md` §14 item 6); Thomas allows this for now (inbox #3, 2026-10-26). A failed or pending check leaves the PR open. If Thomas withdraws it, fall back to auto-merge only when the repository variable `AUTOMERGE_MAIN` is `true`.
 
 ## 4. Journal and state
 
@@ -128,9 +128,9 @@ Snapshot this session's token usage: `python3 tools/dashboard/usage.py .autopilo
 
 Follow `docs/playbooks/autopilot.md` §10:
 - never ask Thomas in the session; write the question to the inbox and apply the recommendation (`triage-policy.md`), except for the reserved items, which stay `waiting_human`;
-- run P3 tasks in batches (`docs/playbooks/autopilot.md` §11, with §14 where they differ: feature-sized tasks, up to 4 in flight on disjoint modules, the lean workflows `tools/autopilot/lean/p3-lean.js` and `p3-batch.js`, journal, state and cost committed once per batch, promotion to `main` once at the end of the run, no pause at a wave boundary):
-  - each task as the saved workflow `p3-task` (args: `step`, `task`, `base`, `title`, `extra`, `session`, and `security: 'always'` for the dev-env §15.3 tasks); then push, open the PR with the `no-figure` label, squash-merge it when CI is green, and record its cost with `--kind build-task`. No promotion per task;
-  - after 3 to 5 merged tasks, or when a milestone ends, the saved workflow `p3-batch` (args: `batch`, `steps`, `base`, `head`, `title`, `session`, `font`); then push, open its PR, merge it, record its cost with `--kind docs`; pass `milestone: true` when the batch closes a milestone (figure and `doc-reviewer`);
+- run P3 tasks in batches (`docs/playbooks/autopilot.md` §11, with §14 where they differ: feature-sized tasks, up to 4 in flight on disjoint modules, the lean workflows `tools/autopilot/lean/p3-lean.js` and `p3-batch.js`, journal, state and cost committed once per batch, promotion to `main` once at the end of the run or at a milestone end, no pause at a wave boundary):
+  - each task as `Workflow({scriptPath: 'tools/autopilot/lean/p3-lean.js', args})` (args: `step`, `task`, `base`, `title`, `extra`, `session`, and `security: 'always'` for the dev-env §15.3 tasks); then push, open the PR with the `no-figure` label, squash-merge it when CI is green, and record its cost with `--kind build-task`. No promotion per task;
+  - after 3 to 5 merged tasks, or when a milestone ends, `Workflow({scriptPath: 'tools/autopilot/lean/p3-batch.js', args})` (args: `batch`, `steps`, `base`, `head`, `title`, `session`, `font`, `milestone`); then push, open its PR, merge it, record its cost with `--kind docs`; pass `milestone: true` when the batch closes a milestone (figure and `doc-reviewer`);
 - write little in the session: one line per merge, blockers, and §5's status lines at the end;
 - keep the run going with `send_later` check-ins (CI on an open PR, the next tick) until the budget check answers `stop`, nothing is ready or a human gate is reached.
 

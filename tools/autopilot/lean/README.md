@@ -1,6 +1,6 @@
 # Lean P3 helpers for the orchestrator
 
-Used by the autopilot orchestrator since 2026-11-09 (Thomas: optimise, simplify, cut costs; [autopilot §13](../../../docs/playbooks/autopilot.md) items 7 and 8). Not product code.
+Used by the autopilot orchestrator since 2026-11-09 (Thomas: optimise, simplify, cut costs; [autopilot §13](../../../docs/playbooks/autopilot.md) items 7 and 8, feature-sized since 2026-11-10 by §14). Not product code.
 
 | File | Use |
 |---|---|
