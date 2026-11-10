@@ -1,0 +1,375 @@
+// The run's Graph tab (issue #160; ui-spec §4.14): the graph of GET /runs/{id}/graph, refetched
+// live, with the Jobs level, Compare with another run, Replay, lineage and the node sheet
+// (status, parameters with this run's values, outputs read live, jobs).
+import { Drawer, NativeSelect } from "@mantine/core";
+import { Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ApiError, type Json, type Run, type RunDetail, type Task, listRuns, listTasks } from "../../api";
+import { useFrames } from "../../live";
+import { usePhone } from "../../shell/layout";
+import type { Detail } from "../DetailSheet";
+import { isTerminal, runWord } from "../stateWord";
+import { GraphView, Links, formatSeconds, kindWord, progress, statusTone, statusWord } from "./GraphView";
+import { type NodeDiff, type View, type ViewNode, collapse, diffGraphs, durationOf, lineage, timeSpan } from "./model";
+import { type GraphSearch, type GraphSettings, searchOf, settingsOf } from "./settings";
+import { type GraphDocument, type NodeOutput, getNodeOutputs, getRunGraph } from "./types";
+
+const MAX_JOB_PROCESSES = 40;
+const JOBS_PER_PROCESS = 100;
+
+const PRODUCER_NOTES: Record<GraphDocument["producer"], string | null> = {
+  "smk-rulegraph": null,
+  "nf-dag": null,
+  "bioflow-insight": "Links read from the pipeline's code by BioFlow-Insight; the run may take fewer paths.",
+  "stages-only": "The links between steps are not known for this run: steps are grouped by stage, without arrows.",
+};
+
+interface Props {
+  run: RunDetail;
+  search: GraphSearch;
+  onSearch: (search: GraphSearch) => void;
+  /** Opens the run's own detail sheet (a process's jobs, a job). */
+  onOpen: (detail: Detail) => void;
+  /** Opens the Tasks tab on a process. */
+  onTasks: (process: string) => void;
+}
+
+function value(params: Record<string, Json>, key: string): string {
+  let at: Json | undefined = params[key];
+  if (at === undefined && key.includes(".")) {
+    at = params;
+    for (const part of key.split(".")) at = at && typeof at === "object" && !Array.isArray(at) ? (at as Record<string, Json>)[part] : undefined;
+  }
+  if (at === undefined) return "(not set: the pipeline's default)";
+  return typeof at === "string" ? at : JSON.stringify(at);
+}
+
+function Outputs({ run, process }: { run: RunDetail; process: string }) {
+  const [items, setItems] = useState<NodeOutput[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(() => {
+    getNodeOutputs(run.id, process)
+      .then((r) => (setItems(r.items ?? []), setError(null)))
+      .catch((e: Error) => setError(e.message));
+  }, [run.id, process]);
+  useEffect(load, [load]);
+  useFrames(load, run.id, !isTerminal(run.state));
+  if (error) return <p role="alert">The outputs could not be read: {error}</p>;
+  if (!items) return <p className="sp-muted">Reading the outputs…</p>;
+  if (items.length === 0) return <p className="sp-muted">No output recorded yet.</p>;
+  return (
+    <ul className="sp-gsheet-list" aria-label={`Outputs of ${process}`}>
+      {items.map((o) => (
+        <li key={`${o.task_id}:${o.path}`}>
+          <span className="sp-mono">{o.path}</span>
+          <span className="sp-state" data-tone={o.state === "present" ? "succeeded" : o.state === "removed" ? "cached" : "queued"}>
+            {o.state === "present" ? "Present" : o.state === "removed" ? "Removed (temporary)" : o.state === "missing" ? "Missing" : "Not checked"}
+          </span>
+          {o.temp && o.state !== "removed" && <span className="sp-gtag">temporary</span>}
+          {o.state === "present" && o.root === "results" && (
+            <Link className="sp-text-link" to="/runs/$id/results/file" params={{ id: run.id }} search={{ path: o.path }} aria-label={`Preview ${o.path}`}>
+              Preview
+            </Link>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+interface SheetProps {
+  run: RunDetail;
+  doc: GraphDocument;
+  view: View;
+  node: ViewNode | null;
+  task: Task | null;
+  diff: NodeDiff | null;
+  onClose: () => void;
+  onMember: (id: string) => void;
+  onTrace: (direction: "up" | "down" | null) => void;
+  onOpen: (detail: Detail) => void;
+  onTasks: (process: string) => void;
+}
+
+function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks }: SheetProps) {
+  const phone = usePhone();
+  const byId = new Map(doc.nodes.map((n) => [n.id, n]));
+  const members = node ? node.members.map((m) => byId.get(m)).filter((m) => !!m) : [];
+  const single = node && members.length === 1 && node.id === members[0].id ? members[0] : null;
+  const params = [...new Set(members.flatMap((m) => m.params))].sort();
+  const { done, total } = node ? progress(node.counts) : { done: 0, total: 0 };
+  return (
+    <Drawer
+      opened={node !== null}
+      onClose={onClose}
+      position="right"
+      size={phone ? "100%" : 480}
+      title={node ? `${node.label} (${kindWord(node.kind)})` : ""}
+      returnFocus
+      closeButtonProps={{ "aria-label": "Close" }}
+      classNames={{ title: "sp-sheet-title" }}
+    >
+      {node && (
+        <section className="sp-sheet" aria-label={node.label}>
+          <p>
+            <span className="sp-state" data-tone={statusTone(node.status)}>
+              {statusWord(node.status)}
+            </span>
+            {total > 0 && ` ${done} of ${total} jobs done`}
+            {durationOf(node) > 0 && ` · ${formatSeconds(durationOf(node))}`}
+          </p>
+          {diff && diff.change === "added" && <p className="sp-gnote">New in this run: the compared run did not have it.</p>}
+          {single?.id && <p className="sp-mono sp-sheet-name">{single.id}</p>}
+          {single?.condition && (
+            <p>
+              Runs when <code>{single.condition}</code>
+            </p>
+          )}
+          {single?.source && (
+            <p className="sp-muted">
+              Defined in <span className="sp-mono">{single.source.file}{single.source.line ? `:${single.source.line}` : ""}</span>
+            </p>
+          )}
+          <div className="sp-gview" role="group" aria-label="Trace">
+            <button type="button" className="sp-gbtn" onClick={() => onTrace("up")}>
+              Trace upstream
+            </button>
+            <button type="button" className="sp-gbtn" onClick={() => onTrace("down")}>
+              Trace downstream
+            </button>
+            <button type="button" className="sp-gbtn" onClick={() => onTrace(null)}>
+              Clear trace
+            </button>
+          </div>
+          <h3 className="sp-sheet-h">Links</h3>
+          <Links view={view} id={node.kind === "job" ? node.members[0] : node.id} />
+          {task && (
+            <p>
+              <button type="button" className="sp-link-button" onClick={() => onOpen({ kind: "task", task })}>
+                Open this job
+              </button>
+            </p>
+          )}
+          {members.length > 1 && (
+            <>
+              <h3 className="sp-sheet-h">Steps ({members.length})</h3>
+              <ul className="sp-gsheet-list" aria-label={`Steps of ${node.label}`}>
+                {members.map((m) => (
+                  <li key={m.id}>
+                    <button type="button" className="sp-link-button" aria-label={`Show ${m.name} on the graph`} onClick={() => onMember(m.id)}>
+                      {m.name}
+                    </button>
+                    <span className="sp-state" data-tone={statusTone(m.status ?? null)}>
+                      {statusWord(m.status ?? null)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <h3 className="sp-sheet-h">Parameters</h3>
+          {params.length === 0 ? (
+            <p className="sp-muted">No parameter is known to be read by {members.length > 1 ? "these steps" : "this step"}.</p>
+          ) : (
+            <dl className="facts" aria-label={`Parameters of ${node.label}`}>
+              {params.map((p) => (
+                <div key={p} style={{ display: "contents" }}>
+                  <dt className="sp-mono">{p}</dt>
+                  <dd>{value(run.params, p)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {single && single.kind !== "gate" && (
+            <>
+              <h3 className="sp-sheet-h">Outputs</h3>
+              <Outputs run={run} process={single.id} />
+              <h3 className="sp-sheet-h">Jobs</h3>
+              <p>
+                <button type="button" className="sp-link-button" onClick={() => onOpen({ kind: "process", name: single.id })}>
+                  Open its jobs
+                </button>
+                {" · "}
+                <button type="button" className="sp-link-button" onClick={() => onTasks(single.id)}>
+                  Open in Tasks
+                </button>
+              </p>
+            </>
+          )}
+        </section>
+      )}
+    </Drawer>
+  );
+}
+
+function Compare({ run, value, onChange }: { run: Run; value: string; onChange: (id: string) => void }) {
+  const [others, setOthers] = useState<Run[]>([]);
+  useEffect(() => {
+    const controller = new AbortController();
+    listRuns({ q: run.workflow.name ?? undefined, limit: 50 }, controller.signal)
+      .then((page) => setOthers((page.items ?? []).filter((r) => r.id !== run.id && r.workflow.location === run.workflow.location)))
+      .catch(() => setOthers([]));
+    return () => controller.abort();
+  }, [run.id, run.workflow.name, run.workflow.location]);
+  return (
+    <NativeSelect
+      size="xs"
+      label="Compare with"
+      value={value}
+      onChange={(e) => onChange(e.currentTarget.value)}
+      data={[{ value: "", label: others.length ? "(no other run)" : "(no other run of this pipeline)" }, ...others.map((r) => ({ value: r.id, label: `${r.name ?? r.id} · ${runWord(r.state)}` }))]}
+    />
+  );
+}
+
+function Replay({ span, at, onAt }: { span: { from: number; to: number }; at: number | null; onAt: (t: number | null) => void }) {
+  const [playing, setPlaying] = useState(false);
+  const atRef = useRef(at);
+  atRef.current = at;
+  useEffect(() => {
+    if (!playing) return;
+    const step = Math.max(1000, (span.to - span.from) / 100);
+    const timer = setInterval(() => {
+      const next = (atRef.current ?? span.from) + step;
+      if (next >= span.to) setPlaying(false);
+      onAt(Math.min(next, span.to));
+    }, 150);
+    return () => clearInterval(timer);
+  }, [playing, span, onAt]);
+  const on = at !== null;
+  return (
+    <div className="sp-greplay">
+      <button type="button" role="switch" aria-checked={on} className="sp-gbtn" onClick={() => (setPlaying(false), onAt(on ? null : span.from))}>
+        Replay
+      </button>
+      {on && (
+        <>
+          <button type="button" className="sp-gbtn" onClick={() => setPlaying(!playing)} aria-label={playing ? "Pause the replay" : "Play the replay"}>
+            {playing ? "Pause" : "Play"}
+          </button>
+          <input
+            type="range"
+            min={span.from}
+            max={span.to}
+            step={Math.max(1, Math.round((span.to - span.from) / 200))}
+            value={at}
+            onChange={(e) => onAt(Number(e.currentTarget.value))}
+            aria-label="Replay time"
+            aria-valuetext={`${formatSeconds((at - span.from) / 1000)} after the start`}
+          />
+          <span className="sp-muted">+{formatSeconds((at - span.from) / 1000)}</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
+  const phone = usePhone();
+  const settings = settingsOf(search, phone);
+  const [doc, setDoc] = useState<GraphDocument | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<Record<string, Task[]>>({});
+  const [compareId, setCompareId] = useState("");
+  const [other, setOther] = useState<GraphDocument | null>(null);
+  const [replayAt, setReplayAt] = useState<number | null>(null);
+  const [trace, setTrace] = useState<{ id: string; direction: "up" | "down" } | null>(null);
+  const live = !isTerminal(run.state);
+
+  const load = useCallback(() => {
+    getRunGraph(run.id)
+      .then((d) => (setDoc(d), setError(null)))
+      .catch((e: ApiError) => setError(e.slug === "feature-disabled" ? "The graph is turned off on this server." : e.message));
+  }, [run.id]);
+  useEffect(load, [load]);
+  useFrames(load, run.id, live);
+
+  // the Jobs level: the jobs of the first processes, refreshed with the graph
+  const wantJobs = settings.level === "jobs" && doc !== null;
+  const processes = useMemo(() => (doc ? doc.nodes.filter((n) => n.kind !== "gate").slice(0, MAX_JOB_PROCESSES).map((n) => n.id) : []), [doc]);
+  useEffect(() => {
+    if (!wantJobs) return;
+    const controller = new AbortController();
+    Promise.all(processes.map((p) => listTasks(run.id, { process: p, limit: JOBS_PER_PROCESS }, controller.signal).then((page) => [p, page.items ?? []] as const)))
+      .then((pairs) => setJobs(Object.fromEntries(pairs)))
+      .catch(() => controller.signal.aborted || setJobs({}));
+    return () => controller.abort();
+  }, [wantJobs, processes, run.id]);
+
+  useEffect(() => {
+    if (!compareId) return setOther(null);
+    const controller = new AbortController();
+    getRunGraph(compareId, controller.signal).then(setOther, () => controller.signal.aborted || setOther(null));
+    return () => controller.abort();
+  }, [compareId]);
+
+  const set = (patch: Partial<GraphSettings>) => onSearch(searchOf({ ...settings, ...patch }, phone));
+  const view = useMemo(() => (doc ? collapse(doc, settings.level, settings.level === "jobs" ? jobs : undefined) : null), [doc, settings.level, jobs]);
+  const diff = useMemo(() => (doc && other ? diffGraphs(doc, other) : null), [doc, other]);
+  const traced = useMemo(() => (view && trace && view.nodes.some((n) => n.id === trace.id) ? lineage(view, trace.id, trace.direction) : null), [view, trace]);
+  const span = doc ? timeSpan(doc) : null;
+
+  if (error) return <p role="alert">The graph could not be read: {error}</p>;
+  if (!doc || !view) return <p className="sp-muted">Drawing the graph…</p>;
+  if (doc.nodes.length === 0) return <p className="sp-empty">No step is known for this run yet.</p>;
+
+  const all = view.nodes.flatMap((n) => [n, ...(n.jobs ?? [])]);
+  const selected = settings.node ? all.find((n) => n.id === settings.node) ?? null : null;
+  const task = selected?.kind === "job" ? Object.values(jobs).flat().find((t) => `job:${t.id}` === selected.id) ?? null : null;
+  const removed = diff ? [...diff].filter(([, d]) => d.change === "removed").map(([id]) => other?.nodes.find((n) => n.id === id)?.name ?? id) : [];
+  const note = PRODUCER_NOTES[doc.producer];
+  const capped = settings.level === "jobs" && doc.nodes.length > MAX_JOB_PROCESSES;
+
+  return (
+    <>
+      <GraphView
+        doc={doc}
+        title={run.name ?? run.id}
+        settings={settings}
+        onSettings={set}
+        runtime
+        jobs={settings.level === "jobs" ? jobs : undefined}
+        decor={{ selected: settings.node, lineage: traced, diff, replayAt }}
+        onOpen={(n) => set({ node: n.id })}
+        extra={
+          <>
+            <Compare run={run} value={compareId} onChange={setCompareId} />
+            {span && span.to > span.from && <Replay span={span} at={replayAt} onAt={setReplayAt} />}
+          </>
+        }
+        notes={
+          <>
+            {note && <p className="sp-gnote">{note}</p>}
+            {!doc.complete && doc.producer !== "stages-only" && <p className="sp-gnote">The graph can still grow: steps after an open checkpoint join it once the checkpoint ends.</p>}
+            {capped && <p className="sp-gnote">{`Jobs are shown for the first ${MAX_JOB_PROCESSES} steps, at most ${JOBS_PER_PROCESS} each; the Tasks tab lists them all.`}</p>}
+            {removed.length > 0 && <p className="sp-gnote">Only in the compared run: {removed.join(", ")}.</p>}
+            {traced && trace && (
+              <p className="sp-gnote">
+                {`Showing what ${trace.direction === "up" ? "leads to" : "follows from"} ${view.nodes.find((n) => n.id === trace.id)?.label ?? trace.id}. `}
+                <button type="button" className="sp-link-button" onClick={() => setTrace(null)}>
+                  Clear trace
+                </button>
+              </p>
+            )}
+          </>
+        }
+      />
+      <NodeSheet
+        run={run}
+        doc={doc}
+        view={view}
+        node={selected}
+        task={task}
+        diff={selected ? diff?.get(selected.id) ?? null : null}
+        onClose={() => set({ node: null })}
+        onMember={(id) => set({ level: "process", node: id })}
+        onTrace={(direction) => {
+          setTrace(direction && selected ? { id: selected.kind === "job" ? selected.members[0] : selected.id, direction } : null);
+          set({ node: null });
+        }}
+        onOpen={(d) => (set({ node: null }), onOpen(d))}
+        onTasks={onTasks}
+      />
+    </>
+  );
+}

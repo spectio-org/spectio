@@ -10,7 +10,7 @@ import {
   TextInput,
   Textarea,
 } from "@mantine/core";
-import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { Fragment, type ReactNode, Suspense, lazy, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   type CatalogList,
@@ -58,6 +58,10 @@ import {
   toYaml,
   valuesFrom,
 } from "./schemaFields";
+import { GRAPH_VIEW, useFeatures } from "../runs/graph/features";
+
+// the Workflow map, with React Flow and dagre: a lazy chunk (issue #160)
+const LaunchMap = lazy(() => import("../runs/graph/LaunchMap").then((m) => ({ default: m.LaunchMap })));
 
 // The 0.0.1 launch form (P1 Task 19; ui-spec §4.6 note 2026-10-29; boards LiteLaunch and
 // LiteLaunchSnakemake, of which 0.0.1 shows less, UX-227). Native inputs and buttons only, a label
@@ -162,6 +166,7 @@ export function LaunchPage({
   const [location, setLocation] = useState("");
   const [revision, setRevision] = useState("");
   const [loaded, setLoaded] = useState<Inspected | null>(null);
+  const graphOn = useFeatures().includes(GRAPH_VIEW);
   const [loading, setLoading] = useState(false);
   const [engine, setEngine] = useState<Engine | null>(null);
   // Profile as the user set it; until then, the chosen environment's default profile (§4.8.1)
@@ -750,6 +755,13 @@ export function LaunchPage({
                 ))}
               </Stack>
               {sections.length === 0 && <KeyValueRows rows={rows} onChange={setRows} />}
+            </FoldSection>
+          )}
+          {loaded && graphOn && (
+            <FoldSection id="launch-map" icon={ICONS.route} title="Workflow map" defaultOpen={false}>
+              <Suspense fallback={<p className="sp-muted">Loading the map…</p>}>
+                <LaunchMap location={loaded.location} revision={loaded.revision} name={loaded.name} />
+              </Suspense>
             </FoldSection>
           )}
         </Stack>

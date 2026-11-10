@@ -1,0 +1,252 @@
+/* The workflow graph (issue #160). Node colours come from [data-tone] (runs.css), so both
+   colour schemes follow the --sp-state-* tokens. */
+.sp-graph {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sp-gtoolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+.sp-gsearch {
+  min-width: 240px;
+  flex: 1 1 240px;
+  max-width: 360px;
+}
+.sp-gview {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--sp-surface-sunken);
+}
+.sp-gbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+  background: none;
+  cursor: pointer;
+}
+.sp-gbtn[aria-pressed="true"],
+.sp-gbtn[aria-checked="true"] {
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-raised);
+  box-shadow: var(--sp-shadow);
+}
+.sp-gbtn:focus-visible,
+.sp-gnode-btn:focus-visible,
+.sp-gjob:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+.sp-graph-map {
+  height: min(70vh, 720px);
+  min-height: 420px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 10px;
+  background: var(--sp-surface-page);
+  overflow: hidden;
+}
+.sp-graph-map .react-flow {
+  --xy-background-color: var(--sp-surface-page);
+  --xy-edge-stroke: var(--sp-text-faint);
+  --xy-handle-background-color: transparent;
+  --xy-handle-border-color: transparent;
+}
+.sp-gnode {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1.5px solid var(--tone);
+  border-radius: 8px;
+  color: var(--tone-fg);
+  background: var(--tone-bg);
+  transition: opacity 120ms;
+}
+.sp-gnode[data-heat] {
+  background: color-mix(in srgb, var(--sp-state-failed) var(--sp-heat), var(--sp-surface-raised));
+  color: var(--sp-text-primary);
+}
+.sp-gnode[data-kind="gate"] {
+  border-radius: 999px;
+  border-style: dashed;
+}
+.sp-gnode[data-kind="checkpoint"] {
+  border-style: double;
+  border-width: 3px;
+}
+.sp-gnode[data-kind="stage"],
+.sp-gnode[data-kind="subworkflow"] {
+  border-width: 2.5px;
+}
+.sp-gnode[data-jobs] {
+  background: color-mix(in srgb, var(--tone-bg) 50%, transparent);
+}
+.sp-gnode[data-crit] {
+  box-shadow: 0 0 0 3px var(--sp-state-review);
+}
+.sp-gnode[data-match] {
+  box-shadow: 0 0 0 3px var(--sp-line-focus);
+}
+.sp-gnode[data-selected] {
+  box-shadow: 0 0 0 3px var(--sp-text-primary);
+}
+.sp-gnode[data-dim],
+.sp-gjob[data-dim] {
+  opacity: 0.3;
+}
+.sp-gnode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+.sp-gnode[data-jobs] .sp-gnode-btn {
+  height: 40px;
+}
+.sp-gnode-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-gnode-meta {
+  font-size: 11px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.sp-gnode-badge {
+  position: absolute;
+  top: -10px;
+  right: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-raised);
+  box-shadow: inset 0 0 0 1px var(--sp-line-border);
+}
+.sp-gjob {
+  width: 100%;
+  height: 100%;
+  padding: 0 6px;
+  border: 1px solid var(--tone);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--tone-fg);
+  background: var(--tone-bg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sp-glane {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--sp-line-border);
+  border-radius: 10px;
+  background: var(--sp-surface-subtle);
+}
+.sp-glane span {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sp-text-secondary);
+}
+.sp-gedge-crit .react-flow__edge-path {
+  stroke: var(--sp-state-review);
+  stroke-width: 3;
+}
+.sp-gedge-dim {
+  opacity: 0.2;
+}
+.sp-glegend {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+}
+.sp-gramp {
+  display: inline-block;
+  width: 64px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: -1px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sp-state-failed) 10%, var(--sp-surface-raised)), var(--sp-state-failed));
+}
+.sp-gtag {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-sunken);
+}
+.sp-gnote {
+  margin: 0;
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+}
+.sp-greplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp-greplay input[type="range"] {
+  width: 220px;
+}
+.sp-gsheet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gsheet-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+@media (max-width: 767px) {
+  .sp-graph-map {
+    height: 60vh;
+    min-height: 320px;
+  }
+  .sp-gsearch {
+    max-width: none;
+  }
+}
+.sp-gbanner {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--sp-state-review-fg);
+  background: var(--sp-state-review-bg);
+}
