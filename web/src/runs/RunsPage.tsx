@@ -1,7 +1,7 @@
 import { Button } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMediaQuery } from "@mantine/hooks";
-import type { ColDef } from "ag-grid-community";
+import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent } from "ag-grid-community";
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { type Page, type Run, type ServerVersion, type Summary, listRuns, runsSummary } from "../api";
 import { ICONS, Icon } from "../icons";
@@ -125,6 +125,14 @@ const COLUMNS: ColDef<Run>[] = [
   { headerName: "Started", valueGetter: ({ data: run }) => (run ? when(run.started_at ?? run.created_at) : "") },
   { headerName: "Duration", valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : "") },
 ];
+
+/** AG Grid keeps Tab and Enter for its cells, so the name cell's link is not a tab stop: Enter on
+ * the Run cell follows that link (ui-spec §4.13). */
+const openOnEnter = (e: CellKeyDownEvent<Run> | FullWidthCellKeyDownEvent<Run>) => {
+  const key = e.event as KeyboardEvent | null | undefined;
+  if (key?.key === "Enter" && "colDef" in e && e.colDef.headerName === "Run")
+    (key.target as HTMLElement).querySelector<HTMLAnchorElement>("a.sp-run-link")?.click();
+};
 
 const PAGE = 50;
 
@@ -316,6 +324,7 @@ export function RunsPage() {
             getRowId={({ data }) => data.id}
             getRowStyle={({ data }) => (data ? { "--tone": `var(--sp-state-${tone(data.state)})` } : undefined)}
             domLayout="autoHeight"
+            onCellKeyDown={openOnEnter}
           />
         </Suspense>
       )}

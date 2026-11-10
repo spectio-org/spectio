@@ -226,3 +226,14 @@ test("a cell takes focus from the keyboard: the header, then the first run's nam
   await waitFor(() => expect(document.activeElement).toHaveAttribute("role", "gridcell"));
   expect(document.activeElement).toHaveTextContent("rnaseq-a");
 });
+
+test("CR-P3FU101A-01: Enter on a run's name cell opens the run", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), failed], next: null } });
+  const router = app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  act(() => within(table).getByRole("columnheader", { name: "Run" }).focus());
+  await userEvent.keyboard("{ArrowDown}");
+  await waitFor(() => expect(document.activeElement).toHaveTextContent("rnaseq-a"));
+  await userEvent.keyboard("{Enter}");
+  await waitFor(() => expect(router.state.location.pathname).toBe("/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W"));
+});
