@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — pipeline catalog (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}
+a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.mcat-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mcat-eng{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px 0 6px;border-radius:7px;background:#F7F7FB;box-shadow:inset 0 0 0 1px #DFE1EA;font-size:11.5px;font-weight:600;color:#22253A}
+.mcat-act{min-height:48px;border-radius:14px;border:none;background:#F1F2F6;color:#22253A;font:600 15px 'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;width:100%;box-sizing:border-box}
+.mcat-act.danger{background:#FDF0F0;color:#B02A2A}
+.mcat-card{border-radius:16px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.07),0 1px 2px rgba(15,16,32,0.05);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+</style>
+</helmet>
+<!-- Width follows the viewport: drawn at 360 and 320 px (ui-spec §4.7.1, UX-PRE-FU87-09). No Catalog tab: the bar keeps four tabs, Launch is marked. -->
+<div style="width: 100%; height: 100vh; min-height: 640px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="Catalog" sub="Launch › Catalog · 3 pipelines" back="MLiteLaunch.dc.html" backLabel="Back to Launch" hint-size="100%,104px"></dc-import></div>
+  <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <a href="LiteCatalogEntry.dc.html" style="min-height: 48px; border-radius: 14px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 15px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>Add pipeline</a>
+    <ul aria-label="Your catalog, in name order" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px;">
+      <sc-for list="{{items}}" as="e" hint-placeholder-count="3">
+        <li>
+          <a href="#m-entry" aria-labelledby="{{e.nid}} {{e.bid}}" aria-describedby="{{e.did}}" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); min-height: 44px;">
+            <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+              <span style="display: flex; align-items: flex-start; gap: 8px;">
+                <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
+                  <span id="{{e.nid}}" style="font-size: 16px; font-weight: 600; overflow-wrap: anywhere;">{{e.label}}<span class="mcat-sr">,</span></span>
+                  <sc-if value="{{e.label !== e.name}}" hint-placeholder-val="{{true}}"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">{{e.name}}</span></sc-if>
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 3px;"><path d="M9 6l6 6-6 6"/></svg>
+              </span>
+              <span id="{{e.bid}}"><span class="mcat-eng"><img src="{{e.logo}}" width="13" height="13" alt="" style="display: block; object-fit: contain;">{{e.engine}}</span></span>
+              <span id="{{e.did}}" style="display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #22253A; overflow-wrap: anywhere; line-height: 1.45;">{{e.location}}<sc-if value="{{e.revision}}" hint-placeholder-val="{{true}}"><span style="color: #4D5065;"> @ {{e.revision}}</span></sc-if></span>
+                <sc-if value="{{e.extras}}" hint-placeholder-val="{{true}}"><span style="font-size: 12.5px; color: #4D5065;">{{e.extras}}</span></sc-if>
+              </span>
+            </span>
+          </a>
+        </li>
+      </sc-for>
+    </ul>
+    <p style="margin: 0; font-size: 12px; color: #6E7287; overflow-wrap: anywhere;">Saved in <span style="font-family: 'JetBrains Mono', monospace;">~/.spectio/catalog.toml</span>. Open a pipeline for Edit and Delete.</p>
+
+    <h2 style="margin: 10px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">ON THIS BOARD, ALSO</h2>
+    <section id="m-entry" aria-labelledby="m-entry-h" class="mcat-card">
+      <h3 id="m-entry-h" style="margin: 0; font-size: 14px; font-weight: 600;">The entry's page, /catalog/rnaseq-test: its actions</h3>
+      <span style="font-size: 12.5px; color: #4D5065; line-height: 1.4;">Under the topbar "rnaseq-test", back to Catalog: the entry's fields, then the actions stacked full width, Delete last.</span>
+      <a href="LiteCatalogEntry.dc.html" class="mcat-act">Edit rnaseq-test</a>
+      <button type="button" class="mcat-act danger" aria-haspopup="dialog">Delete rnaseq-test</button>
+      <span style="font-size: 12px; color: #4D5065; line-height: 1.4;">Delete opens the confirmation as a bottom sheet (LiteCatalogStates G); after it, back to this list with a polite "Deleted rnaseq-test".</span>
+    </section>
+    <section aria-labelledby="m-empty-h" class="mcat-card">
+      <h3 id="m-empty-h" style="margin: 0; font-size: 14px; font-weight: 600;">An empty catalog</h3>
+      <p role="status" style="margin: 0; font-size: 13.5px; color: #22253A; line-height: 1.45;">Your catalog is empty. Add pipeline saves a path or a repository under a name, to pick at Launch.</p>
+    </section>
+    <span style="font-size: 11.5px; color: #6E7287; padding: 0 2px;">Data: the fixture of LiteCatalog. The location wraps anywhere, so the ssh URL never overflows at 320 px.</span>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="launch" hint-size="100%,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+  const NF = '/_blob/636203cdee0bc09b61efe0fa351e239b', SM = '/_blob/7a35665829f51132cb3bcb9a4c3e638c';
+  // Same fixture as LiteCatalog; on the phone a card is a link to the entry's page (UX-PRE-FU87-09).
+  // Name = label and engine ("Strand-seq QC, Snakemake"); the description is the location and the defaults.
+  const entry = (o) => ({ label: o.name, revision: '', nid: 'mcat-n-' + o.name, bid: 'mcat-b-' + o.name, did: 'mcat-d-' + o.name,
+    extras: [o.profile && 'profile ' + o.profile, o.params && 'parameters from ' + o.params].filter(Boolean).join(' · '), ...o });
+  return { items: [
+    entry({ name: 'liver-qc', label: 'Liver time course QC', engine: 'Snakemake', logo: SM,
+      location: '/g/demo-lab/pipelines/liver-tc-qc', profile: 'slurm', params: 'config/liver.yaml' }),
+    entry({ name: 'rnaseq-test', engine: 'Nextflow', logo: NF, location: 'nf-core/rnaseq', revision: '3.27.0',
+      profile: 'test', params: 'conf/test.yaml' }),
+    entry({ name: 'strandseq-qc', label: 'Strand-seq QC', engine: 'Snakemake', logo: SM,
+      location: 'ssh://git@git.demo-lab.org/mylab/strandseq-qc.git', revision: 'v1.4.0' })
+  ] };
+}
+}
+</script>
+</body>
+</html>
