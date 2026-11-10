@@ -16,6 +16,9 @@ export const VERSION = {
   executor: "local",
 };
 
+/** `GET /catalog` with no file yet: Launch reads it on its own (FU-P3-87e). */
+export const NO_CATALOG = { items: [], file: { path: "/home/amartin/.spectio/catalog.toml", state: "missing", detail: null } };
+
 export function json(status: number, body: unknown): Response {
   const type = status >= 400 ? "application/problem+json" : "application/json";
   return new Response(JSON.stringify(body), { status, headers: { "content-type": type } });
@@ -26,7 +29,7 @@ type Answer = unknown | ((url: URL, init?: RequestInit) => Response | Promise<Re
 /** `fetch` answered by the first key that the request's path and query start with; 404
  * otherwise. Returns the mock, whose calls hold each URL. */
 export function serve(answers: Record<string, Answer>) {
-  const all: Record<string, Answer> = { "/api/v1/version": VERSION, ...answers };
+  const all: Record<string, Answer> = { "/api/v1/version": VERSION, "/api/v1/catalog": NO_CATALOG, ...answers };
   const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), "http://127.0.0.1");
     const key = Object.keys(all)

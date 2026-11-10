@@ -30,11 +30,12 @@ function json(status: number, body: unknown): Response {
 }
 
 const fetchMock = vi.fn<typeof fetch>();
-// The Environment row reads its list on its own (LaunchEnvironment.test.tsx): it fails here, so the
-// form sends no environment and the calls below are the form's own.
+// The Environment row and the catalog picker read their lists on their own (LaunchEnvironment and
+// LaunchCatalog tests): they fail here, so the form sends no environment and the calls below are
+// the form's own.
 beforeEach(() =>
   vi.stubGlobal("fetch", (url: RequestInfo | URL, init?: RequestInit) =>
-    String(url) === "/api/v1/environments" ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
+    ["/api/v1/environments", "/api/v1/catalog"].includes(String(url)) ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
   ),
 );
 afterEach(() => {

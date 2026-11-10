@@ -13,6 +13,8 @@ import {
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
+  type CatalogItem,
+  type CatalogList,
   ENGINE_FILES,
   type Engine,
   type EnvironmentItem,
@@ -25,6 +27,7 @@ import {
   getRun,
   inspect,
   launch,
+  listCatalog,
   listEnvironments,
 } from "../api";
 import { label as envLabel } from "../environments/fields";
@@ -36,6 +39,7 @@ import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PageHead } from "../shell/PageHead";
 import { usePhone } from "../shell/layout";
+import { CatalogPicker, SaveToCatalog } from "./CatalogPicker";
 import { EngineButtons } from "./EngineButtons";
 import { EnvironmentRow } from "./EnvironmentRow";
 import { guessEngine } from "./guessEngine";
@@ -174,6 +178,11 @@ export function LaunchPage({
   const [envs, setEnvs] = useState<EnvironmentList | null>(null);
   const [envsFailed, setEnvsFailed] = useState(false);
   const [envName, setEnvName] = useState<string | null>(null);
+  // The catalog (ui-spec §4.7.1): the entry chosen in the picker, and the one the loaded pipeline came from
+  const [catalog, setCatalog] = useState<CatalogList | null>(null);
+  const [catalogFailed, setCatalogFailed] = useState(false);
+  const [entryName, setEntryName] = useState<string | null>(null);
+  const [fromEntry, setFromEntry] = useState<CatalogItem | null>(null);
   // The form key a "Before Launch" link is moving focus to: its sections open (FU-P3-86h)
   const [goTo, setGoTo] = useState<string | null>(null);
   const inFlight = useRef<AbortController | null>(null);
@@ -184,20 +193,38 @@ export function LaunchPage({
       (list) => (setEnvs(list), setEnvsFailed(false)),
       () => setEnvsFailed(true),
     );
+  const loadCatalog = () =>
+    listCatalog().then(
+      (list) => (setCatalog(list), setCatalogFailed(false)),
+      () => setCatalogFailed(true),
+    );
   useEffect(() => {
     document.title = "Launch a workflow · Spectio";
     void loadEnvs();
+    void loadCatalog();
     return () => inFlight.current?.abort();
   }, []);
   // The chosen environment: the user's or Copy's, else the default (ui-spec §4.8.1)
   const offered = envs?.items.filter((e) => e.usable) ?? [];
   const chosen: EnvironmentItem | null =
     offered.find((e) => e.name === envName) ?? offered.find((e) => e.name === envs?.default) ?? offered[0] ?? null;
+  const entry = catalog?.items.find((e) => e.name === entryName) ?? null;
+  // Profile: the entry's, then the environment's, each when the pipeline has it (§4.7.1, §4.8.1)
   const wanted = chosen && engine ? chosen.profiles[engine] : null;
   const inPipeline = !!wanted && !!loaded?.profiles.includes(wanted);
-  const profile = picked ?? (inPipeline ? wanted! : "");
+  const fromCatalog = fromEntry?.profile ?? null;
+  const catalogIn = !!fromCatalog && !!loaded?.profiles.includes(fromCatalog);
+  const profile = picked ?? (catalogIn ? fromCatalog! : inPipeline ? wanted! : "");
   const profileNote =
-    picked === null && wanted && loaded && !inPipeline ? `The environment's profile ${wanted} is not in this pipeline: none selected` : null;
+    picked !== null || !loaded || catalogIn
+      ? null
+      : fromCatalog && wanted && !inPipeline
+        ? `The catalog's profile ${fromCatalog} and the environment's profile ${wanted} are not in this pipeline: none selected`
+        : fromCatalog
+          ? `The catalog's profile ${fromCatalog} is not in this pipeline${inPipeline ? "" : ": none selected"}`
+          : wanted && !inPipeline
+            ? `The environment's profile ${wanted} is not in this pipeline: none selected`
+            : null;
 
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
@@ -219,6 +246,35 @@ export function LaunchPage({
     setLoaded(null);
     setEngine(null);
     setErrors({});
+    setEntryName(null); // the picker goes back to None, and the entry's prefill is forgotten
+    setFromEntry(null);
+  }
+
+  /** An entry chosen in the picker only fills the form; Load inspects it. None keeps the fields. */
+  function choose(name: string | null) {
+    const found = catalog?.items.find((e) => e.name === name);
+    if (!found) {
+      if (picked === null) setPicked(profile); // the profile shown stays
+      setEntryName(null);
+      setFromEntry(null);
+      return;
+    }
+    edit(setLocation, found.location);
+    setRevision(found.revision ?? "");
+    setEngine(found.engine); // the user's choice (UX-G2-07), over the guess of the loaded files
+    setEntryName(found.name);
+    setPicked(null);
+    setValues({});
+    setRows([]);
+  }
+
+  /** Clear and start empty. */
+  function clear() {
+    edit(setLocation, "");
+    setRevision("");
+    setPicked(null);
+    setValues({});
+    setRows([]);
   }
 
   async function load(at = location, rev = revision, copy?: Omit<Prefill, "left">) {
@@ -238,9 +294,11 @@ export function LaunchPage({
     setLoading(true);
     setErrors({});
     try {
-      const found = await inspect(where, isRepo ? rev.trim() : null, controller.signal);
+      const from = !copy && entry?.location === where ? entry : null;
+      const found = await inspect(where, isRepo ? rev.trim() : null, controller.signal, from?.params_file);
       setLoaded(found);
       setTried(false);
+      setFromEntry(from);
       if (copy) {
         // the run's engine, profile and values, in the form's shape for that engine
         const { engine: was } = copy.template.workflow;
@@ -254,18 +312,25 @@ export function LaunchPage({
         setRows(shape.length ? [] : Object.entries(params).map(([key, v]) => ({ key, value: typeof v === "string" ? v : JSON.stringify(v) })));
         setPrefill({ ...copy, left });
       } else {
-        setEngine(guessEngine(found.engine_files));
+        // the entry's engine and params file (§4.7.1); every value the form does not place is listed
+        const was = from?.engine ?? guessEngine(found.engine_files);
+        const shape = schemaFields(found.schema, [], was === "snakemake").flatMap((s) => s.fields);
+        const params = found.params_file?.values ?? {};
+        setEngine(was);
         setPicked(null);
-        setValues({});
-        setRows([]);
+        setValues(shape.length ? valuesFrom(shape, params).values : {});
+        setRows(shape.length ? [] : Object.entries(params).map(([key, v]) => ({ key, value: typeof v === "string" ? v : JSON.stringify(v) })));
       }
     } catch (error) {
       if (controller.signal.aborted) return; // an edit cancelled it: not an error
-      setErrors(
+      const found: Errors =
         error instanceof ApiError && error.errors.length
           ? toErrors(error.errors, [])
-          : { location: `Not loaded: ${(error as Error).message}` },
-      );
+          : { location: `Not loaded: ${(error as Error).message}` };
+      // an entry whose pipeline is gone (UX-PRE-FU87-04): the picker keeps it
+      const at = found.revision && !found.location ? "revision" : "location";
+      if (entry?.location === where && !copy) found[at] = `${found[at] ?? ""} From your catalog entry ${entry.name}: edit it in Manage catalog.`.trim();
+      setErrors(found);
     } finally {
       if (inFlight.current === controller) {
         inFlight.current = null;
@@ -371,7 +436,19 @@ export function LaunchPage({
       ? { outdir: `Warning: same as ${prefill.name}. Change it to keep the two runs' results apart.` }
       : {};
   const missing = reasons();
+  const paramsFile = fromEntry ? loaded?.params_file : null;
   const warnings: Reason[] = notes.outdir && prefill ? [{ text: `Warning, not a blocker: outdir is the same as ${prefill.name}`, to: "params.outdir" }] : [];
+  // what in the params file, or the file itself, loads code (SEC-PRE-FU87-01): warnings, not blockers
+  for (const c of paramsFile?.code_loading ?? []) {
+    const others = c.writable_by_others ? " · writable by others" : "";
+    if (c.field === "params_file") {
+      if (c.writable_by_others) warnings.push({ text: `Warning, not a blocker: ${paramsFile!.path} is writable by others` });
+    } else if (c.field.startsWith("params.")) {
+      warnings.push({ text: `Warning, not a blocker: ${paramsFile!.path} sets ${c.field.slice(7)}: ${c.value}${others}` });
+    } else warnings.push({ text: `Warning, not a blocker: ${loadingLabel(c.field)} ${c.value} loads code or configuration${others}` });
+  }
+  const unplaced = paramsFile?.values && fields.length ? valuesFrom(fields, paramsFile.values).left : [];
+  const placed = paramsFile?.values ? Object.keys(paramsFile.values).length - unplaced.length : 0;
   const why = missing[0]?.text ?? null;
   // The pinned bar on the phone says what Launch sends (UX-PAR-34).
   const summary =
@@ -419,7 +496,10 @@ export function LaunchPage({
     return [`run on ${server?.node ?? "the server"} by ${by}`, how].filter(Boolean).join(" · ");
   };
   const guessed = loaded && guessEngine(loaded.engine_files);
-  const engineNote = !loaded
+  const entryEngine = (fromEntry ?? entry)?.engine;
+  const engineNote = engine && engine === entryEngine && (!loaded || ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f)))
+    ? `${NAMES[engine]}, from the catalog entry`
+    : !loaded
     ? "Load the pipeline to guess the engine"
     : loaded.engine_files.length === 0
       ? "No main.nf or Snakefile found"
@@ -457,7 +537,22 @@ export function LaunchPage({
       <div className="launch-grid">
         <Stack gap="md">
           <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card reveal={goTo === "location" || goTo === "engine"}>
-            <TryPipelines runs={recent} onPick={pick} />
+            <CatalogPicker data={catalog} failed={catalogFailed} onRetry={loadCatalog} chosen={entry} onChoose={choose} onClear={clear}>
+              {paramsFile && (
+                <p className="sp-muted" aria-live="polite">
+                  {paramsFile.error
+                    ? `${paramsFile.path} could not be read: ${paramsFile.error}`
+                    : [
+                        `${plural(placed, "value", "values")} of ${paramsFile.path} ${placed === 1 ? "fills" : "fill"} the form and read changed.`,
+                        unplaced.length > 0 &&
+                          `${plural(unplaced.length, "value", "values")} of ${paramsFile.path} ${unplaced.length === 1 ? "has" : "have"} no field in this form, and ${unplaced.length === 1 ? "is" : "are"} not sent: ${unplaced.join(", ")}`,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                </p>
+              )}
+            </CatalogPicker>
+            <TryPipelines runs={recent} onPick={pick} saved={catalog?.items.filter((e) => e.revision === null).map((e) => e.location)} />
             <Group align="flex-start" gap="sm" wrap="wrap">
               <TextInput
                 style={{ flex: "999 1 280px" }}
@@ -532,6 +627,14 @@ export function LaunchPage({
                   <Icon path={ICONS.check} size={14} stroke={2.4} />
                   <span>Loaded</span>
                 </span>
+                <SaveToCatalog
+                  data={catalog}
+                  failed={catalogFailed}
+                  entry={fromEntry}
+                  pipeline={loaded.name}
+                  draft={{ engine: engine ?? "nextflow", location: loaded.location, revision: loaded.revision ?? "", profile, params_file: "" }}
+                  onSaved={(item) => void loadCatalog().then(() => (setEntryName(item.name), setFromEntry(item)))}
+                />
               </Paper>
             )}
             <Stack gap="md" mt="md">
@@ -655,7 +758,9 @@ export function LaunchPage({
               <dt>Pipeline</dt>
               <dd>
                 {loaded
-                  ? [`${loaded.name}${loaded.version ? ` ${loaded.version}` : ""}`, profile && `profile ${profile}`].filter(Boolean).join(" · ")
+                  ? [`${loaded.name}${loaded.version ? ` ${loaded.version}` : ""}${fromEntry ? `, from the catalog entry ${fromEntry.name}` : ""}`, profile && `profile ${profile}`]
+                      .filter(Boolean)
+                      .join(" · ")
                   : "Not loaded yet"}
               </dd>
               <dt>Engine</dt>
