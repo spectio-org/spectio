@@ -242,14 +242,14 @@ type List = { rows: Run[]; next: string | null };
 const older = (a: Run, b: Run) => a.created_at < b.created_at || (a.created_at === b.created_at && a.id < b.id);
 
 /** A refresh on a stream frame: the fresh first page, then the rows "Load more" added past it
- * (older than its last row) and their cursor. */
+ * and their cursor. Newest first, those are the rows older than its last row. Under another sort a
+ * row can move (an unpin, a run that ends), so every shown row the fresh page lacks is kept, in
+ * its old place: Load more replaces it if its next page brings it again (CR-P3FU115B-02). */
 function refresh(shown: List | null, page: Page<Run>, newest: boolean): List {
   const fresh = page.items ?? [];
   const last = fresh[fresh.length - 1];
   const ids = new Set(fresh.map((r) => r.id));
-  // another sort: the rows past the first page's length that the fresh page does not have
-  const past = (r: Run, i: number) => (newest ? older(r, last) : i >= fresh.length);
-  const tail = shown && last && page.next ? shown.rows.filter((r, i) => !ids.has(r.id) && past(r, i)) : [];
+  const tail = shown && last && page.next ? shown.rows.filter((r) => !ids.has(r.id) && (!newest || older(r, last))) : [];
   return tail.length ? { rows: [...fresh, ...tail], next: shown!.next } : { rows: fresh, next: page.next ?? null };
 }
 
@@ -351,7 +351,9 @@ export function RunsPage() {
     listRuns({ state: states, q, sort, limit: PAGE, cursor: next }, signal)
       .then((page) => {
         if (signal.aborted) return;
-        setList((shown) => ({ rows: [...(shown?.rows ?? []), ...(page.items ?? [])], next: page.next ?? null }));
+        const items = page.items ?? [];
+        const ids = new Set(items.map((r) => r.id));
+        setList((shown) => ({ rows: [...(shown?.rows ?? []).filter((r) => !ids.has(r.id)), ...items], next: page.next ?? null }));
       })
       .catch((e: Error) => signal.aborted || setError(e.message));
   };
@@ -374,10 +376,16 @@ export function RunsPage() {
       }),
     pin: (run: Run) =>
       setPinned(run.id, !run.pinned)
-        .then(() => load(true))
+        .then(() => {
+          setSaid([]);
+          load(true);
+        })
         .catch((e: Error) => setSaid([`${runName(run)} was not pinned: ${e.message}`])),
   };
-  const deleted = (lines: string[]) => {
+  const deleted = (lines: string[], ids: string[]) => {
+    // a refresh keeps the rows Load more added that the first page lacks, as a deleted run is
+    const gone = new Set(ids);
+    setList((l) => l && { ...l, rows: l.rows.filter((r) => !gone.has(r.id)) });
     setSelected(new Set());
     setSaid(lines);
     load(true);

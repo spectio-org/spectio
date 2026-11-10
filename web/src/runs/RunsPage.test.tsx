@@ -392,3 +392,77 @@ test("FU-P3-115b: from the keyboard, Space on a Select cell ticks its box and on
   await userEvent.keyboard(" ");
   expect(screen.getByText("3 selected")).toBeInTheDocument();
 });
+
+test("CR-P3FU115B-01: a run deleted from the rows Load more added leaves the list", async () => {
+  const old = run({ id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V0A", name: "old-b", state: "succeeded", created_at: "2026-10-30T07:40:00+00:00", ended_at: "2026-10-30T08:00:00+00:00" });
+  const oldest = run({ id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V0B", name: "old-c", state: "failed", created_at: "2026-10-30T07:30:00+00:00", ended_at: "2026-10-30T08:00:00+00:00" });
+  serve({
+    "/api/v1/runs:summary": SUMMARY,
+    "/api/v1/runs:delete": () => json(200, { deleted: [old.id], directories: [] }),
+    "/api/v1/runs?limit=50&cursor=abc": { items: [old, oldest], next: "def" },
+    "/api/v1/runs": { items: [run()], next: "abc" },
+  });
+  app("/runs");
+  await userEvent.click(await screen.findByRole("button", { name: "Load more" }));
+  await screen.findByRole("link", { name: "Open run old-b" });
+  await tick("old-b");
+  await userEvent.click(screen.getByRole("button", { name: "Delete…" }));
+  const sheet = await screen.findByRole("dialog", { name: "Delete 1 run?" });
+  await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
+  expect(await screen.findByText("1 run deleted")).toBeInTheDocument();
+  await new Promise((r) => setTimeout(r, 50));
+  expect(screen.queryByRole("link", { name: "Open run old-b" })).toBeNull();
+  expect(screen.getByRole("link", { name: "Open run old-c" })).toBeInTheDocument();
+});
+
+test("CR-P3FU115B-02: under another sort, a row that leaves the first page stays, and Load more does not repeat it", async () => {
+  let first = { items: [run(), failed], next: "abc" };
+  serve({
+    "/api/v1/runs:summary": SUMMARY,
+    "/api/v1/runs?sort=-duration&limit=50&cursor=abc": { items: [done], next: "def" },
+    "/api/v1/runs?sort=-duration&limit=50&cursor=def": { items: [failed], next: null },
+    "/api/v1/runs": () => json(200, first),
+  });
+  app("/runs?sort=-duration");
+  await userEvent.click(await screen.findByRole("button", { name: "Load more" }));
+  await screen.findByRole("link", { name: "Open run atac-d" });
+  first = { items: [run(), done], next: "abc" };
+  const stream = FakeEventSource.last!;
+  stream.open();
+  stream.frame({ run_id: failed.id });
+  await waitFor(() => expect(screen.getAllByRole("link", { name: "Open run atac-d" })).toHaveLength(1), { timeout: 3000 });
+  await new Promise((r) => setTimeout(r, 1200));
+  expect(screen.getByRole("link", { name: "Open run sarek-c" })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Load more" }));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Load more" })).toBeNull());
+  expect(screen.getAllByRole("link", { name: "Open run sarek-c" })).toHaveLength(1);
+});
+
+test("CR-P3FU115B-03: the grid sorts on one column only: Shift on a second header does not add a sort", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), failed], next: null } });
+  app("/runs?sort=name");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const name = within(table).getByRole("columnheader", { name: "Run" });
+  await waitFor(() => expect(name).toHaveAttribute("aria-sort", "ascending"));
+  const state = within(table).getByRole("columnheader", { name: "State" });
+  act(() => state.focus());
+  await userEvent.keyboard("{Shift>}{Enter}{/Shift}");
+  await waitFor(() => expect(state).toHaveAttribute("aria-sort", "ascending"));
+  expect(name).toHaveAttribute("aria-sort", "none");
+});
+
+test("CR-P3FU115B-04: a pin that succeeds clears what a failed one said", async () => {
+  let fail = true;
+  serve({
+    "/api/v1/runs:summary": SUMMARY,
+    "/api/v1/runs/": () => (fail ? json(500, { title: "Server error", detail: "boom" }) : json(200, { ...failed, pinned: true })),
+    "/api/v1/runs": { items: [run(), failed], next: null },
+  });
+  app("/runs");
+  await screen.findByRole("grid", { name: "Runs" });
+  await userEvent.click(screen.getByRole("button", { name: "Pin run sarek-c" }));
+  expect(await screen.findByText(/^sarek-c was not pinned/)).toBeInTheDocument();
+  fail = false;
+  await userEvent.click(screen.getByRole("button", { name: "Pin run sarek-c" }));
+  await waitFor(() => expect(screen.queryByText(/^sarek-c was not pinned/)).toBeNull());
+});

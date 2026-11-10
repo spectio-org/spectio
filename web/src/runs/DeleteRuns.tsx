@@ -34,8 +34,8 @@ function refused(e: Error, runs: Run[]): ReactNode {
 }
 
 /** `why`, when set, refuses Delete… (aria-disabled) and says why beside it. `onDeleted` gets the
- * lines to say: "n runs deleted", then each directory the server could not remove. */
-export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string | null; onDeleted: (said: string[]) => void }) {
+ * lines to say: "n runs deleted", then each directory the server could not remove, and the IDs deleted. */
+export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string | null; onDeleted: (said: string[], ids: string[]) => void }) {
   const phone = usePhone();
   const server = useServer();
   const [asking, setAsking] = useState(false);
@@ -60,7 +60,7 @@ export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string 
       .then(({ deleted, directories }) => {
         close();
         const kept = directories.filter((d) => d.result === "failed").map((d) => `${root}/${d.id} could not be removed`);
-        onDeleted([`${plural(deleted.length, "run", "runs")} deleted`, ...kept]);
+        onDeleted([`${plural(deleted.length, "run", "runs")} deleted`, ...kept], deleted);
       })
       .catch((e: Error) => setError(refused(e, runs)))
       .finally(() => setSending(false));
