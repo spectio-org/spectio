@@ -39,5 +39,16 @@
     "typescript": "5.9.3",
     "vite": "7.3.7",
     "vitest": "4.1.12"
+  },
+  "overrides": {
+    "@vivjs/loaders": {
+      "zod": "4.6.7"
+    },
+    "@loaders.gl/compression": {
+      "fflate": "0.8.3"
+    },
+    "texture-compressor": {
+      "image-size": "2.0.3"
+    }
   }
 }

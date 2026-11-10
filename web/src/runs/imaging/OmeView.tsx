@@ -20,7 +20,7 @@ interface Props {
   url: string;
   size: number;
   name: string;
-  /** The flat view, shown when WebGL fails. */
+  /** The flat view, shown when WebGL fails or the file has no OME-XML. */
   fallback: ReactNode;
   /** A problem before the first tile, as the file page shows it. */
   stateView: (state: ImageState | { problem: ApiError }, retry: () => void) => ReactNode;
@@ -42,7 +42,7 @@ export default function OmeView({ url, size, name, fallback, stateView }: Props)
   const [opens, setOpens] = useState(0); // Reload: a new open, so a new budget; the view is kept
   const [opened, setOpened] = useState<Opened | null>(null);
   const [state, setState] = useState<ImageState | { problem: ApiError } | null>(null);
-  const [noGl, setNoGl] = useState(false);
+  const [flatOnly, setFlatOnly] = useState(false); // no OME-XML, or WebGL failed: the flat view, and nothing of ours left open
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<Status>(null);
   const [view, setView] = useState<ViewState | null>(null);
@@ -53,34 +53,36 @@ export default function OmeView({ url, size, name, fallback, stateView }: Props)
   const viewer = useRef<Viewer | null>(null);
 
   useEffect(() => {
-    const controller = new AbortController();
-    const pool = new DecoderPool();
     setOpened(null);
     setStatus(null);
+    if (flatOnly) return;
+    const controller = new AbortController();
+    const pool = new DecoderPool();
     (async () => {
-      const { tiff, client } = await openWalked(url, size, name, true, controller.signal);
-      guardParses(tiff, client);
+      const { tiff, client, ifds, files, walked } = await openWalked(url, size, name, true, controller.signal);
+      if (files === "none") return controller.signal.aborted || setFlatOnly(true); // the flat view says "no OME metadata"
+      guardParses(tiff, client, walked);
       client.onBusy = (b) => controller.signal.aborted || setBusy(b);
-      const pixels = await openPixels(tiff, pool, name);
+      const pixels = await openPixels(tiff, pool, name, ifds);
       if (!controller.signal.aborted) setOpened({ pixels, client });
     })().catch((err) => controller.signal.aborted || setState(imageState(err)));
     return () => (controller.abort(), pool.destroy());
-  }, [url, size, name, opens]);
+  }, [url, size, name, opens, flatOnly]);
 
   useEffect(() => {
-    if (!opened || !canvas.current) return;
+    if (flatOnly || !opened || !canvas.current) return;
     const tileError = () => {
       const stopped = opened.client.failure instanceof Stopped; // BlockedSource hides it behind its own error
       setStatus(stopped ? { title: (imageState(opened.client.failure) as ImageState).title, action: "reload" } : { title: "Some tiles could not be read.", action: "retry" });
     };
-    const v = new Viewer(canvas.current, opened.pixels, { onView: setView, onTileError: tileError, onError: () => setNoGl(true) });
+    const v = new Viewer(canvas.current, opened.pixels, { onView: setView, onTileError: tileError, onError: () => setFlatOnly(true) }); // the cleanups end the viewer and the open
     viewer.current = v;
     setView((kept) => kept ?? v.fit());
     return () => {
       v.destroy();
       viewer.current = null;
     };
-  }, [opened]);
+  }, [opened, flatOnly]);
 
   useEffect(() => {
     if (view) viewer.current?.draw(view, plane, epoch);
@@ -91,7 +93,7 @@ export default function OmeView({ url, size, name, fallback, stateView }: Props)
     return () => clearTimeout(timer);
   }, [shown]);
 
-  if (noGl) return fallback;
+  if (flatOnly) return fallback;
   if (state) return stateView(state, () => (setState(null), setOpens((n) => n + 1)));
 
   const zoom = (by: number) => view && setView({ ...view, zoom: Math.min(ZOOM.max, Math.max(ZOOM.min, view.zoom + by)) });

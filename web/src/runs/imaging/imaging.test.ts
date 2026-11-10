@@ -483,10 +483,11 @@ test("OME-XML with __proto__ and constructor names reaches Viv's parser without 
     '<Channel ID="Channel:0:0" SamplesPerPixel="1"><__proto__ polluted="yes"/></Channel><TiffData/></Pixels></Image></OME>';
   const { bytes } = build([{ description: ome }]);
   serveBytes(bytes);
-  const { tiff } = await openTiff(URL_, bytes.length);
+  const { tiff, client } = await openTiff(URL_, bytes.length);
+  const { ifds } = await walkIfds(tiff, client);
   const before = Object.getOwnPropertyNames(Object.prototype).sort();
   const pool = { decode: async (_fd: unknown, buffer: ArrayBuffer) => buffer };
-  const pixels = await openPixels(tiff, pool as never, "x.ome.tif");
+  const pixels = await openPixels(tiff, pool as never, "x.ome.tif", ifds);
   expect(pixels.facts).toBe("4 × 2 px · 1 channel · 1 plane · 1 time point · uint8");
   expect(Object.getOwnPropertyNames(Object.prototype).sort()).toEqual(before);
   expect(({} as Record<string, unknown>).polluted).toBeUndefined();
@@ -496,4 +497,50 @@ test("once Viv's chunk has loaded, geotiff's LZW is our capped JavaScript one ag
   await import("./viv"); // Viv registers lzw-tiff-decoder for code 5 (@vivjs/loaders dist/index.mjs:921)
   const decoder = await getDecoder({ Compression: 5, ImageWidth: 4, ImageLength: 2, BitsPerSample: [8] });
   expect(decoder.constructor.name).not.toBe("LZWDecoder");
+});
+
+test("an IFD with over 20 resolution levels (SubIFDs) is too large, before Viv builds a source per level", async () => {
+  const strip: [number, number, number, number][] = [[256, 4, 1, 4], [257, 4, 1, 2], [258, 3, 1, 8], [273, 4, 1, 0], [278, 4, 1, 2], [279, 4, 1, 8]];
+  const levels = (n: number) => {
+    const bytes = raw([...strip, [330, 4, n, 128]], 128 + 4 * n);
+    new Uint32Array(bytes.buffer, 128, n).fill(8); // each SubIFD offset points back at the first IFD
+    return bytes;
+  };
+  for (const [n, error] of [[19, null], [20, new TooLarge("over 20 resolution levels")], [2_000, new TooLarge("over 20 resolution levels")]] as const) {
+    const bytes = levels(n);
+    serveBytes(bytes);
+    const { tiff, client } = await openTiff(URL_, bytes.length);
+    if (error) await expect(walkIfds(tiff, client)).rejects.toEqual(error);
+    else expect((await walkIfds(tiff, client)).ifds).toHaveLength(1);
+  }
+});
+
+test("after the walk, at most `max` distinct IFDs are parsed, the walked ones counted, and the tag budget carries on from the walk's", async () => {
+  const { bytes, nextAt } = build([{}, {}, {}]);
+  const view = new DataView(bytes.buffer);
+  const [second, third] = [view.getUint32(nextAt[0], true), view.getUint32(nextAt[1], true)];
+  serveBytes(bytes);
+  let { tiff, client } = await openTiff(URL_, bytes.length);
+  guardParses(tiff, client, { offsets: [], values: 0 }, 2);
+  await tiff.parseFileDirectoryAt(tiff.firstIFDOffset);
+  await tiff.parseFileDirectoryAt(second);
+  await expect(tiff.parseFileDirectoryAt(third)).rejects.toEqual(new TooLarge("over 2 IFDs")); // not max + 1
+  ({ tiff, client } = await openTiff(URL_, bytes.length));
+  guardParses(tiff, client, { offsets: [tiff.firstIFDOffset], values: 0 }, 2);
+  await tiff.parseFileDirectoryAt(tiff.firstIFDOffset); // walked: counted once
+  await tiff.parseFileDirectoryAt(second);
+  await expect(tiff.parseFileDirectoryAt(third)).rejects.toEqual(new TooLarge("over 2 IFDs"));
+  ({ tiff, client } = await openTiff(URL_, bytes.length));
+  guardParses(tiff, client, { offsets: [], values: 256 * 1024 * 1024 });
+  await expect(tiff.parseFileDirectoryAt(second)).rejects.toEqual(new TooLarge("the IFDs' tags over 256 MiB"));
+});
+
+test("the walk returns the offsets it walked and the bytes of tag values it allowed", async () => {
+  const { bytes } = build([{}, {}]);
+  serveBytes(bytes);
+  const { tiff, client } = await openTiff(URL_, bytes.length);
+  const walked = await walkIfds(tiff, client);
+  expect(walked.offsets).toHaveLength(2);
+  expect(walked.offsets[0]).toBe(tiff.firstIFDOffset);
+  expect(walked.values).toBeGreaterThan(0);
 });

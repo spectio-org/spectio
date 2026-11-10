@@ -488,19 +488,27 @@ function ImageStateView({ state, retry, download }: { state: ImageState | { prob
 
 // the WebGL viewer, with Viv and deck.gl: a lazy chunk, out of the main bundle
 const OmeView = lazy(() => import("./imaging/OmeView"));
-const hasWebgl2 = () => {
-  try {
-    return !!document.createElement("canvas").getContext("webgl2");
-  } catch {
-    return false;
+// probed once per page, and the probe's context lost at once: it would count against the
+// browser's context limit, which evicts the oldest context, the live viewer's (req. 19 WebGL)
+let webgl2: boolean | undefined;
+export const hasWebgl2 = () => {
+  if (webgl2 === undefined) {
+    try {
+      const gl = document.createElement("canvas").getContext("webgl2");
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+      webgl2 = !!gl;
+    } catch {
+      webgl2 = false;
+    }
   }
+  return webgl2;
 };
 
 /** An OME-TIFF: the WebGL viewer on a desktop or tablet with WebGL 2, else the flat view. */
 function OmeTiffView({ id, file }: { id: string; file: ResultStat }) {
   const work = useContext(Work);
   const phone = usePhone();
-  const webgl = useMemo(hasWebgl2, []);
+  const webgl = hasWebgl2();
   const flat = <TiffView id={id} file={file} ome />;
   if (phone || !webgl || (file.size ?? 0) === 0) return flat;
   const download = <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />;

@@ -129,12 +129,12 @@ export interface Flat {
 /** The TIFF at `url` opened and its IFDs walked; an OME-TIFF that names other files is refused. */
 export async function openWalked(url: string, size: number, name: string, ome: boolean, signal: AbortSignal) {
   const { tiff, client } = await openTiff(url, size, signal);
-  const { ifds } = await walkIfds(tiff, client);
+  const { ifds, offsets, values } = await walkIfds(tiff, client);
   if (!ifds.length) throw new Unreadable("no image in the file");
   const files = ome ? omeFiles(ifds[0].ImageDescription, name) : "none";
   if (files === "others") throw new Unsupported("This OME-TIFF names other files: Spectio shows one file at a time.");
   if (files === "too-large") throw new TooLarge("OME-XML over 4 MiB");
-  return { tiff, client, ifds, files };
+  return { tiff, client, ifds, files, walked: { offsets, values } };
 }
 
 /** The shown plane of the TIFF at `url` (the raw route with `as=tiff`), opened, walked and read

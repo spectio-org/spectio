@@ -10,16 +10,17 @@ import type { GeoTIFF } from "geotiff";
 import { registerCapped } from "./decode";
 import { percentiles } from "./flat";
 import type { DecoderPool } from "./pool";
-import { IFDS_MAX, TooLarge } from "./walk";
+import { type FileDirectory, IFDS_MAX, TooLarge, Unreadable } from "./walk";
 
 // Tiles are decoded by our pool (Viv passes it to readRasters, `dist/index.mjs:483-494`); geotiff's
 // registry on this thread gets our capped decoders back all the same, so no TIFF needs WebAssembly.
 registerCapped();
 
 export const CHANNELS_ON = 6;
-const STATS_MAX = 2048 * 2048; // contrast from the lowest level when it is at most this many pixels
+const STATS_MAX = 2048 * 2048; // contrast from the lowest level when it is at most this many pixels, else from its first tile
 const PALETTE: [number, number, number][] = [[0, 0, 255], [0, 255, 0], [255, 0, 255], [255, 255, 0], [0, 255, 255], [255, 128, 0]];
-const FULL: Record<string, number> = { uint8: 255, uint16: 65535, uint32: 2 ** 32 - 1 };
+const BYTES: Record<string, number> = { int8: 1, uint8: 1, int16: 2, uint16: 2, int32: 4, uint32: 4, float: 4 };
+const CACHE_MAX = 256 * 1024 * 1024; // deck.gl's tile cache, as decoded tiles (dev-env §15.3 req. 19)
 
 type Loaded = Awaited<ReturnType<typeof loadOmeTiff>>;
 export type ViewState = { target: [number, number, number]; zoom: number };
@@ -30,13 +31,22 @@ export interface Pixels {
   rgb: boolean;
   channels: number[]; // the channels on at open
   contrast: [number, number][];
+  cacheTiles: number; // deck.gl's tile cache, in tiles: 256 MiB of decoded tiles
 }
 
-/** Viv's pixel sources of the opened TIFF, with the first channels on and their contrast. */
-export async function openPixels(tiff: GeoTIFF, pool: DecoderPool, name: string): Promise<Pixels> {
+/** Viv's pixel sources of the opened TIFF, with the first channels on and their contrast. The
+ * OME-XML sizes, from which Viv builds each level's shape (@vivjs/loaders 0.23.0
+ * `dist/index.mjs:223-225`), are held to the walked IFDs (`ifds`) before any tile is read. */
+export async function openPixels(tiff: GeoTIFF, pool: DecoderPool, name: string, ifds: FileDirectory[]): Promise<Pixels> {
   const { data, metadata } = await loadOmeTiff(name, { source: tiff, pool: pool as never });
   const p = metadata.Pixels;
-  if (p.SizeZ * p.SizeC * p.SizeT > IFDS_MAX) throw new TooLarge(`over ${IFDS_MAX.toLocaleString("en-US")} planes`);
+  const sizes = [p.SizeX, p.SizeY, p.SizeZ, p.SizeC, p.SizeT];
+  if (!sizes.every((v) => Number.isSafeInteger(v) && v > 0)) throw new Unreadable("the OME-XML sizes are not positive integers");
+  const planes = p.SizeZ * p.SizeC * p.SizeT;
+  if (planes > IFDS_MAX) throw new TooLarge(`over ${IFDS_MAX.toLocaleString("en-US")} planes`);
+  if (p.SizeX !== ifds[0]?.ImageWidth || p.SizeY !== ifds[0]?.ImageLength) throw new Unreadable("the OME-XML sizes do not match the image");
+  const samples = Number(ifds[0].SamplesPerPixel ?? 1); // an interleaved RGB plane holds its 3 channels
+  if (planes > ifds.length * samples) throw new Unreadable("the OME-XML names more planes than the file holds");
   const rgb = isInterleaved(data[0].shape);
   const channels = Array.from({ length: rgb ? 1 : Math.min(CHANNELS_ON, p.SizeC) }, (_, c) => c);
   const lowest = data[data.length - 1];
@@ -44,12 +54,17 @@ export async function openPixels(tiff: GeoTIFF, pool: DecoderPool, name: string)
   const type = String(p.Type).toLowerCase();
   const stats = async (c: number): Promise<[number, number]> => {
     if (rgb) return [0, 255];
-    if (width * height > STATS_MAX) return [0, FULL[type] ?? 1];
-    return percentiles((await lowest.getRaster({ selection: { z: 0, t: 0, c } })).data as ArrayLike<number>);
+    const selection = { z: 0, t: 0, c };
+    const read = width * height > STATS_MAX ? lowest.getTile({ x: 0, y: 0, selection }) : lowest.getRaster({ selection });
+    return percentiles((await read).data as ArrayLike<number>);
   };
   const n = (v: number, one: string, many: string) => `${v.toLocaleString("en-US")} ${v === 1 ? one : many}`;
   const facts = [`${p.SizeX.toLocaleString("en-US")} × ${p.SizeY.toLocaleString("en-US")} px`, n(p.SizeC, "channel", "channels"), n(p.SizeZ, "plane", "planes"), n(p.SizeT, "time point", "time points"), type];
-  return { data, sizes: { z: p.SizeZ, t: p.SizeT }, facts: facts.join(" · "), rgb, channels, contrast: await Promise.all(channels.map(stats)) };
+  // Viv's tiles ({data, width, height}) have no byteLength, so deck.gl's maxCacheByteSize cannot
+  // count them (@deck.gl/geo-layers 9.4.1 `dist/tileset-2d/tile-2d-header.js:54-55`): the cap is a count
+  const tileBytes = data[0].tileSize ** 2 * (rgb ? 3 : channels.length) * (BYTES[type] ?? 4);
+  const cacheTiles = Math.max(1, Math.floor(CACHE_MAX / tileBytes));
+  return { data, sizes: { z: p.SizeZ, t: p.SizeT }, facts: facts.join(" · "), rgb, channels, contrast: await Promise.all(channels.map(stats)), cacheTiles };
 }
 
 export interface Events {
@@ -99,6 +114,7 @@ export class Viewer {
       colors: rgb ? [[255, 255, 255]] : channels.map((c) => PALETTE[c % PALETTE.length]),
       channelsVisible: channels.map(() => true),
       onTileError: this.events.onTileError,
+      maxCacheSize: this.pixels.cacheTiles, // passed on to deck.gl's TileLayer (@vivjs/layers 0.23.0 `dist/index.mjs:979`)
     } as never);
     this.deck?.setProps({ viewState: view, layers: [layer] });
   }
