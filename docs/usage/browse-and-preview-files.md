@@ -83,7 +83,7 @@ A `.tif` or `.tiff` file, and an OME-TIFF, opens as one flat picture: the first 
 ![Preview of imaging/cells.tif: a 512 by 384 plane of bright spots on black, on a light backdrop, under Actual size, with the line "512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff_light.webp#only-light)
 ![Preview of imaging/cells.tif: a 512 by 384 plane of bright spots on black, on a light backdrop, under Actual size, with the line "512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff_dark.webp#only-dark)
 
-*A 16-bit grayscale TIFF of 512 by 384 pixels (a demo file, written for this shot), so the page says "Contrast stretched for display". The backdrop stays light in the dark theme.*
+*A 16-bit grayscale TIFF of 512 by 384 pixels (a demo file, written for this shot), so the page says "Contrast stretched for display". The heading takes focus when the page opens, which is the purple ring around "cells.tif" in the shots (also on the phone). The backdrop stays light in the dark theme.*
 
 ![The same TIFF on a phone, with the line "Shown: 512 × 384 of 512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff-phone_light.webp#only-light)
 ![The same TIFF on a phone, with the line "Shown: 512 × 384 of 512 × 384 px · Contrast stretched for display"](../assets/shots/app-file-preview-tiff-phone_dark.webp#only-dark)
