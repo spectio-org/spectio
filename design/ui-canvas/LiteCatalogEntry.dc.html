@@ -107,6 +107,7 @@ legend{padding:0;font-size:13px;font-weight:600;margin-bottom:6px}
           <h3 id="s-dlg-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Save to catalog, the dialog on Launch</h3>
           <div style="position: relative; border-radius: 14px; overflow: hidden; background: rgba(15,16,32,0.45); padding: 16px;">
             <section role="dialog" aria-modal="true" aria-labelledby="sv-title" aria-describedby="sv-desc" class="dlg" style="position: relative;">
+              <form novalidate style="display: contents;">
               <h4 id="sv-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Save to catalog</h4>
               <p id="sv-desc" style="margin: 0; font-size: 13px; color: #4D5065; line-height: 1.45;">The pipeline you loaded, to pick at Launch next time.</p>
               <div class="ef">
@@ -125,10 +126,11 @@ legend{padding:0;font-size:13px;font-weight:600;margin-bottom:6px}
               <div class="ef"><label for="sv-loc">Pipeline</label><input type="text" id="sv-loc" class="mono" value="/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" aria-describedby="sv-loc-hint"><span id="sv-loc-hint" class="hint">A directory: no revision.</span></div>
               <div class="ef"><label for="sv-prof">Default profile <span class="opt">(optional)</span></label><input type="text" id="sv-prof" class="mono" value="singularity" spellcheck="false"></div>
               <div class="ef"><label for="sv-params">Params file <span class="opt">(optional)</span></label><input type="text" id="sv-params" class="mono" value="" spellcheck="false" aria-describedby="sv-params-hint"><span id="sv-params-hint" class="hint">A JSON or YAML file inside the pipeline, such as conf/test.yaml.</span></div>
-              <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="submit" class="btn-save">Save</button>
                 <button type="button" class="btn-cancel">Cancel</button>
-                <button type="button" class="btn-save">Save</button>
               </div>
+              </form>
             </section>
           </div>
           <span class="hint">Opened by Save to catalog in the Loaded card (LiteLaunch). aria-modal; focus in Name (drawn with its ring), returned to Save to catalog on Cancel or Escape. Prefilled with the location, revision, chosen engine and chosen profile. On Save the entry is listed and selected in the picker, and the card then says "In your catalog as nf-core-rnaseq-2" with Edit. Phone: a full-height sheet.</span>
