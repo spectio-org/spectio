@@ -471,14 +471,6 @@ body {
   white-space: normal;
 }
 
-/* Tables (UX-G3a-05): a column marked data-wide hides below 1100 px, so the runs table fits at
-   1024 px without a sideways scroll. Task 20 marks Started with it. */
-@media (max-width: 1099.98px) {
-  .sp-table [data-wide] {
-    display: none;
-  }
-}
-
 /* UI parity A (docs/reviews/ui-parity-0.0.1.md). */
 
 /* The Runs item's count of active runs (LiteSidebar; UX-PAR-07): a pill open, a corner badge on

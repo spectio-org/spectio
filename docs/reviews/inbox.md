@@ -2220,6 +2220,31 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   9. **Notifications, FU-P3-113 (0.0.1):** the bell is on screen, so it works: an in-app list fed by the event stream (run finished, failed, gate waiting), unread count, no e-mail.
 10. **login1 retest c (main 9819372b, 2026-11-09):** environments, rule order (FU-P3-107) and the sacct budget (FU-P3-106a: 0 calls during the run, 1 call at the first view) pass. The missing Environment fact on Run detail and the server-wide Executor are built by FU-P3-86g (#211, on integration, not yet on main). Into FU-P3-108: Measured stays 0 on a finished run until a reload after `sacct.json` lands; the focus stays on the body when New or Edit opens. Into FU-P3-110: the form says that a rule declaring its own resources keeps them. Into FU-P3-104: the preview's Search button at 360 px gets the style of Wrap lines. A partition the cluster does not know is not checked by Environments (no extra SLURM call, rule of 2026-11-09); the launch error names it.
 11. **login1 retest d (main 74b4c939, 2026-11-09):** Run detail's Environment fact and the run's own Executor, the Launch aside (1440 and 360 px, phone order Where it runs, Parameters, Summary as the spec says), the URL history of tabs and log sources, Home without overflow, and "Test pipeline" pass; Try a test pipeline answers its first click in 163 ms, about 85 s after the server starts. Measured on a finished run no longer reproduces (closed). Into FU-P3-108: a "Before Launch" link to a field in a folded group reopens the group but leaves the focus on the link (CR-P3FU86H-01 fixed only the open case); after a local cancel, `head.exit` is written about 1 min before the run reads cancelled and Run detail shows "Head: Alive" meanwhile (look at it with the flaky `test_cancel_with_a_stale_ref_after_the_launch`). Still open, already placed: the focus on New and Edit (FU-P3-108), the preview's Search at 360 px (FU-P3-104).
+12. **login1 retest e (main 5f3bdd25, 2026-11-10):** served on the Unix socket only, with default polling. Results:
+    - **Catalog:** the card was added through the form. `inspect` with a `params_file` returned 200 in 118 ms with its 3 values; `writable_by_others` is true on a 664 file, as it should be. An absolute params path is refused.
+    - **OME-TIFF viewer (3 channels, uint16) and flat RGB TIFF:** they pass at 1440 and 360 px with 0 CSP violations and 0 console errors. The phone falls back to the flat view.
+    - **Cancel from the keyboard:** the focus goes to the h1, and the run reaches cancelled with Head Exited in 6 s or less.
+    - **sacct refusal (FU-P3-106b):** the refusal was simulated in the shim, because EMBL sets `MaxQueryTimeRange=UNLIMITED`. Result: 1 call, 1 warning, 0 retries.
+    - **Not on main then:** the catalog's Launch picker (FU-P3-87e).
+    - **Into FU-P3-108:** Launch did not respond to the Chrome extension's pointer clicks: no request was sent and no run started. A DOM `.click()` launched exactly one run. The Catalog form's Save button did respond to the same kind of click. Launch needs a check by mouse and by keyboard. Extension navigations and the sign-in link get 403 cross-site; this is the extension only, and in-page navigation works.
+13. **Thomas's recap of 2026-11-10, after retest e on main 5f3bdd25:** "still not implemented in this try for some points, like the checkpoint badge". Where each point stands:
+    - **Built, but not on main yet (on integration, in the B13 promotion):**
+      - FU-P3-88a: the engine log's "last lines" open the full log with a way back; the checkpoint mark is lighter in the list and in the drawer; the drawer says what a checkpoint does and what a resume skips; HTML files open in the report viewer.
+      - FU-P3-111: environments with icons per kind, cards and table views, and a built-in opens as "Duplicate to edit".
+      - FU-P3-110: the resources spec, with default resources plus one extra config file per run. Per-rule values are 0.0.2.
+    - **Already on main** (FU-P3-86h, FU-P3-109): Previous / Next follow the URL; Launch sits in the head with an icon; "Where it runs" can be changed in the main column; "Test pipeline" replaces "Scenario"; Home no longer overflows; "Try a test pipeline" answers in 163 ms once the server is up, but about 85 s after a cold start. **If Thomas still sees one of these on a later main, it is reopened in FU-P3-108.**
+    - **Next in the wave:**
+      - FU-P3-112: the profile page, also in single-user mode (built, PR next).
+      - FU-P3-110a and later: the resources build.
+      - FU-P3-89: search.
+      - FU-P3-113: notifications.
+    - **Checkpoint, assumed:** the lighter mark of FU-P3-88a is the first answer to "something else, it weighs the UI down". If it still weighs the UI down on main, FU-P3-108 replaces the mark with an icon in the stage column only, and the drawer line stays.
+    - **New, FU-P3-115 · Runs table actions (0.0.1):**
+      - a checkbox column on the runs list (AG Grid row selection, keyboard reachable);
+      - Delete for the selected finished runs: a confirmation sheet that lists them; the run directory is never touched unless the user ticks "also delete the run directories";
+      - Pin a run, pinned runs first;
+      - sort by column.
+      - Spec first, in ui-spec §4.3 and api §5. The server needs a delete endpoint with a security review.
 - **Order:** FU-P3-86h, FU-P3-109, then FU-P3-102c2 and the imaging tasks, then FU-P3-87, FU-P3-88 (with 101, 104), FU-P3-110 spec, 111, 112, 89, 113.
 - **Why a question:** it sets what 0.0.1 holds; Thomas can move any item.
 - **Assumed (2026-11-09, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** every recommendation above.

@@ -3,7 +3,7 @@
 // $NAME in the route or a step is replaced by that environment variable; SPECTIO_THEME (light or dark) sets the
 // browser's colour scheme, which the screens follow until a theme is picked.
 // Steps: fill:<label>=<value> (the text or search field whose accessible name starts with <label>),
-// click:<button name>, tab:<tab name> (a role=tab button), view:<visible text> (its last match, scrolled to the middle), open:<start of a folded section's button name>, top (scroll to the top), wait:<visible text>,
+// click:<button name>, select:<label>=<option text> (a native select), tab:<tab name> (a role=tab button), view:<visible text> (its last match, scrolled to the middle), open:<start of a folded section's button name>, top (scroll to the top), wait:<visible text>,
 // frame:<text> (text shown inside the page's iframe, such as the report viewer's report).
 // SPECTIO_SESSION_COOKIE=<name>=<value> signs the browser in (FU-P3-38): the session cookie `spectio login --print-link`
 // then POST /api/v1/auth/magic-links:exchange sets. Run through shots.py, which preloads page_text.js
@@ -28,6 +28,9 @@ const steps = raw.map(expand);
       await page.getByRole('textbox', { name }).or(page.getByRole('searchbox', { name })).fill(value);
     } else if (kind === 'click') {
       await page.getByRole('button', { name: arg, exact: true }).click();
+    } else if (kind === 'select') {
+      const [label, option] = [arg.slice(0, arg.indexOf('=')), arg.slice(arg.indexOf('=') + 1)];
+      await page.getByLabel(label).selectOption({ label: option });
     } else if (kind === 'tab') {
       await page.getByRole('tab', { name: arg, exact: true }).click();
     } else if (kind === 'open') {
