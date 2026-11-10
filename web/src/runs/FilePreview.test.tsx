@@ -1,13 +1,19 @@
 // The preview page of one results file (ui-spec §4.4.1, FU-P3-85c; boards LiteFilePreview,
 // MLiteFilePreview and LiteFilePreviewStates; api §5.3): stat first, then the viewer of its kind,
 // its caps, and every state.
-import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
+// jsdom has no Worker: the decodes run in the page, through the worker's own decodeTile
+vi.mock("./imaging/pool", async () => {
+  const { decodeTile } = await import("./imaging/decode");
+  return { DecoderPool: class { decode = decodeTile; destroy() {} } };
+});
+
 beforeEach(stubStream);
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => (vi.unstubAllGlobals(), vi.restoreAllMocks()));
 
 const ID = "run_01JBC6Q4ZK7M8N2P3R5S7T9V1W";
 const RUN = `/api/v1/runs/${ID}`;
@@ -421,12 +427,88 @@ test("an *.ome.zarr folder stays on the preview page, which holds the viewer's p
   expect(router.state.location.pathname).toBe(`/runs/${ID}/results/file`);
 });
 
-test("a TIFF holds the viewer's place, and reads nothing yet", async () => {
-  const mock = files("gel.tif", 2048);
+/** A 4 x 2 TIFF of one 8-bit sample, one uncompressed strip (pixels 0, 40, ... 280 % 256). */
+function tiff(compression = 1) {
+  const tags: [number, number][] = [[256, 4], [257, 2], [258, 8], [259, compression], [262, 1], [273, 122], [277, 1], [278, 2], [279, 8]];
+  const bytes = new Uint8Array(130);
+  const view = new DataView(bytes.buffer);
+  bytes.set([0x49, 0x49, 0x2a, 0, 8, 0, 0, 0]);
+  view.setUint16(8, tags.length, true);
+  tags.forEach(([tag, value], i) => {
+    view.setUint16(10 + i * 12, tag, true);
+    view.setUint16(12 + i * 12, 4, true); // LONG
+    view.setUint32(14 + i * 12, 1, true);
+    view.setUint32(18 + i * 12, value, true);
+  });
+  bytes.set(Array.from({ length: 8 }, (_, i) => (i * 40) % 256), 122);
+  return bytes;
+}
+
+/** The raw route with as=tiff, answering each closed Range with 206 as the server does. */
+const ranged = (bytes: Uint8Array) => (_url: URL, init?: RequestInit) => {
+  const [first, last] = /bytes=(\d+)-(\d+)/.exec(rangeOf(init) ?? "")!.slice(1).map(Number);
+  const body = bytes.slice(first, Math.min(last, bytes.length - 1) + 1);
+  return new Response(body, { status: 206, headers: { "content-range": `bytes ${first}-${first + body.length - 1}/${bytes.length}`, "content-length": String(body.length) } });
+};
+
+function canvas() {
+  const drawn: number[][] = [];
+  const context = {
+    createImageData: (w: number, h: number) => ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }),
+    putImageData: (image: { data: Uint8ClampedArray }) => drawn.push(Array.from(image.data)),
+  };
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((() => context) as never);
+  return drawn;
+}
+
+test("a TIFF is drawn flat on a 2D canvas through the pinned client; Actual size scrolls it", async () => {
+  const drawn = canvas();
+  const mock = files("gel.tif", 130, { [`${RUN}/results/raw/gel.tif?as=tiff`]: ranged(tiff()) });
   open("gel.tif");
-  expect(await screen.findByText("Image viewer: coming")).toBeInTheDocument();
-  expect(screen.getByText(/^TIFF · 2 KiB/)).toBeInTheDocument();
-  expect(fetched(mock).filter((url) => url.includes("/raw/"))).toEqual([]);
+  expect(await screen.findByText("Loading the image…")).toBeInTheDocument();
+  expect(await screen.findByText("4 × 2 px")).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "gel.tif" }).tagName).toBe("CANVAS");
+  expect(drawn[0].filter((_, i) => i % 4 === 0)).toEqual([0, 40, 80, 120, 160, 200, 240, 24]);
+  expect(fetched(mock).filter((url) => url.includes("/raw/")).every((url) => url === `${RUN}/results/raw/gel.tif?as=tiff`)).toBe(true);
+  await userEvent.click(screen.getByRole("button", { name: "Actual size" }));
+  expect(screen.getByRole("region", { name: "gel.tif, image" })).toHaveAttribute("tabindex", "0");
+  expect(drawn).toHaveLength(2); // the canvas in its scroll region is drawn again
+});
+
+test("a TIFF's states: a refused compression, a 413, a 503 with Retry, an empty file", async () => {
+  canvas();
+  files("lerc.tif", 130, { [`${RUN}/results/raw/lerc.tif?as=tiff`]: ranged(tiff(34887)) });
+  open("lerc.tif");
+  expect(await screen.findByText("Spectio cannot decode LERC compression.")).toBeInTheDocument();
+  expect(screen.getAllByRole("link", { name: "Download lerc.tif" })).toHaveLength(2);
+  cleanup();
+
+  files("big.tif", 130, { [`${RUN}/results/raw/big.tif?as=tiff`]: () => json(413, { title: "Too large", detail: "over 1 GiB" }) });
+  open("big.tif");
+  expect(await screen.findByText("This image is too large to show here (over 1 GiB). Download it to open it.")).toBeInTheDocument();
+  cleanup();
+
+  let busy = 2; // the client asks a 503 again once, after 1 s: two in a row are the offline state
+  files("busy.tif", 130, { [`${RUN}/results/raw/busy.tif?as=tiff`]: (url: URL, init?: RequestInit) => (busy-- > 0 ? json(503, { title: "Busy" }) : ranged(tiff())(url, init)) });
+  open("busy.tif");
+  expect(await screen.findByText("Spectio cannot read the cluster's files right now", {}, { timeout: 3000 })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+  expect(await screen.findByText("4 × 2 px")).toBeInTheDocument();
+  cleanup();
+
+  files("empty.tif", 0);
+  open("empty.tif");
+  expect(await screen.findByText("This file is empty.")).toBeInTheDocument();
+});
+
+test("on a phone a TIFF too large for 2,048 px a side says so, with Copy link and Download", async () => {
+  viewport(360);
+  const big = tiff();
+  new DataView(big.buffer).setUint32(18, 18400, true); // ImageWidth
+  files("scan.tif", 130, { [`${RUN}/results/raw/scan.tif?as=tiff`]: ranged(big) });
+  open("scan.tif");
+  expect(await screen.findByText("This image is too large to show on a phone.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
 });
 
 test("an HTML file links to the report viewer", async () => {
