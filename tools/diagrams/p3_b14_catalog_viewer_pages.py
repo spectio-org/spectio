@@ -335,8 +335,8 @@ def build(theme: Theme) -> Sketch:
                                "Params file")):
         small(s, x + 306, top + 52 + i * 22, field, size=10)
         cell(s, x + 390, top + 42 + i * 22, 48, 14, "input")
-    small(s, x + 2, top + 176, "linked from the sidebar, the tab bar, the top bar", size=10.5)
-    small(s, x + 2, top + 192, "and Home · it mirrors Environments", size=10.5)
+    small(s, x + 2, top + 176, "reached from Home and Manage catalog on Launch,", size=10.5)
+    small(s, x + 2, top + 192, "the sidebar marks Launch · it mirrors Environments", size=10.5)
     trash(s, x + 6, top + 208, 20, 24)
     small(s, x + 36, top + 222, "Delete asks first; nothing was deleted: only for", size=10.5)
     small(s, x + 36, top + 238, "412 and the two catalog file refusals", size=10.5)

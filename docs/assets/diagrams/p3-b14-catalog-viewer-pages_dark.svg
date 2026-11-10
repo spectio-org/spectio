@@ -494,8 +494,8 @@
   <path d="M1947.9,337.0 C1948.2,341.9 1947.8,346.1 1948.0,350.9" fill="none" stroke="#e3e3e3" stroke-width="1.1" stroke-linecap="round"/>
   <path d="M1947.9,351.0 C1932.0,351.2 1916.0,351.2 1900.0,350.9" fill="none" stroke="#e3e3e3" stroke-width="1.1" stroke-linecap="round"/>
   <path d="M1899.9,350.9 C1899.8,346.5 1899.9,341.8 1900.1,337.0" fill="none" stroke="#e3e3e3" stroke-width="1.1" stroke-linecap="round"/>
-  <text x="1512.0" y="361.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="10.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">linked from the sidebar, the tab bar, the top bar</text>
-  <text x="1512.0" y="377.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="10.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">and Home · it mirrors Environments</text>
+  <text x="1512.0" y="361.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="10.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">reached from Home and Manage catalog on Launch,</text>
+  <text x="1512.0" y="377.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="10.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">the sidebar marks Launch · it mirrors Environments</text>
   <path d="M1513.0,392.9 C1521.8,393.0 1530.3,392.9 1539.1,393.0" fill="none" stroke="#e3e3e3" stroke-width="1.6" stroke-linecap="round"/>
   <path d="M1522.9,389.0 C1525.2,389.1 1527.0,389.1 1529.0,389.0" fill="none" stroke="#e3e3e3" stroke-width="1.6" stroke-linecap="round"/>
   <path d="M1516.0,395.0 L1536.0,395.0 L1533.0,417.0 L1519.0,417.0 Z" fill="#282b33" stroke="none"/>
