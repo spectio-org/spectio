@@ -96,6 +96,7 @@ The mapping from a problem to a CLI exit code is owned here; what each exit code
 | `log-cleaned` | 410 | 4 |
 | `run-dir-unreachable` | 409 | 5 *(assumed — pending Thomas, inbox #125)* |
 | `environment-exists`, `environment-builtin`, `environments-file-unusable`, `environments-file-changed` | 409 | 5 *(FU-P3-86, §5.4; assumed — pending Thomas, inbox #133)* |
+| `catalog-entry-exists`, `catalog-file-unusable`, `catalog-file-changed` | 409 | 5 *(FU-P3-87, §5.6; assumed — pending Thomas, inbox #147)* |
 | `range-too-wide` | 422 | 1 *(FU-P3-105, 0.0.2, §5.5; assumed — pending Thomas, inbox #139)* |
 | `runner-offline` | 503 | 1 |
 | `rate-limited` | 429 | 1 |
@@ -135,7 +136,7 @@ Paths under `/admin/*` are for system admins only and are specified in [`admin-a
 
 *Note 2026-10-28 (0.0.1 screens, UX-296):* the 0.0.1 server serves a subset of this catalogue, owned by [P1](../plans/P1-walking-skeleton.md) Task 18: `GET /runs` with `state=`, `q=` and `sort=-ended_at` only; `GET /runs:summary?group_by=state` without `since=` or `project=` (all the user's runs); `GET /runs/{id}/stages` with a subset of the `run_stages` row of §7 (`id`, `position`, `name`, `source`, `state`, `task_counts`; `id` is `run_stages.stage_id`, the value `/processes` items carry in `stage_id`), filled by P1 Task 27 (how stages are found: [ui-spec §5.1.1](ui-spec.md#511-detected-stages)), and `stage_id` on the `/processes` items, shown as the [ui-spec §4.4 note](ui-spec.md#44-run-detail) of 2026-10-28 says; and, on the run, `origin` (`ui` or `cli-observed`) and `engine_version` as in §7. The 0.0.1 shape of `GET /version`, behind the session cookie, is in Task 18 too.
 
-*Note 2026-10-30 (0.0.1 launch, P1 Task 17):* the 0.0.1 server adds two endpoints of its own, with no `workflows` catalogue, no `POST /workflows` and no `POST /runs:validate` ([P1](../plans/P1-walking-skeleton.md) Assumption 2).
+*Note 2026-10-30 (0.0.1 launch, P1 Task 17):* the 0.0.1 server adds two endpoints of its own, with no `workflows` catalogue, no `POST /workflows` and no `POST /runs:validate` ([P1](../plans/P1-walking-skeleton.md) Assumption 2). *FU-P3-87 (assumed, inbox #147) adds a user's pipeline catalog and inspect's `params_file`: §5.6.*
 
 - `GET /workflows:inspect?location=&revision=` reads a pipeline for the launch form, without running it, and returns `{location, revision, engine, engine_files, name, version, engine_version, engine_versions: {nextflow, snakemake}, schema, schema_source, profiles}`:
     - `location` is an absolute path to a directory the user's account can read, or a Git repository: an `owner/repo` name, taken as `https://github.com/owner/repo`, or an `https://` or `ssh://` URL, with a required `revision` (a tag, a branch or a commit). The repository is fetched once per revision into `<data dir>/pipelines/<host>/<path>/<revision>/`, under the rule of [Imports are untrusted input](#imports-are-untrusted-input): `git -c protocol.allow=never -c protocol.https.allow=always -c protocol.ssh.allow=always`, an argument list, no terminal; a URL with credentials, a path part `.` or `..`, a control character in the location or the revision, and a revision that starts with `-` are refused;
@@ -537,6 +538,60 @@ Why a table and not columns on `attempts` or the `attempts.resources` JSON: the 
 - **`GET /performance/facets`**: the distinct `pipeline`, `pipeline_version`, `process_or_rule`, `partition`, `environment` (`{id, name}`) and `engine` values in the range, at most 500 each, each facet computed with every other filter but its own.
 
 All four answer `{items: []}` or empty `groups` with `200` when nothing matches; a filter value that matches nothing is not an error. OpenAPI snapshot: new paths only. Tests: `test_perf_tenancy_*` (another project's run, a moved run, a deleted run, a share link); a 1.2-million-row fixture answers `422` within the budget on all four routes; three concurrent across-runs queries give one `429`; `metrics=owner_id`, `group_by=owner_id`, `sort=-run_id` and an injected `metrics` give `422`.
+
+### 5.6 Pipeline catalog (0.0.1)
+
+*Note 2026-11-10, design of FU-P3-87, assumed — pending Thomas ([inbox #147](../reviews/inbox.md#147-assumed-minimal-pipeline-catalog-in-001-fu-p3-87); Thomas, login1 feedback, 2026-11-08: "a minimal pipeline catalog (add pipelines to Launch)", in 0.0.1 by the [decision log](../decisions/log.md#2026-11-08-thomass-login1-feedback-five-features-join-001-engine-polling-unchanged-thomas); design entry: [decision log](../decisions/log.md#2026-11-10-minimal-pipeline-catalog-in-001-fu-p3-87-assumed); revised the same day after the independent pre-review R1, [record](../reviews/code/P3-fu87-spec.md#round-r1-independent)):* the store and the routes behind the catalog screens of [ui-spec §4.7.1](ui-spec.md#471-pipeline-catalog-in-001). Nothing here is built. The 1.0 `workflows` catalogue (`GET /workflows`, `POST /workflows`, versions, imports: §5 table, §7) is unchanged and comes later; this note adds no table to the database.
+
+**What exists before this note.** Launch takes a pipeline as `workflow: {location, revision, engine}` in `POST /runs` (`WorkflowIn`, `spectio_server/api/runs_write.py:50-55`), and the form reads it first with `GET /workflows:inspect` (§5, note of 2026-10-30). Both accept an absolute path to a directory the account can read, or a Git repository: an `owner/repo` name read as `https://github.com/owner/repo`, or an `https://` or `ssh://` URL, with a required revision; the repository is fetched by the server, once per revision, into `<data dir>/pipelines/<host>/<path…>/<revision>/` (`spectio_server/api/workflows.py:106-167`, `:206`). So Git is supported today, and this note adds no fetch. A revision that names a branch is fetched once and never updated (`fetch`, `workflows.py:206-214`), so the form's hint prefers a tag or a commit (SEC-PRE-FU87-06).
+
+**An entry** is a named pipeline location with optional launch defaults:
+
+| Field | Rule |
+|---|---|
+| `name` | the `name` rule of §5.4 (`^[a-z][a-z0-9-]{0,31}\Z`, unique), the key in the URL; `new` (the screen route `/catalog/new`) is reserved |
+| `label` | optional, the `label` rule of §5.4 |
+| `engine` | `nextflow` or `snakemake`, required; Launch presses it, and inspect still checks the engine's file |
+| `location` | required; the rules of `workflows.resolve` without the fetch and without reading the directory: at most `MAX_LOCATION` characters, no control character, an absolute path, or a Git location as `git_url` accepts it (`workflows.py:93-134`) |
+| `revision` | required for a Git location, with the rule of `check_revision` (`workflows.py:137-147`); `null` for a path, else `422` on `revision` |
+| `profile` | optional, one name matching `PROFILE` (`spectio/environments.py`, as the `profiles` of §5.4), or `null` |
+| `params_file` | optional: a path inside the pipeline, 1 to 8 parts joined by `/`, each matching `PART` (`workflows.py:56`, never `.`, `..` or empty), ending `.json`, `.yaml` or `.yml`; or `null` |
+
+- **One set of checks, in the core package** (SEC-PRE-FU87-02). The location, revision and part checks move from `spectio_server/api/workflows.py` into a new module of the core package, `spectio.locations`, as pure functions that raise `ValueError` with a message that never quotes the value; `workflows.py` calls them and wraps the error in `Invalid` for its field, so inspect and `POST /runs` answer as today. The entry model lives in the core package too (`spectio.catalog`), so `spectio.envfile` and `spectio doctor` import nothing from the server, and a bad value in `catalog.toml` raises a `ValueError` inside pydantic, which makes the file `invalid`, never a `500` (`Invalid` is a plain `Exception`, `problems.py:22`, which pydantic would not catch).
+- **Types are strict**, as in §5.4: a pydantic model in strict mode, every pattern matched in full.
+- **Saving checks how the fields are written, not what they name.** `POST` and `PUT` contact no remote, read no directory and fetch nothing: a path that is gone or a revision that does not exist shows when Launch inspects it, with the errors of today. So the server makes no network call in this note (inbox #147 choice 4).
+- **An entry is a launch shortcut, not a launch value.** It never reaches `POST /runs`: Launch fills the form from it and sends the same `workflow`, `profiles` and `params` as for a typed path, which are validated as today. The run records what it ran (location, revision), not the entry's name.
+
+**Where entries live.** In `catalog.toml`, next to `environments.toml`, for the reasons of §5.4 "Where definitions live" (the database is a rebuildable index; one server per user). Its path comes from one function, `config_path().parent / "catalog.toml"`, beside `envfile.environments_path()`. The name is not `pipelines`, which is the fetch cache directory in the data directory.
+- **Format.** One `[pipelines.<name>]` table per entry, with the fields above. Strict: an unknown key, a wrong type or a value outside its rule makes the whole file `invalid`; its `detail` never quotes a value. At most 64 KiB and 100 entries.
+- **Reads, the five states, writes, the identity and the accepted risk** are those of `environments.toml` in §5.4 (Reads, Writes, the per-server lock), applied to this file by the same code (`spectio.envfile`, generalised to a file name and its caps, not copied). A group-writable or linked file is `refused`, which matters more here than for environments: an entry names code that Launch loads ([dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 16). In every state but `ok` the list is empty, with the state and its `detail`, and the free Pipeline field still works. Comments in a hand-edited file are not kept by a write.
+- **A log line per write**: the route, the name, the old and new values.
+
+**Routes** (all under `/api/v1`, mounted as the routes of §5.4, in `create_app`'s conditional set, with the session, Host, cross-site and write checks of req. 2 to 7):
+
+| Route | Answer |
+|---|---|
+| `GET /catalog` | `{items, file: {path, state: "missing" \| "ok" \| "refused" \| "invalid" \| "unreachable", detail}}`, in name order, no paging (100 at most). Each item: `{name, label, engine, location, revision, profile, params_file, etag}` |
+| `GET /catalog/{name}` | one item, with `ETag`; `404 not-found` |
+| `POST /catalog` | the fields above; `201` with the item and `Location`; `409 catalog-entry-exists`; `422 validation-failed` with a pointer per field; `409 catalog-file-unusable` (`503 runner-offline` when unreachable), `catalog-file-changed` |
+| `PUT /catalog/{name}` | replaces one; its `name` cannot change, and a body whose `name` differs from the path gets `422` on `name`; `If-Match` required: without it, and with `If-Match: *`, it is refused with `428 if-match-required`; a stale one gets `412 etag-mismatch` (SEC-PRE-FU87-05) |
+| `DELETE /catalog/{name}` | `If-Match` required, as for `PUT`; `204`; runs are not touched |
+| `GET /workflows:inspect` | new optional query `params_file`, below; the response gains `params_file: {path, values, code_loading, error}` (`null` when not asked) |
+
+- **The problem slugs** `catalog-entry-exists`, `catalog-file-unusable` and `catalog-file-changed` are `409`, CLI exit code 5 (§4.1).
+- **Inspect's `params_file`.**
+    - **Checked before anything is fetched** (SEC-PRE-FU87-04): a value that breaks the rule of the table gets `422` on `params_file` before `resolve`, so no `git` runs.
+    - **Read** inside the resolved directory with the `O_NOFOLLOW` walk of `_open` (`workflows.py:237-252`), a regular file of at most 256 KiB (SEC-PRE-FU87-07; inspect's `MAX_FILE` is 1 MiB), parsed once: as JSON for `.json`, else with `load_yaml` (no aliases); a top-level map nested at most `MAX_DEPTH` (32, `runs_write.py:47`) levels.
+    - **Every failure gives `values: null` and an `error` in words, never a `422` or a `500`** (SEC-PRE-FU87-03): missing, a symbolic link on the way (`ELOOP`, said apart from missing), a FIFO or a directory, an I/O error, over the cap, not UTF-8, not JSON or YAML (`ValueError`, `yaml.YAMLError`), `RecursionError`, too deep, or not a map. It has its own `try`, not `inspect_dir`'s (`workflows.py:415-416`), so the pipeline still loads; `error` goes through `envfile._clean`, at most 200 characters, and never quotes the file's bytes.
+    - **The params file is an import** (SEC-PRE-FU87-01; §5 "Imports are untrusted input", req. 16). Its values reach the engine once Launch sends them, and `POST /runs` checks no key when the schema is inferred or missing (`_check_params`, `runs_write.py:104`); the form also leaves out hidden fields (`schemaFields.ts:105`) such as nf-core's `custom_config_base`. So `values` holds every top-level key of the file, and the screen lists every one it does not place before Launch (ui-spec §4.7.1). `code_loading` is `relaunch.code_loading` (`relaunch.py:277`) applied to the file's values and the pipeline's location, plus `{field: "params_file", value, writable_by_others}` for the file itself when the pipeline is a local path, `writable_by_others` when the file or a directory above it is; the screen names each as a warning before Launch.
+- **Later:** the 1.0 `workflows` catalogue and its imports (§5 table; ui-spec §4.7); a check of the location on Save; recording the fetched commit of a branch revision; a catalog shared between users; the entry's name on the run; a CLI (`spectio catalog list`).
+- **Tests** (`test_req18_catalog_*`, and a session and `Origin` test per write route, req. 7):
+    - every refusal of the table; a Git location without a revision and a path with one; `params_file` with `..`, a leading `/`, 9 parts, a `.txt` extension; a `PUT` whose body `name` differs from the path; `If-Match` absent, `*` and stale on `PUT` and `DELETE`;
+    - `test_req18_catalog_file_bad_value_invalid`: each refused location or revision written by hand in the file makes it `invalid`, never a `500` on `GET /catalog` nor a crash of `spectio doctor`, and the `detail` does not quote it; the file states as in §5.4's tests, through the shared code;
+    - a `POST` that runs no `git` (the `run_git` stub not called), and inspect with a bad `params_file` that runs no `git` either;
+    - inspect with a params file that is missing, a symbolic link, a FIFO, a directory, a list, over 256 KiB, not UTF-8, a YAML alias, nested 33 levels, and 10,000 nested `[`: each gives `values: null` and its `error`;
+    - `test_req18_catalog_params_hidden_key_listed`: a hidden field's key and a key with no field come back in `values` and are listed by the screen; `test_req18_catalog_params_code_loading_flagged`: `custom_config_base` in the file, and a group-writable params file of a local pipeline, appear in `code_loading` with `writable_by_others`;
+    - the routes absent where `no_api_reason` holds; the OpenAPI snapshot gains the five routes and the inspect field.
 
 ## 6. Identity, tenancy and permissions
 
