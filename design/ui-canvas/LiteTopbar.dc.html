@@ -36,6 +36,7 @@ a{color:#4D5065}a:hover{color:#0F1020}
 .tb-key{width:40px;height:40px;border:none;border-radius:12px;background:transparent;color:#33364A;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
 .tb-key:hover{background:#F1F2F6}
 .tb-key:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.tb-av:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
 .tb-off{cursor:not-allowed;color:#6E7287}
 .tb-off svg{opacity:.7}
 .tb-off:hover{background:transparent}
@@ -75,9 +76,10 @@ a{color:#4D5065}a:hover{color:#0F1020}
     <button type="button" class="tb-key" role="switch" aria-checked="false" aria-label="Dark theme">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
     </button>
-    <button type="button" class="tb-off" disabled aria-label="Account (not in 0.0.1)" style="width: 36px; height: 36px; padding: 0; border-radius: 18px; background: #F7F7FB; border: 1px dashed #B7BACB; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 2px;">
+    <!-- The avatar is the link to Profile (ui-spec §4.10.1, FU-P3-112). -->
+    <a href="LiteProfile.dc.html" class="tb-av" aria-label="Profile" style="width: 36px; height: 36px; border-radius: 18px; background: #F7F7FB; border: 1px solid #C4C7D4; color: #33364A; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 2px; box-sizing: border-box;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0"/></svg>
-    </button>
+    </a>
   </header>
 </div>
 </x-dc>

@@ -107,7 +107,7 @@ export function ProfilePage() {
   return (
     <div className="sp-page sp-prof">
       {phone ? (
-        <PhoneTitle title={TITLE} />
+        <PhoneTitle title={TITLE} sub={me ? `Single-user mode · ${me.principal.user}` : undefined} />
       ) : (
         <header className="sp-head">
           <div className="sp-head-main">

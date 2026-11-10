@@ -660,6 +660,13 @@ All four answer `{items: []}` or empty `groups` with `200` when nothing matches;
 - **FU-P3-110c · UI, boards.** The Resources and Extra config rows on LiteLaunch, LiteLaunchSnakemake and MLiteLaunch (360 and 320 px), their errors, the summary lines and the Run detail facts on LiteRunDetail; rendered and looked at; `ux-reviewer`.
 - **FU-P3-110d · UI, the form, the summary and Run detail.** The rows, only the leaves set in a Snakemake `params.json` with an extra file, the reasons of "Before Launch", the summary, Copy to a new launch and Resume lines, the Run detail facts and the kept file's view; Vitest and the Playwright launch smoke with an extra file.
 
+### 5.8 Me and sign-out (0.0.1)
+
+*Note 2026-11-10 (FU-P3-112, assumed — [inbox #146](../reviews/inbox.md#146-assumed-thomass-ui-feedback-of-2026-11-09-fu-p3-109-to-fu-p3-113) item 7):* the two routes behind the Profile page of [ui-spec §4.10.1](ui-spec.md#4101-profile-in-001), in single-user mode. Both sit behind the session cookie, as every route but the four exempt ones ([dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 2). The `GET /me` of the §5 table (default project, scopes) comes with accounts; this is its 0.0.1 shape.
+
+- `GET /me` (schema `Me`, `spectio_server/api/me.py`), mounted with the other `/api/v1` routers: `{principal: {user, uid}, session: {started_at, expires_at}, paths: {config_file, data_dir, db_dir, observed_dir}}`. `principal` is the Unix user the server runs as (its uid as a string when the name is unknown). `started_at` is when this session's cookie was set by the link exchange; `expires_at` is always `null`, since a session lives in memory until the server stops. `config_file` is the `spectio.toml` read (`$SPECTIO_CONFIG` or `~/.spectio/spectio.toml`), `db_dir` the directory of the open database, `observed_dir` `~/.spectio/observed`. It answers paths only, never a secret (session, ticket, server key), a token or a file's contents, with `Cache-Control: no-store`.
+- `POST /auth/session:sign-out`: revokes this session only (others, and the server key, stay) and clears its cookie; `204`, no body. It is a write, so it needs the Origin of [dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 7 (`403` without). A session is kept as its SHA-256 with its start time (`auth/secrets.py`).
+
 ## 6. Identity, tenancy and permissions
 
 Sign-in methods, sessions, tokens, magic links, share links and pipeline provisioning are specified in [`authentication-and-access.md`](authentication-and-access.md). This section owns principals, tenancy and roles.

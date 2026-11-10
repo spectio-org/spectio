@@ -129,6 +129,6 @@ test("phone (360 px): the title is the top bar's h1 and the avatar links to /pro
   const bar = await topBar("header.sp-mtopbar");
   expect(await within(bar).findByRole("heading", { level: 1, name: "Profile" })).toBeInTheDocument();
   expect(within(bar).getByRole("link", { name: "Profile" })).toHaveAttribute("href", "/profile");
-  expect(await screen.findByText("amartin")).toBeInTheDocument();
+  expect(await within(bar).findByText("Single-user mode · amartin")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Sign out of this session" })).toBeInTheDocument();
 });
