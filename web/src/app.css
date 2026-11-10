@@ -418,3 +418,21 @@
     flex-wrap: wrap;
   }
 }
+
+/* AG Grid (ui-spec §4.13; runs/DataGrid.tsx): the theme takes the app's tokens; these add the run
+   rows' state rail, their multi-line cells, the sort arrows and a visible keyboard focus. */
+.sp-grid-runs .ag-row {
+  box-shadow: inset 4px 0 0 var(--tone, transparent);
+}
+.sp-grid-runs .ag-cell {
+  padding-block: 10px;
+  line-height: 1.45;
+}
+.sp-grid-icon {
+  display: block;
+}
+.sp-grid .ag-cell:focus-visible,
+.sp-grid .ag-header-cell:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: -2px;
+}
