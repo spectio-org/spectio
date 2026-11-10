@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { type ServerVersion, getVersion } from "../api";
 import { useLiveStatus } from "../live";
 import { ServerContext } from "../server";
-import { CrumbContext } from "./crumb";
+import { CrumbContext, NO_CRUMB, type PageCrumb } from "./crumb";
 import { LayoutContext } from "./layout";
 import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
@@ -53,7 +53,7 @@ export function AppShell() {
   // The reader's own fold wins over the breakpoint's default.
   const [chosen, setChosen] = useState<boolean | null>(null);
   const open = chosen ?? !tablet;
-  const [crumb, setCrumb] = useState<string | null>(null);
+  const [crumb, setCrumb] = useState<PageCrumb>(NO_CRUMB);
   const [titleRow, setTitleRow] = useState<HTMLElement | null>(null);
 
   return (

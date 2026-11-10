@@ -26,6 +26,7 @@ test("a report opens sandboxed, under the untrusted banner, with Download", asyn
   expect(download.getAttribute("href")).toBe(`${URL_}/results/raw/multiqc/star_salmon/multiqc_report.html?download=true`);
   expect(screen.getByRole("link", { name: /rnaseq-2026-10-25/ }).getAttribute("href")).toBe(`/runs/${ID}`);
   expect(screen.getByText(/Report blank\?/)).toBeInTheDocument();
+  expect(getComputedStyle(screen.getByRole("link", { name: "Show the source as text" })).color).toBe("var(--sp-text-link)"); // FU-P3-104
   const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
   expect(await within(crumbs).findByText("rnaseq-2026-10-25")).toBeInTheDocument();
   expect(within(crumbs).getByText("Report").getAttribute("aria-current")).toBe("page");
