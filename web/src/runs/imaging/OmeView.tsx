@@ -2,19 +2,22 @@
 // the lazy chunk with Viv and deck.gl (FilePreview imports it with React.lazy, so the main bundle
 // does not grow): the TIFF opened and walked through the pinned client, its later IFD parses
 // guarded, then handed to Viv. A canvas on a black backdrop in a focusable region, keys and
-// buttons for the zoom, Z and T ranges, and a status line for what stopped the reading.
+// buttons for the zoom, Z and T ranges, and a status line for what stopped the reading. The
+// channel list and the view in the URL (FU-P3-102f): read once when the viewer opens, written back
+// with a history replace after a pause, so a Reload of the page or of the open keeps the view.
 import { Button } from "@mantine/core";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { ApiError } from "../../api";
 import { type PinnedClient, Stopped } from "./client";
 import { type ImageState, imageState, openWalked } from "./flat";
+import { type ChannelState, Channels, initialChannels } from "./Channels";
 import { DecoderPool } from "./pool";
-import { type Pixels, type ViewState, Viewer, openPixels } from "./viv";
+import { ZOOM, parseView, writeView } from "./url-state";
+import { type Pixels, type Stats, type ViewState, Viewer, openPixels } from "./viv";
 import { guardParses } from "./walk";
 
 type Opened = { pixels: Pixels; client: PinnedClient };
 type Status = { title: string; action: "reload" | "retry" } | null;
-const ZOOM = { min: -12, max: 6 };
 
 interface Props {
   url: string;
@@ -49,8 +52,11 @@ export default function OmeView({ url, size, name, fallback, stateView }: Props)
   const [shown, setShown] = useState({ z: 0, t: 0 }); // the ranges' values
   const [plane, setPlane] = useState(shown); // read 200 ms after the last change
   const [epoch, setEpoch] = useState(0);
+  const [chans, setChans] = useState<ChannelState | null>(null); // kept across a Reload of the open
+  const [stats, setStats] = useState<Record<number, Stats>>({});
   const canvas = useRef<HTMLCanvasElement>(null);
   const viewer = useRef<Viewer | null>(null);
+  const restored = useRef(false);
 
   useEffect(() => {
     setOpened(null);
@@ -77,7 +83,14 @@ export default function OmeView({ url, size, name, fallback, stateView }: Props)
     };
     const v = new Viewer(canvas.current, opened.pixels, { onView: setView, onTileError: tileError, onError: () => setFlatOnly(true) }); // the cleanups end the viewer and the open
     viewer.current = v;
-    setView((kept) => kept ?? v.fit());
+    const url = parseView(window.location.search, opened.pixels.sizes);
+    setView((kept) => kept ?? url.view ?? v.fit());
+    if (!restored.current) {
+      restored.current = true; // the first open only: a Reload of the open keeps the view it has
+      setShown({ z: url.z, t: url.t });
+      setPlane({ z: url.z, t: url.t });
+      setChans(initialChannels(opened.pixels.colours, url.ch, opened.pixels.channels.length));
+    }
     return () => {
       v.destroy();
       viewer.current = null;
@@ -85,8 +98,17 @@ export default function OmeView({ url, size, name, fallback, stateView }: Props)
   }, [opened, flatOnly]);
 
   useEffect(() => {
-    if (view) viewer.current?.draw(view, plane, epoch);
-  }, [view, plane, epoch, opened]);
+    if (!opened || !chans) return;
+    for (const c of chans.on.filter((c) => !stats[c])) opened.pixels.stats(c).then((s) => setStats((all) => ({ ...all, [c]: s })), () => setStatus({ title: "Some tiles could not be read.", action: "retry" }));
+  }, [opened, chans, stats, epoch]);
+
+  useEffect(() => {
+    if (!view || !chans) return;
+    const drawn = chans.on.filter((c) => stats[c]).map((c) => ({ c, colour: chans.colours[c], limits: chans.limits[c] ?? stats[c].limits }));
+    viewer.current?.draw(view, plane, epoch, drawn);
+    const timer = setTimeout(() => writeView({ ...plane, ch: opened?.pixels.rgb ? null : chans.on, view }), 300); // replaceState is throttled
+    return () => clearTimeout(timer);
+  }, [view, plane, epoch, opened, chans, stats]);
 
   useEffect(() => {
     const timer = setTimeout(() => setPlane(shown), 200);
@@ -119,32 +141,35 @@ export default function OmeView({ url, size, name, fallback, stateView }: Props)
   };
 
   return (
-    <div className="sp-file-viewer">
-      <div className="sp-file-line">
-        <span role="status">{status?.title ?? (!opened ? "Loading the image…" : busy ? "Reading tiles…" : "")}</span>
-        {status && (
-          <Button variant="default" size="xs" onClick={again}>
-            {status.action === "reload" ? "Reload" : "Retry"}
-          </Button>
+    <div className="sp-ome-layout">
+      <div className="sp-file-viewer">
+        <div className="sp-file-line">
+          <span role="status">{status?.title ?? (!opened ? "Loading the image…" : busy ? "Reading tiles…" : "")}</span>
+          {status && (
+            <Button variant="default" size="xs" onClick={again}>
+              {status.action === "reload" ? "Reload" : "Retry"}
+            </Button>
+          )}
+        </div>
+        <section className="sp-ome-region" tabIndex={0} aria-label={`${name}, image viewer`} onKeyDown={keys}>
+          <canvas ref={canvas} className="sp-ome-canvas" />
+        </section>
+        <p className="sp-muted">Arrows pan · + or = zoom in · − zoom out · 0 fits</p>
+        <div className="sp-actions">
+          <Button variant="default" size="xs" onClick={() => zoom(1)}>Zoom in</Button>
+          <Button variant="default" size="xs" onClick={() => zoom(-1)}>Zoom out</Button>
+          <Button variant="default" size="xs" onClick={fit}>Fit</Button>
+          <span>{view ? `Zoom ${Math.round(2 ** view.zoom * 100)} %` : ""}</span>
+        </div>
+        {opened && (
+          <>
+            <p className="sp-file-natural">{opened.pixels.facts}</p>
+            <Plane label="Z plane" value={shown.z} count={opened.pixels.sizes.z} onChange={(z) => setShown({ ...shown, z })} />
+            <Plane label="Time point" value={shown.t} count={opened.pixels.sizes.t} onChange={(t) => setShown({ ...shown, t })} />
+          </>
         )}
       </div>
-      <section className="sp-ome-region" tabIndex={0} aria-label={`${name}, image viewer`} onKeyDown={keys}>
-        <canvas ref={canvas} className="sp-ome-canvas" />
-      </section>
-      <p className="sp-muted">Arrows pan · + or = zoom in · − zoom out · 0 fits</p>
-      <div className="sp-actions">
-        <Button variant="default" size="xs" onClick={() => zoom(1)}>Zoom in</Button>
-        <Button variant="default" size="xs" onClick={() => zoom(-1)}>Zoom out</Button>
-        <Button variant="default" size="xs" onClick={fit}>Fit</Button>
-        <span>{view ? `Zoom ${Math.round(2 ** view.zoom * 100)} %` : ""}</span>
-      </div>
-      {opened && (
-        <>
-          <p className="sp-file-natural">{opened.pixels.facts}</p>
-          <Plane label="Z plane" value={shown.z} count={opened.pixels.sizes.z} onChange={(z) => setShown({ ...shown, z })} />
-          <Plane label="Time point" value={shown.t} count={opened.pixels.sizes.t} onChange={(t) => setShown({ ...shown, t })} />
-        </>
-      )}
+      {opened && chans && !opened.pixels.rgb && <Channels names={opened.pixels.names} meta={opened.pixels.colours} state={chans} stats={stats} onChange={setChans} />}
     </div>
   );
 }

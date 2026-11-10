@@ -2,7 +2,7 @@
 // file with no OME-XML gets the flat view, and a WebGL failure ends the viewer and the open before
 // the flat view takes its place. Viv, deck.gl and the open are mocked: jsdom has no WebGL.
 import { MantineProvider } from "@mantine/core";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -11,6 +11,7 @@ const m = vi.hoisted(() => ({
   decks: [] as { props: Record<string, unknown>; finalize: ReturnType<typeof vi.fn> }[],
   pools: [] as { destroy: ReturnType<typeof vi.fn> }[],
   lose: vi.fn(),
+  layers: [] as Record<string, unknown>[],
 }));
 vi.mock("./flat", async (actual) => ({ ...(await actual<typeof import("./flat")>()), openWalked: m.openWalked }));
 vi.mock("./pool", () => ({
@@ -26,7 +27,11 @@ vi.mock("@hms-dbmi/viv", () => ({
   isInterleaved: () => false,
   getImageSize: (s: { shape: number[] }) => ({ height: s.shape[3], width: s.shape[4] }),
   getDefaultInitialViewState: () => ({ target: [0, 0, 0], zoom: 0 }),
-  MultiscaleImageLayer: class {},
+  MultiscaleImageLayer: class {
+    constructor(props: Record<string, unknown>) {
+      m.layers.push(props);
+    }
+  },
 }));
 vi.mock("@deck.gl/core", () => ({
   OrthographicView: class {},
@@ -46,7 +51,7 @@ const tiff = { parseFileDirectoryAt: vi.fn() };
 const ifd = { ImageWidth: 100, ImageLength: 50 };
 
 function view() {
-  render(
+  return render(
     <MantineProvider>
       <OmeView url="/raw" size={100} name="a.ome.tif" fallback={<p>the flat view</p>} stateView={(s) => <p>{"title" in s ? s.title : "problem"}</p>} />
     </MantineProvider>,
@@ -54,7 +59,8 @@ function view() {
 }
 
 beforeEach(() => {
-  m.decks.length = m.pools.length = 0;
+  m.decks.length = m.pools.length = m.layers.length = 0;
+  window.history.replaceState(null, "", "/runs/r1/results/file?path=a.ome.tif");
   m.lose.mockReset();
   HTMLCanvasElement.prototype.getContext = (() => ({ getExtension: (n: string) => (n === "WEBGL_lose_context" ? { loseContext: m.lose } : null) })) as never;
   m.loadOmeTiff.mockResolvedValue({
@@ -82,4 +88,27 @@ test("a WebGL failure ends the viewer (its deck and its context) and the open's 
   expect(m.lose).toHaveBeenCalledOnce();
   expect(m.pools.every((p) => p.destroy.mock.calls.length > 0)).toBe(true);
   expect(m.decks).toHaveLength(1); // no second viewer
+});
+
+test("the view comes from the URL, is written back with a replace, and a reload keeps it", async () => {
+  m.loadOmeTiff.mockResolvedValue({
+    data: [{ shape: [2, 3, 3, 50, 100], tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
+    metadata: { Pixels: { SizeX: 100, SizeY: 50, SizeC: 3, SizeZ: 3, SizeT: 2, Type: "uint8", Channels: [{ Name: "DAPI" }, {}, {}] } },
+  });
+  m.openWalked.mockResolvedValue({ tiff, client, ifds: Array(18).fill(ifd), files: "one", walked: { offsets: [8], values: 0 } });
+  window.history.replaceState(null, "", "/runs/r1/results/file?path=a.ome.tif&z=2&t=NaN&ch=2,9&zoom=1&x=10&y=5");
+  const push = vi.spyOn(window.history, "pushState");
+  const first = view();
+  await waitFor(() => expect(m.decks).toHaveLength(1));
+  await waitFor(() => expect(m.layers.at(-1)?.selections).toEqual([{ z: 1, t: 0, c: 2 }]));
+  expect(screen.getByRole("slider", { name: /^Z plane/ })).toHaveValue("2");
+  expect(screen.getByRole("switch", { name: "Show channel 1, DAPI" })).toHaveAttribute("aria-checked", "false");
+  expect(screen.getByText("Zoom 200 %")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("slider", { name: /^Z plane/ }), { target: { value: "3" } });
+  fireEvent.click(screen.getByRole("switch", { name: "Show channel 1, DAPI" }));
+  await waitFor(() => expect(window.location.search).toBe("?path=a.ome.tif&z=3&t=1&ch=2,0&zoom=1&x=10&y=5"));
+  expect(push).not.toHaveBeenCalled(); // Back is not flooded
+  first.unmount();
+  view(); // a reload: the URL gives the view back
+  await waitFor(() => expect(m.layers.at(-1)?.selections).toEqual([{ z: 2, t: 0, c: 2 }, { z: 2, t: 0, c: 0 }]));
 });
