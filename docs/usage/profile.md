@@ -13,10 +13,6 @@ The Profile page answers four questions: who is this server running as, how long
 
 Click the avatar at the right of the top bar. The breadcrumb reads Home › Profile.
 
-!!! warning "Open it from the avatar, not from the address bar"
-
-    Today `/profile` is not on the server's list of screen addresses (`static.py`, `ROUTES`). A Reload on the Profile page, a bookmark or a typed address answers `404` with `{"type":"/problems/not-found", …}` instead of the page ([DW-P3B14-01](../reviews/code/P3-B14.md#findings), open). The avatar link works because the browser handles it without asking the server.
-
 ## What it shows
 
 ![The Profile page: Who the server runs as (Unix user alice, UID 0), This session (started, expires, Sign out of this session), Config paths (config file, data directory, database directory, observed runs directory, each with a Copy button) and the theme](../assets/shots/app-profile_light.webp#only-light)
