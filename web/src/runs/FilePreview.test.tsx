@@ -226,6 +226,8 @@ test("on the phone the search is behind a Search button that opens it and moves 
   open("a.log");
   const search = await screen.findByRole("button", { name: "Search" });
   expect(search).toHaveAttribute("aria-expanded", "false");
+  // FU-P3-104: the same button style as Wrap lines beside it
+  expect(search.className).toBe(screen.getByRole("button", { name: "Wrap lines" }).className);
   expect(screen.queryByRole("searchbox")).toBeNull();
   fireEvent.click(search);
   expect(search).toHaveAttribute("aria-expanded", "true");
@@ -511,9 +513,37 @@ test("on a phone a TIFF too large for 2,048 px a side says so, with Copy link an
   expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
 });
 
-test("an HTML file links to the report viewer", async () => {
+test("FU-P3-88a: an HTML file of the results opens in the report viewer, with its folder's sort and filter", async () => {
   files("multiqc/multiqc_report.html", 100);
-  open("multiqc/multiqc_report.html");
+  const router = app(`/runs/${ID}/results/file?path=${encodeURIComponent("multiqc/multiqc_report.html")}&sort=-size&q=multi`);
+  const frame = await screen.findByTitle(/sandboxed$/);
+  expect(frame.getAttribute("sandbox")).toBe("allow-scripts allow-downloads");
+  expect(router.state.location.pathname).toBe(`/runs/${ID}/report`);
+  expect(router.state.location.search).toEqual({ path: "multiqc/multiqc_report.html", from: "results", sort: "-size", q: "multi" });
+  // the source stays reachable as text, in the preview
+  const source = screen.getByRole("link", { name: "Show the source as text" });
+  expect(new URL(source.getAttribute("href")!, "http://x").pathname).toBe(`/runs/${ID}/results/file`);
+  expect(query(source)).toEqual({ path: "multiqc/multiqc_report.html", view: "text", sort: "-size", q: "multi" });
+});
+
+test("FU-P3-88a: with view=text an HTML file is shown as text", async () => {
+  files("qc/a.html", 14, { [`${RUN}/results/text/qc/a.html`]: () => text("<p>hello</p>\n") });
+  app(`/runs/${ID}/results/file?path=${encodeURIComponent("qc/a.html")}&view=text`);
+  const viewer = await screen.findByLabelText(/a.html, whole file/, { selector: "pre" });
+  await waitFor(() => expect(viewer.textContent).toContain("<p>hello</p>"));
+  expect(screen.queryByTitle(/sandboxed$/)).toBeNull();
+});
+
+test("FU-P3-88a: an HTML file past the report viewer's 1 GiB cap is not opened there", async () => {
+  files("big.html", 2 * 1024 * 1024 * KIB);
+  open("big.html");
+  expect(await screen.findByText("Too large for the report viewer (over 1 GiB). Download it to open it.")).toBeInTheDocument();
+  expect(screen.queryByTitle(/sandboxed$/)).toBeNull();
+});
+
+test("an HTML file previewed from a job's Outputs links to the report viewer and keeps the way back to the sheet", async () => {
+  files("multiqc/multiqc_report.html", 100);
+  app(`/runs/${ID}/results/file?path=${encodeURIComponent("multiqc/multiqc_report.html")}&task=tsk_1&attempt=1`);
   const link = await screen.findByRole("link", { name: "Open it in the report viewer" });
   expect(link.getAttribute("href")).toBe(`/runs/${ID}/report?path=${encodeURIComponent("multiqc/multiqc_report.html")}`);
   await act(async () => {});
