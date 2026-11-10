@@ -18,12 +18,13 @@ const SECTIONS: Record<string, { label: string; to: To }> = {
 /** The Catalog pages are Launch's, without a `NAV` item (ui-spec §4.7.1): Home › Launch › Catalog. */
 const CATALOG: Crumb[] = [SECTIONS.launch, { label: "Catalog", to: "/catalog" }];
 
-const RUN_PAGES: Record<string, string> = { report: "Report", results: "Results" };
+const RUN_PAGES: Record<string, string> = { report: "Report", results: "Results", workdir: "Work directory" };
 
 /** Home > section > item, from the path; every crumb but the last is a link. The URL's own text
  * is never shown (SEC-P3G4-02): an item reads `item`, the page's label (a run's name from the
  * API), else "Run" under /runs, else "Not found"; a run's report viewer ends with "Report", its
- * results browser with "Results". */
+ * results browser with "Results", a work directory with "Work directory", and a file page below
+ * either with "File": the run is named once (FU-P3-104). */
 export function crumbsFor(pathname: string, item: string | null = null): Crumb[] {
   const crumbs: Crumb[] = [{ label: "Home", to: "/" }];
   let previous = "";
@@ -32,7 +33,14 @@ export function crumbsFor(pathname: string, item: string | null = null): Crumb[]
       crumbs.push(...CATALOG);
       continue;
     }
-    const tool = crumbs.length === 3 && crumbs[1].to === "/runs" && Object.hasOwn(RUN_PAGES, segment) ? RUN_PAGES[segment] : undefined;
+    const tool =
+      crumbs[1]?.to !== "/runs"
+        ? undefined
+        : crumbs.length === 3 && Object.hasOwn(RUN_PAGES, segment)
+          ? RUN_PAGES[segment]
+          : crumbs.length === 4 && segment === "file"
+            ? "File"
+            : undefined;
     crumbs.push((crumbs.length === 1 ? SECTIONS[segment] : undefined) ?? { label: tool ?? item ?? (previous === "runs" ? "Run" : "Not found") });
     previous = segment;
   }
