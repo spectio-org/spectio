@@ -1,8 +1,10 @@
 import { useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import type { ServerVersion } from "../api";
 import { ICONS, Icon } from "../icons";
 import type { PageCrumb } from "./crumb";
+import { SearchDialog } from "./SearchDialog";
 
 type To = "/" | "/runs" | "/launch" | "/environments" | "/catalog";
 interface Crumb {
@@ -108,7 +110,7 @@ function ThemeSwitch() {
   );
 }
 
-/** 0.0.1 has no search or notifications: disabled placeholders with their names (G1). */
+/** 0.0.1 has no notifications: a disabled placeholder with its name (G1). */
 function Placeholder({ name, path, className = "sp-key" }: { name: string; path: string; className?: string }) {
   return (
     <button type="button" className={className} disabled aria-label={`${name} (not in 0.0.1)`}>
@@ -141,6 +143,19 @@ interface Props {
 
 /** The floating top bar of the Paper shell (LiteTopbar), or its compact phone form (MLiteTopbar). */
 export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
+  const [searching, setSearching] = useState(false);
+  // ⌘K / Ctrl+K opens the search from anywhere (FU-P3-89)
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearching(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const dialog = <SearchDialog opened={searching} onClose={() => setSearching(false)} phone={phone} />;
   if (phone) {
     const node = server ? `Server on ${server.node}, online` : down ? "Server not reached" : "Connecting";
     return (
@@ -155,13 +170,18 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
             <span className="sp-dot" aria-hidden="true" />
             <span aria-hidden="true">{server?.node ?? (down ? "offline" : "…")}</span>
           </span>
-          <Placeholder name="Search" path={SEARCH} className="sp-key sp-narrow-hide" />
+          <button type="button" className="sp-key" aria-label="Search runs, pipelines and pages" onClick={() => setSearching(true)}>
+            <span className="sp-key-face">
+              <Icon path={SEARCH} size={19} />
+            </span>
+          </button>
           <Placeholder name="Notifications" path={BELL} className="sp-key sp-narrow-hide" />
           <ThemeSwitch />
           <Avatar />
         </div>
         {/* The page's title row (PhoneTitle); hidden while empty, as on Home (MLiteHome). */}
         <div className="sp-mtitle" ref={titleRow} />
+        {dialog}
       </header>
     );
   }
@@ -173,14 +193,15 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
       </Link>
       <span className="sp-rule" aria-hidden="true" />
       <Breadcrumbs crumb={crumb} />
-      <button type="button" className="sp-search" disabled aria-label="Search (not in 0.0.1)">
+      <button type="button" className="sp-search" aria-label="Search runs, pipelines and pages" aria-keyshortcuts="Meta+K Control+K" onClick={() => setSearching(true)}>
         <Icon path={SEARCH} size={16} />
-        <span className="sp-search-text">Search (not in 0.0.1)</span>
-        <kbd>⌘K</kbd>
+        <span className="sp-search-text">Search</span>
+        <kbd aria-hidden="true">⌘K</kbd>
       </button>
       <Placeholder name="Notifications" path={BELL} />
       <ThemeSwitch />
       <Avatar />
+      {dialog}
     </header>
   );
 }
