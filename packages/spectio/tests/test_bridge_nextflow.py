@@ -420,6 +420,68 @@ def test_writer_rotates_and_drops_long_lines(nextflow: str, tmp_path: Path) -> N
     assert batch.drops == Counter()
 
 
+# --- onFlowBegin's process-level DAG (#160) -------------------------------------------------
+
+
+def test_flow_begin_sends_the_process_dag(nf_run: Path) -> None:
+    """The synthetic pipeline's DAG from `Session.dag`, collapsed through its operators (SPLIT's
+    `flatMap`, MERGE's `groupTuple`...) to process pairs, in creation order."""
+    begins = [
+        SpoolEvent.model_validate_json(line)
+        for line in spool_lines(nf_run)
+        if '"nextflow.onFlowBegin"' in line
+    ]
+    assert len(begins) == 1
+    assert begins[0].data["dag"] == {
+        "processes": [
+            "MAKE_READS", "QC_STATS", "QC_REPORT", "SPLIT", "ALIGN", "MERGE", "COMPARE",
+            "FINAL_REPORT",
+        ],
+        "edges": [
+            ["MAKE_READS", "QC_STATS"],
+            ["MAKE_READS", "SPLIT"],
+            ["QC_STATS", "QC_REPORT"],
+            ["SPLIT", "ALIGN"],
+            ["ALIGN", "MERGE"],
+            ["MERGE", "COMPARE"],
+            ["COMPARE", "FINAL_REPORT"],
+        ],
+    }  # fmt: skip
+
+
+# Stand-ins for nextflow.dag.DAG's vertices and edges: processDag reads them by property only.
+DAG_SCRIPT = """
+import groovy.json.JsonOutput
+def v = { type, name -> new Expando(type: type, label: name, process: null) }
+def e = { a, b -> new Expando(from: a, to: b) }
+def dag = { vs, es -> new Expando(vertices: vs, edges: es) }
+def a = v('PROCESS', 'A'), op = v('OPERATOR', 'map'), b = v('PROCESS', 'B'), o = v('ORIGIN', null)
+def pd = spectio.SpectioObserver.&processDag
+def out = [:]
+out.chain = pd(dag([o, a, op, b], [e(o, a), e(a, op), e(op, b), e(b, null)]))
+def many = (1..1400).collect { v('PROCESS', "P$it") }
+out.values = pd(dag(many, (1..<1400).collect { e(many[it - 1], many[it]) }))
+def wide = (1..3).collect { v('PROCESS', 'W' * 20000 + it) }
+out.bytes = pd(dag(wide, []))
+out.notList = pd(dag(null, []))
+out.throws = pd(new Expando(getVertices: { throw new IllegalStateException('x') }))
+println JsonOutput.toJson(out)
+"""
+
+
+def test_process_dag_bounds_and_errors(nextflow: str, tmp_path: Path) -> None:
+    """Operators are walked through; over 4000 JSON values or 56 KiB the DAG is `truncated`
+    (the reader drops an event of more than MAX_EVENT_NODES values, and onFlowBegin must not be
+    dropped); on any error there is no DAG at all."""
+    done = run_writer(nextflow, tmp_path, tmp_path / "unused", script=DAG_SCRIPT)
+    out = json.loads(done.stdout.strip().splitlines()[-1])
+    assert out["chain"] == {"processes": ["A", "B"], "edges": [["A", "B"]]}
+    assert out["values"] == {"truncated": True}  # 1400 processes + 3 x 1399 edges > 4000
+    assert out["bytes"] == {"truncated": True}
+    assert out["notList"] is None
+    assert out["throws"] is None
+
+
 FULL_DISK_SCRIPT = """
 def w = new spectio.SpoolWriter(java.nio.file.Paths.get(args[0]), args[1], 1L, 1048576L)
 2000.times { w.write('nextflow.onFlowBegin', 1793172224454L, [runName: 'r' * 100]) }
