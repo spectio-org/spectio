@@ -1,7 +1,7 @@
 export const meta = {
-  name: 'p3-task',
+  name: 'p3-task-full',
   description: 'Build one P3 task (one P1 plan task): TDD build, code review (security review when the diff touches a sensitive path), one fix round, short docs',
-  whenToUse: 'The autopilot runs it once per P3 task (docs/playbooks/autopilot.md §10, §11). The orchestrator then pushes, opens the PR and merges; simplify, figure, doc review and promotion run once per batch (p3-batch).',
+  whenToUse: 'Superseded on 2026-11-10 by tools/autopilot/lean/ (autopilot.md §14); kept for non-P3 reference. The autopilot runs it once per P3 task (docs/playbooks/autopilot.md §10, §11). The orchestrator then pushes, opens the PR and merges; simplify, figure, doc review and promotion run once per batch (p3-batch).',
   phases: [
     { title: 'Build', detail: 'worker in its own git worktree, test-driven' },
     { title: 'Review', detail: 'code-reviewer, plus security-reviewer on sensitive paths, fix rounds' },

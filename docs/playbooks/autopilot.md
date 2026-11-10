@@ -267,6 +267,8 @@ Thomas, in the session of 2026-10-30: the autopilot should depend only on its ow
 
 ## 11. Batches of P3 tasks (Thomas, 2026-11-04)
 
+*Note 2026-11-10:* task size, review (defect minors no longer get a fix round of their own), docs, workflows (`tools/autopilot/lean/`) and promotion changed in [§14](#14-feature-sized-tasks-fewer-gates-per-credit-thomas-2026-11-10).
+
 Thomas, in the session of 2026-11-04: review and document in larger batches, so that small tasks do not each pay the full docs and review loop. [Decision log](../decisions/log.md#2026-11-04-p3-tasks-run-in-batches-docs-figure-doc-review-simplify-and-promotion-once-per-batch). It changes §7, §9 and §10 item 3 for P3 tasks; other step kinds are unchanged.
 
 1. **Per task, `p3-task` workflow.**
@@ -305,6 +307,8 @@ Thomas, in the session of 2026-11-08: "Je veux des screenshots des amélioration
 
 ## 13. A shorter build cycle (Thomas, 2026-11-09)
 
+*Note 2026-11-10:* items 3 and 4 (re-review and docs per task), 5 (300-line cap), 6 and 7 (2 tasks in flight) are replaced by [§14](#14-feature-sized-tasks-fewer-gates-per-credit-thomas-2026-11-10).
+
 Thomas, 2026-11-09: "Réduis encore le cycle développement niveau ci et testing, bcp trop long". Measured on FU-P3-86a: CI takes about 4.5 minutes; the agent loop (build, two reviews, two fix rounds, re-reviews, docs) took about 75 minutes. The loop is what is cut. It changes §11 for P3 tasks.
 
 1. **Tests by scope.** The worker runs the tests of the files it touched and the test files the task names, then ruff and mypy on the touched packages. The full suite runs in CI only. Reviewers run only the step's test files.
@@ -321,3 +325,19 @@ Thomas, 2026-11-09: "Réduis encore le cycle développement niveau ci et testing
    - **Short docs at low effort:** the review record, a short Progress section and the PR body.
    - **At most 2 tasks in flight**, to cut Progress and inbox merge conflicts and CI reruns.
 8. **Fix with the simplest rule (lesson of FU-P3-106a).** Fix a defect minor with the simplest rule that removes it. When a fix round opens new majors on the same mechanism, replace that mechanism with the simplest rule instead of iterating on it. In FU-P3-106a, a batch-halving heuristic added while fixing round-1 minors opened new majors in rounds 2 to 4; round 5 removed it for "only an over-cap batch is split" ([P3-fu106a record](../reviews/code/P3-fu106a.md)).
+
+## 14. Feature-sized tasks, fewer gates per credit (Thomas, 2026-11-10)
+
+Thomas, 2026-11-10: more features per session and per week, within the credits he gives each run; less test, CI and docs time; no pause between waves. An outside audit of the journal, `costs.jsonl` and git history ([decision log](../decisions/log.md#2026-11-10-feature-sized-tasks-and-fewer-gates-per-credit-thomas)) found that each feature was cut into many PRs that each pay the same fixed loop, and that more than half the commits were bookkeeping. This section replaces §11 and §13 where they differ.
+
+1. **A task is a feature slice.** One user-visible change, end to end: its spec decision, the boards of a new screen, the server and the web code it needs. About 800 changed lines at most, tests included; split only above that, or when the parts touch unrelated modules. No standalone spec or board PR before the code unless Thomas asks for a pre-review or the design is security-sensitive (§11 item 2 paths). This replaces the 300-line cap of §13 item 5.
+2. **Up to 4 tasks in flight**, on disjoint modules (replaces §13 item 7, "at most 2"). Two tasks that touch the same module run one after the other.
+3. **Review per task.** One `code-reviewer` pass; `security-reviewer` only on sensitive paths (unchanged). A fix round runs only for blockers and majors; defect minors ride along in it, otherwise they join the batch's follow-up list. The verify-only check runs after a blocker or any security finding, so security blockers and majors stay fixed and verified (inbox #75); tests and CI check the rest.
+4. **Docs per task:** the review record (with the task's assumptions) and the PR body. No Progress section and no local site build: CI's `docs-gate` builds the site on every PR ([documentation-system §3.5](../specs/documentation-system.md#35-docs-per-batch-of-p3-tasks-thomas-2026-11-04)).
+5. **Per batch:** one `code-simplifier` pass (re-reviewed above 20 changed lines, as before) and the Progress sections. **Per milestone end** (`p3-batch` with `milestone: true`): the figure and `doc-reviewer`.
+6. **Promotion to `main` once per session run** (at its end) or at a milestone end, not per batch.
+7. **Bookkeeping once per batch.** Journal, `state.json` and cost records are committed once per batch and at the end of the run, not per PR. The session line per merge (§10 item 2) stays.
+8. **Questions.** An inbox entry only for a question with no safe default or a reserved item (`triage-policy.md`). Assumptions go to the task's review record and, when they decide behaviour, to the decision log.
+9. **Follow-ups.** A minor is folded into the next task that touches the same module; it gets no FU id of its own. The open follow-up list is reviewed once per milestone.
+10. **Waves chain.** The run does not pause at a wave boundary: it goes on to the next ready steps while the budget check answers `go`. The human gates of `pipeline.yaml` still stop it.
+11. **CI by path.** `ci.yml` skips `unit`, `product`, `web` and `e2e-local` on a PR that changes only `docs/`, `design/`, `.autopilot/`, `mkdocs.yml` or top-level Markdown files; `security`, `docs-gate` and `pr-body` run on every PR, and pushes to `main` run everything but the nightly corpus (this delivers §13 item 6).
