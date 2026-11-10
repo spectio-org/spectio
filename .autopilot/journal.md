@@ -881,3 +881,12 @@ FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and 
 - **Costs** (subagent tokens): 89 ~282k, 110a ~456k, 113 ~391k, 115b ~405k + ux ~56k + fix ~110k, 110b ~519k, B14 ~769k.
 - **Next run:** FU-P3-110c/d (boards, form, Run detail facts), 102h (Blosc/LZ4 decoder), the FU-P3-108 list with the UX-P3FU115B minors, the CI step of the order fixtures (Thomas).
 - **Not batched yet** (Progress sections for the next batch, §14 item 5): FU-P3-89, 110a, 113, 115b, 110b.
+
+## 2026-11-10 — promotion P3-B14 (#253) and login1 retest g
+
+- #252 (run-end journal) merged into integration (9f6d2207); promotion #253 merged into main (0f90388f), CI green.
+- **Retest g** (login1, Unix socket only, 0 CSP violations): search, bell, profile and Run detail PASS; runs table FAIL on the sort icons only.
+  - Sort icons render as solid squares: `web/src/runs/DataGrid.tsx:20` builds the theme with `withoutPart("iconSet")`, so AG Grid's own `.ag-icon-*` glyphs have no mask image, and FU-P3-115b turned on `unSortIcon`. Fix: draw our own sort icons or keep an icon set. The `ag-icon-aasc` class names are AG Grid's **[to be validated]**.
+  - Minors: the short run ID shown in the UI ("D80950") gives no match in search; focus drops to the page after "Mark all as read"; /profile sets no document.title; after Pin, focus lands on another run's cell; the one-run Delete sheet says "these runs".
+  - No Delete was confirmed on login1: the peer's auto mode blocked it as irreversible. Untested.
+- **Next run:** these items go first (sort icons as a fix, the minors folded into their modules), then the list of the run-end entry above.
