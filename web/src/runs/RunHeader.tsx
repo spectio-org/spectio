@@ -285,7 +285,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
           <Button variant="default" onClick={pin} leftSection={<Icon path={ICONS.pin} size={15} />} fullWidth={phone}>
             {run.pinned ? "Unpin" : "Pin"}
           </Button>
-          {ended && <DeleteRuns runs={[run]} why={null} onDeleted={() => navigate({ to: "/runs" })} />}
+          {ended && <DeleteRuns runs={[run]} why={null} onDeleted={(said) => navigate({ to: "/runs", state: { said } })} />}
         </div>
       </div>
       {cancelError && <p role="alert">Cancel failed: {cancelError}</p>}

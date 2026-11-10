@@ -373,7 +373,13 @@ test("FU-P3-115b: on a phone each card starts with its box, and the bulk bar fol
   serve(LIST);
   app("/runs");
   await screen.findByRole("list", { name: "Runs" });
-  await tick("atac-d");
+  // its own class, not the select wrappers' full-width one; its label is the 44 px hit area (UX-P3FU115B-01, -02)
+  const box = screen.getByRole("checkbox", { name: "Select run atac-d" });
+  expect(box).toHaveClass("sp-row-check");
+  expect(box).not.toHaveClass("sp-select");
+  expect(box.parentElement).toHaveClass("sp-row-hit");
+  await userEvent.click(box.parentElement!);
+  expect(box).toBeChecked();
   expect(screen.getByText("1 selected")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Delete…" })).not.toHaveAttribute("aria-disabled");
 });

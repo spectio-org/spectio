@@ -1,5 +1,5 @@
 import { Button } from "@mantine/core";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState, useSearch } from "@tanstack/react-router";
 import { useMediaQuery } from "@mantine/hooks";
 import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent, SortChangedEvent } from "ag-grid-community";
 import { type ReactNode, Suspense, createContext, lazy, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -45,6 +45,13 @@ export function runsSearch(search: Record<string, unknown>): { state?: string; q
   };
 }
 
+declare module "@tanstack/react-router" {
+  interface HistoryState {
+    /** What a delete on Run detail said, shown in the runs page's status line (UX-P3FU115B-04). */
+    said?: string[];
+  }
+}
+
 /** The page's selection and pin action, read by the grid's cells and the phone's cards. */
 const Rows = createContext<{ selected: Set<string>; toggle: (ids: string[], on: boolean) => void; pin: (run: Run) => void; ids: string[] }>({
   selected: new Set(),
@@ -56,14 +63,17 @@ const Rows = createContext<{ selected: Set<string>; toggle: (ids: string[], on: 
 /** A row's box, a native checkbox named after its run (ui-spec §4.3 note of 2026-11-10). */
 function SelectBox({ run }: { run: Run }) {
   const { selected, toggle } = useContext(Rows);
+  // the label is its hit area, 44 px on the phone's card (UX-P3FU115B-02)
   return (
-    <input
-      type="checkbox"
-      className="sp-select"
-      aria-label={`Select run ${runName(run)}`}
-      checked={selected.has(run.id)}
-      onChange={(e) => toggle([run.id], e.currentTarget.checked)}
-    />
+    <label className="sp-row-hit">
+      <input
+        type="checkbox"
+        className="sp-row-check"
+        aria-label={`Select run ${runName(run)}`}
+        checked={selected.has(run.id)}
+        onChange={(e) => toggle([run.id], e.currentTarget.checked)}
+      />
+    </label>
   );
 }
 
@@ -86,7 +96,7 @@ function SelectAll() {
     <input
       ref={box}
       type="checkbox"
-      className="sp-select"
+      className="sp-row-check"
       aria-label="Select all runs on this page"
       checked={ids.length > 0 && ids.every((id) => selected.has(id))}
       onChange={(e) => toggle(ids, e.currentTarget.checked)}
@@ -226,7 +236,7 @@ const onCellKey = (e: CellKeyDownEvent<Run> | FullWidthCellKeyDownEvent<Run>) =>
   if (!key || !cell || cell.getAttribute("role") !== "gridcell" || !("colDef" in e)) return;
   const keys: Record<string, Record<string, string>> = {
     name: { Enter: "a.sp-run-link", " ": "button.sp-pin" },
-    select: { " ": "input.sp-select" },
+    select: { " ": "input.sp-row-check" },
   };
   const target = keys[e.colDef.colId ?? ""]?.[key.key];
   if (!target) return;
@@ -296,8 +306,13 @@ export function RunsPage() {
   const states = FILTERS[filter].states?.join(",");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // what the last delete or pin said, focused after a delete: Delete… has gone with the selection
-  const [said, setSaid] = useState<string[]>([]);
+  const arrived = useRouterState({ select: (s) => s.location.state.said });
+  const [said, setSaid] = useState<string[]>(arrived ?? []);
   const saidLine = useRef<HTMLDivElement>(null);
+  // a delete on Run detail lands here: focus its lines, as after a delete from the table
+  useEffect(() => {
+    if (arrived?.length) saidLine.current?.focus();
+  }, [arrived]);
   useEffect(() => setSelected(new Set()), [states, q]);
 
   useEffect(() => {
@@ -399,7 +414,7 @@ export function RunsPage() {
   const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started")).map(
     (c): ColDef<Run> =>
       c.colId && SORTABLE.has(c.colId)
-        ? { ...c, sortable: true, comparator: keep, sortingOrder: ["asc", "desc"], sort: sort === c.colId ? "asc" : sort === `-${c.colId}` ? "desc" : null }
+        ? { ...c, sortable: true, unSortIcon: true, comparator: keep, sortingOrder: ["asc", "desc"], sort: sort === c.colId ? "asc" : sort === `-${c.colId}` ? "desc" : null }
         : c,
   );
 
