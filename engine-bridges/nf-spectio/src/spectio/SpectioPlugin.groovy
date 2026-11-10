@@ -439,6 +439,12 @@ class SpectioObserver implements TraceObserverV2 {
     static final List<String> REQUEST_KEYS = ['cpus', 'memory', 'time', 'disk', 'queue', 'accelerator',
                                               'accelerator_type', 'attempt']
     static final int MAX_CONFIG_DEPTH = 8
+    // The reader drops an event of more than 4096 JSON values (spectio_sdk MAX_EVENT_NODES) or a
+    // line over 64 KiB; a dropped onFlowBegin loses the stage freeze. A DAG costs one value per
+    // process and three per edge, so it is sent whole only under both caps.
+    static final int MAX_DAG_VALUES = 4000
+    static final int MAX_DAG_PROCESSES = 2000  // spectio_sdk NextflowDag's own cap
+    static final int MAX_DAG_BYTES = 57344
 
     private final Spool spool
     private volatile Session session
@@ -503,7 +509,70 @@ class SpectioObserver implements TraceObserverV2 {
         }
     }
 
-    @Override void onFlowBegin() { emit('onFlowBegin') { [:] } }
+    @Override void onFlowBegin() {
+        emit('onFlowBegin') {
+            final dag = processDag(session?.dag)
+            dag == null ? [:] : [dag: dag]
+        }
+    }
+
+    /** The run's DAG at process level (#160, spikes/metroflow/graph-contract.md): the processes in
+     *  creation order, by `TaskProcessor.name` (the qualified name the task events carry), and one
+     *  edge per pair of processes joined through channels and operators. Read from
+     *  `Session.dag`, built before `notifyFlowBegin` (Session.groovy:636-638, DAG.groovy:67-72,
+     *  398-490, nextflow v26.10.4). The DAG is only read, never normalized. Over MAX_DAG_VALUES
+     *  or MAX_DAG_BYTES it is `[truncated: true]`; on any error, null (no field). */
+    static Map processDag(Object dag) {
+        try {
+            final vertices = dag?.vertices
+            final edges = dag?.edges
+            if (!(vertices instanceof List) || !(edges instanceof List))
+                return null
+            final Map<Object, String> names = new IdentityHashMap<>()
+            final List<Object> sources = []
+            final Set<String> processes = new LinkedHashSet<>()
+            for (Object v : (List) vertices) {
+                if (str(v?.type) != 'PROCESS')
+                    continue
+                final name = str(v.process?.name ?: v.label)
+                if (name == null)
+                    continue
+                names.put(v, name)
+                sources << v
+                processes << name
+                if (processes.size() > MAX_DAG_PROCESSES)
+                    return [truncated: true]
+            }
+            final Map<Object, List<Object>> next = new IdentityHashMap<>()
+            for (Object e : (List) edges) {
+                if (e?.from != null && e?.to != null)
+                    next.computeIfAbsent(e.from) { [] } << e.to
+            }
+            final Set<List<String>> pairs = new LinkedHashSet<>()
+            for (Object source : sources) {  // creation order: a stable edge order
+                final from = names.get(source)
+                final Set<Object> seen = Collections.newSetFromMap(new IdentityHashMap<>())
+                final Deque<Object> todo = new ArrayDeque<>(next.get(source) ?: [])
+                while (!todo.isEmpty()) {
+                    final v = todo.pop()
+                    if (!seen.add(v))
+                        continue
+                    final target = names.get(v)
+                    if (target == null) {
+                        todo.addAll(next.get(v) ?: [])
+                    } else if (target != from) {
+                        pairs << [from, target]
+                        if (processes.size() + 3 * pairs.size() > MAX_DAG_VALUES)
+                            return [truncated: true]
+                    }
+                }
+            }
+            final out = [processes: processes as List, edges: pairs as List]
+            return JsonOutput.toJson(out).getBytes(StandardCharsets.UTF_8).length > MAX_DAG_BYTES ? [truncated: true] : out
+        } catch (Throwable e) {
+            return null
+        }
+    }
 
     @Override void onFlowComplete() {
         emit('onFlowComplete') {
