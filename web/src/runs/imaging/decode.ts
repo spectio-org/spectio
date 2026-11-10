@@ -8,7 +8,7 @@ import { Inflate } from "pako";
 export class NotDecoded extends Error {}
 
 // none, LZW, JPEG, Deflate (both codes), PackBits; old JPEG, LERC, WebImage and the rest refused
-const ALLOWED = new Set([1, 5, 7, 8, 32946, 32773]);
+export const ALLOWED = new Set([1, 5, 7, 8, 32946, 32773]);
 
 type Fd = Record<string, unknown>;
 const many = (value: unknown): number[] => (value === undefined ? [] : ArrayBuffer.isView(value) || Array.isArray(value) ? Array.from(value as ArrayLike<number>) : [Number(value)]);
