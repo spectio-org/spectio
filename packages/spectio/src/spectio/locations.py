@@ -40,7 +40,10 @@ def git_url(location: str, schemes: tuple[str, ...] = GIT_SCHEMES) -> tuple[str,
     then the path)."""
     if SHORT_NAME.fullmatch(location):
         location = f"{GITHUB}/{location}"
-    url = urlsplit(location)
+    try:
+        url = urlsplit(location)
+    except ValueError:  # its message quotes the netloc, credentials included (SEC-P3FU87A-01)
+        raise ValueError("not a URL") from None
     if url.scheme not in schemes or not location.startswith(f"{url.scheme}://"):
         allowed = ", ".join(f"{s}://" for s in schemes)
         raise ValueError(f"give an absolute path, an owner/repo name or a URL ({allowed})")
