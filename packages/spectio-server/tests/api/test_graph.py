@@ -1,4 +1,4 @@
-"""The workflow graph of issue #160 (api §5.8; spikes/metroflow/graph-contract.md): the feature
+"""The workflow graph of issue #160 (api §5.10; spikes/metroflow/graph-contract.md): the feature
 flag, the run graph from Snakemake's rule graphs and Nextflow's `onFlowBegin` DAG, a process's
 outputs, and the Launch graph (rule files, BioFlow-Insight's metro map)."""
 

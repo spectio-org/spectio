@@ -1,4 +1,4 @@
-"""The workflow graph of issue #160 (api §5.8; spikes/metroflow/graph-contract.md).
+"""The workflow graph of issue #160 (api §5.10; spikes/metroflow/graph-contract.md).
 
 `document` builds the engine-neutral GraphDocument from what the store already holds (Snakemake's
 rule graphs, Nextflow's `onFlowBegin` DAG, the stages) or from a static analysis (`bioflow`,

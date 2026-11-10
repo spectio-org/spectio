@@ -1,5 +1,5 @@
 // The workflow graph of issue #160: GraphDocument v1 and its routes, as in
-// spikes/metroflow/graph-contract.md (api §5.8 once the spec lands). Hand-written like api.ts;
+// spikes/metroflow/graph-contract.md (api §5.10 once the spec lands). Hand-written like api.ts;
 // the server routes come with the same branch.
 import { ApiError, type Counts, type ProcessStatus } from "../../api";
 

@@ -3,6 +3,7 @@ and 4). The head script runs a stub engine through the login shell, which record
 list and its environment in the launch directory."""
 
 import contextlib
+import hashlib
 import json
 import os
 import shlex
@@ -18,7 +19,7 @@ from pathlib import Path
 import pytest
 
 from spectio import loginshell
-from spectio.environments import LocalValues, SlurmValues
+from spectio.environments import DefaultResources, LocalValues, SlurmValues
 from spectio.runner.engines import (
     EngineMissing,
     EngineTooOld,
@@ -28,13 +29,14 @@ from spectio.runner.engines import (
 )
 from spectio.runner.headscript import (
     engine_args,
+    list_rules_args,
     nextflow_config,
     render_head_script,
     write_launch_files,
 )
 from spectio.runner.resume import check_dirs
 from spectio.runner.rundir import make_run_dirs
-from spectio.runner.types import LaunchSpec, ResumeSource
+from spectio.runner.types import ExtraFile, LaunchSpec, ResumeSource
 
 RUN_ID = "run_01K8T9HEAD0000000000000T09"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -844,3 +846,178 @@ def test_req18_snapshot_head_out_names_the_environment(home: Path, bridges: Path
     assert run_head(local).returncode == 0
     first = (local.launch_dir / ".spectio" / "head.out").read_text().splitlines()[0]
     assert first == "Spectio: environment local (local: cpus 2, memory 8192 MiB)"
+
+
+# --- FU-P3-110b: default resources and the extra config file (api §5.7, req. 20) -------------
+
+NF_EXTRA = "process.memory = '1 GB'\nprocess { withName: 'BIG' { memory = '3 GB' } }\n"
+
+
+def extra(text: str = NF_EXTRA, kept_as: str = "extra.config") -> ExtraFile:
+    return ExtraFile(kept_as, hashlib.sha256(text.encode()).hexdigest(), text)
+
+
+def test_req20_nextflow_resources_in_spectio_config(home: Path) -> None:
+    run = DefaultResources(cpus=4, mem_mib=2048, time_min=60)
+    config = nextflow_config(make_spec(home / "runs", local=CAPS, default_resources=run))
+    assert "process.cpus = 4\nprocess.memory = '2048 MB'\nprocess.time = '60m'\n" in config
+    slurm = SlurmValues(partition="htc", time_min=90, mem_mib=4096)
+    only_mem = DefaultResources(mem_mib=100)
+    config = nextflow_config(make_spec(home / "runs", slurm=slurm, default_resources=only_mem))
+    # the run's key replaces the environment's; one the run leaves out keeps the environment's
+    assert "process.memory = '100 MB'" in config and "4096" not in config
+    assert config.count("process.time = '90m'") == 1 and "process.cpus" not in config
+
+
+def test_req20_snakemake_one_default_resources_list(home: Path, bridges: Path) -> None:
+    run = DefaultResources(mem_mib=100, time_min=5)
+    slurm = SlurmValues(partition="htc", time_min=90, mem_mib=4096)
+    args = engine_args(snakemake_spec(home, slurm=slurm, default_resources=run))
+    assert args.count("--default-resources") == 1
+    at = args.index("--default-resources")
+    assert args[at + 1 : at + 5] == ["slurm_partition='htc'", "runtime=5", "mem_mb=100", "--jobs"]
+    args = engine_args(snakemake_spec(home, local=CAPS, default_resources=run))
+    tail = ["--default-resources", "mem_mb=100", "runtime=5", "--resources", "mem_mb=8192"]
+    assert args[-7:] == [*tail, "--cores", "2"]
+    args = engine_args(snakemake_spec(home, default_resources=DefaultResources(time_min=5)))
+    assert args[-2:] == ["--default-resources", "runtime=5"] and args.count("all") == 1
+
+
+@pytest.mark.parametrize(
+    ("kw", "why"),
+    [
+        ({"default_resources": DefaultResources(cpus=2)}, "threads"),
+        ({"default_resources": DefaultResources(time_min=5), "profiles": ["slurm"]}, "profile"),
+        ({"default_resources": DefaultResources.model_construct(mem_mib=True)}, "not an integer"),
+    ],
+)
+def test_req20_snakemake_resources_refused_in_the_head(
+    home: Path, bridges: Path, kw: dict[str, object], why: str
+) -> None:
+    with pytest.raises(ValueError, match=why):
+        engine_args(snakemake_spec(home, **kw))
+
+
+def test_req20_nextflow_resources_checked_where_used(home: Path) -> None:
+    bad = DefaultResources.model_construct(cpus=257)
+    with pytest.raises(ValueError, match="not an integer"):
+        nextflow_config(make_spec(home / "runs", default_resources=bad))
+
+
+def test_req20_nextflow_extra_config_first(home: Path, bridges: Path) -> None:
+    engine = shlex.quote(str(stub_engine(home / "bin")))
+    spec = make_spec(home / "runs", engine_cmd=engine, config_file=extra())
+    assert run_head(spec).returncode == 0
+    own = spec.launch_dir / ".spectio"
+    args = argv(spec)
+    assert args[args.index("-c") + 1] == f"{own}/extra.config,{own}/spectio.config"
+    kept = own / "extra.config"
+    assert kept.read_text() == NF_EXTRA and stat.S_IMODE(kept.stat().st_mode) == 0o600
+
+
+def test_req20_snakemake_extra_configfile_before_params(home: Path, bridges: Path) -> None:
+    text = "ref:\n  build: GRCh38\n"
+    spec = snakemake_spec(home, config_file=extra(text, "extra.yaml"))
+    write_launch_files(spec)
+    own = spec.launch_dir / ".spectio"
+    for args in (engine_args(spec), list_rules_args(spec)):
+        at = args.index("--configfile")
+        assert args[at + 1 : at + 3] == [f"{own}/extra.yaml", f"{own}/params.json"]
+    assert (own / "extra.yaml").read_text() == text
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        ExtraFile("extra.config", "0" * 64, NF_EXTRA),  # the bytes changed
+        ExtraFile("../extra.config", hashlib.sha256(b"x").hexdigest(), "x"),
+        ExtraFile("extra.config", hashlib.sha256(b"x").hexdigest(), None),  # cleared
+    ],
+)
+def test_req20_extra_file_checked_before_the_engine(
+    home: Path, bridges: Path, bad: ExtraFile
+) -> None:
+    spec = make_spec(home / "runs", config_file=bad)
+    with pytest.raises(ValueError, match="config file"):
+        write_launch_files(spec)
+    assert not (spec.launch_dir / ".spectio" / "head.sh").exists()
+
+
+def test_req20_nextflow_comma_in_the_launch_directory_refused(home: Path) -> None:
+    spec = make_spec(home / "ru,ns", config_file=extra())
+    with pytest.raises(ValueError, match="comma"):
+        engine_args(spec)
+
+
+def test_req20_banner_names_the_run_values_and_the_file(home: Path, bridges: Path) -> None:
+    engine = shlex.quote(str(stub_engine(home / "bin")))
+    found = extra()
+    spec = make_spec(
+        home / "runs",
+        engine_cmd=engine,
+        environment="local",
+        local=CAPS,
+        default_resources=DefaultResources(cpus=1, time_min=30),
+        config_file=found,
+    )
+    assert run_head(spec).returncode == 0
+    first = (spec.launch_dir / ".spectio" / "head.out").read_text().splitlines()[0]
+    assert first == (
+        "Spectio: environment local (local: cpus 2, memory 8192 MiB);"
+        f" run: cpus 1, time 30 min; config extra.config (sha256 {found.sha256[:12]})"
+    )
+
+
+@pytest.mark.engines
+def test_req20_order_on_nextflow(home: Path, tmp_path: Path, bridges: Path) -> None:
+    """The [to be validated] of api §5.7: in `-c a,b` the later file wins over the same generic
+    key, and the user's `withName` still wins over both."""
+    nextflow = os.environ.get("NEXTFLOW") or shutil.which("nextflow")
+    if nextflow is None or shutil.which("java") is None:
+        pytest.skip("no nextflow and java on PATH")
+    run = DefaultResources(mem_mib=2048)
+    spec = make_spec(tmp_path / "runs", config_file=extra(), default_resources=run)
+    write_launch_files(spec)
+    spec.location.mkdir(exist_ok=True)
+    (spec.location / "main.nf").write_text("workflow {}\n")
+    args = engine_args(spec)
+    files = args[args.index("-c") + 1]
+    done = subprocess.run(
+        # -c is a launcher option: before `config` (checked on Nextflow 25.10.9)
+        [nextflow, "-q", "-c", files, "config", "-flat", str(spec.location)],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=300,
+    )
+    assert "process.memory = '2048 MB'" in done.stdout
+    assert "process.'withName:BIG'.memory = '3 GB'" in done.stdout
+
+
+@pytest.mark.engines
+def test_req20_order_on_snakemake(home: Path, bridges: Path) -> None:
+    """The deep merge of api §5.7: the workflow's own `configfile:`, then the extra file, then
+    the form's params, key by key."""
+    snakemake = shutil.which("snakemake")
+    if snakemake is None:
+        pytest.skip("no snakemake on PATH")
+    spec = snakemake_spec(
+        home,
+        params={"ref": {"release": 112}},
+        config_file=extra("ref:\n  build: GRCh38\n", "extra.yaml"),
+    )
+    (spec.location / "config.yaml").write_text("ref: {build: GRCh37, release: 100, x: own}\n")
+    (spec.location / "workflow" / "Snakefile").write_text(
+        f'configfile: "{spec.location}/config.yaml"\n'
+        'rule all:\n    output: "out.json"\n'
+        "    run:\n        import json; json.dump(config, open(output[0], 'w'))\n"
+    )
+    write_launch_files(spec)
+    subprocess.run(
+        [snakemake, "-q", *list_rules_args(spec)[:-1], "--cores", "1"],
+        capture_output=True,
+        check=True,
+        timeout=300,
+    )
+    found = json.loads((spec.engine_dir / "out.json").read_text())
+    assert found["ref"] == {"build": "GRCh38", "release": 112, "x": "own"}

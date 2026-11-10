@@ -72,6 +72,14 @@ class LocalValues(_Strict):
     mem_mib: MemMib | None = None
 
 
+class DefaultResources(_Strict):
+    """A run's `default_resources` (api §5.7), in the units of §5.4."""
+
+    cpus: Annotated[int, Field(ge=1, le=256)] | None = None
+    mem_mib: MemMib | None = None
+    time_min: Annotated[int, Field(ge=1, le=43_200)] | None = None
+
+
 class Profiles(_Strict):
     nextflow: ProfileName | None = None
     snakemake: ProfileName | None = None

@@ -6,7 +6,7 @@
 - whether it covers Snakemake;
 - which renderer Spectio should use for an interactive graph with live states.
 
-**Answer in one line.** Only the **producer** can be forked: BioFlow-Insight is MIT and its source is public, and it is vendored in `spikes/metroflow/upstream/`. The **MetroFlow renderer** is not public: it lives in a repository of the hosted service that asks for credentials. BioFlow-Insight reads Nextflow only. Its static edges are an estimate and can contain cycles. **Decision:** Spectio keeps its own engine-neutral graph document (api §5.8) and its own renderer (React Flow + dagre, ui-spec §4.14), and uses BioFlow-Insight as one optional producer, for Launch and as a fallback for Nextflow runs. Runtime truth comes from the engines: Nextflow's DAG through `nf-spectio`, and Snakemake's rule graph.
+**Answer in one line.** Only the **producer** can be forked: BioFlow-Insight is MIT and its source is public, and it is vendored in `spikes/metroflow/upstream/`. The **MetroFlow renderer** is not public: it lives in a repository of the hosted service that asks for credentials. BioFlow-Insight reads Nextflow only. Its static edges are an estimate and can contain cycles. **Decision:** Spectio keeps its own engine-neutral graph document (api §5.10) and its own renderer (React Flow + dagre, ui-spec §4.14), and uses BioFlow-Insight as one optional producer, for Launch and as a fallback for Nextflow runs. Runtime truth comes from the engines: Nextflow's DAG through `nf-spectio`, and Snakemake's rule graph.
 
 ## Setup
 
@@ -76,7 +76,7 @@ The vendored source has no mention of Snakemake (`grep -ri snakemake` finds noth
 
 ## Consequences for the design
 
-1. **Spectio's graph document** is the contract (api §5.8): one document for both engines, with `producer` and `complete` fields. BioFlow-Insight output is mapped into it, never passed through.
+1. **Spectio's graph document** is the contract (api §5.10): one document for both engines, with `producer` and `complete` fields. BioFlow-Insight output is mapped into it, never passed through.
 2. **Producers, from most to least trusted:** the Nextflow runtime DAG (`nf-spectio`, `onFlowBegin`); the Snakemake rule graph; BioFlow-Insight (static, marked as an estimate); stages only (nodes with no edges).
 3. **Every graph algorithm tolerates cycles.** Layering, critical path and lineage drop back edges found by depth-first search.
 4. **BioFlow-Insight runs on the server host, on the local workflow directory, in a subprocess with a timeout.** It is an optional install extra, because it needs Java and Graphviz. Code is never sent to the hosted service (security, #160 question 2).

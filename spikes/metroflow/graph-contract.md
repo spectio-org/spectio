@@ -2,7 +2,7 @@
 
 Draft contract shared by the server, web and nf-spectio work on branch
 `claude/metroflow-interactive-graph-efgw5l`. When the work is done, the spec text moves to
-`docs/specs/api-and-data-model.md` §5.8 (graph document), and the screens go to
+`docs/specs/api-and-data-model.md` §5.10 (graph document), and the screens go to
 `docs/specs/ui-spec.md` §4.14 (workflow graph). After that move, this file is kept only as the spike's record.
 
 ## Feature flag

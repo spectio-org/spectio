@@ -241,7 +241,7 @@ _ProcessName = Annotated[str, Field(max_length=1024)]
 
 
 class NextflowDag(_Data):
-    """The process-level DAG `nf-spectio` sends on `onFlowBegin` (issue #160; api §5.8):
+    """The process-level DAG `nf-spectio` sends on `onFlowBegin` (issue #160; api §5.10):
     operators walked through, at most 2000 processes and within the event cap
     (`MAX_EVENT_NODES`: processes + 3 x edges <= 4000), else only `truncated`."""
 

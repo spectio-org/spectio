@@ -1353,10 +1353,10 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
   - The MetroFlow renderer is in a private repository.
   - BioFlow-Insight reads Nextflow only. Its static edges can contain cycles (nf-core/fetchngs).
 - **Decided:**
-  - Spectio's own engine-neutral graph document ([api §5.8](../specs/api-and-data-model.md#58-workflow-graph-002-flag-graph_view)) and its own renderer, React Flow + dagre (both MIT) ([ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view)).
+  - Spectio's own engine-neutral graph document ([api §5.10](../specs/api-and-data-model.md#510-workflow-graph-002-flag-graph_view)) and its own renderer, React Flow + dagre (both MIT) ([ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view)).
   - Producers, from most to least trusted: the Nextflow runtime DAG from `nf-spectio` `onFlowBegin`, the Snakemake rule graph, BioFlow-Insight as an optional extra, and stages only.
   - The flag is `graph_view` and is off by default.
   - Code is never sent to the hosted BioFlow-Insight.
-- **Changed.** [api §5.8](../specs/api-and-data-model.md#58-workflow-graph-002-flag-graph_view), [ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view), [dev environment §15.1](../specs/dev-environment-and-testing.md) (Visualisation row).
+- **Changed.** [api §5.10](../specs/api-and-data-model.md#510-workflow-graph-002-flag-graph_view), [ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view), [dev environment §15.1](../specs/dev-environment-and-testing.md) (Visualisation row).
 - **Open.** Ask the MetroFlow authors about the renderer's licence. Measure BioFlow-Insight at nf-core scale (rnaseq). OME-NGFF badges on imaging nodes ([#246](https://github.com/spectio-org/spectio/issues/246)).
 

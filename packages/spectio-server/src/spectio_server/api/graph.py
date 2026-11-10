@@ -1,4 +1,4 @@
-"""The workflow graph routes of issue #160 (api §5.8), behind the `graph_view` feature.
+"""The workflow graph routes of issue #160 (api §5.10), behind the `graph_view` feature.
 
 `GET /features` lists the server's features, off by default (dev-env §15.1: 0.0.1 ships no
 graph). With `graph_view` off, every graph route is `404 feature-disabled`.

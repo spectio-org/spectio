@@ -1,8 +1,11 @@
 import { useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import type { ServerVersion } from "../api";
 import { ICONS, Icon } from "../icons";
 import type { PageCrumb } from "./crumb";
+import { NotificationsBell } from "./NotificationsBell";
+import { SearchDialog } from "./SearchDialog";
 
 type To = "/" | "/runs" | "/launch" | "/environments" | "/catalog";
 interface Crumb {
@@ -85,19 +88,18 @@ function Mark({ width }: { width: number }) {
 }
 
 const SEARCH = ICONS.search;
-const BELL = "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0";
 const MOON = "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z";
 const SUN = "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.2 4.2l1.4 1.4 M18.4 18.4l1.4 1.4 M1 12h2 M21 12h2 M4.2 19.8l1.4-1.4 M18.4 5.6l1.4-1.4";
-const PERSON = "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0";
+export const PERSON = "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0";
 
 /** A native switch: the label stays "Dark theme", `aria-checked` says whether it is on. */
-function ThemeSwitch() {
+function ThemeSwitch({ className = "sp-key" }: { className?: string }) {
   const { setColorScheme } = useMantineColorScheme();
   const dark = useComputedColorScheme("light") === "dark";
   return (
     <button
       type="button"
-      className="sp-key"
+      className={className}
       role="switch"
       aria-checked={dark}
       aria-label="Dark theme"
@@ -108,14 +110,14 @@ function ThemeSwitch() {
   );
 }
 
-/** 0.0.1 has no search, notifications or accounts: disabled placeholders with their names (G1). */
-function Placeholder({ name, path, className = "sp-key" }: { name: string; path: string; className?: string }) {
+/** The avatar: a link to the Profile page (ui-spec §4.10.1, FU-P3-112). */
+function Avatar() {
   return (
-    <button type="button" className={className} disabled aria-label={`${name} (not in 0.0.1)`}>
+    <Link to="/profile" className="sp-key sp-avatar" aria-label="Profile">
       <span className="sp-key-face">
-        <Icon path={path} size={19} />
+        <Icon path={PERSON} size={19} />
       </span>
-    </button>
+    </Link>
   );
 }
 
@@ -130,6 +132,19 @@ interface Props {
 
 /** The floating top bar of the Paper shell (LiteTopbar), or its compact phone form (MLiteTopbar). */
 export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
+  const [searching, setSearching] = useState(false);
+  // ⌘K / Ctrl+K opens the search from anywhere (FU-P3-89)
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearching(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const dialog = <SearchDialog opened={searching} onClose={() => setSearching(false)} phone={phone} />;
   if (phone) {
     const node = server ? `Server on ${server.node}, online` : down ? "Server not reached" : "Connecting";
     return (
@@ -144,13 +159,19 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
             <span className="sp-dot" aria-hidden="true" />
             <span aria-hidden="true">{server?.node ?? (down ? "offline" : "…")}</span>
           </span>
-          <Placeholder name="Search" path={SEARCH} className="sp-key sp-narrow-hide" />
-          <Placeholder name="Notifications" path={BELL} className="sp-key sp-narrow-hide" />
-          <ThemeSwitch />
-          <Placeholder name="Account" path={PERSON} className="sp-key sp-avatar" />
+          <button type="button" className="sp-key" aria-label="Search runs, pipelines and pages" onClick={() => setSearching(true)}>
+            <span className="sp-key-face">
+              <Icon path={SEARCH} size={19} />
+            </span>
+          </button>
+          <NotificationsBell phone />
+          {/* Below 390 px the theme switch hides so the row fits; the Profile page sets it too (FU-P3-112). */}
+          <ThemeSwitch className="sp-key sp-narrow-hide" />
+          <Avatar />
         </div>
         {/* The page's title row (PhoneTitle); hidden while empty, as on Home (MLiteHome). */}
         <div className="sp-mtitle" ref={titleRow} />
+        {dialog}
       </header>
     );
   }
@@ -162,14 +183,15 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
       </Link>
       <span className="sp-rule" aria-hidden="true" />
       <Breadcrumbs crumb={crumb} />
-      <button type="button" className="sp-search" disabled aria-label="Search (not in 0.0.1)">
+      <button type="button" className="sp-search" aria-label="Search runs, pipelines and pages" aria-keyshortcuts="Meta+K Control+K" onClick={() => setSearching(true)}>
         <Icon path={SEARCH} size={16} />
-        <span className="sp-search-text">Search (not in 0.0.1)</span>
-        <kbd>⌘K</kbd>
+        <span className="sp-search-text">Search</span>
+        <kbd aria-hidden="true">⌘K</kbd>
       </button>
-      <Placeholder name="Notifications" path={BELL} />
+      <NotificationsBell phone={false} />
       <ThemeSwitch />
-      <Placeholder name="Account" path={PERSON} className="sp-key sp-avatar" />
+      <Avatar />
+      {dialog}
     </header>
   );
 }

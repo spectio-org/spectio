@@ -1,4 +1,4 @@
-"""The GraphDocument (version 1) of api §5.8, built from plain inputs, with no I/O.
+"""The GraphDocument (version 1) of api §5.10, built from plain inputs, with no I/O.
 
 Node ids are the names the store keeps (`tasks.process_or_rule`), so a node joins
 `/processes` and `/tasks?process=` with no mapping. Every text that comes from a pipeline (names,
