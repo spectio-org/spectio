@@ -17,6 +17,7 @@ manifest's name and version and the profiles, and the parameter schema with wher
 """
 
 import contextlib
+import errno
 import json
 import os
 import re
@@ -37,11 +38,12 @@ from urllib.parse import quote
 import yaml
 from fastapi import APIRouter, Request
 
-from spectio import locations
+from spectio import envfile, locations
 from spectio.config import Settings
 from spectio.runner.engines import EngineError, check_engine
 from spectio.runner.rundir import private_dir
-from spectio_server.api.problems import Invalid
+from spectio_server.api.problems import Invalid, Problem
+from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 
 router = APIRouter()
 
@@ -59,6 +61,9 @@ ENTRY_FILES: dict[str, tuple[str, ...]] = {
 }
 SMK_SCHEMAS = ("config.schema.yaml", "workflow/schemas/config.schema.yaml")
 MAX_FILE = 1048576  # a config or schema file read by inspect
+MAX_PARAMS_FILE = 256 * 1024  # a catalog entry's params file (api §5.6, SEC-PRE-FU87-07)
+MAX_DEPTH = 32  # of the params (FU-P3-17), sent or read from a params file
+NO_ALIASES = "YAML aliases are not read"
 
 SchemaSource = Literal["nextflow_schema.json", "config.schema.yaml", "inferred", "none"]
 
@@ -249,6 +254,61 @@ def _read(root: Path, *parts: str) -> str | None:
     return raw.decode()
 
 
+def depth(value: Any) -> int:
+    """How deep `value` nests, iteratively: a deep value never reaches the recursion limit."""
+    deepest, todo = 0, [(value, 1)]
+    while todo:
+        item, level = todo.pop()
+        deepest = max(deepest, level)
+        if isinstance(item, dict):
+            todo.extend((v, level + 1) for v in item.values())
+        elif isinstance(item, list):
+            todo.extend((v, level + 1) for v in item)
+    return deepest
+
+
+def read_params(root: Path, rel: str) -> dict[str, Any]:
+    """The top-level map of the params file `rel` (checked by `locations.check_params_file`)
+    inside `root`, through `_open`'s walk (api §5.6). Raises ValueError with an error in words
+    that names `rel` and quotes none of the file's bytes (SEC-PRE-FU87-03)."""
+    try:
+        fd = _open(root, *rel.split("/"))
+    except OSError as exc:
+        if exc.errno == errno.ELOOP:
+            raise ValueError(
+                f"{rel} is reached through a symbolic link, which is not read"
+            ) from None
+        if exc.errno in (errno.ENOENT, errno.ENOTDIR):
+            raise ValueError(f"the pipeline has no such file as {rel}") from None
+        raise ValueError(f"{rel} cannot be opened: {exc.strerror}") from None
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):  # a directory, a FIFO
+            raise ValueError(f"{rel} is not a regular file")
+        with os.fdopen(fd, "rb", closefd=False) as f:
+            raw = f.read(MAX_PARAMS_FILE + 1)
+    except OSError as exc:
+        raise ValueError(f"{rel} cannot be read: {exc.strerror}") from None
+    finally:
+        os.close(fd)
+    if len(raw) > MAX_PARAMS_FILE:
+        raise ValueError(f"{rel} is larger than {MAX_PARAMS_FILE} bytes")
+    kind = "JSON" if rel.endswith(".json") else "YAML"
+    try:
+        values = json.loads(raw.decode()) if kind == "JSON" else load_yaml(raw.decode())
+    except UnicodeDecodeError:
+        raise ValueError(f"{rel} is not UTF-8 text") from None
+    except RecursionError:
+        raise ValueError(f"{rel} is nested too deep to be read") from None
+    except (ValueError, yaml.YAMLError) as exc:  # their messages quote the file: not shown
+        why = NO_ALIASES if str(exc) == NO_ALIASES else f"not {kind}"
+        raise ValueError(f"{rel} cannot be read: {why}") from None
+    if not isinstance(values, dict):
+        raise ValueError(f"{rel} is not a map of parameter names to values")
+    if depth(values) > MAX_DEPTH:
+        raise ValueError(f"{rel} is nested deeper than {MAX_DEPTH} levels")
+    return values
+
+
 def _jsonable(value: Any) -> Any:
     """YAML dates and the like as strings, so that the response can carry them."""
     return json.loads(json.dumps(value, default=str))
@@ -258,7 +318,7 @@ def load_yaml(text: str) -> Any:
     """Safe YAML with no aliases, which would let a small file grow huge in the response."""
     for event in yaml.parse(text, Loader=yaml.SafeLoader):
         if isinstance(event, yaml.AliasEvent):
-            raise ValueError("YAML aliases are not read")
+            raise ValueError(NO_ALIASES)
     return _jsonable(yaml.safe_load(text))
 
 
@@ -456,11 +516,55 @@ class EngineVersions:
         return dict(kept[1]) if kept else dict.fromkeys(ENTRY_FILES)
 
 
+def _params(request: Request, resolved: Resolved, engine: str | None, rel: str) -> Any:
+    """Inspect's `params_file` (api §5.6): every top-level key of the file in `values`, or
+    `values: null` and an `error` in words whatever went wrong, never a refusal; and what in it,
+    or the file itself, loads code (SEC-PRE-FU87-01)."""
+    # relaunch imports this module, so its check is imported here
+    from spectio_server.api.relaunch import code_loading, writable_by_others
+
+    values: dict[str, Any] | None = None
+    error: str | None = None
+    try:
+        values = read_params(resolved.directory, rel)
+    except ValueError as exc:
+        error = envfile._clean(str(exc))  # at most 200 characters, no control one
+    local = resolved.source == "local"
+    file = str(resolved.directory / rel)
+
+    def flagged() -> list[dict[str, Any]]:
+        found = code_loading(resolved.location, local, values or {}, engine or "", [])
+        if local:
+            found.append(
+                {
+                    "field": "params_file",
+                    "value": file,
+                    "writable_by_others": writable_by_others(file),
+                }
+            )
+        return found
+
+    try:
+        loading = request.app.state.files.run(flagged, READ_TIMEOUT_S)
+    except Stalled as exc:
+        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+    return {"path": rel, "values": values, "code_loading": loading, "error": error}
+
+
 @router.get("/workflows:inspect")
-def inspect(request: Request, location: str, revision: str | None = None) -> dict[str, Any]:
+def inspect(
+    request: Request,
+    location: str,
+    revision: str | None = None,
+    params_file: str | None = None,
+) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
+    if params_file is not None:  # before anything is fetched (SEC-PRE-FU87-04)
+        with _as_invalid("params_file"):
+            locations.check_params_file(params_file)
     resolved = resolve(settings.data_dir, location, revision)
     found = inspect_dir(resolved.directory, resolved.default_name)
+    params = None if params_file is None else _params(request, resolved, found.engine, params_file)
     versions = request.app.state.engine_versions()
     return {
         "location": resolved.location,
@@ -474,6 +578,7 @@ def inspect(request: Request, location: str, revision: str | None = None) -> dic
         "schema": found.schema,
         "schema_source": found.schema_source,
         "profiles": found.profiles,
+        "params_file": params,
     }
 
 

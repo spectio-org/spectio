@@ -12,7 +12,7 @@ or contacts a remote.
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from spectio import envfile, locations
 from spectio.environments import Label, Name, ProfileName
@@ -31,17 +31,22 @@ class Entry(BaseModel):
     label: Label | None = None
     engine: Literal["nextflow", "snakemake"]
     location: Location
-    revision: str | None = None  # required for Git, `null` for a path
+    # required for Git, `null` for a path; checked as a field, so a refusal names `revision`
+    revision: str | None = Field(None, validate_default=True)
     profile: ProfileName | None = None
     params_file: ParamsFile | None = None
 
-    @model_validator(mode="after")
-    def _revision(self) -> "Entry":
-        if not self.location.startswith("/"):
-            locations.check_revision(self.revision)
-        elif self.revision is not None:
+    @field_validator("revision")
+    @classmethod
+    def _revision(cls, revision: str | None, info: ValidationInfo) -> str | None:
+        location = info.data.get("location")  # absent when the location was refused
+        if location is None:
+            return revision
+        if not location.startswith("/"):
+            return locations.check_revision(revision)
+        if revision is not None:
             raise ValueError("a path takes no revision")
-        return self
+        return revision
 
 
 KIND = envfile.Kind(FILE, "pipelines", Entry, MAX_ENTRIES, frozenset({"new"}), False)

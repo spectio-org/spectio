@@ -30,7 +30,9 @@ from spectio_server.api.environments import choose
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import (
     ENTRY_FILES,
+    MAX_DEPTH,
     Found,
+    depth,
     entry_files,
     inspect_dir,
     refuse_control,
@@ -43,8 +45,6 @@ from spectio_server.store.schema import principals, runner_commands
 from spectio_server.store.writer import Writer
 
 router = APIRouter()
-
-MAX_DEPTH = 32  # of the params (FU-P3-17)
 
 
 class WorkflowIn(BaseModel):
@@ -69,22 +69,9 @@ class LaunchIn(BaseModel):
     @field_validator("params")
     @classmethod
     def _shallow(cls, params: dict[str, JsonValue]) -> dict[str, JsonValue]:
-        if _depth(params) > MAX_DEPTH:
+        if depth(params) > MAX_DEPTH:
             raise ValueError(f"nested deeper than {MAX_DEPTH} levels")
         return params
-
-
-def _depth(value: JsonValue) -> int:
-    """How deep `value` nests, iteratively: a deep value never reaches the recursion limit."""
-    deepest, todo = 0, [(value, 1)]
-    while todo:
-        item, depth = todo.pop()
-        deepest = max(deepest, depth)
-        if isinstance(item, dict):
-            todo.extend((v, depth + 1) for v in item.values())
-        elif isinstance(item, list):
-            todo.extend((v, depth + 1) for v in item)
-    return deepest
 
 
 def _check(body: LaunchIn) -> None:

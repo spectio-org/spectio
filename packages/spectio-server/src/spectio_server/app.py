@@ -27,12 +27,16 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
 
+from spectio import envfile
+from spectio.catalog import KIND as CATALOG
+from spectio.catalog import catalog_path
 from spectio.config import Settings
 from spectio.envfile import environments_path
 from spectio_server import static
 from spectio_server.api import (
     browser,
     cancel,
+    catalog,
     environments,
     logs,
     problems,
@@ -167,7 +171,10 @@ def create_app(
         # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`
         app.state.reports = {}  # the reports of ended runs (P1 Task 31)
         app.state.follows = logs.Follows()  # dev-env §15.3 req. 14
-        app.state.environments = environments.Store(environments_path())  # §15.3 req. 18
+        app.state.environments = environments.Store(
+            environments_path(), envfile.ENVIRONMENTS, "environments"
+        )  # §15.3 req. 18
+        app.state.catalog = environments.Store(catalog_path(), CATALOG, "catalog")  # api §5.6
         routers = (
             workflows,
             runs_write,
@@ -179,6 +186,7 @@ def create_app(
             workdir,
             cancel,
             environments,
+            catalog,
         )
         for module in (*routers, stream):
             app.include_router(module.router, prefix=API)
