@@ -373,6 +373,22 @@ def test_cancel_term_then_kill(runs_root: Path, launcher: LocalLauncher) -> None
     assert report.exit_code is None or report.exit_code != 0
 
 
+def test_cancel_just_before_the_engine_starts(runs_root: Path, launcher: LocalLauncher) -> None:
+    """FU-P3-108a: a Cancel (the marker, then SIGTERM to the group) that lands after the head's
+    marker check, while a shell that traps TERM is about to start the engine, still stops it.
+    The hook in front of the engine does what the loop's Cancel does, at that very point."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; exit 0")
+    spec = spec_for(runs_root, engine)
+    hook = runs_root.parent / "bin" / "cancel-now"
+    marker = shlex.quote(str(spec.launch_dir / ".spectio" / "cancel"))
+    hook.write_text(f"#!/bin/bash\necho '{{}}' > {marker}\nkill -TERM 0\n")
+    hook.chmod(0o755)
+    native_id = launcher.submit(replace(spec, engine_cmd=f"{hook}; {spec.engine_cmd}"))
+    report = ended(launcher, native_id)
+    assert not (spec.launch_dir / "started").exists()
+    assert report.exit_code == 143
+
+
 # --- The runner loop ------------------------------------------------------------------------
 
 
@@ -621,6 +637,58 @@ def test_cancel_with_a_stale_ref_after_the_launch(runs_root: Path, launcher: Loc
     assert ("cmd_cancel", True, None) in sink.acks
     assert sink.last(ref.launch_id).exit_code == 143
     assert not (ref.launch_dir / "started").exists()
+
+
+class FastHead(LocalLauncher):
+    """A launcher whose `submit` returns once the head has reached its engine, or ended: a head
+    as fast as one on an idle host, against a loop slowed down by load."""
+
+    def submit(self, spec: LaunchSpec) -> str:
+        native_id = super().submit(spec)
+        done = spec.launch_dir / ".spectio" / "head.exit"
+        wait_for(lambda: (spec.launch_dir / "started").exists() or done.exists())
+        return native_id
+
+
+def test_cancel_in_the_lease_of_its_launch_beats_a_fast_head(runs_root: Path) -> None:
+    """FU-P3-108a: the heads of a lease start once all of it is applied, so a cancel leased
+    after its launch stops a head before its engine however fast the head is."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; sleep 30")
+    sink = FakeSink()
+    launcher = FastHead()
+    try:
+        loop = make_loop(sink, runs_root, engine, launcher)
+        ref = sink.launch(runs_root, RUN_A)
+        sink.commands.append(Command("cmd_cancel", "cancel", ref))
+        run_until(loop, lambda: ref.launch_id not in sink.launches)
+        assert ("cmd_cancel", True, None) in sink.acks
+        assert sink.last(ref.launch_id).exit_code == 143
+        assert not (ref.launch_dir / "started").exists()
+    finally:
+        for native_id in list(launcher._dirs):
+            launcher.cancel(native_id, grace_s=0)
+            launcher.poll([native_id])
+
+
+def test_cancelled_head_end_skips_the_spool_grace(runs_root: Path, launcher: LocalLauncher) -> None:
+    """FU-P3-108a: with the default spool grace (60 s), a head that ends after a Cancel is
+    reported at the next poll, after one last spool read: the run reads cancelled then, not a
+    minute after head.exit with its head shown alive meanwhile."""
+    line = spool_line("RUN", 1, "onFlowCreate").replace('"RUN"', '"%s"')
+    spool = '"$SPECTIO_SPOOL_DIR/nf-spectio-1-0001.jsonl"'
+    last = f'umask 077; printf {shlex.quote(line + chr(10))} "$SPECTIO_RUN_ID" > {spool}; exit 143'
+    body = f"trap {shlex.quote(last)} TERM; touch started; while :; do sleep 0.05; done"
+    engine = stub_engine(runs_root.parent / "bin", body)
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher, end_grace_s=60)
+    ref = sink.launch(runs_root, RUN_A)
+    run_until(loop, (ref.launch_dir / "started").exists)
+    sink.commands.append(Command("cmd_cancel", "cancel", sink.launches[ref.launch_id]))
+    run_until(loop, lambda: ref.launch_id not in sink.launches, timeout=10)
+    assert ("cmd_cancel", True, None) in sink.acks
+    assert sink.last(ref.launch_id).exit_code == 143
+    events = [e for lid, b in sink.batches if lid == ref.launch_id for e in b.events]
+    assert len(events) == 1  # written as the engine ended: read before the end is reported
 
 
 def test_unreadable_head_logged_once(runs_root: Path, caplog: pytest.LogCaptureFixture) -> None:
