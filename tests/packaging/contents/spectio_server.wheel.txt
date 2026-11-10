@@ -13,6 +13,7 @@ spectio_server/api/models.py
 spectio_server/api/problems.py
 spectio_server/api/relaunch.py
 spectio_server/api/results.py
+spectio_server/api/runs_manage.py
 spectio_server/api/runs_read.py
 spectio_server/api/runs_write.py
 spectio_server/api/stream.py
@@ -53,6 +54,7 @@ spectio_server/migrations/versions/0008_run_lineage.py
 spectio_server/migrations/versions/0009_terminal_head.py
 spectio_server/migrations/versions/0010_outputs_and_efficiency.py
 spectio_server/migrations/versions/0011_run_environment.py
+spectio_server/migrations/versions/0012_run_pinned.py
 spectio_server/projector/__init__.py
 spectio_server/projector/ingest.py
 spectio_server/projector/nextflow.py

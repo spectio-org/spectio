@@ -69,7 +69,7 @@ def resume_refusal(conn: Connection, row: Row[Any], ctx: Context) -> str | None:
 def resumed_as(conn: Connection, run_id: str) -> list[dict[str, Any]]:
     found = conn.execute(
         select(runs.c.id, runs.c.name, runs.c.state)
-        .where(runs.c.parent_run_id == run_id)
+        .where(runs.c.parent_run_id == run_id, runs.c.deleted_at.is_(None))
         .order_by(runs.c.created_at, runs.c.id)
     )
     return [{"id": r.id, "name": r.name, "state": r.state} for r in found]

@@ -117,6 +117,8 @@ export interface Run {
   profiles: string[];
   /** Null for a run started from a terminal; read by the run's facts and Resume (FU-P3-86g). */
   environment?: RunEnvironment | null;
+  /** First in the runs list (FU-P3-115a); its screen is FU-P3-115b. */
+  pinned?: boolean;
   failure: { [key: string]: Json } | null;
   /** `checked` false: a run started from a terminal on another host or boot, whose head the
    * server cannot see (architecture §13.8). */

@@ -238,6 +238,8 @@ runs = Table(
     # The run's own environment, {name, label, executor, slurm, local, state} (FU-P3-86a, api
     # §5.4): the source of every per-run executor decision; null for a run from a terminal.
     Column("environment", Json),
+    # Pinned runs come first in the runs list (FU-P3-115a, api §5 note of 2026-11-10)
+    Column("pinned", Boolean, nullable=False, server_default="0"),
     _check("runs", "state", RUN_STATES),
     _check("runs", "origin", RUN_ORIGINS, nullable=True),
     Index("ix_runs_project_created", "project_id", "created_at"),
