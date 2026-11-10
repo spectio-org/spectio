@@ -93,13 +93,13 @@ const SUN = "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.2 4.2l1.4
 export const PERSON = "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0";
 
 /** A native switch: the label stays "Dark theme", `aria-checked` says whether it is on. */
-function ThemeSwitch() {
+function ThemeSwitch({ className = "sp-key" }: { className?: string }) {
   const { setColorScheme } = useMantineColorScheme();
   const dark = useComputedColorScheme("light") === "dark";
   return (
     <button
       type="button"
-      className="sp-key"
+      className={className}
       role="switch"
       aria-checked={dark}
       aria-label="Dark theme"
@@ -164,8 +164,9 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
               <Icon path={SEARCH} size={19} />
             </span>
           </button>
-          <NotificationsBell phone className="sp-key sp-narrow-hide" />
-          <ThemeSwitch />
+          <NotificationsBell phone />
+          {/* Below 390 px the theme switch hides so the row fits; the Profile page sets it too (FU-P3-112). */}
+          <ThemeSwitch className="sp-key sp-narrow-hide" />
           <Avatar />
         </div>
         {/* The page's title row (PhoneTitle); hidden while empty, as on Home (MLiteHome). */}

@@ -22,6 +22,7 @@ const WHAT: Record<NotificationKind, string> = {
 export function NotificationsBell({ phone, className = "sp-key" }: { phone: boolean; className?: string }) {
   const [found, setFound] = useState<Notifications | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [markError, setMarkError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const load = useCallback(() => {
     listNotifications().then(
@@ -38,7 +39,13 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
   const markRead = () => {
     const newest = found?.items[0];
     if (!newest) return;
-    markNotificationsRead(newest.at).then(setFound, (e: Error) => setError(e.message));
+    markNotificationsRead(newest.at).then(
+      (answer) => {
+        setFound(answer);
+        setMarkError(null);
+      },
+      (e: Error) => setMarkError(e.message),
+    );
   };
 
   const unread = found?.unread ?? 0;
@@ -73,6 +80,14 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
           <p className="sp-search-error">
             Notifications could not be loaded: {error}{" "}
             <button type="button" className="sp-link-button" onClick={load}>
+              Retry
+            </button>
+          </p>
+        )}
+        {markError && (
+          <p className="sp-search-error">
+            Could not mark as read: {markError}{" "}
+            <button type="button" className="sp-link-button" onClick={markRead}>
               Retry
             </button>
           </p>

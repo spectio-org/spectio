@@ -92,10 +92,30 @@ test("a run change on the event stream refreshes the count", async () => {
   expect(await screen.findByRole("button", { name: "Notifications, 1 unread" }, { timeout: 3000 })).toBeInTheDocument();
 });
 
-test("on the phone the panel is a full-screen sheet", async () => {
-  viewport(390);
-  serve({ "/api/v1/me/notifications": LIST });
+test("a failed Mark all as read says so, and Retry tries the mark again (CR-P3FU113-02)", async () => {
+  let fail = true;
+  const marked = vi.fn(() => (fail ? json(503, { title: "Unavailable", detail: "locked" }) : json(200, READ)));
+  serve({ "/api/v1/me/notifications:mark-read": marked, "/api/v1/me/notifications": LIST });
   app("/environments");
   const { panel } = await openPanel();
+  await userEvent.click(within(panel).getByRole("button", { name: "Mark all as read" }));
+  expect(await within(panel).findByText("Could not mark as read: locked")).toBeInTheDocument();
+  expect(within(panel).queryByText(/could not be loaded/)).toBeNull();
+  fail = false;
+  await userEvent.click(within(panel).getByRole("button", { name: "Retry" }));
+  await waitFor(() => expect(marked).toHaveBeenCalledTimes(2));
+  expect(await screen.findByRole("button", { name: "Notifications, 0 unread" })).toBeInTheDocument();
+  expect(within(panel).queryByText(/Could not mark as read/)).toBeNull();
+});
+
+test("on a 360 px phone the bell shows and the panel is a full-screen sheet (CR-P3FU113-01)", async () => {
+  viewport(360);
+  serve({ "/api/v1/me/notifications": LIST });
+  app("/environments");
+  const { bell, panel } = await openPanel();
+  // jsdom applies no CSS: sp-narrow-hide (display:none below 390 px, shell.css) must not be on the bell
+  expect(bell).not.toHaveClass("sp-narrow-hide");
+  // the theme switch gives up its place instead: the Profile page sets the colour mode too (FU-P3-112)
+  expect(screen.getByRole("switch", { name: "Dark theme", hidden: true })).toHaveClass("sp-narrow-hide");
   expect(panel).toHaveAttribute("data-full-screen", "true");
 });
