@@ -64,6 +64,9 @@ if os.path.exists(delay):
     time.sleep(float(open(delay).read()))
 if os.path.exists(os.path.join(here, "fail")):  # slurmdbd unreachable: no answer
     sys.exit(1)
+if os.path.exists(os.path.join(here, "toowide")):  # over the site's MaxQueryTimeRange
+    sys.stderr.write("sacct: error: Too wide of a date range in query\\n")
+    sys.exit(1)
 ids = sys.argv[sys.argv.index("-j") + 1].split(",")
 bad = os.path.join(here, "bad")  # an ID whose every call says over MAX_OUTPUT
 if os.path.exists(bad) and open(bad).read() in ids:

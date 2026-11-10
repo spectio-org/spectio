@@ -419,7 +419,12 @@ class Efficiency(BaseModel):
     peak_rss_bytes: int | None
     state: Literal["running", "pending_accounting", "available", "unavailable"]
     source: Literal["sacct", "trace", "benchmark"] | None
-    reason: Literal["local", "no_job_id", "accounting_off", "not_found", "cached"] | None
+    reason: (
+        Literal[
+            "local", "no_job_id", "accounting_off", "not_found", "cached", "max_query_time_range"
+        ]
+        | None
+    )
 
 
 class Task(BaseModel):

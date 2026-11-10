@@ -273,7 +273,8 @@ class Accounting:
     the queue unchanged, as the limiter backs off, until GIVE_UP_S after it ended; then it is
     given up in memory, never stored (CON-SLURM-POLL-02). A batch whose answer is over
     MAX_OUTPUT is split in two by the limiter; a call that would fail every time (a refused
-    tool, too much output for one ID) gives its jobs up at once (SEC-P3FU106A-01). Only a row
+    tool, too much output for one ID) gives its jobs up at once (SEC-P3FU106A-01), and so does
+    a window the site's `MaxQueryTimeRange` refuses, with that reason (FU-P3-106b). Only a row
     in a TERMINAL state is kept: a job
     `sacct` does not know yet, or not as ended (slurmdbd records a job after it ends, with a
     lag, [to be validated] on `slurm-mini`, P1 Task 22), is asked once more FOLLOW_UP_S later,
@@ -306,7 +307,7 @@ class Accounting:
         self._lock = threading.Lock()
         self._rows: dict[str, dict[str, SacctRow | None]] = {}
         self._loaded: set[str] = set()
-        self._failed: dict[str, set[str]] = {}
+        self._failed: dict[str, dict[str, str]] = {}  # run → job given up → its reason
         self._asked: dict[str, set[str]] = {}  # job ID → the runs that wait for it
         # (run, job) asked → its directories (normalised, and resolved) and the run's launch time
         self._where: dict[tuple[str, str], tuple[frozenset[str], float]] = {}
@@ -377,11 +378,13 @@ class Accounting:
         with self._lock:
             return run_id in self._loaded
 
-    def failed(self, run_id: str, job: str) -> bool:
-        """True when `job` was given up: its calls failed until GIVE_UP_S after it ended, or
-        its follow-up found it in no terminal state. This process does not ask it again."""
+    def failed(self, run_id: str, job: str) -> str | None:
+        """Why `job` was given up, None when it was not: `not_found` when its calls failed
+        until GIVE_UP_S after it ended or its follow-up found it in no terminal state,
+        `max_query_time_range` when the site refused its window (FU-P3-106b). This process does
+        not ask it again."""
         with self._lock:
-            return job in self._failed.get(run_id, set())
+            return self._failed.get(run_id, {}).get(job)
 
     def want(
         self,
@@ -464,7 +467,7 @@ class Accounting:
     def _new(self, run_id: str, given: dict[str, str]) -> dict[str, str]:
         """The jobs of `given` neither answered, failed nor asked for the run; under the lock."""
         known = self._rows.get(run_id, {})
-        failed = self._failed.get(run_id, set())
+        failed = self._failed.get(run_id, {})
         return {
             job: where
             for job, where in given.items()
@@ -522,8 +525,8 @@ class Accounting:
                     if key not in called:  # asked during the call: not in it, no follow-up
                         again.add(run_id)
                         continue
-                    if found is sacct.FINAL:  # it would fail every time: given up at once
-                        self._give_up(key)
+                    if isinstance(found, sacct.Unanswered):  # it would fail every time: given up
+                        self._give_up(key, found.value if found is sacct.SITE_LIMIT else None)
                         continue
                     if found is None:  # no answer: asked again, as the limiter backs off
                         if now < self._deadline.get(key, now):
@@ -564,9 +567,9 @@ class Accounting:
         self._deadline.pop(key, None)
         self._followed.discard(key)
 
-    def _give_up(self, key: tuple[str, str]) -> None:
+    def _give_up(self, key: tuple[str, str], reason: str | None = None) -> None:
         self._final(key)
-        self._failed.setdefault(key[0], set()).add(key[1])
+        self._failed.setdefault(key[0], {})[key[1]] = reason or "not_found"
 
     def _ensure_thread(self) -> None:
         with self._lock:
@@ -978,13 +981,11 @@ def task_resources(
         reason = off
         if reason is None and r.native_id is None:
             reason = "no_job_id"
-        elif reason is None and (
-            r.native_id in cached
-            or ctx.accounting.failed(run_id, r.native_id)
-            or (not smk and r.work_dir is None)
-        ):
-            # sacct knew no such job after its tries, its call failed, or no directory binds
-            # the job to a line, so it is never asked (SEC-PRE-15)
+        elif reason is None and (given_up := ctx.accounting.failed(run_id, r.native_id)):
+            reason = given_up  # its call failed, or the site refused its window (FU-P3-106b)
+        elif reason is None and (r.native_id in cached or (not smk and r.work_dir is None)):
+            # sacct knew no such job after its tries, or no directory binds the job to a
+            # line, so it is never asked (SEC-PRE-15)
             reason = "not_found"
         slurm = None
         if slurm_run and r.slurm is not None:

@@ -15,6 +15,8 @@ server-wide pace: one call in flight, one call per `INTERVAL_S`, doubled up to `
 after a failed or slow call (CON-SLURM-POLL-02; schedulers §3.8, the SLURM query budget). A
 call that would fail every time (a refused tool, too much output for one ID) is final; a batch
 that says too much is split in two; any other failure is retried unchanged (SEC-P3FU106A-01).
+A window the site's `MaxQueryTimeRange` refuses fails whatever the IDs, so it is final too
+(FU-P3-106b): read from the first `MAX_STDERR` bytes of its error text, `TOO_WIDE`.
 
 The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
 returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
@@ -35,6 +37,7 @@ import secrets
 import signal
 import stat
 import subprocess
+import tempfile
 import threading
 import time
 from collections import Counter
@@ -43,7 +46,6 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Literal
 
 log = logging.getLogger(__name__)
 
@@ -61,6 +63,11 @@ BATCH = 100
 MAX_PENDING = 100_000  # IDs waiting for a call; more are dropped until the queue drains
 MAX_OUTPUT = 1048576
 MAX_REASON = 256
+MAX_STDERR = 4096
+# slurmdbd's text for a window over `MaxQueryTimeRange` (ESLURM_DB_QUERY_TOO_WIDE: SchedMD
+# slurm src/common/slurm_errno.c, sent by src/slurmdbd/proc_req.c `_get_jobs_cond`), which sacct
+# logs as an error and exits 1; the exact line is [to be validated] on slurm-mini.
+TOO_WIDE = b"Too wide of a date range in query"
 SUBMIT_SKEW_S = 300.0  # a job's Submit may read this much before the run's launch (clocks)
 DELIMITER_LEN = 16  # a multi-character `--delimiter` [to be validated] on slurm-mini
 _DELIMITER_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -88,11 +95,17 @@ class TooMuch(Exception):
     """`sacct` said more than MAX_OUTPUT: asked again, the same IDs would say as much."""
 
 
+class TooWide(Exception):
+    """The site's `MaxQueryTimeRange` refused the call's window: any IDs would fail the same."""
+
+
 class Unanswered(Enum):
     FINAL = "final"  # a call that fails every time it is made: its IDs are given up
+    SITE_LIMIT = "max_query_time_range"  # final as well, for the site's limit (FU-P3-106b)
 
 
 FINAL = Unanswered.FINAL
+SITE_LIMIT = Unanswered.SITE_LIMIT
 
 
 @dataclass(frozen=True)
@@ -120,7 +133,7 @@ class SacctRow:
 Wanted = Mapping[str, Mapping[str, float]]
 # Job ID → {normalised WorkDir: its row}; a job or a directory with no row is absent.
 Found = dict[str, dict[str, SacctRow]]
-Answer = Found | None | Literal[Unanswered.FINAL]  # None: failed, to be asked again
+Answer = Found | None | Unanswered  # None: failed, to be asked again
 
 
 def check_ids(ids: Iterable[str]) -> list[str]:
@@ -184,21 +197,24 @@ def sacct_jobs(
 ) -> Found | None:
     """The rows `sacct` gives for the `wanted` jobs and directories (`parse_sacct`); None when
     it failed or timed out. Raises Refused, before any call, for an ID or a tool that is not
-    accepted, OSError when the tool cannot be read for now, and TooMuch when it said more
-    than MAX_OUTPUT."""
+    accepted, OSError when the tool cannot be read for now, TooMuch when it said more than
+    MAX_OUTPUT, and TooWide when it failed with the site's `TOO_WIDE`."""
     ids = check_ids(wanted)
     check_tool(sacct)
     delimiter = new_delimiter()
     start = min(since for dirs in wanted.values() for since in dirs.values()) - SUBMIT_SKEW_S
     argv = sacct_argv(sacct, ids, delimiter, start)
-    with subprocess.Popen(  # noqa: S603 - an argument list of checked values, no shell
-        argv,
-        env=sacct_env(sacct),
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    ) as proc:
+    with (
+        tempfile.TemporaryFile() as err,  # a file, not a pipe: it never blocks the tool
+        subprocess.Popen(  # noqa: S603 - an argument list of checked values, no shell
+            argv,
+            env=sacct_env(sacct),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=err,
+            start_new_session=True,
+        ) as proc,
+    ):
         timer = threading.Timer(timeout_s, _kill, (proc,))
         timer.start()
         try:
@@ -208,8 +224,12 @@ def sacct_jobs(
             code = proc.wait()
         finally:
             timer.cancel()
+        err.seek(0)
+        said = err.read(MAX_STDERR)
     if len(data) > MAX_OUTPUT:
         raise TooMuch(f"sacct said over {MAX_OUTPUT} bytes for {len(ids)} IDs")
+    if code != 0 and TOO_WIDE in said:
+        raise TooWide(f"sacct refused the window of {len(ids)} IDs: the site's MaxQueryTimeRange")
     if code != 0:
         log.warning(
             "sacct gave no answer for %d IDs (exit %s, %d bytes)", len(ids), code, len(data)
@@ -400,11 +420,12 @@ class SacctLimiter:
     a call that failed or took over `slow_s`, up to `max_interval_s`, and reset by a quick
     answer. `later` queues IDs once a delay has passed (a follow-up). The caller's thread runs
     the call: the server runs it on a thread of its own, never the writer's or a request's.
-    A Refused call (a policy refusal of the tool or an ID) is FINAL, logged at warning. Too much
-    output is the only failure that points at the IDs: the batch is split in two, each of its
-    IDs recorded with half its size until it is next taken, and one ID alone is FINAL. Any other
-    failure (a timeout, a non-zero exit, an OSError of the tool's stat) answers None: the
-    caller puts the batch back unchanged under the back-off, until it gives up (GIVE_UP_S in
+    A Refused call (a policy refusal of the tool or an ID) is FINAL, logged at warning, and
+    one sacct refused for the site's `MaxQueryTimeRange` (TooWide) is SITE_LIMIT, final too.
+    Too much output is the only failure that points at the IDs: the batch is split in two, each
+    of its IDs recorded with half its size until it is next taken, and one ID alone is FINAL.
+    Any other failure (a timeout, a non-zero exit, an OSError of the tool's stat) answers None:
+    the caller puts the batch back unchanged under the back-off, until it gives up (GIVE_UP_S in
     `spectio_server.failure`); an outage splits nothing (SEC-P3FU106A-01, CR-P3FU106A-05)."""
 
     def __init__(
@@ -508,6 +529,9 @@ class SacctLimiter:
         except Refused as exc:  # the tool or an ID: every call of them would be refused
             log.warning("sacct not called for %d IDs: %s", len(ids), exc)
             rows = FINAL
+        except TooWide as exc:  # the site's window limit: any batch would be refused
+            log.warning("%s", exc)
+            rows = SITE_LIMIT
         except TooMuch as exc:  # split in two, until one ID alone says too much
             log.warning("%s", exc)
             if len(ids) == 1:
