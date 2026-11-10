@@ -2,10 +2,12 @@
 // pinned client and its budgets, the IFD walk with its caps and loop set, the one-file OME-XML
 // check. The fixtures are crafted here, byte by byte, and served by a fake fetch that answers
 // each closed Range as the raw route does (step 11: 206 with Content-Range).
+import { getDecoder } from "geotiff";
 import { afterEach, expect, test, vi } from "vitest";
 import { resultUrl } from "../../api";
 import { Answered, BUDGET, IN_FLIGHT, PinnedClient, RANGE_MAX, Refused, Stopped, openTiff, reading } from "./client";
-import { TooLarge, Unreadable, omeFiles, walkIfds } from "./walk";
+import { TooLarge, Unreadable, guardParses, omeFiles, walkIfds } from "./walk";
+import "./decode"; // as in the page: the main bundle's decoders are registered before Viv's chunk loads
 
 const URL_ = resultUrl("run_1", "img/gel.tif", { as: "tiff" });
 
@@ -447,4 +449,51 @@ test("a sizing tag that is not one positive integer is unreadable, not passed", 
     const { tiff, client } = await openTiff(URL_, bytes.length);
     await expect(walkIfds(tiff, client)).rejects.toBeInstanceOf(Unreadable);
   }
+});
+
+test("after the walk, every IFD geotiff or Viv parses (a plane, a SubIFD level) is held to the same caps", async () => {
+  const { bytes, nextAt } = build([{}, { tile: 8192 }]);
+  serveBytes(bytes);
+  const { tiff, client } = await openTiff(URL_, bytes.length);
+  guardParses(tiff, client);
+  const second = new DataView(bytes.buffer).getUint32(nextAt[0], true);
+  await expect(tiff.parseFileDirectoryAt(second)).rejects.toEqual(new TooLarge("tiles larger than 4,096 px"));
+  await expect(tiff.parseFileDirectoryAt(bytes.length + 10)).rejects.toBeInstanceOf(Unreadable);
+  await expect(tiff.getImage(1)).rejects.toEqual(new TooLarge("tiles larger than 4,096 px"));
+  const first = await tiff.parseFileDirectoryAt(tiff.firstIFDOffset);
+  expect(await tiff.parseFileDirectoryAt(tiff.firstIFDOffset)).toBe(first); // parsed once
+});
+
+test("the client says when it starts reading and when the last request ends", async () => {
+  const { bytes } = build([{}]);
+  serveBytes(bytes);
+  const client = new PinnedClient(URL_, bytes.length);
+  const busy: boolean[] = [];
+  client.onBusy = (b) => busy.push(b);
+  await Promise.all([client.request({ headers: { range: "bytes=0-9" } }), client.request({ headers: { range: "bytes=10-19" } })]);
+  expect(busy[0]).toBe(true);
+  expect(busy[busy.length - 1]).toBe(false);
+});
+
+test("OME-XML with __proto__ and constructor names reaches Viv's parser without polluting Object.prototype", async () => {
+  const { openPixels } = await import("./viv"); // the real Viv: its DOMParser walk and zod schema
+  const ome =
+    '<OME xmlns="http://www.openmicroscopy.org/Schemas/OME/2016-06"><__proto__ polluted="yes"><constructor prototype="x"/></__proto__>' +
+    '<Image ID="Image:0" __proto__="a" constructor="b"><Pixels ID="Pixels:0" DimensionOrder="XYZCT" Type="uint8" SizeX="4" SizeY="2" SizeZ="1" SizeC="1" SizeT="1">' +
+    '<Channel ID="Channel:0:0" SamplesPerPixel="1"><__proto__ polluted="yes"/></Channel><TiffData/></Pixels></Image></OME>';
+  const { bytes } = build([{ description: ome }]);
+  serveBytes(bytes);
+  const { tiff } = await openTiff(URL_, bytes.length);
+  const before = Object.getOwnPropertyNames(Object.prototype).sort();
+  const pool = { decode: async (_fd: unknown, buffer: ArrayBuffer) => buffer };
+  const pixels = await openPixels(tiff, pool as never, "x.ome.tif");
+  expect(pixels.facts).toBe("4 × 2 px · 1 channel · 1 plane · 1 time point · uint8");
+  expect(Object.getOwnPropertyNames(Object.prototype).sort()).toEqual(before);
+  expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+});
+
+test("once Viv's chunk has loaded, geotiff's LZW is our capped JavaScript one again, not Viv's WebAssembly one", async () => {
+  await import("./viv"); // Viv registers lzw-tiff-decoder for code 5 (@vivjs/loaders dist/index.mjs:921)
+  const decoder = await getDecoder({ Compression: 5, ImageWidth: 4, ImageLength: 2, BitsPerSample: [8] });
+  expect(decoder.constructor.name).not.toBe("LZWDecoder");
 });

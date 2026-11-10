@@ -22,7 +22,7 @@ export default defineConfig({
     : undefined,
   projects: [
     { name: 'unit', testMatch: /\.unit\.ts$/ },
-    { name: 'desktop', testMatch: /(\.e2e|skeleton\.spec|report\.spec|preview\.spec|environments\.spec|launch-environment\.spec)\.ts$/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'desktop', testMatch: /(\.e2e|skeleton\.spec|report\.spec|preview\.spec|environments\.spec|launch-environment\.spec|viewer\.spec)\.ts$/, use: { ...devices['Desktop Chrome'] } },
     { name: 'phone', testMatch: /(\.e2e|skeleton\.spec|report\.spec|preview\.spec|environments\.spec|launch-environment\.spec)\.ts$/, use: { ...devices['Pixel 7'] } },
   ],
 });

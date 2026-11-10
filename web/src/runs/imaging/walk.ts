@@ -150,3 +150,25 @@ export function omeFiles(description: string | undefined, name: string): "none" 
   }
   return uuids.size > 1 ? "others" : "one";
 }
+
+/** After the walk, holds every IFD geotiff or Viv parses later (a plane's IFD, a SubIFD level,
+ * which the walk does not reach) to the walk's caps: the offset inside the file, its entry table
+ * prescanned, its tags checked, at most 10,000 offsets, each parsed once. */
+export function guardParses(tiff: GeoTIFF, client: PinnedClient, max = IFDS_MAX) {
+  const parse = tiff.parseFileDirectoryAt.bind(tiff);
+  const parsed = new Map<number, ReturnType<typeof parse>>();
+  let values = 0;
+  const checked = async (offset: number) => {
+    if (!Number.isSafeInteger(offset) || offset < 8 || offset + 2 > client.size) throw new Unreadable(`an IFD at ${offset}, past the end`);
+    if (parsed.size > max) throw new TooLarge(`over ${max.toLocaleString("en-US")} IFDs`);
+    values += await reading(client, () => prescan(tiff, offset, client.size));
+    if (values > WALK_VALUES_MAX) throw new TooLarge("the IFDs' tags over 256 MiB");
+    const ifd = await reading(client, () => parse(offset));
+    check(ifd.fileDirectory as FileDirectory);
+    return ifd;
+  };
+  tiff.parseFileDirectoryAt = (offset: number) => {
+    if (!parsed.has(offset)) parsed.set(offset, checked(offset));
+    return parsed.get(offset)!;
+  };
+}

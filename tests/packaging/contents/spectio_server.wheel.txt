@@ -74,8 +74,10 @@ spectio_server/store/db.py
 spectio_server/store/runs.py
 spectio_server/store/schema.py
 spectio_server/store/writer.py
+spectio_server/web/assets/OmeView-*.js
 spectio_server/web/assets/decoder.worker-*.js
 spectio_server/web/assets/deflate-*.js
+spectio_server/web/assets/expression-*.js
 spectio_server/web/assets/favicon-*.svg
 spectio_server/web/assets/index-*.css
 spectio_server/web/assets/index-*.js
