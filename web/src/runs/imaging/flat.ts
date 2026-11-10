@@ -44,7 +44,7 @@ export function checkPlane(fd: FileDirectory) {
 }
 
 /** The 0.1 and 99.9 percentiles of the values (NaN and infinities skipped), to a 4,096th of their span. */
-export function percentiles(values: ArrayLike<number>, lo = 0.001, hi = 0.999): [number, number] {
+export function percentiles(values: ArrayLike<number>): [number, number] {
   let [min, max, n] = [Infinity, -Infinity, 0];
   for (let i = 0; i < values.length; i++) {
     const v = values[i];
@@ -60,8 +60,8 @@ export function percentiles(values: ArrayLike<number>, lo = 0.001, hi = 0.999): 
   let [low, high, seen] = [min, max, 0];
   for (let b = 0, found = false; b < BINS; b++) {
     seen += counts[b];
-    if (!found && seen > lo * n) [low, found] = [min + b * width, true];
-    if (seen >= hi * n) {
+    if (!found && seen > 0.001 * n) [low, found] = [min + b * width, true];
+    if (seen >= 0.999 * n) {
       high = min + (b + 1) * width;
       break;
     }

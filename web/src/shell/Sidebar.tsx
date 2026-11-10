@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { type ServerVersion, runsSummary } from "../api";
 import { ICONS, Icon } from "../icons";
@@ -13,6 +13,14 @@ export const NAV = [
   { to: "/launch", label: "Launch", section: "launch", icon: ICONS.launch, exact: false },
   { to: "/environments", label: "Environments", section: "environments", icon: ICONS.server, exact: false },
 ] as const;
+
+/** The `NAV` item marked on a page outside its path: the Catalog pages are Launch's (ui-spec §4.7.1). */
+export function useMarkedItem(): string | null {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return pathname === "/catalog" || pathname.startsWith("/catalog/") ? "/launch" : null;
+}
+/** The props that mark a `NAV` link as current, as the router does for its active link. */
+export const marked = (to: string, item: string | null) => (to === item ? { "aria-current": "page" as const, "data-status": "active" } : {});
 
 /** The number of active runs, from `GET /runs:summary`, refreshed on stream frames (UX-PAR-07). */
 function useActiveCount(): number {
@@ -41,6 +49,7 @@ interface Props {
  * it is the icon rail; labels stay in the accessibility tree, so no link loses its name. */
 export function Sidebar({ open, onFold, server, down }: Props) {
   const active = useActiveCount();
+  const mark = useMarkedItem();
   return (
     <nav className="sp-sidebar" data-open={open} aria-label="Main">
       <div className="sp-sidebar-head">
@@ -64,6 +73,7 @@ export function Sidebar({ open, onFold, server, down }: Props) {
             activeOptions={{ exact: item.exact }}
             className="sp-nav-item"
             data-section={item.section}
+            {...marked(item.to, mark)}
           >
             <Icon path={item.icon} />
             <span className={open ? undefined : "sp-sr"}>{item.label}</span>
