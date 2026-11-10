@@ -265,8 +265,8 @@ def test_req18_routes_unreachable(
     def stalled(*args: Any, **kwargs: Any) -> Any:
         raise Stalled("the file system did not answer within 5 s")
 
-    monkeypatch.setattr(envfile, "read_file", stalled)
-    monkeypatch.setattr(envfile, "update", stalled)
+    monkeypatch.setattr(envfile, "read_kind", stalled)
+    monkeypatch.setattr(envfile, "update_kind", stalled)
     body = authed_client.get(ENVS).json()
     assert body["file"]["state"] == "unreachable" and body["default"] == "local"
     problem(authed_client.post(ENVS, json=MYLAB), 503, "runner-offline")

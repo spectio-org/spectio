@@ -128,6 +128,25 @@ class EnvironmentList(BaseModel):
     file: EnvironmentsFile
 
 
+class CatalogItem(BaseModel):
+    """One entry of `GET /catalog` (FU-P3-87b, api §5.6): a named pipeline location with its
+    launch defaults."""
+
+    name: str
+    label: str | None
+    engine: Literal["nextflow", "snakemake"]
+    location: str
+    revision: str | None
+    profile: str | None
+    params_file: str | None
+    etag: str
+
+
+class CatalogList(BaseModel):
+    items: list[CatalogItem]
+    file: EnvironmentsFile  # the same five states as environments.toml
+
+
 class Run(BaseModel):
     id: str
     name: str | None
@@ -419,7 +438,12 @@ class Efficiency(BaseModel):
     peak_rss_bytes: int | None
     state: Literal["running", "pending_accounting", "available", "unavailable"]
     source: Literal["sacct", "trace", "benchmark"] | None
-    reason: Literal["local", "no_job_id", "accounting_off", "not_found", "cached"] | None
+    reason: (
+        Literal[
+            "local", "no_job_id", "accounting_off", "not_found", "cached", "max_query_time_range"
+        ]
+        | None
+    )
 
 
 class Task(BaseModel):

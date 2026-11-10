@@ -360,7 +360,7 @@ export interface Efficiency {
   peak_rss_bytes: number | null;
   state: "running" | "pending_accounting" | "available" | "unavailable";
   source: "sacct" | "trace" | "benchmark" | null;
-  reason: "local" | "no_job_id" | "accounting_off" | "not_found" | "cached" | null;
+  reason: "local" | "no_job_id" | "accounting_off" | "not_found" | "cached" | "max_query_time_range" | null;
 }
 
 /** Schema `Task`. */

@@ -22,7 +22,10 @@ export default defineConfig({
     : undefined,
   projects: [
     { name: 'unit', testMatch: /\.unit\.ts$/ },
-    { name: 'desktop', testMatch: /(\.e2e|skeleton\.spec|report\.spec|preview\.spec|environments\.spec|launch-environment\.spec)\.ts$/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'desktop', testMatch: /(\.e2e|skeleton\.spec|report\.spec|preview\.spec|environments\.spec|launch-environment\.spec|viewer\.spec)\.ts$/, use: { ...devices['Desktop Chrome'] } },
+    // the viewer under the CSP on the other engines too (dev-env §15.3 req. 19 Tests); CI installs Chromium only
+    { name: 'firefox', testMatch: /viewer\.spec\.ts$/, use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', testMatch: /viewer\.spec\.ts$/, use: { ...devices['Desktop Safari'] } },
     { name: 'phone', testMatch: /(\.e2e|skeleton\.spec|report\.spec|preview\.spec|environments\.spec|launch-environment\.spec)\.ts$/, use: { ...devices['Pixel 7'] } },
   ],
 });
