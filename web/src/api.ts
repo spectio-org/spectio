@@ -723,3 +723,24 @@ export const replaceCatalogEntry = (body: CatalogBody, etag: string): Promise<Ca
   call(entry(body.name), sendJson("PUT", body, etag));
 export const deleteCatalogEntry = (name: string, etag: string): Promise<null> =>
   call(entry(name), { method: "DELETE", headers: { "if-match": etag } });
+
+export type NotificationKind = "run_succeeded" | "run_failed" | "run_cancelled" | "gate_waiting";
+/** Schema `Notification` (api §5.9): derived from a run in 0.0.1. */
+export interface Notification {
+  id: string;
+  kind: NotificationKind;
+  run_id: string;
+  run_name: string | null;
+  at: string;
+  read: boolean;
+}
+/** Schema `Notifications`: newest first, at most 50; `unread` counts them all. */
+export interface Notifications {
+  items: Notification[];
+  unread: number;
+  read_up_to: string | null;
+}
+export const listNotifications = (signal?: AbortSignal): Promise<Notifications> => call("/me/notifications", { signal });
+/** Marks every item up to `upTo` read (api §5.9); answers the list as `GET` does. */
+export const markNotificationsRead = (upTo: string): Promise<Notifications> =>
+  call("/me/notifications:mark-read", sendJson("POST", { up_to: upTo }));

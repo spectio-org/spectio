@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { ServerVersion } from "../api";
 import { ICONS, Icon } from "../icons";
 import type { PageCrumb } from "./crumb";
+import { NotificationsBell } from "./NotificationsBell";
 import { SearchDialog } from "./SearchDialog";
 
 type To = "/" | "/runs" | "/launch" | "/environments" | "/catalog";
@@ -87,7 +88,6 @@ function Mark({ width }: { width: number }) {
 }
 
 const SEARCH = ICONS.search;
-const BELL = "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0";
 const MOON = "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z";
 const SUN = "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.2 4.2l1.4 1.4 M18.4 18.4l1.4 1.4 M1 12h2 M21 12h2 M4.2 19.8l1.4-1.4 M18.4 5.6l1.4-1.4";
 export const PERSON = "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0";
@@ -106,17 +106,6 @@ function ThemeSwitch() {
       onClick={() => setColorScheme(dark ? "light" : "dark")}
     >
       <Icon path={dark ? SUN : MOON} size={19} />
-    </button>
-  );
-}
-
-/** 0.0.1 has no notifications: a disabled placeholder with its name (G1). */
-function Placeholder({ name, path, className = "sp-key" }: { name: string; path: string; className?: string }) {
-  return (
-    <button type="button" className={className} disabled aria-label={`${name} (not in 0.0.1)`}>
-      <span className="sp-key-face">
-        <Icon path={path} size={19} />
-      </span>
     </button>
   );
 }
@@ -175,7 +164,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
               <Icon path={SEARCH} size={19} />
             </span>
           </button>
-          <Placeholder name="Notifications" path={BELL} className="sp-key sp-narrow-hide" />
+          <NotificationsBell phone className="sp-key sp-narrow-hide" />
           <ThemeSwitch />
           <Avatar />
         </div>
@@ -198,7 +187,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
         <span className="sp-search-text">Search</span>
         <kbd aria-hidden="true">⌘K</kbd>
       </button>
-      <Placeholder name="Notifications" path={BELL} />
+      <NotificationsBell phone={false} />
       <ThemeSwitch />
       <Avatar />
       {dialog}
