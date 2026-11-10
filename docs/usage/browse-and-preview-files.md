@@ -60,6 +60,7 @@ The page shows the file's name, its kind, size and time, its full path with **Co
 | Table (`.csv`, `.tsv`, `.tab`) | a table, parsed in your browser from the first 1 MiB: at most 500 rows and 50 columns, **First row is a header**, **Show as text** |
 | JSON | formatted, with **Show as text**; a file over 1 MiB, nested over 64 levels or not valid JSON is shown as text, with the reason |
 | Image | the image itself (20 MiB at most, an SVG 5 MiB), on a light backdrop, with **Actual size**. An image that cannot be shown says so and offers Download |
+| TIFF, OME-TIFF | the first plane drawn on a canvas, with **Actual size** and a line of facts under it. See [TIFF files](#tiff-files) |
 | HTML report | the report viewer, in a sandbox |
 | PDF, binary | the facts and Download. Spectio does not open them |
 
@@ -72,6 +73,29 @@ On a phone the viewer comes after the facts, Copy path and Download; **Load more
 
 ![The same preview on a phone](../assets/shots/app-file-preview-phone_light.webp#only-light)
 ![The same preview on a phone](../assets/shots/app-file-preview-phone_dark.webp#only-dark)
+
+## TIFF files
+
+*Built on the integration branch (steps FU-P3-102d2 and -102d3, batch [P3-B12](../progress/W5/P3-M9.md#batch-p3-b12), 2026-11-10). **Not shown on screen yet:** no shot of it was taken, see [Not shown](#not-shown). The rules are owned by [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview).*
+
+A `.tif` or `.tiff` file, and an OME-TIFF, opens as one flat picture: the first plane, in your browser.
+
+- **What you see.** The plane on a light backdrop, **Actual size**, and a line of facts: the size in pixels, "Shown: page 1 of N" for a multi-page file, "Contrast stretched for display" when the values were not 8-bit.
+- **Contrast.** A file that is not 8-bit is stretched from its 0.1 and 99.9 percentiles to the screen's range. The file itself is not changed.
+- **OME-TIFF.** It shows its first plane, "channel 1, first plane". Until the image viewer is built (FU-P3-102e), a file with a SubIFD pyramid is not seen as one, so a large one reads "too large on a phone". A file named `.ome.tif` with no OME metadata is shown as a TIFF, and says so. An OME-TIFF that names other files is not opened.
+- **On a phone.** The largest reduced level that fits in 2,048 px a side is drawn, with "Open on a larger screen" and **Copy link**. If no level fits, the page says "This image is too large to show on a phone." and offers **Copy link** and **Download**.
+- **Decoding is capped.** It runs in a worker of Spectio's own, with a size cap per tile, and only a short list of compressions is read: none, LZW, Deflate, PackBits and JPEG. A plane over 50 megapixels, or a file over 1 GiB, is not drawn.
+
+| When | What the page says | What you can do |
+|---|---|---|
+| The file is empty | "This file is empty." | Download |
+| Over the caps | "This image is too large to show here (…). Download it to open it." | Download |
+| A compression not on the list, or an OME-TIFF with other files | "Unsupported", with the reason | Download |
+| Not a TIFF, or not readable | "Not an image Spectio can read: …" | Retry, Download |
+| Too many reads | "Spectio stopped reading tiles: …" on the status line | Reload |
+| A tile did not decode | "This image could not be decoded." | Retry, Download |
+
+The wordings are in `web/src/runs/imaging/flat.ts` (`imageState`), checked by `flat.test.ts` and `FilePreview.test.tsx`.
 
 ## What you can check on the API
 
@@ -88,6 +112,7 @@ $ GET /api/v1/tasks/<task>/attempts/1/workdir/stat/.command.env
 
 ## Not shown
 
+- **A TIFF or OME-TIFF, in any of its states:** no shot, no real run with one. The step was checked by `vitest` (`decode.test.ts`, `flat.test.ts`, `FilePreview.test.tsx`: 544 tests pass) and not driven in a browser. The session that wrote this page had no Nextflow, no Snakemake and no Python Playwright, so it could not start a run to put a TIFF in. Taking the shots is a follow-up with no FU number yet, for a session that can run a pipeline.
 - **An image, a PDF and an HTML file in a work directory:** the synthetic run writes none. They are covered by tests (`test_results.py`, `FilePreview.test.tsx`, and `preview.spec.ts`, a Playwright test of the hostile SVG that runs on Chromium only).
 - **A big file with Load more,** a JSON file and the cap lines: no shot. `preview.spec.ts` loads a 200 KiB log.
 - **A real Nextflow work directory on a cluster,** and any SLURM run: not done.
