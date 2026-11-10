@@ -160,6 +160,53 @@
         "title": "Command",
         "type": "object"
       },
+      "DefaultResources": {
+        "additionalProperties": false,
+        "description": "api \u00a75.7, in the units of \u00a75.4.",
+        "properties": {
+          "cpus": {
+            "anyOf": [
+              {
+                "maximum": 256.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "mem_mib": {
+            "anyOf": [
+              {
+                "maximum": 4194304.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Mib"
+          },
+          "time_min": {
+            "anyOf": [
+              {
+                "maximum": 43200.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Min"
+          }
+        },
+        "title": "DefaultResources",
+        "type": "object"
+      },
       "DeleteIn": {
         "additionalProperties": false,
         "properties": {
@@ -928,6 +975,27 @@
         "additionalProperties": false,
         "description": "The 0.0.1 body of `POST /runs` (api \u00a75 note of 2026-10-30).",
         "properties": {
+          "config_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config File"
+          },
+          "default_resources": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DefaultResources"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "environment": {
             "anyOf": [
               {
@@ -987,6 +1055,38 @@
             "title": "Code Loading",
             "type": "array"
           },
+          "config_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config File"
+          },
+          "default_resources": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Resources"
+          },
           "environment": {
             "title": "Environment",
             "type": "string"
@@ -1034,7 +1134,9 @@
           "non_default",
           "code_loading",
           "environment",
-          "environment_notice"
+          "environment_notice",
+          "default_resources",
+          "config_file"
         ],
         "title": "LaunchTemplate",
         "type": "object"
@@ -1084,6 +1186,21 @@
           }
         },
         "title": "LocalValues",
+        "type": "object"
+      },
+      "MarkReadIn": {
+        "additionalProperties": false,
+        "properties": {
+          "up_to": {
+            "format": "date-time",
+            "title": "Up To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "up_to"
+        ],
+        "title": "MarkReadIn",
         "type": "object"
       },
       "Me": {
@@ -1165,6 +1282,91 @@
           "expires_at"
         ],
         "title": "MeSession",
+        "type": "object"
+      },
+      "Notification": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "run_succeeded",
+              "run_failed",
+              "run_cancelled",
+              "gate_waiting"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "read": {
+            "title": "Read",
+            "type": "boolean"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "run_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Name"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "run_id",
+          "run_name",
+          "at",
+          "read"
+        ],
+        "title": "Notification",
+        "type": "object"
+      },
+      "Notifications": {
+        "description": "`GET /me/notifications` in 0.0.1 (api \u00a75.9): derived from the run records.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "read_up_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read Up To"
+          },
+          "unread": {
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "unread",
+          "read_up_to"
+        ],
+        "title": "Notifications",
         "type": "object"
       },
       "PinIn": {
@@ -1947,6 +2149,143 @@
         "title": "Run",
         "type": "object"
       },
+      "RunConfigFile": {
+        "description": "What a run keeps of its extra config file (FU-P3-110a, api \u00a75.7): the user's `path`, the\nname `kept_as` in its `.spectio/`, the SHA-256 and size of the bytes, and `includes` when a\nNextflow file holds `includeConfig`; null fields unless `state` is `recorded`.",
+        "properties": {
+          "includes": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Includes"
+          },
+          "kept_as": {
+            "anyOf": [
+              {
+                "enum": [
+                  "extra.config",
+                  "extra.yaml",
+                  "extra.json"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kept As"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "state": {
+            "enum": [
+              "recorded",
+              "not_readable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "kept_as",
+          "sha256",
+          "size",
+          "includes",
+          "state"
+        ],
+        "title": "RunConfigFile",
+        "type": "object"
+      },
+      "RunDefaultResources": {
+        "description": "A launch's `default_resources` (FU-P3-110a, api \u00a75.7); its fields are null unless `state`\nis `recorded`.",
+        "properties": {
+          "cpus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "mem_mib": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Mib"
+          },
+          "state": {
+            "enum": [
+              "recorded",
+              "not_readable"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "time_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Min"
+          }
+        },
+        "required": [
+          "cpus",
+          "mem_mib",
+          "time_min",
+          "state"
+        ],
+        "title": "RunDefaultResources",
+        "type": "object"
+      },
       "RunDetail": {
         "properties": {
           "actions": {
@@ -1962,9 +2301,29 @@
               }
             ]
           },
+          "config_file": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunConfigFile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_at": {
             "title": "Created At",
             "type": "string"
+          },
+          "default_resources": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunDefaultResources"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ended_at": {
             "anyOf": [
@@ -2181,7 +2540,9 @@
           "resumed_as",
           "actions",
           "results_dir",
-          "engine_settings"
+          "engine_settings",
+          "default_resources",
+          "config_file"
         ],
         "title": "RunDetail",
         "type": "object"
@@ -4058,6 +4419,97 @@
           }
         },
         "summary": "Me",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/notifications": {
+      "get": {
+        "operationId": "notifications_api_v1_me_notifications_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notifications"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Notifications",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/notifications:mark-read": {
+      "post": {
+        "operationId": "mark_read_api_v1_me_notifications_mark_read_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkReadIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notifications"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Read",
         "tags": [
           "me"
         ]

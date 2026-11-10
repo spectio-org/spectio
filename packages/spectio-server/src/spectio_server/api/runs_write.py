@@ -24,14 +24,17 @@ from referencing import Registry
 from referencing.exceptions import Unresolvable
 from sqlalchemy import Connection, insert
 
-from spectio.environments import PROFILE, Name, snapshot
+from spectio import locations
+from spectio.environments import PROFILE, Environment, Name, snapshot
 from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
-from spectio_server.api.environments import choose
+from spectio_server.api.environments import choose, offline
+from spectio_server.api.extras import DefaultResources, check_resources, read_config_file
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import (
     ENTRY_FILES,
     MAX_DEPTH,
     Found,
+    Resolved,
     depth,
     entry_files,
     inspect_dir,
@@ -39,6 +42,7 @@ from spectio_server.api.workflows import (
     resolve,
     schema_defaults,
 )
+from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
 from spectio_server.store.runs import EngineConflict, first, insert_run
 from spectio_server.store.schema import principals, runner_commands
@@ -65,6 +69,8 @@ class LaunchIn(BaseModel):
     profiles: list[str] = Field(default_factory=list, max_length=20)
     params: dict[str, JsonValue] = Field(default_factory=dict)
     environment: Name | None = None  # by name; the default when absent (FU-P3-86c, api §5.4)
+    default_resources: DefaultResources | None = None  # api §5.7 (FU-P3-110a)
+    config_file: str | None = None  # an absolute path, api §5.7
 
     @field_validator("params")
     @classmethod
@@ -133,7 +139,10 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         raise exc.under("workflow") from None
     _check_params(found, body.params)
     # the values as resolved now: the run keeps them whatever the file says later (req. 18)
-    environment = snapshot(choose(request, body.environment))
+    chosen = choose(request, body.environment)
+    environment = snapshot(chosen)
+    resources = _resources(body, chosen)
+    config_file = _config_file(request, body, resolved)
 
     runs_root = request.app.state.settings.runs_root
     run_id = new_id("run")
@@ -148,6 +157,8 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         profiles=body.profiles,
         created_at=now,
         environment=environment,
+        default_resources=resources,
+        config_file=config_file,
     )
     write_run_manifest(paths.run_dir, manifest)
     payload = {
@@ -181,6 +192,39 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         "profiles": body.profiles,
         "params": body.params,
     }
+
+
+def _resources(body: LaunchIn, env: Environment) -> dict[str, Any] | None:
+    """`default_resources` as sent, checked against the engine, the profile and the
+    environment's caps (api §5.7); None when absent or `{}`, which changes nothing."""
+    found = body.default_resources
+    if found is None or found == DefaultResources():
+        return None
+    check_resources(found, body.workflow.engine, body.profiles, env)
+    return found.model_dump(mode="json")
+
+
+def _config_file(request: Request, body: LaunchIn, resolved: Resolved) -> dict[str, Any] | None:
+    """The extra config file, checked (`locations.check_config_file`) and read in the file pool
+    (api §5.7): what the run keeps of it. The home is accepted as written and resolved, and read
+    from the resolved one; the pipeline's directory as `resolve` gives it."""
+    if body.config_file is None:
+        return None
+    engine = body.workflow.engine
+    written, real = request.app.state.home
+    starts = {str(resolved.directory): str(resolved.directory), written: real, real: real}
+    try:
+        root, parts = locations.check_config_file(body.config_file, list(starts), engine)
+        kept = request.app.state.files.run(
+            lambda: read_config_file(starts[root], parts, engine), READ_TIMEOUT_S
+        )
+    except Stalled as exc:
+        raise offline(exc) from None
+    except ValueError as exc:
+        raise Invalid("config_file", str(exc)) from None
+    except OSError as exc:
+        raise offline(OSError(f"the config file cannot be read: {exc.strerror}")) from None
+    return {"path": body.config_file, **kept}
 
 
 def _insert(

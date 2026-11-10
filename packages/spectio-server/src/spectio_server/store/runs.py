@@ -14,6 +14,7 @@ from sqlalchemy import Connection, insert, null, select
 from spectio.environments import run_column
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import RunManifest, run_paths
+from spectio_server.api.extras import DefaultResources, KeptConfig, column
 from spectio_server.files.results import results_dir
 from spectio_server.ids import new_id
 from spectio_server.store.schema import (
@@ -155,6 +156,8 @@ def insert_run(
             results_dir=results
             or results_dir(engine, m.run_id, runs_root, launch_dir, m.params, default_outdir),
             environment=run_column(m.environment),
+            default_resources=column(DefaultResources, m.default_resources),
+            config_file=column(KeptConfig, m.config_file),
             **lineage,
             **{**mine, "created_at": m.created_at},
         )

@@ -141,6 +141,8 @@ principals = Table(
     Column("kind", String, nullable=False),
     Column("display_name", String),
     Column("disabled_at", UTCDateTime()),
+    # Notifications newer than this are unread (FU-P3-113, api §5.9; migration 0013)
+    Column("notifications_read_at", UTCDateTime()),
     _check("principals", "kind", PRINCIPAL_KINDS),
 )
 
@@ -240,6 +242,10 @@ runs = Table(
     Column("environment", Json),
     # Pinned runs come first in the runs list (FU-P3-115a, api §5 note of 2026-11-10)
     Column("pinned", Boolean, nullable=False, server_default="0"),
+    # The launch's `default_resources` and `config_file`, with a `state` (FU-P3-110a, api §5.7);
+    # null when the run has none.
+    Column("default_resources", Json),
+    Column("config_file", Json),
     _check("runs", "state", RUN_STATES),
     _check("runs", "origin", RUN_ORIGINS, nullable=True),
     Index("ix_runs_project_created", "project_id", "created_at"),

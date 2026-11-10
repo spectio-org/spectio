@@ -3,7 +3,7 @@
 // be the schema's properties, so a field added to or dropped from a response model fails here.
 import { expect, test } from "vitest";
 import snapshot from "../../packages/spectio-server/openapi/0.0.1.json";
-import type { RunEnvironment, CodeLoading, Efficiency, EngineSettings, Failure, LaunchTemplate, Me, Process, ProcessEfficiency, ResultEntry, ResultReport, ResultStat, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Slurm, SlurmAllocated, SlurmRequest, Stage, Task, TaskFile, TaskFiles, TaskOutput } from "./api";
+import type { RunEnvironment, CodeLoading, Efficiency, EngineSettings, Failure, LaunchTemplate, Me, Notification, Notifications, Process, ProcessEfficiency, ResultEntry, ResultReport, ResultStat, Results, Resources, Run, RunConfigFile, RunDefaultResources, RunDetail, Scheduler, ServerVersion, Slurm, SlurmAllocated, SlurmRequest, Stage, Task, TaskFile, TaskFiles, TaskOutput } from "./api";
 
 const schemas = snapshot.components.schemas as unknown as Record<
   string,
@@ -161,7 +161,18 @@ const SAMPLES: Record<string, object> = {
     actions: { resume: { allowed: false, reason: "running" } },
     results_dir: null,
     engine_settings: engineSettings,
+    default_resources: null,
+    config_file: null,
   } satisfies RunDetail,
+  RunDefaultResources: { cpus: null, mem_mib: null, time_min: null, state: "recorded" } satisfies RunDefaultResources,
+  RunConfigFile: {
+    path: null,
+    kept_as: null,
+    sha256: null,
+    size: null,
+    includes: null,
+    state: "recorded",
+  } satisfies RunConfigFile,
   ResultEntry: { name: "", type: "file", size: null, mtime: null } satisfies ResultEntry,
   ResultReport: { path: "", title: "", group: null } satisfies ResultReport,
   Results: { root: "", path: "", exists: true, entries: [], truncated: false, reports: [] } satisfies Results,
@@ -175,6 +186,8 @@ const SAMPLES: Record<string, object> = {
     code_loading: [],
     environment: "local",
     environment_notice: null,
+    default_resources: null,
+    config_file: null,
   } satisfies LaunchTemplate,
   TemplateWorkflow: { location: "", revision: null, engine: "nextflow" },
   Failure: failure,
@@ -189,6 +202,8 @@ const SAMPLES: Record<string, object> = {
   TaskSummary: run.summary.tasks,
   ServerVersion: { version: "", node: "", runs_root: "", account: "", executor: "" } satisfies ServerVersion,
   Me: me,
+  Notification: { id: "", kind: "run_failed", run_id: "", run_name: null, at: "", read: false } satisfies Notification,
+  Notifications: { items: [], unread: 0, read_up_to: null } satisfies Notifications,
   Principal: me.principal,
   MeSession: me.session,
   MePaths: me.paths,

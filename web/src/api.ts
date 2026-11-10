@@ -172,6 +172,28 @@ export interface RunDetail extends Run {
    * P1 Task 31). */
   results_dir: string | null;
   engine_settings?: EngineSettings;
+  /** The launch's default resources and extra config file as recorded; null when the launch set
+   * none (FU-P3-110a, api §5.7). */
+  default_resources: RunDefaultResources | null;
+  config_file: RunConfigFile | null;
+}
+
+/** Schema `RunDefaultResources` (api §5.7): its fields are null unless `state` is `recorded`. */
+export interface RunDefaultResources {
+  cpus: number | null;
+  mem_mib: number | null;
+  time_min: number | null;
+  state: "recorded" | "not_readable";
+}
+
+/** Schema `RunConfigFile` (api §5.7): what a run keeps of its extra config file. */
+export interface RunConfigFile {
+  path: string | null;
+  kept_as: "extra.config" | "extra.yaml" | "extra.json" | null;
+  sha256: string | null;
+  size: number | null;
+  includes: boolean | null;
+  state: "recorded" | "not_readable";
 }
 
 /** Schema `ResultEntry`: one item of a results folder. */
@@ -232,6 +254,9 @@ export interface LaunchTemplate {
   environment: string;
   /** Why the default is chosen instead of the run's environment. */
   environment_notice: string | null;
+  /** As recorded, and the extra config file's path (FU-P3-110a, api §5.7). */
+  default_resources: { [key: string]: number | null } | null;
+  config_file: string | null;
 }
 
 /** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */
@@ -747,3 +772,24 @@ export const replaceCatalogEntry = (body: CatalogBody, etag: string): Promise<Ca
   call(entry(body.name), sendJson("PUT", body, etag));
 export const deleteCatalogEntry = (name: string, etag: string): Promise<null> =>
   call(entry(name), { method: "DELETE", headers: { "if-match": etag } });
+
+export type NotificationKind = "run_succeeded" | "run_failed" | "run_cancelled" | "gate_waiting";
+/** Schema `Notification` (api §5.9): derived from a run in 0.0.1. */
+export interface Notification {
+  id: string;
+  kind: NotificationKind;
+  run_id: string;
+  run_name: string | null;
+  at: string;
+  read: boolean;
+}
+/** Schema `Notifications`: newest first, at most 50; `unread` counts them all. */
+export interface Notifications {
+  items: Notification[];
+  unread: number;
+  read_up_to: string | null;
+}
+export const listNotifications = (signal?: AbortSignal): Promise<Notifications> => call("/me/notifications", { signal });
+/** Marks every item up to `upTo` read (api §5.9); answers the list as `GET` does. */
+export const markNotificationsRead = (upTo: string): Promise<Notifications> =>
+  call("/me/notifications:mark-read", sendJson("POST", { up_to: upTo }));
