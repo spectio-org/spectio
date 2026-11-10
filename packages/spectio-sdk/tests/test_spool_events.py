@@ -424,3 +424,15 @@ def test_caps() -> None:
     assert MAX_LINE_BYTES == 64 * 1024
     assert ROTATE_BYTES == 32 * 1024 * 1024
     assert MAX_FILE_BYTES == 64 * 1024 * 1024
+
+
+def test_flow_begin_keeps_event_when_dag_is_malformed() -> None:
+    """A bad `dag` is dropped alone: the event must survive, it carries the stage freeze (#160)."""
+    from spectio_sdk.events import NextflowFlowBegin
+
+    bad = NextflowFlowBegin.model_validate({"dag": {"processes": "A", "edges": [["A"]]}})
+    assert bad.dag is None
+    good = NextflowFlowBegin.model_validate(
+        {"dag": {"processes": ["A", "B"], "edges": [["A", "B"]]}}
+    )
+    assert good.dag is not None and good.dag.edges == [["A", "B"]]

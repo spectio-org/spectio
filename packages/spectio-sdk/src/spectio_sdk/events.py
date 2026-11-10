@@ -17,6 +17,8 @@ from pydantic import (
     Field,
     JsonValue,
     StrictInt,
+    ValidationError,
+    ValidatorFunctionWrapHandler,
     field_validator,
     model_validator,
 )
@@ -240,18 +242,28 @@ _ProcessName = Annotated[str, Field(max_length=1024)]
 
 class NextflowDag(_Data):
     """The process-level DAG `nf-spectio` sends on `onFlowBegin` (issue #160; api §5.8):
-    operators walked through, at most 2000 processes and 20000 edges, else only `truncated`."""
+    operators walked through, at most 2000 processes and within the event cap
+    (`MAX_EVENT_NODES`: processes + 3 x edges <= 4000), else only `truncated`."""
 
     processes: Annotated[list[_ProcessName], Field(max_length=2000)] = []
     edges: Annotated[
         list[Annotated[list[_ProcessName], Field(min_length=2, max_length=2)]],
-        Field(max_length=20000),
+        Field(max_length=MAX_EVENT_NODES // 3),
     ] = []
     truncated: bool | None = None
 
 
 class NextflowFlowBegin(NextflowEvent):
     dag: NextflowDag | None = None
+
+    @field_validator("dag", mode="wrap")
+    @classmethod
+    def _drop_bad_dag(cls, value: Any, handler: ValidatorFunctionWrapHandler) -> NextflowDag | None:
+        """A malformed `dag` is dropped alone; the event carries the stage freeze."""
+        try:
+            return handler(value)  # type: ignore[no-any-return]
+        except ValidationError:
+            return None
 
 
 class NextflowFlowComplete(NextflowEvent):
