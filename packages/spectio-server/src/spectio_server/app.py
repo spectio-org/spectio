@@ -32,7 +32,7 @@ from spectio.catalog import KIND as CATALOG
 from spectio.catalog import catalog_path
 from spectio.config import Settings
 from spectio.envfile import environments_path
-from spectio_server import static
+from spectio_server import static, targets
 from spectio_server.api import (
     browser,
     cancel,
@@ -140,6 +140,7 @@ def create_app(
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
     app.state.engine_versions = workflows.EngineVersions(settings)
+    app.state.target_engine = targets.login_engine(settings)  # api §5.9; replaced in tests
     app.state.server_key = server_key or ServerKey.new()
     app.state.tickets = TicketStore()
     app.state.sessions = SessionStore()
@@ -187,6 +188,7 @@ def create_app(
             cancel,
             environments,
             catalog,
+            targets,
         )
         for module in (*routers, stream):
             app.include_router(module.router, prefix=API)

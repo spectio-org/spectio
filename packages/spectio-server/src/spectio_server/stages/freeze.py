@@ -38,11 +38,13 @@ from sqlalchemy import Row, func, insert, select, update
 
 from spectio.runner.rundir import private_dir, read_small
 from spectio_sdk.stages import SpectioFile, applies
+from spectio_sdk.targets import stages_note
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import git_url
 from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import IN_CHUNK, Projection
+from spectio_server.projector.targets import target_of
 from spectio_server.stages.assign import Overlap, StageDef, assign
 from spectio_server.stages.detect_nf import detect_nextflow
 from spectio_server.stages.detect_smk import (
@@ -327,6 +329,9 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
         log.warning("run %s: stage sources not read: %s", p.run_id, exc)
         universe, stages, source, checkpoints = names, [], None, []
         note = "The stage sources were not read in time (the file system did not answer)."
+    target = target_of(p.conn, p.run_id)
+    if target is not None:  # one module or one rule: no stages, no gates (api §5.9)
+        stages, source, note = [], None, stages_note(target)
     for n, stage in enumerate(stages, 1):
         p.conn.execute(
             insert(run_stages).values(

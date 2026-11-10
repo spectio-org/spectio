@@ -22,6 +22,7 @@ from spectio_sdk.events import (
 from spectio_server.failure import nf_request, trace_resources
 from spectio_server.files.taskfiles import native_id, task_work_rel
 from spectio_server.ids import new_id
+from spectio_server.projector import targets
 from spectio_server.projector.runs import TERMINAL, Projection, failure_json
 from spectio_server.stages import freeze
 from spectio_server.store.schema import attempts, launches, runs
@@ -61,6 +62,7 @@ def _flow_create(p: Projection, data: NextflowFlowCreate) -> None:
     if data.sessionId:
         p.set_launch(engine_session_id=data.sessionId)
     p.pin_engine_version(data.nextflow)
+    targets.capture(p, data.target)  # `nextflow module run` (api §5.9)
     # `cleanup` and whether `clusterOptions` is set, never its text (P1 Task 34, SEC-P3T1-11)
     settings = {"cleanup": data.cleanup, "cluster_options": data.clusterOptionsSet}
     p.conn.execute(update(runs).where(runs.c.id == p.run_id).values(engine_settings=settings))

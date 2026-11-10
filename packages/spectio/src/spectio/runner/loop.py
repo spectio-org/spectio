@@ -55,6 +55,7 @@ from spectio.runner.types import (
     SpoolBatch,
     Stalled,
 )
+from spectio_sdk.targets import RunTarget
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +96,7 @@ class LaunchPayload(BaseModel):
     params: dict[str, JsonValue] = {}
     resume_of: ResumePayload | None = None
     environment: Snapshot | None = None
+    target: RunTarget | None = None  # one module or one rule (api §5.9)
 
 
 def _now() -> str:
@@ -282,7 +284,8 @@ class RunnerLoop:
             return None
         try:
             payload = LaunchPayload.model_validate(command.payload)
-            if not Path(payload.location).is_absolute():
+            registry = payload.target is not None and payload.target.source == "registry"
+            if not registry and not Path(payload.location).is_absolute():
                 raise ValueError(f"{payload.location!r} is not an absolute path")
             environment = payload.environment or as_snapshot(
                 snapshot(server_builtin(self.settings).environment)
@@ -306,6 +309,7 @@ class RunnerLoop:
                 nxf_opts=engines.nxf_opts,
                 extra_args=engines.extra_args.get(ref.engine, []),
                 resume_of=resume,
+                target=payload.target,
             )
             status, detail = runs_disk(self.settings.runs_root)
             if status == "warn":  # never refused: the engine may still fit (FU-P3-74)

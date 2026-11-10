@@ -9,6 +9,7 @@ from typing import Any, Literal, Protocol, TypeVar
 from spectio.environments import LocalValues, SlurmValues
 from spectio.runner.observed import ObservedRun
 from spectio_sdk.events import SpoolEvent
+from spectio_sdk.targets import RunTarget
 
 
 @dataclass(frozen=True)
@@ -92,7 +93,8 @@ class LaunchSpec:
     its values (FU-P3-86c, api §5.4); `slurm` is None on the local executor. `env` holds extra
     variables for the engine, set after the login profile.
     `launch_dir` holds the launch's `.spectio/`; the engine runs there too, except for a Resume,
-    which runs in `resume_of`'s directories.
+    which runs in `resume_of`'s directories. `target` limits the run to one module or one rule
+    (api §5.9); a registry module's `location` is its name, every other one a directory.
     """
 
     run_id: str
@@ -111,6 +113,7 @@ class LaunchSpec:
     nxf_opts: str | None = None
     extra_args: list[str] = field(default_factory=list)
     resume_of: ResumeSource | None = None
+    target: RunTarget | None = None
 
     @property
     def engine_dir(self) -> Path:

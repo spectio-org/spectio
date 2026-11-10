@@ -81,6 +81,7 @@ _RUN_COLUMNS = (
     runs.c.results_dir,
     runs.c.engine_settings,
     runs.c.environment,
+    runs.c.target,
     workflows.c.engine,
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
@@ -211,6 +212,7 @@ def run_json(
         },
         "profiles": profiles,
         "environment": row.environment,  # null for a run started from a terminal (FU-P3-86a)
+        "target": row.target,  # one module or one rule; null: the whole pipeline (api §5.9)
         "failure": row.failure,
         "head": head,
         "task_counts": counts,
@@ -366,10 +368,12 @@ def list_runs(
     state: Annotated[str | None, Query(max_length=200)] = None,
     q: Annotated[str | None, Query(max_length=200)] = None,
     sort: Literal["-created_at", "-ended_at"] = "-created_at",
+    target: Literal["any", "none"] | None = None,
     limit: Limit = 50,
     cursor: Cursor = None,
 ) -> dict[str, Any]:
-    """Newest first by `created_at`, or by `ended_at` (`sort=-ended_at`: ended runs only)."""
+    """Newest first by `created_at`, or by `ended_at` (`sort=-ended_at`: ended runs only);
+    `target=any` lists runs of one module or one rule only, `none` whole-pipeline runs (§5.9)."""
     states = _states(state, RUN_STATES)
     key = runs.c.ended_at if sort == "-ended_at" else runs.c.created_at
     query = _runs_query()
@@ -377,6 +381,10 @@ def list_runs(
         query = query.where(runs.c.ended_at.is_not(None))
     if states is not None:
         query = query.where(runs.c.state.in_(states))
+    if target is not None:  # SQL NULL; a JSON null is never stored (`insert_run`)
+        query = query.where(
+            runs.c.target.is_not(None) if target == "any" else runs.c.target.is_(None)
+        )
     if q:  # a prefix, compared as text: no LIKE pattern
         query = query.where(func.substr(runs.c.name, 1, len(q)) == q)
     query = _page(query, key, runs.c.id, cursor, limit, descending=True, timestamp=True)
@@ -414,6 +422,7 @@ def server_version(request: Request) -> dict[str, Any]:
         "runs_root": str(settings.runs_root),
         "account": account,
         "executor": settings.executor,
+        "features": {"single_target": settings.features.single_target},  # api §5.9
     }
 
 

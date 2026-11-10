@@ -499,8 +499,59 @@ class SpectioObserver implements TraceObserverV2 {
             // As Session.cleanup() reads it: `!config.cleanup` by Groovy truth (Session.groovy:1375-1410;
             // its bytecode read in the 26.10.4 jar, 2026-11-07).
             [nextflow: str(BuildInfo.version), resume: s.resumeMode as Boolean, workDir: str(s.workDir),
-             cleanup: s.config?.cleanup ? true : false, clusterOptionsSet: setsClusterOptions(s.config?.process)]
+             cleanup: s.config?.cleanup ? true : false, clusterOptionsSet: setsClusterOptions(s.config?.process),
+             target: moduleTarget(str(s.commandLine), s.workflowMetadata?.scriptFile, str(s.workflowMetadata?.scriptId))]
         }
+    }
+
+    static final int MAX_TARGET_FILE = 65536
+    static final List<String> GLOBAL_WITH_VALUE = ['-c', '-C', '-config', '-log', '-syslog', '-trace']
+    static final java.util.regex.Pattern REGISTRY_NAME = ~/[a-z0-9][a-z0-9_-]{0,63}\/[a-z0-9][a-z0-9_.-]{0,127}/
+    static final java.util.regex.Pattern HEX = ~/[0-9a-f]{64}/
+
+    /** `nextflow module run` (Nextflow >= 26.04): the module this run targets, or null for a
+     *  pipeline run (api §5.9, architecture §13.8). The command line is parsed here and never sent;
+     *  a registry module's checksum is its `.module-info`'s, a local one's hash is the script ID. */
+    static Map moduleTarget(String commandLine, Object scriptFile, String scriptId) {
+        final words = (commandLine ?: '').take(MAX_MESSAGE_CHARS).trim().split(/\s+/) as List<String>
+        int at = 1  // the first word is the launcher; then its own options, then the command
+        while (at < words.size() && words[at].startsWith('-'))
+            at += words[at] in GLOBAL_WITH_VALUE ? 2 : 1
+        if (at + 2 >= words.size() || words[at] != 'module' || words[at + 1] != 'run' || words[at + 2].startsWith('-'))
+            return null
+        final ref = words[at + 2]
+        final v = words.indexOf('-version')
+        final version = v > at && v + 1 < words.size() ? words[v + 1].take(64) : null
+        final Path dir = scriptFile instanceof Path ? ((Path) scriptFile).parent : null
+        if (REGISTRY_NAME.matcher(ref).matches() && !ref.startsWith('/') && !ref.startsWith('.')) {
+            final info = dir == null ? null : smallText(dir.resolve('.module-info'))
+            final checksum = info?.readLines()?.find { it.startsWith('checksum=') }?.substring(9)?.trim()
+            return [kind: 'module', name: ref, version: version, source: 'registry',
+                    hash: checksum && HEX.matcher(checksum).matches() ? checksum : null]
+        }
+        final meta = dir == null ? null : smallText(dir.resolve('meta.yml'))
+        final name = yamlScalar(meta, 'name') ?: dir?.fileName?.toString() ?: ref
+        return [kind: 'module', name: name.take(MAX_MESSAGE_CHARS), version: yamlScalar(meta, 'version')?.take(64),
+                source: 'local', path: dir?.toString(), hash: scriptId]
+    }
+
+    /** A small regular file's text, never through a symlink; null otherwise. */
+    static String smallText(Path file) {
+        try {
+            if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS) || Files.size(file) > MAX_TARGET_FILE)
+                return null
+            return new String(Files.readAllBytes(file), StandardCharsets.UTF_8)
+        } catch (Exception ignored) {
+            return null
+        }
+    }
+
+    /** A top-level `key: value` of a YAML file, quotes removed: enough for `meta.yml`'s name and version. */
+    static String yamlScalar(String text, String key) {
+        if (text == null)
+            return null
+        final m = text =~ /(?m)^${key}:[ \t]*["']?([^"'\r\n#]*?)["']?[ \t]*(#.*)?$/
+        return m.find() && m.group(1) ? m.group(1) : null
     }
 
     @Override void onFlowBegin() { emit('onFlowBegin') { [:] } }

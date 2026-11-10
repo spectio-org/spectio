@@ -38,6 +38,7 @@ from spectio.runner.rundir import (
     run_paths,
     write_run_manifest,
 )
+from spectio_sdk.targets import RunTarget
 from spectio_server.api import models
 from spectio_server.api.environments import view
 from spectio_server.api.problems import Invalid, Problem
@@ -47,7 +48,7 @@ from spectio_server.failure import dir_run_id
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
 from spectio_server.resume import check_dirs, launch_payload, row_refusal
-from spectio_server.store.runs import first, insert_run
+from spectio_server.store.runs import first, insert_run, module_source
 from spectio_server.store.schema import principals, run_inputs, runner_commands
 from spectio_server.store.writer import Writer
 
@@ -172,25 +173,33 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         device, inode = check_dirs(ctx, parent)
     except NotResumable as exc:
         raise _conflict(exc.reason, str(exc)) from None
-    try:
-        resolved = resolve(settings.data_dir, parent.location, parent.revision)
-    except Invalid as exc:
-        raise exc.under("workflow") from None
+    target = None if parent.target is None else RunTarget.model_validate(parent.target)
+    if target is not None and target.kind == "module":  # no pipeline to fetch (api §5.9)
+        location, source = parent.location, module_source(target)
+        default_name = target.name.rsplit("/", 1)[-1]
+    else:
+        try:
+            resolved = resolve(settings.data_dir, parent.location, parent.revision)
+        except Invalid as exc:
+            raise exc.under("workflow") from None
+        location, source = str(resolved.directory), resolved.source
+        default_name = resolved.default_name
 
     child_id = new_id("run")
     now = datetime.now(UTC)
     manifest = RunManifest(
         run_id=child_id,
-        name=f"{parent.workflow_name or resolved.default_name}-{child_id[-6:]}",
+        name=f"{parent.workflow_name or default_name}-{child_id[-6:]}",
         workflow=Workflow(location=parent.location, revision=parent.revision, engine=parent.engine),
         params=params,
         profiles=profiles,
         created_at=now,
         parent_run_id=run_id,
         environment=environment,
+        target=None if target is None else target.model_copy(update={"checksum_changed": None}),
     )
     payload = {
-        "location": str(resolved.directory),
+        "location": location,
         "profiles": profiles,
         "params": params,
         "resume_of": {
@@ -202,13 +211,15 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         },
         "environment": environment,
     }
+    if manifest.target is not None:  # Resume keeps the target (api §5.9 Relaunch)
+        payload["target"] = manifest.target.model_dump(exclude_none=True)
     paths = run_paths(settings.runs_root, child_id)
     write_run_manifest(paths.run_dir, manifest)
     writer: Writer = request.app.state.writer
     try:
         writer.submit(
             lambda conn: _insert_child(
-                conn, run_id, manifest, resolved.source, payload, now, settings.runs_root
+                conn, run_id, manifest, source, payload, now, settings.runs_root
             )
         ).result()
     except BaseException:
@@ -298,6 +309,19 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         row = run_row(conn, run_id)
         params = _params(conn, run_id)
         payload = launch_payload(conn, run_id)
+    target = None if row.target is None else RunTarget.model_validate(row.target)
+    name, notice = _template_environment(request, row.environment)
+    template = {
+        "workflow": {"location": row.location, "revision": row.revision, "engine": row.engine},
+        "profiles": _profiles(settings.runs_root, run_id, payload) or [],
+        "params": params,
+        "environment": name,
+        "environment_notice": notice,
+        "target": None if target is None else _target_in(target),
+    }
+    if target is not None and target.kind == "module":  # a Copy keeps its version (§5.9)
+        workflow = {**template["workflow"], "revision": None}  # the version is the target's
+        return {**template, "workflow": workflow, "non_default": list(params), "code_loading": []}
     try:
         resolved = resolve(settings.data_dir, row.location, row.revision)
         found = inspect_dir(resolved.directory, resolved.default_name)
@@ -312,16 +336,19 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         )
     except Stalled as exc:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
-    name, notice = _template_environment(request, row.environment)
     return {
-        "workflow": {"location": row.location, "revision": row.revision, "engine": row.engine},
-        "profiles": _profiles(settings.runs_root, run_id, payload) or [],
-        "params": params,
+        **template,
         "non_default": [k for k in params if k not in defaults or params[k] != defaults[k]],
         "code_loading": loading,
-        "environment": name,
-        "environment_notice": notice,
     }
+
+
+def _target_in(target: RunTarget) -> dict[str, Any]:
+    """The `target` of a `POST /runs` body: what the launch takes, not what it derives."""
+    if target.kind == "module":
+        pinned = {"version": target.version} if target.source == "registry" else {}
+        return {"kind": "module", **pinned}
+    return {"kind": "rule", "name": target.name}
 
 
 def _template_environment(

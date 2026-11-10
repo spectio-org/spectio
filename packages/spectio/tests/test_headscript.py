@@ -35,6 +35,7 @@ from spectio.runner.headscript import (
 from spectio.runner.resume import check_dirs
 from spectio.runner.rundir import make_run_dirs
 from spectio.runner.types import LaunchSpec, ResumeSource
+from spectio_sdk.targets import RunTarget
 
 RUN_ID = "run_01K8T9HEAD0000000000000T09"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -844,3 +845,60 @@ def test_req18_snapshot_head_out_names_the_environment(home: Path, bridges: Path
     assert run_head(local).returncode == 0
     first = (local.launch_dir / ".spectio" / "head.out").read_text().splitlines()[0]
     assert first == "Spectio: environment local (local: cpus 2, memory 8192 MiB)"
+
+
+# --- Run targets: one module or one rule (api §5.9, #161) --------------------------------------
+
+REGISTRY_MODULE = RunTarget(
+    kind="module", name="nf-core/fastqc", version="0.0.0-6d1763b", source="registry"
+)
+
+
+def test_module_run_args_pin_the_version(home: Path) -> None:
+    """A registry module runs `nextflow module run <name> -version <v>`, never unpinned."""
+    spec = make_spec(home / "runs", location=Path("nf-core/fastqc"), target=REGISTRY_MODULE)
+    spectio = spec.launch_dir / ".spectio"
+    assert engine_args(spec) == [
+        "module", "run", "nf-core/fastqc", "-version", "0.0.0-6d1763b",
+        "-params-file", str(spectio / "params.json"),
+        "-c", str(spectio / "spectio.config"), "-work-dir", str(spec.work_dir),
+    ]  # fmt: skip
+    with pytest.raises(ValueError, match="pinned version"):
+        engine_args(replace(spec, target=REGISTRY_MODULE.model_copy(update={"version": None})))
+    with pytest.raises(ValueError, match="pinned version"):
+        engine_args(replace(spec, target=REGISTRY_MODULE.model_copy(update={"version": "latest"})))
+
+
+def test_local_module_run_args(home: Path) -> None:
+    module = home / "modules" / "local" / "hello"
+    target = RunTarget(kind="module", name="hello", version="1.0", source="local", path=str(module))
+    spec = make_spec(home / "runs", location=module, target=target, profiles=["test"])
+    args = engine_args(spec)
+    assert args[:3] == ["module", "run", str(module)] and "-version" not in args
+    assert args[-2:] == ["-profile", "test"]
+
+
+def test_snakemake_rule_target_follows_the_directory(home: Path, bridges: Path) -> None:
+    """The rule is a positional: it comes right after `--directory D`, never after an option that
+    takes several values (`--configfile`), which would swallow it (spike finding 6)."""
+    spec = snakemake_spec(home, target=RunTarget(kind="rule", name="qc_report", flag="target"))
+    args = engine_args(spec)
+    at = args.index("--directory")
+    assert args[at + 2] == "qc_report" and args.count("qc_report") == 1
+    assert args[at + 3] == "--configfile"
+
+
+@pytest.mark.parametrize(
+    "stop", ["--until", "--omit-from=x", "--allowed-rules", "--forcerun", "-R"]
+)
+def test_a_rule_target_never_meets_a_stop_flag(home: Path, bridges: Path, stop: str) -> None:
+    spec = snakemake_spec(home, target=RunTarget(kind="rule", name="merge"), extra_args=[stop, "x"])
+    with pytest.raises(ValueError, match="beside a target"):
+        engine_args(spec)
+    assert engine_args(replace(spec, target=None))  # a whole-pipeline run keeps them
+
+
+def test_a_bad_rule_name_is_refused(home: Path, bridges: Path) -> None:
+    spec = snakemake_spec(home, target=RunTarget(kind="rule", name="-n"))
+    with pytest.raises(ValueError, match="rule name"):
+        engine_args(spec)

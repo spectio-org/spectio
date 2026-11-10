@@ -21,6 +21,8 @@ from pydantic import (
     model_validator,
 )
 
+from spectio_sdk.targets import RunTarget, reported
+
 MAX_LINE_BYTES = 65536  # one line, without its "\n"
 ROTATE_BYTES = 33554432  # the writer opens the next file before passing it
 MAX_FILE_BYTES = 67108864  # the reader ignores anything past it in one file
@@ -171,6 +173,11 @@ def _hide_command(msg: str | None) -> str | None:
     return msg
 
 
+def _lenient_target(cls: type, value: Any, handler: Any) -> RunTarget | None:
+    """A target that does not fit is dropped, never the event that carries it (api §5.9)."""
+    return reported(value)
+
+
 # --- Nextflow (nf-spectio) -----------------------------------------------------------------
 
 TraceValue = str | SignedInt64 | float | None
@@ -233,6 +240,9 @@ class NextflowFlowCreate(NextflowEvent):
     workDir: str | None = None
     cleanup: bool | None = None  # the session's `config.cleanup` (P1 Task 33)
     clusterOptionsSet: bool | None = None  # never the text (SEC-P3T1-11)
+    target: RunTarget | None = None  # `nextflow module run` (api §5.9, #161)
+
+    _target = field_validator("target", mode="wrap")(_lenient_target)
 
 
 class NextflowFlowComplete(NextflowEvent):
@@ -286,6 +296,9 @@ class SnakemakeWorkflowStarted(_Data):
     host: str | None = None
     user: str | None = None
     snakefile_main: str | None = None  # the main Snakefile's path (P1 Task 27)
+    target: RunTarget | None = None  # a rule or file target (api §5.9, #161)
+
+    _target = field_validator("target", mode="wrap")(_lenient_target)
 
 
 class SnakemakeRunInfo(_Data):
