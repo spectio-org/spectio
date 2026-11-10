@@ -4,7 +4,8 @@
 A delete is all or nothing over ended runs, and soft: `runs.deleted_at` is set and the reads
 leave the run out, since the boot's rebuild would add a removed row back from its directory
 (P1 Task 11). Nothing on disk changes unless `directories` is true; then each run's own
-directory, `<runs root>/<run ID>`, is removed once the rows are marked, relative to the runs
+directory, `<runs root>/<run ID>` (and the lineage root's, for a Resume child whose root was
+deleted earlier), is removed once the rows are marked, relative to the runs
 root's descriptor and never through a symlink. Both writes pass the guards of every write
 (session, loopback Origin, JSON body: dev-env §15.3 req. 7).
 """
@@ -68,31 +69,33 @@ def _directory_refusals(
 ) -> list[dict[str, str]]:
     """Why a run's directory may not be removed, one error per run, in request order."""
     ids = [r.id for r in found]
+    in_dirs = or_(
+        runs.c.launch_dir.in_([r.launch_dir for r in found if r.launch_dir]),
+        runs.c.work_dir.in_([r.work_dir for r in found if r.work_dir]),
+    )
     shared = conn.execute(
         select(runs.c.launch_dir, runs.c.work_dir).where(
-            runs.c.id.not_in(ids),
-            runs.c.deleted_at.is_(None),
-            or_(
-                runs.c.launch_dir.in_([r.launch_dir for r in found if r.launch_dir]),
-                runs.c.work_dir.in_([r.work_dir for r in found if r.work_dir]),
-            ),
+            runs.c.id.not_in(ids), runs.c.deleted_at.is_(None), in_dirs
         )
     ).all()
     used = {d for row in shared for d in row if d}
-    alive = set(  # the runner still watches the head (`StoreSink.active_launches`)
-        conn.execute(
-            select(launches.c.run_id).where(
-                launches.c.run_id.in_(ids),
-                launches.c.head_native_id.is_not(None),
-                launches.c.exited_at.is_(None),
-            )
-        ).scalars()
-    )
+    # the runner still watches the head (`StoreSink.active_launches`): of a run in the request,
+    # or of any run, deleted or not, that writes in their directories
+    heads = conn.execute(
+        select(runs.c.id, runs.c.launch_dir, runs.c.work_dir)
+        .join(launches, launches.c.run_id == runs.c.id)
+        .where(
+            or_(runs.c.id.in_(ids), in_dirs),
+            launches.c.head_native_id.is_not(None),
+            launches.c.exited_at.is_(None),
+        )
+    ).all()
+    alive = {v for row in heads for v in row if v}
     errors = []
     for r in found:
         if r.origin == "cli-observed":
             reason = "started from a terminal: its launch directory is your own"
-        elif r.id in alive:
+        elif r.id in alive or r.launch_dir in alive or r.work_dir in alive:
             reason = "its head has not been seen to exit yet: try again in a minute"
         elif r.launch_dir != str(run_paths(runs_root, r.lineage_id or r.id).launch_dir):
             reason = "its directory is not where the runs root says: the runs root changed"
@@ -105,7 +108,9 @@ def _directory_refusals(
 
 
 def _mark(conn: Connection, body: DeleteIn, runs_root: Path) -> list[str]:
-    """Check every run, then mark them all deleted; the IDs whose directory goes."""
+    """Check every run, then mark them all deleted; the IDs whose directory goes: each run's
+    own, then each lineage root outside the request (deleted already, since no live run may
+    share its directories), whose directory the Resume child ran in."""
     rows: dict[str, Any] = {
         r.id: r
         for r in conn.execute(
@@ -144,7 +149,10 @@ def _mark(conn: Connection, body: DeleteIn, runs_root: Path) -> list[str]:
     conn.execute(update(runs).where(runs.c.id.in_(body.ids)).values(deleted_at=datetime.now(UTC)))
     for run_id in body.ids:
         note_change(conn, run_id)
-    return body.ids if body.directories else []
+    if not body.directories:
+        return []
+    roots = [r.lineage_id for r in found if r.lineage_id and r.lineage_id not in body.ids]
+    return body.ids + list(dict.fromkeys(roots))
 
 
 def remove_run_dir(runs_root: Path, run_id: str) -> DirResult:

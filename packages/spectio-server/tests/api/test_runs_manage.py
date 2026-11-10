@@ -240,6 +240,63 @@ def test_delete_directories_of_a_lineage_together(
     assert not parent.run_dir.exists()
 
 
+def resume_child(writer: Writer, settings: Settings, child: str, root: str) -> str:
+    """A Resume child of `root` that runs in its directories; its launch's ID."""
+    parent = run_paths(settings.runs_root, root)
+    return add_run(
+        writer,
+        settings,
+        child,
+        "child",
+        "succeeded",
+        parent_run_id=root,
+        lineage_id=root,
+        launch_dir=str(parent.launch_dir),
+        work_dir=str(parent.work_dir),
+    )
+
+
+def test_delete_child_directories_after_its_root_removes_the_lineage_directory(
+    authed_client: TestClient, writer: Writer, settings: Settings
+) -> None:
+    """The root deleted earlier (records only): the child's delete removes the shared directory
+    too, since no API call can reach it any more (CR-P3FU115A-01)."""
+    add_run(writer, settings, rid(1), "parent", "failed")
+    resume_child(writer, settings, rid(2), rid(1))
+    lineage = make_run_dirs(settings.runs_root, rid(1))
+    own = make_run_dirs(settings.runs_root, rid(2))
+    assert delete(authed_client, [rid(1)]).status_code == 200
+    response = delete(authed_client, [rid(2)], directories=True)
+    assert response.status_code == 200, response.text
+    assert response.json()["directories"] == [
+        {"id": rid(2), "result": "removed"},
+        {"id": rid(1), "result": "removed"},
+    ]
+    assert not own.run_dir.exists()
+    assert not lineage.run_dir.exists()
+
+
+def test_delete_directories_refused_while_a_deleted_childs_head_lives(
+    authed_client: TestClient, writer: Writer, settings: Settings
+) -> None:
+    """A child deleted earlier (records only) whose head still writes in the lineage directory
+    blocks the removal of its parent's directories (CR-P3FU115A-02)."""
+    add_run(writer, settings, rid(1), "parent", "failed")
+    launch_id = resume_child(writer, settings, rid(2), rid(1))
+    writer.submit(
+        lambda c: c.execute(
+            update(launches).where(launches.c.id == launch_id).values(head_native_id="4242")
+        )
+    ).result()
+    lineage = make_run_dirs(settings.runs_root, rid(1))
+    assert delete(authed_client, [rid(2)]).status_code == 200
+    response = delete(authed_client, [rid(1)], directories=True)
+    assert response.status_code == 409, response.text
+    assert response.json()["errors"][0]["field"] == rid(1)
+    assert deleted_at(writer, rid(1)) is None
+    assert lineage.run_dir.is_dir()
+
+
 def test_deleted_child_leaves_resumed_as(
     authed_client: TestClient, writer: Writer, settings: Settings
 ) -> None:
