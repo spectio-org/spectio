@@ -82,14 +82,14 @@ body {
   align-items: center;
   justify-content: center;
 }
-/* The account placeholder: a dashed ring inside the key's hit area. */
+/* The avatar, a link to Profile (FU-P3-112): a ring inside the key's hit area. */
 .sp-avatar .sp-key-face {
   width: 34px;
   height: 34px;
   box-sizing: border-box;
   border-radius: 50%;
   background: var(--sp-surface-subtle);
-  border: 1px dashed var(--sp-line-input);
+  border: 1px solid var(--sp-line-input);
 }
 
 /* Desktop and tablet top bar: a floating paper bar. */
@@ -469,14 +469,6 @@ body {
 .sp-page-sub {
   overflow-wrap: anywhere;
   white-space: normal;
-}
-
-/* Tables (UX-G3a-05): a column marked data-wide hides below 1100 px, so the runs table fits at
-   1024 px without a sideways scroll. Task 20 marks Started with it. */
-@media (max-width: 1099.98px) {
-  .sp-table [data-wide] {
-    display: none;
-  }
 }
 
 /* UI parity A (docs/reviews/ui-parity-0.0.1.md). */

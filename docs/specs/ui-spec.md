@@ -26,6 +26,7 @@ Scope: web UI of Spectio (formerly drafted as Ductio / Perspectio). Companion do
 
 Shell (depictio's Paper chrome, id `glass`; 2026-10-29, §7): a grid filling the viewport.
 - **Top bar** across the full width: animated logo (home), breadcrumbs, project switcher (shown on Overview, Runs, Review, Launch and Workflows; hidden on Environments, Administration and Profile, and hidden while there is a single project ([`api-and-data-model.md`](api-and-data-model.md) §6)), search (⌘K), notifications (bell with the unread count; its panel lists in-app notifications, each deep-linking to a run or gate; `GET /me/notifications`, [`api-and-data-model.md`](api-and-data-model.md) §5) *(assumed — pending Thomas, inbox #17)*, Administration (admins only), **colour mode** (only here), avatar → Profile.
+    - *Note 2026-11-10 (FU-P3-112):* in 0.0.1 the Profile page sets the colour mode too, the same stored setting ([§4.10.1](#4101-profile-in-001)); the top bar keeps its switch.
 - **Sidebar** below it, full remaining height: head with "WORKSPACE" and the **fold button** (PanelLeftClose / PanelLeftOpen, as in depictio); one 56 px item per menu with a 25 px line icon in the menu's colour; active item tinted; Review shows its count; footer with runners status and server status. Folds to a 92 px icon rail (labels hidden, counts become badges).
 - **Content** scrolls on its own; the shell never scrolls.
 
@@ -645,6 +646,17 @@ Lists: model endpoints (kind, where it runs, data policy, state), connected agen
 
 ### 4.10 User profile
 From the avatar in the top bar (depictio model): identity header with stats; **CLI & API tokens** generated in the UI (scopes, created, last used, expiry, revoke) with copyable `spectio login` / `SPECTIO_TOKEN` / Nextflow and Snakemake snippets; account (auth mode, time zone, default environment and landing page); notifications matrix (event × in-app / email / Slack), stored as the user's subscriptions (`GET/PUT /me/subscriptions`) *(assumed — pending Thomas, inbox #17)*; personal agents; groups and projects (phase 2); recent activity.
+
+#### 4.10.1 Profile in 0.0.1
+
+*Note 2026-11-10 (FU-P3-112, assumed — [inbox #146](../reviews/inbox.md#146-assumed-thomass-ui-feedback-of-2026-11-09-fu-p3-109-to-fu-p3-113) item 7, Thomas, 2026-11-09: "a Profile page in single-user mode too (who the server runs as, the session, the config paths, the theme)"):* the 0.0.1 Profile, at `/profile`, reached from the avatar of the top bar, which is a link named "Profile" on the desktop and the phone (it was a disabled "Account" placeholder). Profile has no `NAV` item and no tab, so nothing in the sidebar or the tab bar is marked; the crumbs read Home › Profile. Its data is `GET /me` and its one action `POST /auth/session:sign-out`, both owned by [api §5.8](api-and-data-model.md#58-me-and-sign-out-001). The full Profile of §4.10 above (tokens, notifications, agents) stays the full product's. One column of cards, at most 760 px wide:
+- **Who the server runs as**: Unix user and UID; "You are the only principal: runs, files and settings are this user's."
+- **This session**: Started (in the words of the run lists, "Today 08:40"), Expires "Ends when the server stops, or when you sign out" (the session lives in memory, [dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 2), and the button **Sign out of this session**. After it the card says, as a polite status, "Signed out of this session. To sign in again, open the link that spectio serve printed, or run spectio login --print-link."; a failed sign-out keeps the button, with "Could not sign out. <reason>" as an alert.
+- **Config paths**, read-only text in mono, wrapping anywhere: Config file, Data directory, Database directory, Observed runs directory, each with its own Copy icon button named after its row ("Copy the database directory path") and one polite status ("Copied the database directory path"); then "Read-only here: change them in spectio.toml, then restart spectio serve."
+- **Theme**: a `radiogroup` of three native radios, Light, Dark, System (Mantine's `auto`), the same stored setting as the top bar's Dark theme switch of §2, which stays; "Kept in this browser. System follows your device's setting." It works while `/me` loads or fails.
+- **States**: "Loading your profile…" (status); a failed read, "Your profile could not be read. <reason>" (alert) and Retry.
+- **On the phone** (360 px) the title row reads "Profile" with "Single-user mode · <user>"; the facts are one column, Copy buttons are 44 px, Sign out is full width.
+- **Boards**: LiteProfile (the page, the signed-out, loading and failed states) and MLiteProfile at 360 px; LiteTopbar and MLiteTopbar draw the avatar as the link.
 
 ### 4.11 Phone and tablet
 A separate, simpler layout below 768 px (depictio's phone model), not a squeezed desktop.

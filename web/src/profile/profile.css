@@ -1,0 +1,65 @@
+/* The Profile page (FU-P3-112; boards LiteProfile, MLiteProfile): one column of cards, at most
+   760 px wide; paths wrap anywhere, so nothing overflows at 320 px. */
+.sp-prof {
+  max-width: 760px;
+}
+.sp-prof-card .sp-sub {
+  margin: 10px 0 0;
+}
+.sp-prof-paths {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.sp-prof-paths dt {
+  font-size: 12.5px;
+  color: var(--sp-text-muted);
+}
+.sp-prof-paths dd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 0;
+}
+.sp-prof-paths code {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-family: var(--sp-font-mono);
+  font-size: 13px;
+  background: var(--sp-surface-subtle);
+  overflow-wrap: anywhere;
+}
+.sp-prof-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.sp-prof-themes label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.sp-prof-themes input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--sp-accent);
+}
+.sp-prof-out {
+  margin-top: 14px;
+}
+/* On the phone (MLiteProfile, ui-spec §4.10.1): Copy keys are 44 px touch targets, Sign out is
+   full width. */
+@media (max-width: 767.98px) {
+  .sp-prof-paths .sp-key {
+    width: 44px;
+    height: 44px;
+  }
+  .sp-prof-out {
+    width: 100%;
+  }
+}

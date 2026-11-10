@@ -9,6 +9,7 @@ spectio_server/api/cancel.py
 spectio_server/api/catalog.py
 spectio_server/api/environments.py
 spectio_server/api/logs.py
+spectio_server/api/me.py
 spectio_server/api/models.py
 spectio_server/api/problems.py
 spectio_server/api/relaunch.py
