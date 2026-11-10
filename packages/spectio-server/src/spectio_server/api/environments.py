@@ -18,11 +18,12 @@ launch's reading of a name (FU-P3-86c).
 import hashlib
 import json
 import logging
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from fastapi import APIRouter, Request, Response
+from pydantic import BaseModel
 
 from spectio import envfile
 from spectio.config import Settings
@@ -36,9 +37,10 @@ router = APIRouter()
 
 BUILTIN = RESERVED - {"new"}
 Entry = tuple[Environment, bool, bool, str | None]  # environment, builtin, usable, reason
+E = TypeVar("E", bound=BaseModel)
 
 
-def _offline(exc: Exception) -> Problem:
+def offline(exc: Exception) -> Problem:
     return Problem(503, "runner-offline", "File system not answering", str(exc))
 
 
@@ -46,48 +48,59 @@ def _builtin_names(settings: Settings) -> list[str]:
     return [b.environment.name for b in builtins(settings)]
 
 
-class Store:
-    """`environments.toml` at its one path (`envfile.environments_path()`)."""
+class Store(Generic[E]):
+    """A definitions file of `kind` at its one path: `environments.toml`
+    (`envfile.environments_path()`), or `catalog.toml` (`spectio.catalog`, FU-P3-87b). `noun`
+    names its problems (`environments-file-unusable`); only the environments have built-ins."""
 
-    def __init__(self, path: Path) -> None:
-        self.path = path
-        self._cached: envfile.EnvFile | None = None
+    def __init__(self, path: Path, kind: envfile.Kind[E], noun: str) -> None:
+        self.path, self.kind, self.noun = path, kind, noun
+        self._cached: envfile.File[E] | None = None
 
-    def read(self, settings: Settings, files: FilePool) -> envfile.EnvFile:
-        names, cached = _builtin_names(settings), self._cached
+    def _names(self, settings: Settings) -> list[str]:
+        return _builtin_names(settings) if self.kind.has_default else []
+
+    def read(self, settings: Settings, files: FilePool) -> envfile.File[E]:
+        names, cached = self._names(settings), self._cached
         try:
-            found = files.run(lambda: envfile.read_file(self.path, names, cached), READ_TIMEOUT_S)
+            found = files.run(
+                lambda: envfile.read_kind(self.kind, self.path, names, cached), READ_TIMEOUT_S
+            )
         except Stalled as exc:
-            return envfile.EnvFile("unreachable", str(exc))
+            return envfile.File("unreachable", str(exc))
         if found.identity is not None:
             self._cached = found
         return found
 
     def update(
-        self, settings: Settings, files: FilePool, change: envfile.Change
-    ) -> envfile.EnvFile:
-        """`envfile.update` in the pool. A write whose answer timed out may still land: the
+        self,
+        settings: Settings,
+        files: FilePool,
+        change: Callable[[envfile.File[E]], tuple[str | None, list[E]]],
+    ) -> envfile.File[E]:
+        """`envfile.update_kind` in the pool. A write whose answer timed out may still land: the
         client reads the list again."""
-        names = _builtin_names(settings)
+        names, noun = self._names(settings), self.noun
         try:
-            return files.run(lambda: envfile.update(self.path, names, change), READ_TIMEOUT_S)
+            return files.run(
+                lambda: envfile.update_kind(self.kind, self.path, names, change), READ_TIMEOUT_S
+            )
         except Stalled as exc:
-            raise _offline(exc) from None
+            raise offline(exc) from None
         except OSError as exc:  # ENOSPC, EDQUOT, EIO on the write (CR-P3FU86BCD-01)
-            detail = f"the environments file cannot be written: {exc.strerror}"
-            raise _offline(Exception(detail)) from None
+            detail = f"the {noun} file cannot be written: {exc.strerror}"
+            raise offline(Exception(detail)) from None
         except envfile.Unusable as exc:
-            detail = f"The environments file is {exc.state}: {exc.detail}"
-            raise Problem(
-                409, "environments-file-unusable", "Environments file unusable", detail
-            ) from None
+            detail = f"The {noun} file is {exc.state}: {exc.detail}"
+            title = f"{noun.capitalize()} file unusable"
+            raise Problem(409, f"{noun}-file-unusable", title, detail) from None
         except envfile.Changed as exc:
-            title = "Environments file changed"
-            raise Problem(409, "environments-file-changed", title, str(exc)) from None
+            title = f"{noun.capitalize()} file changed"
+            raise Problem(409, f"{noun}-file-changed", title, str(exc)) from None
 
 
-def etag(env: Environment) -> str:
-    """A strong ETag of the definition (api §5.4: per item)."""
+def etag(env: BaseModel) -> str:
+    """A strong ETag of the definition (api §5.4: per item; a catalog entry's too, §5.6)."""
     text = json.dumps(env.model_dump(mode="json"), sort_keys=True)
     return f'"{hashlib.sha256(text.encode()).hexdigest()[:32]}"'
 
@@ -109,7 +122,7 @@ def _entries(settings: Settings, defined: Iterable[Environment]) -> list[Entry]:
 def view(request: Request) -> tuple[envfile.EnvFile, list[Entry], str]:
     """The file, every environment listed (built-ins first) and the default."""
     settings: Settings = request.app.state.settings
-    store: Store = request.app.state.environments
+    store: Store[Environment] = request.app.state.environments
     found = store.read(settings, request.app.state.files)
     # a file that is not `ok` has no environments and no default
     default = found.default or settings.executor  # else the built-in of the server's kind
@@ -130,7 +143,7 @@ def _item(entry: Entry, default: str) -> dict[str, Any]:
 
 def _not_found(found: envfile.EnvFile) -> Problem:
     if found.state == "unreachable":
-        return _offline(Stalled(found.detail or "the environments file is unreachable"))
+        return offline(Stalled(found.detail or "the environments file is unreachable"))
     why = "" if found.state in ("missing", "ok") else f" (the environments file is {found.state})"
     return Problem(404, "not-found", "Not found", f"No such environment{why}.")
 
@@ -166,7 +179,7 @@ def choose(request: Request, name: str | None) -> Environment:
 @router.get("/environments", response_model=models.EnvironmentList)
 def list_environments(request: Request) -> dict[str, Any]:
     found, entries, default = view(request)
-    store: Store = request.app.state.environments
+    store: Store[Environment] = request.app.state.environments
     return {
         "items": [_item(e, default) for e in entries],
         "default": default,
@@ -195,11 +208,11 @@ def _builtin(name: str) -> None:
         raise Problem(409, "environment-builtin", "Built-in environment", detail)
 
 
-def _if_match(request: Request) -> set[str]:
+def if_match(request: Request, what: str = "environment") -> set[str]:
     value = request.headers.get("if-match")
     tags = {t.strip() for t in (value or "").split(",") if t.strip()}
     if not tags or "*" in tags:
-        detail = "Send the environment's ETag in If-Match; * is not accepted."
+        detail = f"Send the {what}'s ETag in If-Match; * is not accepted."
         raise Problem(428, "if-match-required", "If-Match required", detail)
     return tags
 
@@ -220,7 +233,7 @@ def _values(found: envfile.EnvFile, name: str) -> dict[str, Any]:
 
 
 def _write(request: Request, route: str, name: str, change: envfile.Change) -> None:
-    store: Store = request.app.state.environments
+    store: Store[Environment] = request.app.state.environments
     old: list[dict[str, Any]] = []
 
     def logged(current: envfile.EnvFile) -> tuple[str | None, list[Environment]]:
@@ -255,7 +268,7 @@ def replace_environment(
     name: str, body: Environment, request: Request, response: Response
 ) -> dict[str, Any]:
     _builtin(name)
-    tags = _if_match(request)
+    tags = if_match(request)
     if body.name != name:
         raise Invalid("name", "a name cannot change: duplicate the environment, then delete it")
     _check(body, request.app.state.settings)
@@ -273,7 +286,7 @@ def replace_environment(
 @router.delete("/environments/{name}", status_code=204)
 def delete_environment(name: str, request: Request) -> Response:
     _builtin(name)
-    tags = _if_match(request)
+    tags = if_match(request)
 
     def change(current: envfile.EnvFile) -> tuple[str | None, list[Environment]]:
         _find(current, name, tags)

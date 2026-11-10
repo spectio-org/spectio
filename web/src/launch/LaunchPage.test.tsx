@@ -612,3 +612,27 @@ test("FU-P3-86h: on the phone the summary comes after Parameters", async () => {
   const summary = screen.getByRole("region", { name: "Summary" });
   expect(params.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
+
+test("FU-P3-108b: a link to a field in a folded group moves focus to it once open, and scrolls it into view", async () => {
+  const scroll = vi.fn();
+  Element.prototype.scrollIntoView = scroll;
+  try {
+    page();
+    await load(NF_CORE);
+    const io = toggle(/^Input\/output options/);
+    await userEvent.click(io);
+    expect(io).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(within(before()).getByRole("link", { name: "Fill the required field: input" }));
+    const input = await screen.findByRole("textbox", { name: /^input/ });
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(scroll.mock.contexts).toContain(input);
+  } finally {
+    delete (Element.prototype as Partial<Element>).scrollIntoView;
+  }
+});
+
+test("FU-P3-108b: the Engine head reads the same in Where it runs and in the summary", () => {
+  page();
+  const heads = [...document.querySelectorAll("dt")].filter((dt) => dt.textContent === "Engine head");
+  expect(heads.map((dt) => dt.nextElementSibling?.textContent)).toEqual(["Not chosen yet", "Not chosen yet"]);
+});

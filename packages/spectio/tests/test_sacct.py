@@ -767,3 +767,40 @@ def test_sacct_limiter_outage_not_split_down() -> None:
         if done[1] is None:
             limiter.request(done[0])  # the caller puts a failed call's IDs back
     assert calls == 51
+
+
+# What slurmdbd answers for a window over the site's `MaxQueryTimeRange`: `slurm_strerror(
+# ESLURM_DB_QUERY_TOO_WIDE)` (SchedMD slurm, src/slurmdbd/proc_req.c `_get_jobs_cond`, the text
+# in src/common/slurm_errno.c), which sacct's client logs with `error("%s", comment)` (src/plugins/
+# accounting_storage/slurmdbd/accounting_storage_slurmdbd.c) and exits 1 (src/sacct/sacct.c).
+# The `sacct: error: ` prefix is [to be validated] on slurm-mini.
+STUB = """#!/bin/sh
+echo x >> "${{0%/*}}/count"  # builtins only: PATH is the tool's own directory
+echo '{text}' >&2
+exit {code}
+"""
+
+
+@pytest.mark.parametrize(
+    ("text", "code", "expected"),
+    [
+        ("sacct: error: Too wide of a date range in query", 1, sacct.SITE_LIMIT),
+        ("sacct: error: Problem talking to the database: Connection refused", 1, None),
+        ("Too wide of a date range in query", 0, {}),  # exit 0: its output is read as data
+    ],
+)
+def test_sacct_site_time_range_limit_is_final(
+    fakebin: Fake, text: str, code: int, expected: sacct.Answer
+) -> None:
+    """FU-P3-106b: the site's MaxQueryTimeRange refuses the call's window, whatever its IDs:
+    one call, then none (not retried, not split). Any other failure is retried as before."""
+    fakebin.path.write_text(STUB.format(text=text, code=code))
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        return sacct_jobs(want(*((job, "/w") for job in ids)), sacct=fakebin.path)
+
+    limiter = SacctLimiter(call, interval_s=0)
+    limiter.request(["8812477", "8812478"])
+    assert limiter.run_once() == (["8812477", "8812478"], expected)
+    assert limiter.run_once() is None  # the caller puts back only a failed call's (None) IDs
+    assert (fakebin.dir / "count").read_text() == "x\n"

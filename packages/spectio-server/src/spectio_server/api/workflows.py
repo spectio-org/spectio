@@ -8,7 +8,8 @@ path parts only. A repository is fetched once per revision into
 `<data dir>/pipelines/<host>/<path…>/<revision>/`, by `git` run as an argument list with
 `-c protocol.allow=never` and only the allowed transports turned back on; a commit is fetched
 then checked out. Neither a location nor a revision may hold a control character
-(SEC-P3T09-R5-05), and a revision never starts with `-` (G5).
+(SEC-P3T09-R5-05), and a revision never starts with `-` (G5). Those checks live in
+`spectio.locations`, shared with the catalog file (SEC-PRE-FU87-02).
 
 Inspect reads the directory, never runs it: the engine files present (`main.nf`, `Snakefile`,
 `workflow/Snakefile`), the engine they point to (none for both or neither), the Nextflow
@@ -16,6 +17,7 @@ manifest's name and version and the profiles, and the parameter schema with wher
 """
 
 import contextlib
+import errno
 import json
 import os
 import re
@@ -26,35 +28,30 @@ import stat
 import subprocess
 import threading
 import time
-import unicodedata
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
 
 import yaml
 from fastapi import APIRouter, Request
 
+from spectio import envfile, locations
 from spectio.config import Settings
 from spectio.runner.engines import EngineError, check_engine
 from spectio.runner.rundir import private_dir
-from spectio_server.api.problems import Invalid
+from spectio_server.api.problems import Invalid, Problem
+from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 
 router = APIRouter()
 
-GIT_SCHEMES: tuple[str, ...] = ("https", "ssh")  # api §5; a test adds "file" for a local repo
+GIT_SCHEMES = locations.GIT_SCHEMES  # api §5; a test adds "file" for a local repo
 GIT_TIMEOUT_S = 300
 VERSIONS_TTL_S = 300.0  # how long the engines' versions are kept (FU-P3-109)
 VERSIONS_FAILED_TTL_S = 10.0  # the same, when an engine was not found (CR-P3FU109-03)
-MAX_LOCATION = 4096  # characters (FU-P3-17)
-GITHUB = "https://github.com"
-SHORT_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_][A-Za-z0-9._-]{0,99}")
-URL_CHARS = re.compile(r"[A-Za-z0-9._~:/@+-]+")  # no space, quote, `%`, `?`, `#` or backslash
-HOST = re.compile(r"[a-z0-9]([a-z0-9.-]{0,252}[a-z0-9])?")
-PART = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,99}")  # never "", "." or ".."
-REVISION = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._/-]{0,199}")  # never an option, never a path
+MAX_LOCATION = locations.MAX_LOCATION
 COMMIT = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 # What a fetch failure says when the revision, not the repository, is wrong.
 NO_REVISION = re.compile(r"Remote branch .* not found|couldn't find remote ref|not our ref", re.I)
@@ -64,6 +61,9 @@ ENTRY_FILES: dict[str, tuple[str, ...]] = {
 }
 SMK_SCHEMAS = ("config.schema.yaml", "workflow/schemas/config.schema.yaml")
 MAX_FILE = 1048576  # a config or schema file read by inspect
+MAX_PARAMS_FILE = 256 * 1024  # a catalog entry's params file (api §5.6, SEC-PRE-FU87-07)
+MAX_DEPTH = 32  # of the params (FU-P3-17), sent or read from a params file
+NO_ALIASES = "YAML aliases are not read"
 
 SchemaSource = Literal["nextflow_schema.json", "config.schema.yaml", "inferred", "none"]
 
@@ -90,61 +90,33 @@ class Found:
     schema_source: SchemaSource
 
 
+@contextlib.contextmanager
+def _as_invalid(field: str) -> Iterator[None]:
+    """A ValueError of `spectio.locations`, as `Invalid` for `field`."""
+    try:
+        yield
+    except ValueError as exc:
+        raise Invalid(field, str(exc)) from None
+
+
 def refuse_control(field: str, value: str) -> None:
-    """Control characters, and the format and separator ones (Cf, Zl, Zp: bidi overrides,
-    zero-width spaces, line separators) that hide or reorder text (FU-P3-17)."""
-    if any(
-        ord(c) < 32 or 127 <= ord(c) < 160 or unicodedata.category(c) in ("Cf", "Zl", "Zp")
-        for c in value
-    ):
-        raise Invalid(field, "must not hold control, format or separator characters")
+    """`locations.refuse_control`, raising Invalid (field `field`)."""
+    with _as_invalid(field):
+        locations.refuse_control(value)
 
 
 # --- Locations -------------------------------------------------------------------------------
 
 
 def git_url(location: str) -> tuple[str, tuple[str, ...]]:
-    """The URL of a Git location under the import rule of api §5, and the parts of the directory
-    it is fetched into (`host`, then the path). Raises Invalid (field `location`)."""
-    if SHORT_NAME.fullmatch(location):
-        location = f"{GITHUB}/{location}"
-    url = urlsplit(location)
-    if url.scheme not in GIT_SCHEMES or not location.startswith(f"{url.scheme}://"):
-        allowed = ", ".join(f"{s}://" for s in GIT_SCHEMES)
-        raise Invalid("location", f"give an absolute path, an owner/repo name or a URL ({allowed})")
-    if not URL_CHARS.fullmatch(location):
-        raise Invalid("location", "the URL holds a character Spectio does not accept")
-    try:
-        host, user, password = url.hostname or "", url.username, url.password
-        url.port  # noqa: B018 - raises ValueError on a bad port
-    except ValueError as exc:
-        raise Invalid("location", f"not a URL: {exc}") from None
-    if password is not None or (user is not None and url.scheme != "ssh"):
-        raise Invalid("location", "credentials do not belong in the URL")
-    if url.scheme == "file":
-        if host not in ("", "localhost"):
-            raise Invalid("location", "a file:// URL names no host")
-        host = "local"
-    elif not HOST.fullmatch(host):
-        raise Invalid("location", "the URL names no valid host")
-    parts = url.path.strip("/").split("/")
-    parts[-1] = parts[-1].removesuffix(".git")
-    if len(parts) > 20 or not all(PART.fullmatch(p) for p in parts):
-        raise Invalid("location", "the URL's path must be plain names: no '.', '..' or ''")
-    return location, (host, *parts)
+    """`locations.git_url` under GIT_SCHEMES, raising Invalid (field `location`)."""
+    with _as_invalid("location"):
+        return locations.git_url(location, GIT_SCHEMES)
 
 
 def check_revision(revision: str | None) -> str:
-    if not revision:
-        raise Invalid("revision", "a Git repository needs a revision: a tag, a branch or a commit")
-    refuse_control("revision", revision)
-    if not REVISION.fullmatch(revision) or ".." in revision or revision.endswith("/"):
-        raise Invalid(
-            "revision",
-            "a tag, a branch or a commit: letters, digits, '.', '_', '-' and '/', "
-            "never starting with '-'",
-        )
-    return revision
+    with _as_invalid("revision"):
+        return locations.check_revision(revision)
 
 
 def resolve(data_dir: Path, location: str, revision: str | None) -> Resolved:
@@ -282,16 +254,76 @@ def _read(root: Path, *parts: str) -> str | None:
     return raw.decode()
 
 
+def depth(value: Any) -> int:
+    """How deep `value` nests, iteratively: a deep value never reaches the recursion limit."""
+    deepest, todo = 0, [(value, 1)]
+    while todo:
+        item, level = todo.pop()
+        deepest = max(deepest, level)
+        if isinstance(item, dict):
+            todo.extend((v, level + 1) for v in item.values())
+        elif isinstance(item, list):
+            todo.extend((v, level + 1) for v in item)
+    return deepest
+
+
+def read_params(root: Path, rel: str) -> dict[str, Any]:
+    """The top-level map of the params file `rel` (checked by `locations.check_params_file`)
+    inside `root`, through `_open`'s walk (api §5.6). Raises ValueError with an error in words
+    that names `rel` and quotes none of the file's bytes (SEC-PRE-FU87-03)."""
+    try:
+        fd = _open(root, *rel.split("/"))
+    except OSError as exc:
+        if exc.errno == errno.ELOOP:
+            raise ValueError(
+                f"{rel} is reached through a symbolic link, which is not read"
+            ) from None
+        if exc.errno in (errno.ENOENT, errno.ENOTDIR):
+            raise ValueError(f"the pipeline has no such file as {rel}") from None
+        raise ValueError(f"{rel} cannot be opened: {exc.strerror}") from None
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):  # a directory, a FIFO
+            raise ValueError(f"{rel} is not a regular file")
+        with os.fdopen(fd, "rb", closefd=False) as f:
+            raw = f.read(MAX_PARAMS_FILE + 1)
+    except OSError as exc:
+        raise ValueError(f"{rel} cannot be read: {exc.strerror}") from None
+    finally:
+        os.close(fd)
+    if len(raw) > MAX_PARAMS_FILE:
+        raise ValueError(f"{rel} is larger than {MAX_PARAMS_FILE} bytes")
+    kind = "JSON" if rel.endswith(".json") else "YAML"
+    try:
+        text = raw.decode()
+        values = _jsonable(json.loads(text)) if kind == "JSON" else load_yaml(text)
+    except UnicodeDecodeError:
+        raise ValueError(f"{rel} is not UTF-8 text") from None
+    except RecursionError:
+        raise ValueError(f"{rel} is nested too deep to be read") from None
+    # Their messages quote the file: not shown. TypeError: a key that is not a string, such
+    # as a YAML date (SEC-P3FU87B-01).
+    except (ValueError, TypeError, yaml.YAMLError) as exc:
+        why = NO_ALIASES if str(exc) == NO_ALIASES else f"not {kind}"
+        raise ValueError(f"{rel} cannot be read: {why}") from None
+    if not isinstance(values, dict):
+        raise ValueError(f"{rel} is not a map of parameter names to values")
+    if depth(values) > MAX_DEPTH:
+        raise ValueError(f"{rel} is nested deeper than {MAX_DEPTH} levels")
+    return values
+
+
 def _jsonable(value: Any) -> Any:
-    """YAML dates and the like as strings, so that the response can carry them."""
-    return json.loads(json.dumps(value, default=str))
+    """YAML dates and the like as strings, so that the response can carry them. Raises
+    ValueError on NaN or an infinity, which JSON cannot carry (CR-P3FU87B-01), and TypeError on
+    a key that is not a string, a number, a boolean or null."""
+    return json.loads(json.dumps(value, default=str, allow_nan=False))
 
 
 def load_yaml(text: str) -> Any:
     """Safe YAML with no aliases, which would let a small file grow huge in the response."""
     for event in yaml.parse(text, Loader=yaml.SafeLoader):
         if isinstance(event, yaml.AliasEvent):
-            raise ValueError("YAML aliases are not read")
+            raise ValueError(NO_ALIASES)
     return _jsonable(yaml.safe_load(text))
 
 
@@ -412,7 +444,7 @@ def inspect_dir(directory: Path, default_name: str) -> Found:
     try:
         name, version, nf_profiles = nextflow_config(directory)
         schema, source = schema_of(directory)
-    except (ValueError, RecursionError, yaml.YAMLError) as exc:  # JSONDecodeError: ValueError
+    except (ValueError, TypeError, RecursionError, yaml.YAMLError) as exc:  # JSONDecodeError
         raise Invalid("location", f"the pipeline's files cannot be read: {exc}") from None
     profiles = {"nextflow": nf_profiles, "snakemake": snakemake_profiles(directory)}
     shown = [p for e in (engines if engine is None else [engine]) for p in profiles[e]]
@@ -489,11 +521,55 @@ class EngineVersions:
         return dict(kept[1]) if kept else dict.fromkeys(ENTRY_FILES)
 
 
+def _params(request: Request, resolved: Resolved, engine: str | None, rel: str) -> Any:
+    """Inspect's `params_file` (api §5.6): every top-level key of the file in `values`, or
+    `values: null` and an `error` in words whatever went wrong, never a refusal; and what in it,
+    or the file itself, loads code (SEC-PRE-FU87-01)."""
+    # relaunch imports this module, so its check is imported here
+    from spectio_server.api.relaunch import code_loading, writable_by_others
+
+    values: dict[str, Any] | None = None
+    error: str | None = None
+    try:
+        values = read_params(resolved.directory, rel)
+    except ValueError as exc:
+        error = envfile._clean(str(exc))  # at most 200 characters, no control one
+    local = resolved.source == "local"
+    file = str(resolved.directory / rel)
+
+    def flagged() -> list[dict[str, Any]]:
+        found = code_loading(resolved.location, local, values or {}, engine or "", [])
+        if local:
+            found.append(
+                {
+                    "field": "params_file",
+                    "value": file,
+                    "writable_by_others": writable_by_others(file),
+                }
+            )
+        return found
+
+    try:
+        loading = request.app.state.files.run(flagged, READ_TIMEOUT_S)
+    except Stalled as exc:
+        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+    return {"path": rel, "values": values, "code_loading": loading, "error": error}
+
+
 @router.get("/workflows:inspect")
-def inspect(request: Request, location: str, revision: str | None = None) -> dict[str, Any]:
+def inspect(
+    request: Request,
+    location: str,
+    revision: str | None = None,
+    params_file: str | None = None,
+) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
+    if params_file is not None:  # before anything is fetched (SEC-PRE-FU87-04)
+        with _as_invalid("params_file"):
+            locations.check_params_file(params_file)
     resolved = resolve(settings.data_dir, location, revision)
     found = inspect_dir(resolved.directory, resolved.default_name)
+    params = None if params_file is None else _params(request, resolved, found.engine, params_file)
     versions = request.app.state.engine_versions()
     return {
         "location": resolved.location,
@@ -507,6 +583,7 @@ def inspect(request: Request, location: str, revision: str | None = None) -> dic
         "schema": found.schema,
         "schema_source": found.schema_source,
         "profiles": found.profiles,
+        "params_file": params,
     }
 
 

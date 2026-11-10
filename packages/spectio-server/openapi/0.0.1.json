@@ -13,6 +13,107 @@
         "title": "Actions",
         "type": "object"
       },
+      "CatalogItem": {
+        "description": "One entry of `GET /catalog` (FU-P3-87b, api \u00a75.6): a named pipeline location with its\nlaunch defaults.",
+        "properties": {
+          "engine": {
+            "enum": [
+              "nextflow",
+              "snakemake"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "etag": {
+            "title": "Etag",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "params_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params File"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "engine",
+          "location",
+          "revision",
+          "profile",
+          "params_file",
+          "etag"
+        ],
+        "title": "CatalogItem",
+        "type": "object"
+      },
+      "CatalogList": {
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/EnvironmentsFile"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "file"
+        ],
+        "title": "CatalogList",
+        "type": "object"
+      },
       "CodeLoading": {
         "description": "A value that loads code or configuration (dev-env \u00a715.3 req. 16): `field` is a dotted\npath, `params.<name>`, `workflow.location`, or `engine.<option>` for an engine option of\n`spectio.toml`; `writable_by_others` when the path, or a directory above it, is.",
         "properties": {
@@ -114,7 +215,8 @@
                   "no_job_id",
                   "accounting_off",
                   "not_found",
-                  "cached"
+                  "cached",
+                  "max_query_time_range"
                 ],
                 "type": "string"
               },
@@ -194,6 +296,78 @@
           "notemp"
         ],
         "title": "EngineSettings",
+        "type": "object"
+      },
+      "Entry": {
+        "additionalProperties": false,
+        "properties": {
+          "engine": {
+            "enum": [
+              "nextflow",
+              "snakemake"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "params_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params File"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          }
+        },
+        "required": [
+          "name",
+          "engine",
+          "location"
+        ],
+        "title": "Entry",
         "type": "object"
       },
       "Environment": {
@@ -3323,6 +3497,176 @@
         ]
       }
     },
+    "/api/v1/catalog": {
+      "get": {
+        "operationId": "list_catalog_api_v1_catalog_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Catalog"
+      },
+      "post": {
+        "operationId": "create_entry_api_v1_catalog_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Entry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Entry"
+      }
+    },
+    "/api/v1/catalog/{name}": {
+      "delete": {
+        "operationId": "delete_entry_api_v1_catalog__name__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Entry"
+      },
+      "get": {
+        "operationId": "get_entry_api_v1_catalog__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Entry"
+      },
+      "put": {
+        "operationId": "replace_entry_api_v1_catalog__name__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Entry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Entry"
+      }
+    },
     "/api/v1/environments": {
       "get": {
         "operationId": "list_environments_api_v1_environments_get",
@@ -4834,6 +5178,22 @@
                 }
               ],
               "title": "Revision"
+            }
+          },
+          {
+            "in": "query",
+            "name": "params_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Params File"
             }
           }
         ],
