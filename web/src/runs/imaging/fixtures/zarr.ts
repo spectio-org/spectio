@@ -1,37 +1,34 @@
 // Crafted OME-Zarr stores for the store's tests (FU-P3-102g; dev-env §15.3 req. 19 Tests),
 // generated here rather than committed as binaries: a small valid Zarr v2 image (2 channels, two
-// levels, Blosc chunks made by numcodecs' own encoder) and the malicious variants of req. 19.
-import Blosc from "numcodecs/blosc";
+// levels, zlib chunks at level 0 and raw chunks at level 1) and the malicious variants of req. 19.
+import { deflate } from "pako";
 
 export type Store = Map<string, Uint8Array>;
 const MIB = 1024 * 1024;
 const json = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
 const zarray = (shape: number[], chunks: number[], more: Record<string, unknown> = {}) =>
-  json({ zarr_format: 2, shape, chunks, dtype: "<u2", compressor: { id: "blosc", cname: "lz4", clevel: 5, shuffle: 1, blocksize: 0 }, fill_value: 0, order: "C", filters: null, ...more });
+  json({ zarr_format: 2, shape, chunks, dtype: "<u2", compressor: { id: "zlib", level: 1 }, fill_value: 0, order: "C", filters: null, ...more });
 export const attrs = (paths = ["0", "1"], extra: Record<string, unknown> = {}) => ({
   multiscales: [{ version: "0.4", axes: [{ name: "c", type: "channel" }, { name: "y", type: "space" }, { name: "x", type: "space" }], datasets: paths.map((path) => ({ path })) }],
   omero: { channels: [{ label: "DAPI", color: "0000FF" }, { label: "GFP", color: "00FF00" }] },
   ...extra,
 });
 
-/** One chunk of `n` uint16 values (value i = i), Blosc-compressed. */
-export async function chunk(n: number): Promise<Uint8Array> {
-  const values = new Uint16Array(n).map((_, i) => i);
-  return Blosc.fromConfig({ id: "blosc", cname: "lz4", clevel: 5, shuffle: 1, blocksize: 0 }).encode(new Uint8Array(values.buffer)) as Promise<Uint8Array>;
-}
+/** One chunk of `n` uint16 values (value i = i), raw bytes. */
+export const raw = (n: number) => new Uint8Array(new Uint16Array(n).map((_, i) => i).buffer);
 
 /** A valid image: level 0 is 2 x 10 x 12 (chunks 1 x 10 x 12), level 1 is 2 x 5 x 6
  * (no side of 3 or 4, which Viv takes for interleaved samples). */
-export async function valid(): Promise<Store> {
+export function valid(): Store {
   const store: Store = new Map([
     [".zgroup", json({ zarr_format: 2 })],
     [".zattrs", json(attrs())],
     ["0/.zarray", zarray([2, 10, 12], [1, 10, 12])],
-    ["1/.zarray", zarray([2, 5, 6], [1, 5, 6])],
+    ["1/.zarray", zarray([2, 5, 6], [1, 5, 6], { compressor: null })],
   ]);
   for (const c of [0, 1]) {
-    store.set(`0/${c}.0.0`, await chunk(120));
-    store.set(`1/${c}.0.0`, await chunk(30));
+    store.set(`0/${c}.0.0`, deflate(raw(120)));
+    store.set(`1/${c}.0.0`, raw(30));
   }
   return store;
 }
@@ -48,6 +45,12 @@ export const crafted: Record<string, (s: Store) => void> = {
   "a .zattrs with __proto__ and constructor keys only": (s) =>
     s.set(".zattrs", new TextEncoder().encode(`{"__proto__": ${JSON.stringify(attrs())}, "constructor": {"prototype": {"polluted": 1}}}`)),
   "a zstd compressor": (s) => s.set("0/.zarray", zarray([2, 10, 12], [1, 10, 12], { compressor: { id: "zstd", level: 1 } })),
+  "a blosc compressor": (s) => s.set("0/.zarray", zarray([2, 10, 12], [1, 10, 12], { compressor: { id: "blosc", cname: "lz4", clevel: 5, shuffle: 1, blocksize: 0 } })),
+  "an lz4 compressor": (s) => s.set("0/.zarray", zarray([2, 10, 12], [1, 10, 12], { compressor: { id: "lz4", acceleration: 1 } })),
+  "an array shape of c = 10^9": (s) => s.set("0/.zarray", zarray([1e9, 10, 12], [1, 10, 12])),
+  "a side over 2^31 - 1": (s) => s.set("0/.zarray", zarray([2, 10, 2 ** 31], [1, 10, 12])),
+  "a level whose c differs from level 0": (s) => s.set("1/.zarray", zarray([3, 5, 6], [1, 5, 6])),
+  "a level larger than level 0": (s) => s.set("1/.zarray", zarray([2, 20, 6], [1, 5, 6])),
   "33 levels": (s) => s.set(".zattrs", json(attrs(Array.from({ length: 33 }, (_, i) => String(i))))),
   "no multiscales": (s) => s.set(".zattrs", json({ omero: {} })),
   "a plate": (s) => s.set(".zattrs", json({ plate: { rows: [] } })),

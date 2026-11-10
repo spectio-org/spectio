@@ -10,7 +10,7 @@ import { resolveTarget } from './base-url';
 // 'unsafe-eval', no blob: worker. Every `securitypolicyviolation` and every `URL.createObjectURL`
 // call is recorded; none may happen. Projects desktop (Chromium), firefox and webkit. The OME-Zarr
 // case (FU-P3-102g) reads imaging/cells.ome.zarr key by key through the raw route with as=zarr,
-// its Blosc level through numcodecs' WebAssembly ('wasm-unsafe-eval' only).
+// a raw level and a zlib level (Blosc and LZ4 are refused: numcodecs needs 'unsafe-eval', inbox #135).
 
 const target = resolveTarget(process.env);
 const SEEDED = 'run_01K8T27SEEDED0000000000000';

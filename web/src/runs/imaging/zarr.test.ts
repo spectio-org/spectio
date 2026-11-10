@@ -7,7 +7,7 @@ import { loadOmeZarrFromStore } from "@hms-dbmi/viv";
 import { deflate } from "pako";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { imageState } from "./flat";
-import { type Store, attrs, chunk, crafted, valid } from "./fixtures/zarr";
+import { type Store, attrs, crafted, raw, valid } from "./fixtures/zarr";
 import { ZarrStore, openZarr } from "./zarr";
 
 const ROOT = "/api/v1/runs/run_1/results/raw/img/cells.ome.zarr/";
@@ -16,7 +16,7 @@ let store: Store;
 const asked: string[] = [];
 
 beforeEach(async () => {
-  store = await valid();
+  store = valid();
   asked.length = 0;
   vi.stubGlobal("fetch", async (url: string) => {
     asked.push(url);
@@ -62,6 +62,12 @@ test.each([
   ["a 1 MiB + 1 .zgroup", "This image is too large to show here (Zarr metadata over 1 MiB). Download it to open it."],
   ["a .zattrs with __proto__ and constructor keys only", "This folder has no OME-Zarr image metadata."],
   ["a zstd compressor", "Spectio cannot decode zstd compression."],
+  ["a blosc compressor", "Spectio cannot decode blosc compression."], // numcodecs' Blosc and LZ4 need 'unsafe-eval' (inbox #135)
+  ["an lz4 compressor", "Spectio cannot decode lz4 compression."],
+  ["an array shape of c = 10^9", "This image is too large to show here (over 10,000 planes). Download it to open it."],
+  ["a side over 2^31 - 1", "This image is too large to show here (a side over 2,147,483,647 px). Download it to open it."],
+  ["a level whose c differs from level 0", "Not an image Spectio can read: a level's shape does not follow level 0"],
+  ["a level larger than level 0", "Not an image Spectio can read: a level's shape does not follow level 0"],
   ["33 levels", "This image is too large to show here (over 32 levels). Download it to open it."],
   ["no multiscales", "This folder has no OME-Zarr image metadata."],
   ["a plate", "Spectio does not show OME-Zarr plates or labels yet."],
@@ -84,15 +90,21 @@ test("__proto__ and constructor next to multiscales: the image opens, Viv gets o
   inFolder(s);
 });
 
-test("a Blosc header that lies about its decoded size is refused before decode", async () => {
-  const lying = (await chunk(120)).slice();
-  new DataView(lying.buffer).setUint32(4, 0x7fffffff, true); // nbytes: 2 GiB
-  store.set("0/0.0.0", lying);
+test("a raw chunk whose size is not its level's is refused before decode", async () => {
+  store.set("1/0.0.0", raw(31));
   const s = new ZarrStore(urlOf);
   await openZarr(s);
-  await expect(s.get("/0/0.0.0")).rejects.toThrow("the chunk's header gives 2147483647 bytes, not 240");
+  await expect(s.get("/1/0.0.0")).rejects.toThrow("the chunk holds 62 bytes, not 60");
   expect(s.failure).not.toBeNull(); // the viewer says "Some tiles could not be read."
   inFolder(s);
+});
+
+test("in a work directory, a 422 on .zattrs is the Zarr v2 state; elsewhere it stays the server's refusal", async () => {
+  vi.stubGlobal("fetch", async (url: string) => (url.includes(".zattrs") ? new Response(JSON.stringify({ detail: "not allowed" }), { status: 422, headers: { "content-type": "application/problem+json" } }) : new Response(null, { status: 404 })));
+  const s = new ZarrStore(urlOf);
+  s.work = true;
+  expect(imageState(await openZarr(s).catch((e: unknown) => e))).toMatchObject({ title: "This OME-Zarr uses Zarr v2, which a work directory does not serve. Open it from the results once it is published." });
+  expect(imageState(await openZarr(new ZarrStore(urlOf)).catch((e: unknown) => e))).toMatchObject({ title: "Not an image Spectio can read: not allowed" });
 });
 
 test("keys outside the checked levels are never asked; an absent chunk is the fill value; a server error is the read error", async () => {

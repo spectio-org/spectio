@@ -5,6 +5,7 @@
 // (@vivjs/loaders 0.23.0 `dist/index.d.ts:83-97`; used at `dist/index.mjs:412-415` and
 // `:869-876`; the name only decides the companion `.companion.ome` case, `:922-928`). An OME-Zarr
 // (FU-P3-102g) is handed our own store, checked by `openZarr`, through `loadOmeZarrFromStore`.
+import "./jitless"; // first: before Viv's loaders build their zod schemas
 import { Deck, OrthographicView } from "@deck.gl/core";
 import { MultiscaleImageLayer, ZarrPixelSource, getDefaultInitialViewState, getImageSize, isInterleaved, loadOmeTiff, loadOmeZarrFromStore } from "@hms-dbmi/viv";
 import type { GeoTIFF } from "geotiff";

@@ -27,6 +27,8 @@ interface Props {
   name: string;
   /** An OME-Zarr folder: the raw route's URL of each key below it (as=zarr); `url` and `size` unused. */
   zarr?: (key: string) => string;
+  /** The folder is in a work directory, which serves no Zarr v2 metadata. */
+  workdir?: boolean;
   /** The flat view, shown when WebGL fails or the file has no OME-XML. */
   fallback: ReactNode;
   /** A problem before the first tile, as the file page shows it. */
@@ -45,7 +47,7 @@ function Plane({ label, value, count, onChange }: { label: string; value: number
   );
 }
 
-export default function OmeView({ url, size, name, zarr, fallback, stateView }: Props) {
+export default function OmeView({ url, size, name, zarr, workdir = false, fallback, stateView }: Props) {
   const [opens, setOpens] = useState(0); // Reload: a new open, so a new budget; the view is kept
   const [opened, setOpened] = useState<Opened | null>(null);
   const [state, setState] = useState<ImageState | { problem: ApiError } | null>(null);
@@ -67,10 +69,11 @@ export default function OmeView({ url, size, name, zarr, fallback, stateView }: 
     setStatus(null);
     if (flatOnly) return;
     const controller = new AbortController();
-    const pool = new DecoderPool();
+    let pool: DecoderPool | undefined; // the TIFF's decoder workers; a Zarr needs none
     (async () => {
       if (zarr) {
         const store = new ZarrStore(zarr, controller.signal);
+        store.work = workdir;
         store.onBusy = (b) => controller.signal.aborted || setBusy(b);
         const pixels = await openZarrPixels(store);
         return controller.signal.aborted || setOpened({ pixels, client: store });
@@ -79,11 +82,13 @@ export default function OmeView({ url, size, name, zarr, fallback, stateView }: 
       if (files === "none") return controller.signal.aborted || setFlatOnly(true); // the flat view says "no OME metadata"
       guardParses(tiff, client, walked);
       client.onBusy = (b) => controller.signal.aborted || setBusy(b);
+      if (controller.signal.aborted) return; // the cleanup has run: no pool left behind it
+      pool = new DecoderPool();
       const pixels = await openPixels(tiff, pool, name, ifds);
       if (!controller.signal.aborted) setOpened({ pixels, client });
     })().catch((err) => controller.signal.aborted || setState(imageState(err)));
-    return () => (controller.abort(), pool.destroy());
-  }, [url, size, name, zarr, opens, flatOnly]);
+    return () => (controller.abort(), pool?.destroy());
+  }, [url, size, name, zarr, workdir, opens, flatOnly]);
 
   useEffect(() => {
     if (flatOnly || !opened || !canvas.current) return;

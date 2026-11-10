@@ -10,23 +10,26 @@ import { MIB, tooDeep } from "../preview";
 import { Answered, BUDGET, IN_FLIGHT, Refused, Stopped, problem, readAtMost } from "./client";
 import { NotDecoded, inflate } from "./decode";
 import { Unsupported } from "./flat";
-import { TooLarge, Unreadable } from "./walk";
+import { IFDS_MAX, TooLarge, Unreadable } from "./walk";
 
 const META_MAX = MIB;
 const CHUNK_READ_MAX = 16 * MIB; // the server's cap per key (api §5.3.1 step 7)
 const CHUNK_VALUES_MAX = 16 * MIB; // 16 M values, so at most 64 MiB decoded
+const SIDE_MAX = 2 ** 31 - 1; // px per side (req. 19: sizes are untrusted; SEC-P3FU102G-02)
 export const LEVELS_MAX = 32;
 const AXES = ["t", "c", "z", "y", "x"];
 const PART = /^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,254}$/; // api §5.3.1 step 5, a middle part
 const META = new Set([".zattrs", ".zgroup", ".zarray", "zarr.json"]); // the last part; no `.zmetadata`
 const CHUNK = /^\d{1,10}([./]\d{1,10}){0,9}$/;
 const DTYPES: Record<string, number> = { u1: 1, i1: 1, u2: 2, i2: 2, u4: 4, i4: 4, f4: 4 };
-const COMPRESSORS = new Set(["blosc", "lz4", "zlib", "gzip"]); // zstd: no decoded size before decode
+// zstd: no decoded size before decode; blosc and lz4: numcodecs 0.3.2 builds its embind invokers
+// with `Function` (dist/blosc.js:193, dist/lz4.js:192), which the CSP refuses (inbox #135)
+const COMPRESSORS = new Set(["zlib", "gzip"]);
 
 /** A folder with no OME-Zarr image, a plate or labels: shown with Browse folder. */
 export class NotImage extends Unsupported {}
 
-type Level = { bytes: number; compressor: string | null };
+type Level = { bytes: number; compressor: string | null; shape: number[] };
 export type ZarrMeta = { labels: string[]; names: string[]; colours: ([number, number, number] | null)[] };
 
 const json = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
@@ -38,6 +41,7 @@ export class ZarrStore {
   requests = 0;
   bytes = 0;
   failure: Error | null = null;
+  work = false; // a work directory's store: it refuses every dot part, so a v2 `.zattrs` gets a 422
   onBusy?: (busy: boolean) => void;
   private served = new Map<string, Uint8Array>(); // the checked metadata, by key
   private levels = new Map<string, Level>(); // the checked levels, by path
@@ -120,6 +124,9 @@ function checkArray(meta: Record<string, unknown> | undefined, n: number): { zar
   if (!meta || own(meta, "zarr_format") !== 2) throw new Unreadable("a level is not a Zarr v2 array");
   const [shape, chunks, dtype, order, sep] = ["shape", "chunks", "dtype", "order", "dimension_separator"].map((k) => own(meta, k));
   if (!sizes(shape, n) || !sizes(chunks, n)) throw new Unreadable("a level's shape does not match its axes");
+  const dims = shape as number[];
+  if (dims.slice(0, -2).reduce((a, b) => a * b, 1) > IFDS_MAX) throw new TooLarge(`over ${IFDS_MAX.toLocaleString("en-US")} planes`);
+  if (dims.slice(-2).some((side) => side > SIDE_MAX)) throw new TooLarge(`a side over ${SIDE_MAX.toLocaleString("en-US")} px`);
   const values = (chunks as number[]).reduce((a, b) => a * b, 1);
   if (values > CHUNK_VALUES_MAX) throw new TooLarge("a Zarr chunk over 16 M values");
   const type = typeof dtype === "string" ? /^[<>|]?([a-z]\d+)$/.exec(dtype)?.[1] : undefined;
@@ -131,31 +138,30 @@ function checkArray(meta: Record<string, unknown> | undefined, n: number): { zar
   if (id !== null && (typeof id !== "string" || !COMPRESSORS.has(id))) throw new Unsupported(`Spectio cannot decode ${String(id)} compression.`);
   const fill = own(meta, "fill_value") ?? null;
   if (!(fill === null || Number.isFinite(fill) || ["NaN", "Infinity", "-Infinity"].includes(fill as string))) throw new Unreadable("a level's fill value is not a number");
-  // zlib and gzip are inflated here, capped, and served as raw bytes; Blosc and LZ4 by numcodecs, after their header check
-  const served = id === "blosc" || id === "lz4" ? { id, ...Object.fromEntries(["cname", "clevel", "shuffle", "blocksize"].map((k) => [k, own(compressor, k)])) } : null;
-  const zarray = { zarr_format: 2, shape, chunks, dtype, compressor: served, fill_value: fill, order: order === "F" ? "F" : "C", filters: null, dimension_separator: sep === "/" ? "/" : "." };
-  return { zarray, level: { bytes: values * DTYPES[type], compressor: id as string | null } };
+  // zlib and gzip are inflated here, capped, and served as raw bytes
+  const zarray = { zarr_format: 2, shape, chunks, dtype, compressor: null, fill_value: fill, order: order === "F" ? "F" : "C", filters: null, dimension_separator: sep === "/" ? "/" : "." };
+  return { zarray, level: { bytes: values * DTYPES[type], compressor: id as string | null, shape: dims } };
 }
 
-/** A chunk whose decoded size is its level's, checked before decode (the Blosc header's bytes 4 to 7
- * and 12 to 15, https://github.com/Blosc/c-blosc/blob/main/README_HEADER.rst; LZ4's 4-byte prefix). */
+/** A chunk whose decoded size is its level's: inflated with that cap, or raw of that size. */
 function checkChunk(data: Uint8Array, { bytes, compressor }: Level): Uint8Array {
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  const lying = (n: number) => new NotDecoded(`the chunk's header gives ${n} bytes, not ${bytes}`);
+  const lying = (n: number) => new NotDecoded(`the chunk holds ${n} bytes, not ${bytes}`);
   if (compressor === "zlib" || compressor === "gzip") {
     const out = new Uint8Array(inflate(data.slice().buffer, bytes));
     if (out.byteLength !== bytes) throw lying(out.byteLength);
     return out;
   }
-  const declared = compressor === null ? data.byteLength : data.byteLength >= (compressor === "blosc" ? 16 : 4) ? view.getUint32(compressor === "blosc" ? 4 : 0, true) : -1;
-  if (declared !== bytes) throw lying(declared);
-  if (compressor === "blosc" && view.getUint32(12, true) !== data.byteLength) throw new NotDecoded("the chunk's header gives another compressed size");
+  if (data.byteLength !== bytes) throw lying(data.byteLength);
   return data;
 }
 
 /** Reads and checks the OME-Zarr image's metadata, then locks the store to it (ui-spec §4.4.1 states). */
 export async function openZarr(store: ZarrStore): Promise<ZarrMeta> {
-  const attrs = await readJson(store, ".zattrs");
+  const attrs = await readJson(store, ".zattrs").catch(async (err: unknown) => {
+    if (!(store.work && err instanceof Answered && err.status === 422)) throw err;
+    if (await store.fetchKey("zarr.json", META_MAX)) throw new Unsupported("Spectio cannot open Zarr v3 yet.");
+    throw new Unsupported("This OME-Zarr uses Zarr v2, which a work directory does not serve. Open it from the results once it is published.");
+  });
   if (!attrs) throw (await store.fetchKey("zarr.json", META_MAX)) ? new Unsupported("Spectio cannot open Zarr v3 yet.") : new NotImage("This folder has no OME-Zarr image metadata.");
   if (own(attrs, "plate") !== undefined || own(attrs, "image-label") !== undefined) throw new NotImage("Spectio does not show OME-Zarr plates or labels yet.");
   const multiscales = own(attrs, "multiscales");
@@ -176,11 +182,13 @@ export async function openZarr(store: ZarrStore): Promise<ZarrMeta> {
   const levels = new Map<string, Level>();
   for (const path of paths as string[]) {
     const { zarray, level } = checkArray(await readJson(store, `${path}/.zarray`), labels.length);
+    const top = levels.values().next().value?.shape ?? level.shape; // level 0: the same t, c and z, and no side growing
+    if (level.shape.some((size, i) => (i < labels.length - 2 ? size !== top[i] : size > top[i]))) throw new Unreadable("a level's shape does not follow level 0");
     served.set(`${path}/.zarray`, json(zarray));
     levels.set(path, level);
   }
   store.lock(served, levels);
-  const shape = JSON.parse(new TextDecoder().decode(served.get(`${paths[0]}/.zarray`))).shape as number[];
+  const shape = levels.get(paths[0] as string)!.shape;
   const count = labels.includes("c") ? shape[labels.indexOf("c")] : 1;
   const channels = own(own(attrs, "omero"), "channels");
   const meta = (i: number, k: string) => (Array.isArray(channels) ? own(channels[i], k) : undefined);

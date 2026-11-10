@@ -541,7 +541,7 @@ function OmeZarrView({ id, file }: { id: string; file: ResultStat }) {
   if (!hasWebgl2()) return <Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />;
   return (
     <Suspense fallback={<p className="sp-muted">Loading the image…</p>}>
-      <OmeView key={file.path} url="" size={0} zarr={zarr} name={file.name} fallback={<Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />} stateView={(state, retry) => <ImageStateView state={state} retry={retry} download={browse} />} />
+      <OmeView key={file.path} url="" size={0} zarr={zarr} workdir={!!work} name={file.name} fallback={<Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />} stateView={(state, retry) => <ImageStateView state={state} retry={retry} download={browse} />} />
     </Suspense>
   );
 }

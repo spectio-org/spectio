@@ -14,7 +14,7 @@ report viewer's check (P1 Task 31, req. 14): a real MultiQC 1.35 report at
 at `hostile/hostile_image.svg` for the file preview's check (FU-P3-85c, api §5.3); and a 200 KiB
 `logs/big.log`, over one 64 KiB read, for its Load more focus check; and `imaging/cells.ome.tif`,
 a small OME-TIFF (2 channels, 3 Z planes, 64 x 48 px) for the WebGL viewer's CSP check (FU-P3-102e);
-and `imaging/cells.ome.zarr`, a Zarr v2 OME-Zarr (2 channels, 64 x 48 px, a Blosc level and a zlib
+and `imaging/cells.ome.zarr`, a Zarr v2 OME-Zarr (2 channels, 64 x 48 px, a raw level and a zlib
 level) for the same check through the page's Zarr store (FU-P3-102g).
 """
 
@@ -66,9 +66,9 @@ def spool_lines() -> bytes:
 
 
 def ome_zarr(folder: Path, width: int = 64, height: int = 48, channels: int = 2) -> None:
-    """A Zarr v2 OME-Zarr (NGFF 0.4, axes c, y, x, uint8): level 0 in Blosc chunks stored as
-    memcpyed (header flag 0x02, https://github.com/Blosc/c-blosc/blob/main/README_HEADER.rst),
-    so numcodecs' WebAssembly decoder runs; level 1 at half size in zlib chunks."""
+    """A Zarr v2 OME-Zarr (NGFF 0.4, axes c, y, x, uint8): level 0 in raw chunks (no
+    compressor), level 1 at half size in zlib chunks. No Blosc: the page refuses it, as
+    numcodecs' Blosc decoder needs 'unsafe-eval' (inbox #135)."""
     folder.mkdir()
     axes = [
         {"name": "c", "type": "channel"},
@@ -85,9 +85,8 @@ def ome_zarr(folder: Path, width: int = 64, height: int = 48, channels: int = 2)
     }
     (folder / ".zgroup").write_text(json.dumps({"zarr_format": 2}))
     (folder / ".zattrs").write_text(json.dumps(attrs))
-    blosc = {"id": "blosc", "cname": "lz4", "clevel": 5, "shuffle": 0, "blocksize": 0}
     for level, (w, h, compressor) in enumerate(
-        [(width, height, blosc), (width // 2, height // 2, {"id": "zlib", "level": 1})]
+        [(width, height, None), (width // 2, height // 2, {"id": "zlib", "level": 1})]
     ):
         (folder / str(level)).mkdir()
         meta = {"zarr_format": 2, "shape": [channels, h, w], "chunks": [1, h, w], "dtype": "|u1"}
@@ -95,12 +94,7 @@ def ome_zarr(folder: Path, width: int = 64, height: int = 48, channels: int = 2)
         (folder / str(level) / ".zarray").write_text(json.dumps(meta))
         for c in range(channels):
             plane = bytes((x * 4 + y * 2 + c * 100) % 256 for y in range(h) for x in range(w))
-            n = len(plane)
-            chunk = (
-                struct.pack("<BBBBIII", 2, 1, 0x02, 1, n, n, 16 + n) + plane
-                if level == 0
-                else zlib.compress(plane)
-            )
+            chunk = plane if compressor is None else zlib.compress(plane)
             (folder / str(level) / f"{c}.0.0").write_bytes(chunk)
 
 

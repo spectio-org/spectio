@@ -101,7 +101,7 @@ test("an .ome.tif with no OME-XML gets the flat view, and Viv is never called", 
   view();
   expect(await screen.findByText("the flat view")).toBeInTheDocument();
   expect(m.loadOmeTiff).not.toHaveBeenCalled();
-  expect(m.pools[0].destroy).toHaveBeenCalled(); // the open's pool ends with it
+  expect(m.pools).toHaveLength(0); // no decoder workers started for the flat view
 });
 
 test("a WebGL failure ends the viewer (its deck and its context) and the open's pool, then shows the flat view", async () => {
@@ -164,11 +164,14 @@ test("an OME-Zarr opens through our store (no TIFF read), its axes deciding the 
   m.openZarr.mockResolvedValue({ labels: ["c", "y", "x"], names: ["DAPI", "GFP"], colours: [[0, 0, 255], null] });
   m.loadZarr.mockResolvedValue({ data: [{ shape: [2, 50, 100], labels: ["c", "y", "x"], dtype: "Uint16", tileSize: 512, getRaster: async () => ({ data: new Uint16Array([0, 9]) }) }] });
   const zarr = (key: string) => `/raw/a.ome.zarr/${key}?as=zarr`;
-  const first = render(<MantineProvider><OmeView url="" size={0} zarr={zarr} name="a.ome.zarr" fallback={<p>the flat view</p>} stateView={(s) => <p>{"title" in s ? s.title : "problem"}</p>} /></MantineProvider>);
+  const pools = m.pools.length;
+  const first = render(<MantineProvider><OmeView url="" size={0} zarr={zarr} workdir name="a.ome.zarr" fallback={<p>the flat view</p>} stateView={(s) => <p>{"title" in s ? s.title : "problem"}</p>} /></MantineProvider>);
   expect(await screen.findByText("100 × 50 px · 2 channels · 1 plane · 1 time point · uint16")).toBeInTheDocument();
   await waitFor(() => expect(m.layers.at(-1)?.selections).toEqual([{ c: 0 }, { c: 1 }]));
   expect(m.openWalked).not.toHaveBeenCalled();
   expect(m.openZarr.mock.calls[0][0].log).toEqual([]); // the store itself, unread here: openZarr is mocked
+  expect(m.openZarr.mock.calls[0][0].work).toBe(true); // a work directory's store: its v2 state
+  expect(m.pools).toHaveLength(pools); // no TIFF decoder workers for a Zarr
   first.unmount();
   m.openZarr.mockRejectedValue(new NotImage("This folder has no OME-Zarr image metadata."));
   render(<MantineProvider><OmeView url="" size={0} zarr={zarr} name="a.ome.zarr" fallback={<p>the flat view</p>} stateView={(s) => <p>{"title" in s ? s.title : "problem"}</p>} /></MantineProvider>);
