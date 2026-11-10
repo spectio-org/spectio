@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, FakeEventSource, NO_RESOURCES, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
@@ -561,6 +561,17 @@ test("FU-P3-88a: the last lines open the full log; Back to Summary returns, with
   expect(router.state.location.search).toEqual({});
   const back = await screen.findByRole("region", { name: "Engine log · last lines" });
   await waitFor(() => expect(within(back).getByRole("button", { name: /^Open the full engine log/ })).toHaveFocus());
+});
+
+test("FU-P3-88a: selecting text in the last lines does not open the full log", async () => {
+  detail();
+  const router = app(`/runs/${ID}`);
+  const tail = await screen.findByRole("region", { name: "Engine log · last lines" });
+  const spy = vi.spyOn(window, "getSelection").mockReturnValue({ toString: () => "ERROR line" } as Selection);
+  fireEvent.click(within(tail).getByLabelText("Engine log, last lines"));
+  spy.mockRestore();
+  expect(router.state.location.search).toEqual({});
+  expect(screen.getByRole("tab", { name: "Summary" })).toHaveAttribute("aria-selected", "true");
 });
 
 test("FU-P3-88a: from=summary in the URL keeps Back to Summary; Logs opened from its tab has none", async () => {

@@ -458,8 +458,8 @@ function LogTail({ id, source, ended, onAll, openerRef }: { id: string; source: 
   const label = LOGS.find((l) => l.source === source)!.label;
   return (
     <>
-      {/* a click on the lines opens the full log too; the button below is the keyboard's way (FU-P3-88a) */}
-      <pre className="sp-code sp-log-tail sp-nowrap" data-opens tabIndex={0} aria-label={`${label}, last lines`} onClick={() => onAll(source)}>
+      {/* a click on the lines opens the full log too, not a text selection; the button below is the keyboard's way (FU-P3-88a) */}
+      <pre className="sp-code sp-log-tail sp-nowrap" data-opens tabIndex={0} aria-label={`${label}, last lines`} onClick={() => { if (!window.getSelection()?.toString()) onAll(source); }}>
         {text === null ? "Loading…" : <LogLines text={text} />}
       </pre>
       <button ref={openerRef} type="button" className="sp-link-button" onClick={() => onAll(source)}>
