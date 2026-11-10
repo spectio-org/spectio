@@ -7,10 +7,11 @@ import errno
 import os
 import stat
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from spectio import envfile
+from spectio import catalog, envfile
 from spectio.environments import Environment
 from spectio.runner.types import Stalled
 
@@ -31,6 +32,13 @@ local = { cpus = 4 }
 """
 
 
+CATALOG = """[pipelines.rnaseq]
+engine = "nextflow"
+location = "nf-core/rnaseq"
+revision = "htc"
+"""
+
+
 @pytest.fixture
 def path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     data = tmp_path / "data"
@@ -39,13 +47,28 @@ def path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return envfile.environments_path()
 
 
+@pytest.fixture(params=["environments", "catalog"])
+def kind(request: pytest.FixtureRequest) -> envfile.Kind[Any]:
+    """The shared tests run for both files (api §5.6: the same code, not a copy)."""
+    return envfile.ENVIRONMENTS if request.param == "environments" else catalog.KIND
+
+
+@pytest.fixture
+def either(path: Path, kind: envfile.Kind[Any]) -> tuple[Path, str]:
+    """The file of `kind` and a good text for it."""
+    good = GOOD if kind is envfile.ENVIRONMENTS else CATALOG
+    return kind.path(), good
+
+
 def put(path: Path, text: str | bytes, mode: int = 0o600) -> None:
     path.write_bytes(text.encode() if isinstance(text, str) else text)
     path.chmod(mode)
 
 
-def read(path: Path, names: frozenset[str] = NAMES) -> envfile.EnvFile:
-    return envfile.read_file(path, names)
+def read(
+    path: Path, names: frozenset[str] = NAMES, kind: envfile.Kind[Any] = envfile.ENVIRONMENTS
+) -> envfile.File[Any]:
+    return envfile.read_kind(kind, path, names)
 
 
 def test_req18_file_path_is_next_to_spectio_toml(path: Path) -> None:
@@ -65,54 +88,63 @@ def test_req18_file_missing_and_ok(path: Path) -> None:
     assert found.identity is not None and len(found.identity[4]) == 64
 
 
-def test_req18_file_hand_edit_picked_up(path: Path) -> None:
+def test_req18_file_hand_edit_picked_up(either: tuple[Path, str], kind: envfile.Kind[Any]) -> None:
     """No restart: a later read sees the new text, and an unchanged file is the cached read."""
-    put(path, GOOD)
-    first = read(path)
-    assert envfile.read_file(path, NAMES, cached=first) is first
-    put(path, GOOD.replace('"My lab"', '"Ours"'))
-    second = envfile.read_file(path, NAMES, cached=first)
-    assert second.environments[0].label == "Ours"
+    path, good = either
+    put(path, good)
+    first = read(path, kind=kind)
+    assert envfile.read_kind(kind, path, NAMES, cached=first) is first
+    put(path, good.replace("htc", "gpu"))
+    second = envfile.read_kind(kind, path, NAMES, cached=first)
+    assert second.state == "ok" and second.entries != first.entries
 
 
 @pytest.mark.parametrize(
     "make",
     ["group-writable", "symlink", "fifo", "directory", "dir-writable"],
 )
-def test_req18_file_refused(path: Path, tmp_path: Path, make: str) -> None:
+def test_req18_file_refused(
+    either: tuple[Path, str], kind: envfile.Kind[Any], tmp_path: Path, make: str
+) -> None:
+    path, good = either
     if make == "group-writable":
-        put(path, GOOD, 0o620)
+        put(path, good, 0o620)
     elif make == "symlink":
         target = tmp_path / "elsewhere.toml"
-        put(target, GOOD)
+        put(target, good)
         path.symlink_to(target)
     elif make == "fifo":
         os.mkfifo(path, 0o600)  # never blocks the read: O_NONBLOCK
     elif make == "directory":
         path.mkdir(mode=0o700)
     else:
-        put(path, GOOD)
+        put(path, good)
         path.parent.chmod(0o777)
-    found = read(path)
-    assert found.state == "refused" and found.environments == ()
+    found = read(path, kind=kind)
+    assert found.state == "refused" and found.entries == ()
     assert found.detail
 
 
-def test_req18_file_refused_other_owner(path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    put(path, GOOD)
+def test_req18_file_refused_other_owner(
+    either: tuple[Path, str], kind: envfile.Kind[Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    put(*either)
     monkeypatch.setattr(os, "geteuid", lambda: os.getuid() + 1)
-    assert read(path).state == "refused"
+    assert read(either[0], kind=kind).state == "refused"
 
 
 def test_req18_file_refused_symlinked_directory(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    either: tuple[Path, str],
+    kind: envfile.Kind[Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     real = tmp_path / "real"
     real.mkdir(mode=0o700)
-    put(real / "environments.toml", GOOD)
+    put(real / kind.file, either[1])
     (tmp_path / "link").symlink_to(real)
     monkeypatch.setenv("SPECTIO_CONFIG", str(tmp_path / "link" / "spectio.toml"))
-    assert read(envfile.environments_path()).state == "refused"
+    assert read(kind.path(), kind=kind).state == "refused"
 
 
 @pytest.mark.parametrize(
@@ -160,11 +192,12 @@ def test_req18_file_invalid_detail_has_no_file_bytes(path: Path) -> None:
 
 @pytest.mark.parametrize("where", ["directory", "file"])
 def test_req18_file_open_io_error_unreachable(
-    path: Path, monkeypatch: pytest.MonkeyPatch, where: str
+    either: tuple[Path, str], kind: envfile.Kind[Any], monkeypatch: pytest.MonkeyPatch, where: str
 ) -> None:
     """ESTALE at open time, of the file or of its directory, is `unreachable` as at read time,
     not `refused`; a write raises Stalled (CR-P3FU86BCD-03)."""
-    put(path, GOOD)
+    path = either[0]
+    put(*either)
     target = path.parent if where == "directory" else path.name
     real_open = os.open
 
@@ -174,10 +207,10 @@ def test_req18_file_open_io_error_unreachable(
         return real_open(name, *args, **kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setattr(os, "open", stale)
-    found = read(path)
+    found = read(path, kind=kind)
     assert found.state == "unreachable" and found.detail
     with pytest.raises(Stalled):
-        envfile.update(path, NAMES, lambda current: (None, []))
+        envfile.update_kind(kind, path, NAMES, lambda current: (None, []))
 
 
 def test_req18_file_write_renders_and_renames(path: Path) -> None:
@@ -203,29 +236,35 @@ def test_req18_file_write_renders_and_renames(path: Path) -> None:
 
 
 @pytest.mark.parametrize("make", ["invalid", "refused"])
-def test_req18_file_never_overwrites_unusable(path: Path, make: str) -> None:
+def test_req18_file_never_overwrites_unusable(
+    either: tuple[Path, str], kind: envfile.Kind[Any], make: str
+) -> None:
+    path = either[0]
     put(path, "[broken\n", 0o600 if make == "invalid" else 0o660)
     before = path.read_bytes()
     with pytest.raises(envfile.Unusable) as exc:
-        envfile.update(path, NAMES, lambda current: (None, []))
+        envfile.update_kind(kind, path, NAMES, lambda current: (None, []))
     assert exc.value.state == make
     assert path.read_bytes() == before
 
 
-def test_req18_file_write_after_same_size_hand_edit_refused(path: Path) -> None:
+def test_req18_file_write_after_same_size_hand_edit_refused(
+    either: tuple[Path, str], kind: envfile.Kind[Any]
+) -> None:
     """The identity holds the SHA-256: a hand edit of the same size, with the same mtime, between
     the read and the rename is seen and nothing is written."""
-    put(path, GOOD)
-    edited = GOOD.replace("htc", "gpu")
+    path, good = either
+    put(path, good)
+    edited = good.replace("htc", "gpu")
     mtime = path.stat().st_mtime_ns
 
-    def change(current: envfile.EnvFile) -> tuple[str | None, list[Environment]]:
+    def change(current: envfile.File[Any]) -> tuple[str | None, list[Any]]:
         put(path, edited)
         os.utime(path, ns=(mtime, mtime))
-        return current.default, list(current.environments)
+        return current.default, list(current.entries)
 
     with pytest.raises(envfile.Changed):
-        envfile.update(path, NAMES, change)
+        envfile.update_kind(kind, path, NAMES, change)
     assert path.read_text() == edited
 
 

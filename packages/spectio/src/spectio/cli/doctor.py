@@ -9,7 +9,7 @@ from pathlib import Path
 
 import typer
 
-from spectio import envfile
+from spectio import catalog, envfile
 from spectio.config import MIN_UV, NF_SPECTIO_VERSION, Settings, config_path
 from spectio.environments import builtins
 from spectio.loginshell import run_login, which
@@ -146,6 +146,15 @@ def _environments(settings: Settings) -> Result:
     return status, "environments", f"{path}: {state}, default {default}"
 
 
+def _catalog() -> Result:
+    """The catalog file (FU-P3-87a, api §5.6): its path and state. A file that cannot be used
+    is a warning: the free Pipeline field still works."""
+    path = catalog.catalog_path()
+    found = envfile.read_kind(catalog.KIND, path, ())
+    state = found.state if found.detail is None else f"{found.state} ({found.detail})"
+    return ("ok" if found.state in ("missing", "ok") else "warn"), "catalog", f"{path}: {state}"
+
+
 def checks(
     settings: Settings, env: Mapping[str, str], mountinfo: Path | None = None
 ) -> list[Result]:
@@ -166,7 +175,7 @@ def checks(
             results.append(("fail", "db_dir", str(exc)))
         else:
             results += server.db_checks(db_dir, mountinfo, fallback=settings.db_dir is None)
-    results.append(_environments(settings))
+    results += [_environments(settings), _catalog()]
     status, detail = runs_disk(settings.runs_root)  # a `warn` at most (FU-P3-74)
     results.append((status, "runs_disk", detail))
     here = socket.gethostname()
