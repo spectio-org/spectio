@@ -13,6 +13,7 @@ import {
   KIB,
   type Kind,
   READ,
+  REPORT_MAX,
   ROWS_MAX,
   SHOWN_MAX,
   SVG_MAX,
@@ -31,6 +32,8 @@ import { DecoderPool } from "./imaging/pool";
 import { OFFLINE, OFFLINE_WHY, hasDotPart, join } from "./explorer";
 import { BackToRun, Crumbs, type ResultsSearch, useTaskName } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
+import { compareText } from "./gridText";
+import type GridOf from "./DataGrid";
 import { runName } from "./RunState";
 import { isTerminal, when } from "./stateWord";
 
@@ -259,6 +262,11 @@ function JsonView({ id, file, retry }: { id: string; file: ResultStat; retry: ()
   );
 }
 
+// AG Grid is its own chunk, loaded with the first table (ui-spec §4.13).
+const DataGrid = lazy(() => import("./DataGrid")) as unknown as typeof GridOf;
+/** Up to this many rows the table grows to them; past it, a fixed height scrolls them virtually. */
+const SHORT = 15;
+
 function TableView({ id, file, retry }: { id: string; file: ResultStat; retry: () => void }) {
   const work = useContext(Work);
   const [read, setRead] = useState<TextRead | null>(null);
@@ -293,7 +301,6 @@ function TableView({ id, file, retry }: { id: string; file: ResultStat; retry: (
     table.stopped || cut ? `Showing ${rows.length} of at least ${body.length} rows` : null,
     width > COLUMNS_MAX ? `Showing ${COLUMNS_MAX} of ${width} columns` : null,
   ].filter((n): n is string => n !== null);
-  const cells = (row: string[]) => Array.from({ length: columns }, (_, i) => row[i] ?? "");
   return (
     <div className="sp-file-viewer">
       <div className="sp-file-line">
@@ -305,28 +312,28 @@ function TableView({ id, file, retry }: { id: string; file: ResultStat; retry: (
         </Button>
       </div>
       {table.comments.length > 0 && <pre className="sp-file-comments">{table.comments.join("\n")}</pre>}
-      <div className="sp-file-table" role="region" tabIndex={0} aria-label={`${file.name}, table`}>
-        <table className="sp-table">
-          <caption className="sp-muted">{[file.name, cut ? "read from the first 1 MiB" : null, ...notes].filter(Boolean).join(" · ")}</caption>
-          <thead>
-            <tr>
-              {(head ? cells(head) : Array.from({ length: columns }, (_, i) => `Column ${i + 1}`)).map((c, i) => (
-                <th key={i} scope="col">
-                  {c}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, r) => (
-              <tr key={r}>
-                {cells(row).map((c, i) => (
-                  <td key={i}>{c}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <p className="sp-muted">{[file.name, cut ? "read from the first 1 MiB" : null, ...notes].filter(Boolean).join(" · ")}</p>
+      <div className="sp-file-table" role="region" aria-label={`${file.name}, table`} data-scroll={rows.length > SHORT ? "" : undefined}>
+        <Suspense fallback={<p className="sp-muted">Loading the table…</p>}>
+          <DataGrid<string[]>
+            key={String(header)}
+            label={file.name}
+            rowData={rows}
+            domLayout={rows.length > SHORT ? "normal" : "autoHeight"}
+            defaultColDef={{ flex: 1, minWidth: 120 }}
+            columnDefs={Array.from({ length: columns }, (_, i) => ({
+              colId: String(i),
+              headerName: head ? (head[i] ?? "") : `Column ${i + 1}`,
+              valueGetter: ({ data }) => data?.[i] ?? "",
+              comparator: compareText,
+              filter: "agTextColumnFilter",
+              floatingFilter: true,
+              suppressFloatingFilterButton: true,
+              suppressHeaderMenuButton: true,
+              suppressHeaderFilterButton: true,
+            }))}
+          />
+        </Suspense>
       </div>
       {notes.map((n) => (
         <p key={n} className="sp-muted">
@@ -526,12 +533,32 @@ function OmeTiffView({ id, file }: { id: string; file: ResultStat }) {
   );
 }
 
+/** An OME-Zarr folder: the WebGL viewer reading its keys through our store, with Browse folder
+ * where a file has Download. On a phone or without WebGL 2, a note: the flat Zarr view is not built yet. */
+function OmeZarrView({ id, file }: { id: string; file: ResultStat }) {
+  const work = useContext(Work);
+  const phone = usePhone();
+  const zarr = useCallback((key: string) => resultUrl(id, `${file.path}/${key}`, { as: "zarr" }, work), [id, file.path, work]);
+  const browse = work ? (
+    <Link to="/runs/$id/workdir" params={{ id }} search={{ path: file.path, task: work.task, attempt: work.attempt }}>Browse folder</Link>
+  ) : (
+    <Link to="/runs/$id/results" params={{ id }} search={{ path: file.path }}>Browse folder</Link>
+  );
+  if (phone) return <Note title="Open on a larger screen: Spectio shows an OME-Zarr in the image viewer only." actions={browse} />;
+  if (!hasWebgl2()) return <Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />;
+  return (
+    <Suspense fallback={<p className="sp-muted">Loading the image…</p>}>
+      <OmeView key={file.path} url="" size={0} zarr={zarr} workdir={!!work} name={file.name} fallback={<Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />} stateView={(state, retry) => <ImageStateView state={state} retry={retry} download={browse} />} />
+    </Suspense>
+  );
+}
+
 function Binary({ id, file }: { id: string; file: ResultStat }) {
   const work = useContext(Work);
   return <Note title="This file is not text. Download it to open it." actions={<DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />} />;
 }
 
-function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind: Kind; retry: () => void }) {
+function Viewer({ id, file, kind, retry, search }: { id: string; file: ResultStat; kind: Kind; retry: () => void; search: ResultsSearch }) {
   const work = useContext(Work);
   const download = <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />;
   switch (kind) {
@@ -539,10 +566,15 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
       return <Binary id={id} file={file} />;
     case "pdf":
       return <Note title="Spectio does not open PDF files. Download it to open it." actions={download} />;
-    case "html":
-      return work ? (
-        <Note title="Spectio does not open HTML from a work directory. Download it to open it." actions={download} />
-      ) : (
+    case "html": {
+      if (work) return <Note title="Spectio does not open HTML from a work directory. Download it to open it." actions={download} />;
+      const { sort, q, task, attempt } = search;
+      if (search.view === "text") return <TextView id={id} file={file} levels={false} retry={retry} />;
+      // the report viewer, as from the folder (FU-P3-88a); past its cap, Download; from a job's
+      // Outputs, a link, so the back link still returns to the sheet
+      if ((file.size ?? 0) > REPORT_MAX) return <Note title="Too large for the report viewer (over 1 GiB). Download it to open it." actions={download} />;
+      if (!task || !attempt) return <Navigate to="/runs/$id/report" params={{ id }} search={{ path: file.path, from: "results", sort, q }} replace />;
+      return (
         <Note
           title="An HTML report opens in Spectio's report viewer."
           actions={
@@ -552,6 +584,7 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
           }
         />
       );
+    }
     case "image":
       return <ImageView id={id} file={file} />;
     case "tiff":
@@ -559,8 +592,7 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
     case "ometiff":
       return <OmeTiffView id={id} file={file} />;
     case "omezarr":
-      return <Note title="Image viewer: coming" />; // FU-P3-102g
-
+      return <OmeZarrView id={id} file={file} />;
     case "json":
       return <JsonView id={id} file={file} retry={retry} />;
     case "table":
@@ -613,7 +645,7 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
   // the name the server answered for once known, else the URL's last part (a path that passed
   // isResultPath); a refused path is never shown (SEC-P3T32B-02)
   const fileName = file?.name ?? (valid ? path.split("/").pop()! : null);
-  usePageCrumb(name);
+  usePageCrumb(name, file?.name ?? null);
   useEffect(() => {
     if (name && !work) document.title = `${fileName ?? "File preview"} · ${name} · Spectio`;
     else if (name && taskName) document.title = `${fileName ?? "File preview"} · ${taskName} · ${name} · Spectio`;
@@ -683,7 +715,7 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
         ) : file.type === "link_outside" ? (
           <Note title={work ? "A link outside the run: not followed." : "A link outside the results directory: not followed."} />
         ) : (
-          <Viewer id={id} file={file} kind={kind} retry={retry} />
+          <Viewer id={id} file={file} kind={kind} retry={retry} search={search} />
         )}
       </div>
     </Work.Provider>

@@ -9,12 +9,15 @@ import { beforeEach, expect, test, vi } from "vitest";
 const m = vi.hoisted(() => ({
   openWalked: vi.fn(),
   loadOmeTiff: vi.fn(),
+  openZarr: vi.fn(),
+  loadZarr: vi.fn(),
   decks: [] as { props: Record<string, unknown>; finalize: ReturnType<typeof vi.fn> }[],
   pools: [] as { destroy: ReturnType<typeof vi.fn> }[],
   lose: vi.fn(),
   layers: [] as Record<string, unknown>[],
 }));
 vi.mock("./flat", async (actual) => ({ ...(await actual<typeof import("./flat")>()), openWalked: m.openWalked }));
+vi.mock("./zarr", async (actual) => ({ ...(await actual<typeof import("./zarr")>()), openZarr: m.openZarr }));
 vi.mock("./pool", () => ({
   DecoderPool: class {
     destroy = vi.fn();
@@ -25,6 +28,8 @@ vi.mock("./pool", () => ({
 }));
 vi.mock("@hms-dbmi/viv", () => ({
   loadOmeTiff: m.loadOmeTiff,
+  loadOmeZarrFromStore: m.loadZarr,
+  ZarrPixelSource: class {},
   isInterleaved: (shape: number[]) => shape.at(-1) === 3, // as Viv: an interleaved RGB source ends with its 3 samples
   getImageSize: (s: { shape: number[] }) => ({ height: s.shape[3], width: s.shape[4] }),
   getDefaultInitialViewState: () => ({ target: [0, 0, 0], zoom: 0 }),
@@ -47,7 +52,9 @@ vi.mock("@deck.gl/core", () => ({
 
 import { resultsSearch } from "../ResultsBrowser";
 import OmeView from "./OmeView";
+import { NotImage } from "./zarr";
 
+const TCZYX = ["t", "c", "z", "y", "x"];
 const client = { size: 100, onBusy: null, failure: null };
 const tiff = { parseFileDirectoryAt: vi.fn() };
 const ifd = { ImageWidth: 100, ImageLength: 50 };
@@ -72,7 +79,7 @@ function routed() {
 
 function multi() {
   m.loadOmeTiff.mockResolvedValue({
-    data: [{ shape: [2, 3, 3, 50, 100], tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
+    data: [{ shape: [2, 3, 3, 50, 100], labels: TCZYX, tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
     metadata: { Pixels: { SizeX: 100, SizeY: 50, SizeC: 3, SizeZ: 3, SizeT: 2, Type: "uint8", Channels: [{ Name: "DAPI" }, {}, {}] } },
   });
   m.openWalked.mockResolvedValue({ tiff, client, ifds: Array(18).fill(ifd), files: "one", walked: { offsets: [8], values: 0 } });
@@ -84,7 +91,7 @@ beforeEach(() => {
   m.lose.mockReset();
   HTMLCanvasElement.prototype.getContext = (() => ({ getExtension: (n: string) => (n === "WEBGL_lose_context" ? { loseContext: m.lose } : null) })) as never;
   m.loadOmeTiff.mockResolvedValue({
-    data: [{ shape: [1, 1, 1, 50, 100], tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
+    data: [{ shape: [1, 1, 1, 50, 100], labels: TCZYX, tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
     metadata: { Pixels: { SizeX: 100, SizeY: 50, SizeC: 1, SizeZ: 1, SizeT: 1, Type: "uint8" } },
   });
 });
@@ -94,7 +101,7 @@ test("an .ome.tif with no OME-XML gets the flat view, and Viv is never called", 
   view();
   expect(await screen.findByText("the flat view")).toBeInTheDocument();
   expect(m.loadOmeTiff).not.toHaveBeenCalled();
-  expect(m.pools[0].destroy).toHaveBeenCalled(); // the open's pool ends with it
+  expect(m.pools).toHaveLength(0); // no decoder workers started for the flat view
 });
 
 test("a WebGL failure ends the viewer (its deck and its context) and the open's pool, then shows the flat view", async () => {
@@ -143,11 +150,30 @@ test("a pasted link keeps the view through the router: the file route keeps z, t
 
 test.each(["", "0,1,2"])("an RGB image ignores the URL's ch=%s: one selection, channel 0 (CR-P3FU102F-02)", async (ch) => {
   m.loadOmeTiff.mockResolvedValue({
-    data: [{ shape: [1, 1, 1, 50, 100, 3], tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
+    data: [{ shape: [1, 1, 1, 50, 100, 3], labels: TCZYX, tileSize: 512, getRaster: async () => ({ data: new Uint8Array([0, 9]) }) }],
     metadata: { Pixels: { SizeX: 100, SizeY: 50, SizeC: 3, SizeZ: 1, SizeT: 1, Type: "uint8" } },
   });
   m.openWalked.mockResolvedValue({ tiff, client, ifds: [{ ...ifd, SamplesPerPixel: 3 }], files: "one", walked: { offsets: [8], values: 0 } });
   window.history.replaceState(null, "", `/runs/r1/results/file?path=a.ome.tif&ch=${ch}`);
   view();
   await waitFor(() => expect(m.layers.at(-1)?.selections).toEqual([{ z: 0, t: 0, c: 0 }]));
+});
+
+test("an OME-Zarr opens through our store (no TIFF read), its axes deciding the selections; a NotImage folder ends in its state", async () => {
+  m.openWalked.mockClear();
+  m.openZarr.mockResolvedValue({ labels: ["c", "y", "x"], names: ["DAPI", "GFP"], colours: [[0, 0, 255], null] });
+  m.loadZarr.mockResolvedValue({ data: [{ shape: [2, 50, 100], labels: ["c", "y", "x"], dtype: "Uint16", tileSize: 512, getRaster: async () => ({ data: new Uint16Array([0, 9]) }) }] });
+  const zarr = (key: string) => `/raw/a.ome.zarr/${key}?as=zarr`;
+  const pools = m.pools.length;
+  const first = render(<MantineProvider><OmeView url="" size={0} zarr={zarr} workdir name="a.ome.zarr" fallback={<p>the flat view</p>} stateView={(s) => <p>{"title" in s ? s.title : "problem"}</p>} /></MantineProvider>);
+  expect(await screen.findByText("100 × 50 px · 2 channels · 1 plane · 1 time point · uint16")).toBeInTheDocument();
+  await waitFor(() => expect(m.layers.at(-1)?.selections).toEqual([{ c: 0 }, { c: 1 }]));
+  expect(m.openWalked).not.toHaveBeenCalled();
+  expect(m.openZarr.mock.calls[0][0].log).toEqual([]); // the store itself, unread here: openZarr is mocked
+  expect(m.openZarr.mock.calls[0][0].work).toBe(true); // a work directory's store: its v2 state
+  expect(m.pools).toHaveLength(pools); // no TIFF decoder workers for a Zarr
+  first.unmount();
+  m.openZarr.mockRejectedValue(new NotImage("This folder has no OME-Zarr image metadata."));
+  render(<MantineProvider><OmeView url="" size={0} zarr={zarr} name="a.ome.zarr" fallback={<p>the flat view</p>} stateView={(s) => <p>{"title" in s ? s.title : "problem"}</p>} /></MantineProvider>);
+  expect(await screen.findByText("This folder has no OME-Zarr image metadata.")).toBeInTheDocument();
 });

@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, FakeEventSource, NO_RESOURCES, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
@@ -538,11 +538,50 @@ test("P3-parC: the aside's All logs opens the Logs tab on the tail's source, wit
   }, { [`${URL_}/logs?source=head-err`]: () => new Response("Error in rule x\n") });
   const router = app(`/runs/${ID}`);
   const tail = await screen.findByRole("region", { name: "Head errors · last lines" });
-  await userEvent.click(within(tail).getByRole("button", { name: /^All logs/ }));
+  await userEvent.click(within(tail).getByRole("button", { name: /^Open the full head errors/ }));
   expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
   expect(screen.getByRole("button", { name: "Head errors" })).toHaveAttribute("aria-pressed", "true");
   await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Logs" })).toHaveFocus());
-  expect(router.state.location.search).toEqual({ tab: "logs", source: "head-err" });
+  expect(router.state.location.search).toEqual({ tab: "logs", source: "head-err", from: "summary" });
+});
+
+test("FU-P3-88a: the last lines open the full log; Back to Summary returns, with focus on the opener", async () => {
+  detail();
+  const router = app(`/runs/${ID}`);
+  const tail = await screen.findByRole("region", { name: "Engine log · last lines" });
+  // a click on the lines themselves opens the full log too
+  await userEvent.click(within(tail).getByLabelText("Engine log, last lines"));
+  expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
+  expect(router.state.location.search).toEqual({ tab: "logs", source: "engine", from: "summary" });
+  // another source keeps the way back
+  await userEvent.click(screen.getByRole("button", { name: "Head output" }));
+  expect(router.state.location.search).toEqual({ tab: "logs", source: "head-out", from: "summary" });
+  await userEvent.click(screen.getByRole("button", { name: "Back to Summary" }));
+  expect(screen.getByRole("tab", { name: "Summary" })).toHaveAttribute("aria-selected", "true");
+  expect(router.state.location.search).toEqual({});
+  const back = await screen.findByRole("region", { name: "Engine log · last lines" });
+  await waitFor(() => expect(within(back).getByRole("button", { name: /^Open the full engine log/ })).toHaveFocus());
+});
+
+test("FU-P3-88a: selecting text in the last lines does not open the full log", async () => {
+  detail();
+  const router = app(`/runs/${ID}`);
+  const tail = await screen.findByRole("region", { name: "Engine log · last lines" });
+  const spy = vi.spyOn(window, "getSelection").mockReturnValue({ toString: () => "ERROR line" } as Selection);
+  fireEvent.click(within(tail).getByLabelText("Engine log, last lines"));
+  spy.mockRestore();
+  expect(router.state.location.search).toEqual({});
+  expect(screen.getByRole("tab", { name: "Summary" })).toHaveAttribute("aria-selected", "true");
+});
+
+test("FU-P3-88a: from=summary in the URL keeps Back to Summary; Logs opened from its tab has none", async () => {
+  detail();
+  const router = app(`/runs/${ID}?tab=logs&source=engine&from=summary`);
+  expect(await screen.findByRole("button", { name: "Back to Summary" })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("tab", { name: "Parameters" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
+  expect(router.state.location.search).toEqual({ tab: "logs", source: "engine" });
+  expect(screen.queryByRole("button", { name: "Back to Summary" })).toBeNull();
 });
 
 test("P3-parC: the log's file on the server, with Copy; an Open raw link to the same text", async () => {
@@ -720,6 +759,8 @@ const RULES = {
     { process: "samtools_faindex", stage_id: null, counts: {}, retries: 0, status: "up_to_date", is_checkpoint: false, lower_bound: false },
   ],
 };
+const CHECKPOINT_LINE =
+  "A checkpoint: once its jobs succeed, Snakemake updates the DAG from their outputs. A resume skips the jobs that finished and updates the DAG from the outputs they left.";
 const snakemakeRun = () =>
   detail(
     {
@@ -748,13 +789,28 @@ test("a rule waiting for a checkpoint reads 'Waiting for checkpoint <rule>', not
   expect(within(row("segmentation_selection")).getByText("Waiting for checkpoint segmentation")).toBeInTheDocument();
   expect(within(row("segmentation_selection")).queryByText("Pending")).toBeNull();
   expect(within(row("samtools_faindex")).getByText("Up to date")).toBeInTheDocument();
-  expect(within(row("segmentation")).getByText("Checkpoint")).toBeInTheDocument();
+  // FU-P3-88a: a light mark, an icon and the word, not a filled chip
+  const mark = within(row("segmentation")).getByText("Checkpoint");
+  expect(mark.closest(".sp-chip")).toBeNull();
+  expect(mark.closest(".sp-checkpoint")!.querySelector("svg")).not.toBeNull();
   expect(within(row("plot_SV_calls")).getByText("0 / at least 3")).toBeInTheDocument();
   // Not needed is greyed and listed after the others
   const names = within(table).getAllByRole("button", { name: /^Open rule / }).map((b) => b.getAttribute("aria-label"));
   expect(names[names.length - 1]).toBe("Open rule regenotype_SNVs");
   expect(within(row("regenotype_SNVs")).getByText("Not needed in this run")).toBeInTheDocument();
   expect(row("regenotype_SNVs")).toHaveAttribute("data-quiet");
+});
+
+test("FU-P3-88a: a checkpoint rule's sheet shows the light mark and says what a checkpoint does", async () => {
+  snakemakeRun();
+  app(`/runs/${ID}`);
+  const table = await screen.findByRole("table", { name: "Rules" });
+  await userEvent.click(within(table).getByRole("button", { name: "Open rule segmentation" }));
+  const sheet = await screen.findByRole("dialog");
+  const mark = within(sheet).getByText("Checkpoint");
+  expect(mark.closest(".sp-chip")).toBeNull();
+  expect(mark.closest(".sp-checkpoint")!.querySelector("svg")).not.toBeNull();
+  expect(within(sheet).getByText(CHECKPOINT_LINE)).toBeInTheDocument();
 });
 
 test("the header reads 'at least n jobs' while a checkpoint is open", async () => {

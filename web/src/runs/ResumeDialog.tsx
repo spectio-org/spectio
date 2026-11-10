@@ -26,7 +26,7 @@ export function refusedWords(reason: string, run: RunDetail, server: ServerVersi
       return child ? (
         <>
           A resume of this run is already running:{" "}
-          <Link to="/runs/$id" params={{ id: child.id }}>
+          <Link className="sp-text-link" to="/runs/$id" params={{ id: child.id }}>
             {child.name ?? child.id}
           </Link>
           .

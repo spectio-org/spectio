@@ -4,6 +4,7 @@
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { MantineProvider } from "@mantine/core";
 import { LogViewer } from "./LogViewer";
 
 const LOG = [
@@ -205,7 +206,7 @@ test("wrap off keeps lines on one row; wrap on wraps them, numbers beside their 
 });
 
 test("across the 768 px breakpoint the search follows: field on a desktop, closed and unfocused on the phone (CR-P3FU85C-07)", () => {
-  const { rerender } = render(<LogViewer text={LOG} label="Engine log" searchButton />);
+  const { rerender } = render(<LogViewer text={LOG} label="Engine log" searchButton />, { wrapper: MantineProvider }); // Search is a Mantine button (FU-P3-104)
   expect(screen.queryByRole("searchbox")).toBeNull();
   rerender(<LogViewer text={LOG} label="Engine log" />); // phone to desktop
   expect(field()).toBeInTheDocument();

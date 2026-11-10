@@ -84,7 +84,7 @@ function OutputsPanel({ run, task, n, outputs }: { run: RunDetail; task: Task; n
             </span>
             <span className="sp-actions">
               {o.state === "present" && isResultPath(o.path) && (
-                <Link to="/runs/$id/results/file" params={{ id: run.id }} search={{ path: o.path, task: task.id, attempt: n }} aria-label={`Preview ${o.path}`}>
+                <Link className="sp-text-link" to="/runs/$id/results/file" params={{ id: run.id }} search={{ path: o.path, task: task.id, attempt: n }} aria-label={`Preview ${o.path}`}>
                   Preview
                 </Link>
               )}
@@ -297,7 +297,7 @@ export function TaskFiles({ run, task, attempt }: { run: RunDetail; task: Task; 
             (cleaned ? (
               <span className="sp-muted">The work directory was removed</span>
             ) : (
-              <Link to="/runs/$id/workdir" params={{ id: run.id }} search={{ task: task.id, attempt: n }}>
+              <Link className="sp-text-link" to="/runs/$id/workdir" params={{ id: run.id }} search={{ task: task.id, attempt: n }}>
                 Browse work directory
               </Link>
             ))}

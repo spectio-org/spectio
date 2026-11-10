@@ -137,6 +137,9 @@ export function ReportViewer({ id, path, from, sort, q }: { id: string } & Retur
         src={resultUrl(id, path)}
       />
       <p className="sp-muted">Report blank? Some reports need what the sandbox blocks. Download it and open it on your computer.</p>
+      <Link className="sp-text-link" to="/runs/$id/results/file" params={{ id }} search={{ path, view: "text", sort, q }}>
+        Show the source as text
+      </Link>
     </div>
   );
 }

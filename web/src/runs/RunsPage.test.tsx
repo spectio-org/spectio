@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { FakeEventSource, app, fetched, json, run, serve, stubStream } from "../testing";
+import { FakeEventSource, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -32,19 +32,20 @@ test('the empty list reads "No runs yet." with a link to launch', async () => {
 test("the table shows each run with its state word, a row label and the terminal chip", async () => {
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), observed, failed], next: null } });
   app("/runs");
-  const table = await screen.findByRole("table");
-  const header = within(table).getAllByRole("columnheader").map((h) => h.textContent);
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const header = within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim());
   expect(header).toEqual(["Run", "State", "Workflow", "Tasks", "Started", "Duration"]);
-  expect(within(table).getByRole("columnheader", { name: "Started" })).toHaveAttribute("data-wide");
+  // the API's order, newest first: no column sorts here (ui-spec §4.13)
+  expect(within(table).getByRole("columnheader", { name: "Run" })).not.toHaveAttribute("aria-sort");
   const open = within(table).getByRole("link", { name: "Open run rnaseq-a" });
   expect(open).toHaveAttribute("href", "/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W");
-  const row = open.closest("tr")!;
+  const row = open.closest('[role="row"]') as HTMLElement;
   expect(within(row).getByText("Running")).toBeInTheDocument();
   expect(within(row).getByText("24 / 32")).toBeInTheDocument();
   expect(within(row).getByText("7T9V1W")).toBeInTheDocument();
-  const hand = within(table).getByRole("link", { name: "Open run pilot-hand" }).closest("tr")!;
+  const hand = within(table).getByRole("link", { name: "Open run pilot-hand" }).closest('[role="row"]') as HTMLElement;
   expect(within(hand).getByText("From a terminal")).toBeInTheDocument();
-  const bad = within(table).getByRole("link", { name: "Open run sarek-c" }).closest("tr")!;
+  const bad = within(table).getByRole("link", { name: "Open run sarek-c" }).closest('[role="row"]') as HTMLElement;
   expect(within(bad).getByText("Failed")).toBeInTheDocument();
   expect(within(bad).getByText("task failed · exit 1 · DEEPVARIANT (NA12878)")).toBeInTheDocument();
 });
@@ -145,8 +146,8 @@ test("UX-PAR-01, inbox #91 (b): each row shows its pipeline's mark: nf-core for 
   });
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), snake], next: null } });
   app("/runs");
-  const table = await screen.findByRole("table");
-  const nf = within(table).getByRole("link", { name: "Open run rnaseq-a" }).closest("tr")!;
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const nf = within(table).getByRole("link", { name: "Open run rnaseq-a" }).closest('[role="row"]') as HTMLElement;
   const mark = within(nf).getByRole("img", { name: "nf-core" });
   expect(mark.getAttribute("src")).toMatch(/logo-nf-core/);
   expect(Number(mark.getAttribute("width"))).toBeGreaterThanOrEqual(16);
@@ -154,7 +155,7 @@ test("UX-PAR-01, inbox #91 (b): each row shows its pipeline's mark: nf-core for 
   // The version sits on the name's line (UX-PAR-17), Nextflow's running total is "known so far".
   expect(within(nf).getByText("nf-core/rnaseq").parentElement).toHaveTextContent("nf-core/rnaseq 3.27.0");
   expect(within(nf).getByText("known so far")).toBeInTheDocument();
-  const sm = within(table).getByRole("link", { name: "Open run plate-qc-a" }).closest("tr")!;
+  const sm = within(table).getByRole("link", { name: "Open run plate-qc-a" }).closest('[role="row"]') as HTMLElement;
   expect(within(sm).getByRole("img", { name: "Snakemake" }).getAttribute("src")).toMatch(/logo-snakemake/);
   expect(within(sm).getByText("jobs")).toBeInTheDocument(); // UX-PAR-20
   expect(within(sm).getByText("3 jobs running")).toBeInTheDocument();
@@ -206,4 +207,33 @@ test("UX-PAR-18: the footer counts the rows shown against the filter's total", a
   app("/runs");
   expect(await screen.findByText("1 of 2 runs · newest first")).toBeInTheDocument();
   expect(screen.getByRole("searchbox", { name: "Filter by run name" })).toBeInTheDocument();
+});
+
+test("UX-G3a-05: below 1100 px the grid drops Started, so it fits at 1024 px", async () => {
+  viewport(1024);
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  expect(within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim())).toEqual(["Run", "State", "Workflow", "Tasks", "Duration"]);
+});
+
+test("a cell takes focus from the keyboard: the header, then the first run's name cell", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), failed], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  act(() => within(table).getByRole("columnheader", { name: "Run" }).focus());
+  await userEvent.keyboard("{ArrowDown}");
+  await waitFor(() => expect(document.activeElement).toHaveAttribute("role", "gridcell"));
+  expect(document.activeElement).toHaveTextContent("rnaseq-a");
+});
+
+test("CR-P3FU101A-01: Enter on a run's name cell opens the run", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), failed], next: null } });
+  const router = app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  act(() => within(table).getByRole("columnheader", { name: "Run" }).focus());
+  await userEvent.keyboard("{ArrowDown}");
+  await waitFor(() => expect(document.activeElement).toHaveTextContent("rnaseq-a"));
+  await userEvent.keyboard("{Enter}");
+  await waitFor(() => expect(router.state.location.pathname).toBe("/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W"));
 });

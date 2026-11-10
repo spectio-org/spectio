@@ -7,7 +7,7 @@ import { resolveTarget } from './base-url';
 // page names it. Against a real `spectio serve` (a local-mode one is enough):
 //   bash tests/e2e/serve-local.sh --port 8765 &
 //   SPECTIO_E2E_BASE_URL=http://127.0.0.1:8765 npx playwright test launch-environment.spec.ts --project desktop
-// It deletes the environment it made; the run stays under the server's runs root.
+// It deletes the environment and the catalog entry it made; the runs stay under the server's runs root.
 
 const target = resolveTarget(process.env);
 test.skip(target.serveStatic, 'needs a Spectio server: SPECTIO_E2E_BASE_URL (tests/e2e/serve-local.sh)');
@@ -48,5 +48,33 @@ test('define an environment from Launch, launch with it, and read it on the run'
       });
       expect(removed.status()).toBe(204);
     }
+  }
+});
+
+// The launch smoke from a catalog entry (FU-P3-87e; ui-spec §4.7.1 "At Launch"): the entry chosen in
+// the picker only fills the form, Load inspects it, and Launch sends its location and engine.
+test('launch from a catalog entry', async ({ page, request }) => {
+  const name = `e2e-${Date.now().toString(36)}`;
+  const origin = new URL(target.url).origin;
+  const made = await request.post('/api/v1/catalog', {
+    headers: { Origin: origin },
+    data: { name, label: null, engine: 'nextflow', location: PIPELINE, revision: null, profile: null, params_file: null },
+  });
+  expect(made.status()).toBe(201);
+  try {
+    await page.goto('/launch');
+    await page.getByRole('combobox', { name: 'From your catalog' }).selectOption(name);
+    await expect(page.getByRole('textbox', { name: /^Pipeline/ })).toHaveValue(PIPELINE);
+    await expect(page.getByText(`From the catalog: ${name}`)).toBeVisible();
+    await page.getByRole('button', { name: 'Load' }).click();
+    await expect(page.getByText('Loaded', { exact: true })).toBeVisible();
+    await expect(page.getByText(`In your catalog as ${name}`)).toBeVisible();
+    const posted = page.waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/v1/runs');
+    await page.getByRole('button', { name: 'Launch' }).last().click();
+    expect((await posted).postDataJSON()).toMatchObject({ workflow: { location: PIPELINE, engine: 'nextflow' } });
+    await expect(page).toHaveURL(/\/runs\/run_/);
+  } finally {
+    const removed = await request.delete(`/api/v1/catalog/${name}`, { headers: { Origin: origin, 'If-Match': (await made.json()).etag } });
+    expect(removed.status()).toBe(204);
   }
 });

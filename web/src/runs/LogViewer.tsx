@@ -1,4 +1,5 @@
 import { type KeyboardEvent, type ReactNode, memo, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@mantine/core";
 import { ICONS, Icon } from "../icons";
 
 // The run's log viewer (LiteRunLogs; P3-parD, Thomas 2026-10-31: "logs pas searchable"): the lines
@@ -165,9 +166,10 @@ export function LogViewer({
     <>
       <div className="sp-filters sp-log-search">
         {searchButton && (
-          <button type="button" className="sp-key" aria-expanded={open} onClick={() => setSearching(!open)}>
+          // the style of Wrap lines beside it (FU-P3-104)
+          <Button variant="default" size="xs" aria-expanded={open} onClick={() => setSearching(!open)}>
             Search
-          </button>
+          </Button>
         )}
         {open && (
           <>

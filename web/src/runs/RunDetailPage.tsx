@@ -1,6 +1,6 @@
 import { Button, Modal, Tabs } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { type KeyboardEvent, useCallback, useEffect, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type Ref, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   type LogSource,
@@ -33,7 +33,7 @@ import { ByProcess } from "./ByProcess";
 import { bytes, isLow, isNear, nearLimit, percent, resourcesLine, seconds } from "./resources";
 import { ResultsSection } from "./ResultsSection";
 import { RunHeader, runDirectory } from "./RunHeader";
-import { Low, NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
+import { CheckpointMark, Low, NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
 import {
   classWord,
   engineName,
@@ -63,9 +63,10 @@ const LOGS: { source: LogSource; label: string }[] = [
 const TABS = ["summary", "tasks", "parameters", "logs"] as const;
 type Tab = (typeof TABS)[number];
 
-type RunSearch = { tab?: Exclude<Tab, "summary">; source?: LogSource; process?: string; task?: string; attempt?: number };
+type RunSearch = { tab?: Exclude<Tab, "summary">; source?: LogSource; from?: "summary"; process?: string; task?: string; attempt?: number };
 
-/** The run's URL keeps its tab, the log source on Logs (?tab=logs&source=engine) and the process
+/** The run's URL keeps its tab, the log source on Logs (?tab=logs&source=engine, with &from=summary
+ * when the Summary's last lines opened it: Logs then shows Back to Summary) and the process
  * on Tasks (?tab=tasks&process=ALIGN), so a view can be linked and reloaded; anything else falls
  * back to the Summary, the engine log and every process. `&task=<id>&attempt=<n>` reopens that
  * task's sheet on that attempt (ui-spec §4.4.1, Back to the task sheet). */
@@ -77,7 +78,8 @@ function tabSearch(search: Record<string, unknown>): RunSearch {
   const tab = TABS.find((t) => t !== "summary" && t === search.tab) as Exclude<Tab, "summary"> | undefined;
   if (tab === "tasks" && typeof search.process === "string" && search.process !== "") return { tab, process: search.process };
   if (tab !== "logs") return tab ? { tab } : {};
-  return { tab, source: LOGS.find((l) => l.source === search.source)?.source ?? "engine" };
+  const source = LOGS.find((l) => l.source === search.source)?.source ?? "engine";
+  return search.from === "summary" ? { tab, source, from: "summary" } : { tab, source };
 }
 
 type Words = ReturnType<typeof words>;
@@ -118,12 +120,12 @@ function doneText(p: Process, w: Words): string {
   return p.lower_bound ? `${done} / at least ${all}` : `${done} / ${all}`;
 }
 
-/** The process's name, and the "Checkpoint" text chip of a checkpoint rule. */
+/** The process's name, and the "Checkpoint" mark of a checkpoint rule. */
 function NameCell({ p, w, onOpen }: { p: Process; w: Words; onOpen: (d: Detail) => void }) {
   return (
     <>
       <OpenProcess name={p.process} w={w} onOpen={onOpen} />
-      {p.is_checkpoint && <span className="sp-chip sp-checkpoint">Checkpoint</span>}
+      {p.is_checkpoint && <CheckpointMark />}
     </>
   );
 }
@@ -442,7 +444,7 @@ function HeadByHand({ run, server }: { run: RunDetail; server: ServerVersion | n
 }
 
 /** The last lines of a log, read when the section opens and again on each frame of an active run. */
-function LogTail({ id, source, ended, onAll }: { id: string; source: LogSource; ended: boolean; onAll: (s: LogSource) => void }) {
+function LogTail({ id, source, ended, onAll, openerRef }: { id: string; source: LogSource; ended: boolean; onAll: (s: LogSource) => void; openerRef: Ref<HTMLButtonElement> }) {
   const [text, setText] = useState<string | null>(null);
   const [frames, setFrames] = useState(0); // read again on each frame while the run is active (FU-P3-80)
   useFrames(() => setFrames((n) => n + 1), id, !ended);
@@ -456,11 +458,12 @@ function LogTail({ id, source, ended, onAll }: { id: string; source: LogSource; 
   const label = LOGS.find((l) => l.source === source)!.label;
   return (
     <>
-      <pre className="sp-code sp-log-tail sp-nowrap" tabIndex={0} aria-label={`${label}, last lines`}>
+      {/* a click on the lines opens the full log too, not a text selection; the button below is the keyboard's way (FU-P3-88a) */}
+      <pre className="sp-code sp-log-tail sp-nowrap" data-opens tabIndex={0} aria-label={`${label}, last lines`} onClick={() => { if (!window.getSelection()?.toString()) onAll(source); }}>
         {text === null ? "Loading…" : <LogLines text={text} />}
       </pre>
-      <button type="button" className="sp-link-button" onClick={() => onAll(source)}>
-        All logs: head output, head errors, engine log <Icon path={ICONS.arrowRight} size={13} />
+      <button ref={openerRef} type="button" className="sp-link-button" onClick={() => onAll(source)}>
+        Open the full {label.toLowerCase()} <Icon path={ICONS.arrowRight} size={13} />
       </button>
     </>
   );
@@ -483,7 +486,7 @@ function ParamsList({ params }: { params: RunDetail["params"] }) {
 
 /** The Summary's aside (LiteRunDetail, LiteRunFailed; UX-PAR-23): the parts the 0.0.1 API serves.
  * Results and reports come with P1 Task 31. */
-function SummaryAside({ run, server, onLogs }: { run: RunDetail; server: ServerVersion | null; onLogs: (s: LogSource) => void }) {
+function SummaryAside({ run, server, onLogs, logOpener }: { run: RunDetail; server: ServerVersion | null; onLogs: (s: LogSource) => void; logOpener: Ref<HTMLButtonElement> }) {
   const head = run.head;
   const failed = run.state === "failed";
   const params = Object.keys(run.params).length;
@@ -497,7 +500,7 @@ function SummaryAside({ run, server, onLogs }: { run: RunDetail; server: ServerV
         title={failed ? "Head errors · last lines" : "Engine log · last lines"}
         card
       >
-        <LogTail id={run.id} source={failed ? "head-err" : "engine"} ended={isTerminal(run.state)} onAll={onLogs} />
+        <LogTail id={run.id} source={failed ? "head-err" : "engine"} ended={isTerminal(run.state)} onAll={onLogs} openerRef={logOpener} />
       </FoldSection>
       {head && !head.alive && run.origin !== "cli-observed" && (
         <FoldSection
@@ -860,12 +863,15 @@ function LogsPanel({
   source,
   setSource,
   onTasks,
+  onBack,
 }: {
   run: RunDetail;
   server: ServerVersion | null;
   source: LogSource;
   setSource: (s: LogSource) => void;
   onTasks: () => void;
+  /** Back to Summary, when the Summary's last lines opened Logs (FU-P3-88a) */
+  onBack?: () => void;
 }) {
   const [text, setText] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
@@ -893,6 +899,11 @@ function LogsPanel({
   };
   return (
     <section className="sp-runs sp-logs" aria-label="Logs">
+      {onBack && (
+        <button type="button" className="sp-link-button sp-logs-back" onClick={onBack}>
+          <Icon path={ICONS.chevronLeft} size={13} /> Back to Summary
+        </button>
+      )}
       <div className="sp-filters sp-log-tools">
         <div className="sp-segments" role="group" aria-label="Log">
           {LOGS.map((l) => (
@@ -1044,9 +1055,9 @@ export function RunDetailPage({ id }: { id: string }) {
   if (tab === "logs") lastSource.current = logSource;
   // each view is a history entry: Back and Forward step through them (FU-P3-109)
   const go = useCallback(
-    (to: Tab, opts: { source?: LogSource; process?: string } = {}) => {
+    (to: Tab, opts: { source?: LogSource; process?: string; from?: "summary" } = {}) => {
       if (to === "logs") lastSource.current = opts.source ?? lastSource.current;
-      return navigate({ search: runSearch({ tab: to, source: lastSource.current, process: opts.process }) });
+      return navigate({ search: runSearch({ tab: to, source: lastSource.current, process: opts.process, from: opts.from }) });
     },
     [navigate],
   );
@@ -1073,9 +1084,14 @@ export function RunDetailPage({ id }: { id: string }) {
   const title = useRef<HTMLHeadingElement>(null);
   const panels = { tasks: useRef<HTMLDivElement>(null), logs: useRef<HTMLDivElement>(null) };
   const focusPanel = useRef(false);
+  // Back to Summary from Logs: focus returns to the last lines' button that opened it (FU-P3-88a)
+  const logOpener = useRef<HTMLButtonElement>(null);
+  const focusOpener = useRef(false);
   useEffect(() => {
     if (focusPanel.current && (tab === "tasks" || tab === "logs")) panels[tab].current?.focus();
+    if (focusOpener.current && tab === "summary") logOpener.current?.focus();
     focusPanel.current = false;
+    focusOpener.current = false;
   }, [tab, logSource, search.process]);
 
   const load = useCallback(() => {
@@ -1131,10 +1147,14 @@ export function RunDetailPage({ id }: { id: string }) {
     focusTasks();
     go("tasks");
   };
-  // The Summary's log links open Logs on the same source, with focus on its panel.
+  // The Summary's last lines open Logs on the same source, with focus on its panel and a way back.
   const showLogs = (source: LogSource) => {
     focusPanel.current = true;
-    go("logs", { source });
+    go("logs", { source, from: "summary" });
+  };
+  const backToSummary = () => {
+    focusOpener.current = true;
+    go("summary");
   };
   // The sheet's Open in Tasks: the Tasks tab on that process, every state.
   const showProcess = (process: string) => {
@@ -1185,7 +1205,7 @@ export function RunDetailPage({ id }: { id: string }) {
               {run.state === "failed" && <WhyItFailed run={run} processes={processes} onTasks={() => showTasks("Failed")} onOpen={(view) => setViews([view])} />}
               <StagesOrProcesses run={run} stages={stages} processes={processes} onTasks={() => go("tasks")} onOpen={(view) => setViews([view])} />
             </div>
-            <SummaryAside run={run} server={server} onLogs={showLogs} />
+            <SummaryAside run={run} server={server} onLogs={showLogs} logOpener={logOpener} />
           </div>
         </Tabs.Panel>
         <Tabs.Panel value="tasks" pt="md" ref={panels.tasks} tabIndex={-1}>
@@ -1228,7 +1248,14 @@ export function RunDetailPage({ id }: { id: string }) {
           )}
         </Tabs.Panel>
         <Tabs.Panel value="logs" pt="md" ref={panels.logs} tabIndex={-1}>
-          <LogsPanel run={run} server={server} source={logSource} setSource={(source) => go("logs", { source })} onTasks={() => go("tasks")} />
+          <LogsPanel
+            run={run}
+            server={server}
+            source={logSource}
+            setSource={(source) => go("logs", { source, from: search.from })}
+            onTasks={() => go("tasks")}
+            onBack={search.from ? backToSummary : undefined}
+          />
         </Tabs.Panel>
       </Tabs>
     </div>
