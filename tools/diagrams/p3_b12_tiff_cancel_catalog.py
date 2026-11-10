@@ -287,7 +287,7 @@ def build(theme: Theme) -> Sketch:
     s.step(x + CW / 2, cap, 3, "a local cancel, at once", size=18)
     lines(s, x, cap + 28, ("heads start once the whole lease is applied",
                            "the engine in a subshell: no SIGTERM lost",
-                           "to `trap :` before the engine started",
+                           "a no-op `trap` set before the engine started",
                            "a lock subshell a cancel ends: 143, not 75",
                            "ui-spec 4.4 updated · 3 tests added"))
     y = note(s, x, pin_y, ("no blocker, no major",

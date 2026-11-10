@@ -2248,3 +2248,10 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - **FU-P3-87e · UI, Launch.** The picker and its states, fill on choose and Load to inspect, the engine as the user's choice, the profile and params prefill with the listing of unplaced values and the `code_loading` warnings, the reset rules, Manage catalog and Save to catalog in dialogs, Try leaving out saved locations; Vitest and the Playwright launch smoke from an entry.
   - After the batch: `p3-batch` (simplify, Progress page, one figure, doc review); a section "Save a pipeline" in a usage guide.
 - **Assumed (2026-11-10, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** every recommendation above.
+
+### #148 · Assumed: the other TIFF states on screen (FU-P3-114)
+
+- **Covers:** [FU-P3-114](../progress/W5/P3-M9.md#follow-ups-of-batch-p3-b12), found by `doc-writer` in batch P3-B12 ([DW-P3B12-01](code/P3-B12.md#findings), closed for one state); [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview), [guide](../usage/browse-and-preview-files.md#not-shown).
+- **Context:** the TIFF flat view has two shots, of one 16-bit grayscale file on a seeded server (`tools/media/tiff_demo.py`). Its other states are checked by Vitest in jsdom, which draws no pixels, so they are not seen: too large, unsupported, not a TIFF, stopped, 8-bit, RGB, multi-page, OME-TIFF.
+- **Plan (minor, not blocking):** extend `tiff_demo.py` with one file per state and take the shots with `shots.py`, light and dark, desktop and phone for the "too large" case. No question for Thomas; it is listed here so a later P3 batch picks it up.
+- **Assumed (2026-11-10, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the plan above.
