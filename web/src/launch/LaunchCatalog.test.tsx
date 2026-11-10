@@ -87,7 +87,7 @@ test("choosing an entry only fills the form; Load inspects with its params file;
   expect(screen.getByRole("textbox", { name: /^depth/ })).toHaveValue("5");
   expect(screen.getByText("2 values of conf/test.yaml fill the form and read changed. 2 values of conf/test.yaml have no field in this form, and are not sent: foo, bar")).toBeInTheDocument();
   expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml sets custom_config_base: /g/lab/conf")).toBeInTheDocument();
-  expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml is writable by others")).toBeInTheDocument();
+  expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml loads code or configuration · writable by others")).toBeInTheDocument();
   expect(within(screen.getByRole("region", { name: "Summary" })).getByText(/from the catalog entry rnaseq-test/)).toBeInTheDocument();
   await userEvent.click(screen.getAllByRole("button", { name: "Launch" }).at(-1)!);
   await waitFor(() => expect(posted).toHaveLength(1));
@@ -96,6 +96,59 @@ test("choosing an entry only fills the form; Load inspects with its params file;
     profiles: ["test"],
     params: { depth: 5, input: "s3://x/samples.csv" },
   });
+});
+
+test("the params file itself not writable by others is still named before Launch (SEC-P3FU87E-01)", async () => {
+  const file = { ...INSPECTED.params_file, code_loading: [{ field: "params_file", value: "/data/rnaseq/conf/test.yaml", writable_by_others: false }] };
+  launchWith(list([RNASEQ]), { "/api/v1/workflows:inspect": { ...INSPECTED, params_file: file } });
+  await userEvent.selectOptions(await picker(), "rnaseq-test");
+  await userEvent.click(loadButton());
+  await screen.findByText("Loaded");
+  expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml loads code or configuration")).toBeInTheDocument();
+});
+
+test("None after Load keeps the params file's report: the unplaced line and the warnings (CR-P3FU87E-02)", async () => {
+  launchWith(list([RNASEQ]));
+  const select = await picker();
+  await userEvent.selectOptions(select, "rnaseq-test");
+  await userEvent.click(loadButton());
+  await screen.findByText("Loaded");
+  await userEvent.selectOptions(select, "");
+  expect(screen.queryByText(/^From the catalog:/)).toBeNull();
+  expect(screen.getByRole("textbox", { name: /^depth/ })).toHaveValue("5");
+  expect(screen.getByText(/2 values of conf\/test.yaml have no field in this form, and are not sent: foo, bar/)).toBeInTheDocument();
+  expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml sets custom_config_base: /g/lab/conf")).toBeInTheDocument();
+  expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml loads code or configuration · writable by others")).toBeInTheDocument();
+});
+
+test("an entry edited in Manage catalog after Load: the card's Edit opens the new values and sends the new etag (CR-P3FU87E-01)", async () => {
+  let item = RNASEQ;
+  const puts: RequestInit[] = [];
+  launchWith(() => json(200, list([item])), {
+    [`${API}/rnaseq-test`]: (_u: URL, init?: RequestInit) => {
+      if (init?.method !== "PUT") return json(200, item);
+      puts.push(init);
+      item = { ...JSON.parse(String(init.body)), etag: `"rnaseq-test-${puts.length + 1}"` };
+      return json(200, item);
+    },
+  });
+  await userEvent.selectOptions(await picker(), "rnaseq-test");
+  await userEvent.click(loadButton());
+  await screen.findByText("Loaded");
+  await userEvent.click(screen.getByRole("button", { name: "Manage catalog" }));
+  const manage = await screen.findByRole("dialog", { name: "Manage catalog" });
+  await userEvent.click(within(manage).getByRole("button", { name: "Edit rnaseq-test" }));
+  await userEvent.type(within(manage).getByLabelText("Label (optional)"), "RNA-seq test");
+  await userEvent.click(within(manage).getByRole("button", { name: "Save" }));
+  await within(manage).findByRole("button", { name: "Add pipeline" });
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  await userEvent.click(screen.getByRole("button", { name: "Edit rnaseq-test" }));
+  const dialog = await screen.findByRole("dialog", { name: "Edit rnaseq-test" });
+  expect(within(dialog).getByLabelText("Label (optional)")).toHaveValue("RNA-seq test");
+  await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(puts).toHaveLength(2));
+  expect(new Headers(puts[1].headers).get("if-match")).toBe('"rnaseq-test-2"');
 });
 
 test("a params file that cannot be read is a line, and the pipeline loads with its defaults", async () => {

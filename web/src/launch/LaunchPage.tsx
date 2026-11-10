@@ -13,7 +13,6 @@ import {
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
-  type CatalogItem,
   type CatalogList,
   ENGINE_FILES,
   type Engine,
@@ -22,6 +21,7 @@ import {
   type FieldError,
   type Inspected,
   type LaunchTemplate,
+  type ParamsFile,
   type Run,
   getLaunchTemplate,
   getRun,
@@ -182,7 +182,10 @@ export function LaunchPage({
   const [catalog, setCatalog] = useState<CatalogList | null>(null);
   const [catalogFailed, setCatalogFailed] = useState(false);
   const [entryName, setEntryName] = useState<string | null>(null);
-  const [fromEntry, setFromEntry] = useState<CatalogItem | null>(null);
+  // only the name is kept, so an entry edited or deleted in Manage catalog is read afresh (CR-P3FU87E-01)
+  const [fromName, setFromName] = useState<string | null>(null);
+  // the params file inspected at Load: its report stays until the next Load or edit (CR-P3FU87E-02)
+  const [paramsFile, setParamsFile] = useState<ParamsFile | null>(null);
   // The form key a "Before Launch" link is moving focus to: its sections open (FU-P3-86h)
   const [goTo, setGoTo] = useState<string | null>(null);
   const inFlight = useRef<AbortController | null>(null);
@@ -209,6 +212,7 @@ export function LaunchPage({
   const chosen: EnvironmentItem | null =
     offered.find((e) => e.name === envName) ?? offered.find((e) => e.name === envs?.default) ?? offered[0] ?? null;
   const entry = catalog?.items.find((e) => e.name === entryName) ?? null;
+  const fromEntry = catalog?.items.find((e) => e.name === fromName) ?? null;
   // Profile: the entry's, then the environment's, each when the pipeline has it (§4.7.1, §4.8.1)
   const wanted = chosen && engine ? chosen.profiles[engine] : null;
   const inPipeline = !!wanted && !!loaded?.profiles.includes(wanted);
@@ -247,7 +251,8 @@ export function LaunchPage({
     setEngine(null);
     setErrors({});
     setEntryName(null); // the picker goes back to None, and the entry's prefill is forgotten
-    setFromEntry(null);
+    setFromName(null);
+    setParamsFile(null);
   }
 
   /** An entry chosen in the picker only fills the form; Load inspects it. None keeps the fields. */
@@ -256,7 +261,6 @@ export function LaunchPage({
     if (!found) {
       if (picked === null) setPicked(profile); // the profile shown stays
       setEntryName(null);
-      setFromEntry(null);
       return;
     }
     edit(setLocation, found.location);
@@ -298,7 +302,8 @@ export function LaunchPage({
       const found = await inspect(where, isRepo ? rev.trim() : null, controller.signal, from?.params_file);
       setLoaded(found);
       setTried(false);
-      setFromEntry(from);
+      setFromName(from?.name ?? null);
+      setParamsFile(from ? found.params_file : null);
       if (copy) {
         // the run's engine, profile and values, in the form's shape for that engine
         const { engine: was } = copy.template.workflow;
@@ -436,13 +441,12 @@ export function LaunchPage({
       ? { outdir: `Warning: same as ${prefill.name}. Change it to keep the two runs' results apart.` }
       : {};
   const missing = reasons();
-  const paramsFile = fromEntry ? loaded?.params_file : null;
   const warnings: Reason[] = notes.outdir && prefill ? [{ text: `Warning, not a blocker: outdir is the same as ${prefill.name}`, to: "params.outdir" }] : [];
   // what in the params file, or the file itself, loads code (SEC-PRE-FU87-01): warnings, not blockers
   for (const c of paramsFile?.code_loading ?? []) {
     const others = c.writable_by_others ? " · writable by others" : "";
     if (c.field === "params_file") {
-      if (c.writable_by_others) warnings.push({ text: `Warning, not a blocker: ${paramsFile!.path} is writable by others` });
+      warnings.push({ text: `Warning, not a blocker: ${paramsFile!.path} loads code or configuration${others}` });
     } else if (c.field.startsWith("params.")) {
       warnings.push({ text: `Warning, not a blocker: ${paramsFile!.path} sets ${c.field.slice(7)}: ${c.value}${others}` });
     } else warnings.push({ text: `Warning, not a blocker: ${loadingLabel(c.field)} ${c.value} loads code or configuration${others}` });
@@ -633,7 +637,7 @@ export function LaunchPage({
                   entry={fromEntry}
                   pipeline={loaded.name}
                   draft={{ engine: engine ?? "nextflow", location: loaded.location, revision: loaded.revision ?? "", profile, params_file: "" }}
-                  onSaved={(item) => void loadCatalog().then(() => (setEntryName(item.name), setFromEntry(item)))}
+                  onSaved={(item) => void loadCatalog().then(() => (setEntryName(item.name), setFromName(item.name)))}
                 />
               </Paper>
             )}
