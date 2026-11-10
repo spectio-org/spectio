@@ -248,6 +248,9 @@ export function HomePage() {
             </div>
             <div className="sp-runs">
               <FoldSection id="home-pipelines" screen="home" icon={ICONS.route} title="Your pipelines" summary={`${pipelines.length} directories`} card>
+                <Link to="/catalog" className="sp-link sp-link-end">
+                  Your catalog <Icon path={ICONS.arrowRight} size={14} />
+                </Link>
                 <p className="sp-muted">Pipeline directories of your recent runs: open one in Launch.</p>
                 <ul className="sp-quick">
                   {pipelines.map((run) => (

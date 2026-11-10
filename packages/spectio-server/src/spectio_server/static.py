@@ -2,8 +2,9 @@
 
 Only the screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}`, the report viewer
 `/runs/{run_id}/report`, the results browser `/runs/{run_id}/results` and the Environments pages
-`/environments`, `/environments/new`, `/environments/{name}`, FU-P3-86f) answer `index.html`
-(to `GET` and `HEAD`), and
+`/environments`, `/environments/new`, `/environments/{name}`, FU-P3-86f; the Catalog pages
+`/catalog`, `/catalog/new`, `/catalog/{name}`, FU-P3-87d) answer `index.html` (to `GET` and
+`HEAD`), and
 only `/assets/<name>` answers a file: one plain name, a known web type, opened under `dist`
 with `O_NOFOLLOW` at each step, so no symlink is followed and no path leaves the directory.
 Hashed assets are cached for a year, `index.html` is revalidated, and every answer carries a
@@ -83,6 +84,9 @@ ROUTES = (
     "/environments",
     "/environments/new",
     "/environments/{name}",
+    "/catalog",
+    "/catalog/new",
+    "/catalog/{name}",
 )
 ASSET = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,199}")
 TYPES = {

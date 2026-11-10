@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useMemo } from "react";
 import type { WorkRoot } from "./api";
+import { CatalogEntryPage, CatalogPage } from "./catalog/CatalogPage";
 import { EnvironmentPage, EnvironmentsPage } from "./environments/EnvironmentsPage";
 import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
@@ -25,7 +26,7 @@ import { AppShell } from "./shell/AppShell";
 // run detail (P1 Task 20), and the launch form (Task 19); and the report viewer (Task 31) and the
 // results browser (Task 32), and the preview of one results file (FU-P3-85c); the same two on a
 // Nextflow attempt's work directory (FU-P3-85e), which need `task` and `attempt`; and the
-// Environments list and form (FU-P3-86f).
+// Environments list and form (FU-P3-86f); the Catalog list and form (FU-P3-87d).
 
 /** `/launch?location=<pipeline>`: Launch opens on that pipeline (Home's pipeline links);
  * `/launch?from=<run ID>`: Copy to a new launch, prefilled from that run. */
@@ -111,6 +112,11 @@ function EnvironmentRoute() {
   return <EnvironmentPage key={name} name={name} />;
 }
 
+function CatalogEntryRoute() {
+  const { name } = useParams({ from: "/catalog/$name" });
+  return <CatalogEntryPage key={name} name={name} />;
+}
+
 function NotFoundRoute() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return <NotFound run={pathname.startsWith("/runs/")} />;
@@ -130,6 +136,9 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/environments", component: EnvironmentsPage }),
   createRoute({ getParentRoute: () => root, path: "/environments/new", component: NewEnvironmentRoute, validateSearch: envSearch }),
   createRoute({ getParentRoute: () => root, path: "/environments/$name", component: EnvironmentRoute }),
+  createRoute({ getParentRoute: () => root, path: "/catalog", component: CatalogPage }),
+  createRoute({ getParentRoute: () => root, path: "/catalog/new", component: () => <CatalogEntryPage name={null} /> }),
+  createRoute({ getParentRoute: () => root, path: "/catalog/$name", component: CatalogEntryRoute }),
 ];
 
 const routeTree = root.addChildren(routes);

@@ -107,6 +107,14 @@ def test_environments_pages_are_screens(web: TestClient) -> None:
         assert r.text == INDEX
 
 
+def test_catalog_pages_are_screens(web: TestClient) -> None:
+    """The Catalog list and form answer the screens (ui-spec §4.7.1, FU-P3-87d)."""
+    for path in ("/catalog", "/catalog/new", "/catalog/rnaseq-test"):
+        r = web.get(path)
+        assert r.status_code == 200, path
+        assert r.text == INDEX
+
+
 def test_workdir_pages_are_screens(web: TestClient) -> None:
     """The work directory's folder and file pages answer the screens (ui-spec §4.4.1,
     FU-P3-85e)."""
