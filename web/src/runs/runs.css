@@ -1682,9 +1682,24 @@
   background: repeating-linear-gradient(135deg, var(--sp-surface-sunken) 0 3px, var(--sp-line-border) 3px 5px);
 }
 .sp-checkpoint {
-  display: block;
+  /* a light mark, not a filled chip (FU-P3-88a) */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--sp-text-muted);
+}
+.sp-table .sp-checkpoint,
+.sp-row-card .sp-checkpoint {
+  display: flex;
   width: max-content;
   margin-top: 3px;
+}
+.sp-log-tail[data-opens] {
+  cursor: pointer;
+}
+.sp-logs-back {
+  align-self: flex-start;
 }
 .sp-state-cell {
   max-width: 190px;

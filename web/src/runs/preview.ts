@@ -57,6 +57,7 @@ export const hasLevels = (name: string) => /\.(log|out|err)$/i.test(name);
 export const KIB = 1024;
 export const MIB = 1024 * KIB;
 export const READ = 64 * KIB; // one read (api §5.3: the default tail, and Load more's step)
+export const REPORT_MAX = 1024 * MIB; // the report viewer's cap: the raw route's `MAX_RAW` (api/results.py)
 export const SHOWN_MAX = MIB; // the most text shown, and the table's and JSON's one read
 export const IMAGE_MAX = 20 * MIB;
 export const SVG_MAX = 5 * MIB;

@@ -13,6 +13,7 @@ import {
   KIB,
   type Kind,
   READ,
+  REPORT_MAX,
   ROWS_MAX,
   SHOWN_MAX,
   SVG_MAX,
@@ -551,7 +552,7 @@ function Binary({ id, file }: { id: string; file: ResultStat }) {
   return <Note title="This file is not text. Download it to open it." actions={<DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />} />;
 }
 
-function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind: Kind; retry: () => void }) {
+function Viewer({ id, file, kind, retry, search }: { id: string; file: ResultStat; kind: Kind; retry: () => void; search: ResultsSearch }) {
   const work = useContext(Work);
   const download = <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />;
   switch (kind) {
@@ -559,10 +560,15 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
       return <Binary id={id} file={file} />;
     case "pdf":
       return <Note title="Spectio does not open PDF files. Download it to open it." actions={download} />;
-    case "html":
-      return work ? (
-        <Note title="Spectio does not open HTML from a work directory. Download it to open it." actions={download} />
-      ) : (
+    case "html": {
+      if (work) return <Note title="Spectio does not open HTML from a work directory. Download it to open it." actions={download} />;
+      const { sort, q, task, attempt } = search;
+      if (search.view === "text") return <TextView id={id} file={file} levels={false} retry={retry} />;
+      // the report viewer, as from the folder (FU-P3-88a); past its cap, Download; from a job's
+      // Outputs, a link, so the back link still returns to the sheet
+      if ((file.size ?? 0) > REPORT_MAX) return <Note title="Too large for the report viewer (over 1 GiB). Download it to open it." actions={download} />;
+      if (!task || !attempt) return <Navigate to="/runs/$id/report" params={{ id }} search={{ path: file.path, from: "results", sort, q }} replace />;
+      return (
         <Note
           title="An HTML report opens in Spectio's report viewer."
           actions={
@@ -572,6 +578,7 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
           }
         />
       );
+    }
     case "image":
       return <ImageView id={id} file={file} />;
     case "tiff":
@@ -702,7 +709,7 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
         ) : file.type === "link_outside" ? (
           <Note title={work ? "A link outside the run: not followed." : "A link outside the results directory: not followed."} />
         ) : (
-          <Viewer id={id} file={file} kind={kind} retry={retry} />
+          <Viewer id={id} file={file} kind={kind} retry={retry} search={search} />
         )}
       </div>
     </Work.Provider>
