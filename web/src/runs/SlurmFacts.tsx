@@ -20,6 +20,7 @@ const REASONS: Record<NonNullable<Efficiency["reason"]>, string> = {
   no_job_id: "no SLURM job ID",
   not_found: "not in SLURM accounting",
   cached: "reused from an earlier run, no job ran",
+  max_query_time_range: "the window is over the site's sacct limit (MaxQueryTimeRange)",
 };
 
 const memory = (r: SlurmRequest): string | null =>
