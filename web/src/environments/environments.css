@@ -112,6 +112,9 @@
   color: var(--sp-text-primary);
   font-size: 14px;
 }
+.sp-env-table tr[data-default] th[scope="row"] {
+  box-shadow: inset 3px 0 0 var(--sp-section-environments);
+}
 .sp-env-table th[scope="row"]:focus-visible {
   outline: 2px solid var(--sp-line-focus);
   outline-offset: -2px;
