@@ -8,7 +8,8 @@ path parts only. A repository is fetched once per revision into
 `<data dir>/pipelines/<host>/<path…>/<revision>/`, by `git` run as an argument list with
 `-c protocol.allow=never` and only the allowed transports turned back on; a commit is fetched
 then checked out. Neither a location nor a revision may hold a control character
-(SEC-P3T09-R5-05), and a revision never starts with `-` (G5).
+(SEC-P3T09-R5-05), and a revision never starts with `-` (G5). Those checks live in
+`spectio.locations`, shared with the catalog file (SEC-PRE-FU87-02).
 
 Inspect reads the directory, never runs it: the engine files present (`main.nf`, `Snakefile`,
 `workflow/Snakefile`), the engine they point to (none for both or neither), the Nextflow
@@ -26,17 +27,17 @@ import stat
 import subprocess
 import threading
 import time
-import unicodedata
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
 
 import yaml
 from fastapi import APIRouter, Request
 
+from spectio import locations
 from spectio.config import Settings
 from spectio.runner.engines import EngineError, check_engine
 from spectio.runner.rundir import private_dir
@@ -44,17 +45,11 @@ from spectio_server.api.problems import Invalid
 
 router = APIRouter()
 
-GIT_SCHEMES: tuple[str, ...] = ("https", "ssh")  # api §5; a test adds "file" for a local repo
+GIT_SCHEMES = locations.GIT_SCHEMES  # api §5; a test adds "file" for a local repo
 GIT_TIMEOUT_S = 300
 VERSIONS_TTL_S = 300.0  # how long the engines' versions are kept (FU-P3-109)
 VERSIONS_FAILED_TTL_S = 10.0  # the same, when an engine was not found (CR-P3FU109-03)
-MAX_LOCATION = 4096  # characters (FU-P3-17)
-GITHUB = "https://github.com"
-SHORT_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_][A-Za-z0-9._-]{0,99}")
-URL_CHARS = re.compile(r"[A-Za-z0-9._~:/@+-]+")  # no space, quote, `%`, `?`, `#` or backslash
-HOST = re.compile(r"[a-z0-9]([a-z0-9.-]{0,252}[a-z0-9])?")
-PART = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,99}")  # never "", "." or ".."
-REVISION = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._/-]{0,199}")  # never an option, never a path
+MAX_LOCATION = locations.MAX_LOCATION
 COMMIT = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 # What a fetch failure says when the revision, not the repository, is wrong.
 NO_REVISION = re.compile(r"Remote branch .* not found|couldn't find remote ref|not our ref", re.I)
@@ -90,61 +85,33 @@ class Found:
     schema_source: SchemaSource
 
 
+@contextlib.contextmanager
+def _as_invalid(field: str) -> Iterator[None]:
+    """A ValueError of `spectio.locations`, as `Invalid` for `field`."""
+    try:
+        yield
+    except ValueError as exc:
+        raise Invalid(field, str(exc)) from None
+
+
 def refuse_control(field: str, value: str) -> None:
-    """Control characters, and the format and separator ones (Cf, Zl, Zp: bidi overrides,
-    zero-width spaces, line separators) that hide or reorder text (FU-P3-17)."""
-    if any(
-        ord(c) < 32 or 127 <= ord(c) < 160 or unicodedata.category(c) in ("Cf", "Zl", "Zp")
-        for c in value
-    ):
-        raise Invalid(field, "must not hold control, format or separator characters")
+    """`locations.refuse_control`, raising Invalid (field `field`)."""
+    with _as_invalid(field):
+        locations.refuse_control(value)
 
 
 # --- Locations -------------------------------------------------------------------------------
 
 
 def git_url(location: str) -> tuple[str, tuple[str, ...]]:
-    """The URL of a Git location under the import rule of api §5, and the parts of the directory
-    it is fetched into (`host`, then the path). Raises Invalid (field `location`)."""
-    if SHORT_NAME.fullmatch(location):
-        location = f"{GITHUB}/{location}"
-    url = urlsplit(location)
-    if url.scheme not in GIT_SCHEMES or not location.startswith(f"{url.scheme}://"):
-        allowed = ", ".join(f"{s}://" for s in GIT_SCHEMES)
-        raise Invalid("location", f"give an absolute path, an owner/repo name or a URL ({allowed})")
-    if not URL_CHARS.fullmatch(location):
-        raise Invalid("location", "the URL holds a character Spectio does not accept")
-    try:
-        host, user, password = url.hostname or "", url.username, url.password
-        url.port  # noqa: B018 - raises ValueError on a bad port
-    except ValueError as exc:
-        raise Invalid("location", f"not a URL: {exc}") from None
-    if password is not None or (user is not None and url.scheme != "ssh"):
-        raise Invalid("location", "credentials do not belong in the URL")
-    if url.scheme == "file":
-        if host not in ("", "localhost"):
-            raise Invalid("location", "a file:// URL names no host")
-        host = "local"
-    elif not HOST.fullmatch(host):
-        raise Invalid("location", "the URL names no valid host")
-    parts = url.path.strip("/").split("/")
-    parts[-1] = parts[-1].removesuffix(".git")
-    if len(parts) > 20 or not all(PART.fullmatch(p) for p in parts):
-        raise Invalid("location", "the URL's path must be plain names: no '.', '..' or ''")
-    return location, (host, *parts)
+    """`locations.git_url` under GIT_SCHEMES, raising Invalid (field `location`)."""
+    with _as_invalid("location"):
+        return locations.git_url(location, GIT_SCHEMES)
 
 
 def check_revision(revision: str | None) -> str:
-    if not revision:
-        raise Invalid("revision", "a Git repository needs a revision: a tag, a branch or a commit")
-    refuse_control("revision", revision)
-    if not REVISION.fullmatch(revision) or ".." in revision or revision.endswith("/"):
-        raise Invalid(
-            "revision",
-            "a tag, a branch or a commit: letters, digits, '.', '_', '-' and '/', "
-            "never starting with '-'",
-        )
-    return revision
+    with _as_invalid("revision"):
+        return locations.check_revision(revision)
 
 
 def resolve(data_dir: Path, location: str, revision: str | None) -> Resolved:
