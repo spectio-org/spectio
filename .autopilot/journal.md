@@ -846,3 +846,10 @@ Orchestrator session session_01MF8RxQASDmXaFjVA49aybZ. Lean helpers: p3-lean per
 **Costs** (subagent tokens): 106b ~383k, 87b ~425k, 87c ~486k + ux-reviewer ~115k, 102e ~596k + docs ~72k, 87d ~485k, 102f ~375k, B12 ~836k.
 
 **In flight:** 87d (#228), 102f. **Next:** promote B12, then the login1 retest; batch B13 (87a, 106b, 87b, 87c, 102e).
+
+## 2026-11-10 — FU-P3-104 hand-off: FU-P3-104b after FU-P3-101a
+
+FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and the bare links of the run's pages. Three items of the login1 retest of 2026-11-09 wait for FU-P3-101a, which replaces the preview table and changes `web/src/runs/FilePreview.tsx`. They are follow-up **FU-P3-104b**, to start once FU-P3-101a has merged (CR-P3FU104-02; ui-spec §4.4.1, status note of 2026-11-10):
+- the table's caption: already the table's first child, so check it on screen inside the sticky scroll region;
+- Browse folder, on the preview page: takes `.sp-text-link`;
+- Open it in the report viewer, on the preview page: takes `.sp-text-link`.
