@@ -11,10 +11,10 @@ from typing import Any
 
 from sqlalchemy import Connection, insert, null, select
 
-from spectio.environments import run_column
+from spectio.environments import DefaultResources, run_column
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import RunManifest, run_paths
-from spectio_server.api.extras import DefaultResources, KeptConfig, column
+from spectio_server.api.extras import KeptConfig, column
 from spectio_server.files.results import results_dir
 from spectio_server.ids import new_id
 from spectio_server.store.schema import (
