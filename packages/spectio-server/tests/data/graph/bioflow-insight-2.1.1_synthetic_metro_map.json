@@ -1,0 +1,122 @@
+{
+    "nodes": [
+        {
+            "id": ".ALIGN",
+            "name": "ALIGN",
+            "position": {
+                "x": "331.20000000000005",
+                "y": "28.8"
+            },
+            "code": "process ALIGN {\n    tag \"${chunk.baseName}\"\n    label 'align'\n    input:  tuple val(sample), path(chunk)\n    output: path(\"${chunk.baseName}.counts.tsv\")\n    when:   task.ext.when == null || task.ext.when\n    script:\n    \"\"\"\n    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'\n    ${failHook('ALIGN', sample)}\n    synth.py align ${chunk} ${chunk.baseName}.counts.tsv\n    \"\"\"\n}",
+            "file_ref": "(main.nf)"
+        },
+        {
+            "id": ".COMPARE",
+            "name": "COMPARE",
+            "position": {
+                "x": "619.2",
+                "y": "28.8"
+            },
+            "code": "process COMPARE {\n    tag \"${group_b}_vs_ctrl\"\n    label 'quant'\n    publishDir \"${params.outdir}/quant/comparisons\", mode: 'copy'\n    input:  tuple val(group_b), val(samples_b), val(samples_ctrl), path(matrix)\n    output: path(\"${group_b}_vs_ctrl.tsv\")\n    when:   task.ext.when == null || task.ext.when\n    script:\n    \"\"\"\n    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'\n    ${failHook('COMPARE', group_b)}\n    synth.py compare ${matrix} ${samples_b.join(',')} ${samples_ctrl.join(',')} ${group_b}_vs_ctrl.tsv\n    \"\"\"\n}",
+            "file_ref": "(main.nf)"
+        },
+        {
+            "id": ".FINAL_REPORT",
+            "name": "FINAL_REPORT",
+            "position": {
+                "x": "763.2",
+                "y": "28.8"
+            },
+            "code": "process FINAL_REPORT {\n    label 'quant'\n    publishDir \"${params.outdir}\", mode: 'copy'\n    input:  path(tables)\n    output: path(\"final_report.html\")\n    when:   task.ext.when == null || task.ext.when\n    script:\n    \"\"\"\n    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'\n    ${failHook('FINAL_REPORT', '')}\n    { echo '<!doctype html><title>Final report</title><h1>Comparisons</h1><pre>'; cat ${tables}; echo '</pre>'; } > final_report.html\n    \"\"\"\n}",
+            "file_ref": "(main.nf)"
+        },
+        {
+            "id": ".MAKE_READS",
+            "name": "MAKE_READS",
+            "position": {
+                "x": "43.2",
+                "y": "72.0"
+            },
+            "code": "process MAKE_READS {\n    tag \"$sample\"\n    label 'qc'\n    input:  tuple val(sample), val(group), val(n_reads)\n    output: tuple val(sample), val(group), path(\"${sample}.reads.txt\")\n    when:   task.ext.when == null || task.ext.when\n    script:\n    \"\"\"\n    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'\n    ${failHook('MAKE_READS', sample)}\n    synth.py reads ${sample} ${n_reads} ${params.seed} ${sample}.reads.txt\n    \"\"\"\n}",
+            "file_ref": "(main.nf)"
+        },
+        {
+            "id": ".MERGE",
+            "name": "MERGE",
+            "position": {
+                "x": "475.20000000000005",
+                "y": "28.8"
+            },
+            "code": "process MERGE {\n    label 'quant'\n    publishDir \"${params.outdir}/quant\", mode: 'copy'\n    input:  path(counts)\n    output: path(\"counts_matrix.tsv\")\n    when:   task.ext.when == null || task.ext.when\n    script:\n    \"\"\"\n    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'\n    ${failHook('MERGE', '')}\n    synth.py merge counts_matrix.tsv ${counts}\n    \"\"\"\n}",
+            "file_ref": "(main.nf)"
+        },
+        {
+            "id": ".QC_REPORT",
+            "name": "QC_REPORT",
+            "position": {
+                "x": "331.20000000000005",
+                "y": "115.2"
+            },
+            "code": "process QC_REPORT {\n    label 'qc'\n    publishDir \"${params.outdir}/multiqc\", mode: 'copy'\n    input:  path(jsons)\n    output: path(\"general_stats.tsv\"), emit: tsv\n            path(\"multiqc_data.json\"), emit: json\n            path(\"multiqc_report.html\"), emit: html\n    when:   task.ext.when == null || task.ext.when\n    script:\n    \"\"\"\n    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'\n    ${failHook('QC_REPORT', '')}\n    synth.py report general_stats.tsv multiqc_data.json multiqc_report.html ${jsons}\n    \"\"\"\n}",
+            "file_ref": "(main.nf)"
+        },
+        {
+            "id": ".QC_STATS",
+            "name": "QC_STATS",
+            "position": {
+                "x": "187.20000000000002",
+                "y": "115.2"
+            },
+            "code": "process QC_STATS {\n    tag \"$sample\"\n    label 'qc'\n    publishDir \"${params.outdir}/qc/per_sample\", mode: 'copy'\n    input:  tuple val(sample), val(group), path(reads)\n    output: path(\"${sample}.qc.json\")\n    when:   task.ext.when == null || task.ext.when\n    script:\n    \"\"\"\n    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'\n    ${failHook('QC_STATS', sample)}\n    synth.py stats ${reads} ${sample}.qc.json\n    \"\"\"\n}",
+            "file_ref": "(main.nf)"
+        },
+        {
+            "id": ".SPLIT",
+            "name": "SPLIT",
+            "position": {
+                "x": "187.20000000000002",
+                "y": "28.8"
+            },
+            "code": "process SPLIT {\n    tag \"$sample\"\n    label 'align'\n    input:  tuple val(sample), val(group), path(reads)\n    output: tuple val(sample), path(\"chunks/*.txt\")\n    when:   task.ext.when == null || task.ext.when\n    script:\n    // params from the command line arrive as strings: \"0\" must mean dynamic, not one chunk\n    def n = (params.chunks as int) > 0 ? params.chunks : \"\\$(( (\\$(wc -l < ${reads}) + 99) / 100 ))\"\n    \"\"\"\n    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'\n    ${failHook('SPLIT', sample)}\n    synth.py split ${reads} ${n} chunks\n    \"\"\"\n}",
+            "file_ref": "(main.nf)"
+        }
+    ],
+    "edges": [
+        {
+            "A": ".ALIGN",
+            "B": ".MERGE",
+            "id": ".ALIGN -> .MERGE"
+        },
+        {
+            "A": ".COMPARE",
+            "B": ".FINAL_REPORT",
+            "id": ".COMPARE -> .FINAL_REPORT"
+        },
+        {
+            "A": ".MAKE_READS",
+            "B": ".QC_STATS",
+            "id": ".MAKE_READS -> .QC_STATS"
+        },
+        {
+            "A": ".MAKE_READS",
+            "B": ".SPLIT",
+            "id": ".MAKE_READS -> .SPLIT"
+        },
+        {
+            "A": ".MERGE",
+            "B": ".COMPARE",
+            "id": ".MERGE -> .COMPARE"
+        },
+        {
+            "A": ".QC_STATS",
+            "B": ".QC_REPORT",
+            "id": ".QC_STATS -> .QC_REPORT"
+        },
+        {
+            "A": ".SPLIT",
+            "B": ".ALIGN",
+            "id": ".SPLIT -> .ALIGN"
+        }
+    ],
+    "subworkflows": {}
+}

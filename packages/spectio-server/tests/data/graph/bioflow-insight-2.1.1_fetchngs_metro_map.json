@@ -1,0 +1,328 @@
+{
+    "nodes": [
+        {
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "name": "ASPERA_CLI",
+            "condition": "!skip_fastq_download",
+            "position": {
+                "x": "513.6",
+                "y": "163.20000000000002"
+            },
+            "code": "process ASPERA_CLI {\n    tag \"${meta.id}\"\n    label 'process_medium'\n\n    conda \"${moduleDir}/environment.yml\"\n\n    container \"${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container\n        ? 'https_link_depot.galaxyproject.org/singularity/aspera-cli:4.20.0--hdfd78af_0'\n        : 'biocontainers/aspera-cli:4.20.0--hdfd78af_0'}\"\n\n    input:\n    tuple val(meta), val(fastq)\n    val user\n\n    output:\n    tuple val(meta), path(\"*fastq.gz\"), emit: fastq\n    tuple val(meta), path(\"*md5\"), emit: md5\n    tuple val(\"${task.process}\"), val('aspera_cli'), eval('gem list aspera-cli | grep -o \"[0-9][0-9.]*\"'), emit: versions_aspera_cli, topic: versions\n\n    script:\n    def args = task.ext.args ?: ''\n    if (meta.single_end) {\n        \"\"\"\n        export GEM_HOME=\"\\${GEM_HOME:-/usr/local/share/rubygems}\"\n        if [ ! -w \"\\${HOME:-/}\" ]; then\n            export HOME=\\$(mktemp -d)\n        fi\n        if [ ! -d \"\\${HOME}/.aspera/sdk\" ]; then\n            ascli conf ascp install 1>&2\n        fi\n        ASCP=\\$(find \"\\${HOME}/.aspera/sdk\" -name \"ascp\" -type f | head -1)\n        BYPASS_KEY=\"${moduleDir}/assets/aspera_bypass_rsa.pem\"\n\n        \"\\$ASCP\"  ${args}  -i \"\\$BYPASS_KEY\"  ${user}@${fastq[0]}  ${meta.id}.fastq.gz\n\n        echo \"${meta.md5_1}  ${meta.id}.fastq.gz\" > ${meta.id}.fastq.gz.md5\n        md5sum -c ${meta.id}.fastq.gz.md5\n        \"\"\"\n    }\n    else {\n        \"\"\"\n        export GEM_HOME=\"\\${GEM_HOME:-/usr/local/share/rubygems}\"\n        if [ ! -w \"\\${HOME:-/}\" ]; then\n            export HOME=\\$(mktemp -d)\n        fi\n        if [ ! -d \"\\${HOME}/.aspera/sdk\" ]; then\n            ascli conf ascp install 1>&2\n        fi\n        ASCP=\\$(find \"\\${HOME}/.aspera/sdk\" -name \"ascp\" -type f | head -1)\n        BYPASS_KEY=\"${moduleDir}/assets/aspera_bypass_rsa.pem\"\n\n        \"\\$ASCP\"  ${args}  -i \"\\$BYPASS_KEY\"  ${user}@${fastq[0]}  ${meta.id}_1.fastq.gz\n\n        echo \"${meta.md5_1}  ${meta.id}_1.fastq.gz\" > ${meta.id}_1.fastq.gz.md5\n        md5sum -c ${meta.id}_1.fastq.gz.md5\n\n        \"\\$ASCP\"  ${args}  -i \"\\$BYPASS_KEY\"  ${user}@${fastq[1]}  ${meta.id}_2.fastq.gz\n\n        echo \"${meta.md5_2}  ${meta.id}_2.fastq.gz\" > ${meta.id}_2.fastq.gz.md5\n        md5sum -c ${meta.id}_2.fastq.gz.md5\n        \"\"\"\n    }\n\n    stub:\n    if (meta.single_end) {\n        \"\"\"\n        echo | gzip > ${meta.id}.fastq.gz\n        touch ${meta.id}.fastq.gz.md5\n        \"\"\"\n    }\n    else {\n        \"\"\"\n        echo | gzip > ${meta.id}_1.fastq.gz\n        echo | gzip > ${meta.id}_2.fastq.gz\n        touch ${meta.id}_1.fastq.gz.md5\n        touch ${meta.id}_2.fastq.gz.md5\n        \"\"\"\n    }\n}",
+            "file_ref": "(modules/local/aspera_cli/main.nf)"
+        },
+        {
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "name": "FASTQDL",
+            "condition": "!skip_fastq_download",
+            "position": {
+                "x": "657.6",
+                "y": "99.2"
+            },
+            "code": "process FASTQDL {\n    tag \"$meta.id\"\n    label 'process_medium'\n\n    conda \"${moduleDir}/environment.yml\"\n    container \"${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?\n        'https_link_community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/f6/f6a69a81750a1808471528b20358f5f03b555d0333d622e2f3e47e33700a6718/data':\n        'community.wave.seqera.io/library/fastq-dl:4.0.1--fd5420f75c055a44' }\"\n\n    input:\n    tuple val(meta), val(accession)\n\n    output:\n    tuple val(meta), path(\"*.fastq.gz\")       , emit: fastq\n    tuple val(meta), path(\"*-run-info.tsv\")   , emit: runinfo\n    tuple val(meta), path(\"*-run-mergers.tsv\"), emit: runmergers, optional: true\n    tuple val(\"${task.process}\"), val('fastq-dl'), eval('fastq-dl --version |& sed \"s/.* //\"'), emit: versions_fastqdl, topic: versions\n\n\n    when:\n    task.ext.when == null $OR$ task.ext.when\n\n    script:\n    def args = task.ext.args ?: ''\n    def prefix = task.ext.prefix ?: \"${meta.id}\"\n    \"\"\"\n    fastq-dl  ${args}  --prefix ${prefix}  --accession ${accession}  --cpus ${task.cpus}  --outdir .\n    \"\"\"\n\n    stub:\n    def prefix = task.ext.prefix ?: \"${meta.id}\"\n    \"\"\"\n    echo \"\" | gzip > ${accession}.fastq.gz\n    echo \"\" | gzip > ${accession}_1.fastq.gz\n    echo \"\" | gzip > ${accession}_2.fastq.gz\n    touch ${prefix}-run-info.tsv\n    \"\"\"\n}",
+            "file_ref": "(modules/nf-core/fastqdl/main.nf)"
+        },
+        {
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+            "name": "CUSTOM_SRATOOLSNCBISETTINGS",
+            "condition": "!skip_fastq_download",
+            "position": {
+                "x": "513.6",
+                "y": "313.6"
+            },
+            "code": "process CUSTOM_SRATOOLSNCBISETTINGS {\n    tag 'ncbi-settings'\n    label 'process_low'\n\n    conda \"${moduleDir}/environment.yml\"\n    container \"${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?\n        'https_link_depot.galaxyproject.org/singularity/sra-tools:3.2.1--h4304569_1' :\n        'quay.io/biocontainers/sra-tools:3.2.1--h4304569_1' }\"\n\n    input:\n    val ids\n\n    output:\n    path('*.mkfg'), emit: ncbi_settings\n    tuple val(\"${task.process}\"), val('sratools'), eval(\"prefetch --version 2>&1 | grep -Eo '[0-9.]+'\"), topic: versions, emit: versions_sratools\n\n    when:\n    task.ext.when == null $OR$ task.ext.when\n\n    script:\n    config = \"/LIBS/GUID = \\$double_bar$\"${UUID.randomUUID().toString()}\\$double_bar$\"\\\\n/libs/cloud/report_instance_identity = \\$double_bar$\"true\\$double_bar$\"\\\\n\"\n\n    \"\"\"\n    echo ${config}\n    \"\"\"\n\n    template \"detect_ncbi_settings.sh\"\n\n    stub:\n    \"\"\"\n    touch user-settings.mkfg\n    \"\"\"\n}",
+            "file_ref": "(modules/nf-core/custom/sratoolsncbisettings/main.nf)"
+        },
+        {
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP",
+            "name": "SRATOOLS_FASTERQDUMP",
+            "condition": "!skip_fastq_download",
+            "position": {
+                "x": "801.6",
+                "y": "281.6"
+            },
+            "code": "process SRATOOLS_FASTERQDUMP {\n    tag \"$meta.id\"\n    label 'process_medium'\n\n    conda \"${moduleDir}/environment.yml\"\n    container \"${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?\n        'https_link_community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/37/37aacd127aa32161d8b38a83efb18df01a8ab1d769a93e88f80342d27801b548/data' :\n        'community.wave.seqera.io/library/sra-tools_pigz:4a694d823f6f7fcf' }\"\n\n    input:\n    tuple val(meta), path(sra)\n    path ncbi_settings\n    path certificate\n\n    output:\n    tuple val(meta), path('*.fastq.gz'), emit: reads\n    tuple val(\"${task.process}\"), val('sratools'), eval(\"prefetch --version 2>&1 | grep -Eo '[0-9.]+'\"), topic: versions, emit: versions_sratools\n    tuple val(\"${task.process}\"), val('pigz'), eval(\"pigz --version 2>&1 | sed 's/pigz //g'\"), topic: versions, emit: versions_pigz\n\n    when:\n    task.ext.when == null $OR$ task.ext.when\n\n    script:\n    def args = task.ext.args ?: ''\n    def args2 = task.ext.args2 ?: ''\n    def prefix = task.ext.prefix ?: \"${meta.id}\"\n    def outfile = \"${prefix}.fastq\"\n    def exclude_third = meta.single_end ? '' : \"mv $outfile $prefix $OR$ echo 'No third file'\"\n    \n    \n    def key_file = ''\n    if (certificate.toString().endsWith('.jwt')) {\n        key_file += \" --perm ${certificate}\"\n    } else if (certificate.toString().endsWith('.ngc')) {\n        key_file += \" --ngc ${certificate}\"\n    }\n    \"\"\"\n    export NCBI_SETTINGS=\"\\$PWD/${ncbi_settings}\"\n\n    fasterq-dump  $args  --threads $task.cpus  --outfile $outfile  ${key_file}  ${sra}\n\n    $exclude_third\n\n    pigz  $args2  --no-name  --processes $task.cpus  *.fastq\n    \"\"\"\n\n    stub:\n    def args = task.ext.args ?: ''\n    def args2 = task.ext.args2 ?: ''\n    def prefix = task.ext.prefix ?: \"${meta.id}\"\n    def outfile = \"${prefix}.fastq\"\n    def exclude_third = meta.single_end ? '' : \"mv $outfile $prefix $OR$ echo 'No third file'\"\n    \n    \n    def key_file = ''\n    if (certificate.toString().endsWith('.jwt')) {\n        key_file += \" --perm ${certificate}\"\n    } else if (certificate.toString().endsWith('.ngc')) {\n        key_file += \" --ngc ${certificate}\"\n    }\n    def touch_outfiles = meta.single_end ? \"${prefix}.fastq\" : \"${prefix}_1.fastq ${prefix}_2.fastq\"\n    \"\"\"\n    touch $touch_outfiles\n\n    export NCBI_SETTINGS=\"\\$PWD/${ncbi_settings}\"\n\n    echo  \"fasterq-dump  $args  --threads $task.cpus  --outfile $outfile  ${key_file}  ${sra}\"\n\n    $exclude_third\n\n    pigz  $args2  --no-name  --processes $task.cpus  *.fastq\n    \"\"\"\n}",
+            "file_ref": "(modules/nf-core/sratools/fasterqdump/main.nf)"
+        },
+        {
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+            "name": "SRATOOLS_PREFETCH",
+            "condition": "!skip_fastq_download",
+            "position": {
+                "x": "657.6",
+                "y": "281.6"
+            },
+            "code": "process SRATOOLS_PREFETCH {\n    tag \"$meta.id\"\n    label 'process_low'\n\n    conda \"${moduleDir}/environment.yml\"\n    container \"${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?\n        'https_link_depot.galaxyproject.org/singularity/sra-tools:3.2.1--h4304569_1' :\n        'quay.io/biocontainers/sra-tools:3.2.1--h4304569_1' }\"\n\n    input:\n    tuple val(meta), val(id)\n    path ncbi_settings\n    path certificate\n\n    output:\n    tuple val(meta), path(\"${id}\", type: 'dir'), emit: sra\n    tuple val(\"${task.process}\"), val('sratools'), eval(\"prefetch --version 2>&1 | grep -Eo '[0-9.]+'\"), topic: versions, emit: versions_sratools\n    tuple val(\"${task.process}\"), val('curl'), eval(\"curl --version | sed '1!d;s/^curl //; s/ .*//'\"), topic: versions, emit: versions_curl\n\n    when:\n    task.ext.when == null $OR$ task.ext.when\n\n    script:\n    args = task.ext.args ?: ''\n    args2 = task.ext.args2 ?: '5 1 100'  \n    def cert_arg = certificate ?\n        (certificate.name.endsWith('.jwt') ? \"--perm ${certificate}\" :\n        certificate.name.endsWith('.ngc') ? \"--ngc ${certificate}\" : '') : ''\n    final_args = \"${args} ${cert_arg}\".trim()\n\n    \"\"\"\n    echo \"${args2}\"\n    echo \"${final_args}\"\n    \"\"\"\n\n    template \"retry_with_backoff.sh\"\n\n    stub:\n    \"\"\"\n    mkdir ${id}\n    touch ${id}/${id}.sra\n    \"\"\"\n}",
+            "file_ref": "(modules/nf-core/sratools/prefetch/main.nf)"
+        },
+        {
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG",
+            "name": "MULTIQC_MAPPINGS_CONFIG",
+            "position": {
+                "x": "945.6",
+                "y": "158.4"
+            },
+            "code": "process MULTIQC_MAPPINGS_CONFIG {\n    tag \"${csv.fileName}\"\n\n    conda \"${moduleDir}/environment.yml\"\n    container \"${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container\n        ? 'https_link_depot.galaxyproject.org/singularity/python:3.9--1'\n        : 'biocontainers/python:3.9--1'}\"\n\n    input:\n    path csv\n\n    output:\n    path \"*config.yml\", emit: yml\n    tuple val(\"${task.process}\"), val('python'), eval('python --version | sed \"s/Python //g\"'), emit: versions_python, topic: versions\n\n    script:\n    \"\"\"\n    multiqc_mappings_config.py  ${csv}  multiqc_config.yml\n    \"\"\"\n\n    stub:\n    \"\"\"\n    touch multiqc_config.yml\n    \"\"\"\n}",
+            "file_ref": "(modules/local/multiqc_mappings_config/main.nf)"
+        },
+        {
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "name": "SRA_FASTQ_FTP",
+            "condition": "!skip_fastq_download",
+            "position": {
+                "x": "369.6",
+                "y": "222.4"
+            },
+            "code": "process SRA_FASTQ_FTP {\n    tag \"${meta.id}\"\n    label 'process_low'\n    label 'error_retry'\n\n    conda \"${moduleDir}/environment.yml\"\n    container \"${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container\n        ? 'https_link_community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/29/2938c24ccc7875ffddf253ead323193a509f0061884a05f43224bb25d9d85b12/data'\n        : 'community.wave.seqera.io/library/gzip_wget:041a8ba200c3fa3f'}\"\n\n    input:\n    tuple val(meta), val(fastq)\n\n    output:\n    tuple val(meta), path(\"*fastq.gz\"), emit: fastq\n    tuple val(meta), path(\"*md5\"), emit: md5\n    tuple val(\"${task.process}\"), val('wget'), eval('wget --version | head -n 1 | sed  \"s/^GNU Wget //; s\" .*\\$\"/\"'), emit: versions_wget, topic: versions\n\n    script:\n    def args = task.ext.args ?: ''\n    if (meta.single_end) {\n        \"\"\"\n        wget  ${args}  -O ${meta.id}.fastq.gz  ${fastq[0]}\n\n        echo \"${meta.md5_1}  ${meta.id}.fastq.gz\" > ${meta.id}.fastq.gz.md5\n        md5sum -c ${meta.id}.fastq.gz.md5\n        \"\"\"\n    }\n    else {\n        \"\"\"\n        wget  ${args}  -O ${meta.id}_1.fastq.gz  ${fastq[0]}\n\n        echo \"${meta.md5_1}  ${meta.id}_1.fastq.gz\" > ${meta.id}_1.fastq.gz.md5\n        md5sum -c ${meta.id}_1.fastq.gz.md5\n\n        wget  ${args}  -O ${meta.id}_2.fastq.gz  ${fastq[1]}\n\n        echo \"${meta.md5_2}  ${meta.id}_2.fastq.gz\" > ${meta.id}_2.fastq.gz.md5\n        md5sum -c ${meta.id}_2.fastq.gz.md5\n\"\"\"\n    }\n\n    stub:\n    if (meta.single_end) {\n        \"\"\"\n        echo | gzip > ${meta.id}.fastq.gz\n        touch ${meta.id}.fastq.gz.md5\n        \"\"\"\n    }\n    else {\n        \"\"\"\n        echo | gzip > ${meta.id}_1.fastq.gz\n        echo | gzip > ${meta.id}_2.fastq.gz\n        touch ${meta.id}_1.fastq.gz.md5\n        touch ${meta.id}_2.fastq.gz.md5\n        \"\"\"\n    }\n}",
+            "file_ref": "(modules/local/sra_fastq_ftp/main.nf)"
+        },
+        {
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_IDS_TO_RUNINFO",
+            "name": "SRA_IDS_TO_RUNINFO",
+            "position": {
+                "x": "81.60000000000001",
+                "y": "259.2"
+            },
+            "code": "process SRA_IDS_TO_RUNINFO {\n    tag \"${id}\"\n    label 'error_retry'\n\n    conda \"${moduleDir}/environment.yml\"\n    container \"${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container\n        ? 'https_link_depot.galaxyproject.org/singularity/python:3.9--1'\n        : 'biocontainers/python:3.9--1'}\"\n\n    input:\n    val id\n    val fields\n\n    output:\n    path \"*.tsv\", emit: tsv\n    tuple val(\"${task.process}\"), val('python'), eval('python --version | sed \"s/Python //g\"'), emit: versions_python, topic: versions\n\n    script:\n    def metadata_fields = fields ? \"--ena_metadata_fields '${fields.replaceAll('\\\\s*,\\\\s*', ',')}'\" : ''\n    \"\"\"\n    echo ${id} > id.txt\n    sra_ids_to_runinfo.py  id.txt  ${id}.runinfo.tsv  ${metadata_fields}\n    \"\"\"\n\n    stub:\n    \"\"\"\n    touch ${id}.runinfo.tsv\n    \"\"\"\n}",
+            "file_ref": "(modules/local/sra_ids_to_runinfo/main.nf)"
+        },
+        {
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+            "name": "SRA_RUNINFO_TO_FTP",
+            "position": {
+                "x": "225.60000000000002",
+                "y": "259.2"
+            },
+            "code": "process SRA_RUNINFO_TO_FTP {\n    tag \"${runinfo.toString().tokenize(\\\".\\\")[0]}\"\n\n    conda \"${moduleDir}/environment.yml\"\n\n    container \"${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container\n        ? 'https_link_depot.galaxyproject.org/singularity/python:3.9--1'\n        : 'biocontainers/python:3.9--1'}\"\n\n    input:\n    path runinfo\n\n    output:\n    path \"*.tsv\", emit: tsv\n    tuple val(\"${task.process}\"), val('python'), eval('python --version | sed \"s/Python //g\"'), emit: versions_python, topic: versions\n\n    script:\n    \"\"\"\n    sra_runinfo_to_ftp.py  ${runinfo.join(',')}  ${runinfo.toString().tokenize(\".\")[0]}.runinfo_ftp.tsv\n    \"\"\"\n\n    stub:\n    \"\"\"\n    touch ${runinfo.toString().tokenize(\".\")[0]}.runinfo_ftp.tsv\n    \"\"\"\n}",
+            "file_ref": "(modules/local/sra_runinfo_to_ftp/main.nf)"
+        }
+    ],
+    "edges": [
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG",
+            "condition": "!skip_fastq_download",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_IDS_TO_RUNINFO",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_IDS_TO_RUNINFO -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG"
+        },
+        {
+            "A": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+            "B": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+            "id": "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP -> NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP"
+        }
+    ],
+    "subworkflows": {
+        "NFCORE_FETCHNGS_$$_1": {
+            "nodes": [
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_IDS_TO_RUNINFO",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP"
+            ],
+            "label": "NFCORE_FETCHNGS",
+            "code": "workflow NFCORE_FETCHNGS {\n    take:\n    ids \n\n    main:\n    \n    \n    \n    FETCHNGS(\n        ids,\n        params.outdir,\n        params.dbgap_key ? file(params.dbgap_key, checkIfExists: true) : [],\n        params.download_method,\n        params.ena_metadata_fields ?: '',\n        params.nf_core_pipeline ?: '',\n        params.nf_core_rnaseq_strandedness ?: 'auto',\n        params.sample_mapping_fields,\n        params.skip_fastq_download,\n    )\n}",
+            "condition": null,
+            "file_ref": "(main.nf)"
+        },
+        "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1": {
+            "nodes": [
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_FASTQ_FTP",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.ASPERA_CLI",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQDL",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_IDS_TO_RUNINFO",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.SRA_RUNINFO_TO_FTP",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.MULTIQC_MAPPINGS_CONFIG",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP"
+            ],
+            "label": "FETCHNGS",
+            "code": "workflow FETCHNGS {\n    take:\n    ids \n    outdir\n    dbgap_key\n    download_method\n    ena_metadata_fields\n    nf_core_pipeline\n    nf_core_rnaseq_strandedness\n    sample_mapping_fields\n    skip_fastq_download\n\n    main:\n\n    \n    \n    \n    SRA_IDS_TO_RUNINFO(ids, ena_metadata_fields)\n\n    \n    \n    \n    SRA_RUNINFO_TO_FTP(SRA_IDS_TO_RUNINFO.out.tsv)\n\n    ch_sra_metadata = SRA_RUNINFO_TO_FTP.out.tsv.filter { row -> row.size() > 0 }.splitCsv(header: true, sep: '\\t').map_modified { \u00a4140677877165968_0\u00a4 }.unique()\n\n    if (!skip_fastq_download) {\n\n        ch_sra_reads = ch_sra_metadata.branch { meta ->\n            def final_download_method = 'ftp'\n            \n            \n            \n            if (meta.fastq_aspera && download_method == 'aspera') {\n                final_download_method = 'aspera'\n            }\n            if (download_method == 'fastq-dl') {\n                final_download_method = 'fastq-dl'\n            }\n            if ((!meta.fastq_aspera && !meta.fastq_1) $OR$ download_method == 'sratools') {\n                final_download_method = 'sratools'\n            }\n            aspera: final_download_method == 'aspera'\n            return [meta, meta.fastq_aspera.tokenize(';').take(2)]\n            fastqdl: final_download_method == 'fastq-dl'\n            return [meta, meta.run_accession]\n            ftp: final_download_method == 'ftp'\n            return [meta, [meta.fastq_1, meta.fastq_2]]\n            sratools: final_download_method == 'sratools'\n            return [meta, meta.run_accession]\n        }\n\n        \n        \n        \n        SRA_FASTQ_FTP(ch_sra_reads.ftp)\n\n        \n        \n        \n        FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS(ch_sra_reads.sratools, dbgap_key)\n\n        \n        \n        \n        ASPERA_CLI(ch_sra_reads.aspera, 'era-fasp')\n\n        FASTQDL(ch_sra_reads.fastqdl)\n\n        \n        ch_sra_metadata = SRA_FASTQ_FTP.out.fastq.mix(FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS.out.reads).mix(ASPERA_CLI.out.fastq).mix(FASTQDL.out.fastq).map_modified { \u00a4140677877165968_1\u00a4 }\n    }\n\n    \n    \n    \n    CHANNEL_SRA_CREATE_CSV(ch_sra_metadata, nf_core_pipeline, nf_core_rnaseq_strandedness, sample_mapping_fields, outdir)\n\n    ch_samplesheet = CHANNEL_SRA_CREATE_CSV.out.samplesheet\n    ch_mappings = CHANNEL_SRA_CREATE_CSV.out.mappings\n\n    \n    \n    \n    MULTIQC_MAPPINGS_CONFIG(ch_mappings.filter { sample_mapping_fields })\n    ch_sample_mappings_yml = MULTIQC_MAPPINGS_CONFIG.out.yml\n\n    \n    \n    \n    def ch_collated_versions = softwareVersionsToYAML(\n        softwareVersions: channel.topic(\"versions\"),\n        nextflowVersion: workflow.nextflow.version,\n    ).collectFile(\n        storeDir: \"${outdir}/pipeline_info\",\n        name: 'nf_core_' + 'fetchngs_software_' + 'versions.yml',\n        sort: true,\n        newLine: true,\n    )\n\n    emit:\n    samplesheet     = ch_samplesheet\n    mappings        = ch_mappings\n    sample_mappings = ch_sample_mappings_yml\n    sra_metadata    = ch_sra_metadata\n    versions        = ch_collated_versions\n}",
+            "condition": null,
+            "file_ref": "(workflows/fetchngs.nf)"
+        },
+        "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1": {
+            "nodes": [
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.CUSTOM_SRATOOLSNCBISETTINGS",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_PREFETCH",
+                "NFCORE_FETCHNGS_$$_1.FETCHNGS_$$_1.FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS_$$_1.SRATOOLS_FASTERQDUMP"
+            ],
+            "label": "FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS",
+            "code": "workflow FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS {\n    take:\n    ch_sra_ids   \n    ch_dbgap_key \n\n    main:\n\n    \n    \n    \n    CUSTOM_SRATOOLSNCBISETTINGS ( ch_sra_ids.collect() )\n    ch_ncbi_settings = CUSTOM_SRATOOLSNCBISETTINGS.out.ncbi_settings\n\n    \n    \n    \n    SRATOOLS_PREFETCH ( ch_sra_ids, ch_ncbi_settings, ch_dbgap_key )\n\n    \n    \n    \n    SRATOOLS_FASTERQDUMP ( SRATOOLS_PREFETCH.out.sra, ch_ncbi_settings, ch_dbgap_key )\n\n    emit:\n    reads    = SRATOOLS_FASTERQDUMP.out.reads \n}",
+            "condition": "!skip_fastq_download",
+            "file_ref": "(subworkflows/nf-core/fastq_download_prefetch_fasterqdump_sratools/main.nf)"
+        }
+    }
+}

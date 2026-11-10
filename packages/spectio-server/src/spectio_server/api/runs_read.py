@@ -434,40 +434,49 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     (FU-P3-82)."""
     with read(request) as conn:
         run = run_row(conn, run_id)
-        mine = tasks.c.run_id == run_id
-        known = conn.execute(
-            select(
-                run_processes.c.name,
-                run_processes.c.stage_id,
-                run_processes.c.ended,
-                run_processes.c.jobs_planned,
-                run_processes.c.is_checkpoint,
-            )
-            .where(run_processes.c.run_id == run_id)
-            .order_by(run_processes.c.position)
-        ).all()
-        from_tasks = conn.execute(
-            select(tasks.c.process_or_rule, func.max(tasks.c.stage_id))
-            .where(mine)
-            .group_by(tasks.c.process_or_rule)
-            .order_by(func.min(tasks.c.id))
-        ).all()
-        counts = conn.execute(
-            select(tasks.c.process_or_rule, tasks.c.state, func.count())
-            .where(mine)
-            .group_by(tasks.c.process_or_rule, tasks.c.state)
-        ).all()
-        retries: dict[str, int] = dict(
-            conn.execute(
-                select(tasks.c.process_or_rule, func.count())
-                .join(attempts, attempts.c.task_id == tasks.c.id)
-                .where(mine, attempts.c.n > 1)
-                .group_by(tasks.c.process_or_rule)
-            ).all()
+        return {"items": process_items(conn, run, context(request))[0]}
+
+
+def process_items(
+    conn: Connection, run: Row[Any], ctx: Context
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
+    """The items of `GET /runs/{id}/processes` (the nodes of the run's graph, #160), and the
+    jobs of `task_resources` they were computed from, by task ID."""
+    run_id = run.id
+    mine = tasks.c.run_id == run_id
+    known = conn.execute(
+        select(
+            run_processes.c.name,
+            run_processes.c.stage_id,
+            run_processes.c.ended,
+            run_processes.c.jobs_planned,
+            run_processes.c.is_checkpoint,
         )
-        graphs = _rulegraphs(conn, run)
-        facts = _run_facts(conn, run, graphs[-1] if graphs else {})
-        jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, None, context(request))
+        .where(run_processes.c.run_id == run_id)
+        .order_by(run_processes.c.position)
+    ).all()
+    from_tasks = conn.execute(
+        select(tasks.c.process_or_rule, func.max(tasks.c.stage_id))
+        .where(mine)
+        .group_by(tasks.c.process_or_rule)
+        .order_by(func.min(tasks.c.id))
+    ).all()
+    counts = conn.execute(
+        select(tasks.c.process_or_rule, tasks.c.state, func.count())
+        .where(mine)
+        .group_by(tasks.c.process_or_rule, tasks.c.state)
+    ).all()
+    retries: dict[str, int] = dict(
+        conn.execute(
+            select(tasks.c.process_or_rule, func.count())
+            .join(attempts, attempts.c.task_id == tasks.c.id)
+            .where(mine, attempts.c.n > 1)
+            .group_by(tasks.c.process_or_rule)
+        ).all()
+    )
+    graphs = _rulegraphs(conn, run)
+    facts = _run_facts(conn, run, graphs[-1] if graphs else {})
+    jobs = task_resources(conn, run.id, dir_run_id(run), run.engine, None, ctx)
     by_process: dict[str, dict[str, int]] = {}
     for process, state, n in counts:
         by_process.setdefault(process, {})[state] = n
@@ -504,7 +513,7 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
                 "pipeline_order": ranks[process],
             }
         )
-    return {"items": items}
+    return items, jobs
 
 
 def _pipeline_order(names: list[str], graphs: list[dict[str, Any]], seen: set[str]) -> list[str]:

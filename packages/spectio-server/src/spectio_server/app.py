@@ -38,6 +38,7 @@ from spectio_server.api import (
     cancel,
     catalog,
     environments,
+    graph,
     logs,
     problems,
     relaunch,
@@ -176,6 +177,7 @@ def create_app(
         )  # §15.3 req. 18
         app.state.catalog = environments.Store(catalog_path(), CATALOG, "catalog")  # api §5.6
         routers = (
+            graph,  # `/workflows:graph` before any `/workflows/{…}`
             workflows,
             runs_write,
             relaunch,

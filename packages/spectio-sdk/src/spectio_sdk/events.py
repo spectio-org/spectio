@@ -235,6 +235,25 @@ class NextflowFlowCreate(NextflowEvent):
     clusterOptionsSet: bool | None = None  # never the text (SEC-P3T1-11)
 
 
+_ProcessName = Annotated[str, Field(max_length=1024)]
+
+
+class NextflowDag(_Data):
+    """The process-level DAG `nf-spectio` sends on `onFlowBegin` (issue #160; api §5.8):
+    operators walked through, at most 2000 processes and 20000 edges, else only `truncated`."""
+
+    processes: Annotated[list[_ProcessName], Field(max_length=2000)] = []
+    edges: Annotated[
+        list[Annotated[list[_ProcessName], Field(min_length=2, max_length=2)]],
+        Field(max_length=20000),
+    ] = []
+    truncated: bool | None = None
+
+
+class NextflowFlowBegin(NextflowEvent):
+    dag: NextflowDag | None = None
+
+
 class NextflowFlowComplete(NextflowEvent):
     success: bool | None = None
     exitStatus: SignedInt64 | None = None
@@ -426,7 +445,7 @@ _TASK_HOOKS = ("onTaskPending", "onTaskSubmit", "onTaskStart", "onTaskComplete",
 
 DATA_MODELS: dict[str, type[_Data]] = {
     "nextflow.onFlowCreate": NextflowFlowCreate,
-    "nextflow.onFlowBegin": NextflowEvent,
+    "nextflow.onFlowBegin": NextflowFlowBegin,
     "nextflow.onFlowComplete": NextflowFlowComplete,
     "nextflow.onFlowError": NextflowTask,
     "nextflow.onProcessCreate": NextflowProcess,

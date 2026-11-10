@@ -1,0 +1,275 @@
+"""The workflow graph of issue #160 (api §5.8; spikes/metroflow/graph-contract.md): the feature
+flag, the run graph from Snakemake's rule graphs and Nextflow's `onFlowBegin` DAG, a process's
+outputs, and the Launch graph (rule files, BioFlow-Insight's metro map)."""
+
+import json
+import shutil
+from pathlib import Path
+from typing import Any
+
+import pytest
+from fastapi.testclient import TestClient
+
+from spectio.config import ServerOpts, Settings
+from spectio_server.graph import bioflow, document
+from spectio_server.store.writer import Writer
+
+from ..test_process_status import job, smk_run
+from .conftest import FLAKY_RUN, SYNTHETIC, add_run, client_for, replay
+from .test_failure import API, RUN, Run
+
+DATA = Path(__file__).resolve().parents[1] / "data" / "graph"
+FETCHNGS = DATA / "bioflow-insight-2.1.1_fetchngs_metro_map.json"
+SYNTH_MAP = DATA / "bioflow-insight-2.1.1_synthetic_metro_map.json"
+SMK_FIXTURE = "snakemake-9.27.1_checkpoint_flaky_retry.spool.jsonl"
+
+
+def on(settings: Settings) -> Settings:
+    return settings.model_copy(update={"server": ServerOpts(features=["graph_view"])})
+
+
+def graph_client(settings: Settings, writer: Writer) -> TestClient:
+    return client_for(on(settings), writer)
+
+
+def got(client: TestClient, path: str) -> dict[str, Any]:
+    found = client.get(f"{API}{path}")
+    assert found.status_code == 200, found.text
+    return found.json()  # type: ignore[no-any-return]
+
+
+# --- The feature flag ------------------------------------------------------------------------
+
+
+def test_features_off_by_default(settings: Settings, writer: Writer) -> None:
+    client = client_for(settings, writer)
+    assert got(client, "/features") == {"features": []}
+    for path in (
+        f"/runs/{RUN}/graph",
+        f"/runs/{RUN}/processes/A/outputs",
+        "/workflows:graph?location=/x",
+    ):
+        found = client.get(f"{API}{path}")
+        assert found.status_code == 404
+        assert found.json()["type"] == "/problems/feature-disabled"
+
+
+def test_features_on(settings: Settings, writer: Writer) -> None:
+    assert got(graph_client(settings, writer), "/features") == {"features": ["graph_view"]}
+
+
+def test_features_env(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> None:
+    monkeypatch.setenv("SPECTIO_SERVER_FEATURES", "graph_view, ")
+    assert Settings().server.features == ["graph_view"]
+    monkeypatch.setenv("SPECTIO_SERVER_FEATURES", "nope")
+    with pytest.raises(ValueError):
+        Settings()
+
+
+# --- The run graph: Snakemake ----------------------------------------------------------------
+
+
+def test_snakemake_rulegraph_replayed(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """The T2 checkpoint run: its rule graph's links are the edges, the rules its nodes."""
+    launch_id = add_run(writer, settings, FLAKY_RUN, "smk", engine="snakemake")
+    replay(writer, tmp_path, launch_id, SMK_FIXTURE, FLAKY_RUN)
+    doc = got(graph_client(settings, writer), f"/runs/{FLAKY_RUN}/graph")
+    assert doc["version"] == 1 and doc["engine"] == "snakemake"
+    assert doc["producer"] == "smk-rulegraph"
+    ids = {n["id"] for n in doc["nodes"]}
+    assert {"make_reads", "split", "merge", "all"} <= ids
+    edges = {(e["source"], e["target"]) for e in doc["edges"]}
+    assert ("make_reads", "split") in edges and ("merge", "all") in edges
+    assert all(e["source"] in ids and e["target"] in ids for e in doc["edges"])
+    node = next(n for n in doc["nodes"] if n["id"] == "make_reads")
+    assert node["kind"] == "rule" and node["status"] and node["counts"]
+    assert set(node["metrics"]) == {"duration_s", "cpu_mean", "mem_max", "failed"}
+    assert node["first_start"] is not None
+    assert next(n for n in doc["nodes"] if n["id"] == "split")["kind"] == "checkpoint"
+
+
+def test_snakemake_no_rulegraph(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """With no rule graph yet: the rules, no edges, `stages-only`, not complete."""
+    run = smk_run(settings, writer, tmp_path)
+    writer.submit(
+        lambda c: c.exec_driver_sql("DELETE FROM events WHERE type LIKE '%rulegraph'")
+    ).result()
+    job(run, 1, "make_reads")
+    doc = got(graph_client(settings, writer), f"/runs/{RUN}/graph")
+    assert doc["producer"] == "stages-only" and not doc["complete"] and doc["edges"] == []
+    assert "make_reads" in {n["id"] for n in doc["nodes"]}
+
+
+def test_snakemake_outputs(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """A rule's outputs: its jobs' `outputs`, `present` or `missing` in the launch directory,
+    `removed` once a `temp_removed` named them."""
+    run = smk_run(settings, writer, tmp_path)
+    (run.paths.launch_dir / "reads").mkdir(parents=True)
+    (run.paths.launch_dir / "reads" / "1.txt").write_text("x")
+    job(run, 1, "make_reads", output=[str(run.paths.launch_dir / "reads" / "1.txt")])
+    job(run, 2, "make_reads", output=[str(run.paths.launch_dir / "reads" / "2.txt")])
+    run.push("snakemake.temp_removed", path=str(run.paths.launch_dir / "reads" / "2.txt"))
+    client = graph_client(settings, writer)
+    items = got(client, f"/runs/{RUN}/processes/make_reads/outputs")["items"]
+    states = {i["path"]: (i["state"], i["root"], i["temp"]) for i in items}
+    assert states == {
+        "reads/1.txt": ("present", "launch", False),
+        "reads/2.txt": ("removed", "launch", True),
+    }
+    assert all(i["task_id"] for i in items)
+    assert client.get(f"{API}/runs/{RUN}/processes/nope/outputs").status_code == 404
+
+
+# --- The run graph: Nextflow -----------------------------------------------------------------
+
+
+def test_nextflow_without_dag(settings: Settings, writer: Writer, replayed_flaky: str) -> None:
+    doc = got(graph_client(settings, writer), f"/runs/{replayed_flaky}/graph")
+    assert doc["producer"] == "stages-only" and not doc["complete"] and doc["edges"] == []
+    assert {"MAKE_READS", "ALIGN", "FINAL_REPORT"} <= {n["id"] for n in doc["nodes"]}
+    assert all(n["kind"] == "process" for n in doc["nodes"])
+
+
+def test_nextflow_dag(settings: Settings, writer: Writer) -> None:
+    """`onFlowBegin`'s DAG: its edges, the processes with no task yet as idle nodes, and the
+    qualified names' subworkflows as nested groups."""
+    run = Run(settings, writer)
+    names = ["PIPE:QC:FASTQC", "PIPE:QC:STATS", "PIPE:ALIGN"]
+    dag = {"processes": names, "edges": [names[:2], names[1:], ["PIPE:ALIGN", "GHOST"]]}
+    run.push("nextflow.onFlowBegin", dag=dag)
+    run.push("nextflow.onTaskSubmit", process="PIPE:QC:FASTQC", tag="S1", attempt=1)
+    doc = got(graph_client(settings, writer), f"/runs/{RUN}/graph")
+    assert doc["producer"] == "nf-dag" and doc["complete"] and not doc["estimate"]
+    assert {(e["source"], e["target"]) for e in doc["edges"]} == {
+        ("PIPE:QC:FASTQC", "PIPE:QC:STATS"),
+        ("PIPE:QC:STATS", "PIPE:ALIGN"),
+    }
+    nodes = {n["id"]: n for n in doc["nodes"]}
+    assert set(nodes) == set(names)
+    assert nodes["PIPE:ALIGN"]["status"] == "pending" and nodes["PIPE:ALIGN"]["counts"] == {}
+    assert nodes["PIPE:QC:STATS"]["name"] == "STATS"
+    assert nodes["PIPE:QC:STATS"]["subworkflow"] == "sub:PIPE:QC"
+    groups = {g["id"]: g for g in doc["groups"]}
+    assert groups["sub:PIPE:QC"]["parent"] == "sub:PIPE"
+    assert groups["sub:PIPE"]["parent"] is None and groups["sub:PIPE"]["kind"] == "subworkflow"
+
+
+def test_nextflow_dag_truncated(settings: Settings, writer: Writer) -> None:
+    run = Run(settings, writer)
+    run.push("nextflow.onFlowBegin", dag={"truncated": True})
+    doc = got(graph_client(settings, writer), f"/runs/{RUN}/graph")
+    assert doc["producer"] == "stages-only"
+
+
+def test_nextflow_outputs(settings: Settings, writer: Writer, replayed_flaky: str) -> None:
+    """QC_STATS's outputs: the files published from its tasks' work directories."""
+    items = got(
+        graph_client(settings, writer), f"/runs/{replayed_flaky}/processes/QC_STATS/outputs"
+    )["items"]
+    assert items and all(i["path"].endswith(".qc.json") for i in items)
+    assert all(i["task_id"] for i in items)
+    assert not got(
+        graph_client(settings, writer), f"/runs/{replayed_flaky}/processes/MAKE_READS/outputs"
+    )["items"]  # not published
+
+
+# --- The pure document -----------------------------------------------------------------------
+
+
+def test_metro_map_fetchngs() -> None:
+    mapped = document.from_metro(json.loads(FETCHNGS.read_text()))
+    name = "NFCORE_FETCHNGS:FETCHNGS:SRA_IDS_TO_RUNINFO"
+    assert name in mapped["nodes"]
+    info = mapped["nodes"][name]
+    assert info["source"]["file"] == "modules/local/sra_ids_to_runinfo/main.nf"
+    assert info["layout"] is not None
+    sub = "sub:NFCORE_FETCHNGS:FETCHNGS:FASTQ_DOWNLOAD_PREFETCH_FASTERQDUMP_SRATOOLS"
+    assert mapped["groups"][sub] == "!skip_fastq_download"
+    assert all(":" in a and ":" in b for a, b in mapped["edges"])
+
+
+def test_metro_map_synthetic_params() -> None:
+    mapped = document.from_metro(json.loads(SYNTH_MAP.read_text()))
+    assert "ALIGN" in mapped["nodes"]
+    assert "verbosity" in mapped["nodes"]["ALIGN"]["params"]
+
+
+def test_match_by_last_segment() -> None:
+    known = {"A:B:FASTQC": 1, "A:MULTIQC": 2, "X:DUP": 3, "Y:DUP": 4}
+    assert document.match(["A:B:FASTQC", "FASTQC", "DUP", "NONE"], known) == {
+        "A:B:FASTQC": "A:B:FASTQC",
+        "FASTQC": "A:B:FASTQC",
+    }
+
+
+def test_build_drops_dangling_edges_and_unknown_stages() -> None:
+    doc = document.build(
+        engine="snakemake",
+        producer="smk-rulegraph",
+        complete=True,
+        nodes=[{"id": "a", "stage_id": "s1"}, {"id": "b", "stage_id": "gone"}],
+        edges=[("a", "b"), ("a", "z")],
+        stages=[{"id": "s1", "name": "One"}],
+    )
+    assert doc["edges"] == [{"source": "a", "target": "b", "condition": None}]
+    assert [n["stage_id"] for n in doc["nodes"]] == ["s1", None]
+    assert doc["groups"] == [
+        {"id": "stage:s1", "kind": "stage", "name": "One", "parent": None, "condition": None}
+    ]
+
+
+# --- The Launch graph ------------------------------------------------------------------------
+
+
+def test_launch_snakemake(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    pipeline = tmp_path / "smk"
+    shutil.copytree(SYNTHETIC / "snakemake", pipeline)
+    doc = got(graph_client(settings, writer), f"/workflows:graph?location={pipeline}")
+    assert doc["engine"] == "snakemake" and doc["producer"] == "stages-only"
+    ids = [n["id"] for n in doc["nodes"]]
+    assert "make_reads" in ids and "all" in ids
+    assert all(n["source"]["file"].endswith("Snakefile") for n in doc["nodes"])
+    assert "status" not in doc["nodes"][0] or doc["nodes"][0]["status"] is None
+
+
+def test_launch_nextflow_without_bioflow(
+    settings: Settings, writer: Writer, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(bioflow, "available", lambda: None)
+    pipeline = tmp_path / "nf"
+    shutil.copytree(SYNTHETIC / "nextflow", pipeline)
+    doc = got(graph_client(settings, writer), f"/workflows:graph?location={pipeline}")
+    assert doc["producer"] == "stages-only" and doc["edges"] == []
+    nodes = {n["id"]: n for n in doc["nodes"]}
+    assert {"MAKE_READS", "ALIGN", "FINAL_REPORT"} <= set(nodes)
+    assert nodes["ALIGN"]["source"]["file"] == "main.nf"
+
+
+def test_launch_nextflow_with_bioflow(
+    settings: Settings, writer: Writer, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """BioFlow-Insight's map (its recorded output) gives edges, conditions and positions."""
+    monkeypatch.setattr(bioflow, "metro_map", lambda _: json.loads(FETCHNGS.read_text()))
+    pipeline = tmp_path / "nf"
+    shutil.copytree(SYNTHETIC / "nextflow", pipeline)
+    doc = got(graph_client(settings, writer), f"/workflows:graph?location={pipeline}")
+    assert doc["producer"] == "bioflow-insight" and doc["edges"]
+    assert doc["estimate"] and not doc["complete"]  # static edges, cycles included
+    edges = {(e["source"], e["target"]): e["condition"] for e in doc["edges"]}
+    fq, al = "NFCORE_FETCHNGS:FETCHNGS:FASTQDL", "NFCORE_FETCHNGS:FETCHNGS:ASPERA_CLI"
+    assert (fq, al) in edges and (al, fq) in edges  # a cycle, kept
+    assert edges[(fq, al)] == "!skip_fastq_download"
+    node = next(n for n in doc["nodes"] if n["name"] == "SRA_FASTQ_FTP")
+    assert node["subworkflow"] == "sub:NFCORE_FETCHNGS:FETCHNGS"
+    assert node["condition"] == "!skip_fastq_download" and node["layout"]
+
+
+def test_launch_location_checked(settings: Settings, writer: Writer) -> None:
+    found = graph_client(settings, writer).get(f"{API}/workflows:graph?location=/nonexistent")
+    assert found.status_code == 422
+
+
+@pytest.mark.skipif(bioflow.available() is None, reason="bioflow-insight and dot not installed")
+def test_bioflow_real() -> None:  # pragma: no cover - only where the tool is installed
+    metro = bioflow.metro_map(SYNTHETIC / "nextflow" / "main.nf")
+    assert metro is not None and document.from_metro(metro)["edges"]
