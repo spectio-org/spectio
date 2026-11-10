@@ -38,7 +38,7 @@ export function PageHead({
           <Icon path={item.icon} size={22} />
         </span>
         <div>
-          <h1 className="sp-page-title">{title}</h1>
+          <h1 className="sp-page-title" tabIndex={-1}>{title}</h1>
           {sub && <p className="sp-sub sp-page-sub">{sub}</p>}
         </div>
       </div>
