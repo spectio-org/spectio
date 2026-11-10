@@ -816,3 +816,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Costs (subagent tokens): 102c2 ~309k + ux-reviewer ~69k, B11 ~859k.
 - login1 asked for retest d on main 74b4c939 (report-2026-11-09d.md).
 - Paused at Thomas's request: no new task starts until he resumes. Next on resume: FU-P3-102d2.
+
+## 2026-11-10 — handoff to the next-wave session
+
+- Lean helpers committed to `tools/autopilot/lean/` (0d8b4f77): p3-lean.js, p3-batch.js, prflow.sh (SCRATCH now required), waitci.sh, resolve_docs.py, sockshot.js, README.
+- New orchestrator session session_01MF8RxQASDmXaFjVA49aybZ, from autopilot/integration: wave FU-P3-102d2 → 102g, 87, 88 (+101, 104), 110 spec, 111, 112, 89, 113; 108 minors, 106b and the flaky cancel test in parallel. Speed rules: up to 3 disjoint tasks in flight, batch every 4–5, promote at once; live retests through the local session cshk_01MF8RxPQMMC58MHn31SYWYyUCNZQatBzPebBAU92BEyyq (login1).
+- This session stops orchestrating.
