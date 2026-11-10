@@ -211,6 +211,14 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-file-preview-phone", "/runs/$SPECTIO_DEMO_RUN/results/file?path=quant/counts_matrix.tsv", 390, 844,
              "0.0.1, live: the same preview on a phone",
              themes=("light", "dark"), live=("wait:counts_matrix.tsv",)),
+        # Batch P3-B12 (FU-P3-102d3): a TIFF in the results of a seeded run, from `tools/media/tiff_demo.py` (it sets the
+        # environment itself): one 16-bit grayscale plane of 512 by 384, so the page says "Contrast stretched for display".
+        Shot("app-file-preview-tiff", "/runs/$SPECTIO_DEMO_RUN/results/file?path=imaging/cells.tif", 1440, 1000,
+             "0.0.1, live: the preview of a TIFF, its first plane on a canvas with Actual size and the line of facts under it",
+             themes=("light", "dark"), live=("wait:Actual size",)),
+        Shot("app-file-preview-tiff-phone", "/runs/$SPECTIO_DEMO_RUN/results/file?path=imaging/cells.tif", 390, 844,
+             "0.0.1, live: the same TIFF on a phone",
+             themes=("light", "dark"), live=("wait:Actual size",)),
         Shot("app-workdir", "/runs/$SPECTIO_DEMO_RUN/workdir?task=$SPECTIO_DEMO_TASK&attempt=1", 1440, 1000,
              "0.0.1, live: the work directory of one Nextflow task attempt, in the same explorer, with the way back to the task's sheet",
              themes=("light", "dark"), live=("wait:treatA_vs_ctrl.tsv",)),
