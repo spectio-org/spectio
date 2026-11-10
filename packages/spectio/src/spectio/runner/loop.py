@@ -148,6 +148,7 @@ class RunnerLoop:
         self._unadopted: set[str] = set()  # launches whose refused adopt is already logged
         self._last: dict[str, HeadReport] = {}
         self._ended_at: dict[str, float] = {}
+        self._starts: list[tuple[Command, LaunchSpec]] = []  # the heads of this lease, to start
 
     def run(self, stop: threading.Event) -> None:
         while not stop.is_set():
@@ -168,6 +169,11 @@ class RunnerLoop:
                 self._try_adopt(ref)  # after a restart
         for command in self.sink.lease_commands():
             self._command(command)
+        # the heads start once the whole lease is applied: a cancel leased after its launch has
+        # written its marker by then, so the head stops before its engine (FU-P3-108a)
+        starts, self._starts = self._starts, []
+        for command, spec in starts:
+            self._command(command, spec)
         launches = self.sink.active_launches()
         for ref in launches:
             self._each(self._read, ref)
@@ -214,13 +220,20 @@ class RunnerLoop:
 
     # --- Commands ------------------------------------------------------------------------
 
-    def _command(self, command: Command) -> None:
+    def _command(self, command: Command, start: LaunchSpec | None = None) -> None:
+        """Apply one command and ack it; a launch is acked once `start`, its head, is started."""
         try:
             if command.launch.terminal is not None:  # never a launcher call (req. 12)
                 self.sink.ack(command.id, False, "a run started from a terminal is monitor only")
                 return
-            if command.kind == "launch":
-                detail = self._launch(command)
+            if start is not None:
+                detail = self._start(command.launch, start)
+            elif command.kind == "launch":
+                found = self._launch(command)
+                if isinstance(found, LaunchSpec):
+                    self._starts.append((command, found))
+                    return
+                detail = found
             elif command.kind == "cancel":
                 detail = self._cancel(command.launch)
             else:
@@ -230,7 +243,8 @@ class RunnerLoop:
             detail = f"{type(exc).__name__}: {exc}"
         self.sink.ack(command.id, detail is None, detail)
 
-    def _launch(self, command: Command) -> str | None:
+    def _launch(self, command: Command) -> LaunchSpec | str | None:
+        """The head to start, or the ack's detail (None: nothing to start)."""
         ref = command.launch
         if ref.launch_id in self._known:
             return None  # delivered again: already started
@@ -296,13 +310,23 @@ class RunnerLoop:
             status, detail = runs_disk(self.settings.runs_root)
             if status == "warn":  # never refused: the engine may still fit (FU-P3-74)
                 log.warning("runs_disk %s", detail)
-            native_id = self.launcher.submit(spec)
         except EngineError as exc:
             return self._fail(ref, exc.class_, str(exc))
         except (OSError, ValueError) as exc:
             return self._fail(ref, "launch_error", str(exc))
+        return spec
+
+    def _start(self, ref: LaunchRef, spec: LaunchSpec) -> str | None:
+        if ref.launch_id in self._known:
+            return None  # leased twice: already started
+        try:
+            native_id = self.launcher.submit(spec)
+        except (OSError, ValueError) as exc:
+            return self._fail(ref, "launch_error", str(exc))
         self._known.add(ref.launch_id)
         self._report(ref, HeadReport("starting", native_id, None, None, False, None))
+        if self._cancel_asked(ref):  # cancelled in this lease: its marker first, then the signal
+            self.launcher.cancel(native_id)
         return None
 
     def _resume_source(self, ref: LaunchRef, asked: ResumePayload) -> ResumeSource:
@@ -368,10 +392,15 @@ class RunnerLoop:
 
     def _report(self, ref: LaunchRef, report: HeadReport) -> None:
         if report.ended and report.failure is None:
-            if ref.engine_ended or (ref.engine == "snakemake" and report.exit_code is not None):
-                # the engine's end event is in (G7), or a Snakemake exit code ends the launch
-                # (Assumption 16): the head is gone, so one more read drains its spool, with no
-                # grace to wait (FU-P3-14, CR-P3T09-04, CR-P3G7-07)
+            if (
+                ref.engine_ended
+                or (ref.engine == "snakemake" and report.exit_code is not None)
+                or self._cancel_asked(ref)
+            ):
+                # the engine's end event is in (G7), a Snakemake exit code ends the launch
+                # (Assumption 16), or it was cancelled, and the run ends cancelled whatever the
+                # engine says (FU-P3-108a): the head is gone, so one more read drains its
+                # spool, with no grace to wait (FU-P3-14, CR-P3T09-04, CR-P3G7-07)
                 self._read(ref)
             else:
                 first = self._ended_at.setdefault(ref.launch_id, time.monotonic())
@@ -383,6 +412,17 @@ class RunnerLoop:
             return
         self._last[ref.launch_id] = report
         self.sink.head_report(ref.launch_id, report)
+
+    def _cancel_asked(self, ref: LaunchRef) -> bool:
+        """Whether this launch's `.spectio/cancel` marker is there (never for a run started
+        from a terminal, which is never cancelled from here); unreadable, the grace applies."""
+        if ref.terminal is not None:
+            return False
+        try:
+            with private_dir(self.settings.runs_root, ref.run_id, "launch", ".spectio") as fd:
+                return _exists(fd, CANCEL)
+        except (OSError, ValueError):
+            return False
 
     def _fs(self, key: str, fn: Callable[[], T]) -> T:
         """`fn()` in the file pool with its timeout when there is one; raises `Stalled`. A job
