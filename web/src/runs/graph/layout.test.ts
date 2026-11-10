@@ -69,3 +69,14 @@ test("a cyclic static graph lays out in every layout", () => {
     noOverlaps(boxes, ["A", "B", "C"]);
   }
 });
+
+test("with no edges, every layout wraps lanes into rows instead of one long line", () => {
+  const nodes = Array.from({ length: 40 }, (_, i) => ({ ...DOC.nodes[0], id: `P${i}`, name: `P${i}`, subworkflow: null, stage_id: i < 20 ? "a" : "b" }));
+  const view = collapse({ ...DOC, groups: [], nodes, edges: [] }, "process");
+  for (const layout of ["layered-tb", "layered-lr", "metro", "compact"] as const) {
+    const { boxes } = place(view, layout);
+    const width = Math.max(...[...boxes.values()].map((b) => b.x + b.w));
+    expect(width, layout).toBeLessThan(8 * (NODE_W + 40));
+    noOverlaps(boxes, view.nodes.map((n) => n.id));
+  }
+});

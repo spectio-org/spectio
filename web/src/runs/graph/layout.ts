@@ -32,6 +32,7 @@ const JOB_COLS = 4;
 const GAP = 12;
 const HEADER = 40;
 const COL = NODE_W + 56;
+const WRAP = 6; // Compact: nodes per row of a lane
 
 /** A node's size: a process holding its jobs grows to fit them in a grid. */
 export function sizeOf(n: ViewNode): { w: number; h: number } {
@@ -100,7 +101,7 @@ function metro(view: View): Placed {
   return { boxes, lanes: out };
 }
 
-/** One row per lane, nodes side by side in topological order. */
+/** One band per lane, nodes side by side in topological order, wrapped every WRAP nodes. */
 function compact(view: View): Placed {
   const order = topoOrder(view);
   const at = new Map(order.map((id, i) => [id, i]));
@@ -111,13 +112,21 @@ function compact(view: View): Placed {
   for (const lane of lanes) {
     const members = view.nodes.filter((n) => (n.lane ?? "") === lane.id).sort((a, b) => at.get(a.id)! - at.get(b.id)!);
     let x = 120;
+    let row = 0;
+    let rowH = 0;
     let height = 0;
-    for (const n of members) {
+    members.forEach((n, i) => {
+      if (i > 0 && i % WRAP === 0) {
+        x = 120;
+        row += rowH + GAP;
+        rowH = 0;
+      }
       const { w, h } = sizeOf(n);
-      boxes.set(n.id, { x, y: y + 28, w, h });
+      boxes.set(n.id, { x, y: y + 28 + row, w, h });
       x += w + GAP * 2;
-      height = Math.max(height, h);
-    }
+      rowH = Math.max(rowH, h);
+      height = Math.max(height, row + h);
+    });
     out.push({ id: lane.id, label: lane.label, y, h: height + 44 });
     y += height + 60;
   }
@@ -154,7 +163,10 @@ export function hasUpstream(view: View): boolean {
 
 export function place(view: View, layout: GraphLayout): Placed {
   let placed: Placed;
-  if (layout === "metro") placed = metro(view);
+  // No edges (stages-only): ranks and layers mean nothing, so every layout but Upstream is the
+  // wrapped grid per lane; otherwise dagre would set every node on one line.
+  if (view.edges.length === 0 && layout !== "upstream") placed = compact(view);
+  else if (layout === "metro") placed = metro(view);
   else if (layout === "compact") placed = compact(view);
   else if (layout === "upstream") placed = upstream(view);
   else placed = { boxes: layered(view, layout === "layered-lr" ? "LR" : "TB"), lanes: [] };
