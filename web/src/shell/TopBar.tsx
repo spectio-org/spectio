@@ -2,6 +2,7 @@ import { useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ServerVersion } from "../api";
 import { ICONS, Icon } from "../icons";
+import type { PageCrumb } from "./crumb";
 
 type To = "/" | "/runs" | "/launch" | "/environments" | "/catalog";
 interface Crumb {
@@ -24,8 +25,9 @@ const RUN_PAGES: Record<string, string> = { report: "Report", results: "Results"
  * is never shown (SEC-P3G4-02): an item reads `item`, the page's label (a run's name from the
  * API), else "Run" under /runs, else "Not found"; a run's report viewer ends with "Report", its
  * results browser with "Results", a work directory with "Work directory", and a file page below
- * either with "File": the run is named once (FU-P3-104). */
-export function crumbsFor(pathname: string, item: string | null = null): Crumb[] {
+ * either with `file`, the name `stat` answered (never the URL's `path`), "File" until then: the run
+ * is named once (FU-P3-104, CR-P3FU104-01). */
+export function crumbsFor(pathname: string, item: string | null = null, file: string | null = null): Crumb[] {
   const crumbs: Crumb[] = [{ label: "Home", to: "/" }];
   let previous = "";
   for (const segment of pathname.split("/").filter(Boolean)) {
@@ -39,7 +41,7 @@ export function crumbsFor(pathname: string, item: string | null = null): Crumb[]
         : crumbs.length === 3 && Object.hasOwn(RUN_PAGES, segment)
           ? RUN_PAGES[segment]
           : crumbs.length === 4 && segment === "file"
-            ? "File"
+            ? (file ?? "File")
             : undefined;
     crumbs.push((crumbs.length === 1 ? SECTIONS[segment] : undefined) ?? { label: tool ?? item ?? (previous === "runs" ? "Run" : "Not found") });
     previous = segment;
@@ -47,9 +49,9 @@ export function crumbsFor(pathname: string, item: string | null = null): Crumb[]
   return crumbs.map((crumb, i) => (i === crumbs.length - 1 ? { label: crumb.label } : crumb));
 }
 
-function Breadcrumbs({ item }: { item: string | null }) {
+function Breadcrumbs({ crumb }: { crumb: PageCrumb }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const crumbs = crumbsFor(pathname, item);
+  const crumbs = crumbsFor(pathname, crumb.item, crumb.file);
   return (
     <nav aria-label="Breadcrumb" className="sp-crumbs">
       <ol>
@@ -121,7 +123,7 @@ interface Props {
   phone: boolean;
   server: ServerVersion | null;
   down: string | null;
-  crumb: string | null;
+  crumb: PageCrumb;
   /** Receives the phone's title row, where a page puts its h1 (UX-PAR-08). */
   titleRow: (row: HTMLElement | null) => void;
 }
@@ -159,7 +161,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
         <span className="sp-word">Spectio</span>
       </Link>
       <span className="sp-rule" aria-hidden="true" />
-      <Breadcrumbs item={crumb} />
+      <Breadcrumbs crumb={crumb} />
       <button type="button" className="sp-search" disabled aria-label="Search (not in 0.0.1)">
         <Icon path={SEARCH} size={16} />
         <span className="sp-search-text">Search (not in 0.0.1)</span>

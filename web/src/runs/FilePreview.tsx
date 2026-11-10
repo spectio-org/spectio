@@ -639,7 +639,7 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
   // the name the server answered for once known, else the URL's last part (a path that passed
   // isResultPath); a refused path is never shown (SEC-P3T32B-02)
   const fileName = file?.name ?? (valid ? path.split("/").pop()! : null);
-  usePageCrumb(name);
+  usePageCrumb(name, file?.name ?? null);
   useEffect(() => {
     if (name && !work) document.title = `${fileName ?? "File preview"} · ${name} · Spectio`;
     else if (name && taskName) document.title = `${fileName ?? "File preview"} · ${taskName} · ${name} · Spectio`;

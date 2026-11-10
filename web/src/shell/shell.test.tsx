@@ -125,6 +125,17 @@ test.each([
   expect(items).toEqual(["Home", "Runs", "rnaseq-a", page, ...(last ? [last] : [])]);
 });
 
+test("CR-P3FU104-01: a file page's breadcrumb ends with the name the server answered for, not the URL's", async () => {
+  const id = "run_01JBC6Q4ZK7M8N2P3R5S7T9V1W";
+  const stat = { root: "/g/demo-lab/rnaseq", path: "tables/counts.tsv", name: "counts.tsv", type: "file", size: 12, mtime: "2026-11-10T09:00:00Z" };
+  serve({ [`/api/v1/runs/${id}`]: { ...run(), ...DETAIL }, [`/api/v1/runs/${id}/`]: () => json(404, { title: "Not found" }), [`/api/v1/runs/${id}/results/stat/`]: stat });
+  app(`/runs/${id}/results/file?path=tables/counts.tsv`);
+  const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
+  expect(await within(crumbs).findByText("counts.tsv")).toHaveAttribute("aria-current", "page");
+  expect(within(crumbs).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["Home", "Runs", "rnaseq-a", "Results", "counts.tsv"]);
+  expect(within(crumbs).queryByText("tables/counts.tsv")).toBeNull();
+});
+
 test("a malformed percent sequence keeps the shell (CR-P3G4-01)", async () => {
   app("/runs/%E0");
   const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
