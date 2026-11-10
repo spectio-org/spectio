@@ -52,3 +52,14 @@
 .sp-prof-out {
   margin-top: 14px;
 }
+/* On the phone (MLiteProfile, ui-spec §4.10.1): Copy keys are 44 px touch targets, Sign out is
+   full width. */
+@media (max-width: 767.98px) {
+  .sp-prof-paths .sp-key {
+    width: 44px;
+    height: 44px;
+  }
+  .sp-prof-out {
+    width: 100%;
+  }
+}
