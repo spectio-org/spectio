@@ -330,6 +330,26 @@ class Me(BaseModel):
     paths: MePaths
 
 
+NotificationKind = Literal["run_succeeded", "run_failed", "run_cancelled", "gate_waiting"]
+
+
+class Notification(BaseModel):
+    id: str
+    kind: NotificationKind
+    run_id: str
+    run_name: str | None
+    at: str
+    read: bool
+
+
+class Notifications(BaseModel):
+    """`GET /me/notifications` in 0.0.1 (api §5.9): derived from the run records."""
+
+    items: list[Notification]
+    unread: int
+    read_up_to: str | None
+
+
 ProcessStatus = Literal[
     "pending",
     "running",
