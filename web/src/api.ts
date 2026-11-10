@@ -172,6 +172,28 @@ export interface RunDetail extends Run {
    * P1 Task 31). */
   results_dir: string | null;
   engine_settings?: EngineSettings;
+  /** The launch's default resources and extra config file as recorded; null when the launch set
+   * none (FU-P3-110a, api §5.7). */
+  default_resources: RunDefaultResources | null;
+  config_file: RunConfigFile | null;
+}
+
+/** Schema `RunDefaultResources` (api §5.7): its fields are null unless `state` is `recorded`. */
+export interface RunDefaultResources {
+  cpus: number | null;
+  mem_mib: number | null;
+  time_min: number | null;
+  state: "recorded" | "not_readable";
+}
+
+/** Schema `RunConfigFile` (api §5.7): what a run keeps of its extra config file. */
+export interface RunConfigFile {
+  path: string | null;
+  kept_as: "extra.config" | "extra.yaml" | "extra.json" | null;
+  sha256: string | null;
+  size: number | null;
+  includes: boolean | null;
+  state: "recorded" | "not_readable";
 }
 
 /** Schema `ResultEntry`: one item of a results folder. */
@@ -232,6 +254,9 @@ export interface LaunchTemplate {
   environment: string;
   /** Why the default is chosen instead of the run's environment. */
   environment_notice: string | null;
+  /** As recorded, and the extra config file's path (FU-P3-110a, api §5.7). */
+  default_resources: { [key: string]: number | null } | null;
+  config_file: string | null;
 }
 
 /** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */

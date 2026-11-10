@@ -306,10 +306,23 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
     defaults = schema_defaults(found.schema if found.schema_source != "inferred" else None)
     extra = settings.engines.extra_args.get(row.engine, [])
     local = resolved.source == "local"
+    resources, config = _recorded(row.default_resources), _recorded(row.config_file)
+    path = None if config is None else config["path"]
+
+    def loads() -> list[dict[str, Any]]:
+        found = code_loading(row.location, local, params, row.engine, extra)
+        if path is not None:  # api §5.7, code_loading
+            found.append(
+                {
+                    "field": "config_file",
+                    "value": path,
+                    "writable_by_others": writable_by_others(path),
+                }
+            )
+        return found
+
     try:
-        loading = request.app.state.files.run(
-            lambda: code_loading(row.location, local, params, row.engine, extra), READ_TIMEOUT_S
-        )
+        loading = request.app.state.files.run(loads, READ_TIMEOUT_S)
     except Stalled as exc:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
     name, notice = _template_environment(request, row.environment)
@@ -321,7 +334,16 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         "code_loading": loading,
         "environment": name,
         "environment_notice": notice,
+        "default_resources": resources,
+        "config_file": path,
     }
+
+
+def _recorded(column: dict[str, Any] | None) -> dict[str, Any] | None:
+    """A `recorded` column of api §5.7 without its `state`; None otherwise."""
+    if column is None or column.get("state") != "recorded":
+        return None
+    return {k: v for k, v in column.items() if k != "state"}
 
 
 def _template_environment(

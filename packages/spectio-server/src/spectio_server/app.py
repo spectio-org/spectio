@@ -38,6 +38,7 @@ from spectio_server.api import (
     cancel,
     catalog,
     environments,
+    extras,
     logs,
     me,
     notifications,
@@ -138,6 +139,7 @@ def create_app(
     app.state.settings = settings
     app.state.writer = writer
     app.state.files = FilePool() if files is None else files  # dev-env §15.3 req. 13
+    app.state.home = extras.home_roots()  # read once, from the password database (api §5.7)
     app.state.imaging_slots = results.ImagingSlots(results.IMAGING_SLOTS)  # api §5.3.1
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
