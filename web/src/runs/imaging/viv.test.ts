@@ -51,12 +51,16 @@ beforeEach(() => {
 test("Viv is handed the opened GeoTIFF and our pool, not a URL; at most 6 channels on", async () => {
   const tiff = { opened: true };
   const pool = { decode: vi.fn() };
-  viv.loadOmeTiff.mockResolvedValue({ data: source([[2, 8, 3, 50, 100], [2, 8, 3, 25, 50]]), metadata: { Pixels: pixels(8) } });
+  viv.loadOmeTiff.mockResolvedValue({ data: source([[2, 8, 3, 50, 100], [2, 8, 3, 25, 50]]), metadata: { Pixels: { ...pixels(8), Channels: [{ Name: "DAPI", Color: [0, 0, 255, 255] }, { Name: " " }] } } });
   const opened = await openPixels(tiff as never, pool as never, "cells.ome.tif", ifds(48));
   expect(viv.loadOmeTiff).toHaveBeenCalledWith("cells.ome.tif", { source: tiff, pool });
   expect(opened.channels).toEqual([0, 1, 2, 3, 4, 5]);
   expect(opened.facts).toBe("100 × 50 px · 8 channels · 3 planes · 2 time points · uint16");
-  expect(opened.contrast[0][1]).toBeGreaterThan(opened.contrast[0][0]); // from the lowest level's percentiles
+  const { limits, domain } = await opened.stats(0);
+  expect(limits[1]).toBeGreaterThan(limits[0]); // from the lowest level's percentiles
+  expect(domain).toEqual([0, 300]); // its minimum and maximum
+  expect(opened.names).toEqual(["DAPI", ...Array.from({ length: 7 }, (_, c) => `Channel ${c + 2}`)]);
+  expect(opened.colours.slice(0, 2)).toEqual([[0, 0, 255], null]);
   expect(opened.data[1].getRaster).toHaveBeenCalledWith({ selection: { z: 0, t: 0, c: 0 } });
 });
 
@@ -77,10 +81,13 @@ test("one viewer at a time: a second one ends the first; each end loses its WebG
   const events = { onView: vi.fn(), onTileError: vi.fn(), onError: vi.fn() };
   const first = new Viewer(canvas, opened, events);
   expect(decks[0].props.canvas).toBe(canvas);
-  first.draw({ target: [1, 2, 0], zoom: 0 }, { z: 2, t: 1 }, 0);
+  const drawn = [0, 1].map((c) => ({ c, colour: [0, 0, 255] as [number, number, number], limits: [0, 9] as [number, number] }));
+  first.draw({ target: [1, 2, 0], zoom: 0 }, { z: 2, t: 1 }, 0, drawn);
   expect(viv.layers[0].selections).toEqual([{ z: 2, t: 1, c: 0 }, { z: 2, t: 1, c: 1 }]);
   expect(viv.layers[0].onTileError).toBe(events.onTileError);
-  first.draw({ target: [1, 2, 0], zoom: 0 }, { z: 2, t: 1 }, 1);
+  first.draw({ target: [1, 2, 0], zoom: 0 }, { z: 2, t: 1 }, 1, drawn);
+  first.draw({ target: [1, 2, 0], zoom: 0 }, { z: 2, t: 1 }, 1, []);
+  expect(decks[0].props.layers).toEqual([]); // every channel off: no layer
   expect(viv.layers[1].id).not.toBe(viv.layers[0].id); // a new epoch asks the tiles again
   const second = new Viewer(canvas, opened, events);
   expect(decks[0].finalize).toHaveBeenCalledOnce();
@@ -111,7 +118,7 @@ test("deck.gl's tile cache holds at most 256 MiB of decoded tiles", async () => 
   const canvas = document.createElement("canvas");
   canvas.getContext = (() => null) as never;
   const viewer = new Viewer(canvas, opened, { onView: vi.fn(), onTileError: vi.fn(), onError: vi.fn() });
-  viewer.draw({ target: [0, 0, 0], zoom: 0 }, { z: 0, t: 0 }, 0);
+  viewer.draw({ target: [0, 0, 0], zoom: 0 }, { z: 0, t: 0 }, 0, [{ c: 0, colour: [0, 0, 255], limits: [0, 9] }]);
   expect(viv.layers[0].maxCacheSize).toBe(Math.floor((256 * 1024 * 1024) / (512 * 512 * 2 * 2))); // 2 channels of uint16
   viewer.destroy();
 });
@@ -121,6 +128,7 @@ test("a lowest level over 4 megapixels takes its contrast from one tile, not fro
   const opened = await openPixels({} as never, {} as never, "f.ome.tif", [{ ImageWidth: 4096, ImageLength: 4096 }]);
   expect(opened.data[0].getRaster).not.toHaveBeenCalled();
   expect(opened.data[0].getTile).toHaveBeenCalledWith({ x: 0, y: 0, selection: { z: 0, t: 0, c: 0 } });
-  expect(opened.contrast[0][0]).toBeLessThan(0);
-  expect(opened.contrast[0][1]).toBeGreaterThan(0);
+  const { limits } = await opened.stats(0);
+  expect(limits[0]).toBeLessThan(0);
+  expect(limits[1]).toBeGreaterThan(0);
 });

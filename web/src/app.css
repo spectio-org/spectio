@@ -382,3 +382,39 @@
   font-size: 13px;
   color: var(--sp-state-review-fg);
 }
+
+/* The catalog picker (ui-spec §4.7.1; LiteLaunch, MLiteLaunch): Manage catalog beside the select on
+   a desktop, under it and full width, at least 44 px, on the phone (UX-P3FU87C-08). */
+.launch-cat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.launch-cat p {
+  margin: 0;
+}
+.launch-cat-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.launch-cat-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+@media (max-width: 767.98px) {
+  .launch-cat-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .launch-cat-row .mantine-Button-root {
+    min-height: 44px;
+  }
+  .launch-loaded {
+    flex-wrap: wrap;
+  }
+}

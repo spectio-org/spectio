@@ -10,27 +10,33 @@ import type { GeoTIFF } from "geotiff";
 import { registerCapped } from "./decode";
 import { percentiles } from "./flat";
 import type { DecoderPool } from "./pool";
+import { CHANNELS_ON } from "./url-state";
 import { type FileDirectory, IFDS_MAX, TooLarge, Unreadable } from "./walk";
 
 // Tiles are decoded by our pool (Viv passes it to readRasters, `dist/index.mjs:483-494`); geotiff's
 // registry on this thread gets our capped decoders back all the same, so no TIFF needs WebAssembly.
 registerCapped();
 
-export const CHANNELS_ON = 6;
 const STATS_MAX = 2048 * 2048; // contrast from the lowest level when it is at most this many pixels, else from its first tile
-const PALETTE: [number, number, number][] = [[0, 0, 255], [0, 255, 0], [255, 0, 255], [255, 255, 0], [0, 255, 255], [255, 128, 0]];
 const BYTES: Record<string, number> = { int8: 1, uint8: 1, int16: 2, uint16: 2, int32: 4, uint32: 4, float: 4 };
 const CACHE_MAX = 256 * 1024 * 1024; // deck.gl's tile cache, as decoded tiles (dev-env §15.3 req. 19)
 
 type Loaded = Awaited<ReturnType<typeof loadOmeTiff>>;
 export type ViewState = { target: [number, number, number]; zoom: number };
+export type Rgb = [number, number, number];
+/** A channel's contrast at open (its 0.1 and 99.9 percentiles) and its domain (minimum, maximum). */
+export type Stats = { limits: [number, number]; domain: [number, number] };
+/** A channel as drawn. */
+export type Drawn = { c: number; colour: Rgb; limits: [number, number] };
 export interface Pixels {
   data: Loaded["data"];
-  sizes: { z: number; t: number };
+  sizes: { x: number; y: number; z: number; c: number; t: number };
   facts: string;
   rgb: boolean;
+  names: string[]; // the OME-XML Channel Name, else "Channel <n>"
+  colours: (Rgb | null)[]; // the OME-XML Channel Color
   channels: number[]; // the channels on at open
-  contrast: [number, number][];
+  stats: (c: number) => Promise<Stats>; // read once per channel, the first channels' before the open ends
   cacheTiles: number; // deck.gl's tile cache, in tiles: 256 MiB of decoded tiles
 }
 
@@ -52,19 +58,36 @@ export async function openPixels(tiff: GeoTIFF, pool: DecoderPool, name: string,
   const lowest = data[data.length - 1];
   const { width, height } = getImageSize(lowest);
   const type = String(p.Type).toLowerCase();
-  const stats = async (c: number): Promise<[number, number]> => {
-    if (rgb) return [0, 255];
+  const read = async (c: number): Promise<Stats> => {
+    if (rgb) return { limits: [0, 255], domain: [0, 255] };
     const selection = { z: 0, t: 0, c };
-    const read = width * height > STATS_MAX ? lowest.getTile({ x: 0, y: 0, selection }) : lowest.getRaster({ selection });
-    return percentiles((await read).data as ArrayLike<number>);
+    const values = (await (width * height > STATS_MAX ? lowest.getTile({ x: 0, y: 0, selection }) : lowest.getRaster({ selection }))).data as ArrayLike<number>;
+    let [min, max] = [Infinity, -Infinity]; // NaN is skipped: it compares false
+    for (let i = 0; i < values.length; i++) {
+      if (values[i] < min) min = values[i];
+      if (values[i] > max) max = values[i];
+    }
+    const limits = percentiles(values);
+    return { limits, domain: min <= max ? [min, max] : limits };
   };
+  const cache = new Map<number, Promise<Stats>>();
+  const stats = (c: number) => {
+    if (!cache.has(c)) cache.set(c, read(c).catch((err) => (cache.delete(c), Promise.reject(err)))); // a failure is read again on Retry
+    return cache.get(c) as Promise<Stats>;
+  };
+  // the OME-XML Channel elements (@vivjs/loaders 0.23.0 `dist/index.mjs:646-652`, Color as RGBA by `intToRgba`, `:92-100`)
+  const meta = (p.Channels ?? []) as { Name?: string; Color?: number[] }[];
+  const names = Array.from({ length: p.SizeC }, (_, c) => meta[c]?.Name?.trim() || `Channel ${c + 1}`);
+  const colours = Array.from({ length: p.SizeC }, (_, c) => (meta[c]?.Color?.slice(0, 3) as Rgb | undefined) ?? null);
   const n = (v: number, one: string, many: string) => `${v.toLocaleString("en-US")} ${v === 1 ? one : many}`;
   const facts = [`${p.SizeX.toLocaleString("en-US")} × ${p.SizeY.toLocaleString("en-US")} px`, n(p.SizeC, "channel", "channels"), n(p.SizeZ, "plane", "planes"), n(p.SizeT, "time point", "time points"), type];
   // Viv's tiles ({data, width, height}) have no byteLength, so deck.gl's maxCacheByteSize cannot
   // count them (@deck.gl/geo-layers 9.4.1 `dist/tileset-2d/tile-2d-header.js:54-55`): the cap is a count
-  const tileBytes = data[0].tileSize ** 2 * (rgb ? 3 : channels.length) * (BYTES[type] ?? 4);
+  const tileBytes = data[0].tileSize ** 2 * (rgb ? 3 : Math.min(CHANNELS_ON, p.SizeC)) * (BYTES[type] ?? 4);
   const cacheTiles = Math.max(1, Math.floor(CACHE_MAX / tileBytes));
-  return { data, sizes: { z: p.SizeZ, t: p.SizeT }, facts: facts.join(" · "), rgb, channels, contrast: await Promise.all(channels.map(stats)), cacheTiles };
+  await Promise.all(channels.map(stats));
+  const all = { x: p.SizeX, y: p.SizeY, z: p.SizeZ, c: p.SizeC, t: p.SizeT };
+  return { data, sizes: all, facts: facts.join(" · "), rgb, names, colours, channels, stats, cacheTiles };
 }
 
 export interface Events {
@@ -103,15 +126,16 @@ export class Viewer {
     return getDefaultInitialViewState(this.pixels.data, size) as ViewState;
   }
 
-  /** Draws plane `z`, `t` (0-based) at `view`; a new `epoch` asks every tile again. */
-  draw(view: ViewState, { z, t }: { z: number; t: number }, epoch: number) {
-    const { data, rgb, channels, contrast } = this.pixels;
+  /** Draws `channels` of plane `z`, `t` (0-based) at `view`; a new `epoch` asks every tile again. */
+  draw(view: ViewState, { z, t }: { z: number; t: number }, epoch: number, channels: Drawn[]) {
+    const { data, rgb } = this.pixels;
+    if (!channels.length) return this.deck?.setProps({ viewState: view, layers: [] }); // every channel off: black
     const layer = new MultiscaleImageLayer({
       id: `ome-${epoch}`,
       loader: data,
-      selections: channels.map((c) => ({ z, t, c })),
-      contrastLimits: contrast,
-      colors: rgb ? [[255, 255, 255]] : channels.map((c) => PALETTE[c % PALETTE.length]),
+      selections: channels.map(({ c }) => ({ z, t, c })),
+      contrastLimits: channels.map((d) => d.limits),
+      colors: rgb ? [[255, 255, 255]] : channels.map((d) => d.colour),
       channelsVisible: channels.map(() => true),
       onTileError: this.events.onTileError,
       maxCacheSize: this.pixels.cacheTiles, // passed on to deck.gl's TileLayer (@vivjs/layers 0.23.0 `dist/index.mjs:979`)
