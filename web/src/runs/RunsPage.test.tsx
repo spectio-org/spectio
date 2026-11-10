@@ -3,6 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { FakeEventSource, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
+// The runs page renders AG Grid and these tests type with userEvent: several take 3 to 4.5 s
+// here and went past the default 5 s on CI once FU-P3-115b added its columns (#248).
+vi.setConfig({ testTimeout: 15_000 });
+
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
 
@@ -293,7 +297,7 @@ test("FU-P3-115b: the Delete sheet lists the runs and sends directories only whe
   await userEvent.click(within(again).getByRole("checkbox", { name: "Also delete their run directories" }));
   await userEvent.click(within(again).getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(bodies[1]).toEqual({ ids: [done.id], directories: true }));
-}, 15_000); // the grid, the sheet and its two submits: ~4.4 s alone, over 5 s on CI
+});
 
 test("FU-P3-115b: a 409 keeps the sheet open with the run named and why", async () => {
   serve({
@@ -442,7 +446,7 @@ test("CR-P3FU115B-02: under another sort, a row that leaves the first page stays
   await userEvent.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => expect(screen.queryByRole("button", { name: "Load more" })).toBeNull());
   expect(screen.getAllByRole("link", { name: "Open run sarek-c" })).toHaveLength(1);
-}, 15_000); // waits on purpose (debounced refetch, a real 1.2 s pause): ~4.4 s alone, over 5 s on CI
+});
 
 test("CR-P3FU115B-03: the grid sorts on one column only: Shift on a second header does not add a sort", async () => {
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), failed], next: null } });
