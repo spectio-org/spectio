@@ -31,6 +31,8 @@ test("home shows the count cards, the active runs, the runs that ended and the p
   const pipelines = screen.getByRole("region", { name: "Your pipelines" });
   expect(await within(pipelines).findByText("/g/demo-lab/pipelines/plate-qc")).toBeInTheDocument();
   expect(within(pipelines).getByText("/g/demo-lab/pipelines/rnaseq")).toBeInTheDocument();
+  // ui-spec §4.7.1: Home reaches the Catalog page (FU-P3-87d)
+  expect(within(pipelines).getByRole("link", { name: "Your catalog" })).toHaveAttribute("href", "/catalog");
   expect(screen.getByRole("link", { name: "Launch a workflow" })).toHaveAttribute("href", "/launch");
   expect(within(active).getByRole("link", { name: "All runs" })).toHaveAttribute("href", "/runs");
   // inbox #91 (b): the pipeline's mark, nf-core for an nf-core/ name, else the engine's (P3-parC)

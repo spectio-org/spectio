@@ -60,6 +60,12 @@ _RESUME = (
     "  {{ echo 'spectio: the launch directory is not the one checked (req. 16)' >&2; exit 1; }}\n"
     "umask 022\n"
 )
+# The engine starts in a subshell, whose INT and TERM are not trapped, and which checks the
+# cancel marker first: a Cancel writes it before its SIGTERM, so a SIGTERM that a trapping shell
+# took before the engine started is never lost; one after the check reaches the subshell, or
+# the engine it became (bash execs the last command). Without it the engine could still start
+# after a Cancel and run until its SIGKILL (FU-P3-108a).
+_ENGINE = "( [ -e {cancel} ] && exit 143; {command} )\n"
 SESSION_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 LOCK = ".spectio-launch.lock"  # in the engine's directory, while a head of Spectio runs there
 LOCKED = 75  # head.exit's code when another head holds the lock
@@ -97,8 +103,12 @@ lock={lock}
 if [ -e .spectio/cancel ]; then
   code=143  # cancelled before the engine ran
 elif ! (set -C; printf '%s\\n' {run_id} > "$lock") 2>/dev/null; then
-  echo "spectio: $lock exists: another Spectio head runs there" > .spectio/head.out
-  code={locked}
+  if [ -e .spectio/cancel ]; then
+    code=143  # a Cancel's SIGTERM ended the subshell that takes the lock
+  else
+    echo "spectio: $lock exists: another Spectio head runs there" > .spectio/head.out
+    code={locked}
+  fi
 else
   {banner} > .spectio/head.out
   (umask "$um"; exec env -i "${{keep[@]}}" bash -l -c {inner} spectio-head) 2>&1 |
@@ -278,6 +288,7 @@ def render_head_script(spec: LaunchSpec) -> str:
     exports = " ".join(f"{k}={shlex.quote(v)}" for k, v in engine_env(spec).items())
     command = " ".join([spec.engine_cmd, *map(shlex.quote, engine_args(spec))])
     tools = {t: shlex.quote(shutil.which(t) or t) for t in ("timeout", "mv", "rm", "stat")}
+    own = str(_spectio(spec))
     inner = (
         f"trap : INT TERM\ncd -- {shlex.quote(str(spec.engine_dir))} || exit 1\nexport {exports}\n"
     )
@@ -293,7 +304,6 @@ def render_head_script(spec: LaunchSpec) -> str:
             unlock = " ".join([spec.engine_cmd, *map(shlex.quote, _snakemake_base(spec))])
             inner += f"{unlock} --unlock || exit $?\n"
         listing = " ".join([spec.engine_cmd, *map(shlex.quote, list_rules_args(spec))])
-        own = str(_spectio(spec))
         inner += _LIST_RULES.format(
             s=LIST_RULES_S,
             command=listing,
@@ -304,7 +314,7 @@ def render_head_script(spec: LaunchSpec) -> str:
             rules=shlex.quote(own + "/rules.txt"),
             cancel=shlex.quote(own + "/cancel"),
         )
-    inner += f"{command}\n"
+    inner += _ENGINE.format(cancel=shlex.quote(own + "/cancel"), command=command)
     line = banner(spec)
     return _HEAD.format(
         run_id=spec.run_id,

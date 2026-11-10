@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import type { ServerVersion } from "../api";
 import { ICONS, Icon } from "../icons";
 
-type To = "/" | "/runs" | "/launch" | "/environments";
+type To = "/" | "/runs" | "/launch" | "/environments" | "/catalog";
 interface Crumb {
   label: string;
   to?: To;
@@ -15,6 +15,9 @@ const SECTIONS: Record<string, { label: string; to: To }> = {
   environments: { label: "Environments", to: "/environments" },
 };
 
+/** The Catalog pages are Launch's, without a `NAV` item (ui-spec §4.7.1): Home › Launch › Catalog. */
+const CATALOG: Crumb[] = [SECTIONS.launch, { label: "Catalog", to: "/catalog" }];
+
 const RUN_PAGES: Record<string, string> = { report: "Report", results: "Results" };
 
 /** Home > section > item, from the path; every crumb but the last is a link. The URL's own text
@@ -25,6 +28,10 @@ export function crumbsFor(pathname: string, item: string | null = null): Crumb[]
   const crumbs: Crumb[] = [{ label: "Home", to: "/" }];
   let previous = "";
   for (const segment of pathname.split("/").filter(Boolean)) {
+    if (crumbs.length === 1 && segment === "catalog") {
+      crumbs.push(...CATALOG);
+      continue;
+    }
     const tool = crumbs.length === 3 && crumbs[1].to === "/runs" && Object.hasOwn(RUN_PAGES, segment) ? RUN_PAGES[segment] : undefined;
     crumbs.push((crumbs.length === 1 ? SECTIONS[segment] : undefined) ?? { label: tool ?? item ?? (previous === "runs" ? "Run" : "Not found") });
     previous = segment;

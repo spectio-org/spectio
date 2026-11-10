@@ -10,6 +10,9 @@ const TILE_SIDE_MAX = 4096;
 const STORED_MAX = 8 * MIB; // a tile or strip as stored
 const DECODED_MAX = 64 * MIB; // a tile or strip as decoded
 const OME_XML_MAX = 4 * MIB;
+// Viv builds a pixel source per SubIFD level (@vivjs/loaders 0.23.0 `dist/index.mjs:837-838`, `:903-915`)
+// and shifts by the level (`:239-240`), which wraps past 31
+const LEVELS_MAX = 20;
 // geotiff parses every tag of an IFD at once, allocating each one's declared count, so the walk
 // reads the entry table itself first (through the charged client) and holds it to these caps.
 const ENTRIES_MAX = 1024;
@@ -61,6 +64,7 @@ function check(fd: FileDirectory) {
     widest = Math.max(widest, b);
   }
   // a tile, or a strip of ImageWidth x RowsPerStrip, decoded: each sample at the widest bits given
+  if (many(fd.SubIFDs).length + 1 > LEVELS_MAX) throw new TooLarge(`over ${LEVELS_MAX} resolution levels`);
   const width = scalar(fd, "ImageWidth");
   const height = scalar(fd, "ImageLength");
   const [w, h] = tiled ? [tw, tl] : [width, Math.min(scalar(fd, "RowsPerStrip", height), height)];
@@ -105,14 +109,17 @@ async function prescan(tiff: GeoTIFF, offset: number, size: number): Promise<num
   return total;
 }
 
+/** What the walk allowed, which the later parses carry on from: the IFD offsets and the bytes of tag values. */
+export type Walked = { offsets: number[]; values: number };
+
 /** The IFDs of an opened TIFF (of `client.size` bytes), in order; `loop` when the chain came back. */
-export async function walkIfds(tiff: GeoTIFF, client: PinnedClient, max = IFDS_MAX): Promise<{ ifds: FileDirectory[]; loop: boolean }> {
+export async function walkIfds(tiff: GeoTIFF, client: PinnedClient, max = IFDS_MAX): Promise<{ ifds: FileDirectory[]; loop: boolean } & Walked> {
   const size = client.size;
   const seen = new Set<number>();
   const ifds: FileDirectory[] = [];
   let values = 0;
   for (let offset = tiff.firstIFDOffset; offset !== 0; ) {
-    if (seen.has(offset)) return { ifds, loop: true };
+    if (seen.has(offset)) return { ifds, loop: true, offsets: [...seen], values };
     if (!Number.isSafeInteger(offset) || offset < 8 || offset + 2 > size) throw new Unreadable(`an IFD at ${offset}, past the end`);
     if (ifds.length >= max) throw new TooLarge(`over ${max.toLocaleString("en-US")} IFDs`);
     seen.add(offset);
@@ -124,7 +131,7 @@ export async function walkIfds(tiff: GeoTIFF, client: PinnedClient, max = IFDS_M
     ifds.push(fd);
     offset = Number(ifd.nextIFDByteOffset);
   }
-  return { ifds, loop: false };
+  return { ifds, loop: false, offsets: [...seen], values };
 }
 
 /** Whether a first IFD's ImageDescription is OME-XML, and if so whether it names this file only
@@ -149,4 +156,31 @@ export function omeFiles(description: string | undefined, name: string): "none" 
     uuids.add(uuid.textContent?.trim() ?? "");
   }
   return uuids.size > 1 ? "others" : "one";
+}
+
+/** After the walk, holds every IFD geotiff or Viv parses later (a plane's IFD, a SubIFD level,
+ * which the walk does not reach) to the walk's caps: the offset inside the file, its entry table
+ * prescanned, its tags checked, at most 10,000 offsets with the walked ones, each parsed once, the
+ * tag values within the walk's budget with what the walk read. */
+export function guardParses(tiff: GeoTIFF, client: PinnedClient, walked: Walked = { offsets: [], values: 0 }, max = IFDS_MAX) {
+  const parse = tiff.parseFileDirectoryAt.bind(tiff);
+  const parsed = new Map<number, ReturnType<typeof parse>>();
+  const counted = new Set(walked.offsets);
+  let values = walked.values;
+  const checked = async (offset: number) => {
+    if (!Number.isSafeInteger(offset) || offset < 8 || offset + 2 > client.size) throw new Unreadable(`an IFD at ${offset}, past the end`);
+    const known = counted.has(offset); // walked: counted and charged already
+    if (!known && counted.size >= max) throw new TooLarge(`over ${max.toLocaleString("en-US")} IFDs`);
+    counted.add(offset);
+    const length = await reading(client, () => prescan(tiff, offset, client.size));
+    if (!known) values += length;
+    if (values > WALK_VALUES_MAX) throw new TooLarge("the IFDs' tags over 256 MiB");
+    const ifd = await reading(client, () => parse(offset));
+    check(ifd.fileDirectory as FileDirectory);
+    return ifd;
+  };
+  tiff.parseFileDirectoryAt = (offset: number) => {
+    if (!parsed.has(offset)) parsed.set(offset, checked(offset));
+    return parsed.get(offset)!;
+  };
 }

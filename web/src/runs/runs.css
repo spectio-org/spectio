@@ -1859,6 +1859,112 @@
 .sp-file-natural {
   font-size: 12px;
 }
+/* the WebGL viewer: a black backdrop in both themes, the focus ring outside the canvas */
+.sp-ome-region {
+  position: relative; /* deck.gl places its canvas absolutely */
+  height: 60vh;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+  outline-offset: 2px;
+}
+.sp-ome-canvas {
+  width: 100%;
+  height: 100%;
+}
+/* the channel list beside the canvas (board LiteImageViewer); under it below 1024 px */
+.sp-ome-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 16px;
+}
+.sp-ome-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--sp-surface-subtle);
+}
+.sp-ome-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 70vh;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-ome-row {
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--sp-surface-raised);
+  box-shadow: 0 0 0 1px var(--sp-line-border);
+}
+.sp-ome-row > .sp-file-line {
+  justify-content: space-between;
+}
+.sp-ome-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere; /* a long name wraps */
+}
+.sp-ome-name small {
+  color: var(--sp-text-secondary);
+}
+.sp-ome-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+.sp-ome-switch {
+  width: 36px;
+  height: 22px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--sp-line-input);
+  cursor: pointer;
+}
+.sp-ome-switch::after {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin-left: 3px;
+  border-radius: 50%;
+  background: #fff;
+}
+.sp-ome-switch[aria-checked="true"] {
+  background: var(--sp-text-link);
+}
+.sp-ome-switch[aria-checked="true"]::after {
+  margin-left: 17px;
+}
+.sp-ome-switch:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+.sp-ome-range {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.sp-ome-range span {
+  font-family: var(--sp-font-mono);
+}
+.sp-ome-full {
+  margin: 0; /* a live region: kept in the page when empty, so its message is announced */
+  color: var(--sp-state-review-fg);
+}
+@media (max-width: 1023.98px) {
+  .sp-ome-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 @media (max-width: 767.98px) {
   .sp-file-pager {
     flex-direction: column;

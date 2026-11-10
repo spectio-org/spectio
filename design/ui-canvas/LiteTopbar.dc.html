@@ -87,7 +87,7 @@ renderVals() {
   // "Runs / rnaseq-2026-10-25 / Tasks" becomes Home > Runs > rnaseq-2026-10-25 > Tasks; every crumb but the last is a link.
   const runPages = { 'rnaseq-2026-10-25': 'LiteRunDetail.dc.html', 'wgs-cohort-12': 'LiteRunFailed.dc.html',
     'strandseq-hg002-p01': 'LiteRunDetailSnakemake.dc.html', 'rnaseq-pilot-hand': 'LiteRunObserved.dc.html' };
-  const pages = { Home: 'LiteHome.dc.html', Runs: 'LiteRuns.dc.html', Launch: 'LiteLaunch.dc.html', ...runPages };
+  const pages = { Home: 'LiteHome.dc.html', Runs: 'LiteRuns.dc.html', Launch: 'LiteLaunch.dc.html', Catalog: 'LiteCatalog.dc.html', ...runPages };
   const parts = (this.props.crumbs ?? 'Runs').split(' / ').filter(Boolean);
   if (parts[0] !== 'Home') parts.unshift('Home');
   // Below 1000 px, on a page under a run, the crumbs between Home and the run fold into "…" (tb-mid, tb-gap):

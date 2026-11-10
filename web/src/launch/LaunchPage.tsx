@@ -322,15 +322,19 @@ export function LaunchPage({
     return found;
   }
 
-  /** A reason's link: opens the sections that hold its field, then moves focus there. */
-  function focusField(to: string) {
-    setGoTo(to);
-    setTimeout(() => {
-      const at = document.getElementById(targetId(to));
-      const control = at?.matches("input, select, textarea, button") ? at : at?.querySelector<HTMLElement>("input, select, textarea, button");
-      control?.focus();
-      setGoTo(null);
-    }, 0);
+  /** A reason's link: moves focus to its field and scrolls it into view; a field in a folded
+   * section is not rendered yet, so the sections open and it is tried again on the next frames
+   * (inbox #146 item 11). */
+  function focusField(to: string, frames = 10) {
+    const at = document.getElementById(targetId(to));
+    const control = at?.matches("input, select, textarea, button") ? at : at?.querySelector<HTMLElement>("input, select, textarea, button");
+    if (control) {
+      control.focus();
+      control.scrollIntoView?.({ block: "center" });
+      return setGoTo(null);
+    }
+    setGoTo(frames > 0 ? to : null);
+    if (frames > 0) requestAnimationFrame(() => focusField(to, frames - 1));
   }
 
   async function submit() {
@@ -659,7 +663,7 @@ export function LaunchPage({
               <dt>Environment</dt>
               <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
               <dt>Engine head</dt>
-              <dd>{headLine}</dd>
+              <dd>{engine ? headLine : "Not chosen yet"}</dd>
               <dt>Tasks</dt>
               <dd>{tasksLine()}</dd>
               <dt>Run directory</dt>

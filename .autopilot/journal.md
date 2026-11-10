@@ -810,3 +810,39 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Live screenshots of Launch taken from a local `spectio serve` on its Unix socket only (Playwright relays each request over the socket, Host header kept): no TCP port. Seen: Engine head reads "Not chosen yet" in Where it runs but "a process on vm" in the summary; minor for FU-P3-108.
 - Batch P3-B11 (86f, 86g, 86h, 109; d2147ede..b35198e2) started; FU-P3-102c2 boards in flight. After B11: promote, then ask login1 for retest d.
 - 2026-11-09 — Thomas: pause at the next wave. In flight finish (batch P3-B11 docs, FU-P3-102c2 boards, their PRs, the B11 promotion); no new task starts until Thomas resumes.
+
+## 2026-11-09 — 215, 216 merged; promotion P3-B11 (#217); paused
+- Merged #215 (FU-P3-102c2 boards; the worker could not run ux-reviewer, so the orchestrator ran it: approve 0/0/7; 11 minors open for FU-P3-108 and FU-P3-102d/g) and #216 (batch P3-B11 docs). #216 docs-gate first failed on the screenshot churn guard (nine Launch shots retaken on purpose); the `screenshots` label opts in. Promoted to main (#217, merge 74b4c939), with the same label.
+- Costs (subagent tokens): 102c2 ~309k + ux-reviewer ~69k, B11 ~859k.
+- login1 asked for retest d on main 74b4c939 (report-2026-11-09d.md).
+- Paused at Thomas's request: no new task starts until he resumes. Next on resume: FU-P3-102d2.
+
+## 2026-11-10 — handoff to the next-wave session
+
+- Lean helpers committed to `tools/autopilot/lean/` (0d8b4f77): p3-lean.js, p3-batch.js, prflow.sh (SCRATCH now required), waitci.sh, resolve_docs.py, sockshot.js, README.
+- New orchestrator session session_01MF8RxQASDmXaFjVA49aybZ, from autopilot/integration: wave FU-P3-102d2 → 102g, 87, 88 (+101, 104), 110 spec, 111, 112, 89, 113; 108 minors, 106b and the flaky cancel test in parallel. Speed rules: up to 3 disjoint tasks in flight, batch every 4–5, promote at once; live retests through the local session cshk_01MF8RxPQMMC58MHn31SYWYyUCNZQatBzPebBAU92BEyyq (login1).
+- This session stops orchestrating.
+
+## 2026-11-10 — next wave: tasks 218–227 merged, batch P3-B12
+
+Orchestrator session session_01MF8RxQASDmXaFjVA49aybZ. Lean helpers: p3-lean per task, p3-batch per batch.
+
+**Merged into integration**
+- FU-P3-102d2 #218: the decoder worker and the capped Deflate and LZW decoders.
+- FU-P3-87 spec #219: inbox #147, api §5.6, ui-spec §4.7.1.
+- FU-P3-108a #220: the cancel race. A local cancel reads cancelled as soon as the head exits; this was the root cause of the flaky cancel test.
+- FU-P3-102d3 #221: the TIFF flat view. CI first failed on the packaging globs, then passed once they were fixed.
+- FU-P3-108b #222: focus moves to the form on New and Edit, and to the field from Before Launch.
+- FU-P3-87a #223: catalog.toml, `spectio.locations`, and `envfile` generalised.
+- FU-P3-106b #224: a MaxQueryTimeRange refusal is final. The 1-second bound of `test_req13_directive_linear` failed once on a loaded runner (1.0008 s) and passed on the next head; the robust bound is left for the FU-P3-108 minors.
+- FU-P3-87b #225: the catalog routes and inspect's `params_file`; security review run.
+- FU-P3-87c #226: the catalog boards. The worker could not run `ux-reviewer`, so the orchestrator did: approve 0/0/8. 02–05 were fixed on the branch; 01 and 06–08 are carried to 87d and 87e.
+- FU-P3-102e #227: the OME-TIFF viewer with Viv 0.23.0, deck.gl 9.4.1 and luma.gl 9.4.2. Every finding but one was fixed: the npm audit gate is met with overrides, and there is now a no-OME fallback, a lifecycle fix and a 20-level cap. Open: SEC-P3FU102E-05, the viewer test on Firefox and WebKit (only Chromium is available here and in CI), recorded in inbox #148. The CSP is unchanged.
+
+**Batch P3-B12** (102d2, 87-spec, 108a, 102d3, 108b)
+- The simplifier changed 3 lines; doc-reviewer approved at 13/14.
+- At the merge, the Progress page sections duplicated by the batch move were deduplicated, and the batch's FU-P3-114 inbox entry was renumbered #149, since #148 was already the 102e entry.
+
+**Costs** (subagent tokens): 106b ~383k, 87b ~425k, 87c ~486k + ux-reviewer ~115k, 102e ~596k + docs ~72k, 87d ~485k, 102f ~375k, B12 ~836k.
+
+**In flight:** 87d (#228), 102f. **Next:** promote B12, then the login1 retest; batch B13 (87a, 106b, 87b, 87c, 102e).

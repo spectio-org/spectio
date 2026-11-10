@@ -360,7 +360,7 @@ export interface Efficiency {
   peak_rss_bytes: number | null;
   state: "running" | "pending_accounting" | "available" | "unavailable";
   source: "sacct" | "trace" | "benchmark" | null;
-  reason: "local" | "no_job_id" | "accounting_off" | "not_found" | "cached" | null;
+  reason: "local" | "no_job_id" | "accounting_off" | "not_found" | "cached" | "max_query_time_range" | null;
 }
 
 /** Schema `Task`. */
@@ -669,3 +669,31 @@ export const replaceEnvironment = (body: EnvironmentBody, etag: string): Promise
 export const deleteEnvironment = (name: string, etag: string): Promise<null> =>
   call(env(name), { method: "DELETE", headers: { "if-match": etag } });
 export const makeDefault = (name: string): Promise<null> => call(`${env(name)}:make-default`, { method: "POST" });
+
+/** Schema `CatalogItem` (api §5.6): a named pipeline location with its launch defaults. */
+export interface CatalogItem {
+  name: string;
+  label: string | null;
+  engine: "nextflow" | "snakemake";
+  location: string;
+  revision: string | null;
+  profile: string | null;
+  params_file: string | null;
+  etag: string;
+}
+export type CatalogBody = Omit<CatalogItem, "etag">;
+
+/** Schema `CatalogList`: the entries in name order, and the file's state (empty unless `ok`). */
+export interface CatalogList {
+  items: CatalogItem[];
+  file: EnvironmentList["file"];
+}
+
+const entry = (name: string) => `/catalog/${encodeURIComponent(name)}`;
+export const listCatalog = (signal?: AbortSignal): Promise<CatalogList> => call("/catalog", { signal });
+export const getCatalogEntry = (name: string, signal?: AbortSignal): Promise<CatalogItem> => call(entry(name), { signal });
+export const createCatalogEntry = (body: CatalogBody): Promise<CatalogItem> => call("/catalog", sendJson("POST", body));
+export const replaceCatalogEntry = (body: CatalogBody, etag: string): Promise<CatalogItem> =>
+  call(entry(body.name), sendJson("PUT", body, etag));
+export const deleteCatalogEntry = (name: string, etag: string): Promise<null> =>
+  call(entry(name), { method: "DELETE", headers: { "if-match": etag } });
