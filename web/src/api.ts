@@ -594,7 +594,7 @@ const resultPath = (path: string) => path.split("/").map(encodeURIComponent).joi
 /** Where a results file is served: an HTML report with the sandbox CSP of req. 14 (for the
  * report viewer's iframe), any other file, or `download`, as an attachment; `as: "image"` for
  * the preview's `<img>` (api §5.3). */
-export const resultUrl = (id: string, path: string, opts: { download?: boolean; as?: "image" | "tiff" } = {}, work?: WorkRoot) =>
+export const resultUrl = (id: string, path: string, opts: { download?: boolean; as?: "image" | "tiff" | "zarr" } = {}, work?: WorkRoot) =>
   `${API}${tree(id, work)}/raw/${resultPath(path)}${query({ download: opts.download ? "true" : null, as: opts.as })}`;
 
 /** Where a results file is read as text (api §5.3). */

@@ -78,6 +78,8 @@ spectio_server/store/writer.py
 spectio_server/web/THIRD_PARTY_NOTICES.txt
 spectio_server/web/assets/DataGrid-*.js
 spectio_server/web/assets/OmeView-*.js
+spectio_server/web/assets/blosc-*.js
+spectio_server/web/assets/chunk-INHXZS53-*.js
 spectio_server/web/assets/decoder.worker-*.js
 spectio_server/web/assets/deflate-*.js
 spectio_server/web/assets/expression-*.js
@@ -89,8 +91,10 @@ spectio_server/web/assets/lerc-*.js
 spectio_server/web/assets/logo-nextflow-*.png
 spectio_server/web/assets/logo-nf-core-*.png
 spectio_server/web/assets/logo-snakemake-*.png
+spectio_server/web/assets/lz4-*.js
 spectio_server/web/assets/lzw-*.js
 spectio_server/web/assets/packbits-*.js
 spectio_server/web/assets/raw-*.js
 spectio_server/web/assets/webimage-*.js
+spectio_server/web/assets/zstd-*.js
 spectio_server/web/index.html

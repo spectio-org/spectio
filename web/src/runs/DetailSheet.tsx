@@ -6,7 +6,7 @@ import { useFrames } from "../live";
 import { usePhone } from "../shell/layout";
 import { bytes, nearLimit, seconds } from "./resources";
 import { efficiencyFacts } from "./ByProcess";
-import { NearLimit, Word, taskLabel } from "./RunState";
+import { CheckpointMark, NearLimit, Word, taskLabel } from "./RunState";
 import { Facts, SlurmFacts } from "./SlurmFacts";
 import { TaskFiles } from "./TaskFiles";
 import { type Shown, isTerminal, lastSegment, neededFirst, processState, refresh, stageWord, sum, taskWord, total, words } from "./stateWord";
@@ -142,6 +142,11 @@ function ProcessTasks({ run, process, name, onOpen }: { run: RunDetail; process:
   );
 }
 
+/** What a checkpoint does, and what a resume skips (ui-spec §5.2; Snakemake's data-dependent
+ * conditional execution, research note dag-temp-slurm-efficiency-2026-11-07 §2). */
+const CHECKPOINT_LINE =
+  "A checkpoint: once its jobs succeed, Snakemake updates the DAG from their outputs. A resume skips the jobs that finished and updates the DAG from the outputs they left.";
+
 function ProcessView({ run, stages, process, onOpen, onTasks }: { run: RunDetail; stages: Stage[]; process: Process; onOpen: Props["onOpen"]; onTasks: Props["onTasks"] }) {
   const w = words(run.workflow.engine);
   const name = lastSegment(process.process);
@@ -152,9 +157,10 @@ function ProcessView({ run, stages, process, onOpen, onTasks }: { run: RunDetail
       <p className="sp-mono sp-sheet-name">{process.process}</p>
       <p className="sp-sub">
         <Word state={state} word={word} />
-        {process.is_checkpoint && <span className="sp-chip">Checkpoint</span>}
+        {process.is_checkpoint && <CheckpointMark />}
         <span>{stageLine(process.stage_id, stages)}</span>
       </p>
+      {process.is_checkpoint && <p className="sp-muted">{CHECKPOINT_LINE}</p>}
       <CountChips counts={process.counts} retries={process.retries} label={`${w.Units} of ${name} by state`} />
       {efficiency.length > 0 && (
         <section aria-label="Efficiency">

@@ -1,7 +1,7 @@
 import "./runs.css";
 import { Link } from "@tanstack/react-router";
 import type { Run, RunState, Task } from "../api";
-import { Icon } from "../icons";
+import { ICONS, Icon } from "../icons";
 import { PipelineMark } from "../shell/EngineMark";
 import { type Tone, classWord, lastSegment, plural, runWord, shortId, tone, words } from "./stateWord";
 
@@ -33,6 +33,15 @@ export function Word({ state, word }: { state: string; word: string }) {
 /** The "near limit" badge in words, after a measured value (a peak or a duration above 90 %). */
 export function NearLimit({ on }: { on: boolean }) {
   return on ? <> <span className="sp-near">near limit</span></> : null;
+}
+
+/** A checkpoint rule's mark: a small icon and the word, lighter than a chip (FU-P3-88a). */
+export function CheckpointMark() {
+  return (
+    <span className="sp-checkpoint">
+      <Icon path={ICONS.signpost} size={13} /> Checkpoint
+    </span>
+  );
 }
 
 /** The "low" badge in words, after an efficiency under 25 % (ui-spec §4.4 note 2026-11-07). */

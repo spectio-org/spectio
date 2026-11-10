@@ -57,6 +57,7 @@ export const hasLevels = (name: string) => /\.(log|out|err)$/i.test(name);
 export const KIB = 1024;
 export const MIB = 1024 * KIB;
 export const READ = 64 * KIB; // one read (api §5.3: the default tail, and Load more's step)
+export const REPORT_MAX = 1024 * MIB; // the report viewer's cap: the raw route's `MAX_RAW` (api/results.py)
 export const SHOWN_MAX = MIB; // the most text shown, and the table's and JSON's one read
 export const IMAGE_MAX = 20 * MIB;
 export const SVG_MAX = 5 * MIB;
@@ -97,9 +98,8 @@ export function wholeLines(text: string): string {
 
 const TOO_BIG = "Not shown formatted: too deeply nested or too large";
 
-/** The formatted view of a JSON file read whole, or why it is shown as text: a linear pre-scan
- * refuses a depth over 64 before JSON.parse runs, and the formatted text is capped at 2 MiB. */
-export function jsonView(text: string): { text: string } | { fallback: string } {
+/** A linear pre-scan, before JSON.parse runs: true when the text nests deeper than 64. */
+export function tooDeep(text: string): boolean {
   let depth = 0;
   let inString = false;
   for (let i = 0; i < text.length; i++) {
@@ -109,9 +109,16 @@ export function jsonView(text: string): { text: string } | { fallback: string } 
       else if (c === '"') inString = false;
     } else if (c === '"') inString = true;
     else if (c === "[" || c === "{") {
-      if (++depth > JSON_DEPTH_MAX) return { fallback: TOO_BIG };
+      if (++depth > JSON_DEPTH_MAX) return true;
     } else if (c === "]" || c === "}") depth--;
   }
+  return false;
+}
+
+/** The formatted view of a JSON file read whole, or why it is shown as text: the depth pre-scan,
+ * then the formatted text is capped at 2 MiB. */
+export function jsonView(text: string): { text: string } | { fallback: string } {
+  if (tooDeep(text)) return { fallback: TOO_BIG };
   let value: unknown;
   try {
     value = JSON.parse(text);
