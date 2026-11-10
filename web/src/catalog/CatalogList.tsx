@@ -25,10 +25,13 @@ const WAITS: Record<string, string> = {
 export const waitsFor = (data: List | null) => (data && WAITS[data.file.state]) || null;
 export const WAITS_ID = "cat-waits";
 
+// Only these known refusals are sure to have changed nothing, so only they say so; a network
+// failure or a 5xx may come after the server deleted the entry.
+const UNCHANGED = " Reload reads it again; nothing was deleted.";
 const PROBLEMS: Record<string, string> = {
-  "412": "This entry changed in another tab.",
-  "catalog-file-changed": "The file changed on disk since this page read it.",
-  "catalog-file-unusable": "The catalog file cannot be changed right now.",
+  "412": "This entry changed in another tab." + UNCHANGED,
+  "catalog-file-changed": "The file changed on disk since this page read it." + UNCHANGED,
+  "catalog-file-unusable": "The catalog file cannot be changed right now." + UNCHANGED,
 };
 export const problem = (e: Error) => (e instanceof ApiError ? (PROBLEMS[String(e.status)] ?? PROBLEMS[e.slug ?? ""]) : undefined) ?? e.message;
 
@@ -50,7 +53,7 @@ export function DeleteAsk({ entry, onClose, onDeleted, onReload }: { entry: Cata
   const body = entry && (
     <>
       <p>It leaves your catalog and the picker at Launch. Runs launched from it keep their pipeline.</p>
-      {error && <p role="alert" className="sp-note sp-alert">{error} Reload reads it again; nothing was deleted.</p>}
+      {error && <p role="alert" className="sp-note sp-alert">{error}</p>}
       <div className="sp-actions">
         <Button variant="default" data-autofocus onClick={close}>Cancel</Button>
         {error ? (

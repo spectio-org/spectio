@@ -129,8 +129,17 @@ test.each([
   await userEvent.click(await screen.findByRole("button", { name: "Delete rnaseq-test" }));
   const dialog = await screen.findByRole("dialog");
   await userEvent.click(within(dialog).getByRole("button", { name: "Delete rnaseq-test" }));
-  expect(await within(dialog).findByRole("alert")).toHaveTextContent(words);
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent(`${words} Reload reads it again; nothing was deleted.`);
   expect(within(dialog).getByRole("button", { name: "Reload" })).toBeInTheDocument();
+});
+
+test("a 500 in the Delete dialog does not claim nothing was deleted", async () => {
+  serve({ [`${API}/rnaseq-test`]: () => json(500, { type: "/problems/internal", title: "Server error", detail: "boom" }), [API]: list(ITEMS) });
+  app("/catalog");
+  await userEvent.click(await screen.findByRole("button", { name: "Delete rnaseq-test" }));
+  const dialog = await screen.findByRole("dialog");
+  await userEvent.click(within(dialog).getByRole("button", { name: "Delete rnaseq-test" }));
+  expect(await within(dialog).findByRole("alert")).not.toHaveTextContent("nothing was deleted");
 });
 
 test("Add pipeline: focus on the heading, Revision once Pipeline is a repository, Save posts, focus on the saved row", async () => {
