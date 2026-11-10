@@ -215,7 +215,8 @@
                   "no_job_id",
                   "accounting_off",
                   "not_found",
-                  "cached"
+                  "cached",
+                  "max_query_time_range"
                 ],
                 "type": "string"
               },

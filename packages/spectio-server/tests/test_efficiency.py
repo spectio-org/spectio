@@ -385,6 +385,36 @@ def test_eff_unavailable(
 
 
 @pytest.mark.parametrize("engine", ENGINES)
+def test_eff_unavailable_site_limit(
+    settings: Settings, writer: Writer, fakebin: Fake, engine: str
+) -> None:
+    """FU-P3-106b: a window over the site's MaxQueryTimeRange is final: one call, then none,
+    past the give-up too, and the job reads `unavailable` with the limit as its reason."""
+    client = client_for(settings, writer)
+    clock = Clock()
+    acct = accounting(settings, fakebin, clock=clock)
+    client.app.state.accounting = acct  # type: ignore[attr-defined]
+    (fakebin.dir / "toowide").touch()
+    run = Run(settings, writer, engine, slurm=True)
+    fakebin.at(NATIVE, submit(run, engine))
+    finish(run, engine)
+    run.end()
+    task_items(client)
+    assert acct.step()
+    clock.now += failure.GIVE_UP_S + failure.FOLLOW_UP_S
+    (item,) = task_items(client)
+    assert not acct.step()
+    assert item["efficiency"] == {
+        **NOTHING,
+        **MEASURED,
+        "state": "unavailable",
+        "source": ENGINE_SOURCE[engine],
+        "reason": "max_query_time_range",
+    }
+    assert len(fakebin.calls()) == 1
+
+
+@pytest.mark.parametrize("engine", ENGINES)
 def test_aggregate(settings: Settings, writer: Writer, engine: str) -> None:
     """Over each task's last attempt: jobs done of total, measured, mean and max of the ratios,
     the most common request with `varies`, the largest peak and elapsed time used."""
