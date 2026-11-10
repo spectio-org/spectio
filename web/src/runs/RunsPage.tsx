@@ -1,17 +1,18 @@
 import { Button } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMediaQuery } from "@mantine/hooks";
-import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent } from "ag-grid-community";
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
-import { type Page, type Run, type ServerVersion, type Summary, listRuns, runsSummary } from "../api";
+import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent, SortChangedEvent } from "ag-grid-community";
+import { type ReactNode, Suspense, createContext, lazy, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { type Page, type Run, type RunsSort, type ServerVersion, type Summary, listRuns, runsSummary, setPinned } from "../api";
 import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
 import type GridOf from "./DataGrid";
-import { Pipeline, RunLink, StateWord, stateContext, tasksText } from "./RunState";
-import { ACTIVE, duration, isTerminal, shortId, tone, when, words } from "./stateWord";
+import { DeleteRuns } from "./DeleteRuns";
+import { Pipeline, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
+import { ACTIVE, duration, isTerminal, plural, shortId, tone, when, words } from "./stateWord";
 
 /** The state filters; `key` is the `?state=` of the URL, so Home's cards link to one (UX-PAR-12). */
 export const FILTERS: { key: string; label: string; states: string[] | null }[] = [
@@ -22,13 +23,85 @@ export const FILTERS: { key: string; label: string; states: string[] | null }[] 
   { key: "cancelled", label: "Cancelled", states: ["cancelled"] },
 ];
 
-/** The `/runs` search params: a known filter key, or none, and the name filter when set. */
-export function runsSearch(search: Record<string, unknown>): { state?: string; q?: string } {
-  const { state, q } = search;
+/** The list's orders (`?sort=`, FU-P3-115b) and the footer's words for each; none is newest first. */
+const SORTS: Partial<Record<RunsSort, string>> = {
+  name: "by name",
+  "-name": "by name, Z to A",
+  state: "by state",
+  "-state": "by state, Z to A",
+  started_at: "oldest started first",
+  "-started_at": "latest started first",
+  duration: "shortest first",
+  "-duration": "longest first",
+};
+
+/** The `/runs` search params: a known filter key, or none, the name filter and the sort when set. */
+export function runsSearch(search: Record<string, unknown>): { state?: string; q?: string; sort?: RunsSort } {
+  const { state, q, sort } = search;
   return {
     ...(typeof state === "string" && FILTERS.some((f) => f.key === state && f.key !== "all") ? { state } : {}),
     ...(typeof q === "string" && q !== "" ? { q } : {}),
+    ...(typeof sort === "string" && Object.hasOwn(SORTS, sort) ? { sort: sort as RunsSort } : {}),
   };
+}
+
+/** The page's selection and pin action, read by the grid's cells and the phone's cards. */
+const Rows = createContext<{ selected: Set<string>; toggle: (ids: string[], on: boolean) => void; pin: (run: Run) => void; ids: string[] }>({
+  selected: new Set(),
+  toggle: () => {},
+  pin: () => {},
+  ids: [],
+});
+
+/** A row's box, a native checkbox named after its run (ui-spec §4.3 note of 2026-11-10). */
+function SelectBox({ run }: { run: Run }) {
+  const { selected, toggle } = useContext(Rows);
+  return (
+    <input
+      type="checkbox"
+      className="sp-select"
+      aria-label={`Select run ${runName(run)}`}
+      checked={selected.has(run.id)}
+      onChange={(e) => toggle([run.id], e.currentTarget.checked)}
+    />
+  );
+}
+
+/** The header's box; Space on its header cell ticks it, as on a row's Select cell. */
+function SelectAll() {
+  const { selected, toggle, ids } = useContext(Rows);
+  const box = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const cell = box.current?.closest<HTMLElement>(".ag-header-cell");
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === " " && e.target === cell) {
+        e.preventDefault();
+        box.current?.click();
+      }
+    };
+    cell?.addEventListener("keydown", onKey);
+    return () => cell?.removeEventListener("keydown", onKey);
+  }, []);
+  return (
+    <input
+      ref={box}
+      type="checkbox"
+      className="sp-select"
+      aria-label="Select all runs on this page"
+      checked={ids.length > 0 && ids.every((id) => selected.has(id))}
+      onChange={(e) => toggle(ids, e.currentTarget.checked)}
+    />
+  );
+}
+
+/** The pin toggle of a row (aria-pressed); pinned runs come first in every sort. */
+function PinButton({ run }: { run: Run }) {
+  const { pin } = useContext(Rows);
+  return (
+    <button type="button" className="sp-pin" aria-pressed={!!run.pinned} aria-label={`Pin run ${runName(run)}`} onClick={() => pin(run)}>
+      <Icon path={ICONS.pin} size={15} />
+    </button>
+  );
 }
 
 /** Where heads run, by the server's executor: tmux sessions on the login node, or processes on
@@ -59,11 +132,12 @@ function TasksCell({ run }: { run: Run }) {
 }
 /** A run as a card, for the phone (MLiteRuns, MLiteHome; UX-PAR-10): the state and duration,
  * the name, the pipeline with its mark and the tasks, then the context. */
-export function RunCard({ run }: { run: Run }) {
+export function RunCard({ run, select }: { run: Run; select?: ReactNode }) {
   const { units } = words(run.workflow.engine);
   return (
     <li className="sp-run-card" data-rail="" data-tone={tone(run.state)}>
       <span className="sp-run-card-top">
+        {select}
         <StateWord state={run.state} />
         <span>{duration(run.started_at, run.ended_at)}</span>
       </span>
@@ -91,16 +165,30 @@ export function RunCard({ run }: { run: Run }) {
 // AG Grid is its own chunk, loaded with the desktop list; the phone keeps its cards (ui-spec §4.13).
 const DataGrid = lazy(() => import("./DataGrid")) as unknown as typeof GridOf;
 
-/** The 0.0.1 columns (ui-spec §4.3), in the API's order: none sorts or filters on its own (the
- * page's filters ask the API). The state rail is the row's left edge, in its tone. */
+/** The 0.0.1 columns (ui-spec §4.3) after the select box. Run, State, Started and Duration sort
+ * on the server (`colId` is the `sort=` key): the grid keeps the API's order (`comparator` 0) and
+ * filters nothing on its own. The state rail is the row's left edge, in its tone. */
+const keep = () => 0;
 const COLUMNS: ColDef<Run>[] = [
   {
+    colId: "select",
+    headerName: "",
+    flex: 0,
+    width: 52,
+    minWidth: 52,
+    headerComponent: SelectAll,
+    cellRenderer: ({ data: run }: { data: Run }) => <SelectBox run={run} />,
+  },
+  {
     headerName: "Run",
+    colId: "name",
     flex: 1.4,
     cellRenderer: ({ data: run }: { data: Run }) => (
       <>
-        <RunLink run={run} />
-        <br />
+        <span className="sp-run-cell">
+          <RunLink run={run} />
+          <PinButton run={run} />
+        </span>
         {run.origin === "cli-observed" && (
           <span className="sp-chip">
             <Icon path={ICONS.terminal} size={12} /> From a terminal
@@ -112,6 +200,7 @@ const COLUMNS: ColDef<Run>[] = [
   },
   {
     headerName: "State",
+    colId: "state",
     flex: 1.6,
     cellRenderer: ({ data: run }: { data: Run }) => (
       <>
@@ -122,16 +211,27 @@ const COLUMNS: ColDef<Run>[] = [
   },
   { headerName: "Workflow", flex: 1.4, cellRenderer: ({ data: run }: { data: Run }) => <Pipeline run={run} /> },
   { headerName: "Tasks", cellRenderer: ({ data: run }: { data: Run }) => <TasksCell run={run} /> },
-  { headerName: "Started", valueGetter: ({ data: run }) => (run ? when(run.started_at ?? run.created_at) : "") },
-  { headerName: "Duration", valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : "") },
+  { headerName: "Started", colId: "started_at", valueGetter: ({ data: run }) => (run ? when(run.started_at ?? run.created_at) : "") },
+  { headerName: "Duration", colId: "duration", valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : "") },
 ];
 
-/** AG Grid keeps Tab and Enter for its cells, so the name cell's link is not a tab stop: Enter on
- * the Run cell follows that link (ui-spec §4.13). */
-const openOnEnter = (e: CellKeyDownEvent<Run> | FullWidthCellKeyDownEvent<Run>) => {
+const SORTABLE = new Set(["name", "state", "started_at", "duration"]);
+
+/** AG Grid keeps Tab and Enter for its cells, so a cell's controls are not tab stops: Enter on the
+ * Run cell follows its link, Space on it presses its pin, Space on a Select cell ticks its box
+ * (ui-spec §4.13). A key on the control itself is the control's own. */
+const onCellKey = (e: CellKeyDownEvent<Run> | FullWidthCellKeyDownEvent<Run>) => {
   const key = e.event as KeyboardEvent | null | undefined;
-  if (key?.key === "Enter" && "colDef" in e && e.colDef.headerName === "Run")
-    (key.target as HTMLElement).querySelector<HTMLAnchorElement>("a.sp-run-link")?.click();
+  const cell = key?.target as HTMLElement | undefined;
+  if (!key || !cell || cell.getAttribute("role") !== "gridcell" || !("colDef" in e)) return;
+  const keys: Record<string, Record<string, string>> = {
+    name: { Enter: "a.sp-run-link", " ": "button.sp-pin" },
+    select: { " ": "input.sp-select" },
+  };
+  const target = keys[e.colDef.colId ?? ""]?.[key.key];
+  if (!target) return;
+  key.preventDefault();
+  cell.querySelector<HTMLElement>(target)?.click();
 };
 
 const PAGE = 50;
@@ -143,11 +243,13 @@ const older = (a: Run, b: Run) => a.created_at < b.created_at || (a.created_at =
 
 /** A refresh on a stream frame: the fresh first page, then the rows "Load more" added past it
  * (older than its last row) and their cursor. */
-function refresh(shown: List | null, page: Page<Run>): List {
+function refresh(shown: List | null, page: Page<Run>, newest: boolean): List {
   const fresh = page.items ?? [];
   const last = fresh[fresh.length - 1];
   const ids = new Set(fresh.map((r) => r.id));
-  const tail = shown && last && page.next ? shown.rows.filter((r) => !ids.has(r.id) && older(r, last)) : [];
+  // another sort: the rows past the first page's length that the fresh page does not have
+  const past = (r: Run, i: number) => (newest ? older(r, last) : i >= fresh.length);
+  const tail = shown && last && page.next ? shown.rows.filter((r, i) => !ids.has(r.id) && past(r, i)) : [];
   return tail.length ? { rows: [...fresh, ...tail], next: shown!.next } : { rows: fresh, next: page.next ?? null };
 }
 
@@ -175,8 +277,9 @@ export function RunsPage() {
   const navigate = useNavigate({ from: "/runs" });
   const filter = Math.max(0, FILTERS.findIndex((f) => f.key === search.state));
   const q = search.q ?? "";
+  const sort = search.sort;
   // Each change keeps the other param: the name filter lands 250 ms after typing, a click may come between.
-  const setSearch = (change: { state?: string; q?: string }) =>
+  const setSearch = (change: { state?: string; q?: string; sort?: string }) =>
     navigate({ search: (prev) => runsSearch({ ...prev, ...change }), replace: true });
   const setFilter = (i: number) => setSearch({ state: FILTERS[i].states ? FILTERS[i].key : undefined });
   const server = useServer();
@@ -191,6 +294,11 @@ export function RunsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const states = FILTERS[filter].states?.join(",");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  // what the last delete or pin said, focused after a delete: Delete… has gone with the selection
+  const [said, setSaid] = useState<string[]>([]);
+  const saidLine = useRef<HTMLDivElement>(null);
+  useEffect(() => setSelected(new Set()), [states, q]);
 
   useEffect(() => {
     document.title = "Runs · Spectio";
@@ -217,16 +325,16 @@ export function RunsPage() {
       const { signal } = query.current;
       const mine = ++loads.current;
       const stale = () => signal.aborted || mine !== loads.current;
-      Promise.all([listRuns({ state: states, q, limit: PAGE }, signal), runsSummary(signal)])
+      Promise.all([listRuns({ state: states, q, sort, limit: PAGE }, signal), runsSummary(signal)])
         .then(([page, sum]) => {
           if (stale()) return;
-          setList((shown) => (merge ? refresh(shown, page) : { rows: page.items ?? [], next: page.next ?? null }));
+          setList((shown) => (merge ? refresh(shown, page, !sort) : { rows: page.items ?? [], next: page.next ?? null }));
           setSummary(sum);
           setError(null);
         })
         .catch((e: Error) => stale() || setError(e.message));
     },
-    [states, q],
+    [states, q, sort],
   );
   useEffect(() => {
     const controller = new AbortController();
@@ -240,13 +348,52 @@ export function RunsPage() {
   const next = list?.next ?? null;
   const more = () => {
     const { signal } = query.current;
-    listRuns({ state: states, q, limit: PAGE, cursor: next }, signal)
+    listRuns({ state: states, q, sort, limit: PAGE, cursor: next }, signal)
       .then((page) => {
         if (signal.aborted) return;
         setList((shown) => ({ rows: [...(shown?.rows ?? []), ...(page.items ?? [])], next: page.next ?? null }));
       })
       .catch((e: Error) => signal.aborted || setError(e.message));
   };
+
+  const chosen = (runs ?? []).filter((r) => selected.has(r.id));
+  const live = chosen.filter((r) => !isTerminal(r.state)).length;
+  const why = live
+    ? `${plural(live, "selected run has", "selected runs have")} not ended: cancel ${live === 1 ? "it" : "them"} first`
+    : chosen.length > 200
+      ? "At most 200 runs at once: clear some first"
+      : null;
+  const rows = {
+    selected,
+    ids: (runs ?? []).map((r) => r.id),
+    toggle: (ids: string[], on: boolean) =>
+      setSelected((was) => {
+        const now = new Set(was);
+        for (const id of ids) on ? now.add(id) : now.delete(id);
+        return now;
+      }),
+    pin: (run: Run) =>
+      setPinned(run.id, !run.pinned)
+        .then(() => load(true))
+        .catch((e: Error) => setSaid([`${runName(run)} was not pinned: ${e.message}`])),
+  };
+  const deleted = (lines: string[]) => {
+    setSelected(new Set());
+    setSaid(lines);
+    load(true);
+    setTimeout(() => saidLine.current?.focus());
+  };
+  const onSort = (e: SortChangedEvent<Run>) => {
+    if (e.source !== "uiColumnSorted") return;
+    const col = e.columns?.find((c) => c.getSort());
+    setSearch({ sort: col ? `${col.getSort() === "desc" ? "-" : ""}${col.getColId()}` : undefined });
+  };
+  const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started")).map(
+    (c): ColDef<Run> =>
+      c.colId && SORTABLE.has(c.colId)
+        ? { ...c, sortable: true, comparator: keep, sortingOrder: ["asc", "desc"], sort: sort === c.colId ? "asc" : sort === `-${c.colId}` ? "desc" : null }
+        : c,
+  );
 
   const total = count(summary, null);
   const filtered = filter !== 0 || q !== "";
@@ -304,12 +451,27 @@ export function RunsPage() {
           </Button>
         </div>
       )}
+      <div ref={saidLine} tabIndex={-1} role="status" className="sp-said">
+        {said.map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+      </div>
+      {chosen.length > 0 && (
+        <div className="sp-bulk" role="group" aria-label="Selected runs">
+          <strong>{chosen.length} selected</strong>
+          <DeleteRuns runs={chosen} why={why} onDeleted={deleted} />
+          <Button variant="subtle" onClick={() => setSelected(new Set())}>
+            Clear selection
+          </Button>
+        </div>
+      )}
       {runs === null && !error && <p className="sp-muted">Loading the runs…</p>}
       {runs?.length === 0 && (filtered ? <p className="sp-empty">No run matches these filters.</p> : <NoRuns />)}
+      <Rows.Provider value={rows}>
       {!!runs?.length && phone && (
         <ul className="sp-run-cards" aria-label="Runs">
           {runs.map((run) => (
-            <RunCard key={run.id} run={run} />
+            <RunCard key={run.id} run={run} select={<SelectBox run={run} />} />
           ))}
         </ul>
       )}
@@ -319,19 +481,21 @@ export function RunsPage() {
             label="Runs"
             className="sp-grid-runs"
             rowData={runs}
-            columnDefs={COLUMNS.filter((c) => !(narrow && c.headerName === "Started"))}
+            columnDefs={columns}
             defaultColDef={{ sortable: false, autoHeight: true, wrapText: true, flex: 1, minWidth: 110, suppressHeaderMenuButton: true }}
             getRowId={({ data }) => data.id}
             getRowStyle={({ data }) => (data ? { "--tone": `var(--sp-state-${tone(data.state)})` } : undefined)}
             domLayout="autoHeight"
-            onCellKeyDown={openOnEnter}
+            onCellKeyDown={onCellKey}
+            onSortChanged={onSort}
           />
         </Suspense>
       )}
+      </Rows.Provider>
       {!!runs?.length && (
         <p className="sp-foot-line">
-          {shownTotal !== null ? `${runs.length} of ${shownTotal} runs` : `${runs.length} ${runs.length === 1 ? "run" : "runs"}`} ·
-          newest first
+          {shownTotal !== null ? `${runs.length} of ${shownTotal} runs` : `${runs.length} ${runs.length === 1 ? "run" : "runs"}`} ·{" "}
+          {(sort && SORTS[sort]) ?? "newest first"}
         </p>
       )}
       {next && (

@@ -34,9 +34,9 @@ test("the table shows each run with its state word, a row label and the terminal
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
   const header = within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim());
-  expect(header).toEqual(["Run", "State", "Workflow", "Tasks", "Started", "Duration"]);
-  // the API's order, newest first: no column sorts here (ui-spec §4.13)
-  expect(within(table).getByRole("columnheader", { name: "Run" })).not.toHaveAttribute("aria-sort");
+  expect(header).toEqual(["", "Run", "State", "Workflow", "Tasks", "Started", "Duration"]);
+  // the API's order, newest first: no header is sorted until one is pressed (FU-P3-115b)
+  expect(within(table).getByRole("columnheader", { name: "Run" })).toHaveAttribute("aria-sort", "none");
   const open = within(table).getByRole("link", { name: "Open run rnaseq-a" });
   expect(open).toHaveAttribute("href", "/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W");
   const row = open.closest('[role="row"]') as HTMLElement;
@@ -214,7 +214,7 @@ test("UX-G3a-05: below 1100 px the grid drops Started, so it fits at 1024 px", a
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
-  expect(within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim())).toEqual(["Run", "State", "Workflow", "Tasks", "Duration"]);
+  expect(within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim())).toEqual(["", "Run", "State", "Workflow", "Tasks", "Duration"]);
 });
 
 test("a cell takes focus from the keyboard: the header, then the first run's name cell", async () => {
@@ -236,4 +236,159 @@ test("CR-P3FU101A-01: Enter on a run's name cell opens the run", async () => {
   await waitFor(() => expect(document.activeElement).toHaveTextContent("rnaseq-a"));
   await userEvent.keyboard("{Enter}");
   await waitFor(() => expect(router.state.location.pathname).toBe("/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W"));
+});
+
+// FU-P3-115b: selection, the bulk bar and its Delete sheet, the pin button, sortable headers.
+const done = run({ id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V5Q", name: "atac-d", state: "succeeded", ended_at: "2026-10-31T09:00:00+00:00" });
+const LIST = { "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), failed, done], next: null } };
+const tick = (name: string) => userEvent.click(screen.getByRole("checkbox", { name: `Select run ${name}` }));
+
+test("FU-P3-115b: a selected run that has not ended keeps Delete refused, with its reason", async () => {
+  serve(LIST);
+  app("/runs");
+  await screen.findByRole("grid", { name: "Runs" });
+  await tick("sarek-c");
+  expect(screen.getByText("1 selected")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Delete…" })).not.toHaveAttribute("aria-disabled");
+  await tick("rnaseq-a");
+  const del = screen.getByRole("button", { name: "Delete…" });
+  expect(del).toHaveAttribute("aria-disabled", "true");
+  expect(del).toHaveAccessibleDescription("1 selected run has not ended: cancel it first");
+  await userEvent.click(del);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Clear selection" }));
+  expect(screen.queryByText(/selected$/)).toBeNull();
+  expect(screen.getByRole("checkbox", { name: "Select run sarek-c" })).not.toBeChecked();
+});
+
+test("FU-P3-115b: the Delete sheet lists the runs and sends directories only when ticked", async () => {
+  const bodies: unknown[] = [];
+  serve({
+    ...LIST,
+    "/api/v1/runs:delete": (_url: URL, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return json(200, { deleted: [failed.id, done.id], directories: [] });
+    },
+  });
+  app("/runs");
+  await screen.findByRole("grid", { name: "Runs" });
+  await userEvent.click(screen.getByRole("checkbox", { name: "Select all runs on this page" }));
+  await tick("rnaseq-a");
+  const opener = screen.getByRole("button", { name: "Delete…" });
+  await userEvent.click(opener);
+  const sheet = await screen.findByRole("dialog", { name: "Delete 2 runs?" });
+  expect(sheet).toHaveAttribute("aria-modal", "true");
+  expect(within(sheet).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["sarek-c · Failed", "atac-d · Succeeded"]);
+  expect(within(sheet).getByRole("checkbox", { name: "Also delete their run directories" })).not.toBeChecked();
+  await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
+  await waitFor(() => expect(bodies).toEqual([{ ids: [failed.id, done.id], directories: false }]));
+  expect(await screen.findByText("2 runs deleted")).toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  // Delete… has gone with the selection: focus lands on what the delete said
+  await waitFor(() => expect(document.activeElement).toHaveTextContent("2 runs deleted"));
+
+  await tick("atac-d");
+  await userEvent.click(screen.getByRole("button", { name: "Delete…" }));
+  const again = await screen.findByRole("dialog", { name: "Delete 1 run?" });
+  await userEvent.click(within(again).getByRole("checkbox", { name: "Also delete their run directories" }));
+  await userEvent.click(within(again).getByRole("button", { name: "Delete" }));
+  await waitFor(() => expect(bodies[1]).toEqual({ ids: [done.id], directories: true }));
+});
+
+test("FU-P3-115b: a 409 keeps the sheet open with the run named and why", async () => {
+  serve({
+    ...LIST,
+    "/api/v1/runs:delete": () =>
+      json(409, {
+      type: "/problems/directory-not-removable",
+      title: "Directory not removable",
+      detail: "Spectio removes only a run directory it created and no other run uses.",
+      errors: [{ field: failed.id, message: "started from a terminal: its launch directory is your own" }],
+    }),
+  });
+  app("/runs");
+  await screen.findByRole("grid", { name: "Runs" });
+  await tick("sarek-c");
+  await userEvent.click(screen.getByRole("button", { name: "Delete…" }));
+  const sheet = await screen.findByRole("dialog", { name: "Delete 1 run?" });
+  await userEvent.click(within(sheet).getByRole("checkbox", { name: "Also delete their run directories" }));
+  await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
+  const alert = await within(sheet).findByRole("alert");
+  expect(alert).toHaveTextContent("Nothing was deleted. Spectio removes only a run directory it created and no other run uses.");
+  expect(alert).toHaveTextContent("sarek-c: started from a terminal: its launch directory is your own");
+  expect(screen.getByRole("dialog", { name: "Delete 1 run?" })).toBeInTheDocument();
+});
+
+test("FU-P3-115b: the pin button is pressed for a pinned run and sends PATCH pinned", async () => {
+  const calls: { url: string; method?: string; body?: string }[] = [];
+  serve({
+    "/api/v1/runs:summary": SUMMARY,
+    "/api/v1/runs/": (url: URL, init?: RequestInit) => {
+      calls.push({ url: url.pathname, method: init?.method, body: String(init?.body) });
+      return json(200, { ...failed, pinned: true });
+    },
+    "/api/v1/runs": { items: [run({ pinned: true }), failed], next: null },
+  });
+  app("/runs");
+  await screen.findByRole("grid", { name: "Runs" });
+  expect(screen.getByRole("button", { name: "Pin run rnaseq-a" })).toHaveAttribute("aria-pressed", "true");
+  const pin = screen.getByRole("button", { name: "Pin run sarek-c" });
+  expect(pin).toHaveAttribute("aria-pressed", "false");
+  await userEvent.click(pin);
+  await waitFor(() => expect(calls).toEqual([{ url: `/api/v1/runs/${failed.id}`, method: "PATCH", body: '{"pinned":true}' }]));
+});
+
+test("FU-P3-115b: a header sorts on the server, lives in the URL, and the footer says the order", async () => {
+  const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), failed], next: "abc" } });
+  const router = app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const name = within(table).getByRole("columnheader", { name: "Run" });
+  expect(name).toHaveAttribute("aria-sort", "none");
+  act(() => name.focus());
+  await userEvent.keyboard("{Enter}");
+  await waitFor(() => expect(router.state.location.search).toEqual({ sort: "name" }));
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?sort=name&limit=50"));
+  expect(name).toHaveAttribute("aria-sort", "ascending");
+  expect(await screen.findByText("2 of 2 runs · by name")).toBeInTheDocument();
+  // the server's order stays: the grid does not sort the rows itself
+  const links = within(table).getAllByRole("link").map((a) => a.textContent);
+  expect(links).toEqual(["rnaseq-a", "sarek-c"]);
+  await userEvent.keyboard("{Enter}");
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?sort=-name&limit=50"));
+  // a sort change asks for a first page: no cursor of the old order
+  expect(fetched(mock).filter((u) => u.includes("cursor"))).toEqual([]);
+});
+
+test("FU-P3-115b: a sort from the URL is asked for and shown on its header", async () => {
+  const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [failed], next: null } });
+  app("/runs?sort=-duration&state=failed");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?state=failed&sort=-duration&limit=50"));
+  await waitFor(() => expect(within(table).getByRole("columnheader", { name: "Duration" })).toHaveAttribute("aria-sort", "descending"));
+  expect(screen.getByText(/longest first$/)).toBeInTheDocument();
+});
+
+test("FU-P3-115b: on a phone each card starts with its box, and the bulk bar follows it", async () => {
+  viewport(360);
+  serve(LIST);
+  app("/runs");
+  await screen.findByRole("list", { name: "Runs" });
+  await tick("atac-d");
+  expect(screen.getByText("1 selected")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Delete…" })).not.toHaveAttribute("aria-disabled");
+});
+
+test("FU-P3-115b: from the keyboard, Space on a Select cell ticks its box and on the header ticks all", async () => {
+  serve(LIST);
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const head = screen.getByRole("checkbox", { name: "Select all runs on this page" }).closest('[role="columnheader"]') as HTMLElement;
+  act(() => within(table).getByRole("columnheader", { name: "Run" }).focus());
+  await userEvent.keyboard("{ArrowDown}{ArrowLeft}");
+  await waitFor(() => expect(document.activeElement).toHaveAttribute("aria-colindex", "1"));
+  await userEvent.keyboard(" ");
+  expect(screen.getByRole("checkbox", { name: "Select run rnaseq-a" })).toBeChecked();
+  act(() => head.focus());
+  await userEvent.keyboard(" ");
+  expect(screen.getByText("3 selected")).toBeInTheDocument();
 });

@@ -1,22 +1,24 @@
 import { Button } from "@mantine/core";
-import { Link } from "@tanstack/react-router";
-import type { ReactNode, Ref } from "react";
-import type { Process, RunDetail, ServerVersion, Stage } from "../api";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { type ReactNode, type Ref, useState } from "react";
+import { type Process, type RunDetail, type ServerVersion, type Stage, setPinned } from "../api";
 import { runEnvName, summary as envSummary } from "../environments/fields";
-import { ICONS } from "../icons";
+import { ICONS, Icon } from "../icons";
 import { LiveStatus } from "../live";
 import { toYaml } from "../launch/schemaFields";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PhoneTitle, usePhone } from "../shell/layout";
 import { type CopyItem, CopyButton, CopyMenu } from "./CopyMenu";
+import { DeleteRuns } from "./DeleteRuns";
 import { ResumeAction } from "./ResumeDialog";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
 import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
 // UX-PAR-19, 21 and 22): the state bar, the engine's mark tile, the name and short ID, the state
-// line, Cancel, Resume, Copy to a new launch and Copy, then the facts and the task counts.
+// line, Cancel, Resume, Copy to a new launch, Copy, Pin or Unpin and, once ended, Delete… (FU-P3-115b),
+// then the facts and the task counts.
 
 /** The chips under the facts: the states with tasks, failed and retried always (UX-PAR-22). A chip
  * with a `filter` (a Tasks tab filter's label) opens the Tasks tab on it (P3-parD). */
@@ -190,10 +192,21 @@ interface Props {
   cancelError: string | null;
   /** A count chip pressed: the Tasks tab filter it names. */
   onChip: (filter: string) => void;
+  /** The run as `PATCH /runs/{id}` answered it (Pin, Unpin). */
+  onRun: (run: RunDetail) => void;
 }
 
-export function RunHeader({ run, stages, processes, server, titleRef, canCancel, onCancel, cancelError, onChip }: Props) {
+export function RunHeader({ run, stages, processes, server, titleRef, canCancel, onCancel, cancelError, onChip, onRun }: Props) {
   const phone = usePhone();
+  const navigate = useNavigate();
+  const [pinError, setPinError] = useState<string | null>(null);
+  const pin = () =>
+    setPinned(run.id, !run.pinned)
+      .then((r) => {
+        onRun(r);
+        setPinError(null);
+      })
+      .catch((e: Error) => setPinError(e.message));
   const ended = isTerminal(run.state);
   // Failed and Cancelled add Resume, every ended state Copy to a new launch; a run started from a
   // terminal has neither (ui-spec §4.4 run tools note, header actions)
@@ -269,9 +282,14 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
             </Button>
           )}
           <CopyMenu items={copyItems(run, server)} fullWidth={phone} />
+          <Button variant="default" onClick={pin} leftSection={<Icon path={ICONS.pin} size={15} />} fullWidth={phone}>
+            {run.pinned ? "Unpin" : "Pin"}
+          </Button>
+          {ended && <DeleteRuns runs={[run]} why={null} onDeleted={() => navigate({ to: "/runs" })} />}
         </div>
       </div>
       {cancelError && <p role="alert">Cancel failed: {cancelError}</p>}
+      {pinError && <p role="alert">Pin failed: {pinError}</p>}
       <FoldSection id="facts" screen="run" icon={ICONS.info} title="Facts" summary={summary} defaultOpen={!phone}>
         <Facts run={run} server={server} />
       </FoldSection>

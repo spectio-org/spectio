@@ -1984,3 +1984,65 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+/* The runs table actions (FU-P3-115b; ui-spec §4.3 note of 2026-11-10; board LiteRuns): the bulk
+   bar over the table, the pin beside a run's name, the Delete sheet's list and box. */
+.sp-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--sp-surface-subtle);
+}
+.sp-bulk .mantine-Button-root[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.sp-said:empty {
+  display: none;
+}
+.sp-said p {
+  margin: 0;
+}
+.sp-run-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sp-pin {
+  display: inline-flex;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--sp-text-secondary);
+  background: none;
+  cursor: pointer;
+}
+.sp-pin[aria-pressed="true"] {
+  color: var(--sp-text-primary);
+}
+.sp-pin[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+.sp-pin:focus-visible,
+.sp-select:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+.sp-select {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--sp-line-focus);
+}
+.sp-delete-list {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+.sp-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
