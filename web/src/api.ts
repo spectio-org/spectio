@@ -44,6 +44,8 @@ export interface LaunchBody {
   /** An environment's name (api §5.4); absent: the server's default. */
   environment?: string;
   params: Record<string, unknown>;
+  /** One module or one rule (api §5.9, 0.0.2); absent: the whole pipeline. */
+  target?: TargetIn;
 }
 
 export interface Launched {
@@ -59,7 +61,58 @@ export interface ServerVersion {
   runs_root: string;
   account: string;
   executor: string;
+  /** Feature flags of this server (api §5.9): the launch parts of single targets show only when on. */
+  features: Features;
 }
+
+/** Schema `Features`. */
+export interface Features {
+  single_target: boolean;
+}
+
+/** Schema `RunTarget` (api §5.9): what a run was limited to; null on a run is the whole pipeline. */
+export interface RunTarget {
+  kind: "module" | "rule" | "file";
+  name: string;
+  version: string | null;
+  hash: string | null;
+  source: "registry" | "local" | null;
+  path: string | null;
+  flag: "target" | "until" | "allowed_rules" | null;
+  more: number;
+  checksum_changed: boolean | null;
+}
+
+/** `target` in the body of `POST /runs` (api §5.9); the server fills the rest. */
+export interface TargetIn {
+  kind: "module" | "rule";
+  name?: string | null;
+  version?: string | null;
+}
+
+/** One declared input of a module (`POST /targets:inspect`). */
+export interface ModuleInput {
+  name: string;
+  type: string;
+  description: string;
+}
+
+/** `POST /api/v1/targets:inspect` (api §5.9): a module's inputs, or a pipeline's rules. */
+export type TargetInspected =
+  | {
+      kind: "module";
+      source: "registry" | "local";
+      name: string;
+      version: string | null;
+      description: string;
+      inputs: ModuleInput[];
+    }
+  | {
+      kind: "rule";
+      rules: string[];
+      plan: { jobs: Record<string, number>; total: number } | null;
+      error?: string;
+    };
 
 /** api §7.1 (schema `Run.state`). */
 export type RunState =
@@ -115,6 +168,8 @@ export interface Run {
     version: string | null;
   };
   profiles: string[];
+  /** One module or one rule; null for the whole pipeline (api §5.9). */
+  target?: RunTarget | null;
   /** Null for a run started from a terminal; read by the run's facts and Resume (FU-P3-86g). */
   environment?: RunEnvironment | null;
   failure: { [key: string]: Json } | null;
@@ -222,6 +277,8 @@ export interface LaunchTemplate {
   environment: string;
   /** Why the default is chosen instead of the run's environment. */
   environment_notice: string | null;
+  /** The run's target, kept by the copy (api §5.9). */
+  target?: TargetIn | null;
 }
 
 /** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */
@@ -487,6 +544,8 @@ const run = (id: string) => `/runs/${encodeURIComponent(id)}`;
 
 export interface RunsQuery {
   state?: string;
+  /** `any`: runs that target one module or rule; `none`: whole-pipeline runs (api §5.9). */
+  target?: "any" | "none";
   q?: string;
   sort?: "-created_at" | "-ended_at";
   limit?: number;
@@ -633,6 +692,18 @@ export async function readResultText(
   const text = await response.text();
   const range = CONTENT_RANGE.exec(response.headers.get("content-range") ?? "");
   return range ? { text, next: Number(range[2]) + 1, size: Number(range[3]) } : { text, next: null, size: null };
+}
+
+export function inspectTarget(
+  body: { engine: Engine; location: string; version?: string | null; revision?: string | null; rule?: string | null },
+  signal?: AbortSignal,
+): Promise<TargetInspected> {
+  return call("/targets:inspect", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
 }
 
 export function launch(body: LaunchBody): Promise<Launched> {

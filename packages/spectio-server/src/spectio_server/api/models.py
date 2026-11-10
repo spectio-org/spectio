@@ -283,7 +283,7 @@ class LaunchTemplate(BaseModel):
     code_loading: list[CodeLoading]
     environment: str  # the run's, preselected by name, or the default when it is gone (§5.4)
     environment_notice: str | None  # why the default is preselected instead
-    target: dict[str, JsonValue] | None = None  # the launch's `target` (api §5.9)
+    target: dict[str, JsonValue] | None  # the launch's `target` (api §5.9)
 
 
 class RunList(BaseModel):

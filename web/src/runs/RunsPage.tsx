@@ -4,6 +4,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent } from "ag-grid-community";
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { type Page, type Run, type ServerVersion, type Summary, listRuns, runsSummary } from "../api";
+import { targetText } from "./target";
 import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
@@ -22,12 +23,24 @@ export const FILTERS: { key: string; label: string; states: string[] | null }[] 
   { key: "cancelled", label: "Cancelled", states: ["cancelled"] },
 ];
 
-/** The `/runs` search params: a known filter key, or none, and the name filter when set. */
-export function runsSearch(search: Record<string, unknown>): { state?: string; q?: string } {
-  const { state, q } = search;
+/** The Runs select (ui-spec §4.15): every run, the runs that target one module or rule, or the
+ * whole-pipeline runs; `key` is the `?target=` of the URL and of `GET /runs` (api §5.9). */
+const TARGETS: { key: "all" | "any" | "none"; label: string }[] = [
+  { key: "all", label: "All runs" },
+  { key: "any", label: "Single module or rule" },
+  { key: "none", label: "Whole pipeline" },
+];
+
+type RunsSearch = { state?: string; q?: string; target?: "any" | "none" };
+
+/** The `/runs` search params: a known filter key, or none, the name filter when set, and the
+ * target filter when not all runs. */
+export function runsSearch(search: Record<string, unknown>): RunsSearch {
+  const { state, q, target } = search;
   return {
     ...(typeof state === "string" && FILTERS.some((f) => f.key === state && f.key !== "all") ? { state } : {}),
     ...(typeof q === "string" && q !== "" ? { q } : {}),
+    ...(target === "any" || target === "none" ? { target } : {}),
   };
 }
 
@@ -68,6 +81,7 @@ export function RunCard({ run }: { run: Run }) {
         <span>{duration(run.started_at, run.ended_at)}</span>
       </span>
       <RunLink run={run} />
+      {run.target && <span className="sp-muted sp-target">{targetText(run.target)}</span>}
       <span className="sp-run-card-line">
         <Pipeline run={run} size={16} />
         <span>
@@ -101,6 +115,12 @@ const COLUMNS: ColDef<Run>[] = [
       <>
         <RunLink run={run} />
         <br />
+        {run.target && (
+          <>
+            <span className="sp-muted sp-target">{targetText(run.target)}</span>
+            <br />
+          </>
+        )}
         {run.origin === "cli-observed" && (
           <span className="sp-chip">
             <Icon path={ICONS.terminal} size={12} /> From a terminal
@@ -175,8 +195,9 @@ export function RunsPage() {
   const navigate = useNavigate({ from: "/runs" });
   const filter = Math.max(0, FILTERS.findIndex((f) => f.key === search.state));
   const q = search.q ?? "";
+  const target = search.target;
   // Each change keeps the other param: the name filter lands 250 ms after typing, a click may come between.
-  const setSearch = (change: { state?: string; q?: string }) =>
+  const setSearch = (change: RunsSearch) =>
     navigate({ search: (prev) => runsSearch({ ...prev, ...change }), replace: true });
   const setFilter = (i: number) => setSearch({ state: FILTERS[i].states ? FILTERS[i].key : undefined });
   const server = useServer();
@@ -217,7 +238,7 @@ export function RunsPage() {
       const { signal } = query.current;
       const mine = ++loads.current;
       const stale = () => signal.aborted || mine !== loads.current;
-      Promise.all([listRuns({ state: states, q, limit: PAGE }, signal), runsSummary(signal)])
+      Promise.all([listRuns({ state: states, q, target, limit: PAGE }, signal), runsSummary(signal)])
         .then(([page, sum]) => {
           if (stale()) return;
           setList((shown) => (merge ? refresh(shown, page) : { rows: page.items ?? [], next: page.next ?? null }));
@@ -226,7 +247,7 @@ export function RunsPage() {
         })
         .catch((e: Error) => stale() || setError(e.message));
     },
-    [states, q],
+    [states, q, target],
   );
   useEffect(() => {
     const controller = new AbortController();
@@ -240,7 +261,7 @@ export function RunsPage() {
   const next = list?.next ?? null;
   const more = () => {
     const { signal } = query.current;
-    listRuns({ state: states, q, limit: PAGE, cursor: next }, signal)
+    listRuns({ state: states, q, target, limit: PAGE, cursor: next }, signal)
       .then((page) => {
         if (signal.aborted) return;
         setList((shown) => ({ rows: [...(shown?.rows ?? []), ...(page.items ?? [])], next: page.next ?? null }));
@@ -249,9 +270,10 @@ export function RunsPage() {
   };
 
   const total = count(summary, null);
-  const filtered = filter !== 0 || q !== "";
-  // "of N" only while the filter's total is known from the summary (ui-spec §4.11).
-  const shownTotal = q === "" && summary ? count(summary, FILTERS[filter].states) : null;
+  const filtered = filter !== 0 || q !== "" || target !== undefined;
+  // "of N" only while the filter's total is known from the summary (ui-spec §4.11), which counts
+  // by state, not by target.
+  const shownTotal = q === "" && !target && summary ? count(summary, FILTERS[filter].states) : null;
   return (
     <div className="sp-runs">
       <PageHead
@@ -294,6 +316,16 @@ export function RunsPage() {
             </button>
           ))}
         </div>
+        <label className="sp-select-field">
+          <span>Runs</span>
+          <select value={target ?? "all"} onChange={(e) => setSearch({ target: e.currentTarget.value as RunsSearch["target"] })}>
+            {TARGETS.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {error && (

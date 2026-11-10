@@ -436,3 +436,29 @@
   outline: 2px solid var(--sp-line-focus);
   outline-offset: -2px;
 }
+
+/* What to run (ui-spec §4.15): the whole pipeline, or one module or one rule. */
+.launch-what {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+}
+.launch-what legend {
+  font-weight: 600;
+  padding: 0 4px;
+}
+.launch-what label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.launch-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--sp-surface-subtle);
+}

@@ -23,9 +23,12 @@ import {
   type LaunchTemplate,
   type ParamsFile,
   type Run,
+  type TargetIn,
+  type TargetInspected,
   getLaunchTemplate,
   getRun,
   inspect,
+  inspectTarget,
   launch,
   listCatalog,
   listEnvironments,
@@ -44,6 +47,7 @@ import { EngineButtons } from "./EngineButtons";
 import { EnvironmentRow } from "./EnvironmentRow";
 import { guessEngine } from "./guessEngine";
 import { TryPipelines } from "./TryPipelines";
+import { REGISTRY_NAME, moduleInspected, planText } from "./target";
 import {
   type Field,
   type Row,
@@ -92,6 +96,8 @@ function targetId(to: string): string {
   if (to === "location") return "launch-location";
   if (to === "engine") return "engine-buttons";
   if (to === "environment") return "launch-where-body";
+  if (to === "rule") return "launch-rule";
+  if (to === "version") return "launch-version";
   return paramId(to.slice("params.".length));
 }
 
@@ -100,6 +106,8 @@ function targetId(to: string): string {
  * (`params.ref.release` on `ref.release`, UX-PAR-31). */
 function formKey(field: string, keys: string[]): string {
   const bare = field.replace(/^workflow\./, "");
+  if (bare === "target.version") return "version";
+  if (bare === "target.name" || bare === "rule") return "rule";
   if (["location", "revision", "engine", "name", "environment"].includes(bare)) return bare;
   if (bare.startsWith("profiles")) return "profile";
   if (!bare.startsWith("params.")) return "form";
@@ -189,6 +197,18 @@ export function LaunchPage({
   // The form key a "Before Launch" link is moving focus to: its sections open (FU-P3-86h)
   const [goTo, setGoTo] = useState<string | null>(null);
   const inFlight = useRef<AbortController | null>(null);
+  // What to run (ui-spec §4.15, api §5.9): the whole pipeline, or one module or one rule when the
+  // server has single targets on. A module loads as a form of its inputs; a Snakemake pipeline
+  // lists its rules, and the chosen rule's dry run is previewed.
+  const singleOffered = !!server?.features?.single_target;
+  const [single, setSingle] = useState(false);
+  const [version, setVersion] = useState("");
+  const [pinned, setPinned] = useState<string | null>(null);
+  const [module, setModule] = useState<Extract<TargetInspected, { kind: "module" }> | null>(null);
+  const [rules, setRules] = useState<string[] | null>(null);
+  const [rule, setRule] = useState("");
+  const [plan, setPlan] = useState<{ text: string; ok: boolean } | null>(null);
+  const planFlight = useRef<AbortController | null>(null);
   const revisionField = useRef<HTMLInputElement>(null);
 
   const loadEnvs = () =>
@@ -230,6 +250,8 @@ export function LaunchPage({
             ? `The environment's profile ${wanted} is not in this pipeline: none selected`
             : null;
 
+  const targeting = single;
+  const moduleName = targeting && REGISTRY_NAME.test(location.trim());
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
   const skipped: string[] = [];
@@ -253,6 +275,60 @@ export function LaunchPage({
     setEntryName(null); // the picker goes back to None, and the entry's prefill is forgotten
     setFromName(null);
     setParamsFile(null);
+    planFlight.current?.abort();
+    setModule(null);
+    setRules(null);
+    setRule("");
+    setPlan(null);
+    setPinned(null);
+  }
+
+  /** Whole pipeline or Single module / rule: the form starts again from Load. */
+  function switchMode(to: boolean) {
+    edit(() => setSingle(to), "");
+  }
+
+  /** Single target Load (§4.15): a registry module through `module view`; else the pipeline's
+   * inspect, then its rules (Snakemake) or the module of its directory (Nextflow). */
+  async function inspectSingle(where: string, rev: string | null, ver: string, signal: AbortSignal): Promise<Inspected> {
+    const asModule = async (location: string, pipeline: Inspected | null) => {
+      const answer = await inspectTarget({ engine: "nextflow", location, version: pipeline ? null : ver.trim() || null }, signal);
+      if (answer.kind !== "module") throw new Error("not a module");
+      setModule(answer);
+      if (!pipeline && !ver.trim() && answer.version) {
+        setVersion(answer.version);
+        setPinned(`Pinned to ${answer.version}, the registry's current version`);
+      }
+      return moduleInspected(answer, location, pipeline);
+    };
+    if (REGISTRY_NAME.test(where)) return asModule(where, null);
+    const pipeline = await inspect(where, rev, signal);
+    if (!ENGINE_FILES.snakemake.some((f) => pipeline.engine_files.includes(f))) return asModule(pipeline.location, pipeline);
+    const answer = await inspectTarget({ engine: "snakemake", location: where, revision: rev }, signal);
+    setRules(answer.kind === "rule" ? answer.rules : []);
+    return pipeline;
+  }
+
+  /** A rule chosen: its dry run, from an empty directory, says which jobs it needs (§4.15). */
+  function chooseRule(to: string) {
+    planFlight.current?.abort();
+    setRule(to);
+    setPlan(null);
+    if (!to || !loaded) return;
+    const controller = new AbortController();
+    planFlight.current = controller;
+    setPlan({ text: "Counting the jobs…", ok: false });
+    inspectTarget({ engine: "snakemake", location: loaded.location, revision: loaded.revision, rule: to }, controller.signal)
+      .then((answer) => {
+        if (controller.signal.aborted) return;
+        const found = answer.kind === "rule" ? answer : null;
+        setPlan(
+          found?.plan
+            ? { text: `Will run: ${planText(found.plan)}`, ok: true }
+            : { text: `The dry run failed: ${found?.error ?? "no plan"}`, ok: false },
+        );
+      })
+      .catch((e: Error) => controller.signal.aborted || setPlan({ text: `The dry run failed: ${e.message}`, ok: false }));
   }
 
   /** An entry chosen in the picker only fills the form; Load inspects it. None keeps the fields. */
@@ -281,14 +357,15 @@ export function LaunchPage({
     setRows([]);
   }
 
-  async function load(at = location, rev = revision, copy?: Omit<Prefill, "left">) {
+  async function load(at = location, rev = revision, copy?: Omit<Prefill, "left">, wantSingle = single, ver = version) {
     const where = at.trim();
     const isRepo = where !== "" && !where.startsWith("/");
+    const isModule = wantSingle && REGISTRY_NAME.test(where);
     if (where === "") {
       setErrors({ location: "Give an absolute path or a repository." });
       return;
     }
-    if (isRepo && rev.trim() === "") {
+    if (isRepo && !isModule && rev.trim() === "") {
       setErrors({ revision: "Give a tag, branch or commit." });
       return;
     }
@@ -299,7 +376,9 @@ export function LaunchPage({
     setErrors({});
     try {
       const from = !copy && entry?.location === where ? entry : null;
-      const found = await inspect(where, isRepo ? rev.trim() : null, controller.signal, from?.params_file);
+      const found = wantSingle
+        ? await inspectSingle(where, isRepo && !isModule ? rev.trim() : null, ver, controller.signal)
+        : await inspect(where, isRepo ? rev.trim() : null, controller.signal, from?.params_file);
       setLoaded(found);
       setTried(false);
       setFromName(from?.name ?? null);
@@ -360,9 +439,13 @@ export function LaunchPage({
     Promise.all([getLaunchTemplate(copyFrom, controller.signal), getRun(copyFrom, controller.signal)])
       .then(([template, run]) => {
         const { location: at, revision: rev } = template.workflow;
+        const target = template.target ?? null; // the copy keeps the target (§4.15)
         setLocation(at);
         setRevision(rev ?? "");
-        void load(at, rev ?? "", { template, run: `${runName(run)} (${shortId(run.id)})`, name: runName(run) });
+        setSingle(!!target);
+        setVersion(target?.version ?? "");
+        const copy = { template, run: `${runName(run)} (${shortId(run.id)})`, name: runName(run) };
+        void load(at, rev ?? "", copy, !!target, target?.version ?? "").then(() => target?.kind === "rule" && setRule(target.name ?? ""));
       })
       .catch((e: Error) => controller.signal.aborted || setPrefillError(e.message));
     return () => controller.abort();
@@ -388,6 +471,8 @@ export function LaunchPage({
       if (wrong === REQUIRED) found.push({ text: `Fill the required field: ${field.key}`, to });
       else if (wrong) found.push({ text: `Fix ${field.key}: ${wrong}`, to });
     }
+    if (targeting && engine === "snakemake" && !rule) found.push({ text: "Choose a rule", to: "rule" });
+    if (targeting && module?.source === "registry" && !version.trim()) found.push({ text: "Give the module's version", to: "version" });
     if (sending) found.push({ text: "Launching…" });
     return found;
   }
@@ -413,6 +498,11 @@ export function LaunchPage({
       return;
     }
     const params = buildParams(fields, values, rows);
+    const target: TargetIn | null = !targeting
+      ? null
+      : module
+        ? { kind: "module", version: module.source === "registry" ? version.trim() : module.version }
+        : { kind: "rule", name: rule };
     setSending(true);
     setErrors({});
     try {
@@ -422,6 +512,7 @@ export function LaunchPage({
         profiles: profile ? [profile] : [],
         ...(chosen ? { environment: chosen.name } : {}),
         params,
+        ...(target ? { target } : {}),
       });
       onLaunched(run.id);
     } catch (error) {
@@ -540,6 +631,17 @@ export function LaunchPage({
       {prefill && <PrefillBanner prefill={prefill} onClear={onClear} />}
       <div className="launch-grid">
         <Stack gap="md">
+          {singleOffered && (
+            <fieldset className="sp-card launch-what">
+              <legend>What to run</legend>
+              <label>
+                <input type="radio" name="launch-what" checked={!single} onChange={() => switchMode(false)} /> Whole pipeline
+              </label>
+              <label>
+                <input type="radio" name="launch-what" checked={single} onChange={() => switchMode(true)} /> Single module / rule
+              </label>
+            </fieldset>
+          )}
           <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card reveal={goTo === "location" || goTo === "engine"}>
             <CatalogPicker data={catalog} failed={catalogFailed} onRetry={loadCatalog} chosen={entry} onChoose={choose} onClear={clear}>
               {paramsFile && (
@@ -561,12 +663,15 @@ export function LaunchPage({
               <TextInput
                 style={{ flex: "999 1 280px" }}
                 id="launch-location"
-                label="Pipeline"
+                label={targeting ? "Module or pipeline" : "Pipeline"}
                 inputWrapperOrder={["label", "input", "description", "error"]}
                 value={location}
                 onChange={(e) => edit(setLocation, e.currentTarget.value)}
                 error={errors.location}
                 description={
+                  targeting ? (
+                    "A registry module such as nf-core/fastqc, the absolute path of a module directory, or a Snakemake pipeline to run one rule of."
+                  ) : (
                   <>
                     An absolute path your account can read, a GitHub or nf-core name such as
                     nf-core/rnaseq, or an https:// or ssh URL.
@@ -577,11 +682,26 @@ export function LaunchPage({
                       </>
                     )}
                   </>
+                  )
                 }
                 spellCheck={false}
                 autoComplete="off"
               />
-              {repo && (
+              {moduleName && (
+                <TextInput
+                  style={{ flex: "1 1 220px", maxWidth: 260 }}
+                  id="launch-version"
+                  label="Version"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
+                  value={version}
+                  onChange={(e) => edit(setVersion, e.currentTarget.value)}
+                  error={errors.version}
+                  description={pinned ?? "A pinned version; left empty, Load pins the registry's current one."}
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              )}
+              {repo && !moduleName && (
                 <TextInput
                   style={{ flex: "1 1 220px", maxWidth: 260 }}
                   ref={revisionField}
@@ -621,25 +741,56 @@ export function LaunchPage({
                     {loaded.name}
                     {loaded.version ? ` ${loaded.version}` : ""}
                   </Text>
-                  <Text size="sm" c="dimmed">
-                    {loaded.revision ? `A Git repository at ${loaded.revision}` : "A directory on this machine"}
-                    {loaded.engine_files.length ? ` · ${loaded.engine_files.join(", ")} found` : ""}
-                    {` · ${SOURCES[loaded.schema_source]}`}
-                  </Text>
+                  {module ? (
+                    <>
+                      <Text size="sm" c="dimmed">
+                        {module.source === "registry" ? "A module from the registry" : "A module directory on this machine"}
+                        {` · ${plural(module.inputs.length, "input", "inputs")}`}
+                      </Text>
+                      {module.description && <Text size="sm">{module.description}</Text>}
+                    </>
+                  ) : (
+                    <Text size="sm" c="dimmed">
+                      {loaded.revision ? `A Git repository at ${loaded.revision}` : "A directory on this machine"}
+                      {loaded.engine_files.length ? ` · ${loaded.engine_files.join(", ")} found` : ""}
+                      {` · ${SOURCES[loaded.schema_source]}`}
+                    </Text>
+                  )}
                 </div>
                 <span className="launch-loaded-status">
                   <Icon path={ICONS.check} size={14} stroke={2.4} />
                   <span>Loaded</span>
                 </span>
-                <SaveToCatalog
+                {!module && <SaveToCatalog
                   data={catalog}
                   failed={catalogFailed}
                   entry={fromEntry}
                   pipeline={loaded.name}
                   draft={{ engine: engine ?? "nextflow", location: loaded.location, revision: loaded.revision ?? "", profile, params_file: "" }}
                   onSaved={(item) => void loadCatalog().then(() => (setEntryName(item.name), setFromName(item.name)))}
-                />
+                />}
               </Paper>
+            )}
+            {targeting && rules !== null && (
+              <Stack gap="xs" mt="sm">
+                <NativeSelect
+                  id="launch-rule"
+                  label="Rule"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
+                  value={rule}
+                  onChange={(e) => chooseRule(e.currentTarget.value)}
+                  data={[{ value: "", label: "Choose a rule" }, ...rules]}
+                  description="The rule to run; the jobs it needs run with it."
+                  error={errors.rule}
+                />
+                {plan && (
+                  <div role="status" className="launch-plan">
+                    <span>{plan.text}</span>
+                    {plan.ok && <span className="sp-muted">The rule and the jobs it needs, counted from an empty directory</span>}
+                  </div>
+                )}
+                {rule && <span className="sp-mono">snakemake … {rule}</span>}
+              </Stack>
             )}
             <Stack gap="md" mt="md">
               <EngineButtons
@@ -767,6 +918,18 @@ export function LaunchPage({
                       .join(" · ")
                   : "Not loaded yet"}
               </dd>
+              {targeting && (
+                <>
+                  <dt>Runs</dt>
+                  <dd>
+                    {module
+                      ? `Runs module ${module.name} ${(module.source === "registry" ? version.trim() : module.version) || "(no version)"}, ${module.source === "registry" ? "from the registry" : "from a directory"}`
+                      : rule
+                        ? `Runs rule ${rule} and the jobs it needs`
+                        : "One module or one rule, once loaded"}
+                  </dd>
+                </>
+              )}
               <dt>Engine</dt>
               <dd>{engine ? `${NAMES[engine]} ${loaded?.engine_versions[engine] ?? "(version not found)"}` : "Not chosen yet"}</dd>
               <dt>Environment</dt>

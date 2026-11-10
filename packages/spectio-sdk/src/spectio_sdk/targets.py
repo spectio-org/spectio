@@ -24,7 +24,9 @@ class RunTarget(BaseModel):
     """`runs.target`: what a run was limited to. Grammars are enforced at launch; a target a
     bridge reports is only bounded (it describes a run that already happened)."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True, strict=True)
+    model_config = ConfigDict(
+        extra="ignore", frozen=True, strict=True, json_schema_serialization_defaults_required=True
+    )
 
     kind: Literal["module", "rule", "file"]
     name: Text

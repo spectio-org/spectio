@@ -213,6 +213,28 @@ function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
   );
 }
 
+/** The rules a target run does not need, folded into one row that opens to their names
+ * (ui-spec §4.15). */
+function OutsideTarget({ rules }: { rules: string[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="sp-outside-target">
+      <button type="button" className="sp-link-button sp-outside" aria-expanded={open} onClick={() => setOpen(!open)}>
+        Outside the target ({plural(rules.length, "rule", "rules")})
+      </button>
+      {open && (
+        <ul className="sp-plain-list" aria-label="Rules outside the target">
+          {rules.map((r) => (
+            <li key={r} className="sp-mono">
+              {r}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Stages in position order, each opening to its processes; or the flat list (ui-spec §4.4 note). */
 function StagesOrProcesses({
   run,
@@ -232,6 +254,9 @@ function StagesOrProcesses({
   const engine = engineName(run.workflow.engine);
   const open = run.summary.open_checkpoints ?? [];
   const updates = run.summary.dag_updates ?? 0;
+  // a target run lists what it runs; the rules it does not need fold into one row (ui-spec §4.15)
+  const outside = run.target ? processes.filter((p) => p.status === "not_needed").map((p) => p.process) : [];
+  const listed = outside.length ? processes.filter((p) => p.status !== "not_needed") : processes;
   const note = (
     <>
       {run.stages_note && (
@@ -262,7 +287,11 @@ function StagesOrProcesses({
       Pending: no {w.unit} has started. Running: {w.units} are running, or some are done and more are to come. Done:
       every {w.unit} succeeded or was reused. Stopped: the run ended before it finished.{" "}
       {run.workflow.engine === "snakemake"
-        ? "Waiting for checkpoint: its jobs may appear once the checkpoint ends. Up to date: its outputs already exist. Not needed in this run: the targets or an input function left it out. \"at least\": a checkpoint is open and more jobs may come."
+        ? `Waiting for checkpoint: its jobs may appear once the checkpoint ends. Up to date: its outputs already exist. ${
+            run.target
+              ? "Outside the target: the rule is not needed to make the target."
+              : "Not needed in this run: the targets or an input function left it out."
+          } "at least": a checkpoint is open and more jobs may come.`
         : "No task (condition or empty input): a when: condition was false, or its input was empty. Processes the script does not call in this run are not listed."}
     </p>
   );
@@ -270,8 +299,9 @@ function StagesOrProcesses({
     return (
       <FoldSection id="processes" screen="run" icon={ICONS.list} title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
         {note}
-        <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>
-        <ProcessTable processes={processes} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
+        {!run.target && <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>}
+        <ProcessTable processes={listed} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
+        {outside.length > 0 && <OutsideTarget rules={outside} />}
         {legend}
       </FoldSection>
     );

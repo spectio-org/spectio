@@ -842,3 +842,57 @@ test("a Nextflow process with no task reads 'No task (condition or empty input)'
   expect(screen.getByText(/Processes the script does not call in this run are not listed\./)).toBeInTheDocument();
   expect(within(await runHeader()).getByText("Work directory cleaned after success (cleanup = true)")).toBeInTheDocument();
 });
+
+// #161 (ui-spec §4.15): runs that target one Nextflow module or one Snakemake rule.
+const TARGET_NONE = { version: null, hash: null, source: null, path: null, more: 0, checksum_changed: null };
+const RULE_TARGET = { ...TARGET_NONE, kind: "rule", name: "qc_report", flag: "target" };
+const MODULE_TARGET = { ...TARGET_NONE, kind: "module", name: "nf-core/fastqc", version: "0.0.0-6d1763b", source: "registry", flag: null };
+
+test("#161: a rule target run folds the rules it does not need into one 'Outside the target' row", async () => {
+  const rule = (process: string, status: string, counts = {}) => ({ process, stage_id: null, counts, retries: 0, status, is_checkpoint: false, lower_bound: false });
+  detail(
+    { workflow: SNAKEMAKE, target: RULE_TARGET, task_counts: { succeeded: 25 } },
+    {
+      [`${URL_}/processes`]: {
+        items: [rule("make_reads", "done", { succeeded: 12 }), rule("qc_report", "done", { succeeded: 1 }), rule("merge", "not_needed"), rule("align", "not_needed")],
+      },
+      [URL_]: { ...DETAIL, ...run({ workflow: SNAKEMAKE, target: RULE_TARGET }), stages_note: "This run targets rule qc_report" },
+    },
+  );
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).getByText("rule qc_report")).toBeInTheDocument();
+  const table = await screen.findByRole("table", { name: "Rules" });
+  expect(within(table).queryByRole("button", { name: "Open rule merge" })).toBeNull();
+  expect(within(table).getByRole("button", { name: "Open rule qc_report" })).toBeInTheDocument();
+  expect(screen.getByText("This run targets rule qc_report")).toBeInTheDocument();
+  expect(screen.queryByText(/No stages for this pipeline/)).toBeNull();
+  const fold = screen.getByRole("button", { name: "Outside the target (2 rules)" });
+  expect(fold).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByText("merge")).toBeNull();
+  await userEvent.click(fold);
+  expect(fold).toHaveAttribute("aria-expanded", "true");
+  const list = screen.getByRole("list", { name: "Rules outside the target" });
+  expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["merge", "align"]);
+  expect(screen.getByText(/Outside the target: the rule is not needed to make the target\./)).toBeInTheDocument();
+  expect(screen.queryByText(/Not needed in this run:/)).toBeNull();
+});
+
+test("#161: a module run names its module and version, and says it publishes no results directory", async () => {
+  detail(
+    { target: MODULE_TARGET, state: "succeeded", ended_at: "2026-10-31T08:00:00+00:00" },
+    {
+      [`${URL_}/processes`]: { items: [{ process: "FASTQC", stage_id: null, counts: { succeeded: 1 }, retries: 0, status: "done", is_checkpoint: false, lower_bound: false }] },
+      [URL_]: { ...DETAIL, ...run({ target: MODULE_TARGET, state: "succeeded", ended_at: "2026-10-31T08:00:00+00:00" }), stages_note: "This run targets one module" },
+    },
+  );
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).getByText("module nf-core/fastqc 0.0.0-6d1763b")).toBeInTheDocument();
+  expect(within(header).getByText("checksum: after install")).toBeInTheDocument();
+  expect(await screen.findByText("This run targets one module")).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Stages" })).toBeNull();
+  expect(
+    await screen.findByText(/^This module run publishes no results directory: its outputs are in the task's work directory/),
+  ).toBeInTheDocument();
+});

@@ -237,3 +237,48 @@ test("CR-P3FU101A-01: Enter on a run's name cell opens the run", async () => {
   await userEvent.keyboard("{Enter}");
   await waitFor(() => expect(router.state.location.pathname).toBe("/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W"));
 });
+
+const moduleRun = run({
+  id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V4Z",
+  name: "fastqc-one",
+  target: {
+    kind: "module",
+    name: "nf-core/fastqc",
+    version: "0.0.0-6d1763b",
+    hash: null,
+    source: "registry",
+    path: null,
+    flag: null,
+    more: 0,
+    checksum_changed: null,
+  },
+});
+
+test("#161: the Runs select asks for runs that target one module or rule, kept in the URL", async () => {
+  const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [moduleRun, run()], next: null } });
+  const router = app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  // the name cell's second line names the target
+  expect(within(table).getByText("module nf-core/fastqc 0.0.0-6d1763b")).toBeInTheDocument();
+  const select = screen.getByRole("combobox", { name: "Runs" });
+  expect([...(select as HTMLSelectElement).options].map((o) => o.text)).toEqual([
+    "All runs",
+    "Single module or rule",
+    "Whole pipeline",
+  ]);
+  await userEvent.selectOptions(select, "Single module or rule");
+  await waitFor(() => expect(router.state.location.search).toEqual({ target: "any" }));
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?target=any&limit=50"));
+  // the summary counts by state, not by target: no "of N" while a target filter is set
+  expect(screen.queryByText(/ of \d+ runs/)).not.toBeInTheDocument();
+  await userEvent.selectOptions(select, "All runs");
+  await waitFor(() => expect(router.state.location.search).toEqual({}));
+});
+
+test("#161: an unknown ?target= is dropped", async () => {
+  const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [], next: null } });
+  app("/runs?target=bogus&state=failed");
+  await screen.findByRole("combobox", { name: "Runs" });
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?state=failed&limit=50"));
+  expect(screen.getByRole("combobox", { name: "Runs" })).toHaveValue("all");
+});

@@ -1105,7 +1105,8 @@
           "non_default",
           "code_loading",
           "environment",
-          "environment_notice"
+          "environment_notice",
+          "target"
         ],
         "title": "LaunchTemplate",
         "type": "object"
@@ -2465,7 +2466,14 @@
         },
         "required": [
           "kind",
-          "name"
+          "name",
+          "version",
+          "hash",
+          "source",
+          "path",
+          "flag",
+          "more",
+          "checksum_changed"
         ],
         "title": "RunTarget",
         "type": "object"

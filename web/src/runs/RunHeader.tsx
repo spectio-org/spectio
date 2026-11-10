@@ -12,6 +12,7 @@ import { PhoneTitle, usePhone } from "../shell/layout";
 import { type CopyItem, CopyButton, CopyMenu } from "./CopyMenu";
 import { ResumeAction } from "./ResumeDialog";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
+import { TargetLine } from "./target";
 import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
@@ -235,6 +236,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
           <div className="sp-grow">
             <strong className="sp-run-pipeline">{pipeline}</strong>
             <span className="sp-muted">{[engine, ...run.profiles].join(" · ")}</span>
+            {run.target && <TargetLine target={run.target} />}
             <p className="sp-sub">
               <span>
                 Run <span className="sp-mono">{shortId(run.id)}</span>
@@ -250,6 +252,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
               </h1>
               <span className="sp-id">{shortId(run.id)}</span>
             </div>
+            {run.target && <TargetLine target={run.target} />}
             <p className="sp-sub sp-page-sub">
               {state}
               {progress}

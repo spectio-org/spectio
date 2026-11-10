@@ -1984,3 +1984,56 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* The target of a run (ui-spec §4.15): one module or one rule, under the run's name and in the
+   runs list's name cell; it wraps on the phone. */
+.sp-target {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.sp-warn-line {
+  color: var(--sp-state-review-fg);
+}
+/* The rules a Snakemake target run does not need, folded into one row (ui-spec §4.15). */
+.sp-outside {
+  display: block;
+  width: 100%;
+  text-align: start;
+}
+/* The Runs select beside the state filter (ui-spec §4.15); under it, full width, on the phone. */
+.sp-select-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp-select-field select {
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid var(--sp-line-input);
+  border-radius: 10px;
+  font: inherit;
+  color: inherit;
+  background: var(--sp-surface-raised);
+}
+@media (max-width: 767.98px) {
+  .sp-select-field {
+    flex: 1 1 100%;
+  }
+  .sp-select-field select {
+    flex: 1;
+    min-height: 44px;
+  }
+}
+.sp-outside-target {
+  margin-top: 8px;
+}
+.sp-plain-list {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+@media (max-width: 767.98px) {
+  .sp-outside {
+    min-height: 44px;
+  }
+}
