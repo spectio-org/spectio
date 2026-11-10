@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from snakemake_interface_logger_plugins.base import LogHandlerBase
 from snakemake_interface_logger_plugins.common import LogEvent
 from snakemake_interface_logger_plugins.settings import LogHandlerSettingsBase
@@ -43,6 +44,7 @@ from .conftest import (
     REPO,
     ROOT,
     RUN_ID,
+    SYNTHETIC,
     SmkRun,
     snakemake,
     synthetic_happy,
@@ -794,3 +796,48 @@ def test_loose_spectio_home_no_pointer_snakemake(tmp_home: Path, tmp_path: Path,
     assert run.proc.returncode == 0, run.proc.stderr[-3000:]
     assert list(where.iterdir()) == [] and run.files()
     assert "no pointer written" in (run.launch / ".spectio" / "bridge.err").read_text()
+
+
+# --- Run targets: one rule (api §5.9, architecture §13.8; #161) -----------------------------
+
+
+@pytest.mark.parametrize(
+    ("argv", "target"),
+    [
+        (["-s", "S", "--cores", "1"], None),
+        (["-s", "S", "all"], None),
+        (["-s", "S", "--directory", "d", "qc_report"], ("rule", "qc_report", "target", 0)),
+        (["qc_report", "merge"], ("rule", "qc_report", "target", 1)),
+        (["results/final_report.html"], ("file", "results/final_report.html", "target", 0)),
+        (["--until", "qc_report", "--cores", "2"], ("rule", "qc_report", "until", 0)),
+        (["--allowed-rules", "merge"], ("rule", "merge", "allowed_rules", 0)),
+        (["--cores"], None),  # argparse would exit
+    ],
+)
+def test_run_target_from_argv(argv: list[str], target: tuple[str, str, str, int] | None) -> None:
+    found = plugin.run_target(argv)
+    if target is None:
+        assert found is None
+    else:
+        kind, name, flag, more = target
+        assert found == {"kind": kind, "name": name, "flag": flag, "more": more}
+
+
+def test_rule_target_run(tmp_path: Path) -> None:
+    """The single-rule fixture (`tests/pipelines/synthetic/snakemake/targets.yaml`): the run
+    reports its target, and only the jobs the rule needs run."""
+    fixture = yaml.safe_load((SYNTHETIC / "snakemake" / "targets.yaml").read_text())["targets"][0]
+    config = ["outdir=results", f"samples={SYNTHETIC / 'data' / 'samplesheet.csv'}"]
+    smk = SYNTHETIC / "snakemake" / "workflow" / "Snakefile"
+    # after `--cores N`: `--logger` and `--config` take several values and would swallow it
+    run = snakemake(tmp_path / "launch", smk, "--cores", "2", fixture["rule"], "--config", *config)
+    assert run.proc.returncode == 0, run.proc.stderr[-3000:]
+    (started,) = run.of("snakemake.workflow_started")
+    assert started["target"] == {
+        "kind": "rule",
+        "name": fixture["rule"],
+        "flag": fixture["flag"],
+        "more": 0,
+    }
+    (info,) = run.of("snakemake.run_info")
+    assert {k: v for k, v in info["stats"].items() if k != "total"} == fixture["jobs"]

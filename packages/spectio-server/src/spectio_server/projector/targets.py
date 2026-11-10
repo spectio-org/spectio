@@ -47,7 +47,8 @@ def capture(p: "Projection", reported: RunTarget | None) -> None:
             )
             .values(key=target.hash)
         )
-        if _checksum_changed(p.conn, p.run_id, target):
+        registry = target.source == "registry"  # a local hash differs by origin (§5.9)
+        if registry and _checksum_changed(p.conn, p.run_id, target):
             target = target.model_copy(update={"checksum_changed": True})
     p.conn.execute(
         update(runs)

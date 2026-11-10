@@ -697,3 +697,75 @@ def test_loose_spectio_home_no_pointer(
     assert done.returncode == 0, done.stdout + done.stderr
     assert list(where.iterdir()) == [] and terminal_files(launch_dir)
     assert "no pointer written" in (launch_dir / ".spectio" / "bridge.err").read_text()
+
+
+# --- Run targets: `nextflow module run` (api §5.9, architecture §13.8; #161) ----------------
+
+MODULE = REPO / "tests" / "pipelines" / "synthetic" / "modules" / "synth_stats"
+TARGET_SCRIPT = """
+import java.nio.file.Paths
+def at = { String cmd, String file -> groovy.json.JsonOutput.toJson(
+    spectio.SpectioObserver.moduleTarget(cmd, file ? Paths.get(file) : null, 'abc123')) }
+println at('nextflow run main.nf -profile test', null)
+def p = args[0] + '/main.nf'
+println at('nextflow module run nf-core/fastqc -version 1.2 -params-file p.json', p)
+println at('nextflow -c x.config module run nf-core/fastqc', p)
+println at('nextflow module run ' + args[1], args[1] + '/main.nf')
+println at('nextflow run x --tool module run', null)
+"""
+
+
+def test_module_target_from_the_command_line(nextflow: str, tmp_path: Path) -> None:
+    installed = tmp_path / "modules" / "nf-core" / "fastqc"
+    installed.mkdir(parents=True)
+    checksum = "b" * 64
+    (installed / ".module-info").write_text(f"#date\nchecksum={checksum}\nregistryUrl=x\n")
+    jar = build(nextflow, "--classpath")
+    build(nextflow, str(tmp_path / "plugin"))
+    classes = tmp_path / "plugin" / "nf-spectio-0.0.1" / "classes"
+    out = subprocess.run(
+        ["java", "-cp", f"{jar}:{classes}", "groovy.ui.GroovyMain", "-e", TARGET_SCRIPT,  # noqa: S607
+         str(installed), str(MODULE)],
+        check=True, capture_output=True, text=True,
+    ).stdout  # fmt: skip
+    pipeline, pinned, unpinned, local, param = (json.loads(x) for x in out.splitlines()[-5:])
+    assert pipeline is None and param is None
+    assert pinned == {
+        "kind": "module", "name": "nf-core/fastqc", "version": "1.2", "source": "registry",
+        "hash": checksum,
+    }  # fmt: skip
+    assert unpinned["version"] is None and unpinned["hash"] == checksum
+    assert local == {
+        "kind": "module", "name": "synth_stats", "version": "1.0.0", "source": "local",
+        "path": str(MODULE), "hash": "abc123",
+    }  # fmt: skip
+
+
+def test_local_module_run_reports_its_target(nextflow: str, tmp_path: Path) -> None:
+    """The single-module fixture, run alone, driven: `onFlowCreate` carries the target."""
+    plugins = tmp_path / "plugins"
+    build(nextflow, str(plugins))
+    launch = tmp_path / "launch"
+    (launch / ".spectio").mkdir(mode=0o700, parents=True)
+    (launch / "S1.reads.txt").write_text("r1\nr2\n")
+    (launch / "params.json").write_text('{"meta": {"id": "S1"}, "reads": "S1.reads.txt"}')
+    env = {
+        **os.environ,
+        "NXF_PLUGINS_DIR": str(plugins),
+        "NXF_ANSI_LOG": "false",
+        "SPECTIO_RUN_ID": RUN_ID,
+        "SPECTIO_LAUNCH_N": "1",
+        "SPECTIO_SPOOL_DIR": str(launch / ".spectio" / "events"),
+    }
+    argv = [nextflow, "module", "run", str(MODULE), "-plugins", "nf-spectio@0.0.1"]
+    proc = subprocess.run(
+        [*argv, "-params-file", "params.json"],
+        cwd=launch, env=env, capture_output=True, text=True, timeout=600, check=False,
+    )  # fmt: skip
+    assert proc.returncode == 0, proc.stdout[-3000:] + proc.stderr[-3000:]
+    events = [SpoolEvent.model_validate_json(line) for line in spool_lines(launch)]
+    (create,) = [parse_data(e) for e in events if e.type == "nextflow.onFlowCreate"]
+    target = getattr(create, "target", None)
+    assert target is not None and (target.kind, target.source) == ("module", "local")
+    assert (target.name, target.version, target.path) == ("synth_stats", "1.0.0", str(MODULE))
+    assert target.hash and "commandLine" not in "".join(spool_lines(launch))
