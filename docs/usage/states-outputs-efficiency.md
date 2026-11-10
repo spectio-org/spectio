@@ -20,7 +20,7 @@ Open a run, then **Summary**. Each rule has a state word. Pending means "jobs ar
 | Up to date | Snakemake | its outputs already exist, so there is nothing to run |
 | No task (condition or empty input) | Nextflow | the process never got a task: a `when:` was false or its input was empty |
 
-A checkpoint rule carries a **Checkpoint** chip. While one is open the count reads "done / at least n", and the bar is hatched past the jobs known so far. The Summary says "The DAG grows after checkpoint …" and, once it ended, "DAG updated after a checkpoint (12 times): the job count includes the new jobs."
+A checkpoint rule carries a **Checkpoint** mark: a small signpost icon and the word, in muted text with no fill (a filled chip before batch [P3-B13](../progress/W5/P3-M9.md#batch-p3-b13), step FU-P3-88a; the shot below still shows the old chip). Its sheet adds one line, "A checkpoint: once its jobs succeed, Snakemake updates the DAG from their outputs." While one is open the count reads "done / at least n", and the bar is hatched past the jobs known so far. The Summary says "The DAG grows after checkpoint …" and, once it ended, "DAG updated after a checkpoint (12 times): the job count includes the new jobs."
 
 ![A Snakemake run's Summary: the rules, the Checkpoint chip on split, the DAG-updated line, the states legend](../assets/shots/app-run-rules_light.webp#only-light)
 ![A Snakemake run's Summary: the rules, the Checkpoint chip on split, the DAG-updated line, the states legend](../assets/shots/app-run-rules_dark.webp#only-dark)
@@ -106,6 +106,33 @@ For the synthetic test pipelines, the profile `fail_demo` makes `COMPARE` (Snake
 ![A failed run launched with the profile fail_demo: Why it failed, and the sheet of the COMPARE task with its WARN, INFO and ERROR lines](../assets/shots/app-run-failed-synth_dark.webp#only-dark)
 
 *Nextflow 26.10.4 on a local executor. The SLURM job log of a Snakemake run, where the tool's stderr is copied, was not run* **[to be validated]**.
+
+## The Summary's last lines and the full log
+
+*Built on the integration branch (step FU-P3-88a, batch [P3-B13](../progress/W5/P3-M9.md#batch-p3-b13), 2026-11-10). Owned by [ui-spec §4.4](../specs/ui-spec.md#44-run-detail).*
+
+![The Summary of a run: Facts, Processes, and on the right the Engine log with its last lines and the button Open the full engine log](../assets/shots/app-run-engine-log_light.webp#only-light)
+![The Summary of a run: Facts, Processes, and on the right the Engine log with its last lines and the button Open the full engine log](../assets/shots/app-run-engine-log_dark.webp#only-dark)
+
+*A seeded run record whose launch directory holds a `.nextflow.log` of nine lines, written for this shot. No head ran, so Facts and Processes are empty; only the log card is real.*
+
+- **The last lines open the log.** A click on them, or the button **Open the full engine log →** (on a failed run, "head errors"), opens the Logs tab on the same source, with focus on its panel.
+- **A click that ends a text selection does not open it,** so you can still copy a line.
+- **Back to Summary** sits above the log's tools and returns to the Summary with focus on the button that opened it. Opened from its own tab, Logs has no such button. The address carries `&from=summary`, so Back to Summary survives a reload.
+
+## The runs list
+
+*Built on the integration branch (step FU-P3-101a, batch [P3-B13](../progress/W5/P3-M9.md#batch-p3-b13)). Owned by [ui-spec §4.13](../specs/ui-spec.md#413-tables-in-ag-grid) and [§4.3](../specs/ui-spec.md).*
+
+![The runs list as a grid: seven demo runs, a coloured rail on each row, filters above](../assets/shots/app-runs-grid_light.webp#only-light)
+![The runs list as a grid: seven demo runs, a coloured rail on each row, filters above](../assets/shots/app-runs-grid_dark.webp#only-dark)
+
+*Seven seeded run records (succeeded, running, failed, cancelled), not pipeline runs: Tasks, Started and Duration read "—" because no head reported. The state rail on each row's left edge is as before.*
+
+- **The grid keeps the API's order,** newest first, and its own filters (name and state above the table). No column sorts or filters here. **Load more** adds rows.
+- **Keyboard.** The grid takes Tab and Enter for its cells, so a run's name is not a tab stop of its own. Move to the Run cell with the arrow keys and press **Enter** to open the run (a blocker found in review, fixed before merge).
+- **Below 1100 px** the Started column drops, so the table fits at 1024 px.
+- **On a phone** the list stays one card per run, and the grid is not loaded.
 
 ## Temporary and protected outputs
 
