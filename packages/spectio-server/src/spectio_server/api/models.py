@@ -304,6 +304,31 @@ class ServerVersion(BaseModel):
     executor: str
 
 
+class Principal(BaseModel):
+    user: str
+    uid: int
+
+
+class MeSession(BaseModel):
+    started_at: str | None
+    expires_at: str | None
+
+
+class MePaths(BaseModel):
+    config_file: str
+    data_dir: str
+    db_dir: str
+    observed_dir: str
+
+
+class Me(BaseModel):
+    """`GET /me` in 0.0.1 (api §5.8): paths only, never a secret or a file's contents."""
+
+    principal: Principal
+    session: MeSession
+    paths: MePaths
+
+
 ProcessStatus = Literal[
     "pending",
     "running",

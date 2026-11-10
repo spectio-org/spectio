@@ -39,6 +39,7 @@ from spectio_server.api import (
     catalog,
     environments,
     logs,
+    me,
     problems,
     relaunch,
     results,
@@ -187,6 +188,7 @@ def create_app(
             cancel,
             environments,
             catalog,
+            me,
         )
         for module in (*routers, stream):
             app.include_router(module.router, prefix=API)
