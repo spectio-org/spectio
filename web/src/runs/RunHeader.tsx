@@ -148,7 +148,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
   if (run.parent_run_id) {
     facts.push([
       "Resume of",
-      <Link to="/runs/$id" params={{ id: run.parent_run_id }}>
+      <Link className="sp-text-link" to="/runs/$id" params={{ id: run.parent_run_id }}>
         run {shortId(run.parent_run_id)}
       </Link>,
     ]);
@@ -158,7 +158,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
       "Resumed as",
       <span className="sp-lines">
         {run.resumed_as.map((child) => (
-          <Link key={child.id} to="/runs/$id" params={{ id: child.id }}>
+          <Link key={child.id} className="sp-text-link" to="/runs/$id" params={{ id: child.id }}>
             {child.name ?? `run ${shortId(child.id)}`} · {runWord(child.state)}
           </Link>
         ))}
