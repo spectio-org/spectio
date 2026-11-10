@@ -11,7 +11,7 @@
 
 **What is copied.** `src/`, `bioflow_insight_cli/`, `LICENSE`, `README.md` and the packaging files, unchanged.
 
-**What is left out.** `src/language_server_source_code/language-server-all.jar` (≈15 MB), which is the Nextflow language server that BioFlow-Insight bundles. Fetch it from the same upstream commit (or install the PyPI package) to run the copy. Also left out: `tests/`, `wf_test/` and `img/`.
+**What is left out.** `src/language_server_source_code/language-server-all.jar` (≈15 MB), which is the Nextflow language server that BioFlow-Insight bundles. Fetch it from the same upstream commit (or install the PyPI package) to run the copy. Also left out: `tests/`, `wf_test/`, `img/` and `requirements.txt`. That file is unused here (the dependencies are in `setup.py` and `pyproject.toml`). osv-scanner resolves its loose pins to old transitive versions, such as pillow 9.5.0, and fails the dependency audit on code Spectio never installs.
 
 **MetroFlow renderer.** It is not vendored. It lives in the hosted service's repository `gitlab.pasteur.fr/sharefair/bioflow-insight-server`, which needed credentials on 2026-11-10 (a `git clone` asked for a username). See the spike note.
 
