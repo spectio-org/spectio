@@ -119,3 +119,13 @@ test("on the phone the search icon opens the same dialog, full screen", async ()
   const { dialog } = await openByButton();
   expect(dialog).toHaveAttribute("data-full-screen", "true");
 });
+
+test("on a 360 px phone the search icon still shows and opens the dialog (CR-P3FU89-01)", async () => {
+  viewport(360);
+  backend();
+  app("/environments");
+  const { opener, dialog } = await openByButton();
+  // sp-narrow-hide hides a control below 390 px (shell.css); a phone has no ⌘K, so search keeps its icon
+  expect(opener).not.toHaveClass("sp-narrow-hide");
+  expect(dialog).toHaveAttribute("data-full-screen", "true");
+});

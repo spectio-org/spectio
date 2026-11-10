@@ -170,7 +170,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
             <span className="sp-dot" aria-hidden="true" />
             <span aria-hidden="true">{server?.node ?? (down ? "offline" : "…")}</span>
           </span>
-          <button type="button" className="sp-key sp-narrow-hide" aria-label="Search" onClick={() => setSearching(true)}>
+          <button type="button" className="sp-key" aria-label="Search" onClick={() => setSearching(true)}>
             <span className="sp-key-face">
               <Icon path={SEARCH} size={19} />
             </span>
