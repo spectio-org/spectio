@@ -1802,7 +1802,7 @@
   <circle cx="548.0" cy="1593.0" r="4.5" fill="#ff8787"/>
   <circle cx="563.0" cy="1593.0" r="4.5" fill="#ffd43b"/>
   <circle cx="578.0" cy="1593.0" r="4.5" fill="#69db7c"/>
-  <text x="598.0" y="1598.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">/environments?view=table</text>
+  <text x="598.0" y="1598.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">/environments?view=table</tspan></text>
   <text x="544.0" y="1623.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="10.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Show environments as</text>
   <path d="M680.0,1611.0 L734.0,1611.0 L734.0,1629.0 L680.0,1629.0 Z" fill="#ffffff" stroke="none"/>
   <path d="M680.1,1611.1 C698.0,1610.8 716.2,1611.2 733.9,1611.1" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>

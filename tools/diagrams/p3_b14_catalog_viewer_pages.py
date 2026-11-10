@@ -548,7 +548,7 @@ def build(theme: Theme) -> Sketch:
     # 9 -- FU-P3-111 ------------------------------------------------------------------------------
     x = COLS[1]
     head(s, x, R3, "FU-P3-111 · PR 238 · web")
-    s.browser(x + 2, top + 4, 446, 166, url="/environments?view=table")
+    s.browser(x + 2, top + 4, 446, 166, url="`/environments?view=table`")
     small(s, x + 14, top + 48, "Show environments as", size=10.5)
     chip(s, x + 150, top + 36, 54, "Cards", "surface", h=18, size=10)
     chip(s, x + 204, top + 36, 54, "Table", "input", h=18, size=10)
