@@ -160,6 +160,31 @@
         "title": "Command",
         "type": "object"
       },
+      "DeleteIn": {
+        "additionalProperties": false,
+        "properties": {
+          "directories": {
+            "default": false,
+            "title": "Directories",
+            "type": "boolean"
+          },
+          "ids": {
+            "items": {
+              "pattern": "run_[0-7][0-9A-HJKMNP-TV-Z]{25}",
+              "type": "string"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "DeleteIn",
+        "type": "object"
+      },
       "Efficiency": {
         "description": "A job's CPU and memory efficiency (schedulers \u00a73.6), `cpu` and `mem` ratios, never\nclamped; `peak_rss_bytes` and `elapsed_s` the values they come from.",
         "properties": {
@@ -1142,6 +1167,20 @@
         "title": "MeSession",
         "type": "object"
       },
+      "PinIn": {
+        "additionalProperties": false,
+        "properties": {
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pinned"
+        ],
+        "title": "PinIn",
+        "type": "object"
+      },
       "Principal": {
         "properties": {
           "uid": {
@@ -1837,6 +1876,10 @@
             ],
             "title": "Origin"
           },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          },
           "profiles": {
             "items": {
               "type": "string"
@@ -1895,6 +1938,7 @@
           "workflow",
           "profiles",
           "environment",
+          "pinned",
           "failure",
           "head",
           "task_counts",
@@ -2032,6 +2076,10 @@
             ],
             "title": "Parent Run Id"
           },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          },
           "profiles": {
             "items": {
               "type": "string"
@@ -2119,6 +2167,7 @@
           "workflow",
           "profiles",
           "environment",
+          "pinned",
           "failure",
           "head",
           "task_counts",
@@ -4016,7 +4065,7 @@
     },
     "/api/v1/runs": {
       "get": {
-        "description": "Newest first by `created_at`, or by `ended_at` (`sort=-ended_at`: ended runs only).",
+        "description": "Newest first by `created_at`, or by the sort of `_run_keys`, pinned runs first;\n`sort=-ended_at`: ended runs only, by end time (FU-P3-115a).",
         "operationId": "list_runs_api_v1_runs_get",
         "parameters": [
           {
@@ -4061,7 +4110,15 @@
               "default": "-created_at",
               "enum": [
                 "-created_at",
-                "-ended_at"
+                "-ended_at",
+                "name",
+                "-name",
+                "state",
+                "-state",
+                "started_at",
+                "-started_at",
+                "duration",
+                "-duration"
               ],
               "title": "Sort",
               "type": "string"
@@ -4197,6 +4254,53 @@
           }
         },
         "summary": "Get Run"
+      },
+      "patch": {
+        "operationId": "patch_run_api_v1_runs__run_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PinIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Run"
       }
     },
     "/api/v1/runs/{run_id}/logs": {
@@ -4827,6 +4931,46 @@
           }
         },
         "summary": "Relaunch"
+      }
+    },
+    "/api/v1/runs:delete": {
+      "post": {
+        "operationId": "delete_runs_api_v1_runs_delete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Delete Runs Api V1 Runs Delete Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Runs"
       }
     },
     "/api/v1/runs:summary": {
