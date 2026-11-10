@@ -181,6 +181,7 @@ class Run(BaseModel):
     workflow: WorkflowRef
     profiles: list[str]
     environment: RunEnvironment | None  # null for a run started from a terminal
+    pinned: bool  # first in the runs list (FU-P3-115a)
     failure: dict[str, JsonValue] | None
     head: Head | None
     task_counts: dict[str, int]

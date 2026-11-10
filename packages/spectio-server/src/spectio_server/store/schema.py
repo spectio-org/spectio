@@ -238,6 +238,8 @@ runs = Table(
     # The run's own environment, {name, label, executor, slurm, local, state} (FU-P3-86a, api
     # §5.4): the source of every per-run executor decision; null for a run from a terminal.
     Column("environment", Json),
+    # Pinned runs come first in the runs list (FU-P3-115a, api §5 note of 2026-11-10)
+    Column("pinned", Boolean, nullable=False, server_default="0"),
     # The launch's `default_resources` and `config_file`, with a `state` (FU-P3-110a, api §5.7);
     # null when the run has none.
     Column("default_resources", Json),

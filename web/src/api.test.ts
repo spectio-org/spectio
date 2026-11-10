@@ -28,6 +28,7 @@ const run = {
     local: { cpus: null, mem_mib: null },
     state: "recorded",
   },
+  pinned: false,
   failure: null,
   head: { session: null, node: "", alive: false, exit_code: null, checked: true },
   task_counts: {},
