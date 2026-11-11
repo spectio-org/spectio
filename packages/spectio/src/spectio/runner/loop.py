@@ -30,6 +30,7 @@ from spectio.environments import (
     DefaultResources,
     Snapshot,
     as_snapshot,
+    check_on_server,
     launch_fields,
     server_builtin,
     snapshot,
@@ -314,6 +315,7 @@ class RunnerLoop:
             environment = payload.environment or as_snapshot(
                 snapshot(server_builtin(self.settings).environment)
             )
+            check_on_server(environment, self.settings)
             asked = payload.resume_of
             resume = None if asked is None else self._resume_source(ref, asked)
             engines = self.settings.engines
