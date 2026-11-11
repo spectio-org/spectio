@@ -120,3 +120,32 @@ test("UI-03, phone: the subtitle may stay in the page, the primary may stay out 
   expect(within(head).queryByRole("button")).toBeNull();
   expect(screen.getByRole("button", { name: "Launch a workflow" }).closest(".sp-head-bar")).not.toBeNull();
 });
+
+test("CR-P3UI03-01, phone: the title row's h1 is the focus target", () => {
+  wrap(<PageHead section="environments" title="Environments" />, true);
+  expect(within(screen.getByTestId("title-row")).getByRole("heading", { level: 1 })).toHaveAttribute("tabindex", "-1");
+});
+
+test("CR-P3UI03-02, phone: the secondaries and the More actions menu stay in the page", async () => {
+  const exp = vi.fn();
+  for (const phoneTitle of ["title-and-sub", "page"] as const) {
+    const { unmount } = wrap(
+      <PageHead
+        section="runs"
+        title="rnaseq-a"
+        phoneTitle={phoneTitle}
+        secondary={[<Button key="a" variant="default">Rerun</Button>]}
+        more={[{ label: "Export", onClick: exp }]}
+        primary={<Button>Stop</Button>}
+      />,
+      true,
+    );
+    expect(screen.getByRole("button", { name: "Rerun" }).closest(".sp-head-bar")).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Stop" })).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: "More actions" }));
+    await userEvent.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Export" }));
+    unmount();
+    screen.queryByTestId("title-row")?.remove();
+  }
+  expect(exp).toHaveBeenCalledTimes(2);
+});

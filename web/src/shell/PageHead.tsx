@@ -72,23 +72,25 @@ export function PageHead({ section, title, sub, icon, primary, secondary, more, 
   const phone = usePhone();
   const subLine = sub && <p className="sp-sub sp-page-sub">{sub}</p>;
   const bar = phone && phonePrimary === "bar" && primary && <div className="sp-head-bar">{primary}</div>;
+  // On the phone the secondaries and "More actions" stay in the page; only the primary moves to the bar.
+  const actions = (secondary || more?.length || (!phone && primary)) && (
+    <div className="sp-head-actions">
+      {secondary}
+      {more && more.length > 0 && <MoreMenu items={more} />}
+      {!phone && primary}
+    </div>
+  );
   if (phone && phoneTitle !== "page") {
     const both = phoneTitle === "title-and-sub";
     return (
       <>
         <PhoneTitle title={title} sub={both ? sub : undefined} />
         {!both && subLine}
+        {actions}
         {bar}
       </>
     );
   }
-  const actions = !phone && (secondary || more?.length || primary) && (
-    <div className="sp-head-actions">
-      {secondary}
-      {more && more.length > 0 && <MoreMenu items={more} />}
-      {primary}
-    </div>
-  );
   return (
     <>
       <header className="sp-head">
