@@ -331,6 +331,7 @@ class Accounting:
         self.sweeper: Callable[[str], None] | None = None  # set by `app.wire_sweep`
         self.on_rows: Callable[[str, dict[str, SacctRow | None]], None] | None = None
         self._ended: dict[str, None] = {}  # runs whose sweep is due, in the order they ended
+        self._sweeping: set[str] = set()  # the runs handed to the sweep, not swept yet
         self._closed = False
 
     @classmethod
@@ -403,6 +404,14 @@ class Accounting:
         SEC-P3FU106B-01). This process does not ask it again."""
         with self._lock:
             return self._failed.get(run_id, {}).get(job)
+
+    def waiting(self, run_id: str) -> set[str] | None:
+        """The run's jobs asked and not answered yet, a follow-up included, a job given up
+        not; None while the run's sweep is due or running: every job waits (CR-P3FU105D-01)."""
+        with self._lock:
+            if run_id in self._ended or run_id in self._sweeping:
+                return None
+            return {job for rid, job in self._where if rid == run_id}
 
     def want(
         self,
@@ -541,11 +550,12 @@ class Accounting:
 
     def _sweep_ended(self) -> bool:
         """Sweep the runs handed over; False when there were none."""
-        with self._lock:
-            todo, self._ended = list(self._ended), {}
         sweep = self.sweeper
         if sweep is None:  # never: `ended` hands nothing over without it
             return False
+        with self._lock:
+            todo, self._ended = list(self._ended), {}
+            self._sweeping.update(todo)
         for run_id in todo:
             if self._closed:
                 break
@@ -553,6 +563,9 @@ class Accounting:
                 sweep(run_id)
             except Exception:  # the next run is swept; a view still asks this one's jobs
                 log.exception("the end-of-run sweep of %s failed", run_id)
+            finally:
+                with self._lock:
+                    self._sweeping.discard(run_id)
         return bool(todo)
 
     def close(self) -> None:

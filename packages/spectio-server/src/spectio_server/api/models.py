@@ -7,7 +7,7 @@ dictionaries; FastAPI checks each one against its model. The state enums repeat 
 
 from typing import Literal
 
-from pydantic import BaseModel, JsonValue
+from pydantic import BaseModel, ConfigDict, JsonValue
 
 RunState = Literal[
     "queued",
@@ -629,3 +629,71 @@ class Results(BaseModel):
     entries: list[ResultEntry]
     truncated: bool
     reports: list[ResultReport]
+
+
+class TaskRef(BaseModel):
+    task_id: str
+    tag: str | None
+
+
+class Stats(BaseModel):
+    """One metric over a process's measured attempts (api §5.5): quartiles by linear
+    interpolation between the closest ranks; `min_task` and `max_task` the first such attempt."""
+
+    n: int
+    min: float
+    q1: float
+    median: float
+    q3: float
+    max: float
+    mean: float
+    min_task: TaskRef
+    max_task: TaskRef
+
+
+class Waste(BaseModel):
+    metric: Literal["mem_eff", "cpu_eff"]
+    below: float
+    jobs: int
+
+
+class ProcessPerformance(BaseModel):
+    process_or_rule: str
+    stage_id: str | None
+    pipeline_order: int
+    n: int
+    measured: int
+    jobs: JobCount
+    sources: dict[str, int]
+    requested: Requested
+    stats: dict[str, Stats | None]
+    waste: list[Waste]
+
+
+class Point(BaseModel):
+    """One attempt, with the asked metrics as more members (`cpu_eff: 0.63`)."""
+
+    model_config = ConfigDict(extra="allow")
+    task_id: str
+    attempt: int
+    process_or_rule: str
+    tag: str | None
+    partition: str | None
+    source: str | None
+
+
+class Points(BaseModel):
+    items: list[Point]
+    truncated: bool
+    stride: int
+
+
+class RunPerformance(BaseModel):
+    run_id: str
+    measured: int
+    total: int  # the ended attempts counted, cached tasks apart
+    cached: int
+    pending_accounting: int
+    processes_truncated: bool
+    processes: list[ProcessPerformance]
+    points: Points | None  # null with `points=false`

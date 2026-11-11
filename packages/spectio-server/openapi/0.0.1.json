@@ -1383,6 +1383,93 @@
         "title": "PinIn",
         "type": "object"
       },
+      "Point": {
+        "additionalProperties": true,
+        "description": "One attempt, with the asked metrics as more members (`cpu_eff: 0.63`).",
+        "properties": {
+          "attempt": {
+            "title": "Attempt",
+            "type": "integer"
+          },
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition"
+          },
+          "process_or_rule": {
+            "title": "Process Or Rule",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt",
+          "process_or_rule",
+          "tag",
+          "partition",
+          "source"
+        ],
+        "title": "Point",
+        "type": "object"
+      },
+      "Points": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "stride": {
+            "title": "Stride",
+            "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "truncated",
+          "stride"
+        ],
+        "title": "Points",
+        "type": "object"
+      },
       "Principal": {
         "properties": {
           "uid": {
@@ -1562,6 +1649,85 @@
           "items"
         ],
         "title": "ProcessList",
+        "type": "object"
+      },
+      "ProcessPerformance": {
+        "properties": {
+          "jobs": {
+            "$ref": "#/components/schemas/JobCount"
+          },
+          "measured": {
+            "title": "Measured",
+            "type": "integer"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "pipeline_order": {
+            "title": "Pipeline Order",
+            "type": "integer"
+          },
+          "process_or_rule": {
+            "title": "Process Or Rule",
+            "type": "string"
+          },
+          "requested": {
+            "$ref": "#/components/schemas/Requested"
+          },
+          "sources": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Sources",
+            "type": "object"
+          },
+          "stage_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Id"
+          },
+          "stats": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Stats"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Stats",
+            "type": "object"
+          },
+          "waste": {
+            "items": {
+              "$ref": "#/components/schemas/Waste"
+            },
+            "title": "Waste",
+            "type": "array"
+          }
+        },
+        "required": [
+          "process_or_rule",
+          "stage_id",
+          "pipeline_order",
+          "n",
+          "measured",
+          "jobs",
+          "sources",
+          "requested",
+          "stats",
+          "waste"
+        ],
+        "title": "ProcessPerformance",
         "type": "object"
       },
       "Profiles": {
@@ -2656,6 +2822,63 @@
         "title": "RunList",
         "type": "object"
       },
+      "RunPerformance": {
+        "properties": {
+          "cached": {
+            "title": "Cached",
+            "type": "integer"
+          },
+          "measured": {
+            "title": "Measured",
+            "type": "integer"
+          },
+          "pending_accounting": {
+            "title": "Pending Accounting",
+            "type": "integer"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Points"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "processes": {
+            "items": {
+              "$ref": "#/components/schemas/ProcessPerformance"
+            },
+            "title": "Processes",
+            "type": "array"
+          },
+          "processes_truncated": {
+            "title": "Processes Truncated",
+            "type": "boolean"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "run_id",
+          "measured",
+          "total",
+          "cached",
+          "pending_accounting",
+          "processes_truncated",
+          "processes",
+          "points"
+        ],
+        "title": "RunPerformance",
+        "type": "object"
+      },
       "RunRef": {
         "properties": {
           "id": {
@@ -3316,6 +3539,58 @@
         "title": "StageList",
         "type": "object"
       },
+      "Stats": {
+        "description": "One metric over a process's measured attempts (api \u00a75.5): quartiles by linear\ninterpolation between the closest ranks; `min_task` and `max_task` the first such attempt.",
+        "properties": {
+          "max": {
+            "title": "Max",
+            "type": "number"
+          },
+          "max_task": {
+            "$ref": "#/components/schemas/TaskRef"
+          },
+          "mean": {
+            "title": "Mean",
+            "type": "number"
+          },
+          "median": {
+            "title": "Median",
+            "type": "number"
+          },
+          "min": {
+            "title": "Min",
+            "type": "number"
+          },
+          "min_task": {
+            "$ref": "#/components/schemas/TaskRef"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "q1": {
+            "title": "Q1",
+            "type": "number"
+          },
+          "q3": {
+            "title": "Q3",
+            "type": "number"
+          }
+        },
+        "required": [
+          "n",
+          "min",
+          "q1",
+          "median",
+          "q3",
+          "max",
+          "mean",
+          "min_task",
+          "max_task"
+        ],
+        "title": "Stats",
+        "type": "object"
+      },
       "Summary": {
         "properties": {
           "groups": {
@@ -3666,6 +3941,31 @@
         "title": "TaskOutput",
         "type": "object"
       },
+      "TaskRef": {
+        "properties": {
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "tag"
+        ],
+        "title": "TaskRef",
+        "type": "object"
+      },
       "TaskSummary": {
         "properties": {
           "cached": {
@@ -3803,6 +4103,33 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "Waste": {
+        "properties": {
+          "below": {
+            "title": "Below",
+            "type": "number"
+          },
+          "jobs": {
+            "title": "Jobs",
+            "type": "integer"
+          },
+          "metric": {
+            "enum": [
+              "mem_eff",
+              "cpu_eff"
+            ],
+            "title": "Metric",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metric",
+          "below",
+          "jobs"
+        ],
+        "title": "Waste",
         "type": "object"
       },
       "WorkDir": {
@@ -4850,6 +5177,105 @@
           }
         },
         "summary": "Run Log"
+      }
+    },
+    "/api/v1/runs/{run_id}/performance": {
+      "get": {
+        "operationId": "run_performance_api_v1_runs__run_id__performance_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "process",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Process"
+            }
+          },
+          {
+            "in": "query",
+            "name": "metrics",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Metrics"
+            }
+          },
+          {
+            "in": "query",
+            "name": "points",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Points",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "attempts",
+            "required": false,
+            "schema": {
+              "default": "last",
+              "enum": [
+                "last",
+                "all"
+              ],
+              "title": "Attempts",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPerformance"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Performance"
       }
     },
     "/api/v1/runs/{run_id}/processes": {
