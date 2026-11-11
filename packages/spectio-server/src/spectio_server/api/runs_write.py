@@ -24,11 +24,10 @@ from referencing import Registry
 from referencing.exceptions import Unresolvable
 from sqlalchemy import Connection, insert
 
-from spectio import locations
 from spectio.environments import PROFILE, DefaultResources, Environment, Name, snapshot
 from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
-from spectio_server.api.environments import choose, offline
-from spectio_server.api.extras import check_resources, read_config_file
+from spectio_server.api.environments import choose
+from spectio_server.api.extras import check_resources, checked_config_file
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import (
     ENTRY_FILES,
@@ -42,7 +41,6 @@ from spectio_server.api.workflows import (
     resolve,
     schema_defaults,
 )
-from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
 from spectio_server.store.runs import EngineConflict, first, insert_run
 from spectio_server.store.schema import principals, runner_commands
@@ -216,26 +214,11 @@ def extras_payload(
 def _config_file(
     request: Request, body: LaunchIn, resolved: Resolved
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
-    """The extra config file, checked (`locations.check_config_file`) and read in the file pool
-    (api §5.7): what the run keeps of it, and the launch command's `{kept_as, sha256, size,
-    text}`. The home is accepted as written and resolved, and read from the resolved one; the
-    pipeline's directory as `resolve` gives it."""
+    """The extra config file, checked and read (`extras.checked_config_file`, api §5.7): what
+    the run keeps of it, and the launch command's `{kept_as, sha256, size, text}`."""
     if body.config_file is None:
         return None, None
-    engine = body.workflow.engine
-    written, real = request.app.state.home
-    starts = {str(resolved.directory): str(resolved.directory), written: real, real: real}
-    try:
-        root, parts = locations.check_config_file(body.config_file, list(starts), engine)
-        kept = request.app.state.files.run(
-            lambda: read_config_file(starts[root], parts, engine), READ_TIMEOUT_S
-        )
-    except Stalled as exc:
-        raise offline(exc) from None
-    except ValueError as exc:
-        raise Invalid("config_file", str(exc)) from None
-    except OSError as exc:
-        raise offline(OSError(f"the config file cannot be read: {exc.strerror}")) from None
+    kept = checked_config_file(request, body.config_file, resolved.directory, body.workflow.engine)
     text = kept.pop("text")
     sent = {k: kept[k] for k in ("kept_as", "sha256", "size")}
     return {"path": body.config_file, **kept}, {**sent, "text": text}
