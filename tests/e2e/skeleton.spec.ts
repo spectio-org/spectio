@@ -409,7 +409,7 @@ const SLURM_TASK = {
   efficiency: { cpu: 0.69, mem: 1.0, elapsed_s: 360, peak_rss_bytes: 8 * GIB, state: 'available', source: 'sacct', reason: null },
 };
 const PROC_EFFICIENCY = {
-  jobs: { done: 24, total: 25 }, measured: 24, cpu_mean: 0.34, cpu_max: 0.41, mem_mean: 0.03, mem_max: 0.05,
+  jobs: { done: 24, total: 25 }, measured: 24, pending_accounting: 0, cpu_mean: 0.34, cpu_max: 0.41, mem_mean: 0.03, mem_max: 0.05,
   requested: { cpus: 6, mem_bytes: 8 * GIB, time_limit_s: 8 * 3600, varies: false }, used: { peak_rss_bytes_max: 0.4 * GIB, elapsed_s_max: 360 },
 };
 

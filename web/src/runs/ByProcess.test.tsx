@@ -14,6 +14,7 @@ const GIB = 1024 ** 3;
 const eff = (over: Record<string, unknown>) => ({
   jobs: { done: 48, total: 48 },
   measured: 48,
+  pending_accounting: 0,
   cpu_mean: 0.34,
   cpu_max: 0.41,
   mem_mean: 0.03,

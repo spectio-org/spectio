@@ -1528,6 +1528,10 @@
             ],
             "title": "Mem Mean"
           },
+          "pending_accounting": {
+            "title": "Pending Accounting",
+            "type": "integer"
+          },
           "requested": {
             "$ref": "#/components/schemas/Requested"
           },
@@ -1538,6 +1542,7 @@
         "required": [
           "jobs",
           "measured",
+          "pending_accounting",
           "cpu_mean",
           "cpu_max",
           "mem_mean",
