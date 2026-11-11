@@ -2107,8 +2107,9 @@
 .sp-grid-runs .sp-state svg {
   flex: none;
 }
-/* The name takes the free width and the pin a fixed slot at the column's right; a name or a
-   path wraps to two lines at most, the full value in the link's accessible name. */
+/* The name takes the free width and the pin a fixed slot at the column's right; a name wraps to
+   two lines at most, the full name in a tooltip on hover and focus. The workflow path is not
+   focusable, so it wraps in full, unclamped (CR-P3UI08-01). */
 .sp-grid-runs .sp-run-cell {
   align-items: flex-start;
 }
@@ -2120,8 +2121,10 @@
   flex: none;
   margin-top: -2px;
 }
-.sp-run-name .sp-run-link,
 .sp-grid-runs .sp-pipeline > span:last-child {
+  overflow-wrap: anywhere;
+}
+.sp-run-name .sp-run-link {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

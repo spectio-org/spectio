@@ -1,4 +1,4 @@
-import { Button } from "@mantine/core";
+import { Button, Tooltip } from "@mantine/core";
 import { Link, useNavigate, useRouterState, useSearch } from "@tanstack/react-router";
 import { useMediaQuery } from "@mantine/hooks";
 import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent, SortChangedEvent } from "ag-grid-community";
@@ -161,6 +161,18 @@ function TasksCell({ run }: { run: Run }) {
     </>
   );
 }
+/** The run's link, clamped to two lines (runs.css), its full name in a tooltip on hover and on
+ * focus (ui-spec §12.8). */
+function RunName({ run }: { run: Run }) {
+  return (
+    <Tooltip label={runName(run)} events={{ hover: true, focus: true, touch: false }} multiline maw={360}>
+      <span className="sp-run-name">
+        <RunLink run={run} />
+      </span>
+    </Tooltip>
+  );
+}
+
 /** A run as a card, for the phone (MLiteRuns, MLiteHome; UX-PAR-10): the state and duration,
  * the name, the pipeline with its mark and the tasks, then the context. The runs list gives
  * its box and its pin (UX-P3FU115B-06); Home gives neither. */
@@ -175,9 +187,7 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
       </span>
       {pin ? (
         <span className="sp-run-cell">
-          <span className="sp-run-name">
-            <RunLink run={run} />
-          </span>
+          <RunName run={run} />
           {pin}
         </span>
       ) : (
@@ -224,9 +234,7 @@ const COLUMNS: ColDef<Run>[] = [
     cellRenderer: ({ data: run }: { data: Run }) => (
       <>
         <span className="sp-run-cell">
-          <span className="sp-run-name">
-            <RunLink run={run} />
-          </span>
+          <RunName run={run} />
           <PinButton run={run} />
         </span>
         {run.origin === "cli-observed" && (

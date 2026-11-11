@@ -641,3 +641,38 @@ test("UI-08: Started is a §12.8 date in a <time>, the exact time in its name; t
     vi.useRealTimers();
   }
 });
+
+/** Focuses `el` as a keyboard does. The tooltip opens on `:focus-visible` only, and jsdom's guess
+ * at it does not follow a programmatic focus, so the test says the focus is visible. */
+function keyboardFocus(el: HTMLElement) {
+  const matches = Element.prototype.matches;
+  vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, s: string) {
+    return s === ":focus-visible" ? this === document.activeElement : matches.call(this, s);
+  });
+  act(() => el.focus());
+}
+
+test("CR-P3UI08-01: a clamped run name shows in full in a tooltip on keyboard focus", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  try {
+    keyboardFocus(within(table).getByRole("link", { name: "Open run rnaseq-a" }));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("rnaseq-a");
+  } finally {
+    vi.restoreAllMocks();
+  }
+});
+
+test("CR-P3UI08-01: on a phone the card's run name has the same tooltip on keyboard focus", async () => {
+  viewport(360);
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const list = await screen.findByRole("list", { name: "Runs" });
+  try {
+    keyboardFocus(within(list).getByRole("link", { name: "Open run rnaseq-a" }));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("rnaseq-a");
+  } finally {
+    vi.restoreAllMocks();
+  }
+});
