@@ -738,9 +738,11 @@ def test_engine_version_check_never_holds_the_process_exit() -> None:
     a ThreadPoolExecutor's workers held the exit until the check ended
     (`test_sigterm_stops_cleanly`, FU-P3-108c)."""
     script = (
-        "import sys, time\n"
+        "import os, sys, time\n"
         "from spectio_server.api import workflows as wf\n"
-        "wf.EngineVersions._one = lambda self, e: (print(e, flush=True), time.sleep(60))\n"
+        # one write a line: two threads' print() calls interleave (CR-161S8-04)
+        "wf.EngineVersions._one = lambda self, e: (\n"
+        "    os.write(1, (e + '\\n').encode()), time.sleep(60))\n"
         "wf.EngineVersions(None).warm()\n"
         "sys.stdin.readline()\n"  # the parent saw both checks start
     )
@@ -775,3 +777,113 @@ def test_a_failed_engine_check_is_kept_only_briefly(
     versions()  # stale: the refresh runs (inline here)
     assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"}
     assert len(checks) == 4
+
+
+def test_inspect_error_quotes_no_file_content(authed_client: TestClient, tmp_path: Path) -> None:
+    """SEC-161S3-04: PyYAML's message quotes the failing line; the 422 does not."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config" / "config.yaml").write_text('token: "hunter2\n')
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422 and "not JSON or YAML" in response.text
+    assert "hunter2" not in response.text
+
+
+@pytest.mark.parametrize(
+    ("text", "said"),
+    [
+        ("a: !!timestamp foo\n", "a value this server does not read"),
+        ("a: !!bool foo\n", "a value this server does not read"),
+        ("a: !!int ''\n", "a value this server does not read"),
+        ("a: !!float '_'\n", "a value this server does not read"),
+        ('a: "\\ud800"\n', "a string escape that is not Unicode text"),
+        (
+            "a: !!int TOKEN-abc123\n",
+            "not JSON or YAML this server reads",
+        ),  # int()'s message quotes the value
+    ],
+)
+def test_inspect_refuses_bad_values_with_a_422(
+    authed_client: TestClient, tmp_path: Path, text: str, said: str
+) -> None:
+    """SEC-161S5-01, -02, -03: a bad explicit tag or a lone surrogate is a 422, never a 500,
+    and a constructor's message, which quotes the file, is not shown."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config" / "config.yaml").write_text(text)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422 and said in response.text
+    assert "TOKEN" not in response.text
+
+
+def test_inspect_refuses_a_lone_surrogate_in_a_json_schema(
+    authed_client: TestClient, tmp_path: Path
+) -> None:
+    """SEC-161S5-02: through JSON too, the response could not be encoded: a 422."""
+    root = tmp_path / "pipe"
+    root.mkdir()
+    (root / "main.nf").write_text("workflow {}\n")
+    (root / "nextflow_schema.json").write_text('{"title": "\\ud800"}')
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422 and "not Unicode text" in response.text
+
+
+def test_large_config_gives_no_form_but_launches(authed_client: TestClient, tmp_path: Path) -> None:
+    """CR-161S5-01, CR-161S6-01, -02, CR-161S7-01, -02: a config.yaml over 256 KiB, over 1 MiB,
+    not UTF-8 past 256 KiB, past the token budget or nested past 64 levels infers no form, as
+    with no config, and the pipeline launches; a schema that large is still refused."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    config = root / "config" / "config.yaml"
+    deep = "".join("  " * i + f"k{i}:\n" for i in range(100)) + "  " * 100 + "1\n"
+    for raw in (
+        "".join(f"k{i}: {i}\n" for i in range(30000)).encode(),  # about 290 KiB
+        b"# padding\n" * 120000,  # about 1.2 MiB
+        b"\xff" * (300 * 1024),  # not UTF-8, checked for size first
+        ("samples: [" + "1," * 100000 + "1]\n").encode(),  # 200 KiB, past the token budget
+        deep.encode(),  # 100 levels
+    ):
+        config.write_bytes(raw)
+        body = authed_client.get(INSPECT, params={"location": str(root)}).json()
+        assert body["schema_source"] == "none" and body["engine"] == "snakemake"
+        assert launch(authed_client, str(root), "snakemake").status_code == 201
+    (root / "config.schema.yaml").write_text("# padding\n" * 30000)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422
+    assert "config.schema.yaml is larger than 262144 bytes" in response.text
+
+
+def test_token_budget_bounds_deep_bursts(authed_client: TestClient, tmp_path: Path) -> None:
+    """SEC-161S5-04: 63-deep flow bursts up to 256 KiB stop at the token budget, fast."""
+    burst = "[" * 63 + "1" + "]" * 63
+    root = tmp_path / "pipe"
+    root.mkdir()
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config.schema.yaml").write_text(f"- {burst}\n" * 1900)
+    start = time.monotonic()
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert time.monotonic() - start < 4
+    assert response.status_code == 422 and "more than 131072 YAML tokens" in response.text
+
+
+@pytest.mark.parametrize(
+    "rel", ["nextflow_schema.json", "config.schema.yaml", "workflow/schemas/config.schema.yaml"]
+)
+def test_deep_schema_is_a_422(authed_client: TestClient, tmp_path: Path, rel: str) -> None:
+    """SEC-161S6-02: a schema nested past 64 levels is refused; the response encoder would
+    fail on it, a 500. A config that deep infers no form (above)."""
+    root = tmp_path / "pipe"
+    (root / "workflow" / "schemas").mkdir(parents=True)
+    if rel.endswith(".json"):
+        (root / "main.nf").write_text("\n")
+        text = '{"a":' * 300 + "1" + "}" * 300
+    else:
+        (root / "Snakefile").write_text("\n")
+        text = "".join("  " * i + f"k{i}:\n" for i in range(300)) + "  " * 300 + "1\n"
+    (root / rel).write_text(text)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422, response.text
+    assert "nested deeper than 64 levels" in response.text

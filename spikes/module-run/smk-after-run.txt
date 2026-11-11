@@ -1,0 +1,31 @@
+=== after a run, -n qc_report
+Nothing to be done (all requested files are present and up to date).
+=== after a run, -n qc_report --force
+Job stats:
+job          count
+---------  -------
+qc_report        1
+total            1
+=== after a run, -n qc_report --allowed-rules qc_report --force
+Job stats:
+job          count
+---------  -------
+qc_report        1
+total            1
+=== after a run, -n --until qc_report --force
+Job stats:
+job           count
+----------  -------
+make_reads        1
+qc_stats          1
+qc_report         1
+total             3
+=== after a run, -n merge --allowed-rules merge
+Job stats:
+job           count
+----------  -------
+make_reads        1
+split             1
+align_done        1
+merge             1
+total             4

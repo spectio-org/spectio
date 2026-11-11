@@ -23,6 +23,7 @@ from spectio.loginshell import KEEP
 from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
 from spectio.runner.rundir import RUN_ID, private_dir, write_file
 from spectio.runner.types import ExtraFile, LaunchSpec
+from spectio_sdk.targets import REGISTRY_NAME, RULE, VERSION, RunTarget
 
 ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # Snakemake 9 refuses to run without --cores (local) or --jobs (remote executors):
@@ -160,8 +161,10 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             raise ValueError(f"profile name {name!r} is not allowed")
     if spec.engine == "snakemake" and len(profiles) > 1:
         raise ValueError("a Snakemake launch takes one profile")
+    target = spec.target
     if spec.engine == "nextflow":
-        args = ["run", str(spec.location), "-params-file", params]
+        args = ["run", str(spec.location)] if target is None else _module_run(spec, target)
+        args += ["-params-file", params]
         # The user's file first, Spectio's own last, so that its generic keys win (api §5.7).
         configs = [str(p) for p in (_extra(spec), spectio / "spectio.config") if p is not None]
         if len(configs) > 1 and "," in str(spectio):
@@ -180,7 +183,7 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             raise ValueError("Snakemake takes CPUs from each rule's threads")
         if run and profiles:
             raise ValueError(f"the profile {profiles[0]} sets the resources")
-        args = [*_snakemake_base(spec), "--logger", "spectio"]
+        args = [*_snakemake_base(spec, target), "--logger", "spectio"]
         if spec.resume_of is not None:  # `snakemake/cli.py:919-922`, v9.27.1
             args.append("--rerun-incomplete")
         if spec.slurm is not None:
@@ -210,6 +213,9 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         # them into targets (SEC-P3FU86A-R3-01).
         if "--" in spec.extra_args:
             raise ValueError("a bare -- in [engines] extra_args.snakemake is not allowed")
+        if target is not None and any(_stops(arg) for arg in spec.extra_args):
+            # A target never meets a stop flag: those belong to stage gates (api §5.10).
+            raise ValueError("[engines] extra_args.snakemake holds a stop flag beside a target")
         if spec.slurm is not None:
             args += ["--local-cores", str(LOCAL_CORES)]
         else:
@@ -279,10 +285,47 @@ def _local_caps(local: LocalValues | None, run: dict[str, int]) -> list[str]:
     return args
 
 
-def _snakemake_base(spec: LaunchSpec) -> list[str]:
+def _module_run(spec: LaunchSpec, target: RunTarget) -> list[str]:
+    """`module run <name> -version <v>` for a registry module, always pinned (api §5.10, #161
+    §D); `module run <dir>` for a local one, whose version is its `meta.yml`'s."""
+    if target.kind != "module":
+        raise ValueError(f"a Nextflow run cannot target a {target.kind}")
+    if target.source != "registry":
+        return ["module", "run", str(spec.location)]
+    version = target.version
+    if version is None or version == "latest" or not VERSION.fullmatch(version):
+        raise ValueError("a registry module runs at a pinned version")
+    if not REGISTRY_NAME.fullmatch(target.name) or str(spec.location) != target.name:
+        raise ValueError(f"{target.name!r} is not a registry module name")
+    return ["module", "run", target.name, "-version", version]
+
+
+# Snakemake options that stop or limit a run; gates own them, a target never meets them.
+STOP_FLAGS = ("--until", "--omit-from", "--allowed-rules", "--forcerun")
+STOP_SHORT = "UOR"  # `-U`, `-O`, `-R`, also attached (`-Umerge`) or grouped (`-pU`, `-nRx`)
+# Snakemake options that are prefixes of a stop flag: argparse takes an exact name first
+EXACT = ("--force",)
+
+
+def _stops(arg: str) -> bool:
+    """A stop flag, or what argparse reads as one: a short form, or a long one's prefix."""
+    if not arg.startswith("--"):  # a short cluster with U, O or R anywhere: refused whole
+        return arg.startswith("-") and any(letter in STOP_SHORT for letter in arg[1:])
+    name = arg.split("=", 1)[0]
+    return len(name) > 2 and name not in EXACT and any(flag.startswith(name) for flag in STOP_FLAGS)
+
+
+def _snakemake_base(spec: LaunchSpec, target: RunTarget | None = None) -> list[str]:
     snakefile = spec.location / "workflow" / "Snakefile"
     if not snakefile.is_file():
         snakefile = spec.location / "Snakefile"
+    rule: list[str] = []
+    if target is not None:
+        if target.kind != "rule" or not RULE.fullmatch(target.name):
+            raise ValueError(f"{target.name!r} is not a rule name")
+        # A positional right after `--directory D`: after `--configfile`, which takes several
+        # values, it would be read as a config file (spike module-run, finding 6).
+        rule = [target.name]
     # "Multiple files overwrite each other in the given order" (api §5.7): the user's, then
     # the form's
     files = [str(p) for p in (_extra(spec), _spectio(spec) / "params.json") if p is not None]
@@ -291,6 +334,7 @@ def _snakemake_base(spec: LaunchSpec) -> list[str]:
         str(snakefile),
         "--directory",
         str(spec.engine_dir),
+        *rule,
         "--configfile",
         *files,
     ]

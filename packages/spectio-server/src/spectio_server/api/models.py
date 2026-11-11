@@ -9,6 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, JsonValue
 
+from spectio_sdk.targets import RunTarget
+
 RunState = Literal[
     "queued",
     "running",
@@ -181,6 +183,7 @@ class Run(BaseModel):
     workflow: WorkflowRef
     profiles: list[str]
     environment: RunEnvironment | None  # null for a run started from a terminal
+    target: RunTarget | None  # one module or one rule; null: the whole pipeline (api §5.10)
     pinned: bool  # first in the runs list (FU-P3-115a)
     failure: dict[str, JsonValue] | None
     head: Head | None
@@ -306,6 +309,7 @@ class LaunchTemplate(BaseModel):
     code_loading: list[CodeLoading]
     environment: str  # the run's, preselected by name, or the default when it is gone (§5.4)
     environment_notice: str | None  # why the default is preselected instead
+    target: dict[str, JsonValue] | None  # the launch's `target` (api §5.10)
     default_resources: dict[str, int | None] | None  # as sent (api §5.7)
     config_file: str | None  # the original path, read again at the new launch
 
@@ -324,12 +328,17 @@ class Summary(BaseModel):
     groups: list[SummaryGroup]
 
 
+class Features(BaseModel):
+    single_target: bool  # runs of one module or one rule (api §5.10)
+
+
 class ServerVersion(BaseModel):
     version: str
     node: str
     runs_root: str
     account: str
     executor: str
+    features: Features
 
 
 class Principal(BaseModel):

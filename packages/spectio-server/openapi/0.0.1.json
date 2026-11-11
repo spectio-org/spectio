@@ -891,6 +891,19 @@
         "title": "Failure",
         "type": "object"
       },
+      "Features": {
+        "properties": {
+          "single_target": {
+            "title": "Single Target",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "single_target"
+        ],
+        "title": "Features",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -950,6 +963,65 @@
           "checked"
         ],
         "title": "Head",
+        "type": "object"
+      },
+      "InspectIn": {
+        "additionalProperties": false,
+        "properties": {
+          "engine": {
+            "enum": [
+              "nextflow",
+              "snakemake"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "location": {
+            "maxLength": 4096,
+            "title": "Location",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "engine",
+          "location"
+        ],
+        "title": "InspectIn",
         "type": "object"
       },
       "JobCount": {
@@ -1034,6 +1106,16 @@
             "maxItems": 20,
             "title": "Profiles",
             "type": "array"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TargetIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "workflow": {
             "$ref": "#/components/schemas/WorkflowIn"
@@ -1123,6 +1205,20 @@
             "title": "Profiles",
             "type": "array"
           },
+          "target": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
           "workflow": {
             "$ref": "#/components/schemas/TemplateWorkflow"
           }
@@ -1135,6 +1231,7 @@
           "code_loading",
           "environment",
           "environment_notice",
+          "target",
           "default_resources",
           "config_file"
         ],
@@ -2118,6 +2215,16 @@
           "summary": {
             "$ref": "#/components/schemas/RunSummary"
           },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "task_counts": {
             "additionalProperties": {
               "type": "integer"
@@ -2140,6 +2247,7 @@
           "workflow",
           "profiles",
           "environment",
+          "target",
           "pinned",
           "failure",
           "head",
@@ -2504,6 +2612,16 @@
           "summary": {
             "$ref": "#/components/schemas/RunSummary"
           },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "task_counts": {
             "additionalProperties": {
               "type": "integer"
@@ -2526,6 +2644,7 @@
           "workflow",
           "profiles",
           "environment",
+          "target",
           "pinned",
           "failure",
           "head",
@@ -2747,6 +2866,127 @@
         "title": "RunSummary",
         "type": "object"
       },
+      "RunTarget": {
+        "description": "`runs.target`: what a run was limited to. Grammars are enforced at launch; a target a\nbridge reports is only bounded (it describes a run that already happened).",
+        "properties": {
+          "checksum_changed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Changed"
+          },
+          "flag": {
+            "anyOf": [
+              {
+                "enum": [
+                  "target",
+                  "until",
+                  "allowed_rules"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag"
+          },
+          "hash": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hash"
+          },
+          "kind": {
+            "enum": [
+              "module",
+              "rule",
+              "file"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "more": {
+            "default": 0,
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "More",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "registry",
+                  "local"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "version",
+          "hash",
+          "source",
+          "path",
+          "flag",
+          "more",
+          "checksum_changed"
+        ],
+        "title": "RunTarget",
+        "type": "object"
+      },
       "Scheduler": {
         "description": "What the scheduler said of a failed job (P1 Task 29): its state and reason, from `sacct`\nor the engine's own message, and requested and used memory and time, from `sacct` or the\ntrace. `accounting` says whether `sacct` answered, is being asked, or is unavailable (off,\nnot on SLURM, no job ID, or no answer).",
         "properties": {
@@ -2880,6 +3120,9 @@
             "title": "Executor",
             "type": "string"
           },
+          "features": {
+            "$ref": "#/components/schemas/Features"
+          },
           "node": {
             "title": "Node",
             "type": "string"
@@ -2898,7 +3141,8 @@
           "node",
           "runs_root",
           "account",
-          "executor"
+          "executor",
+          "features"
         ],
         "title": "ServerVersion",
         "type": "object"
@@ -3348,6 +3592,49 @@
           "count"
         ],
         "title": "SummaryGroup",
+        "type": "object"
+      },
+      "TargetIn": {
+        "additionalProperties": false,
+        "description": "`target` in the body of `POST /runs`; the rest of the target comes from the server.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "module",
+              "rule"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "TargetIn",
         "type": "object"
       },
       "Task": {
@@ -4517,7 +4804,7 @@
     },
     "/api/v1/runs": {
       "get": {
-        "description": "Newest first by `created_at`, or by the sort of `_run_keys`, pinned runs first;\n`sort=-ended_at`: ended runs only, by end time (FU-P3-115a).",
+        "description": "Newest first by `created_at`, or by the sort of `_run_keys`, pinned runs first;\n`sort=-ended_at`: ended runs only, by end time (FU-P3-115a). `target=any` lists runs of\none module or one rule only, `none` whole-pipeline runs (\u00a75.10).",
         "operationId": "list_runs_api_v1_runs_get",
         "parameters": [
           {
@@ -4574,6 +4861,26 @@
               ],
               "title": "Sort",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "target",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "any",
+                    "none"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target"
             }
           },
           {
@@ -5498,6 +5805,46 @@
           }
         },
         "summary": "Runs Summary"
+      }
+    },
+    "/api/v1/targets:inspect": {
+      "post": {
+        "operationId": "inspect_api_v1_targets_inspect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InspectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Inspect Api V1 Targets Inspect Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Inspect"
       }
     },
     "/api/v1/tasks/{task_id}/attempts/{n}/files": {

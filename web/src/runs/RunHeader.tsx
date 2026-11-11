@@ -14,6 +14,7 @@ import { DeleteRuns } from "./DeleteRuns";
 import { extrasFacts } from "./RunDetailExtras";
 import { ResumeAction } from "./ResumeDialog";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
+import { TargetLine } from "./target";
 import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
@@ -113,9 +114,23 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
   const ended = isTerminal(run.state);
   const engine = [engineName(w.engine), w.engine_version].filter(Boolean).join(" ");
   const pipeline = w.name ? (w.version ? `${w.name} ${w.version}` : `${w.name} (no version declared)`) : w.location;
+  // a module run names its module, and only a local one has a directory (ui-spec §4.15)
+  const module = run.target?.kind === "module" ? run.target : null;
+  const directory: [string, ReactNode][] =
+    module?.source === "registry"
+      ? []
+      : [
+          [
+            module ? "Module directory" : "Pipeline directory",
+            <span className="sp-copy-line">
+              <span className="sp-mono">{w.location}</span>
+              <CopyButton text={w.location} label="Copy" name={module ? "Copy the module directory" : "Copy the pipeline directory"} />
+            </span>,
+          ],
+        ];
   const facts: [string, ReactNode][] = [
     [
-      "Pipeline",
+      module ? "Module" : "Pipeline",
       // the pipeline's mark: nf-core for an nf-core/ name, else the engine's (inbox #91)
       <span className="sp-pipeline">
         <PipelineMark engine={w.engine} name={w.name} size={18} />
@@ -135,13 +150,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     ["Head", headWord(run)],
     ["Login node", run.head?.node ?? server?.node ?? "—"],
     ["Exit code", run.head?.exit_code != null ? String(run.head.exit_code) : ended ? "—" : "— (still running)"],
-    [
-      "Pipeline directory",
-      <span className="sp-copy-line">
-        <span className="sp-mono">{w.location}</span>
-        <CopyButton text={w.location} label="Copy" name="Copy the pipeline directory" />
-      </span>,
-    ],
+    ...directory,
     ["Run directory", <span className="sp-mono">{runDirectory(run, server) ?? "—"}</span>],
     ...environmentFacts(run, server),
     ...extrasFacts(run),
@@ -250,6 +259,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
           <div className="sp-grow">
             <strong className="sp-run-pipeline">{pipeline}</strong>
             <span className="sp-muted">{[engine, ...run.profiles].join(" · ")}</span>
+            {run.target && <TargetLine target={run.target} />}
             <p className="sp-sub">
               <span>
                 Run <span className="sp-mono">{shortId(run.id)}</span>
@@ -265,6 +275,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
               </h1>
               <span className="sp-id">{shortId(run.id)}</span>
             </div>
+            {run.target && <TargetLine target={run.target} />}
             <p className="sp-sub sp-page-sub">
               {state}
               {progress}

@@ -843,6 +843,75 @@ test("a Nextflow process with no task reads 'No task (condition or empty input)'
   expect(within(await runHeader()).getByText("Work directory cleaned after success (cleanup = true)")).toBeInTheDocument();
 });
 
+// #161 (ui-spec §4.15): runs that target one Nextflow module or one Snakemake rule.
+const TARGET_NONE = { version: null, hash: null, source: null, path: null, more: 0, checksum_changed: null };
+const RULE_TARGET = { ...TARGET_NONE, kind: "rule", name: "qc_report", flag: "target" };
+const MODULE_TARGET = { ...TARGET_NONE, kind: "module", name: "nf-core/fastqc", version: "0.0.0-6d1763b", source: "registry", flag: null };
+
+test("#161: a rule target run shows its steps to the target, and the rules it does not need apart", async () => {
+  const rule = (process: string, status: string, counts = {}) => ({ process, stage_id: null, counts, retries: 0, status, is_checkpoint: false, lower_bound: false });
+  detail(
+    { workflow: SNAKEMAKE, target: RULE_TARGET, task_counts: { succeeded: 25 } },
+    {
+      [`${URL_}/processes`]: {
+        items: [rule("make_reads", "done", { succeeded: 12 }), rule("qc_report", "done", { succeeded: 1 }), rule("merge", "not_needed"), rule("align", "not_needed")],
+      },
+      [URL_]: { ...DETAIL, ...run({ workflow: SNAKEMAKE, target: RULE_TARGET }), stages_note: "This run targets rule qc_report" },
+    },
+  );
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).getByRole("group", { name: "Target: rule qc_report" })).toBeInTheDocument();
+  const table = await screen.findByRole("table", { name: "Rules" });
+  expect(within(table).queryByRole("button", { name: "Open rule merge" })).toBeNull();
+  expect(within(table).getByRole("button", { name: "Open rule qc_report" })).toBeInTheDocument();
+  expect(screen.getByText("This run targets rule qc_report")).toBeInTheDocument();
+  expect(screen.queryByText(/No stages for this pipeline/)).toBeNull();
+  // the chain to the target, in pipeline order, then the rules it does not need, dimmed
+  const steps = screen.getByRole("list", { name: "Steps to the target" });
+  expect(within(steps).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+    "make_readsDone · 12 / 12 jobs",
+    "qc_reportDone · 1 / 1 job · target",
+  ]);
+  const list = screen.getByRole("list", { name: "Rules outside the target" });
+  expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["mergenot needed", "alignnot needed"]);
+  expect(screen.getByText(/Outside the target: the rule is not needed to make the target\./)).toBeInTheDocument();
+  expect(screen.queryByText(/Not needed in this run:/)).toBeNull();
+});
+
+test("#161: a module run names its module and version, and says it publishes no results directory", async () => {
+  detail(
+    { target: MODULE_TARGET, state: "succeeded", ended_at: "2026-10-31T08:00:00+00:00" },
+    {
+      [`${URL_}/processes`]: { items: [{ process: "FASTQC", stage_id: null, counts: { succeeded: 1 }, retries: 0, status: "done", is_checkpoint: false, lower_bound: false }] },
+      [URL_]: { ...DETAIL, ...run({ target: MODULE_TARGET, state: "succeeded", ended_at: "2026-10-31T08:00:00+00:00" }), stages_note: "This run targets one module" },
+    },
+  );
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).getByRole("group", { name: "Target: module nf-core/fastqc 0.0.0-6d1763b" })).toBeInTheDocument();
+  expect(within(header).getByText("checksum: after install")).toBeInTheDocument();
+  // a registry module has no directory to copy; the facts name the module
+  expect(within(header).getAllByText("Module")).toHaveLength(2); // the badge and the facts
+  expect(within(header).queryByText("Pipeline directory")).toBeNull();
+  expect(await screen.findByText("This run targets one module")).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Stages" })).toBeNull();
+  expect(
+    await screen.findByText(/^This module run publishes no results directory: its outputs are in the task's work directory/),
+  ).toBeInTheDocument();
+});
+
+test("#161: a local module run shows its directory as Module directory, with a Copy", async () => {
+  const local = { ...MODULE_TARGET, name: "spectio/hello", version: "1.0.0", source: "local", path: "/g/lab/modules/hello" };
+  detail({ target: local }, { [URL_]: { ...DETAIL, ...run({ target: local }), stages_note: "This run targets one module" } });
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).getByRole("group", { name: "Target: module spectio/hello 1.0.0 · local" })).toBeInTheDocument();
+  expect(within(header).getByText("Module directory")).toBeInTheDocument();
+  expect(within(header).queryByText("Pipeline directory")).toBeNull();
+  expect(within(header).getByRole("button", { name: /Copy the module directory/ })).toBeInTheDocument();
+});
+
 test("UX-P3FU115B-04: Delete… on Run detail returns to Runs with what the delete said, focused there", async () => {
   detail(
     { state: "succeeded", ended_at: "2026-10-31T09:00:00+00:00" },

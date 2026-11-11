@@ -60,11 +60,13 @@ spectio_server/migrations/versions/0011_run_environment.py
 spectio_server/migrations/versions/0012_run_pinned.py
 spectio_server/migrations/versions/0013_run_extras.py
 spectio_server/migrations/versions/0014_notifications_read.py
+spectio_server/migrations/versions/0015_run_target.py
 spectio_server/projector/__init__.py
 spectio_server/projector/ingest.py
 spectio_server/projector/nextflow.py
 spectio_server/projector/runs.py
 spectio_server/projector/snakemake.py
+spectio_server/projector/targets.py
 spectio_server/py.typed
 spectio_server/rebuild.py
 spectio_server/resume.py
@@ -82,6 +84,7 @@ spectio_server/store/db.py
 spectio_server/store/runs.py
 spectio_server/store/schema.py
 spectio_server/store/writer.py
+spectio_server/targets.py
 spectio_server/web/THIRD_PARTY_NOTICES.txt
 spectio_server/web/assets/DataGrid-*.js
 spectio_server/web/assets/OmeView-*.js

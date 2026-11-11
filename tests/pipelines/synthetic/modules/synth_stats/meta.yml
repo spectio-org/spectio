@@ -1,0 +1,22 @@
+# Single-module fixture (#161): the fields Spectio reads (name, version, input), nf-core style.
+name: "synth_stats"
+version: "1.0.0"
+description: "Count the reads of one synthetic sample"
+keywords:
+  - "spectio"
+  - "fixture"
+input:
+  - - meta:
+        type: "map"
+        description: "Sample information, e.g. [ id:'S1' ]"
+    - reads:
+        type: "file"
+        description: "One reads file, one read per line"
+output:
+  stats:
+    - - meta:
+          type: "map"
+          description: "Sample information"
+      - "*.stats.json":
+          type: "file"
+          description: "The read count, as JSON"

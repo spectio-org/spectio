@@ -242,6 +242,84 @@ test("CR-P3FU101A-01: Enter on a run's name cell opens the run", async () => {
   await waitFor(() => expect(router.state.location.pathname).toBe("/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W"));
 });
 
+const MODULE_TARGET = {
+  kind: "module",
+  name: "nf-core/fastqc",
+  version: "0.0.0-6d1763b",
+  hash: null,
+  source: "registry",
+  path: null,
+  flag: null,
+  more: 0,
+  checksum_changed: null,
+} as const;
+const moduleRun = run({
+  id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V4Z",
+  name: "fastqc-one",
+  target: {
+    kind: "module",
+    name: "nf-core/fastqc",
+    version: "0.0.0-6d1763b",
+    hash: null,
+    source: "registry",
+    path: null,
+    flag: null,
+    more: 0,
+    checksum_changed: null,
+  },
+});
+
+test("#161: the Scope column names each run's scope, and the Scope buttons filter, kept in the URL", async () => {
+  const ruleRun = run({
+    id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V5Z",
+    name: "qc-one",
+    target: { ...MODULE_TARGET, kind: "rule", name: "qc_report", version: null, source: null, flag: "target", checksum_changed: null },
+  });
+  const changed = run({
+    id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V6Z",
+    name: "fastqc-two",
+    target: { ...MODULE_TARGET, checksum_changed: true },
+  });
+  const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [moduleRun, ruleRun, changed, run()], next: null } });
+  const router = app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  expect(within(table).getByRole("columnheader", { name: "Scope" })).toBeInTheDocument();
+  const rowOf = (name: string) => within(table).getByRole("link", { name: `Open run ${name}` }).closest("[role=row]") as HTMLElement;
+  expect(within(rowOf("fastqc-one")).getByText("Module")).toBeInTheDocument();
+  expect(within(rowOf("qc-one")).getByText("Rule")).toBeInTheDocument();
+  // the rule follows the pipeline in "What ran", named for a screen reader as the target
+  expect(within(rowOf("qc-one")).getByText("qc_report").closest(".sp-target-to")).toHaveTextContent("→ target qc_report");
+  expect(within(rowOf("fastqc-two")).getByText("checksum changed")).toBeInTheDocument();
+  expect(within(rowOf("rnaseq-a")).getByText("Pipeline")).toBeInTheDocument();
+  const scope = screen.getByRole("group", { name: "Scope" });
+  expect(within(scope).getAllByRole("button").map((b) => b.textContent)).toEqual(["Any scope", "Pipelines", "Single steps"]);
+  expect(within(scope).getByRole("button", { name: "Any scope" })).toHaveAttribute("aria-pressed", "true");
+  await userEvent.click(within(scope).getByRole("button", { name: "Single steps" }));
+  await waitFor(() => expect(router.state.location.search).toEqual({ target: "any" }));
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?target=any&limit=50"));
+  expect(within(scope).getByRole("button", { name: "Single steps" })).toHaveAttribute("aria-pressed", "true");
+  // the summary counts by state, not by target: no "of N" while a target filter is set
+  expect(screen.queryByText(/ of \d+ runs/)).not.toBeInTheDocument();
+  await userEvent.click(within(scope).getByRole("button", { name: "Any scope" }));
+  await waitFor(() => expect(router.state.location.search).toEqual({}));
+});
+
+test("#161: with the flag off and no target run, there is no Scope column or buttons", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  expect(within(table).queryByRole("columnheader", { name: "Scope" })).toBeNull();
+  expect(screen.queryByRole("group", { name: "Scope" })).toBeNull();
+});
+
+test("#161: an unknown ?target= is dropped", async () => {
+  const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [moduleRun], next: null } });
+  app("/runs?target=bogus&state=failed");
+  const scope = await screen.findByRole("group", { name: "Scope" });
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?state=failed&limit=50"));
+  expect(within(scope).getByRole("button", { name: "Any scope" })).toHaveAttribute("aria-pressed", "true");
+});
+
 // FU-P3-115b: selection, the bulk bar and its Delete sheet, the pin button, sortable headers.
 const done = run({ id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V5Q", name: "atac-d", state: "succeeded", ended_at: "2026-10-31T09:00:00+00:00" });
 const LIST = { "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), failed, done], next: null } };

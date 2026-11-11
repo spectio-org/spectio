@@ -3,7 +3,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { DETAIL, app, fetched, json, run, serve, stubStream } from "../testing";
+import { DETAIL, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -146,4 +146,69 @@ test("FU-P3-110d: the run's resources and extra config file are prefilled, the f
   await userEvent.click(screen.getAllByRole("button", { name: "Launch" }).at(-1)!);
   await waitFor(() => expect(posted).toHaveLength(1));
   expect(posted[0]).toMatchObject({ default_resources: { cpus: 4, mem_mib: 16384, time_min: 90 }, config_file: path });
+});
+
+test("a copy of a Snakemake file-target run opens as a Snakemake step, not a Nextflow module (SEC-161W-04)", async () => {
+  const mock = serve({
+    "/api/v1/version": { ...VERSION, features: { single_target: true } },
+    [`${URL_}:launch-template`]: {
+      ...TEMPLATE,
+      workflow: { location: "/g/demo-lab/pipelines/synth-qc", revision: null, engine: "snakemake" },
+      profiles: [],
+      params: {},
+      non_default: [],
+      code_loading: [],
+      target: { kind: "file", name: "results/x.txt" },
+    },
+    [URL_]: { ...DETAIL, ...run({ state: "succeeded", name: "synth" }) },
+    "/api/v1/workflows:inspect": { ...INSPECTED, location: "/g/demo-lab/pipelines/synth-qc", engine: "snakemake", engine_files: ["Snakefile"], schema: null, schema_source: "none", profiles: [] },
+    "/api/v1/targets:inspect": { kind: "rule", rules: ["all", "qc_report"], plan: null },
+    "/api/v1/runs?": { items: [], next: null },
+  });
+  app(`/launch?from=${ID}`);
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/targets:inspect"));
+  const inspect = mock.mock.calls.find(([u]) => String(u).endsWith("/targets:inspect"));
+  expect(JSON.parse(String(inspect?.[1]?.body))).toMatchObject({ engine: "snakemake" });
+  // a file is not a rule: the copy opens with no rule chosen, and says so (ui-spec §4.15)
+  expect(await screen.findByRole("link", { name: "Choose a rule" })).toBeInTheDocument();
+});
+
+test("a copy of a module run sends no extra config file (api §5.10), and the profile it sends is the one shown", async () => {
+  const mock = serve({
+    "/api/v1/version": { ...VERSION, features: { single_target: true } },
+    [`${URL_}:launch-template`]: {
+      ...TEMPLATE,
+      workflow: { location: "nf-core/fastqc", revision: null, engine: "nextflow" },
+      profiles: ["docker"],
+      params: { meta: { id: "a" }, reads: "/data/a.fq.gz" },
+      non_default: ["meta", "reads"],
+      code_loading: [],
+      config_file: "/g/lab/tweaks.config",
+      target: { kind: "module", name: "nf-core/fastqc", version: "0.0.0-6d1763b", source: "registry" },
+    },
+    [URL_]: { ...DETAIL, ...run({ state: "succeeded", name: "fastqc" }) },
+    "/api/v1/targets:inspect": {
+      kind: "module",
+      source: "registry",
+      name: "nf-core/fastqc",
+      version: "0.0.0-6d1763b",
+      description: "Run FastQC",
+      inputs: [
+        { name: "meta", type: "map", description: "sample" },
+        { name: "reads", type: "file", description: "reads" },
+      ],
+    },
+    "/api/v1/runs?": { items: [], next: null },
+    "/api/v1/runs": (_url: URL, init?: RequestInit) => (init?.method === "POST" ? json(201, { id: "run_new", state: "queued" }) : json(200, { items: [], next: null })),
+  });
+  app(`/launch?from=${ID}`);
+  await screen.findByText("Runs module nf-core/fastqc 0.0.0-6d1763b, from the registry");
+  // the copied profile is not one a registry module lists, yet Launch sends it: the select shows it (SEC-161W-R2-02)
+  expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveDisplayValue("docker (not in this pipeline)");
+  await userEvent.click(screen.getAllByRole("button", { name: "Launch module" }).at(-1)!);
+  await waitFor(() => expect(mock.mock.calls.some(([u, i]) => String(u).endsWith("/api/v1/runs") && i?.method === "POST")).toBe(true));
+  const [, init] = mock.mock.calls.find(([u, i]) => String(u).endsWith("/api/v1/runs") && i?.method === "POST")!;
+  const sent = JSON.parse(String(init?.body));
+  expect(sent).toMatchObject({ target: { kind: "module", version: "0.0.0-6d1763b" }, profiles: ["docker"] });
+  expect(sent).not.toHaveProperty("config_file");
 });

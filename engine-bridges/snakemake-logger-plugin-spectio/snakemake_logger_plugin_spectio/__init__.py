@@ -161,7 +161,41 @@ def _compact(data: dict[str, Any]) -> dict[str, Any]:
 
 def _workflow_started(r: Any) -> dict[str, Any]:
     keys = ("workflow_id", "snakemake_version", "rundir", "host", "user", "snakefile_main")
-    return _compact({k: _opt_text(getattr(r, k, None)) for k in keys})
+    data = _compact({k: _opt_text(getattr(r, k, None)) for k in keys})
+    target = run_target(sys.argv[1:])
+    if target is not None:
+        data["target"] = target
+    return data
+
+
+_RULE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,127}")
+_MAX_TARGET = 4096
+
+
+def run_target(argv: list[str]) -> dict[str, Any] | None:
+    """The rule or file this run is limited to (api §5.10, architecture §13.8), from Snakemake's
+    own argument parser: the first target, else `--until`, else `--allowed-rules`; a lone `all`
+    is the whole pipeline. A name that looks like a rule is a rule, anything else a file. The
+    command line itself is never sent; None when it cannot be read."""
+    try:
+        from snakemake.cli import get_argument_parser
+
+        args, _ = get_argument_parser().parse_known_args(argv)
+    except (Exception, SystemExit):  # argparse exits on what it cannot read
+        return None
+    for flag, given in (
+        ("target", getattr(args, "targets", None)),
+        ("until", getattr(args, "until", None)),
+        ("allowed_rules", getattr(args, "allowed_rules", None)),
+    ):
+        names = [str(n) for n in given or []]
+        if flag == "target" and names == ["all"]:
+            continue
+        if names:
+            name = names[0][:_MAX_TARGET]
+            kind = "rule" if _RULE.fullmatch(name) else "file"
+            return {"kind": kind, "name": name, "flag": flag, "more": len(names) - 1}
+    return None
 
 
 def _run_info(r: Any) -> dict[str, Any]:

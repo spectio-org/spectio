@@ -165,6 +165,7 @@ def test_version_behind_session(
         "runs_root": str(settings.runs_root),
         "account": body["account"],
         "executor": "local",
+        "features": {"single_target": False},
     }
     assert body["account"]
 

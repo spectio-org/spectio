@@ -44,6 +44,8 @@ export interface LaunchBody {
   /** An environment's name (api §5.4); absent: the server's default. */
   environment?: string;
   params: Record<string, unknown>;
+  /** One module or one rule (api §5.10, 0.0.2); absent: the whole pipeline. */
+  target?: TargetIn;
   /** Schema `DefaultResources` (api §5.7): only the keys set; absent changes nothing. */
   default_resources?: { cpus?: number; mem_mib?: number; time_min?: number };
   /** The absolute path of an extra config file, read once by the server at this launch (api §5.7). */
@@ -63,7 +65,58 @@ export interface ServerVersion {
   runs_root: string;
   account: string;
   executor: string;
+  /** Feature flags of this server (api §5.10): the launch parts of single targets show only when on. */
+  features: Features;
 }
+
+/** Schema `Features`. */
+export interface Features {
+  single_target: boolean;
+}
+
+/** Schema `RunTarget` (api §5.10): what a run was limited to; null on a run is the whole pipeline. */
+export interface RunTarget {
+  kind: "module" | "rule" | "file";
+  name: string;
+  version: string | null;
+  hash: string | null;
+  source: "registry" | "local" | null;
+  path: string | null;
+  flag: "target" | "until" | "allowed_rules" | null;
+  more: number;
+  checksum_changed: boolean | null;
+}
+
+/** `target` in the body of `POST /runs` (api §5.10); the server fills the rest. */
+export interface TargetIn {
+  kind: "module" | "rule";
+  name?: string | null;
+  version?: string | null;
+}
+
+/** One declared input of a module (`POST /targets:inspect`). */
+export interface ModuleInput {
+  name: string;
+  type: string;
+  description: string;
+}
+
+/** `POST /api/v1/targets:inspect` (api §5.10): a module's inputs, or a pipeline's rules. */
+export type TargetInspected =
+  | {
+      kind: "module";
+      source: "registry" | "local";
+      name: string;
+      version: string | null;
+      description: string;
+      inputs: ModuleInput[];
+    }
+  | {
+      kind: "rule";
+      rules: string[];
+      plan: { jobs: Record<string, number>; total: number } | null;
+      error?: string;
+    };
 
 /** `GET /api/v1/me` in 0.0.1 (schema `Me`, api §5.8): paths only, never a secret. */
 export interface Me {
@@ -127,6 +180,8 @@ export interface Run {
     version: string | null;
   };
   profiles: string[];
+  /** One module or one rule; null for the whole pipeline (api §5.10). */
+  target?: RunTarget | null;
   /** Null for a run started from a terminal; read by the run's facts and Resume (FU-P3-86g). */
   environment?: RunEnvironment | null;
   /** First in every sort of the runs list but `-ended_at` (api §5, FU-P3-115a). */
@@ -258,6 +313,8 @@ export interface LaunchTemplate {
   environment: string;
   /** Why the default is chosen instead of the run's environment. */
   environment_notice: string | null;
+  /** The run's target, kept by the copy (api §5.10). */
+  target?: TargetIn | null;
   /** As recorded, and the extra config file's path (FU-P3-110a, api §5.7). */
   default_resources: { [key: string]: number | null } | null;
   config_file: string | null;
@@ -536,6 +593,8 @@ export type RunsSort =
 
 export interface RunsQuery {
   state?: string;
+  /** `any`: runs that target one module or rule; `none`: whole-pipeline runs (api §5.10). */
+  target?: "any" | "none";
   q?: string;
   sort?: RunsSort;
   limit?: number;
@@ -702,6 +761,18 @@ export async function readResultText(
   return range ? { text, next: Number(range[2]) + 1, size: Number(range[3]) } : { text, next: null, size: null };
 }
 
+export function inspectTarget(
+  body: { engine: Engine; location: string; version?: string | null; revision?: string | null; rule?: string | null },
+  signal?: AbortSignal,
+): Promise<TargetInspected> {
+  return call("/targets:inspect", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
+}
+
 /** The run's kept extra config file (`GET /runs/{id}/config-file`, api §5.7), with its `ETag`, the
  * SHA-256 of the bytes served, unquoted. A refusal is an ApiError with its status (404, 503). */
 export async function getConfigFile(id: string, signal?: AbortSignal): Promise<{ text: string; sha256: string | null }> {
@@ -806,6 +877,6 @@ export interface Notifications {
   read_up_to: string | null;
 }
 export const listNotifications = (signal?: AbortSignal): Promise<Notifications> => call("/me/notifications", { signal });
-/** Marks every item up to `upTo` read (api §5.9); answers the list as `GET` does. */
+/** Marks every item up to `upTo` read (api §5.10); answers the list as `GET` does. */
 export const markNotificationsRead = (upTo: string): Promise<Notifications> =>
   call("/me/notifications:mark-read", sendJson("POST", { up_to: upTo }));
