@@ -7,6 +7,7 @@ import {
   type MantineColorsTuple,
   createTheme,
   localStorageColorSchemeManager,
+  rem,
 } from "@mantine/core";
 
 const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const;
@@ -21,6 +22,26 @@ export const SCALES = {
   /** Neutrals tinted with indigo; ink-0 (#F7F7FB) sits before ink-50. */
   ink: ["#EEEFF5", "#DFE1EA", "#C4C7D4", "#9A9EB0", "#6E7287", "#4D5065", "#33364A", "#22253A", "#171A2E", "#0F1020"],
 } satisfies Record<string, MantineColorsTuple>;
+
+/** Mantine colours for danger and review, built from the run-state tokens below (0 is the light tint,
+ * 9 the dark one): `color="failed"`, never Mantine's default `red` (#FA5252, 3.3:1 on white). In
+ * the light scheme Mantine fills and writes text with shade 6, the light `fg` token; the dark
+ * scheme's overrides are in `stateColorsDark`. */
+export const STATE_COLORS = {
+  failed: ["#FCEBEB", "#F9D2D2", "#F59A9A", "#EE5A5A", "#E54A4A", "#DC3B3B", "#B02A2A", "#8F2222", "#6E1A1A", "#3A1A1F"],
+  review: ["#FDF3E2", "#FBE3BD", "#F5C779", "#E9A23B", "#E1951F", "#D9890B", "#8F5806", "#774905", "#5C3904", "#33270F"],
+} satisfies Record<string, MantineColorsTuple>;
+
+/** In the dark scheme Mantine would fill and write text with the same shade (4), which cannot hold
+ * a white label and read on a dark page at once: fill with 6 (white label 6.5:1 and 5.9:1) and
+ * write text with 2, the dark `fg` token. */
+const stateColorsDark = Object.fromEntries(
+  Object.keys(STATE_COLORS).flatMap((c) => [
+    [`--mantine-color-${c}-filled`, `var(--mantine-color-${c}-6)`],
+    [`--mantine-color-${c}-filled-hover`, `var(--mantine-color-${c}-7)`],
+    [`--mantine-color-${c}-text`, `var(--mantine-color-${c}-2)`],
+  ]),
+);
 
 const scaleVars = Object.fromEntries([
   ["--sp-ink-0", "#F7F7FB"],
@@ -166,12 +187,18 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     "--sp-font-mono": "'JetBrains Mono', ui-monospace, monospace",
   },
   light: roles(LIGHT, STATES_LIGHT),
-  dark: roles(DARK, STATES_DARK),
+  dark: { ...roles(DARK, STATES_DARK), ...stateColorsDark },
 });
+
+/** Overlays (dialogs, sheets, popovers, menus) share one radius and one shadow. */
+const overlay = { defaultProps: { radius: "md", shadow: "md" } };
+/** Dialogs and sheets have card padding (16); their 16 px title is in app.css. */
+const sheet = { defaultProps: { ...overlay.defaultProps, padding: "lg" } };
 
 export const theme = createTheme({
   colors: {
     ...SCALES,
+    ...STATE_COLORS,
     // Mantine's dark scheme reads `dark`: 0 is text, 4 borders, 6 inputs, 7 the page.
     dark: ["#ECEDF5", "#C4C7D4", "#9A9EB0", "#8E92A8", "#33364A", "#2A2D45", "#1D2036", "#0F1020", "#0B0C18", "#07080F"],
   },
@@ -179,8 +206,42 @@ export const theme = createTheme({
   primaryShade: { light: 6, dark: 4 },
   fontFamily: "var(--sp-font-body)",
   fontFamilyMonospace: "var(--sp-font-mono)",
-  headings: { fontFamily: "var(--sp-font-display)", fontWeight: "600" },
-  defaultRadius: "md",
+  // The 4 px scales of the design system (ui-spec "Design system"): every screen reads these.
+  spacing: { xs: rem(4), sm: rem(8), md: rem(12), lg: rem(16), xl: rem(24) },
+  radius: { xs: rem(4), sm: rem(8), md: rem(12) },
+  defaultRadius: "sm",
+  fontSizes: { xs: rem(12), sm: rem(13), md: rem(14), lg: rem(16), xl: rem(20) },
+  lineHeights: { xs: "1.4", sm: "1.45", md: "1.5", lg: "1.5", xl: "1.4" },
+  headings: {
+    fontFamily: "var(--sp-font-display)",
+    fontWeight: "600",
+    sizes: {
+      h1: { fontSize: rem(28), lineHeight: "1.25" },
+      h2: { fontSize: rem(20), lineHeight: "1.3" },
+      h3: { fontSize: rem(16), lineHeight: "1.4" },
+    },
+  },
+  components: {
+    Button: { defaultProps: { size: "sm", radius: "sm" } },
+    // The height of a size-sm input and button (36 px), so an icon button lines up with them.
+    ActionIcon: { defaultProps: { size: "input-sm", variant: "subtle" } },
+    // Selection is the accent, never a run-state colour (ui-spec §3.4).
+    // A 36 px tab with a 14 px label: Mantine's own (xs · md padding, sm text) shrinks on this scale.
+    Tabs: {
+      defaultProps: { color: "violet" },
+      styles: { tab: { padding: "var(--mantine-spacing-sm) var(--mantine-spacing-lg)", fontSize: "var(--mantine-font-size-md)" } },
+    },
+    SegmentedControl: { defaultProps: { color: "violet" } },
+    // The colour is --mantine-color-anchor, the link token (roles, above); app.css underlines on focus.
+    Anchor: { defaultProps: { underline: "hover" } },
+    Modal: sheet,
+    // A drawer sits on a viewport edge: square corners (bottom sheets round their top in runs.css).
+    Drawer: { defaultProps: { ...sheet.defaultProps, radius: 0 } },
+    Popover: overlay,
+    Menu: overlay,
+    Tooltip: { defaultProps: { withArrow: false } },
+    Input: { defaultProps: { size: "sm" } },
+  },
 });
 
 /** The scheme is kept in localStorage; Mantine's manager wraps each read and write in try/catch. */

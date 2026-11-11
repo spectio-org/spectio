@@ -1,4 +1,25 @@
-/* The launch form's own rules (P1 Task 19); the shell's are in shell/shell.css. */
+/* The launch form's own rules (P1 Task 19), after the global focus rules; the shell's are in shell/shell.css. */
+/* One focus ring for the whole app, Mantine's portals included (dialogs, sheets, menus render
+   outside .sp-shell): the accent focus token, light or dark. */
+:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+/* A route's focus target (a heading, a status line or a panel given tabIndex -1 and focused by
+   script) is announced, not outlined: the reader did not move there. Roving items (a menu's
+   entries, tabs, options) keep the ring. */
+[tabindex="-1"]:not(a, button, [role="menuitem"], [role="option"], [role="tab"]):focus {
+  outline: none;
+}
+/* Dialog and sheet titles are 16 px, as a card's (Mantine's own is md, 14 px on this scale). */
+.mantine-Modal-title,
+.mantine-Drawer-title {
+  font-size: var(--mantine-font-size-lg);
+}
+/* Links underline on hover (Anchor's default) and on keyboard focus. */
+.mantine-Anchor-root:focus-visible {
+  text-decoration: underline;
+}
 /* The Loaded card: the engine's mark on its white tile, the pipeline, a status (UX-PAR-33). */
 .launch-loaded {
   display: flex;
