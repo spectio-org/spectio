@@ -4,6 +4,7 @@ inspection for the Launch form, the store and the rebuild."""
 import hashlib
 import json
 import os
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -354,15 +355,26 @@ def test_launched_module_run_gets_its_checksum(on: TestClient, writer: Writer) -
 
 
 def test_launched_module_run_keeps_its_own_target(on: TestClient, writer: Writer) -> None:
-    """SEC-161S-09: a head that reports another module or version adds nothing: the launch's
-    target is kept, its checksum unknown."""
+    """SEC-161S-09: a head that reports another module adds nothing: the launch's target is
+    kept, its checksum unknown."""
     run = module_launch(on, version=VERSION).json()["id"]
     (launch,) = table(writer, launches)
-    create = event(1, "nextflow.onFlowCreate", run, target={**REPORTED, "version": "other"})
+    create = event(1, "nextflow.onFlowCreate", run, target={**REPORTED, "name": "nf-core/other"})
     push(writer, on.app.state.settings, launch.id, create)  # type: ignore[attr-defined]
     found = module_of(writer, run)
-    assert found.target["version"] == VERSION and "hash" not in found.target
+    assert found.target["name"] == "nf-core/fastqc" and "hash" not in found.target
     assert found.key is None
+
+
+def test_launched_module_run_keeps_its_pinned_version(on: TestClient, writer: Writer) -> None:
+    """CR-161S2-03: the installed `meta.yml` may name the version otherwise than the pin: the
+    pin is kept and the checksum still added."""
+    run = module_launch(on, version=VERSION).json()["id"]
+    (launch,) = table(writer, launches)
+    create = event(1, "nextflow.onFlowCreate", run, target={**REPORTED, "version": "1.0"})
+    push(writer, on.app.state.settings, launch.id, create)  # type: ignore[attr-defined]
+    found = module_of(writer, run)
+    assert found.target["version"] == VERSION and found.target["hash"] == CHECKSUM
 
 
 def test_rule_target_has_no_stages(on: TestClient, writer: Writer, settings: Settings) -> None:
@@ -435,6 +447,28 @@ def test_meta_yml_aliases_and_nesting_refused(on: TestClient, tmp_path: Path) ->
     assert fields(inspect_local(on, deep)) == ["workflow.location"]
 
 
+def test_meta_yml_deep_flow_is_refused_fast(on: TestClient, tmp_path: Path) -> None:
+    """SEC-161S2-01: deep flow nesting is refused before PyYAML parses it (a quadratic parse),
+    and a `meta.yml` past 64 KiB is not read."""
+    deep = local(tmp_path, "name: deep\nx: " + "[" * 60000 + "\n", "deep")
+    start = time.monotonic()
+    assert fields(inspect_local(on, deep)) == ["workflow.location"]
+    assert time.monotonic() - start < 1
+    big = local(tmp_path, "name: big\n" + "# padding\n" * 7000, "big")
+    response = inspect_local(on, big)
+    assert fields(response) == ["workflow.location"]
+    assert "larger than 65536 bytes" in response.text
+
+
+def test_meta_yml_not_utf8_quotes_no_bytes(on: TestClient, tmp_path: Path) -> None:
+    """SEC-161S2-05: the refusal names the file, not the bytes the decoder stopped at."""
+    module = local(tmp_path, "name: hello\n", "latin")
+    (module / "meta.yml").write_bytes(b"name: h\xe9llo\n")
+    response = inspect_local(on, module)
+    assert fields(response) == ["workflow.location"] and "not UTF-8 text" in response.text
+    assert "xe9" not in response.text
+
+
 def test_meta_yml_control_characters_refused(on: TestClient, tmp_path: Path) -> None:
     """SEC-161S-12: a meta.yml name or version is refused as a location would be."""
     named = local(tmp_path, 'name: "hello\\u001b[31m"\n', "named")
@@ -468,7 +502,7 @@ def test_engine_answer_is_capped(settings: Settings) -> None:
     """CR-161S-02, SEC-161S-06: an engine that prints without end is stopped past 1 MiB."""
     settings.engines.nextflow_cmd = "yes"
     rc, out, err = login_engine(settings)("nextflow", ["module", "view"])
-    assert rc != 0 and len(out) <= MAX_META_BYTES + 65536 and "larger than" in err
+    assert rc == 125 and len(out) <= MAX_META_BYTES and "larger than" in err
 
 
 def test_inspect_is_bounded(on: TestClient) -> None:
@@ -483,6 +517,17 @@ def test_inspect_is_bounded(on: TestClient) -> None:
             INSPECTIONS.release()
     response = on.post(INSPECT, json={"engine": "nextflow", "location": "nf-core/fastqc"})
     assert response.status_code == 200
+
+
+def test_module_launch_is_bounded(on: TestClient, engine: FakeEngine) -> None:
+    """SEC-161S2-03: `POST /runs` of a registry module asks the engine under the same bound."""
+    taken = [INSPECTIONS.acquire(blocking=False) for _ in range(2)]
+    try:
+        assert all(taken)
+        assert module_launch(on, version=VERSION).status_code == 503 and engine.calls == []
+    finally:
+        for _ in taken:
+            INSPECTIONS.release()
 
 
 def test_module_without_inputs_takes_no_params(on: TestClient, tmp_path: Path) -> None:
@@ -635,8 +680,12 @@ def drops_of(writer: Writer, launch: str) -> dict[str, int]:
         ("nextflow", {"kind": "module", "name": "m", "source": "local", "path": "rel/m"}),
         ("nextflow", {"kind": "module", "name": "m", "source": "local", "path": "/a/../m"}),
         ("nextflow", {"kind": "module", "name": "m"}),
+        ("nextflow", {**REPORTED, "hash": None}),
     ],
-    ids=["rule-on-nf", "module-on-smk", "name", "hash", "control", "relative", "dotdot", "nosrc"],
+    ids=[
+        *("rule-on-nf", "module-on-smk", "name", "hash", "control", "relative", "dotdot"),
+        *("nosrc", "nohash"),
+    ],
 )
 def test_reported_target_that_does_not_fit_is_dropped(
     settings: Settings, writer: Writer, engine: str, target: dict[str, Any]

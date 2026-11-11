@@ -31,9 +31,10 @@ from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 
 router = APIRouter()
 
-MAX_META_BYTES = 1_048_576  # a `meta.yml`, and an engine's answer
+MAX_META_BYTES = 1_048_576  # an engine's answer
+MAX_META_YML = 64 * 1024  # a local module's `meta.yml` (SEC-161S2-01)
 MAX_RULES = 2000
-INSPECTIONS = threading.BoundedSemaphore(2)  # engine processes `targets:inspect` may hold at once
+INSPECTIONS = threading.BoundedSemaphore(2)  # engine processes the targets checks may run at once
 
 T = TypeVar("T")
 
@@ -93,6 +94,17 @@ def login_engine(settings: Settings) -> Engine:
     return run
 
 
+def bounded(engine: Engine, name: str, argv: list[str]) -> tuple[int, str, str]:
+    """One engine process, under `INSPECTIONS` for `targets:inspect` and `POST /runs` alike
+    (SEC-161S2-03): `503` while both slots are held."""
+    if not INSPECTIONS.acquire(blocking=False):
+        raise Problem(503, "runner-offline", "Busy", "other inspections are running: try again")
+    try:
+        return engine(name, argv)
+    finally:
+        INSPECTIONS.release()
+
+
 def _engine_failed(engine: str, rc: int, err: str) -> Problem:
     first = next((line.strip() for line in err.splitlines() if line.strip()), f"exit {rc}")
     return Problem(502, "engine-failed", "The engine failed", f"{engine}: {first[:500]}")
@@ -147,17 +159,26 @@ def pooled(files: FilePool, fn: Callable[[], T]) -> T:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
 
 
-def _module_files(directory: Path) -> tuple[bytes, Any]:
-    """`main.nf`'s bytes and `meta.yml`'s value, each a regular file reached through no symlink,
-    read without blocking (`workflows._read`), YAML with no alias."""
+def _module_files(location: str) -> tuple[Path, bytes, Any]:
+    """The directory, `main.nf`'s bytes and `meta.yml`'s value, each a regular file reached
+    through no symlink, read without blocking (`workflows._read`), YAML with no alias. Run in
+    the file pool: `local_dir` stats the location too (SEC-161S2-04)."""
+    try:
+        directory = local_dir(location)
+    except Invalid as exc:
+        raise exc.under("workflow") from None
     try:
         main, meta = _read(directory, "main.nf"), _read(directory, "meta.yml")
+    except UnicodeDecodeError:  # its message quotes the file's bytes (SEC-161S2-05)
+        raise Invalid("workflow.location", "main.nf or meta.yml is not UTF-8 text") from None
     except (OSError, ValueError) as exc:
         raise Invalid("workflow.location", str(exc)) from None
     if main is None or meta is None:
         raise Invalid("workflow.location", "main.nf or meta.yml is missing or not a regular file")
+    if len(meta.encode()) > MAX_META_YML:
+        raise Invalid("workflow.location", f"meta.yml is larger than {MAX_META_YML} bytes")
     try:
-        return main.encode(), load_yaml(meta)
+        return directory, main.encode(), load_yaml(meta)
     except (ValueError, TypeError, RecursionError, yaml.YAMLError):
         raise Invalid("workflow.location", "meta.yml is not YAML this server reads") from None
 
@@ -167,11 +188,7 @@ def local_module(files: FilePool, location: str) -> Module:
     refuse_control("workflow.location", location)
     if not location.startswith("/"):
         raise Invalid("workflow.location", "a local module is an absolute path")
-    try:
-        directory = local_dir(location)
-    except Invalid as exc:
-        raise exc.under("workflow") from None
-    main, meta = pooled(files, lambda: _module_files(directory))
+    directory, main, meta = pooled(files, lambda: _module_files(location))
     if not isinstance(meta, dict):
         raise Invalid("workflow.location", "meta.yml is not a mapping")
     name = str(meta.get("name") or directory.name)[:128]
@@ -193,7 +210,7 @@ def local_module(files: FilePool, location: str) -> Module:
 
 def module_view(engine: Engine, name: str, version: str | None) -> dict[str, Any]:
     argv = ["module", "view", "-o", "json", *(["-version", version] if version else []), name]
-    rc, out, err = engine("nextflow", argv)
+    rc, out, err = bounded(engine, "nextflow", argv)
     if rc != 0:
         raise _engine_failed("nextflow module view", rc, err or out)
     try:  # a login profile may print first; what follows the JSON is not read
@@ -289,7 +306,7 @@ def snakefile_of(directory: Path) -> Path:
 
 def inspect_rules(engine: Engine, directory: Path, rule: str | None) -> dict[str, Any]:
     snakefile = str(snakefile_of(directory))
-    rc, out, err = engine("snakemake", ["--snakefile", snakefile, "--list-rules"])
+    rc, out, err = bounded(engine, "snakemake", ["--snakefile", snakefile, "--list-rules"])
     if rc != 0:
         raise _engine_failed("snakemake --list-rules", rc, err or out)
     rules = [w for w in (line.strip() for line in out.splitlines()) if RULE.fullmatch(w)]
@@ -301,7 +318,8 @@ def inspect_rules(engine: Engine, directory: Path, rule: str | None) -> dict[str
     if rule not in rules:
         raise Invalid("rule", f"the pipeline has no rule {rule}")
     # `-n` in the empty temporary directory: every job the rule needs from scratch
-    rc, out, err = engine("snakemake", ["--snakefile", snakefile, "--directory", ".", rule, "-n"])
+    argv = ["--snakefile", snakefile, "--directory", ".", rule, "-n"]
+    rc, out, err = bounded(engine, "snakemake", argv)
     answer["plan"] = plan_of(out + "\n" + err) if rc == 0 else None
     if answer["plan"] is None:
         first = next((s.strip() for s in (err or out).splitlines() if s.strip()), "")
@@ -321,15 +339,6 @@ def launch_rule(given: TargetIn) -> RunTarget:
 def inspect(body: InspectIn, request: Request) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
     require_flag(settings)
-    if not INSPECTIONS.acquire(blocking=False):
-        raise Problem(503, "runner-offline", "Busy", "other inspections are running: try again")
-    try:
-        return _inspect(body, request, settings)
-    finally:
-        INSPECTIONS.release()
-
-
-def _inspect(body: InspectIn, request: Request, settings: Settings) -> dict[str, Any]:
     from spectio_server.api.workflows import resolve  # the launch's own rules
 
     engine: Engine = request.app.state.target_engine

@@ -463,7 +463,7 @@ def test_login_output_capped(home: Path, login: Callable[..., None]) -> None:
     started = time.monotonic()
     done = loginshell.run_login("yes", max_bytes=1000)
     assert done.returncode == 125 and "larger than 1000 bytes" in done.stderr
-    assert len(done.stdout) <= 1000 + 65536 and time.monotonic() - started < 15
+    assert len(done.stdout) <= 1000 and time.monotonic() - started < 15
     assert loginshell.run_login("echo hi", max_bytes=1000).stdout == "hi\n"
 
 
@@ -910,6 +910,7 @@ def test_snakemake_rule_target_follows_the_directory(home: Path, bridges: Path) 
         *("--until", "--omit-from=x", "--allowed-rules", "--forcerun", "-R"),
         *("-U", "-O", "-Rmerge", "-Ux", "-Ox"),  # SEC-161S-04: short and attached forms
         *("--unt", "--omit=x", "--allowed", "--forcer"),  # argparse takes a long prefix
+        *("-pU", "-pUmerge", "-nRx", "-FR"),  # SEC-161S2-02: grouped short options
     ],
 )
 def test_a_rule_target_never_meets_a_stop_flag(home: Path, bridges: Path, stop: str) -> None:
@@ -919,7 +920,13 @@ def test_a_rule_target_never_meets_a_stop_flag(home: Path, bridges: Path, stop: 
     assert engine_args(replace(spec, target=None))  # a whole-pipeline run keeps them
 
 
-@pytest.mark.parametrize("kept", ["--force", "--forceall", "--cores=2", "-n", "--rerun-incomplete"])
+@pytest.mark.parametrize(
+    "kept",
+    [
+        *("--force", "--forceall", "--cores=2", "-n", "--rerun-incomplete", "-pn"),
+        *("--printshellcmds", "-p", "--keep-going", "--rerun-triggers=mtime"),  # CR-161S2-07
+    ],
+)
 def test_a_rule_target_keeps_the_other_flags(home: Path, bridges: Path, kept: str) -> None:
     """`--force` is Snakemake's own option: argparse matches it exactly, not as `--forcerun`."""
     spec = snakemake_spec(home, target=RunTarget(kind="rule", name="merge"), extra_args=[kept])
@@ -1105,11 +1112,3 @@ def test_req20_order_on_snakemake(home: Path, bridges: Path) -> None:
     )
     found = json.loads((spec.engine_dir / "out.json").read_text())
     assert found["ref"] == {"build": "GRCh38", "release": 112, "x": "own"}
-
-
-@pytest.mark.parametrize(
-    "arg", ["--printshellcmds", "-p", "--keep-going", "--rerun-triggers=mtime"]
-)
-def test_a_rule_target_takes_other_options(home: Path, bridges: Path, arg: str) -> None:
-    spec = snakemake_spec(home, target=RunTarget(kind="rule", name="merge"), extra_args=[arg])
-    assert arg in engine_args(spec)

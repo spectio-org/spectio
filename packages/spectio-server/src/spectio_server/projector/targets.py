@@ -30,7 +30,8 @@ KINDS = {"nextflow": ("module",), "snakemake": ("rule", "file")}
 def fits(target: RunTarget, engine: str) -> bool:
     """Whether a reported target may move the run (SEC-161S-07): its kind is its engine's, a
     module's source is named, a registry one has the launch's name grammar and a 64-hex
-    checksum, a local one an absolute, normalised path; no control character anywhere."""
+    checksum (required, CR-161S2-02), a local one an absolute, normalised path; no control
+    character anywhere."""
     if target.kind not in KINDS[engine]:
         return False
     try:
@@ -41,9 +42,8 @@ def fits(target: RunTarget, engine: str) -> bool:
     if target.kind != "module":
         return True
     if target.source == "registry":
-        return bool(REGISTRY_NAME.fullmatch(target.name)) and (
-            target.hash is None or bool(HASH.fullmatch(target.hash))
-        )
+        hashed = target.hash is not None and bool(HASH.fullmatch(target.hash))
+        return hashed and bool(REGISTRY_NAME.fullmatch(target.name))
     path = target.path or ""
     return target.source == "local" and path.startswith("/") and os.path.normpath(path) == path
 
@@ -63,8 +63,9 @@ def capture(p: "Projection", reported: RunTarget | None, engine: str) -> None:
         stored = RunTarget.model_validate(row.target)
         if stored.kind != "module" or stored.hash is not None or reported.hash is None:
             return
-        same = (stored.name, stored.version, stored.source)
-        if (reported.name, reported.version, reported.source) != same:
+        # not the version: the bridge reads it from the installed `meta.yml`, which may name
+        # it otherwise than the pin the launch kept (CR-161S2-03)
+        if (reported.name, reported.source) != (stored.name, stored.source):
             log.warning("run %s: the head reported another module; its target is kept", p.run_id)
             p.dropped["target_refused"] += 1
             return

@@ -533,7 +533,7 @@ class SpectioObserver implements TraceObserverV2 {
                 return [kind: 'module', name: ref.take(MAX_MESSAGE_CHARS), version: version, source: 'registry', hash: checksum]
             final name = yamlScalar(meta, 'name') ?: dir?.fileName?.toString() ?: ref
             return [kind: 'module', name: name.take(MAX_MESSAGE_CHARS), version: version, source: 'local',
-                    path: dir?.toString()?.take(MAX_MESSAGE_CHARS), hash: scriptId]
+                    path: dir?.toAbsolutePath()?.normalize()?.toString()?.take(MAX_MESSAGE_CHARS), hash: scriptId]
         } catch (Exception ignored) {
             return null  // only `target` is lost, never the event (§13.3)
         }

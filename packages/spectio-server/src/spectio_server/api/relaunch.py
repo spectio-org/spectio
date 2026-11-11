@@ -58,7 +58,7 @@ from spectio_server.resume import check_dirs, launch_payload, row_refusal
 from spectio_server.store.runs import first, insert_run, module_source
 from spectio_server.store.schema import principals, run_inputs, runner_commands
 from spectio_server.store.writer import Writer
-from spectio_server.targets import local_module, registry_module, require_flag
+from spectio_server.targets import local_module, pooled, registry_module, require_flag
 
 router = APIRouter()
 
@@ -409,16 +409,14 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         "default_resources": _recorded(row.default_resources),
         "config_file": None,  # a module run has none (api §5.10)
     }
-    if module:  # a local module's directory loads code as a pipeline's does (SEC-161S-02)
-        local = target is not None and target.source == "local"
+    # a local module's directory loads code as a pipeline's does (SEC-161S-02)
+    if target is not None and target.kind == "module":
+        local = target.source == "local"
         extra = settings.engines.extra_args.get("nextflow", [])
-        try:
-            loading = request.app.state.files.run(
-                lambda: code_loading(row.location, local, params, "nextflow", extra),
-                READ_TIMEOUT_S,
-            )
-        except Stalled as exc:
-            raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+        files = request.app.state.files
+        loading = pooled(
+            files, lambda: code_loading(row.location, local, params, "nextflow", extra)
+        )
         return {**template, "non_default": list(params), "code_loading": loading}
     try:
         resolved = resolve(settings.data_dir, row.location, row.revision)
@@ -443,10 +441,7 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
             )
         return found
 
-    try:
-        loading = request.app.state.files.run(loads, READ_TIMEOUT_S)
-    except Stalled as exc:
-        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+    loading = pooled(request.app.state.files, loads)
     return {
         **template,
         "non_default": [k for k in params if k not in defaults or params[k] != defaults[k]],

@@ -302,15 +302,15 @@ def _module_run(spec: LaunchSpec, target: RunTarget) -> list[str]:
 
 # Snakemake options that stop or limit a run; gates own them, a target never meets them.
 STOP_FLAGS = ("--until", "--omit-from", "--allowed-rules", "--forcerun")
-STOP_SHORT = ("-U", "-O", "-R")  # also with the value attached: `-Umerge`
+STOP_SHORT = "UOR"  # `-U`, `-O`, `-R`, also attached (`-Umerge`) or grouped (`-pU`, `-nRx`)
 # Snakemake options that are prefixes of a stop flag: argparse takes an exact name first
 EXACT = ("--force",)
 
 
 def _stops(arg: str) -> bool:
     """A stop flag, or what argparse reads as one: a short form, or a long one's prefix."""
-    if not arg.startswith("--"):
-        return arg.startswith(STOP_SHORT)
+    if not arg.startswith("--"):  # a short cluster with U, O or R anywhere: refused whole
+        return arg.startswith("-") and any(letter in STOP_SHORT for letter in arg[1:])
     name = arg.split("=", 1)[0]
     return len(name) > 2 and name not in EXACT and any(flag.startswith(name) for flag in STOP_FLAGS)
 
