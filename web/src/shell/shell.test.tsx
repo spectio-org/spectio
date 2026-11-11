@@ -202,12 +202,13 @@ test("UI-04: the top bar keys share one face and one 20 px icon", async () => {
   }
 });
 
-test("UI-04: sidebar items, fold key and status share one icon size", async () => {
+test("UI-04: sidebar items share the 25 px icon, the fold key and status keep theirs", async () => {
   app();
   const sidebar = await screen.findByRole("navigation", { name: "Main" });
-  const fold = within(sidebar).getByRole("button", { name: "Fold the sidebar" });
-  for (const node of [fold, ...within(sidebar).getAllByRole("link")]) {
-    expect(node.querySelector("svg")).toHaveAttribute("width", "20");
+  for (const link of within(sidebar).getAllByRole("link")) {
+    expect(link.querySelector("svg")).toHaveAttribute("width", "25");
   }
+  const fold = within(sidebar).getByRole("button", { name: "Fold the sidebar" });
+  expect(fold.querySelector("svg")).toHaveAttribute("width", "20");
   expect(sidebar.querySelector(".sp-status svg")).toHaveAttribute("width", "16");
 });
