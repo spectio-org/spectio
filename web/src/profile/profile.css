@@ -3,29 +3,39 @@
 .sp-prof {
   max-width: 760px;
 }
+/* UI-16 (ui-spec §12.7): one card look, padding 16 (12 on the phone), radius md, a 1 px border. */
+.sp-prof-card {
+  padding: var(--mantine-spacing-lg);
+  border: 1px solid var(--sp-line-border);
+  border-radius: var(--mantine-radius-md);
+  box-shadow: none;
+}
+.sp-prof-body {
+  margin-top: var(--mantine-spacing-md);
+}
 .sp-prof-card .sp-sub {
-  margin: 10px 0 0;
+  margin: var(--mantine-spacing-sm) 0 0;
 }
 .sp-prof-paths {
   display: grid;
-  gap: 10px;
+  gap: var(--mantine-spacing-sm);
   margin: 0;
 }
 .sp-prof-paths dt {
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-xs);
   color: var(--sp-text-muted);
 }
 .sp-prof-paths dd {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 2px 0 0;
+  gap: var(--mantine-spacing-sm);
+  margin: var(--mantine-spacing-xs) 0 0;
 }
 .sp-prof-paths code {
   flex: 1;
   min-width: 0;
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
   font-family: var(--sp-font-mono);
   font-size: 13px;
   background: var(--sp-surface-subtle);
@@ -34,30 +44,21 @@
 .sp-prof-themes {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 20px;
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-xl);
 }
-.sp-prof-themes label {
+.sp-prof-themes .mantine-Radio-root {
   display: flex;
   align-items: center;
-  gap: 8px;
   min-height: 44px;
-  font-size: 14px;
-  cursor: pointer;
-}
-.sp-prof-themes input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--sp-accent);
 }
 .sp-prof-out {
-  margin-top: 14px;
+  margin-top: var(--mantine-spacing-md);
 }
-/* On the phone (MLiteProfile, ui-spec §4.10.1): Copy keys are 44 px touch targets, Sign out is
+/* On the phone (MLiteProfile, ui-spec §4.10.1): Copy keys are 44 px (ActionIcon xl), Sign out is
    full width. */
 @media (max-width: 767.98px) {
-  .sp-prof-paths .sp-key {
-    width: 44px;
-    height: 44px;
+  .sp-prof-card {
+    padding: var(--mantine-spacing-md);
   }
   .sp-prof-out {
     width: 100%;

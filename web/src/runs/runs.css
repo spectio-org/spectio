@@ -1128,18 +1128,27 @@
   gap: 12px;
   border-bottom: 1px solid var(--sp-line-divider);
 }
+/* Dialog and sheet titles, and their footer (ui-spec §12.4, UI-18): 16/600 in the display font;
+   Cancel then the confirm at the right, gap sm; stacked full width on the phone, confirm last. */
 .sp-sheet-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
 }
-/* Only DetailSheet's title (the other sheets share .sp-sheet-title, CR-P3UI12-01). */
+.sp-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-lg);
+}
+.sp-dialog-foot[data-stack] {
+  flex-direction: column;
+}
+/* Only DetailSheet's title takes the free width and wraps (CR-P3UI12-01); its font is UI-18's. */
 .sp-sheet-head .sp-sheet-title {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
-  font-family: var(--sp-font-display);
-  font-size: var(--mantine-font-size-lg);
-  font-weight: 600;
 }
 .sp-sheet-head .mantine-CloseButton-root {
   flex-shrink: 0;
@@ -2113,5 +2122,68 @@
   font-family: var(--sp-font-mono);
   font-size: 12px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* UI-08: the runs list (ui-spec §12.6, §12.8). The state filter sits in the toolbar row at the
+   search box's 36 px (2 + 32 + 2); on the phone its pills scroll sideways, 44 px high, with a fade
+   at the cut edge so a hidden pill reads as cut. */
+.sp-toolbar .sp-segments {
+  flex-wrap: nowrap;
+  padding: 2px;
+  border-radius: var(--mantine-radius-sm);
+}
+.sp-toolbar .sp-segments button {
+  min-height: 32px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+@media (max-width: 767.98px) {
+  .sp-toolbar .sp-segments {
+    flex: 1 1 100%;
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+  .sp-toolbar .sp-segments button {
+    min-height: 44px;
+  }
+}
+/* One padding and one top alignment for every cell; the header in sm/600, muted. */
+.sp-grid-runs .ag-header-cell,
+.sp-grid-runs .ag-cell {
+  padding-inline: var(--mantine-spacing-md);
+}
+.sp-grid-runs .ag-header-cell-text {
+  font-size: var(--mantine-font-size-sm);
+  color: var(--sp-text-muted);
+}
+.sp-grid-runs .sp-state {
+  line-height: 20px;
+}
+.sp-grid-runs .sp-state svg {
+  flex: none;
+}
+/* The name takes the free width and the pin a fixed slot at the column's right; a name wraps to
+   two lines at most, the full name in a tooltip on hover and focus. The workflow path is not
+   focusable, so it wraps in full, unclamped (CR-P3UI08-01). */
+.sp-grid-runs .sp-run-cell {
+  align-items: flex-start;
+}
+.sp-run-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sp-grid-runs .sp-pin {
+  flex: none;
+  margin-top: -2px;
+}
+.sp-grid-runs .sp-pipeline > span:last-child {
+  overflow-wrap: anywhere;
+}
+.sp-run-name .sp-run-link {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
 }

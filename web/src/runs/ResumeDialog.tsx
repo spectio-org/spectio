@@ -145,10 +145,10 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
           Not resumed: {error}
         </p>
       )}
-      {/* the board's order: Resume above Cancel on the phone, Cancel then Resume on the desktop */}
-      <div className="sp-actions" data-stack={phone || undefined}>
-        {phone ? go : cancel}
-        {phone ? cancel : go}
+      {/* ui-spec §12.4: Cancel then Resume, the confirm last on the phone too */}
+      <div className="sp-dialog-foot" data-stack={phone || undefined}>
+        {cancel}
+        {go}
       </div>
     </>
   );
@@ -182,7 +182,7 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
           {body}
         </Drawer>
       ) : (
-        <Modal opened={asking} onClose={close} title="Resume this run?" returnFocus centered>
+        <Modal opened={asking} onClose={close} title="Resume this run?" returnFocus centered classNames={{ title: "sp-sheet-title" }}>
           {body}
         </Modal>
       )}

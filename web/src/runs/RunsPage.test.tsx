@@ -284,6 +284,13 @@ test("FU-P3-115b: the Delete sheet lists the runs and sends directories only whe
   expect(sheet).toHaveAttribute("aria-modal", "true");
   expect(within(sheet).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["sarek-c · Failed", "atac-d · Succeeded"]);
   expect(within(sheet).getByRole("checkbox", { name: "Also delete their run directories" })).not.toBeChecked();
+  // the dialog footer of ui-spec §12.4 (UI-18): Cancel then the confirm, in the theme's failed colour
+  const foot = sheet.querySelector(".sp-dialog-foot")!;
+  expect(within(foot as HTMLElement).getAllByRole("button").map((b) => b.textContent)).toEqual(["Cancel", "Delete"]);
+  const confirm = within(sheet).getByRole("button", { name: "Delete" });
+  expect(confirm.getAttribute("style")).toContain("--mantine-color-failed");
+  expect(confirm.getAttribute("style")).not.toContain("--mantine-color-red");
+  expect(opener.getAttribute("style") ?? "").not.toContain("--mantine-color-red");
   await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(bodies).toEqual([{ ids: [failed.id, done.id], directories: false }]));
   expect(await screen.findByText("2 runs deleted")).toBeInTheDocument();
@@ -610,4 +617,69 @@ test("UX-P3FU115B-11: what a delete said goes once the list is filtered or a run
   expect(await screen.findByText("1 run deleted")).toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: /^Failed/ }));
   expect(screen.queryByText("1 run deleted")).toBeNull();
+});
+
+test("UI-08: the search and the state filter share the toolbar row of ui-spec §12.6", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const bar = await screen.findByRole("group", { name: "Filter runs" });
+  expect(bar).toHaveClass("sp-toolbar");
+  expect(within(bar).getByRole("searchbox", { name: "Filter by run name" })).toBeInTheDocument();
+  expect(within(bar).getByRole("group", { name: "Show runs" })).toBeInTheDocument();
+});
+
+test("UI-08: Started is a §12.8 date in a <time>, the exact time in its name; the pin has its own slot", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-31T09:40:05+00:00"));
+  try {
+    serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+    app("/runs");
+    const table = await screen.findByRole("grid", { name: "Runs" });
+    const row = within(table).getByRole("link", { name: "Open run rnaseq-a" }).closest('[role="row"]') as HTMLElement;
+    const at = within(row).getByText("2 h ago");
+    expect(at.tagName).toBe("TIME");
+    expect(at).toHaveAttribute("datetime", "2026-10-31T07:40:05+00:00");
+    expect(at.getAttribute("aria-label")).toMatch(/^2 h ago, 2026-10-31 \d\d:40$/);
+    // the name and its pin sit in two slots, so the pin lines up from row to row (§12.8)
+    const pin = within(row).getByRole("button", { name: "Pin run rnaseq-a" });
+    expect(pin.closest(".sp-run-cell")?.lastElementChild).toBe(pin);
+    expect(within(row).getByRole("link", { name: "Open run rnaseq-a" }).parentElement).toHaveClass("sp-run-name");
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+/** Focuses `el` as a keyboard does. The tooltip opens on `:focus-visible` only, and jsdom's guess
+ * at it does not follow a programmatic focus, so the test says the focus is visible. */
+function keyboardFocus(el: HTMLElement) {
+  const matches = Element.prototype.matches;
+  vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, s: string) {
+    return s === ":focus-visible" ? this === document.activeElement : matches.call(this, s);
+  });
+  act(() => el.focus());
+}
+
+test("CR-P3UI08-01: a clamped run name shows in full in a tooltip on keyboard focus", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  try {
+    keyboardFocus(within(table).getByRole("link", { name: "Open run rnaseq-a" }));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("rnaseq-a");
+  } finally {
+    vi.restoreAllMocks();
+  }
+});
+
+test("CR-P3UI08-01: on a phone the card's run name has the same tooltip on keyboard focus", async () => {
+  viewport(360);
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const list = await screen.findByRole("list", { name: "Runs" });
+  try {
+    keyboardFocus(within(list).getByRole("link", { name: "Open run rnaseq-a" }));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("rnaseq-a");
+  } finally {
+    vi.restoreAllMocks();
+  }
 });
