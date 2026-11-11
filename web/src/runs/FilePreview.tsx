@@ -567,9 +567,10 @@ function Viewer({ id, file, kind, retry, search }: { id: string; file: ResultSta
       if (work) return <Note title="Spectio does not open HTML from a work directory. Download it to open it." actions={download} />;
       const { sort, q, task, attempt } = search;
       if (search.view === "text") return <TextView id={id} file={file} levels={false} retry={retry} />;
-      // the report viewer, as from the folder (FU-P3-88a); past its cap, Download; from a job's
-      // Outputs, a link, so the back link still returns to the sheet
-      if ((file.size ?? 0) > REPORT_MAX) return <Note title="Too large for the report viewer (over 1 GiB). Download it to open it." actions={download} />;
+      // the report viewer, as from the folder (FU-P3-88a); past its cap or of unknown size, Download
+      // (fail closed, SEC-P3FU88A-01); from a job's Outputs, a link, so the back link still returns to the sheet
+      if (file.size === null) return <Note title="Spectio cannot tell this file's size, so the report viewer does not open it. Download it to open it." actions={download} />;
+      if (file.size > REPORT_MAX) return <Note title="Too large for the report viewer (over 1 GiB). Download it to open it." actions={download} />;
       if (!task || !attempt) return <Navigate to="/runs/$id/report" params={{ id }} search={{ path: file.path, from: "results", sort, q }} replace />;
       return (
         <Note
