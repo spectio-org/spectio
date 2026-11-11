@@ -23,6 +23,7 @@ from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import read_run_manifest, run_paths, write_run_manifest
 from spectio_sdk.targets import RunTarget
 from spectio_server.api.relaunch import _target_in
+from spectio_server.api.workflows import read_params
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.rebuild import rebuild_index
 from spectio_server.sink import StoreSink
@@ -728,3 +729,10 @@ def test_unversioned_module_runs_are_not_compared(settings: Settings, writer: Wr
         target = {**REPORTED, "version": None, "hash": hash_}
         push(writer, settings, launch, event(1, "nextflow.onFlowCreate", run_id(n), target=target))
     assert "checksum_changed" not in module_of(writer, run_id(9)).target
+
+
+def test_deep_params_file_says_nested_too_deep(tmp_path: Path) -> None:
+    """CR-161S3-02: the bracket bound of `load_yaml` keeps the callers' own message."""
+    (tmp_path / "params.yml").write_text("x: " + "[" * 100 + "]" * 100 + "\n")
+    with pytest.raises(ValueError, match=r"params\.yml is nested too deep to be read"):
+        read_params(tmp_path, "params.yml")

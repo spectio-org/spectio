@@ -327,13 +327,14 @@ def _jsonable(value: Any) -> Any:
 def load_yaml(text: str) -> Any:
     """Safe YAML with no aliases, which would let a small file grow huge in the response, and
     no flow nesting past `2 * MAX_DEPTH` brackets: PyYAML's parse time grows with the square of
-    that depth (SEC-161S2-01). Brackets inside quotes count too, so this only refuses more."""
+    that depth (SEC-161S2-01). Brackets inside quotes count too, so this only refuses more.
+    Raised as `RecursionError`, which callers already report as nested too deep (CR-161S3-02)."""
     level = 0
     for char in text:
         if char in "[{":
             level += 1
             if level > 2 * MAX_DEPTH:
-                raise ValueError(f"nested deeper than {2 * MAX_DEPTH} brackets")
+                raise RecursionError(f"nested deeper than {2 * MAX_DEPTH} brackets")
         elif char in "]}":
             level = max(level - 1, 0)
     for event in yaml.parse(text, Loader=yaml.SafeLoader):

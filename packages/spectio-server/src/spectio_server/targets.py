@@ -32,7 +32,7 @@ from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 router = APIRouter()
 
 MAX_META_BYTES = 1_048_576  # an engine's answer
-MAX_META_YML = 64 * 1024  # a local module's `meta.yml` (SEC-161S2-01)
+MAX_META_YML = 64 * 1024  # a local module's `main.nf` and `meta.yml` (SEC-161S2-01)
 MAX_RULES = 2000
 INSPECTIONS = threading.BoundedSemaphore(2)  # engine processes the targets checks may run at once
 
@@ -175,8 +175,9 @@ def _module_files(location: str) -> tuple[Path, bytes, Any]:
         raise Invalid("workflow.location", str(exc)) from None
     if main is None or meta is None:
         raise Invalid("workflow.location", "main.nf or meta.yml is missing or not a regular file")
-    if len(meta.encode()) > MAX_META_YML:
-        raise Invalid("workflow.location", f"meta.yml is larger than {MAX_META_YML} bytes")
+    for name, text in (("main.nf", main), ("meta.yml", meta)):  # req. 21
+        if len(text.encode()) > MAX_META_YML:
+            raise Invalid("workflow.location", f"{name} is larger than {MAX_META_YML} bytes")
     try:
         return directory, main.encode(), load_yaml(meta)
     except (ValueError, TypeError, RecursionError, yaml.YAMLError):

@@ -393,7 +393,8 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         payload = launch_payload(conn, run_id)
     target = None if row.target is None else RunTarget.model_validate(row.target)
     name, notice = _template_environment(request, row.environment)
-    module = target is not None and target.kind == "module"  # a Copy keeps its version (§5.10)
+    # a Copy keeps a module's version (§5.10)
+    module = target if target is not None and target.kind == "module" else None
     template: dict[str, Any] = {
         # a module's version is the target's, not a revision
         "workflow": {
@@ -409,9 +410,8 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         "default_resources": _recorded(row.default_resources),
         "config_file": None,  # a module run has none (api §5.10)
     }
-    # a local module's directory loads code as a pipeline's does (SEC-161S-02)
-    if target is not None and target.kind == "module":
-        local = target.source == "local"
+    if module is not None:  # a local module's directory loads code as a pipeline's does
+        local = module.source == "local"  # (SEC-161S-02)
         extra = settings.engines.extra_args.get("nextflow", [])
         files = request.app.state.files
         loading = pooled(
