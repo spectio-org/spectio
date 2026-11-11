@@ -346,10 +346,9 @@ def inspect(body: InspectIn, request: Request) -> dict[str, Any]:
     from spectio_server.api.workflows import resolve  # the launch's own rules
 
     engine: Engine = request.app.state.target_engine
+    files: FilePool = request.app.state.files
     if body.engine == "nextflow":
-        module = inspect_module(
-            settings, engine, request.app.state.files, body.location, body.version
-        )
+        module = inspect_module(settings, engine, files, body.location, body.version)
         t = module.target
         return {
             "kind": "module",
@@ -359,7 +358,6 @@ def inspect(body: InspectIn, request: Request) -> dict[str, Any]:
             "description": module.description,
             "inputs": module.inputs,
         }
-    files: FilePool = request.app.state.files
 
     def find() -> str:
         return str(snakefile_of(resolve(settings.data_dir, body.location, body.revision).directory))
