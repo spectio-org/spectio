@@ -81,10 +81,9 @@
   flex-direction: column;
   min-width: 0;
 }
+/* not the pipelines' paths: those wrap and stay whole (FU-P3-109) */
 .sp-home-card .sp-cardhead-title,
-.sp-home-card .sp-list li > span > *,
-.sp-home-card .sp-quick a > *,
-.sp-home-card .sp-quick .sp-pipeline > span {
+.sp-home-card .sp-list li > span > * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
