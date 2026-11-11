@@ -932,6 +932,17 @@ test("UI-11: the Logs toolbar: the actions are named icon buttons, Copy copies t
   expect(within(tools).getByRole("link", { name: /^Open raw/ })).toBeInTheDocument();
   await userEvent.click(within(tools).getByRole("button", { name: "Copy the engine log" }));
   expect(await navigator.clipboard.readText()).toBe("N E X T F L O W  ~  version 26.10.4\n");
+  expect(await screen.findByText("Copied the engine log")).toHaveAttribute("role", "status");
+});
+
+test("UI-11: Copy the log without a clipboard says it could not copy", async () => {
+  Reflect.deleteProperty(navigator, "clipboard");
+  detail();
+  app(`/runs/${ID}`);
+  await userEvent.click(await screen.findByRole("tab", { name: "Logs" }));
+  await screen.findByText(/N E X T F L O W/);
+  await userEvent.click(within(screen.getByRole("group", { name: "Engine log tools" })).getByRole("button", { name: "Copy the engine log" }));
+  expect(await screen.findByText(/^Could not copy the engine log/)).toHaveAttribute("role", "status");
 });
 
 test("UI-11: a log not written yet is an empty state, a failed read an error with Retry", async () => {

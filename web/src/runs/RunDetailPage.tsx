@@ -28,7 +28,7 @@ import { usePhone } from "../shell/layout";
 import { EmptyState, ErrorPanel } from "../shell/States";
 import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { useAccountingReads } from "./accounting";
-import { CopyButton } from "./CopyMenu";
+import { CopyButton, useCopyStatus } from "./CopyMenu";
 import { type Detail, DetailSheet } from "./DetailSheet";
 import { taskSearch } from "./explorer";
 import { FailureSummary } from "./FailureSummary";
@@ -896,6 +896,7 @@ function LogsPanel({
   // a read that did not give the text: "missing" (404, not written yet) or the error's message
   const [failure, setFailure] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
+  const [said, copy] = useCopyStatus();
   const w = words(run.workflow.engine);
   useEffect(() => {
     const controller = new AbortController();
@@ -944,7 +945,7 @@ function LogsPanel({
         actions={
           <>
             <ToolButton label="Reload" icon="reload" onClick={reload} />
-            <ToolButton label={`Copy the ${label.toLowerCase()}`} icon="copy" disabled={text === null} onClick={() => void navigator.clipboard?.writeText(text ?? "")} />
+            <ToolButton label={`Copy the ${label.toLowerCase()}`} icon="copy" disabled={text === null} onClick={() => copy({ label, what: `the ${label.toLowerCase()}`, text: text ?? "" })} />
             <ToolButton label="Download last 64 KiB" icon="download" disabled={text === null} onClick={download} />
             <ToolButton label="Open raw (opens in a new tab)" icon="externalLink" href={logUrl(run.id, source)} />
           </>
@@ -959,7 +960,8 @@ function LogsPanel({
           ) : undefined
         }
       />
-      <p className="sp-muted sp-log-caption">{DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it</p>
+      <p className="sp-muted sp-log-caption">{DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it <span role="status">{said}</span>
+      </p>
       <p className="sp-log-note">
         <Icon name="file" />
         <span>
