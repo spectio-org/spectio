@@ -588,6 +588,14 @@ test("FU-P3-88a: an HTML file past the report viewer's 1 GiB cap is not opened t
   expect(screen.queryByTitle(/sandboxed$/)).toBeNull();
 });
 
+test("an HTML file of unknown size is not opened in the report viewer: the gate fails closed (SEC-P3FU88A-01)", async () => {
+  files("odd.html", null);
+  open("odd.html");
+  expect(await screen.findByText("Spectio cannot tell this file's size, so the report viewer does not open it. Download it to open it.")).toBeInTheDocument();
+  expect(screen.getAllByRole("link", { name: "Download odd.html" }).length).toBeGreaterThan(0);
+  expect(screen.queryByTitle(/sandboxed$/)).toBeNull();
+});
+
 test("an HTML file previewed from a job's Outputs links to the report viewer and keeps the way back to the sheet", async () => {
   files("multiqc/multiqc_report.html", 100);
   app(`/runs/${ID}/results/file?path=${encodeURIComponent("multiqc/multiqc_report.html")}&task=tsk_1&attempt=1`);
