@@ -264,6 +264,18 @@ test("the file could not be read (503): a banner with the server's reason, the v
   await waitFor(() => expect(posted).toHaveLength(2));
 });
 
+test("a runner's own 503 with a file path set is not the file's banner (CR-P3FU110D-01)", async () => {
+  launchWith({
+    answer: () => json(503, { status: 503, type: "/problems/runner-offline", title: "Runner offline", detail: "no runner answers for this host" }),
+  });
+  await load();
+  await userEvent.click(row(/^Extra config file/));
+  await userEvent.type(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
+  await userEvent.click(launchButton());
+  expect(await screen.findByText(/^Not launched: /)).toBeInTheDocument();
+  expect(screen.queryByText(/The extra config file could not be read/)).toBeNull();
+});
+
 test("Snakemake with an extra file sends only the keys set, and the preview says where the others come from", async () => {
   const posted = launchWith({ inspected: SNAKEMAKE });
   await load("/data/smk");

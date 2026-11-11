@@ -461,9 +461,11 @@ export function LaunchPage({
       });
       onLaunched(run.id);
     } catch (error) {
-      if (path && error instanceof ApiError && error.status === 503) {
-        // a timeout or an I/O error of the read: its reason follows the server's own words (api §5.7)
-        setConfigDown(error.message.replace(/^the config file cannot be read: /, "").replace(/\.$/, ""));
+      const fileDown = /^the config file cannot be read: /;
+      if (path && error instanceof ApiError && error.status === 503 && fileDown.test(error.message)) {
+        // a timeout or an I/O error of the read, not choose()'s own 503 (CR-P3FU110D-01): its reason
+        // follows the server's own words (api §5.7)
+        setConfigDown(error.message.replace(fileDown, "").replace(/\.$/, ""));
         return;
       }
       const found =

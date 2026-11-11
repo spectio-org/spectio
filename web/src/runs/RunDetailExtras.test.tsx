@@ -148,6 +148,16 @@ test("the sheet says when the kept copy changed since the launch", async () => {
   expect(within(sheet).getByLabelText("Contents of extra.config").textContent).toBe("edited\n");
 });
 
+test("no ETag is no evidence of a change (CR-P3FU110D-03)", async () => {
+  detail({ config_file: KEPT }, () => new Response("edited\n"));
+  app(`/runs/${ID}`);
+  await facts();
+  await userEvent.click(within(fact("Extra config file")).getByRole("button", { name: "View extra.config" }));
+  const sheet = await screen.findByRole("dialog", { name: "extra.config" });
+  expect((await within(sheet).findByLabelText("Contents of extra.config")).textContent).toBe("edited\n");
+  expect(within(sheet).queryByText(/^Changed since the launch/)).toBeNull();
+});
+
 test("the kept copy gone (404), then a 503 with Retry", async () => {
   let answer = 404;
   detail({ config_file: KEPT }, () =>

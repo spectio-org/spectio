@@ -121,7 +121,7 @@ function KeptFileSheet(props: { id: string; name: string; path: string; size: st
     const controller = new AbortController();
     setRead({ state: "reading" });
     getConfigFile(id, controller.signal)
-      .then((got) => setRead({ state: "read", text: got.text, changed: got.sha256 !== sha256 }))
+      .then((got) => setRead({ state: "read", text: got.text, changed: got.sha256 !== null && got.sha256 !== sha256 }))
       .catch((e: Error) => controller.signal.aborted || setRead({ state: e instanceof ApiError && e.status === 404 ? "gone" : "failed" }));
     return () => controller.abort();
   }, [opened, attempt, id, sha256]);
