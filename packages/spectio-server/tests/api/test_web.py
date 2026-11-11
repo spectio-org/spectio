@@ -7,6 +7,7 @@ TODO(P1 Task 16): the screens move behind the session with the API.
 """
 
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -273,3 +274,23 @@ def test_refused_checkout_says_why(tmp_path: Path, caplog: pytest.LogCaptureFixt
     assert [r.getMessage() for r in caplog.records] == [
         f"{web} is group- or world-writable or not yours: chmod g-w,o-w {web}"
     ]
+
+
+def test_profile_page_is_a_screen(web: TestClient) -> None:
+    """A Reload of the Profile page answers the screens (ui-spec §4.10.1, FU-P3-112;
+    DW-P3B14-01: it was a 404)."""
+    r = web.get("/profile")
+    assert r.status_code == 200
+    assert r.text == INDEX
+
+
+def test_every_web_route_is_served() -> None:
+    """Each path of `web/src/routes.tsx` is in `static.ROUTES`, so no screen 404s on a Reload
+    (DW-P3B14-01)."""
+    routes = Path(__file__).parents[4] / "web" / "src" / "routes.tsx"
+    if not routes.is_file():
+        pytest.skip("web/src is not in this checkout")
+    paths = re.findall(r'path: "(/[^"]*)"', routes.read_text())
+    assert paths
+    served = {re.sub(r"\{(\w+)\}", "$x", r) for r in static.ROUTES}
+    assert {re.sub(r"\$\w+", "$x", p) for p in paths} <= served

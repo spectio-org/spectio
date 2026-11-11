@@ -748,6 +748,29 @@ def test_sacct_limiter_logs_refusal_and_retries_os_error(
     assert "uid 7" in caplog.records[0].getMessage()
 
 
+def test_sacct_limiter_logs_the_same_refusal_once_per_interval(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """CR-P3FU106A-04: the same policy refusal is logged at warning once per `max_interval_s`,
+    not on every call; a different one is logged at once."""
+    clock = Clock()
+    said = ["sacct at /x belongs to uid 7"] * 3 + ["the sacct path x is not absolute"]
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        raise sacct.Refused(said.pop(0))
+
+    limiter = SacctLimiter(call, interval_s=0, max_interval_s=600, clock=clock)
+    with caplog.at_level(logging.WARNING, logger="spectio.runner.sacct"):
+        for job, step in (("1", 0), ("2", 599), ("3", 601), ("4", 0)):
+            clock.now += step
+            limiter.request([job])
+            assert limiter.run_once() == ([job], sacct.FINAL)
+    uid, path = "sacct at /x belongs to uid 7", "the sacct path x is not absolute"
+    assert [r.getMessage() for r in caplog.records] == [
+        f"sacct not called for 1 IDs: {m}" for m in (uid, uid, path)
+    ]
+
+
 def test_sacct_limiter_outage_not_split_down() -> None:
     """CR-P3FU106A-05: a whole-slurmdbd outage fails every call; nothing is split, so once
     sacct answers, 100 IDs drain in one call."""

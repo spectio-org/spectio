@@ -5,8 +5,8 @@ the whole pipeline, which every run held so far is; and two `workflows.source` v
 SQLite changes a CHECK by copying the table, which drops `workflows` while `workflow_versions`
 points to it: `store.db._migrate` runs with foreign keys off and checks them before the commit.
 
-Revision ID: 0012
-Revises: 0011
+Revision ID: 0015
+Revises: 0014
 Create Date: 2026-11-10
 """
 
@@ -16,8 +16,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0012"
-down_revision: str | Sequence[str] | None = "0011"
+revision: str = "0015"
+down_revision: str | Sequence[str] | None = "0014"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

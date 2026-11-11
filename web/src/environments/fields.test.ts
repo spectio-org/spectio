@@ -94,3 +94,8 @@ test("the summary line, in words; an unset value is left out", () => {
     "this machine · no limit",
   );
 });
+
+test("one CPU is singular (DW-P3B11-02)", () => {
+  const one = item({ executor: "local", slurm: null, local: { cpus: 1, mem_mib: null } });
+  expect(summary(one, "login1", "slurm")).toBe("on login1 (the login node) · at most 1 CPU");
+});

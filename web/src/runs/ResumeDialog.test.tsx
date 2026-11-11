@@ -208,3 +208,60 @@ test("on the phone, Resume asks in a bottom sheet, Resume above Cancel", async (
   expect(buttons.indexOf("Resume")).toBeLessThan(buttons.indexOf("Cancel"));
   await waitFor(() => expect(within(sheet).getByRole("button", { name: "Cancel" })).toHaveFocus());
 });
+
+test("FU-P3-115b: Pin toggles the run's pin, and an ended run's Delete… deletes it and opens the list", async () => {
+  const sent: { url: string; method?: string; body?: string }[] = [];
+  const answer = (body: unknown) => (url: URL, init?: RequestInit) => {
+    sent.push({ url: url.pathname, method: init?.method, body: init?.body ? String(init.body) : undefined });
+    return json(200, body);
+  };
+  detail((url: URL, init?: RequestInit) => (init?.method === "PATCH" ? answer(failedRun({ pinned: true }))(url, init) : json(200, failedRun())), {
+    "/api/v1/runs:delete": answer({ deleted: [ID], directories: [] }),
+    "/api/v1/runs?": { items: [], next: null },
+    "/api/v1/runs:summary": { groups: [] },
+  });
+  const router = app(`/runs/${ID}`);
+  const head = await header();
+  // the label says the action, so no aria-pressed (it would contradict a changing name)
+  await userEvent.click(await within(head).findByRole("button", { name: "Pin" }));
+  expect(await within(head).findByRole("button", { name: "Unpin" })).not.toHaveAttribute("aria-pressed");
+  expect(sent[0]).toEqual({ url: URL_, method: "PATCH", body: '{"pinned":true}' });
+  await userEvent.click(within(head).getByRole("button", { name: "Delete…" }));
+  const sheet = await screen.findByRole("dialog", { name: "Delete 1 run?" });
+  expect(within(sheet).getByRole("listitem")).toHaveTextContent("wgs-cohort-12 · Failed");
+  await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
+  await waitFor(() => expect(router.state.location.pathname).toBe("/runs"));
+  expect(sent[1]).toEqual({ url: "/api/v1/runs:delete", method: "POST", body: JSON.stringify({ ids: [ID], directories: false }) });
+});
+
+test("FU-P3-115b: a run that has not ended has Pin but no Delete…", async () => {
+  detail(failedRun({ state: "running", ended_at: null }));
+  app(`/runs/${ID}`);
+  const head = await header();
+  expect(await within(head).findByRole("button", { name: "Pin" })).toBeInTheDocument();
+  expect(within(head).queryByRole("button", { name: "Delete…" })).toBeNull();
+});
+
+test("FU-P3-110d: the sheet says the resume reuses the resources and the kept file; a changed copy's 422 is said in the server's words", async () => {
+  const kept = { path: "/home/amartin/x.config", kept_as: "extra.config", sha256: "a".repeat(64), size: 10, includes: false, state: "recorded" };
+  const message = "The kept config file of the parent changed: use Copy to a new launch";
+  detail(failedRun({ default_resources: { cpus: 4, mem_mib: null, time_min: null, state: "recorded" }, config_file: kept }), {
+    [`${URL_}:relaunch`]: () => json(422, { status: 422, detail: `config_file: ${message}`, errors: [{ field: "config_file", message }] }),
+  });
+  app(`/runs/${ID}`);
+  await userEvent.click(await within(await header()).findByRole("button", { name: "Resume" }));
+  const dialog = await screen.findByRole("dialog", { name: "Resume this run?" });
+  expect(dialog).toHaveTextContent("Same resources and the same kept config file (extra.config) as before.");
+  await userEvent.click(within(dialog).getByRole("button", { name: "Resume" }));
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent(`Not resumed: ${message}`);
+  expect(within(dialog).getByRole("alert")).not.toHaveTextContent("config_file:");
+});
+
+test("FU-P3-110d: only resources, or only the kept file, are named on their own", async () => {
+  detail(failedRun({ default_resources: { cpus: 4, mem_mib: null, time_min: null, state: "recorded" }, config_file: null }));
+  app(`/runs/${ID}`);
+  await userEvent.click(await within(await header()).findByRole("button", { name: "Resume" }));
+  const dialog = await screen.findByRole("dialog", { name: "Resume this run?" });
+  expect(dialog).toHaveTextContent("Same resources as before.");
+  expect(dialog).not.toHaveTextContent("kept config file");
+});

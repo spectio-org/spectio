@@ -17,7 +17,7 @@ from sqlalchemy import Connection, Row, select
 from spectio.config import Settings
 from spectio.environments import as_snapshot, launch_fields, read_as
 from spectio.runner.headscript import SESSION_ID, engine_args
-from spectio.runner.loop import LaunchPayload
+from spectio.runner.loop import LaunchPayload, extra_file
 from spectio.runner.resume import NotResumable, prove
 from spectio.runner.rundir import run_paths
 from spectio.runner.types import LaunchSpec, ResumeSource
@@ -69,7 +69,7 @@ def resume_refusal(conn: Connection, row: Row[Any], ctx: Context) -> str | None:
 def resumed_as(conn: Connection, run_id: str) -> list[dict[str, Any]]:
     found = conn.execute(
         select(runs.c.id, runs.c.name, runs.c.state)
-        .where(runs.c.parent_run_id == run_id)
+        .where(runs.c.parent_run_id == run_id, runs.c.deleted_at.is_(None))
         .order_by(runs.c.created_at, runs.c.id)
     )
     return [{"id": r.id, "name": r.name, "state": r.state} for r in found]
@@ -132,6 +132,8 @@ def command(conn: Connection, row: Row[Any], settings: Settings) -> dict[str, An
         **launch_fields(as_snapshot(own)),
         extra_args=engines.extra_args.get(row.engine, []),
         resume_of=resume,
+        default_resources=payload.default_resources,
+        config_file=extra_file(payload),  # its name only: the bytes are cleared once answered
     )
     try:
         argv = [*_words(spec.engine_cmd), *engine_args(spec)]

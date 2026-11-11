@@ -1,4 +1,4 @@
-"""Runs that target one module or one rule (api-and-data-model.md §5.9, #161): the launch, the
+"""Runs that target one module or one rule (api-and-data-model.md §5.10, #161): the launch, the
 inspection for the Launch form, the store and the rebuild."""
 
 import hashlib
@@ -237,7 +237,7 @@ def test_rebuild_keeps_the_target(on: TestClient, settings: Settings, tmp_path: 
 
 
 def test_migration_keeps_workflows(settings: Settings) -> None:
-    """0012 copies `workflows` to change its CHECK: the rows that point to it survive."""
+    """0015 copies `workflows` to change its CHECK: the rows that point to it survive."""
     assert settings.db_dir is not None
     engine, _ = open_db(settings.db_dir)
     alembic = Config()
@@ -297,7 +297,8 @@ def observed(writer: Writer, n: int, launch_dir: str, engine: str = "nextflow") 
     )
     writer.submit(lambda c: insert_observed_run(c, run, datetime.now(UTC))).result()
     query = select(launches.c.id).where(launches.c.run_id == run_id(n))
-    return writer.submit(lambda c: c.execute(query).scalar_one()).result()
+    launch_id: str = writer.submit(lambda c: c.execute(query).scalar_one()).result()
+    return launch_id
 
 
 def module_of(writer: Writer, run: str) -> Any:

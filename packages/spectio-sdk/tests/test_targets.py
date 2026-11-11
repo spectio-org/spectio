@@ -1,4 +1,4 @@
-"""The run target (api-and-data-model.md §5.9): its model and how the bridges' events carry it."""
+"""The run target (api-and-data-model.md §5.10): its model and how the bridges' events carry it."""
 
 from spectio_sdk.events import NextflowFlowCreate, SnakemakeWorkflowStarted
 from spectio_sdk.targets import REGISTRY_NAME, RULE, VERSION, RunTarget, reported, stages_note

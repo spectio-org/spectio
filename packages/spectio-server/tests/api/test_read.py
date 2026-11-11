@@ -178,7 +178,7 @@ def test_runs_sort_ended(authed_client: TestClient, writer: Writer, settings: Se
     assert [r["id"] for r in found["items"]] == [rid(1)]
     rest = authed_client.get(RUNS, params={"sort": "-ended_at", "cursor": found["next"]}).json()
     assert [r["id"] for r in rest["items"]] == [rid(3)]  # no run that has not ended
-    problem(authed_client.get(RUNS, params={"sort": "name"}), 422, "validation-failed")
+    problem(authed_client.get(RUNS, params={"sort": "workflow"}), 422, "validation-failed")
 
 
 def test_stages_ordered(authed_client: TestClient, seeded_stages: str) -> None:

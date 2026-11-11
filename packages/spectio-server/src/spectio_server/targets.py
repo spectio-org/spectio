@@ -1,4 +1,4 @@
-"""Runs that target one Nextflow module or one Snakemake rule (api-and-data-model.md §5.9, #161).
+"""Runs that target one Nextflow module or one Snakemake rule (api-and-data-model.md §5.10, #161).
 
 `launch_target` checks the `target` of `POST /runs`; `POST /targets:inspect` serves the Launch
 form: a module's inputs (`nextflow module view -o json`, or a local module's `meta.yml`), and a
@@ -96,7 +96,7 @@ def _engine_failed(engine: str, rc: int, err: str) -> Problem:
 
 
 def registry_module(settings: Settings, name: str, version: str | None) -> None:
-    """The launch grammar of a registry module (§5.9): its name, its namespace, its version."""
+    """The launch grammar of a registry module (§5.10): its name, its namespace, its version."""
     if not REGISTRY_NAME.fullmatch(name):
         raise Invalid("workflow.location", "a registry module: namespace/name, in lower case")
     namespace = name.split("/", 1)[0]
@@ -210,7 +210,7 @@ def inspect_module(
 def launch_module(
     settings: Settings, engine: Engine, location: str, given: TargetIn, params: dict[str, Any]
 ) -> Module:
-    """The target of a module launch, checked whole (§5.9): pinned, allowed, inputs by name."""
+    """The target of a module launch, checked whole (§5.10): pinned, allowed, inputs by name."""
     if location.startswith("/"):
         module = local_module(location)[0]
         if given.version is not None and given.version != module.target.version:

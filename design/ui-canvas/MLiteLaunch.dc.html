@@ -46,6 +46,24 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
 .mcat-pnl{border-radius:16px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.07),0 1px 2px rgba(15,16,32,0.05);padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .mcat-card{min-height:44px;width:100%;box-sizing:border-box;text-align:left;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.11);padding:10px 12px;display:flex;flex-direction:column;gap:3px;font:inherit;color:inherit;cursor:pointer}
 .btn-load{height:44px;border-radius:12px;border:none;background:#F6F2FE;color:#4D368B;font:600 14px 'Inter',sans-serif;cursor:pointer}
+/* ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): Resources and Extra config file, full width, every control at least 44 px; api §5.7. */
+.xrow{border-radius:12px;box-shadow:inset 0 0 0 1px #DFE1EA;padding:2px 12px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.xrow h3{margin:0;font-size:14.5px;font-weight:600}
+.xrow-b{display:flex;flex-direction:column;gap:12px;min-width:0}
+.fld{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld > label,.fld > legend{padding:0;font-size:13.5px;font-weight:600}
+.fld > legend{margin-bottom:5px}
+.m-in{font:15px 'Inter',sans-serif;border-radius:12px;border:1px solid #C4C7D4;padding:10px 12px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%;min-height:44px;min-width:0}
+.m-in[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
+.unit{display:flex;gap:8px;align-items:center;min-width:0}
+.unit .m-in{flex:1 1 0}
+.unit select.m-in{flex:0 0 84px;width:84px}
+.unit > label,.unit > .u{font-size:13px;color:#4D5065;flex-shrink:0}
+.hint{font-size:12.5px;color:#4D5065;line-height:1.45}
+.ferr{font-size:12.5px;color:#B02A2A;font-weight:600;line-height:1.45}
+.keep{display:flex;gap:7px;align-items:baseline;font-size:12.5px;color:#33364A;background:#F7F7FB;border-radius:10px;padding:7px 10px;line-height:1.45;margin:0}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 640px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
@@ -100,6 +118,37 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
         <label class="env-r"><input type="radio" name="m-env" value="gpu-test" aria-labelledby="m-env-n-gpu" aria-describedby="m-env-d-gpu"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600;"><span id="m-env-n-gpu">gpu-test<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span></span><span id="m-env-d-gpu" style="font-size: 12.5px; color: #4D5065;">partition gpu · 16 GiB per job</span></span></label>
         <button type="button" class="btn-env" aria-haspopup="dialog">New environment</button>
       </fieldset>
+      <!-- ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): the two rows after Environment, drawn open; Nextflow on Login node (caps 2 CPUs and 8 GiB). -->
+      <div class="xrow">
+        <h3 id="m-xr-res-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="m-xr-res" style="min-height: 44px;"><span>Resources</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Defaults: 2 CPUs · 6 GiB · 2 h per task</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
+        <div id="m-xr-res" class="xrow-b">
+          <span id="m-res-hint" class="hint">Used by every process that does not set its own. A process that sets its own CPUs, memory or time keeps them. Replaces the pipeline's own default for all processes.</span>
+          <div class="fld">
+            <label for="m-res-cpus">CPUs per task</label>
+            <input id="m-res-cpus" class="m-in" inputmode="numeric" value="2" placeholder="the pipeline's default" aria-describedby="m-res-cpus-h m-res-hint">
+            <span id="m-res-cpus-h" class="hint">1 to 256 · at most 2 (Login node)</span>
+          </div>
+          <div class="fld">
+            <label for="m-res-mem">Memory per task</label>
+            <span class="unit"><input id="m-res-mem" class="m-in" inputmode="decimal" value="6" placeholder="the pipeline's default" aria-describedby="m-res-mem-h m-res-hint"><label class="sr" for="m-res-mem-u">Memory per task, unit</label><select id="m-res-mem-u" class="m-in"><option>MiB</option><option selected>GiB</option></select></span>
+            <span id="m-res-mem-h" class="hint">Rounded to MiB · at most 8 GiB (Login node)</span>
+          </div>
+          <fieldset class="fld">
+            <legend>Time per task</legend>
+            <span class="unit"><label class="sr" for="m-res-th">Time per task, hours</label><input id="m-res-th" class="m-in" inputmode="numeric" value="2" aria-describedby="m-res-time-h m-res-hint"><span class="u" aria-hidden="true">h</span><label class="sr" for="m-res-tm">Time per task, minutes</label><input id="m-res-tm" class="m-in" inputmode="numeric" value="0" aria-describedby="m-res-time-h m-res-hint"><span class="u" aria-hidden="true">min</span></span>
+            <span id="m-res-time-h" class="hint">1 min to 720 h (30 days)</span>
+          </fieldset>
+        </div>
+      </div>
+      <div class="xrow">
+        <h3 id="m-xr-cfg-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="m-xr-cfg" style="min-height: 44px;"><span>Extra config file</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">lab-tweaks.config</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
+        <div id="m-xr-cfg" class="xrow-b fld">
+          <label for="m-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+          <input id="m-xcfg" class="m-in" value="/home/amartin/configs/lab-tweaks.config" placeholder="/home/amartin/…/my.config" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="m-xcfg-h m-xcfg-k" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+          <span id="m-xcfg-h" class="hint">A .config file, passed with -c after the pipeline's own. It runs as you, like the pipeline's nextflow.config. In your home directory or in the pipeline: type its absolute path.</span>
+          <span id="m-xcfg-k" class="keep"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; align-self: center;"><path d="M6 11h12v9H6z M9 11V8a3 3 0 0 1 6 0v3"/></svg><span>Read once at Launch and kept with the run as <span class="mono">extra.config</span>, readable by you only (0600), with its SHA-256 · at most 256 KiB.</span></span>
+        </div>
+      </div>
       <dl class="sum">
         <div><dt>Engine head</dt><dd>Nextflow 25.10.4, in a tmux session on login1</dd></div>
         <div><dt>Tasks</dt><dd>run on login1 by Nextflow · at most 2 CPUs</dd></div>
@@ -172,6 +221,8 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
         <div><dt>Pipeline</dt><dd>nf-core/rnaseq 3.27.0 · profile singularity</dd></div>
         <div><dt>Engine</dt><dd>Nextflow 25.10.4</dd></div>
         <div><dt>Environment</dt><dd>Login node · Local</dd></div>
+        <div><dt>Resources</dt><dd>2 CPUs · 6 GiB · 2 h per task; processes that set their own keep them</dd></div>
+        <div><dt>Extra config</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400;">/home/amartin/configs/lab-tweaks.config</dd></div>
         <div><dt>Engine head</dt><dd>tmux session on login1</dd></div>
         <div><dt>Tasks</dt><dd>run on login1 by Nextflow · at most 2 CPUs</dd></div>
         <div><dt>Run directory</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400;">/scratch/amartin/spectio-runs/&lt;run ID&gt;</dd></div>
@@ -284,6 +335,22 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
           <span id="mei-why" style="font-size: 13px; color: #5C3A05; background: #FEF7EC; border-radius: 10px; padding: 8px 10px; line-height: 1.45;">Your environments file has a mistake: only the built-ins are offered. See <a href="MLiteEnvironments.dc.html">Environments</a></span>
           <button type="button" class="btn-env" aria-disabled="true" aria-describedby="mei-why">New environment</button>
         </fieldset>
+    </section>
+    <h2 style="margin: 10px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">WHERE IT RUNS · RESOURCES AND THE EXTRA FILE, ERRORS</h2>
+    <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">ui-spec §4.6 (FU-P3-110c): the states of LiteLaunch, full width. A cap is checked before Launch; the file's refusal comes back on the input after Launch, with focus on it. Reading the file and the 503 are drawn on LiteLaunch.</span>
+    <section aria-labelledby="mxr-h" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 12px;">
+        <h3 id="mxr-h" style="margin: 0; font-size: 14px; font-weight: 600;">Above the cap, and a refused file</h3>
+        <div class="fld">
+          <label for="mxr-cpus">CPUs per task</label>
+          <input id="mxr-cpus" class="m-in" inputmode="numeric" value="4" aria-invalid="true" aria-describedby="mxr-cpus-e mxr-cpus-h">
+          <span id="mxr-cpus-e" class="ferr">At most 2 CPUs in Login node</span>
+          <span id="mxr-cpus-h" class="hint">1 to 256 · at most 2 (Login node)</span>
+        </div>
+        <div class="fld">
+          <label for="mxr-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+          <input id="mxr-xcfg" class="m-in" value="/tmp/lab-tweaks.config" spellcheck="false" autocapitalize="off" aria-invalid="true" aria-describedby="mxr-e" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+          <span id="mxr-e" role="alert" class="ferr">Choose a file in your home directory or in the pipeline.</span>
+        </div>
     </section>
   </main>
   <div role="region" aria-label="Launch" style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; background: #FFFFFF; box-shadow: 0 -1px 0 rgba(15,16,32,0.08); padding: 10px 12px calc(84px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 12px; box-sizing: border-box;">

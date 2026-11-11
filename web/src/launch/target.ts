@@ -1,6 +1,6 @@
 import type { Inspected, JSONSchema, TargetInspected } from "../api";
 
-// Launch's single target mode (ui-spec §4.15; api §5.9): a module becomes a form like a pipeline's,
+// Launch's single target mode (ui-spec §4.15; api §5.10): a module becomes a form like a pipeline's,
 // one field per declared input, so the rest of the form (Before Launch, the params preview) is
 // the same code.
 

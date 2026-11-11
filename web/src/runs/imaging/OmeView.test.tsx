@@ -12,7 +12,7 @@ const m = vi.hoisted(() => ({
   openZarr: vi.fn(),
   loadZarr: vi.fn(),
   decks: [] as { props: Record<string, unknown>; finalize: ReturnType<typeof vi.fn> }[],
-  pools: [] as { destroy: ReturnType<typeof vi.fn> }[],
+  pools: [] as { destroy: ReturnType<typeof vi.fn>; decode: ReturnType<typeof vi.fn> }[],
   lose: vi.fn(),
   layers: [] as Record<string, unknown>[],
 }));
@@ -21,6 +21,7 @@ vi.mock("./zarr", async (actual) => ({ ...(await actual<typeof import("./zarr")>
 vi.mock("./pool", () => ({
   DecoderPool: class {
     destroy = vi.fn();
+    decode = vi.fn(async () => new Uint8Array([4, 2]).buffer);
     constructor() {
       m.pools.push(this);
     }
@@ -171,8 +172,13 @@ test("an OME-Zarr opens through our store (no TIFF read), its axes deciding the 
   expect(m.openWalked).not.toHaveBeenCalled();
   expect(m.openZarr.mock.calls[0][0].log).toEqual([]); // the store itself, unread here: openZarr is mocked
   expect(m.openZarr.mock.calls[0][0].work).toBe(true); // a work directory's store: its v2 state
-  expect(m.pools).toHaveLength(pools); // no TIFF decoder workers for a Zarr
+  expect(m.pools).toHaveLength(pools + 1); // the decoder workers decode its chunks (FU-P3-102h)
+  const store = m.openZarr.mock.calls[0][0];
+  const chunk = { compressor: "blosc", bytes: 2 };
+  expect(Array.from(await store.decode(chunk, new Uint8Array([9])))).toEqual([4, 2]);
+  expect(m.pools.at(-1)!.decode).toHaveBeenCalledWith(chunk, expect.any(ArrayBuffer), "chunk");
   first.unmount();
+  expect(m.pools.at(-1)!.destroy).toHaveBeenCalled(); // closing the view ends them
   m.openZarr.mockRejectedValue(new NotImage("This folder has no OME-Zarr image metadata."));
   render(<MantineProvider><OmeView url="" size={0} zarr={zarr} name="a.ome.zarr" fallback={<p>the flat view</p>} stateView={(s) => <p>{"title" in s ? s.title : "problem"}</p>} /></MantineProvider>);
   expect(await screen.findByText("This folder has no OME-Zarr image metadata.")).toBeInTheDocument();

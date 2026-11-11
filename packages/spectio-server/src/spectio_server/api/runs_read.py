@@ -20,7 +20,9 @@ from importlib.metadata import version
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Query, Request
-from sqlalchemy import Connection, Row, Select, and_, func, select
+from sqlalchemy import Connection, Float, Row, Select, and_, func, literal, or_, select
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import FunctionElement
 
 from spectio.config import Settings
 from spectio.runner.local import checkable
@@ -82,6 +84,9 @@ _RUN_COLUMNS = (
     runs.c.engine_settings,
     runs.c.environment,
     runs.c.target,
+    runs.c.pinned,
+    runs.c.default_resources,
+    runs.c.config_file,
     workflows.c.engine,
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
@@ -96,13 +101,16 @@ _RUN_COLUMNS = (
 )
 
 
-def _runs_query() -> Select[Any]:
+def _runs_query(*extra: Any) -> Select[Any]:
+    """The runs not deleted (FU-P3-115a: `POST /runs:delete` soft deletes), with `extra`
+    columns."""
     return (
-        select(*_RUN_COLUMNS)
+        select(*_RUN_COLUMNS, *extra)
         .join(workflow_versions, workflow_versions.c.id == runs.c.workflow_version_id)
         .join(workflows, workflows.c.id == workflow_versions.c.workflow_id)
         .outerjoin(_last_n, _last_n.c.run_id == runs.c.id)
         .outerjoin(launches, and_(launches.c.run_id == runs.c.id, launches.c.n == _last_n.c.n))
+        .where(runs.c.deleted_at.is_(None))
     )
 
 
@@ -212,7 +220,8 @@ def run_json(
         },
         "profiles": profiles,
         "environment": row.environment,  # null for a run started from a terminal (FU-P3-86a)
-        "target": row.target,  # one module or one rule; null: the whole pipeline (api §5.9)
+        "target": row.target,  # one module or one rule; null: the whole pipeline (api §5.10)
+        "pinned": row.pinned,
         "failure": row.failure,
         "head": head,
         "task_counts": counts,
@@ -293,6 +302,8 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
             "cleanup": (row.engine_settings or {}).get("cleanup"),
             "notemp": None,
         },
+        "default_resources": row.default_resources,  # api §5.7 (FU-P3-110a)
+        "config_file": row.config_file,
     }
 
 
@@ -302,7 +313,66 @@ def results_of(row: Row[Any]) -> str | None:
     return None if row.origin == "cli-observed" else row.results_dir
 
 
-# --- Cursors: base64url of [sort value, id], or of the id alone when it is the sort key -----
+# --- Cursors: base64url of the sort values of the page's last row, or of the ID alone when it
+# is the sort key (tasks) -------------------------------------------------------------------
+
+
+class _Seconds(FunctionElement[float]):
+    """`end - start` in seconds, NULL when either is: SQLite has no interval type. Its
+    `julianday` reads the stored `YYYY-MM-DD HH:MM:SS.SSSSSS` text, any count of fraction digits
+    (https://www.sqlite.org/lang_datefunc.html, "Time Values")."""
+
+    type = Float()
+    inherit_cache = True
+
+
+@compiles(_Seconds, "sqlite")
+def _seconds_sqlite(element: _Seconds, compiler: Any, **kw: Any) -> str:
+    start, end = (compiler.process(c, **kw) for c in element.clauses)
+    return f"((julianday({end}) - julianday({start})) * 86400.0)"
+
+
+@compiles(_Seconds, "postgresql")
+def _seconds_postgresql(element: _Seconds, compiler: Any, **kw: Any) -> str:
+    start, end = (compiler.process(c, **kw) for c in element.clauses)
+    return f"EXTRACT(EPOCH FROM ({end} - {start}))"
+
+
+RunSort = Literal[
+    "-created_at",
+    "-ended_at",
+    "name",
+    "-name",
+    "state",
+    "-state",
+    "started_at",
+    "-started_at",
+    "duration",
+    "-duration",
+]
+NO_END = 1e15  # seconds: a run with no duration sorts after every real one
+
+
+def _run_keys(sort: str) -> list[tuple[Any, bool, str]]:
+    """The keyset of `GET /runs?sort=` as (expression, descending, kind): pinned runs first but
+    for `-ended_at` (Home's recently ended), then the key, then the ID in the key's direction
+    (api §5 note of 2026-11-10). Every expression is NOT NULL, so a row compares."""
+    descending, name = sort.startswith("-"), sort.lstrip("-")
+    key: Any
+    kind = "time"
+    if name == "name":
+        key, kind = func.coalesce(runs.c.name, ""), "text"
+    elif name == "state":
+        key, kind = runs.c.state, "text"
+    elif name == "started_at":  # a run not started takes its creation
+        key = func.coalesce(runs.c.started_at, runs.c.created_at)
+    elif name == "duration":  # a run not ended comes last, in both directions
+        seconds = _Seconds(runs.c.started_at, runs.c.ended_at)
+        key, kind = func.coalesce(seconds, -1.0 if descending else NO_END), "number"
+    else:  # created_at, ended_at (the route keeps ended runs only)
+        key = runs.c[name]
+    keys = [(key, descending, kind), (runs.c.id, descending, "text")]
+    return keys if name == "ended_at" else [(runs.c.pinned, True, "bool"), *keys]
 
 
 def _encode(value: Any) -> str:
@@ -310,43 +380,57 @@ def _encode(value: Any) -> str:
     return base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
 
 
-def _decode(cursor: str, timestamp: bool) -> tuple[Any, str]:
-    try:
-        found = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
-        if not timestamp:
-            if not isinstance(found, str):
-                raise ValueError("not an ID")
-            return found, found
-        value, id_ = found
-        if not isinstance(id_, str):
-            raise ValueError("no ID")
-        at = datetime.fromisoformat(value)
+def _value(raw: Any, kind: str) -> Any:
+    if kind == "time":
+        at = datetime.fromisoformat(raw)  # TypeError when not a string
         if at.utcoffset() is None:  # the store takes aware times only
             raise ValueError("naive")
-        return at, id_
+        return at
+    types = {"bool": (bool,), "text": (str,), "number": (int, float)}[kind]
+    if not isinstance(raw, types) or (kind == "number" and isinstance(raw, bool)):
+        raise ValueError(f"not a {kind}")
+    return raw
+
+
+def _decode(cursor: str, kinds: list[str]) -> list[Any]:
+    try:
+        found = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
+        if not isinstance(found, list) or len(found) != len(kinds):
+            raise ValueError("not a list of the sort's values")
+        return [_value(v, k) for v, k in zip(found, kinds, strict=True)]
     except (ValueError, TypeError, binascii.Error):
         raise Invalid("cursor", "not a cursor this server gave") from None
 
 
-def _page(
-    query: Select[Any],
-    key: Any,
-    id_col: Any,
-    cursor: str | None,
-    limit: int,
-    descending: bool,
-    timestamp: bool,
+def _keyset(
+    query: Select[Any], keys: list[tuple[Any, bool, str]], cursor: str | None, limit: int
 ) -> Select[Any]:
+    """The rows after the cursor's in the order of `keys`, one more than `limit`."""
     if cursor is not None:
-        value, id_ = _decode(cursor, timestamp)
-        if not timestamp:  # the ID is the key (tasks): one comparison
-            query = query.where(key < value if descending else key > value)
-        elif descending:
-            query = query.where((key < value) | ((key == value) & (id_col < id_)))
-        else:
-            query = query.where((key > value) | ((key == value) & (id_col > id_)))
-    order = (key.desc(), id_col.desc()) if descending else (key.asc(), id_col.asc())
+        values = _decode(cursor, [kind for _, _, kind in keys])
+        bound = [literal(v, key.type) for (key, _, _), v in zip(keys, values, strict=True)]
+        after = []
+        for i, (key, descending, _) in enumerate(keys):
+            same = [k == v for (k, _, _), v in zip(keys[:i], bound[:i], strict=True)]
+            after.append(and_(*same, key < bound[i] if descending else key > bound[i]))
+        query = query.where(or_(*after))
+    order = [key.desc() if descending else key.asc() for key, descending, _ in keys]
     return query.order_by(*order).limit(limit + 1)
+
+
+def _decode_id(cursor: str) -> str:
+    try:
+        found = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
+    except (ValueError, TypeError, binascii.Error):
+        found = None
+    if not isinstance(found, str):
+        raise Invalid("cursor", "not a cursor this server gave")
+    return found
+
+
+def _cursor_of(row: Row[Any], keys: list[tuple[Any, bool, str]]) -> str:
+    values = list(row[-len(keys) :])
+    return _encode([v.isoformat() if isinstance(v, datetime) else v for v in values])
 
 
 def _states(value: str | None, allowed: tuple[str, ...]) -> list[str] | None:
@@ -367,16 +451,17 @@ def list_runs(
     request: Request,
     state: Annotated[str | None, Query(max_length=200)] = None,
     q: Annotated[str | None, Query(max_length=200)] = None,
-    sort: Literal["-created_at", "-ended_at"] = "-created_at",
+    sort: RunSort = "-created_at",
     target: Literal["any", "none"] | None = None,
     limit: Limit = 50,
     cursor: Cursor = None,
 ) -> dict[str, Any]:
-    """Newest first by `created_at`, or by `ended_at` (`sort=-ended_at`: ended runs only);
-    `target=any` lists runs of one module or one rule only, `none` whole-pipeline runs (§5.9)."""
+    """Newest first by `created_at`, or by the sort of `_run_keys`, pinned runs first;
+    `sort=-ended_at`: ended runs only, by end time (FU-P3-115a). `target=any` lists runs of
+    one module or one rule only, `none` whole-pipeline runs (§5.10)."""
     states = _states(state, RUN_STATES)
-    key = runs.c.ended_at if sort == "-ended_at" else runs.c.created_at
-    query = _runs_query()
+    keys = _run_keys(sort)
+    query = _runs_query(*(key.label(f"_key{i}") for i, (key, _, _) in enumerate(keys)))
     if sort == "-ended_at":
         query = query.where(runs.c.ended_at.is_not(None))
     if states is not None:
@@ -387,7 +472,7 @@ def list_runs(
         )
     if q:  # a prefix, compared as text: no LIKE pattern
         query = query.where(func.substr(runs.c.name, 1, len(q)) == q)
-    query = _page(query, key, runs.c.id, cursor, limit, descending=True, timestamp=True)
+    query = _keyset(query, keys, cursor, limit)
     with read(request) as conn:
         rows = conn.execute(query).all()
         page = [r.id for r in rows[:limit]]
@@ -396,8 +481,7 @@ def list_runs(
     items = [
         run_json(r, profiles.get(r.id, []), modes.get(r.id), marked[r.id]) for r in rows[:limit]
     ]
-    last = rows[limit - 1] if len(rows) > limit else None
-    next_ = None if last is None else _encode([getattr(last, key.name).isoformat(), last.id])
+    next_ = _cursor_of(rows[limit - 1], keys) if len(rows) > limit else None
     return {"items": items, "next": next_}
 
 
@@ -405,7 +489,11 @@ def list_runs(
 def runs_summary(request: Request, group_by: Literal["state"] = "state") -> dict[str, Any]:
     """Counts by state over all the runs, with no time window (0.0.1: no `since`, `project`)."""
     with read(request) as conn:
-        rows = conn.execute(select(runs.c.state, func.count()).group_by(runs.c.state)).all()
+        rows = conn.execute(
+            select(runs.c.state, func.count())
+            .where(runs.c.deleted_at.is_(None))
+            .group_by(runs.c.state)
+        ).all()
     return {"groups": [{"key": key, "count": n} for key, n in rows]}
 
 
@@ -422,7 +510,7 @@ def server_version(request: Request) -> dict[str, Any]:
         "runs_root": str(settings.runs_root),
         "account": account,
         "executor": settings.executor,
-        "features": {"single_target": settings.features.single_target},  # api §5.9
+        "features": {"single_target": settings.features.single_target},  # api §5.10
     }
 
 
@@ -652,7 +740,9 @@ def list_tasks(
         query = query.where(tasks.c.state.in_(states))
     if process is not None:
         query = query.where(tasks.c.process_or_rule == process)
-    query = _page(query, tasks.c.id, tasks.c.id, cursor, limit, descending=False, timestamp=False)
+    if cursor is not None:  # the task's ID is its sort key: the cursor is that ID
+        query = query.where(tasks.c.id > _decode_id(cursor))
+    query = query.order_by(tasks.c.id).limit(limit + 1)
     with read(request) as conn:
         run = run_row(conn, run_id)
         rows = conn.execute(query).all()

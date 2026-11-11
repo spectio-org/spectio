@@ -10,7 +10,7 @@ export class NotDecoded extends Error {}
 // none, LZW, JPEG, Deflate (both codes), PackBits; old JPEG, LERC, WebImage and the rest refused
 export const ALLOWED = new Set([1, 5, 7, 8, 32946, 32773]);
 
-type Fd = Record<string, unknown>;
+export type Fd = Record<string, unknown>;
 const many = (value: unknown): number[] => (value === undefined ? [] : ArrayBuffer.isView(value) || Array.isArray(value) ? Array.from(value as ArrayLike<number>) : [Number(value)]);
 const num = (fd: Fd, name: string) => Number(fd[name]);
 
@@ -170,10 +170,11 @@ export async function decodeTile(fd: Fd, buffer: ArrayBuffer): Promise<ArrayBuff
   return (await getDecoder(fd)).decode(fd, buffer);
 }
 
-/** The worker's answer to one message of the pool: `{id, decoded}` or `{id, error}`. */
-export async function answer({ id, fileDirectory, buffer }: { id: number; fileDirectory: Fd; buffer: ArrayBuffer }) {
+/** The worker's answer to one message of the pool, `{id, decoded}` or `{id, error}`; `decode`
+ * is decodeTile, or a Zarr chunk's decoder (codecs.ts `reply`). */
+export async function answer({ id, fileDirectory, buffer }: { id: number; fileDirectory: Fd; buffer: ArrayBuffer }, decode: (fd: Fd, buffer: ArrayBuffer) => ArrayBuffer | Promise<ArrayBuffer> = decodeTile) {
   try {
-    const decoded = await decodeTile(fileDirectory, buffer);
+    const decoded = await decode(fileDirectory, buffer);
     return { message: { id, decoded }, transfer: [decoded] };
   } catch (err) {
     return { message: { id, error: err instanceof NotDecoded ? err.message : "the tile could not be decoded" }, transfer: [] };

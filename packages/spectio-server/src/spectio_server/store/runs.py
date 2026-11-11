@@ -11,10 +11,11 @@ from typing import Any
 
 from sqlalchemy import Connection, insert, null, select
 
-from spectio.environments import run_column
+from spectio.environments import DefaultResources, run_column
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import RunManifest, run_paths
 from spectio_sdk.targets import RunTarget
+from spectio_server.api.extras import KeptConfig, column
 from spectio_server.files.results import results_dir
 from spectio_server.ids import new_id
 from spectio_server.store.schema import (
@@ -83,7 +84,7 @@ def _workflow_id(
 
 
 def module_source(target: RunTarget) -> str:
-    """The `workflows.source` of a module run (api §5.9)."""
+    """The `workflows.source` of a module run (api §5.10)."""
     return "module-registry" if target.source == "registry" else "module-local"
 
 
@@ -112,7 +113,7 @@ def insert_run(
     project = first(conn, projects)
     engine = m.workflow.engine
     module = m.target if m.target is not None and m.target.kind == "module" else None
-    if module is not None:  # keyed by the module, not a pipeline location (api §5.9)
+    if module is not None:  # keyed by the module, not a pipeline location (api §5.10)
         source = module_source(module)
     workflow_id = _workflow_id(
         conn, project, source, m.workflow.location, engine, workflow_name, mine
@@ -166,6 +167,8 @@ def insert_run(
             or results_dir(engine, m.run_id, runs_root, launch_dir, m.params, default_outdir),
             environment=run_column(m.environment),
             target=null() if m.target is None else m.target.model_dump(exclude_none=True),
+            default_resources=column(DefaultResources, m.default_resources),
+            config_file=column(KeptConfig, m.config_file),
             **lineage,
             **{**mine, "created_at": m.created_at},
         )

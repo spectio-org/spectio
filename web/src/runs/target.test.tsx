@@ -1,4 +1,4 @@
-// The target of a run as the screens write it (ui-spec §4.15; api §5.9).
+// The target of a run as the screens write it (ui-spec §4.15; api §5.10).
 import { MantineProvider } from "@mantine/core";
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";

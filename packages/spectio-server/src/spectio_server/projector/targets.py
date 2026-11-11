@@ -1,4 +1,4 @@
-"""The target a bridge reports (api §5.9, architecture §13.8; #161), stored on the run.
+"""The target a bridge reports (api §5.10, architecture §13.8; #161), stored on the run.
 
 A run launched from the screens already holds its target: the report adds what only the head
 knows, a registry module's checksum. A run started from a terminal gets the reported target, and
@@ -47,7 +47,7 @@ def capture(p: "Projection", reported: RunTarget | None) -> None:
             )
             .values(key=target.hash)
         )
-        registry = target.source == "registry"  # a local hash differs by origin (§5.9)
+        registry = target.source == "registry"  # a local hash differs by origin (§5.10)
         if registry and _checksum_changed(p.conn, p.run_id, target):
             target = target.model_copy(update={"checksum_changed": True})
     p.conn.execute(
@@ -62,7 +62,7 @@ def _location(target: RunTarget) -> str:
 
 
 def _move(conn: Connection, old_version: str, target: RunTarget) -> None:
-    """Key a terminal module run by its module (api §5.9 Identity): its version row moves to the
+    """Key a terminal module run by its module (api §5.10 Identity): its version row moves to the
     module's workflow; the launch directory's workflow goes when no version is left in it."""
     old = conn.execute(
         select(workflows.c.id, workflows.c.project_id, workflows.c.created_by)

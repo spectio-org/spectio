@@ -2,7 +2,7 @@ import type { RunTarget } from "../api";
 import { CopyButton } from "./CopyMenu";
 import { plural } from "./stateWord";
 
-// The target of a run (ui-spec §4.15; api §5.9): one Nextflow module or one Snakemake rule. The
+// The target of a run (ui-spec §4.15; api §5.10): one Nextflow module or one Snakemake rule. The
 // run header and the runs list write it the same way; null is the whole pipeline.
 
 const FLAG = { target: "", until: " (--until)", allowed_rules: " (--allowed-rules)" };

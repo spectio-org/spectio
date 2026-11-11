@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal, Protocol, TypeVar
 
-from spectio.environments import LocalValues, SlurmValues
+from spectio.environments import DefaultResources, LocalValues, SlurmValues
 from spectio.runner.observed import ObservedRun
 from spectio_sdk.events import SpoolEvent
 from spectio_sdk.targets import RunTarget
@@ -84,6 +84,17 @@ class ResumeSource:
 
 
 @dataclass(frozen=True)
+class ExtraFile:
+    """The run's extra config file (api §5.7): its bytes, kept in `.spectio/` as `kept_as`
+    once they match `sha256`. `text` is None where only the name is needed (the copied
+    command), or once the launch command is answered (`sink.ack`)."""
+
+    kept_as: str
+    sha256: str
+    text: str | None = None
+
+
+@dataclass(frozen=True)
 class LaunchSpec:
     """One launch of a run, as the head script runs it (P1 Task 9, Assumption 13).
 
@@ -91,10 +102,11 @@ class LaunchSpec:
     quoted or written to a file, never read as shell words. `environment` names the run's
     environment, and `slurm` (on the SLURM executor) or `local` (its caps, None for none) are
     its values (FU-P3-86c, api §5.4); `slurm` is None on the local executor. `env` holds extra
-    variables for the engine, set after the login profile.
+    variables for the engine, set after the login profile. `default_resources` and
+    `config_file` are the run's own (api §5.7).
     `launch_dir` holds the launch's `.spectio/`; the engine runs there too, except for a Resume,
     which runs in `resume_of`'s directories. `target` limits the run to one module or one rule
-    (api §5.9); a registry module's `location` is its name, every other one a directory.
+    (api §5.10); a registry module's `location` is its name, every other one a directory.
     """
 
     run_id: str
@@ -114,6 +126,8 @@ class LaunchSpec:
     extra_args: list[str] = field(default_factory=list)
     resume_of: ResumeSource | None = None
     target: RunTarget | None = None
+    default_resources: DefaultResources | None = None
+    config_file: ExtraFile | None = None
 
     @property
     def engine_dir(self) -> Path:

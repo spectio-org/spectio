@@ -269,7 +269,7 @@ def _migrate(engine: Engine) -> bool:
     config.set_main_option("script_location", "spectio_server:migrations")
     with engine.connect() as conn:
         # SQLite changes a table by copying it: with foreign keys on, dropping the old table
-        # breaks the rows that point to it (0012). Off outside the transaction, as SQLite's
+        # breaks the rows that point to it (0015). Off outside the transaction, as SQLite's
         # procedure says (sqlite.org/lang_altertable.html §7), and checked before the commit.
         raw = conn.connection.driver_connection
         assert raw is not None  # noqa: S101 - a live pysqlite connection

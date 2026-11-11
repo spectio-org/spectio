@@ -72,6 +72,14 @@ class LocalValues(_Strict):
     mem_mib: MemMib | None = None
 
 
+class DefaultResources(_Strict):
+    """A run's `default_resources` (api §5.7), in the units of §5.4."""
+
+    cpus: Annotated[int, Field(ge=1, le=256)] | None = None
+    mem_mib: MemMib | None = None
+    time_min: Annotated[int, Field(ge=1, le=43_200)] | None = None
+
+
 class Profiles(_Strict):
     nextflow: ProfileName | None = None
     snakemake: ProfileName | None = None
@@ -204,6 +212,15 @@ def resume_snapshot(column: dict[str, Any] | None, settings: Settings) -> Snapsh
     if env.executor == "local" and settings.executor == "slurm" and not _capped(env.local):
         return env.model_copy(update={"local": LocalValues(**LOCAL_CAPS)})
     return env
+
+
+def check_on_server(env: Snapshot, settings: Settings) -> None:
+    """The runner's own check of a payload's snapshot against its server's kind (defence in
+    depth, SEC-P3FU86BCD-02): raises NotAllowed for SLURM on a server with no SLURM, which
+    `choose()` and `resume_snapshot()` already refuse. A `local` without caps is not refused:
+    a file's environment may have none on a SLURM server (api §5.4)."""
+    if env.executor == "slurm" and settings.executor != "slurm":
+        raise NotAllowed("This run asks for SLURM; this server has no SLURM")
 
 
 def _capped(local: LocalValues | None) -> bool:

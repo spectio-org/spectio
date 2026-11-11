@@ -1,4 +1,4 @@
-// Launch, "What to run" (ui-spec §4.15; api §5.9; #161): one Nextflow module or one Snakemake rule,
+// Launch, "What to run" (ui-spec §4.15; api §5.10; #161): one Nextflow module or one Snakemake rule,
 // offered only when the server says `features.single_target`.
 import { MantineProvider } from "@mantine/core";
 import { render, screen, waitFor, within } from "@testing-library/react";

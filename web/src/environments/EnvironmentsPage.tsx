@@ -148,8 +148,8 @@ export function EnvironmentsPage() {
     );
   const actions = (env: EnvironmentItem) => (
     <div className="sp-actions">
-      {!env.builtin && <Waiting why={why} to={`/environments/${env.name}`} aria-label={`Edit ${env.name}`}>Edit</Waiting>}
-      <Waiting why={why} to={`/environments/new?from=${env.name}`} aria-label={`${duplicateWords(env)} ${env.name}`}>{duplicateWords(env)}</Waiting>
+      {!env.builtin && <Waiting why={why} to={`/environments/${encodeURIComponent(env.name)}`} aria-label={`Edit ${env.name}`}>Edit</Waiting>}
+      <Waiting why={why} to={`/environments/new?from=${encodeURIComponent(env.name)}`} aria-label={`${duplicateWords(env)} ${env.name}`}>{duplicateWords(env)}</Waiting>
       {!env.default && env.usable && (
         <Button variant="default" size="sm" aria-label={`Make default ${env.name}`} onClick={() => !why && promote(env)} {...waits(why)}>
           Make default
@@ -326,7 +326,7 @@ export function EnvironmentPage({ name, from }: { name: string | null; from?: st
           Make default {name}
         </Button>
       )}
-      <Button component={Link} to={`/environments/new?from=${name}`} variant="default" fullWidth>{duplicateWords(item)} {name}</Button>
+      <Button component={Link} to={`/environments/new?from=${encodeURIComponent(name)}`} variant="default" fullWidth>{duplicateWords(item)} {name}</Button>
       {!item.builtin && <Button variant="light" color="red" fullWidth onClick={() => setAsking(true)}>Delete {name}</Button>}
       {moreError && <p role="alert" className="sp-note sp-alert">{moreError}</p>}
       <DeleteAsk env={asking ? item : null} onClose={() => setAsking(false)} onDeleted={() => toList(`Deleted ${name}`, null)} onReload={reload} />
@@ -335,7 +335,7 @@ export function EnvironmentPage({ name, from }: { name: string | null; from?: st
   return (
     <div className="sp-page">
       <PageHead section="environments" title={name ? label(item!) : "New environment"} sub="The executor and its defaults, saved under a name you choose at Launch" />
-      {builtin && !phone && <Button component={Link} to={`/environments/new?from=${name}`} variant="default" aria-label={`Duplicate to edit ${name}`}>Duplicate to edit</Button>}
+      {builtin && !phone && <Button component={Link} to={`/environments/new?from=${encodeURIComponent(name)}`} variant="default" aria-label={`Duplicate to edit ${name}`}>Duplicate to edit</Button>}
       <EnvironmentForm
         key={`${round}:${item?.etag ?? ""}`}
         initial={initial}

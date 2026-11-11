@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -729,6 +730,32 @@ def test_stale_engine_versions_return_at_once_and_refresh_in_the_background(
     spawned.pop()()
     assert sorted(checks) == ["nextflow", "snakemake"]
     assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"} and spawned == []
+
+
+def test_engine_version_check_never_holds_the_process_exit() -> None:
+    """`spectio serve` stopped by SIGTERM while a check runs (a JVM or a login shell under load)
+    exits at once: the checks run on daemon threads, which the interpreter does not join, where
+    a ThreadPoolExecutor's workers held the exit until the check ended
+    (`test_sigterm_stops_cleanly`, FU-P3-108c)."""
+    script = (
+        "import sys, time\n"
+        "from spectio_server.api import workflows as wf\n"
+        "wf.EngineVersions._one = lambda self, e: (print(e, flush=True), time.sleep(60))\n"
+        "wf.EngineVersions(None).warm()\n"
+        "sys.stdin.readline()\n"  # the parent saw both checks start
+    )
+    proc = subprocess.Popen(
+        [sys.executable, "-c", script], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
+    )
+    try:
+        assert proc.stdout is not None and proc.stdin is not None
+        assert sorted(proc.stdout.readline().strip() for _ in range(2)) == ["nextflow", "snakemake"]
+        proc.stdin.write("\n")
+        proc.stdin.flush()
+        assert proc.wait(10) == 0
+    finally:
+        proc.kill()
+        proc.wait()
 
 
 def test_a_failed_engine_check_is_kept_only_briefly(

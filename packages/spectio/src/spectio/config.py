@@ -129,7 +129,7 @@ class RunnerOpts(_Model):
 
 class FeatureOpts(_Model):
     """Features behind a flag (dev-env §15.1). `single_target`: runs that target one module or
-    one rule (api §5.9); `module_namespaces`: the registry namespaces such a run may use."""
+    one rule (api §5.10); `module_namespaces`: the registry namespaces such a run may use."""
 
     single_target: bool = False
     module_namespaces: list[Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")]] = [

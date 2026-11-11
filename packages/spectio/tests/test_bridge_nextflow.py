@@ -699,7 +699,7 @@ def test_loose_spectio_home_no_pointer(
     assert "no pointer written" in (launch_dir / ".spectio" / "bridge.err").read_text()
 
 
-# --- Run targets: `nextflow module run` (api §5.9, architecture §13.8; #161) ----------------
+# --- Run targets: `nextflow module run` (api §5.10, architecture §13.8; #161) ----------------
 
 MODULE = REPO / "tests" / "pipelines" / "synthetic" / "modules" / "synth_stats"
 TARGET_SCRIPT = """

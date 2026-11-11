@@ -44,8 +44,12 @@ export interface LaunchBody {
   /** An environment's name (api §5.4); absent: the server's default. */
   environment?: string;
   params: Record<string, unknown>;
-  /** One module or one rule (api §5.9, 0.0.2); absent: the whole pipeline. */
+  /** One module or one rule (api §5.10, 0.0.2); absent: the whole pipeline. */
   target?: TargetIn;
+  /** Schema `DefaultResources` (api §5.7): only the keys set; absent changes nothing. */
+  default_resources?: { cpus?: number; mem_mib?: number; time_min?: number };
+  /** The absolute path of an extra config file, read once by the server at this launch (api §5.7). */
+  config_file?: string;
 }
 
 export interface Launched {
@@ -61,7 +65,7 @@ export interface ServerVersion {
   runs_root: string;
   account: string;
   executor: string;
-  /** Feature flags of this server (api §5.9): the launch parts of single targets show only when on. */
+  /** Feature flags of this server (api §5.10): the launch parts of single targets show only when on. */
   features: Features;
 }
 
@@ -70,7 +74,7 @@ export interface Features {
   single_target: boolean;
 }
 
-/** Schema `RunTarget` (api §5.9): what a run was limited to; null on a run is the whole pipeline. */
+/** Schema `RunTarget` (api §5.10): what a run was limited to; null on a run is the whole pipeline. */
 export interface RunTarget {
   kind: "module" | "rule" | "file";
   name: string;
@@ -83,7 +87,7 @@ export interface RunTarget {
   checksum_changed: boolean | null;
 }
 
-/** `target` in the body of `POST /runs` (api §5.9); the server fills the rest. */
+/** `target` in the body of `POST /runs` (api §5.10); the server fills the rest. */
 export interface TargetIn {
   kind: "module" | "rule";
   name?: string | null;
@@ -97,7 +101,7 @@ export interface ModuleInput {
   description: string;
 }
 
-/** `POST /api/v1/targets:inspect` (api §5.9): a module's inputs, or a pipeline's rules. */
+/** `POST /api/v1/targets:inspect` (api §5.10): a module's inputs, or a pipeline's rules. */
 export type TargetInspected =
   | {
       kind: "module";
@@ -113,6 +117,14 @@ export type TargetInspected =
       plan: { jobs: Record<string, number>; total: number } | null;
       error?: string;
     };
+
+/** `GET /api/v1/me` in 0.0.1 (schema `Me`, api §5.8): paths only, never a secret. */
+export interface Me {
+  principal: { user: string; uid: number };
+  /** `expires_at` null: the session ends when the server stops. */
+  session: { started_at: string | null; expires_at: string | null };
+  paths: { config_file: string; data_dir: string; db_dir: string; observed_dir: string };
+}
 
 /** api §7.1 (schema `Run.state`). */
 export type RunState =
@@ -168,10 +180,12 @@ export interface Run {
     version: string | null;
   };
   profiles: string[];
-  /** One module or one rule; null for the whole pipeline (api §5.9). */
+  /** One module or one rule; null for the whole pipeline (api §5.10). */
   target?: RunTarget | null;
   /** Null for a run started from a terminal; read by the run's facts and Resume (FU-P3-86g). */
   environment?: RunEnvironment | null;
+  /** First in every sort of the runs list but `-ended_at` (api §5, FU-P3-115a). */
+  pinned?: boolean;
   failure: { [key: string]: Json } | null;
   /** `checked` false: a run started from a terminal on another host or boot, whose head the
    * server cannot see (architecture §13.8). */
@@ -217,6 +231,28 @@ export interface RunDetail extends Run {
    * P1 Task 31). */
   results_dir: string | null;
   engine_settings?: EngineSettings;
+  /** The launch's default resources and extra config file as recorded; null when the launch set
+   * none (FU-P3-110a, api §5.7). */
+  default_resources: RunDefaultResources | null;
+  config_file: RunConfigFile | null;
+}
+
+/** Schema `RunDefaultResources` (api §5.7): its fields are null unless `state` is `recorded`. */
+export interface RunDefaultResources {
+  cpus: number | null;
+  mem_mib: number | null;
+  time_min: number | null;
+  state: "recorded" | "not_readable";
+}
+
+/** Schema `RunConfigFile` (api §5.7): what a run keeps of its extra config file. */
+export interface RunConfigFile {
+  path: string | null;
+  kept_as: "extra.config" | "extra.yaml" | "extra.json" | null;
+  sha256: string | null;
+  size: number | null;
+  includes: boolean | null;
+  state: "recorded" | "not_readable";
 }
 
 /** Schema `ResultEntry`: one item of a results folder. */
@@ -277,8 +313,11 @@ export interface LaunchTemplate {
   environment: string;
   /** Why the default is chosen instead of the run's environment. */
   environment_notice: string | null;
-  /** The run's target, kept by the copy (api §5.9). */
+  /** The run's target, kept by the copy (api §5.10). */
   target?: TargetIn | null;
+  /** As recorded, and the extra config file's path (FU-P3-110a, api §5.7). */
+  default_resources: { [key: string]: number | null } | null;
+  config_file: string | null;
 }
 
 /** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */
@@ -520,6 +559,10 @@ export function getVersion(signal?: AbortSignal): Promise<ServerVersion> {
   return call("/version", { signal });
 }
 
+export const getMe = (): Promise<Me> => call("/me");
+/** Ends this session only (api §5.8); the cookie is cleared. */
+export const signOut = (): Promise<null> => call("/auth/session:sign-out", { method: "POST" });
+
 export function inspect(
   location: string,
   revision: string | null,
@@ -542,18 +585,42 @@ const query = (params: Record<string, string | number | null | undefined>) => {
 };
 const run = (id: string) => `/runs/${encodeURIComponent(id)}`;
 
+/** `GET /runs` `sort=` (api §5, note of 2026-11-10): a key, `-` for descending. */
+export type RunsSort =
+  | "-created_at"
+  | "-ended_at"
+  | `${"" | "-"}${"name" | "state" | "started_at" | "duration"}`;
+
 export interface RunsQuery {
   state?: string;
-  /** `any`: runs that target one module or rule; `none`: whole-pipeline runs (api §5.9). */
+  /** `any`: runs that target one module or rule; `none`: whole-pipeline runs (api §5.10). */
   target?: "any" | "none";
   q?: string;
-  sort?: "-created_at" | "-ended_at";
+  sort?: RunsSort;
   limit?: number;
   cursor?: string | null;
 }
 
 export function listRuns(params: RunsQuery, signal?: AbortSignal): Promise<Page<Run>> {
   return call(`/runs${query({ ...params })}`, { signal });
+}
+
+/** `POST /runs:delete`: soft deletes ended runs, all or none; `directories` also removes each
+ * run's own directory (api §5, note of 2026-11-10). */
+export function deleteRuns(
+  ids: string[],
+  directories: boolean,
+): Promise<{ deleted: string[]; directories: { id: string; result: "removed" | "missing" | "failed" }[] }> {
+  return call("/runs:delete", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ids, directories }),
+  });
+}
+
+/** `PATCH /runs/{id}` `{pinned}`: answers the run as `GET /runs/{id}`. */
+export function setPinned(id: string, pinned: boolean): Promise<RunDetail> {
+  return call(run(id), { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ pinned }) });
 }
 
 export function runsSummary(signal?: AbortSignal): Promise<Summary> {
@@ -706,6 +773,18 @@ export function inspectTarget(
   });
 }
 
+/** The run's kept extra config file (`GET /runs/{id}/config-file`, api §5.7), with its `ETag`, the
+ * SHA-256 of the bytes served, unquoted. A refusal is an ApiError with its status (404, 503). */
+export async function getConfigFile(id: string, signal?: AbortSignal): Promise<{ text: string; sha256: string | null }> {
+  const response = await fetch(`${API}${run(id)}/config-file`, { signal });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body?.detail ?? body?.title ?? `HTTP ${response.status}`);
+  }
+  const etag = response.headers.get("etag");
+  return { text: await response.text(), sha256: etag ? etag.replace(/^(W\/)?"|"$/g, "") : null };
+}
+
 export function launch(body: LaunchBody): Promise<Launched> {
   return call("/runs", {
     method: "POST",
@@ -780,3 +859,24 @@ export const replaceCatalogEntry = (body: CatalogBody, etag: string): Promise<Ca
   call(entry(body.name), sendJson("PUT", body, etag));
 export const deleteCatalogEntry = (name: string, etag: string): Promise<null> =>
   call(entry(name), { method: "DELETE", headers: { "if-match": etag } });
+
+export type NotificationKind = "run_succeeded" | "run_failed" | "run_cancelled" | "gate_waiting";
+/** Schema `Notification` (api §5.9): derived from a run in 0.0.1. */
+export interface Notification {
+  id: string;
+  kind: NotificationKind;
+  run_id: string;
+  run_name: string | null;
+  at: string;
+  read: boolean;
+}
+/** Schema `Notifications`: newest first, at most 50; `unread` counts them all. */
+export interface Notifications {
+  items: Notification[];
+  unread: number;
+  read_up_to: string | null;
+}
+export const listNotifications = (signal?: AbortSignal): Promise<Notifications> => call("/me/notifications", { signal });
+/** Marks every item up to `upTo` read (api §5.10); answers the list as `GET` does. */
+export const markNotificationsRead = (upTo: string): Promise<Notifications> =>
+  call("/me/notifications:mark-read", sendJson("POST", { up_to: upTo }));

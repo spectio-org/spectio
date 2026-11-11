@@ -625,6 +625,22 @@ media:
       - docs/assets/diagrams/p3-b13-catalog-zarr-grid_dark.svg
       - docs/assets/diagrams/p3-b13-catalog-zarr-grid_light.png
       - docs/assets/diagrams/p3-b13-catalog-zarr-grid_dark.png
+  - id: p3-b14-catalog-viewer-pages
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b14_catalog_viewer_pages.py
+    outputs:
+      - docs/assets/diagrams/p3-b14-catalog-viewer-pages_light.svg
+      - docs/assets/diagrams/p3-b14-catalog-viewer-pages_dark.svg
+      - docs/assets/diagrams/p3-b14-catalog-viewer-pages_light.png
+      - docs/assets/diagrams/p3-b14-catalog-viewer-pages_dark.png
+  - id: p3-b15-resources-bell-runs-codecs
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b15_resources_bell_runs_codecs.py
+    outputs:
+      - docs/assets/diagrams/p3-b15-resources-bell-runs-codecs_light.svg
+      - docs/assets/diagrams/p3-b15-resources-bell-runs-codecs_dark.svg
+      - docs/assets/diagrams/p3-b15-resources-bell-runs-codecs_light.png
+      - docs/assets/diagrams/p3-b15-resources-bell-runs-codecs_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
@@ -899,6 +915,76 @@ media:
     # a seeded run record whose launch directory holds a .nextflow.log: the Summary's engine log lines and Open the full engine log, at 1440 x 900; the facts are empty because no head ran (FU-P3-88a)
     generator: python3 tools/media/b13_demo.py --shot app-run-engine-log
     outputs: [docs/assets/shots/app-run-engine-log_light.webp, docs/assets/shots/app-run-engine-log_dark.webp]
+  - id: app-catalog
+    kind: screenshot
+    # the Catalog page on a seeded server: one card per saved pipeline (three: rnaseq-test, nf-core-rnaseq, liver-qc) with Edit and Delete, and Add pipeline, at 1440 x 900 (FU-P3-87d)
+    generator: python3 tools/media/b14_demo.py --shot app-catalog
+    outputs: [docs/assets/shots/app-catalog_light.webp, docs/assets/shots/app-catalog_dark.webp]
+  - id: app-catalog-entry
+    kind: screenshot
+    # the entry form of one saved entry (/catalog/rnaseq-test): name, label, engine, location, profile and params file, at 1440 x 900 (FU-P3-87d)
+    generator: python3 tools/media/b14_demo.py --shot app-catalog-entry
+    outputs: [docs/assets/shots/app-catalog-entry_light.webp, docs/assets/shots/app-catalog-entry_dark.webp]
+  - id: app-environments-table
+    kind: screenshot
+    # Environments as a table (?view=table): the kind icon, the built-in local and two seeded environments, the actions named per row, Duplicate to edit on the built-in, at 1440 x 900 (FU-P3-111)
+    generator: python3 tools/media/b14_demo.py --shot app-environments-table
+    outputs: [docs/assets/shots/app-environments-table_light.webp, docs/assets/shots/app-environments-table_dark.webp]
+  - id: app-environment-duplicate
+    kind: screenshot
+    # the form of a duplicate of the built-in local environment (/environments/new?from=local), filled in with a unique name, at 1440 x 900 (FU-P3-111)
+    generator: python3 tools/media/b14_demo.py --shot app-environment-duplicate
+    outputs: [docs/assets/shots/app-environment-duplicate_light.webp, docs/assets/shots/app-environment-duplicate_dark.webp]
+  - id: app-file-preview-ome-tiff
+    kind: screenshot
+    # results/imaging/cells.ome.tif (a hand-written tiled uncompressed OME-TIFF, three 16-bit channels DAPI, GFP, Actin) in the Viv viewer with the channel list; the breadcrumb ends with the file name; headless Chromium with its software WebGL 2, at 1440 x 1000 (FU-P3-102e, -102f, -104)
+    generator: python3 tools/media/b14_demo.py --shot app-file-preview-ome-tiff
+    outputs: [docs/assets/shots/app-file-preview-ome-tiff_light.webp, docs/assets/shots/app-file-preview-ome-tiff_dark.webp]
+  - id: app-profile
+    kind: screenshot
+    # the Profile page reached from the avatar on a seeded server run as alice (the UID reads 0: the demo patches the name, not the number), opened from the avatar (a direct visit is a 404, DW-P3B14-01), at 1440 x 900 (FU-P3-112)
+    generator: python3 tools/media/b14_demo.py --shot app-profile
+    outputs: [docs/assets/shots/app-profile_light.webp, docs/assets/shots/app-profile_dark.webp]
+  - id: app-profile-phone
+    kind: screenshot
+    # the Profile page at 390 x 844, opened from the avatar, the cards stacked and Sign out of this session full width (FU-P3-112)
+    generator: python3 tools/media/b14_demo.py --shot app-profile-phone
+    outputs: [docs/assets/shots/app-profile-phone_light.webp, docs/assets/shots/app-profile-phone_dark.webp]
+  - id: app-search
+    kind: screenshot
+    # the search dialog opened from the top bar with "rna" typed, on a seeded server: five runs by name prefix and two catalog pipelines, each result a button, at 1440 x 900 (FU-P3-89)
+    generator: python3 tools/media/b15_demo.py --shot app-search
+    outputs: [docs/assets/shots/app-search_light.webp, docs/assets/shots/app-search_dark.webp]
+  - id: app-notifications
+    kind: screenshot
+    # the notifications panel behind the bell, "Notifications, 6 unread": one item per ended run, Mark all as read, at 1440 x 900 (FU-P3-113)
+    generator: python3 tools/media/b15_demo.py --shot app-notifications
+    outputs: [docs/assets/shots/app-notifications_light.webp, docs/assets/shots/app-notifications_dark.webp]
+  - id: app-runs-actions
+    kind: screenshot
+    # the runs table with two rows selected: the bulk bar with Delete... and Clear selection, a pinned run first, a sort icon on Run, State, Started and Duration, at 1440 x 900 (FU-P3-115b, -116, -119)
+    generator: python3 tools/media/b15_demo.py --shot app-runs-actions
+    outputs: [docs/assets/shots/app-runs-actions_light.webp, docs/assets/shots/app-runs-actions_dark.webp]
+  - id: app-runs-delete
+    kind: screenshot
+    # the Delete sheet for two selected runs (a failed and a cancelled one): the list, "Spectio forgets these runs", the box Also delete their run directories off, at 1440 x 900 (FU-P3-115b)
+    generator: python3 tools/media/b15_demo.py --shot app-runs-delete
+    outputs: [docs/assets/shots/app-runs-delete_light.webp, docs/assets/shots/app-runs-delete_dark.webp]
+  - id: app-launch-resources
+    kind: screenshot
+    # Launch from a catalog entry with Resources (2 CPUs, 3 GiB, 1 h per task, in a Two cores environment capped at 2 CPUs and 4 GiB) and Extra config file opened, a path typed, the Summary beside them, at 1440 x 1500 (FU-P3-110d)
+    generator: python3 tools/media/b15_demo.py --shot app-launch-resources
+    outputs: [docs/assets/shots/app-launch-resources_light.webp, docs/assets/shots/app-launch-resources_dark.webp]
+  - id: app-run-resources
+    kind: screenshot
+    # a finished run's facts with Default resources (8 CPUs, 64 GiB, 12 h per task) and Extra config file (path, kept as extra.config, 167 B, SHA-256 start, View and Copy SHA-256), seeded by hand, at 1440 x 700 (FU-P3-110d)
+    generator: python3 tools/media/b15_demo.py --shot app-run-resources
+    outputs: [docs/assets/shots/app-run-resources_light.webp, docs/assets/shots/app-run-resources_dark.webp]
+  - id: app-run-config-file
+    kind: screenshot
+    # View extra.config opened in its sheet: the path and size, the kept copy as text, at 1440 x 800 (FU-P3-110d)
+    generator: python3 tools/media/b15_demo.py --shot app-run-config-file
+    outputs: [docs/assets/shots/app-run-config-file_light.webp, docs/assets/shots/app-run-config-file_dark.webp]
   - id: app-workdir
     kind: screenshot
     # live, the COMPARE (treatA_vs_ctrl) task's work directory at 1440 x 1000, with SPECTIO_DEMO_TASK its task ID: the same explorer on a second root (batch P3-B09, FU-P3-85e)

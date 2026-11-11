@@ -24,6 +24,7 @@ import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { FoldSection } from "../shell/FoldSection";
 import { usePhone } from "../shell/layout";
+import { useAccountingReads } from "./accounting";
 import { CopyButton } from "./CopyMenu";
 import { type Detail, DetailSheet } from "./DetailSheet";
 import { taskSearch } from "./explorer";
@@ -1137,6 +1138,7 @@ export function RunDetailPage({ id }: { id: string }) {
   }, [id, valid]);
   useEffect(load, [load]);
   useFrames(load, id, valid && !(run && isTerminal(run.state)));
+  useAccountingReads(load, id, !!run && isTerminal(run.state), processes); // sacct lands after the end (FU-P3-119)
 
   const name = run ? runName(run) : null;
   usePageCrumb(name);
@@ -1208,6 +1210,7 @@ export function RunDetailPage({ id }: { id: string }) {
         onCancel={() => setAsking(true)}
         cancelError={cancelError}
         onChip={showTasks}
+        onRun={setRun}
       />
       {sheetLost && <p role="status">This job's sheet could not be reopened.</p>}
       <DetailSheet

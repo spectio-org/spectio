@@ -330,7 +330,7 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
         universe, stages, source, checkpoints = names, [], None, []
         note = "The stage sources were not read in time (the file system did not answer)."
     target = target_of(p.conn, p.run_id)
-    if target is not None:  # one module or one rule: no stages, no gates (api §5.9)
+    if target is not None:  # one module or one rule: no stages, no gates (api §5.10)
         stages, source, note = [], None, stages_note(target)
     for n, stage in enumerate(stages, 1):
         p.conn.execute(

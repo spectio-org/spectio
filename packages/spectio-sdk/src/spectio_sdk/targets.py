@@ -1,4 +1,4 @@
-"""A run's target: one Nextflow module or one Snakemake rule (api-and-data-model.md §5.9).
+"""A run's target: one Nextflow module or one Snakemake rule (api-and-data-model.md §5.10).
 
 `None` is the whole pipeline. The same model is what the launch stores, what the bridges report
 in `onFlowCreate` / `workflow_started` (§14.1), and what `runs.target` holds (§7).
@@ -9,7 +9,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, ValidationError
 
-# Launch grammars (§5.9): a registry module, its pinned version, and a Snakemake rule.
+# Launch grammars (§5.10): a registry module, its pinned version, and a Snakemake rule.
 REGISTRY_NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}/[a-z0-9][a-z0-9_.-]{0,127}")
 VERSION = re.compile(r"[0-9A-Za-z][0-9A-Za-z._+-]{0,63}")
 RULE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,127}")
@@ -56,7 +56,7 @@ def reported(value: Any) -> RunTarget | None:
 
 
 def stages_note(target: RunTarget) -> str:
-    """The run detail's note for a target run, which has no stages (§5.9)."""
+    """The run detail's note for a target run, which has no stages (§5.10)."""
     if target.kind == "module":
         return "This run targets one module"
     return f"This run targets rule {target.name}"
