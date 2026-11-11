@@ -53,7 +53,7 @@ export function EnvironmentRow(props: Props) {
   const dialogs = phone ? (
     <Drawer {...dialog} position="bottom" size="100%" classNames={{ content: "sp-bottom-sheet", title: "sp-sheet-title" }}>{form}</Drawer>
   ) : (
-    <Modal {...dialog} size="lg" centered>{form}</Modal>
+    <Modal {...dialog} size="lg" centered classNames={{ title: "sp-sheet-title" }}>{form}</Modal>
   );
   // One tree whatever the list's state: the dialog keeps its place, and its values, while the list
   // reloads or fails to (ui-spec §4.8.1 Reload, CR-P3FU86G-03).
@@ -72,7 +72,7 @@ function Choice({ list, failed, chosen, onChoose, onRetry, error, onAdd }: Props
     return (
       <div className="launch-env-state">
         <p className="sp-alert">Environments could not be read</p>
-        <Button variant="default" size="xs" onClick={onRetry}>Retry</Button>
+        <Button variant="default" onClick={onRetry}>Retry</Button>
         <p className="sp-muted">The server's default environment will be used</p>
       </div>
     );

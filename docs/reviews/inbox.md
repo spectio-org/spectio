@@ -2354,3 +2354,12 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
     - **Batch 6, sweep and proof:** 19 the CSS sweep, raw px to tokens, one file per part (`runs.css` in two or three parts); 20 the visual-regression shot set of [ui-spec §12.15](../specs/ui-spec.md#1215-verification) and the CSS lint test. The spec part of task 20 is this step.
 - **Why a question:** it sets the look of every 0.0.1 screen and adds six batches before the 0.0.1 release; Thomas can change any choice before the batch it names.
 - **Assumed (2026-11-11, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a), (2a), (3a), (4a), (5a).
+
+### #154 · Assumed: one §12.7 card head for every fold card, Launch included (FU-P3-123, 2026-11-11)
+
+- **Covers:** CR-P3UI13-01 (review of P3-ui13, UI-13): the Launch cards (Pipeline, Where it runs, Parameters, the params preview) keep `FoldSection`'s head, so they lack the §12.7 head ([ui-spec §12.7](../specs/ui-spec.md#127-card)): 44 px, an h3 title, a meta line, and the chevron as its own `ActionIcon`. `launch.css` only sets their titles to 16/600.
+- **Context.** `CardHead` (`web/src/shell/CardHead.tsx`, UI-03) is the §12.7 head, but no page renders it yet: Home, Run detail, Results and Launch all fold through `FoldSection` (`web/src/shell/FoldSection.tsx`), whose head is one `<h2><button>` with the tile, title, summary and status inside it, and which remembers open state per screen. CR-P3UI03-03 left open which head the cards migrate to. Moving Launch alone would make it the one page whose cards differ from the others'.
+- **Open choices, each with the recommendation (assumed):**
+  1. (a) one follow-up, FU-P3-123, that gives `FoldSection` the §12.7 head (or makes it render `CardHead`) for every fold card at once, keeping the section ids, `reveal` and the remembered state, and moves the tests to the title-named chevron; (b) Launch alone now, the other pages later. **(a)**: one change keeps every page's cards alike and settles CR-P3UI03-03.
+- **Build plan:** FU-P3-123 as one P3 task in batch 6 (the CSS sweep, task 19), before the visual-regression shots of task 20.
+- **Assumed (2026-11-11, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a).

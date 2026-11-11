@@ -284,6 +284,13 @@ test("FU-P3-115b: the Delete sheet lists the runs and sends directories only whe
   expect(sheet).toHaveAttribute("aria-modal", "true");
   expect(within(sheet).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["sarek-c · Failed", "atac-d · Succeeded"]);
   expect(within(sheet).getByRole("checkbox", { name: "Also delete their run directories" })).not.toBeChecked();
+  // the dialog footer of ui-spec §12.4 (UI-18): Cancel then the confirm, in the theme's failed colour
+  const foot = sheet.querySelector(".sp-dialog-foot")!;
+  expect(within(foot as HTMLElement).getAllByRole("button").map((b) => b.textContent)).toEqual(["Cancel", "Delete"]);
+  const confirm = within(sheet).getByRole("button", { name: "Delete" });
+  expect(confirm.getAttribute("style")).toContain("--mantine-color-failed");
+  expect(confirm.getAttribute("style")).not.toContain("--mantine-color-red");
+  expect(opener.getAttribute("style") ?? "").not.toContain("--mantine-color-red");
   await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(bodies).toEqual([{ ids: [failed.id, done.id], directories: false }]));
   expect(await screen.findByText("2 runs deleted")).toBeInTheDocument();
