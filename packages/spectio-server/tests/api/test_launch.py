@@ -784,7 +784,7 @@ def test_inspect_error_quotes_no_file_content(authed_client: TestClient, tmp_pat
     (root / "Snakefile").write_text("rule all:\n    input: []\n")
     (root / "config" / "config.yaml").write_text('token: "hunter2\n')
     response = authed_client.get(INSPECT, params={"location": str(root)})
-    assert response.status_code == 422 and "not YAML" in response.text
+    assert response.status_code == 422 and "not JSON or YAML" in response.text
     assert "hunter2" not in response.text
 
 
@@ -796,7 +796,10 @@ def test_inspect_error_quotes_no_file_content(authed_client: TestClient, tmp_pat
         ("a: !!int ''\n", "a value this server does not read"),
         ("a: !!float '_'\n", "a value this server does not read"),
         ('a: "\\ud800"\n', "a string escape that is not Unicode text"),
-        ("a: !!int TOKEN-abc123\n", "not YAML"),  # int()'s message quotes the value
+        (
+            "a: !!int TOKEN-abc123\n",
+            "not JSON or YAML this server reads",
+        ),  # int()'s message quotes the value
     ],
 )
 def test_inspect_refuses_bad_values_with_a_422(
@@ -826,14 +829,22 @@ def test_inspect_refuses_a_lone_surrogate_in_a_json_schema(
 
 
 def test_large_config_gives_no_form_but_launches(authed_client: TestClient, tmp_path: Path) -> None:
-    """CR-161S5-01, SEC-161S5-06: a config.yaml over 256 KiB infers no form, as with no
-    config; a schema that large is still refused."""
+    """CR-161S5-01, CR-161S6-01, -02: a config.yaml over 256 KiB, over 1 MiB, or past the token
+    budget infers no form, as with no config, and the pipeline launches; a schema that large
+    is still refused."""
     root = tmp_path / "pipe"
     (root / "config").mkdir(parents=True)
     (root / "Snakefile").write_text("rule all:\n    input: []\n")
-    (root / "config" / "config.yaml").write_text("".join(f"k{i}: {i}\n" for i in range(30000)))
-    body = authed_client.get(INSPECT, params={"location": str(root)}).json()
-    assert body["schema_source"] == "none" and body["engine"] == "snakemake"
+    config = root / "config" / "config.yaml"
+    for text in (
+        "".join(f"k{i}: {i}\n" for i in range(30000)),  # about 290 KiB
+        "# padding\n" * 120000,  # about 1.2 MiB
+        "samples: [" + "1," * 100000 + "1]\n",  # 200 KiB, past the token budget
+    ):
+        config.write_text(text)
+        body = authed_client.get(INSPECT, params={"location": str(root)}).json()
+        assert body["schema_source"] == "none" and body["engine"] == "snakemake"
+    assert launch(authed_client, str(root), "snakemake").status_code == 201
     (root / "config.schema.yaml").write_text("# padding\n" * 30000)
     response = authed_client.get(INSPECT, params={"location": str(root)})
     assert response.status_code == 422
@@ -844,9 +855,9 @@ def test_token_budget_bounds_deep_bursts(authed_client: TestClient, tmp_path: Pa
     """SEC-161S5-04: 63-deep flow bursts up to 256 KiB stop at the token budget, fast."""
     burst = "[" * 63 + "1" + "]" * 63
     root = tmp_path / "pipe"
-    (root / "config").mkdir(parents=True)
+    root.mkdir()
     (root / "Snakefile").write_text("rule all:\n    input: []\n")
-    (root / "config" / "config.yaml").write_text(f"- {burst}\n" * 1900)
+    (root / "config.schema.yaml").write_text(f"- {burst}\n" * 1900)
     start = time.monotonic()
     response = authed_client.get(INSPECT, params={"location": str(root)})
     assert time.monotonic() - start < 4

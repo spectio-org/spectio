@@ -174,16 +174,14 @@ def _module_files(location: str) -> tuple[Path, bytes, Any]:
     except Invalid as exc:
         raise exc.under("workflow") from None
     try:
-        main, meta = _read(directory, "main.nf"), _read(directory, "meta.yml")
+        main = _read(directory, "main.nf", cap=MAX_MODULE_FILE)  # req. 21
+        meta = _read(directory, "meta.yml", cap=MAX_MODULE_FILE)
     except UnicodeDecodeError:  # its message quotes the file's bytes (SEC-161S2-05)
         raise Invalid("workflow.location", "main.nf or meta.yml is not UTF-8 text") from None
     except (OSError, ValueError) as exc:
         raise Invalid("workflow.location", str(exc)) from None
     if main is None or meta is None:
         raise Invalid("workflow.location", "main.nf or meta.yml is missing or not a regular file")
-    for name, text in (("main.nf", main), ("meta.yml", meta)):  # req. 21
-        if len(text.encode()) > MAX_MODULE_FILE:
-            raise Invalid("workflow.location", f"{name} is larger than {MAX_MODULE_FILE} bytes")
     try:
         return directory, main.encode(), load_yaml(meta)
     except (ValueError, TypeError, RecursionError, yaml.YAMLError):

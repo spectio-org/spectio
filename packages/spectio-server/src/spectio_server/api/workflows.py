@@ -59,7 +59,7 @@ ENTRY_FILES: dict[str, tuple[str, ...]] = {
     "snakemake": ("Snakefile", "workflow/Snakefile"),
 }
 SMK_SCHEMAS = ("config.schema.yaml", "workflow/schemas/config.schema.yaml")
-MAX_FILE = 1048576  # a file inspect reads: nextflow.config, nextflow_schema.json, config.yaml
+MAX_FILE = 1048576  # a file inspect reads: nextflow.config, nextflow_schema.json
 MAX_PARAMS_FILE = 256 * 1024  # a catalog entry's params file (api §5.6, SEC-PRE-FU87-07)
 MAX_DEPTH = 32  # of the params (FU-P3-17), sent or read from a params file
 NO_ALIASES = "YAML aliases are not read"
@@ -71,6 +71,11 @@ MAX_TOKENS = 131_072  # YAML tokens in one file: about 2 s of pure-Python PyYAML
 class Unreadable(ValueError):
     """A refusal in the server's own words, which quote no file content: shown as it is
     (SEC-161S5-03). Any other error of a parser or constructor may quote the file."""
+
+
+class TooLarge(Unreadable):
+    """A file past a size or token bound: an optional file such as `config/config.yaml` is
+    then left out rather than refused (CR-161S6-01, -02)."""
 
 
 SchemaSource = Literal["nextflow_schema.json", "config.schema.yaml", "inferred", "none"]
@@ -265,7 +270,7 @@ def _read(root: Path, *parts: str, cap: int = MAX_FILE) -> str | None:
         except OSError as exc:  # an I/O error after the open (FU-P3-17)
             raise Unreadable(f"{parts[-1]} cannot be read: {exc.strerror}") from None
     if len(raw) > cap:
-        raise Unreadable(f"{parts[-1]} is larger than {cap} bytes")
+        raise TooLarge(f"{parts[-1]} is larger than {cap} bytes")
     return raw.decode()
 
 
@@ -354,7 +359,7 @@ class _Loader(yaml.SafeLoader):
 
     def fetch_more_tokens(self) -> None:
         if self.tokens_taken > MAX_TOKENS:
-            raise Unreadable(f"more than {MAX_TOKENS} YAML tokens")
+            raise TooLarge(f"more than {MAX_TOKENS} YAML tokens")
         super().fetch_more_tokens()
 
     def fetch_flow_collection_start(self, TokenClass: Any) -> None:
@@ -482,14 +487,17 @@ def schema_of(root: Path) -> tuple[dict[str, Any] | None, SchemaSource]:
         text = _read(root, *rel.split("/"), cap=MAX_YAML)
         if text is not None:
             return _object(load_yaml(text), rel), "config.schema.yaml"
-    text = _read(root, "config", "config.yaml")
-    # past MAX_YAML no form is inferred, as with no config: it only gives the form's defaults,
-    # so the pipeline still launches (CR-161S5-01, SEC-161S5-06)
-    if text is not None and len(text.encode()) <= MAX_YAML:
-        config = _object(load_yaml(text), "config/config.yaml")
-        props = {str(k): _type(v) for k, v in config.items()}
-        return {"type": "object", "properties": props}, "inferred"
-    return None, "none"
+    # past MAX_YAML or MAX_TOKENS no form is inferred, as with no config: it only gives the
+    # form's defaults, so the pipeline still launches (CR-161S5-01, CR-161S6-01, -02)
+    try:
+        text = _read(root, "config", "config.yaml", cap=MAX_YAML)
+        config = None if text is None else _object(load_yaml(text), "config/config.yaml")
+    except TooLarge:
+        config = None
+    if config is None:
+        return None, "none"
+    props = {str(k): _type(v) for k, v in config.items()}
+    return {"type": "object", "properties": props}, "inferred"
 
 
 def _object(value: Any, name: str) -> dict[str, Any]:
@@ -519,7 +527,9 @@ def inspect_dir(directory: Path, default_name: str) -> Found:
     except (Unreadable, RecursionError, json.JSONDecodeError) as exc:
         raise Invalid("location", f"the pipeline's files cannot be read: {exc}") from None
     except (ValueError, TypeError, yaml.YAMLError):
-        raise Invalid("location", "the pipeline's files cannot be read: not YAML") from None
+        raise Invalid(
+            "location", "the pipeline's files cannot be read: not JSON or YAML this server reads"
+        ) from None
     profiles = {"nextflow": nf_profiles, "snakemake": snakemake_profiles(directory)}
     shown = [p for e in (engines if engine is None else [engine]) for p in profiles[e]]
     return Found(

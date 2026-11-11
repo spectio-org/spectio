@@ -508,6 +508,23 @@ def test_module_view_text_after_the_json(settings: Settings, writer: Writer) -> 
     assert response.status_code == 200, response.text
 
 
+def test_module_view_lone_surrogate_is_refused(settings: Settings, writer: Writer) -> None:
+    """SEC-161S5-02, CR-161S6-04: engine output with a lone surrogate is a 502, not a 500."""
+
+    def view(engine: str, argv: list[str]) -> tuple[int, str, str]:
+        return 0, json.dumps({**VIEW, "description": text}), ""
+
+    settings.features = FeatureOpts(single_target=True)
+    client = client_for(settings, writer)
+    client.app.state.target_engine = view  # type: ignore[attr-defined]
+    body = {"engine": "nextflow", "location": "nf-core/fastqc"}
+    text = "fine"
+    assert client.post(INSPECT, json=body).status_code == 200  # the same view, readable
+    text = "\ud800"
+    response = client.post(INSPECT, json=body)
+    assert response.status_code == 502 and "engine-failed" in response.text
+
+
 def test_engine_answer_is_capped(settings: Settings) -> None:
     """CR-161S-02, SEC-161S-06: an engine that prints without end is stopped past 1 MiB."""
     settings.engines.nextflow_cmd = "yes"
