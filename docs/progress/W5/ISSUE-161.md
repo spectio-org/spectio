@@ -7,12 +7,12 @@ review: null
 ---
 # Issue #161 · Runs that target one Nextflow module or one Snakemake rule
 
-!!! success "Done 2026-11-11 · [issue #161](https://github.com/spectio-org/spectio/issues/161) · PR [#255](https://github.com/spectio-org/spectio/pull/255) · 0.0.2, behind `[features] single_target` · not a pipeline step · `code-reviewer` and `security-reviewer` approve (web: 2 rounds; server, runner and bridges: 8 rounds) · `doc-reviewer` not run yet"
+!!! success "Done 2026-11-11 · [issue #161](https://github.com/spectio-org/spectio/issues/161) · PR [#255](https://github.com/spectio-org/spectio/pull/255) · 0.0.2, behind `[features] single_target` · not a pipeline step · `code-reviewer` and `security-reviewer` approve (web: 2 rounds; server, runner and bridges: 8 rounds) · `doc-reviewer` approve"
 
 ![A run can target one step. Left, a Nextflow module: installed from the registry with its checksum, one process and one node, nf-spectio reports the target, Spectio compares the checksum with earlier runs. Right, a Snakemake rule: a dry run counts 25 jobs, only the target and the jobs it needs run, the other rules are not needed. Bottom, both land in the runs list with a Scope badge and a Scope filter](../../assets/diagrams/module-run-161_light.png#only-light)
 ![A run can target one step. Left, a Nextflow module: installed from the registry with its checksum, one process and one node, nf-spectio reports the target, Spectio compares the checksum with earlier runs. Right, a Snakemake rule: a dry run counts 25 jobs, only the target and the jobs it needs run, the other rules are not needed. Bottom, both land in the runs list with a Scope badge and a Scope filter](../../assets/diagrams/module-run-161_dark.png#only-dark)
 
-This page is for a feature that came from a GitHub issue, not from a step of `pipeline.yaml`. No earlier issue-driven PR has a Progress page of its own: the P3 follow-ups (`FU-P3-*`) are recorded as sections of their milestone page, by batch ([P3-M9](P3-M9.md) for example). This feature is not a batch task, so it gets its own page. It sits in wave W5, the wave of the implementation, because the docs check ties a page to a wave folder; the front matter `step` is `ISSUE-161`. It is `done` now that the code reviews are in; `review:` stays `null` until `doc-reviewer` has read it.
+This page is for a feature that came from a GitHub issue, not from a step of `pipeline.yaml`. No earlier issue-driven PR has a Progress page of its own: the P3 follow-ups (`FU-P3-*`) are recorded as sections of their milestone page, by batch ([P3-M9](P3-M9.md) for example). This feature is not a batch task, so it gets its own page. It sits in wave W5, the wave of the implementation, because the docs check ties a page to a wave folder; the front matter `step` is `ISSUE-161`. It is `done` now that the code reviews are in, and `doc-reviewer` approved it after one round of changes.
 
 ## What changed
 
@@ -20,7 +20,7 @@ This page is for a feature that came from a GitHub issue, not from a step of `pi
 
 **After.** A run may carry an optional `target`. `null` is the whole pipeline, today's behaviour, unchanged. Owner of the contract: [api §5.10](../../specs/api-and-data-model.md#510-run-target-one-module-or-one-rule-002). Owner of the screens: [ui-spec §4.15](../../specs/ui-spec.md#415-runs-that-target-one-module-or-one-rule-002). This page does not repeat either.
 
-Where the change lands, by layer (`git diff --stat 498e8c0..HEAD`, 498e8c0 being the merge base with `main`: 85 files, 7102 insertions, 166 deletions, 39 commits; by folder: `packages` 32, `docs` 18, `web` 16, `tests` 8, `spikes` 6, `engine-bridges` 3, `tools` 2):
+Where the change lands, by layer (`git diff --stat 498e8c0..650ec9e`, 498e8c0 being the merge base with `main`: 85 files, 7102 insertions, 166 deletions, 39 commits; by folder: `packages` 32, `docs` 18, `web` 16, `tests` 8, `spikes` 6, `engine-bridges` 3, `tools` 2):
 
 | Layer | What it does | Main files |
 |---|---|---|
@@ -51,7 +51,7 @@ Where the change lands, by layer (`git diff --stat 498e8c0..HEAD`, 498e8c0 being
 
 ## Evidence
 
-Commits since the merge base (`git log --oneline 498e8c0..HEAD`, 39 commits, `HEAD` = `650ec9e`; the first and last of the code, then the last of the docs):
+Commits since the merge base (`git log --oneline 498e8c0..650ec9e`, 39 commits; the first and last of the code, then the last of the docs):
 
 ```text
 22fbd61 spike(module-run): nextflow module run and Snakemake rule targets (#161)
@@ -104,9 +104,9 @@ $ cd web && npx vitest run
 
 ## Figures and media
 
-**Sketch (first on the page).** The mechanism: two ways in (a terminal run captured by the bridges, a launch from the screens) end in one `runs.target`, which the runs list and the run header show as a Scope badge. By `diagram-artist`, script `tools/diagrams/single_target_run.py`. Provisional paths, to be confirmed: `docs/assets/diagrams/module-run-161_light.png` and `…_dark.png`.
+**Sketch (first on the page).** By `diagram-artist`, script `tools/diagrams/module_run_161.py`, files `docs/assets/diagrams/module-run-161_light.png` and `…_dark.png`. Left, a Nextflow module: installed from the registry with the checksum of its `.module-info`, one process runs, nf-spectio reports the target, and the checksum is compared with an earlier run. Right, a Snakemake rule: a dry run counts 25 jobs, the target and the jobs it needs run, the other rules are not needed. Bottom, both runs land in the runs list with a Scope badge and a Scope filter.
 
-**Screenshots.** The web code of this branch on a vite dev server, the API mocked with demo data (`demo-lab`, `login1`, `/scratch/demo`); 1440 wide, light only, as the other live shots of the docs. Script and conversion: `tools/media/single_target_demo.js`; the four files are listed in `docs/assets/media.yaml`. The script writes seven PNGs; four are kept, to stay small (four WebP files, 0.62 MB together).
+**Screenshots.** The screens use a mocked 7-rule pipeline (`synth-qc`), not the synthetic pipeline drawn in the figure. The web code of this branch on a vite dev server, the API mocked with demo data (`demo-lab`, `login1`, `/scratch/demo`); 1440 wide, light only, as the other live shots of the docs. Script and conversion: `tools/media/single_target_demo.js`; the four files are listed in `docs/assets/media.yaml`. The script writes seven PNGs; four are kept, to stay small (four WebP files, 0.62 MB together).
 
 1. **Launch one module.** "What to run" cards, the kind choice, a registry module loaded with its pinned version and "checksum: after install", and the module's inputs as the form. Spec: [ui-spec §4.15, Launch](../../specs/ui-spec.md#415-runs-that-target-one-module-or-one-rule-002).
 
@@ -136,7 +136,7 @@ Not kept in the docs (in the script's output only): the empty Launch form, the m
 |---|---|---|
 | `code-reviewer` + `security-reviewer`, web redesign | `6a6244c..915f48e`, fixes to `d907d27` | **approve** in round 2. Round 1: code changes (0 blocker, 1 major, 9 minors), security changes (0/1/3). Round 2: code 0/0/4, security 0/0/2. The major (SEC-161W-01 / CR-161R-01): a hidden Profile select was still sent for a module |
 | `code-reviewer` + `security-reviewer`, server, runner and bridges | `498e8c0..f18c218`, then each round's fixes | **approve** in round 8. Round 1: code changes (0/3/17), security **block** (1/2/10). Round 8: code 0/0/4, security 0/0/1. Security majors stayed open until round 7, so the standing rule (inbox #75) kept the loop going. `code-simplifier` changed -3/+1 lines and the tests passed |
-| `doc-reviewer` | this page and the pages it touches | not run; `review:` is `null` until it is |
+| `doc-reviewer` | this page and the pages it touches | **approve** after one round: round 1 changes (10/14, six required changes: figure description, pinned range, index link, spec links, screenshot data, stale status), all applied |
 
 What the eight server rounds closed, in short (details and ids in the record):
 - the blocker: a local `meta.yml` parsed with YAML aliases allowed (SEC-161S-01);
@@ -162,4 +162,4 @@ What the eight server rounds closed, in short (details and ids in the record):
 - seen by the worker and not changed: a resumed registry module run is named after `parent.workflow_name`, and `GET /runs/{id}` shows `nextflow run` as the command of a module run;
 - `freeze` still reads stage sources for a rule target, because the Snakefile's rules are needed to list the others as `not_needed` (CR-161S-20, partly).
 
-**Docs still to do:** the `doc-reviewer` pass, which fills `review:` in the front matter.
+**Docs still to do:** none for this PR.
