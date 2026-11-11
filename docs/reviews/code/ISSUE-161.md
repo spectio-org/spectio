@@ -78,4 +78,20 @@ code-reviewer approved with 9 minors; security-reviewer asked for changes (1 maj
 | CR-161S2-08 | minor (simplify) | `run_login` keeps two read paths | not changed: the uncapped path serves every other login call |
 | CR-161S2-09 | minor (simplify) | `launch_template` repeated the pool's 503 and a `None` check | fixed in `1863ee4`: `pooled` |
 
+### Round 3 (`1863ee4`, fixes `85a60d7`, `07402d8`)
+
+code-reviewer approved with 5 minors; security-reviewer asked for changes (1 major, 3 minors): the bracket count of round 2 could be fooled. A fourth round runs on `1863ee4..07402d8`.
+
+| Id | Severity | Finding | Status |
+|---|---|---|---|
+| SEC-161S3-01 | major | quoted closers (`[']',` × 10 900) hid the flow depth from the bracket count: 7 s for a 64 KiB `meta.yml`, 27 s for a 256 KiB params file, each holding a file-pool thread and the GIL | fixed in `07402d8`: `workflows._Loader` refuses in PyYAML's scanner once `flow_level` reaches 64, and refuses aliases while composing, in one pass; both quote shapes refused in under 1 s (tested), and a 256 KiB params file too |
+| SEC-161S3-02 | minor | a head that reported another version had its checksum stored as the pin's, so `checksum_changed` could fire for nothing | fixed in `07402d8`: the pin is kept, no checksum, counted `target_version_differs` (api §14.1). This supersedes the CR-161S2-03 fix: the difference is counted, neither accepted nor dropped silently |
+| SEC-161S3-03 | minor | Snakemake `targets:inspect` checked the directory in the request thread, and its Git fetch lost the route's bound | fixed in `07402d8`: a local directory in the file pool, a Git fetch under the inspection slots |
+| SEC-161S3-04 | minor (before #161) | `workflows:inspect` quoted PyYAML's message, the file's failing line, in its 422 | fixed in `07402d8`: "not YAML" or "not UTF-8 text"; the test fails without the fix |
+| CR-161S3-01 | minor | the guard also refuses a short cluster whose attached value holds `U`, `O` or `R` (`-d/scratch/RUN1`), which the spec did not say | spec in `85a60d7`: refused whole, the safe direction |
+| CR-161S3-02 | minor | the round-2 bound made a deep params file "not YAML" instead of "nested too deep" | fixed in `85a60d7` (`RecursionError`); `test_catalog` now expects "too deep" for `conf/nested.yaml`, as for its JSON twin |
+| CR-161S3-03 | minor | the spec named the 503 for `targets:inspect` only | fixed in `85a60d7`: also `POST /runs` of a registry module |
+| CR-161S3-04 | minor | req. 21 caps `main.nf` at 64 KiB; the code capped `meta.yml` only | fixed in `85a60d7` |
+| CR-161S3-05 | minor (simplify) | `launch_template` repeated the module check | fixed in `85a60d7`: narrowed once |
+
 Seen by the worker and not changed here: a resumed registry module run is named after `parent.workflow_name`; and `GET /runs/{id}` shows `nextflow run` as the command of a module run.
