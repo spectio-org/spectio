@@ -62,6 +62,15 @@ function whereWords(run: RunDetail, server: ServerVersion | null): string | null
   return `Runs on ${runEnvName(env)} as before.`;
 }
 
+/** What the resume reuses of the launch's default resources and kept config file (api §5.7). */
+function extrasWords(run: RunDetail): string | null {
+  const resources = run.default_resources?.state === "recorded";
+  const kept = run.config_file?.state === "recorded" ? run.config_file.kept_as : null;
+  if (resources && kept) return `Same resources and the same kept config file (${kept}) as before.`;
+  if (resources) return "Same resources as before.";
+  return kept ? `The same kept config file (${kept}) as before.` : null;
+}
+
 /** The dialog's text: where the new run starts and what the engine reuses. The launch directory
  * is named only for a run that is not itself a resume: a resume runs in its first run's. */
 function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
@@ -79,6 +88,7 @@ function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) 
       </p>
       {where && <code className="sp-resume-path">{where}</code>}
       {runsOn && <p>{runsOn}</p>}
+      {extrasWords(run) && <p>{extrasWords(run)}</p>}
       {head && !head.alive && (
         <p className="sp-note">The head of this run has ended on {head.node} (checked): Spectio unlocks the directory first.</p>
       )}
@@ -109,7 +119,9 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
       .then((child) => navigate({ to: "/runs/$id", params: { id: child.id } }))
       .catch((e: Error) => {
         const words = e instanceof ApiError && e.reason ? refusedWords(e.reason, run, server) : null;
-        setError(words ?? e.message);
+        // a 422 (a changed kept file, api §5.7) in the server's words, without its field names
+        const fields = e instanceof ApiError && e.errors.length ? e.errors.map((f) => f.message).join("; ") : null;
+        setError(words ?? fields ?? e.message);
       })
       .finally(() => setSending(false));
   };

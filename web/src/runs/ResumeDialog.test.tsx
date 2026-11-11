@@ -241,3 +241,27 @@ test("FU-P3-115b: a run that has not ended has Pin but no Delete…", async () =
   expect(await within(head).findByRole("button", { name: "Pin" })).toBeInTheDocument();
   expect(within(head).queryByRole("button", { name: "Delete…" })).toBeNull();
 });
+
+test("FU-P3-110d: the sheet says the resume reuses the resources and the kept file; a changed copy's 422 is said in the server's words", async () => {
+  const kept = { path: "/home/amartin/x.config", kept_as: "extra.config", sha256: "a".repeat(64), size: 10, includes: false, state: "recorded" };
+  const message = "The kept config file of the parent changed: use Copy to a new launch";
+  detail(failedRun({ default_resources: { cpus: 4, mem_mib: null, time_min: null, state: "recorded" }, config_file: kept }), {
+    [`${URL_}:relaunch`]: () => json(422, { status: 422, detail: `config_file: ${message}`, errors: [{ field: "config_file", message }] }),
+  });
+  app(`/runs/${ID}`);
+  await userEvent.click(await within(await header()).findByRole("button", { name: "Resume" }));
+  const dialog = await screen.findByRole("dialog", { name: "Resume this run?" });
+  expect(dialog).toHaveTextContent("Same resources and the same kept config file (extra.config) as before.");
+  await userEvent.click(within(dialog).getByRole("button", { name: "Resume" }));
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent(`Not resumed: ${message}`);
+  expect(within(dialog).getByRole("alert")).not.toHaveTextContent("config_file:");
+});
+
+test("FU-P3-110d: only resources, or only the kept file, are named on their own", async () => {
+  detail(failedRun({ default_resources: { cpus: 4, mem_mib: null, time_min: null, state: "recorded" }, config_file: null }));
+  app(`/runs/${ID}`);
+  await userEvent.click(await within(await header()).findByRole("button", { name: "Resume" }));
+  const dialog = await screen.findByRole("dialog", { name: "Resume this run?" });
+  expect(dialog).toHaveTextContent("Same resources as before.");
+  expect(dialog).not.toHaveTextContent("kept config file");
+});

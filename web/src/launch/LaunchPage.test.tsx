@@ -594,6 +594,8 @@ test("FU-P3-86h: the aside has the summary, then Before Launch, the preview fold
     ["Pipeline", "rnaseq 3.27.0 · profile docker"],
     ["Engine", "Nextflow 26.10.4"],
     ["Environment", "the server's default"],
+    ["Resources", "from the environment"], // FU-P3-110d, ui-spec §4.6
+    ["Extra config", "none"],
     ["Engine head", "…"],
     ["Tasks", "by Nextflow, in the server's default environment"],
     ["Run directory", "…"],
