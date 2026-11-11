@@ -32,7 +32,7 @@ from spectio_server.store.schema import (
     runs,
     tasks,
 )
-from spectio_server.store.writer import note_change
+from spectio_server.store.writer import note_change, note_ended
 
 if TYPE_CHECKING:
     from spectio_server.stages.freeze import StageSources
@@ -142,6 +142,7 @@ class Projection:
             values["started_at"] = at
         if to in TERMINAL:
             values["ended_at"] = at
+            note_ended(self.conn, self.run_id)  # its end-of-run sweep (FU-P3-105c)
         if failure is not None:
             values["failure"] = failure
         self.conn.execute(update(runs).where(runs.c.id == self.run_id).values(**values))

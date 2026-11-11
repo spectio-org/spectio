@@ -210,11 +210,26 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         # them into targets (SEC-P3FU86A-R3-01).
         if "--" in spec.extra_args:
             raise ValueError("a bare -- in [engines] extra_args.snakemake is not allowed")
+        if any(_efficiency_report(arg) for arg in spec.extra_args):
+            raise ValueError("--slurm-efficiency-report in [engines] extra_args is not allowed")
         if spec.slurm is not None:
             args += ["--local-cores", str(LOCAL_CORES)]
         else:
             args += _local_caps(spec.local, _run(spec))
     return args
+
+
+EFFICIENCY_REPORT = "--slurm-efficiency-report"
+
+
+def _efficiency_report(arg: str) -> bool:
+    """The SLURM plugin's efficiency report, or its path, by name or by an abbreviation
+    argparse would take ([to be validated] for Snakemake 9.27.1): it makes one more `sacct` per
+    run, with no `-S` (FU-P3-105c, schedulers §3.7)."""
+    name = arg.split("=", 1)[0]
+    if name.startswith(EFFICIENCY_REPORT):
+        return True
+    return len(name) > len("--slurm-e") and EFFICIENCY_REPORT.startswith(name)
 
 
 def _int(value: object, low: int, high: int) -> int:

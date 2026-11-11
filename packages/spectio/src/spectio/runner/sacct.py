@@ -10,7 +10,8 @@ server user's own jobs asked (`--user=<euid>`), never with `--duplicates`; its o
 kept only when its `WorkDir` is one the caller expects for that job (the directory it was
 launched from, SEC-P3T29-01) and its `Submit` is not before the run's launch (inbox #116 rule
 10 (b), FU-P3-53). Each call is bounded in time too: `-S` the earliest launch of its jobs less
-`SUBMIT_SKEW_S`, `-E now`, never from Epoch 0 (CON-SLURM-POLL-03). `SacctLimiter` holds the
+`SUBMIT_SKEW_S`, `-E now`, never from Epoch 0 (CON-SLURM-POLL-03); the end-of-run sweep ends
+it at the run's end plus `SUBMIT_SKEW_S` (FU-P3-105c, schedulers §3.7). `SacctLimiter` holds the
 server-wide pace: one call in flight, one call per `INTERVAL_S`, doubled up to `MAX_INTERVAL_S`
 after a failed or slow call (CON-SLURM-POLL-02; schedulers §3.8, the SLURM query budget). A
 call that would fail every time (a refused tool, too much output for one ID) is final; a batch
@@ -53,7 +54,7 @@ log = logging.getLogger(__name__)
 JOB_ID = re.compile(r"[0-9]{1,12}(_[0-9]{1,8})?")
 FORMAT = (
     "JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,TotalCPU,NCPUS,NNodes,"
-    "Partition,Account,QOS,AllocTRES,WorkDir,Submit"
+    "Partition,Account,QOS,AllocTRES,WorkDir,Submit,Start"
 )  # WorkDir not last: a newline in it leaves two fragments, neither with every field
 _FIELDS = FORMAT.count(",") + 1
 TIMEOUT_S = 30.0
@@ -128,6 +129,7 @@ class SacctRow:
     account: str | None = None
     qos: str | None = None
     alloc_tres: str | None = None
+    wait_s: int | None = None  # Start - Submit (FU-P3-105c); None when Start is before Submit
 
 
 # Job ID → {normalised WorkDir it may have: the run's launch time, epoch seconds}.
@@ -170,9 +172,15 @@ def new_delimiter() -> str:
     return "".join(secrets.choice(_DELIMITER_CHARS) for _ in range(DELIMITER_LEN))
 
 
-def sacct_argv(path: Path, ids: list[str], delimiter: str, start: float) -> list[str]:
-    """The call; `start` (epoch seconds) is its `-S`, written in UTC as `TZ=UTC` reads it."""
-    since = datetime.fromtimestamp(max(0.0, start), UTC).strftime("%Y-%m-%dT%H:%M:%S")
+def _utc(moment: float) -> str:
+    return datetime.fromtimestamp(max(0.0, moment), UTC).strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def sacct_argv(
+    path: Path, ids: list[str], delimiter: str, start: float, end: float | None = None
+) -> list[str]:
+    """The call; `start` (epoch seconds) is its `-S`, `end` its `-E` (`now` when None or not
+    after `start`), written in UTC as `TZ=UTC` reads them."""
     return [
         str(path),
         "--parsable2",
@@ -182,9 +190,9 @@ def sacct_argv(path: Path, ids: list[str], delimiter: str, start: float) -> list
         ",".join(ids),
         f"--user={os.geteuid()}",
         "-S",
-        since,
+        _utc(start),
         "-E",
-        "now",
+        "now" if end is None or end <= start else _utc(end),
         f"--format={FORMAT}",
     ]
 
@@ -195,16 +203,19 @@ def sacct_jobs(
     *,
     sacct: Path,
     dropped: Counter[str] | None = None,
+    until: float | None = None,
 ) -> Found | None:
     """The rows `sacct` gives for the `wanted` jobs and directories (`parse_sacct`); None when
-    it failed or timed out. Raises Refused, before any call, for an ID or a tool that is not
-    accepted, OSError when the tool cannot be read for now, TooMuch when it said more than
-    MAX_OUTPUT, and TooWide when it failed with the site's `TOO_WIDE`."""
+    it failed or timed out. `until` (epoch seconds): the latest end of the runs asked, so `-E`
+    is that plus SUBMIT_SKEW_S; `now` when None. Raises Refused, before any call, for an ID or
+    a tool that is not accepted, OSError when the tool cannot be read for now, TooMuch when it
+    said more than MAX_OUTPUT, and TooWide when it failed with the site's `TOO_WIDE`."""
     ids = check_ids(wanted)
     check_tool(sacct)
     delimiter = new_delimiter()
     start = min(since for dirs in wanted.values() for since in dirs.values()) - SUBMIT_SKEW_S
-    argv = sacct_argv(sacct, ids, delimiter, start)
+    end = None if until is None else until + SUBMIT_SKEW_S
+    argv = sacct_argv(sacct, ids, delimiter, start, end)
     with (
         tempfile.TemporaryFile() as err,  # a file, not a pipe: it never blocks the tool
         subprocess.Popen(  # noqa: S603 - an argument list of checked values, no shell
@@ -274,7 +285,8 @@ def parse_sacct(
             current = None
             continue
         job, state, exit_code, reason, max_rss, elapsed, req_mem, time_limit = parts[:8]
-        total_cpu, ncpus, nnodes, partition, account, qos, tres, work_dir, submit = parts[8:]
+        total_cpu, ncpus, nnodes, partition, account, qos, tres, work_dir, submit = parts[8:17]
+        started = _submit(parts[17])  # Start has Submit's form
         base, _, step = job.partition(".")
         if step:
             if current is not None and current[0] == base:
@@ -311,6 +323,7 @@ def parse_sacct(
             account=_text(account, _NAME),
             qos=_text(qos, _NAME),
             alloc_tres=_text(tres, _TRES),
+            wait_s=None if started is None or started < submitted else int(started - submitted),
         )
         candidate = _Candidate(row, _memory(max_rss))
         found.setdefault((base, where), []).append(candidate)
@@ -338,7 +351,7 @@ def _add_step(candidate: _Candidate, max_rss: str, total_cpu: str) -> None:
 
 
 def _submit(value: str) -> float | None:
-    """Submit, `YYYY-MM-DDTHH:MM:SS` in UTC (`TZ=UTC` in the call's environment), as epoch
+    """Submit or Start, `YYYY-MM-DDTHH:MM:SS` in UTC (`TZ=UTC` in the call's environment), as epoch
     seconds; None for `Unknown` or anything else."""
     if not _SUBMIT.fullmatch(value):
         return None

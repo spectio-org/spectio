@@ -11,7 +11,8 @@ Where a failure's facts come from:
   memory and in `<run dir>/.spectio/sacct.json`; nothing here waits for it. While a run is
   live, only a Nextflow failure when it is first opened and a job whose SLURM panel is opened
   are asked; every other ended job waits for the run's end, then one sweep and one follow-up
-  (CON-SLURM-POLL-01; schedulers §3.8, the SLURM query budget);
+  (CON-SLURM-POLL-01; schedulers §3.8, the SLURM query budget), made with no view when the
+  projector ends the run (`sweep_run`, FU-P3-105c, schedulers §3.7);
 - the job's files: the last lines of its log, and a Snakemake job's benchmark file, read by
   the job-file reader of P1 Task 28 (`files.taskfiles`, confined, escape sequences removed) in
   the file pool, with its timeout.
@@ -26,6 +27,7 @@ import time
 from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass
+from functools import partial
 from pathlib import Path
 from typing import Any, Literal
 
@@ -49,7 +51,7 @@ from spectio_server.files.taskfiles import (
     run_root,
 )
 from spectio_server.projector.runs import TERMINAL as RUN_ENDED
-from spectio_server.store.schema import attempts, runs, tasks
+from spectio_server.store.schema import attempts, runs, tasks, workflow_versions, workflows
 
 log = logging.getLogger(__name__)
 
@@ -77,6 +79,7 @@ _RUNNING = object()  # a run's resolve that has started
 Status = Literal["available", "pending", "unavailable"]
 # Runs a job in the file pool with the view's timeout; False when it did not end in time.
 InPool = Callable[[Callable[[], None]], bool]
+Where = tuple[frozenset[str], float, float | None]  # a job's directories, launch, end
 
 
 # --- Snakemake's SLURM executor plugin, in its own words -------------------------------------
@@ -260,6 +263,7 @@ class _CachedRow(BaseModel):
     account: str | None = Field(None, pattern=r"^[A-Za-z0-9_.,:+-]{1,128}$")
     qos: str | None = Field(None, pattern=r"^[A-Za-z0-9_.,:+-]{1,128}$")
     alloc_tres: str | None = Field(None, pattern=r"^[A-Za-z0-9_.,:/=+-]{1,1024}$")
+    wait_s: int | None = Field(None, ge=0, le=_MAX)  # FU-P3-105c: absent before it
 
 
 class Accounting:
@@ -285,7 +289,10 @@ class Accounting:
     that number, such as a local PID read as a SLURM ID, are dropped (SEC-P3T29-01; inbox #116
     rule 10 (b); WorkDir [to be validated] on `slurm-mini`). A job with no directory is never
     asked. Each call asks the (run, job) pairs queued when it starts; a run that asks a job
-    during that call is queued again, with no follow-up counted (CON-PRE-16)."""
+    during that call is queued again, with no follow-up counted (CON-PRE-16). A run the
+    projector ends is handed over by `ended` and swept on this thread by `sweeper` (FU-P3-105c);
+    each run whose rows changed is given to `on_rows` (its `attempt_metrics`); `close` drops
+    what is not made yet."""
 
     def __init__(
         self,
@@ -309,9 +316,10 @@ class Accounting:
         self._loaded: set[str] = set()
         self._failed: dict[str, dict[str, str]] = {}  # run → job given up → its reason
         self._asked: dict[str, set[str]] = {}  # job ID → the runs that wait for it
-        # (run, job) asked → its directories (normalised, and resolved) and the run's launch time
-        self._where: dict[tuple[str, str], tuple[frozenset[str], float]] = {}
-        self._called: dict[tuple[str, str], tuple[frozenset[str], float]] = {}  # the last call's
+        # (run, job) asked → its directories (normalised, and resolved), the run's launch time
+        # and its end (None while live), epoch seconds
+        self._where: dict[tuple[str, str], Where] = {}
+        self._called: dict[tuple[str, str], Where] = {}  # the last call's
         self._logged: set[str] = set()  # runs whose dropped lines were logged
         self._followed: set[tuple[str, str]] = set()  # (run, job) whose follow-up is due
         self._deadline: dict[tuple[str, str], float] = {}  # (run, job) → given up after (clock)
@@ -320,6 +328,10 @@ class Accounting:
         self._wake = threading.Event()
         self._start_thread = start_thread
         self._thread: threading.Thread | None = None
+        self.sweeper: Callable[[str], None] | None = None  # set by `app.wire_sweep`
+        self.on_rows: Callable[[str, dict[str, SacctRow | None]], None] | None = None
+        self._ended: dict[str, None] = {}  # runs whose sweep is due, in the order they ended
+        self._closed = False
 
     @classmethod
     def from_settings(cls, settings: Settings, **kwargs: Any) -> "Accounting":
@@ -342,14 +354,19 @@ class Accounting:
             }
             self._called = called
         wanted: dict[str, dict[str, float]] = {}
-        for (_, job), (dirs, since) in called.items():
+        for (_, job), (dirs, since, _) in called.items():
             mine = wanted.setdefault(job, {})
             for where in dirs:  # two runs of one directory: the earlier launch (FU-P3-53)
                 mine[where] = min(since, mine.get(where, since))
         if not wanted:
             return {}
+        # -E: the latest end of the runs asked; now when one of them is live
+        ends = [until for _, _, until in called.values() if until is not None]
+        until = max(ends) if len(ends) == len(called) else None
         dropped: Counter[str] = Counter()
-        found = sacct.sacct_jobs(wanted, self._timeout, sacct=self._path, dropped=dropped)
+        found = sacct.sacct_jobs(
+            wanted, self._timeout, sacct=self._path, dropped=dropped, until=until
+        )
         by_run = Counter[str]()
         for run_id, job in called:
             by_run[run_id] += dropped[job]
@@ -395,7 +412,7 @@ class Accounting:
         in_pool: InPool | None = None,
         *,
         ended: float | None = None,
-    ) -> None:
+    ) -> bool:
         """Ask `sacct` for the run's jobs, (job ID, the directory it was launched from), it has
         not answered yet, once the run's cache file was read. `since` is the run's launch,
         `ended` when its jobs had ended at the latest (the run's end; now when None), epoch
@@ -405,9 +422,10 @@ class Accounting:
         is resolved, so a view that times out still leaves its work and a later view asks the
         rest (CR-P3FU53-01). With no `in_pool` (tests) the job runs here. A job with no
         directory (SEC-PRE-15) or whose ID is no SLURM job ID (SEC-P3FU53-01) is never asked.
-        Returns once the jobs are queued."""
+        Returns once the jobs are queued: False when nothing could be asked (off, the file not
+        read) or a resolve was refused or did not end in time."""
         if not self.enabled:
-            return
+            return False
         given = {
             job: os.path.normpath(where)
             for job, where in jobs
@@ -416,17 +434,19 @@ class Accounting:
         token = object()
         with self._lock:
             if run_id not in self._loaded:  # its file could not be read in time: ask nothing
-                return
+                return False
             new = self._new(run_id, given)
             dirs = [d for d in dict.fromkeys(new.values()) if d not in self._real][:MAX_RESOLVE]
             send = bool(dirs) and run_id not in self._resolving
             if send:
                 self._resolving[run_id] = token
+        resolved = True
         if send:
             job = self._resolve_job(run_id, token, dirs)
             if in_pool is None:
                 job()
             elif not in_pool(job):
+                resolved = False
                 with self._lock:  # refused, or cancelled before it ran: it never will
                     if self._resolving.get(run_id) is token:
                         del self._resolving[run_id]
@@ -437,11 +457,12 @@ class Accounting:
             for job_id in queued:
                 where = new[job_id]
                 self._asked.setdefault(job_id, set()).add(run_id)
-                self._where[run_id, job_id] = frozenset({where, self._real[where]}), since
+                self._where[run_id, job_id] = frozenset({where, self._real[where]}), since, ended
                 self._deadline[run_id, job_id] = self._clock() + GIVE_UP_S - ago
         if queued:
             self._ensure_thread()
             self._wake.set()
+        return resolved
 
     def _resolve_job(self, run_id: str, token: object, dirs: list[str]) -> Callable[[], None]:
         """The `realpath` of each absolute directory, kept as it is computed; never run on the
@@ -502,19 +523,62 @@ class Accounting:
         except (OSError, ValueError) as exc:
             log.warning("%s of %s not written: %s", CACHE_FILE, run_id, exc)
 
+    # The end-of-run sweep (FU-P3-105c).
+
+    def ended(self, run_ids: Iterable[str]) -> None:
+        """The runs the projector just ended (the writer's `on_ended`, after the commit): each
+        one is swept on the accounting thread. Never waits, never reads a file."""
+        if not self.enabled or self.sweeper is None:
+            return
+        with self._lock:
+            if self._closed:
+                return
+            for run_id in run_ids:
+                if len(self._ended) < sacct.MAX_PENDING:
+                    self._ended[run_id] = None
+        self._ensure_thread()
+        self._wake.set()
+
+    def _sweep_ended(self) -> bool:
+        """Sweep the runs handed over; False when there were none."""
+        with self._lock:
+            todo, self._ended = list(self._ended), {}
+        sweep = self.sweeper
+        if sweep is None:  # never: `ended` hands nothing over without it
+            return False
+        for run_id in todo:
+            if self._closed:
+                break
+            try:
+                sweep(run_id)
+            except Exception:  # the next run is swept; a view still asks this one's jobs
+                log.exception("the end-of-run sweep of %s failed", run_id)
+        return bool(todo)
+
+    def close(self) -> None:
+        """The server stops: the sweeps and calls not made yet are dropped, the thread ends."""
+        with self._lock:
+            self._closed = True
+            self._ended.clear()
+        self._wake.set()
+
     # The accounting thread.
 
     def step(self) -> bool:
-        """Make the next due call and keep its answer; False when none was due."""
+        """Make the due sweeps and the next due call, and keep its answer; False when none was
+        due."""
+        if self._closed:
+            return False
+        swept = self._sweep_ended()
         done = self._limiter.run_once()
         if done is None:
-            return False
+            return swept
         ids, found = done
         touched: dict[str, dict[str, SacctRow | None]] = {}
         with self._lock:
             called, self._called = self._called, {}
             now = self._clock()
-            low = min((since for _, since in called.values()), default=0.0)  # the call's -S
+            low = min((since for _, since, _ in called.values()), default=0.0)  # the call's -S
             for job in ids:
                 answer = found.get(job, {}) if isinstance(found, dict) else {}
                 again, follow = set(), set()  # the runs that wait: asked now, or later
@@ -559,6 +623,8 @@ class Accounting:
                         self._final((run_id, job))
         for run_id, rows in touched.items():
             self._save(run_id, rows)
+            if self.on_rows is not None:
+                self.on_rows(run_id, rows)
         return True
 
     def _final(self, key: tuple[str, str]) -> None:
@@ -579,8 +645,8 @@ class Accounting:
             self._thread.start()
 
     def _run(self) -> None:
-        while True:
-            wait = self._limiter.wait_s()
+        while not self._closed:
+            wait = 0.0 if self._ended else self._limiter.wait_s()
             if wait is None or wait > 0:
                 self._wake.wait(wait)
                 self._wake.clear()
@@ -704,6 +770,55 @@ def on_slurm(environment: dict[str, Any] | None, settings: Settings) -> bool:
     (SEC-PRE-FU86-R1-01); `not_recorded` is the server's built-in (`read_as`, api §5.4).
     `not_readable` and a run started from a terminal are not SLURM."""
     return executor_of(read_as(environment, settings)) == "slurm"
+
+
+def sweep_run(conn: Connection, run_id: str, ctx: Context) -> None:
+    """The end-of-run sweep (FU-P3-105c, schedulers §3.7), on the accounting thread once the
+    projector ended the run: every ended attempt of a SLURM run with a job ID is queued once,
+    as a view of the ended run would (`task_resources`), with the run's launch and end for
+    `-S` and `-E`. Nothing for a live, deleted or terminal-started run, a run off SLURM, or
+    with accounting off. The run's file is read and its directories resolved in the file pool,
+    with its timeout; a pool that does not answer leaves the rest to a later view."""
+    run = conn.execute(
+        select(
+            runs.c.id,
+            runs.c.lineage_id,
+            runs.c.state,
+            runs.c.origin,
+            runs.c.environment,
+            runs.c.created_at,
+            runs.c.started_at,
+            runs.c.ended_at,
+            workflows.c.engine,
+        )
+        .join(workflow_versions, workflow_versions.c.id == runs.c.workflow_version_id)
+        .join(workflows, workflows.c.id == workflow_versions.c.workflow_id)
+        .where(runs.c.id == run_id, runs.c.deleted_at.is_(None))
+    ).one_or_none()
+    if run is None or run.state not in RUN_ENDED or run.origin == "cli-observed":
+        return
+    if not ctx.accounting.enabled or not on_slurm(run.environment, ctx.settings):
+        return
+    try:
+        ctx.files.run(partial(ctx.accounting.load, run_id), ctx.timeout_s)
+    except Stalled:
+        return
+    ended = (
+        select(attempts.c.native_id, attempts.c.work_dir)
+        .join(tasks, tasks.c.id == attempts.c.task_id)
+        .where(
+            tasks.c.run_id == run_id,
+            attempts.c.state.in_(ENDED),
+            attempts.c.native_id.is_not(None),
+        )
+    )
+    launch = str(run_paths(ctx.runs_root, dir_run_id(run)).launch_dir)
+    smk = run.engine == "snakemake"
+    jobs = [(r.native_id, launch if smk else r.work_dir) for r in conn.execute(ended)]
+    since, until = _launched(run.created_at, run.started_at), _ended(run.ended_at)
+    for _ in range(len(jobs) // MAX_RESOLVE + 1):  # MAX_RESOLVE directories per pass
+        if not ctx.accounting.want(run_id, jobs, since, _resolver(ctx), ended=until):
+            return
 
 
 def _last_attempt() -> Any:

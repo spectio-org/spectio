@@ -178,7 +178,7 @@ def test_req15_argv_and_id_check(fakebin: Fake) -> None:
         "-E",
         "now",
         "--format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,TotalCPU,NCPUS,"
-        "NNodes,Partition,Account,QOS,AllocTRES,WorkDir,Submit",
+        "NNodes,Partition,Account,QOS,AllocTRES,WorkDir,Submit,Start",
     ]
     assert "--duplicates" not in call["argv"] and "-D" not in call["argv"]  # CON-PRE-15
     assert found is not None and set(found) == {"8812477", "8812345_3"}
@@ -199,6 +199,28 @@ def test_sacct_window_from_earliest_launch(fakebin: Fake) -> None:
     argv = fakebin.calls()[0]["argv"]
     start = argv.index("-S")
     assert argv[start : start + 4] == ["-S", "2026-11-08T08:55:00", "-E", "now"]
+
+
+def test_sweep_window_ends_after_the_run(fakebin: Fake) -> None:
+    """FU-P3-105c (schedulers §3.7): the end-of-run sweep's `-E` is the run's end plus
+    SUBMIT_SKEW_S; an end not after `-S` (clocks) falls back to `now`."""
+    sacct_jobs(ASKED, sacct=fakebin.path, until=LAUNCH + 3600)
+    sacct_jobs(ASKED, sacct=fakebin.path, until=LAUNCH - 600)
+    windows = [call["argv"][call["argv"].index("-S") :][:4] for call in fakebin.calls()]
+    assert windows == [
+        ["-S", "2026-11-08T08:55:00", "-E", "2026-11-08T10:05:00"],
+        ["-S", "2026-11-08T08:55:00", "-E", "now"],
+    ]
+
+
+def test_sweep_wait_from_submit_and_start() -> None:
+    """FU-P3-105c: `wait_s` is Start - Submit; null when Start is unknown or before Submit."""
+    jobs = {"7": "2026-11-08T09:02:30", "8": "Unknown", "9": "2026-11-08T08:59:59"}
+    text = "\n".join(
+        line(JobID=j, State="COMPLETED", WorkDir="/w", Start=s) for j, s in jobs.items()
+    )
+    found = parse(text, ("7", "/w"), ("8", "/w"), ("9", "/w"))
+    assert {job: found[job]["/w"].wait_s for job in jobs} == {"7": 150, "8": None, "9": None}
 
 
 def test_sacct_delimiter_random_per_call(fakebin: Fake) -> None:
@@ -547,7 +569,7 @@ def test_req15_eff_fields(fakebin: Fake) -> None:
     found = sacct_jobs({**ASKED, "8812999": {"/w": LAUNCH}}, sacct=fakebin.path)
     assert found is not None and set(found) == {"8812477", "8812345_3"}
     assert fakebin.calls()[0]["argv"][-1] == f"--format={sacct.FORMAT}"
-    assert sacct.FORMAT.endswith(",WorkDir,Submit") and sacct.FORMAT.count(",") == 16
+    assert sacct.FORMAT.endswith(",WorkDir,Submit,Start") and sacct.FORMAT.count(",") == 17
 
 
 def test_sacct_output_capped(fakebin: Fake) -> None:

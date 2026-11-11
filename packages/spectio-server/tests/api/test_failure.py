@@ -30,13 +30,14 @@ from spectio.runner.rundir import RunPaths, make_run_dirs
 from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server import failure
+from spectio_server.app import create_app, wire_sweep
 from spectio_server.failure import Accounting, parse_smk_slurm_message
 from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.projector.ingest import ingest
 from spectio_server.serve import boot
 from spectio_server.stages.freeze import StageSources
 from spectio_server.store.db import open_db
-from spectio_server.store.schema import attempts, events, runs, tasks
+from spectio_server.store.schema import attempt_metrics, attempts, events, runs, tasks
 from spectio_server.store.writer import Writer
 
 from ..test_serve import FIXTURE_RUN, FIXTURES, head_files, make_run, run_id, settle
@@ -87,15 +88,17 @@ d = [a for a in sys.argv if a.startswith("--delimiter=")][0].split("=", 1)[1]
 submit = os.path.join(here, "submit")  # Submit, in UTC as TZ=UTC asks; now otherwise
 now = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
 submit = open(submit).read() if os.path.exists(submit) else now
+start = os.path.join(here, "start")  # Start; Submit otherwise
+start = open(start).read() if os.path.exists(start) else submit
 resized = os.path.exists(os.path.join(here, "resized"))  # an older RESIZING record first
 tres = "billing=2,cpu=2,mem=2G,node=1"
 for job in ids if state != "-" else ():
     where = dirs.get(job, "/elsewhere")
     lines = [
         [job, state, "0:125", "None", "0", "00:01:05", "2G", "00:10:00", "00:52.000", "2", "1",
-         "htc", "lab", "normal", tres, where, submit],
+         "htc", "lab", "normal", tres, where, submit, start],
         [job + ".batch", state, "0:125", "", "2097152K", "00:01:05", "", "", "00:52.000", "2",
-         "1", "", "", "", tres, "", ""],
+         "1", "", "", "", tres, "", "", ""],
     ]
     if resized:
         lines = [[f[0], "RESIZING", *f[2:]] for f in lines] + lines
@@ -990,6 +993,106 @@ def test_sacct_live_run_asks_failures_and_opened_panel(
     task_items(client)  # one sweep: a second view queues nothing again
     assert acct.step() and sorted(fakebin.ids()[1:]) == ["8812401", "8812421"]
     assert not acct.step()
+
+
+LAUNCHED = datetime(2026, 10, 31, 8, 0, tzinfo=UTC)  # before the events' time, 09:00
+
+
+def swept_run(settings: Settings, writer: Writer, fakebin: Fake, acct: Accounting) -> Run:
+    """A SLURM run of three Nextflow jobs, launched at LAUNCHED, its sweep wired to `acct`."""
+    client = client_for(settings, writer)
+    client.app.state.accounting = acct  # type: ignore[attr-defined]
+    wire_sweep(client.app)  # type: ignore[arg-type]
+    run = Run(settings, writer, slurm=True)
+    at = {"created_at": LAUNCHED}
+    writer.submit(lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(**at))).result()
+    (fakebin.dir / "submit").write_text("2026-10-31T08:10:00")
+    (fakebin.dir / "start").write_text("2026-10-31T08:12:30")
+    for i in range(3):
+        fakebin.at(str(8812401 + 10 * i), run.nf_task(i, 1, "COMPLETED"))
+    return run
+
+
+def test_sweep_one_per_run_and_one_follow_up(
+    settings: Settings, writer: Writer, fakebin: Fake
+) -> None:
+    """FU-P3-105c (schedulers §3.7, §3.8): no call while the run is active; at its end, with
+    no view, one sweep of every ended job (`--user`, `-S` launch - 5 min, `-E` end + 5 min);
+    the jobs slurmdbd did not answer are asked once more FOLLOW_UP_S later, then never again,
+    views included. The answers land in `attempt_metrics` and `sacct.json`."""
+    (fakebin.dir / "lag").write_text("-")  # slurmdbd lags: no row on the first call
+    clock = Clock()
+    acct = accounting(settings, fakebin, clock=clock)
+    run = swept_run(settings, writer, fakebin, acct)
+    assert not acct.step() and fakebin.calls() == []  # active: nothing asked
+    run.push("nextflow.onFlowComplete", success=True)  # the projector ends it: the hook
+    assert fakebin.calls() == []  # the writer only handed the run over
+    assert acct.step()
+    (argv,) = fakebin.calls()
+    window = argv[argv.index("-S") :][:4]
+    assert window == ["-S", "2026-10-31T07:55:00", "-E", "2026-10-31T09:05:00"]
+    assert f"--user={os.geteuid()}" in argv
+    assert sorted(fakebin.ids()) == ["8812401", "8812411", "8812421"]
+    client = client_for(settings, writer)
+    client.app.state.accounting = acct  # type: ignore[attr-defined]
+    task_items(client)  # a view after the sweep queues nothing
+    assert not acct.step()
+    clock.now += failure.FOLLOW_UP_S
+    assert acct.step() and len(fakebin.calls()) == 2  # the one follow-up
+    clock.now += failure.FOLLOW_UP_S
+    task_items(client)
+    assert not acct.step() and len(fakebin.calls()) == 2
+    cache = json.loads((run.paths.run_dir / ".spectio" / "sacct.json").read_text())
+    assert cache["jobs"]["8812401"]["wait_s"] == 150
+    query = select(attempt_metrics).order_by(attempt_metrics.c.tag)
+    found = writer.submit(lambda c: c.execute(query).all()).result()
+    assert [(r.source, r.wait_s, r.realtime_s, r.partition) for r in found] == [
+        ("sacct", 150.0, 65.0, "htc")
+    ] * 3
+
+
+def test_sweep_none_with_accounting_off(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """FU-P3-105c: `[slurm] accounting = false`: the run's end makes no call."""
+    off = Settings(
+        data_dir=settings.data_dir,
+        db_dir=settings.db_dir,
+        runs_root=settings.runs_root,
+        executor="slurm",
+        slurm={"accounting": False, "sacct": str(fakebin.path)},
+    )
+    acct = Accounting.from_settings(off, start_thread=False, interval_s=0)
+    run = swept_run(settings, writer, fakebin, acct)
+    run.push("nextflow.onFlowComplete", success=True)
+    assert not acct.step() and fakebin.calls() == []
+
+
+def test_sweep_dropped_on_server_stop(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """FU-P3-105c: a sweep not made yet is dropped when the server stops; nothing is called."""
+    acct = accounting(settings, fakebin)
+    run = swept_run(settings, writer, fakebin, acct)
+    run.push("nextflow.onFlowComplete", success=True)
+    acct.close()
+    assert not acct.step() and fakebin.calls() == []
+
+
+def test_sweep_of_run_ended_at_boot(settings: Settings, fakebin: Fake) -> None:
+    """CR-P3FU105C-01: a run that ended while the server was stopped is ended by the first
+    spool replay of `boot`, before `create_app` wires the sweep; the writer keeps it and hands
+    it over once wired: exactly one sweep."""
+    assert settings.db_dir is not None
+    rid = run_id(7)
+    spool = ("nextflow-26.10.4_plugin_toolerr.spool.jsonl", "nf-spectio-1-0001.jsonl")
+    head_files(make_run(settings.runs_root, rid, spool=spool))
+    booted = boot(settings, settings.db_dir)
+    try:
+        acct = accounting(settings, fakebin)
+        create_app(settings, booted.writer, accounting=acct)
+        swept: list[str] = []
+        acct.sweeper = swept.append
+        assert acct.step() and swept == [rid]
+        assert not acct.step() and swept == [rid]
+    finally:
+        booted.close()
 
 
 def test_req15_cache_file(
