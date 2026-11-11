@@ -62,3 +62,10 @@ test("without WebGL 2 the largest level of at most 50 megapixels; none that smal
   store.set("1/.zarray", zarray([2, 9000, 6000], [1, 1000, 1000])); // 54 megapixels
   await expect(read(false)).rejects.toMatchObject({ reason: "a plane over 50 megapixels" });
 });
+
+test("a plane that needs more chunks than the request budget is too large, and no chunk is read (SEC-P3FU102I-01)", async () => {
+  store.set("0/.zarray", zarray([2, 50, 41], [1, 1, 1])); // 2,050 chunks in one plane
+  store.set("1/.zarray", zarray([2, 25, 20], [1, 25, 20]));
+  await expect(read(false)).rejects.toMatchObject({ reason: "a plane over 2,000 Zarr chunks" });
+  expect(asked.filter((u) => /\/\d+\/\d/.test(u))).toEqual([]);
+});

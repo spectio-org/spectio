@@ -468,8 +468,7 @@ test("a folder's stat opens the folder page", async () => {
 
 /** The valid OME-Zarr of the store's tests (2 channels of 12 x 10 and 6 x 5), its keys served
  * below `cells.ome.zarr` with as=zarr. */
-function zarrFolder(type = "dir") {
-  const store = valid();
+function zarrFolder(type = "dir", store = valid()) {
   const below = `${RUN}/results/raw/cells.ome.zarr/`;
   return serve({
     [`${RUN}/results/stat/cells.ome.zarr`]: stat("cells.ome.zarr", null, type),
@@ -496,6 +495,16 @@ test("an *.ome.zarr folder stays on the preview page; without WebGL 2 it is draw
   await userEvent.click(screen.getAllByRole("link", { name: "Browse folder" })[0]);
   await waitFor(() => expect(router.state.location.pathname).toBe(`/runs/${ID}/results`));
   expect(router.state.location.search).toMatchObject({ path: "cells.ome.zarr" });
+});
+
+test("without WebGL 2 a reduced level says what is shown, as on a phone (CR-P3FU102I-03)", async () => {
+  canvas();
+  const store = valid();
+  store.set("0/.zarray", new TextEncoder().encode(JSON.stringify({ zarr_format: 2, shape: [2, 10000, 6000], chunks: [1, 1000, 1000], dtype: "<u2", compressor: { id: "zlib", level: 1 }, fill_value: 0, order: "C", filters: null })));
+  zarrFolder("dir", store);
+  open("cells.ome.zarr");
+  expect(await screen.findByText("Shown: channel 1, first plane, 6 × 5 of 6,000 × 10,000 px · Contrast stretched for display")).toBeInTheDocument();
+  expect(screen.queryByText("Open on a larger screen")).toBeNull();
 });
 
 test("on a phone an OME-Zarr shows the first plane flat, with Open on a larger screen and Copy link", async () => {

@@ -419,7 +419,7 @@ function TiffView({ id, file, ome, zarr, actions }: { id: string; file: ResultSt
       : readFlat(resultUrl(id, file.path, { as: "tiff" }, work), file.size ?? 0, file.name, ome, phone, pool, controller.signal);
     read
       .then((read) => controller.signal.aborted || (read ? setFlat(read) : setState("phone")))
-      .catch((err) => controller.signal.aborted || setState(imageState(err)));
+      .catch((err) => controller.signal.aborted || (controller.abort(), setState(imageState(err)))); // stop the reads still queued
     return () => (controller.abort(), pool.destroy());
   }, [id, file, ome, zarr, phone, work, tries, empty]);
   const paint = useCallback(
@@ -444,9 +444,11 @@ function TiffView({ id, file, ome, zarr, actions }: { id: string; file: ResultSt
 
   const asOme = ome && !flat.noOme;
   const [W, H] = flat.full;
+  // a reduced level (a phone, or an OME-Zarr without WebGL 2) says what is shown (CR-P3FU102I-03)
+  const reduced = phone || flat.width !== W || flat.height !== H;
   const facts = [
-    phone ? `Shown: ${asOme ? "channel 1, first plane, " : ""}${px(flat.width, flat.height)} of ${px(W, H)} px` : `${px(W, H)} px`,
-    !phone && asOme ? "Shown: channel 1, first plane" : null,
+    reduced ? `Shown: ${asOme ? "channel 1, first plane, " : ""}${px(flat.width, flat.height)} of ${px(W, H)} px` : `${px(W, H)} px`,
+    !reduced && asOme ? "Shown: channel 1, first plane" : null,
     !asOme && flat.pages > 1 ? `Shown: page 1 of ${flat.pages}` : null,
     flat.note,
     flat.stretched ? "Contrast stretched for display" : null,
