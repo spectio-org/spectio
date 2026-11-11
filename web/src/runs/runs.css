@@ -1112,11 +1112,18 @@
 }
 .sp-sheet {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
+  padding-top: 16px;
 }
 .sp-sheet:focus-visible {
   outline: 2px solid var(--sp-line-focus);
   outline-offset: 4px;
+}
+/* UI-12: the sheet's head stays on top: title, a task's state, then Close at the right. */
+.sp-sheet-head {
+  gap: 12px;
+  border-bottom: 1px solid var(--sp-line-divider);
 }
 /* Dialog and sheet titles, and their footer (ui-spec §12.4, UI-18): 16/600 in the display font;
    Cancel then the confirm at the right, gap sm; stacked full width on the phone, confirm last. */
@@ -1134,6 +1141,19 @@
 .sp-dialog-foot[data-stack] {
   flex-direction: column;
 }
+/* Only DetailSheet's title takes the free width and wraps (CR-P3UI12-01); its font is UI-18's. */
+.sp-sheet-head .sp-sheet-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sp-sheet-head .mantine-CloseButton-root {
+  flex-shrink: 0;
+}
+/* On the phone the sheet rises from the bottom, rounded on its free edge only. */
+.sp-sheet-bottom {
+  border-radius: 12px 12px 0 0;
+}
 .sp-sheet-name {
   margin: 0;
   font-size: 13px;
@@ -1144,8 +1164,10 @@
   margin: 0;
 }
 .sp-sheet-h {
-  margin: 8px 0 0;
-  font-size: 15px;
+  margin: 12px 0 0;
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
 }
 .sp-sheet-list {
   display: grid;
@@ -1196,8 +1218,23 @@
   font-weight: 600;
   color: var(--sp-text-secondary);
 }
-.sp-sheet-facts {
-  grid-template-columns: 1fr 1fr;
+/* Facts in a sheet: two columns on every screen, one label style (xs/600 muted). */
+.sp-facts.sp-sheet-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.sp-sheet-facts > div {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+.sp-sheet-facts dt {
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  color: var(--sp-text-muted);
+}
+.sp-sheet-facts dd {
+  margin: 2px 0 0;
 }
 .sp-log-search {
   margin-bottom: 8px;
@@ -1251,7 +1288,8 @@
 }
 .sp-files {
   display: grid;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
   min-width: 0;
 }
 .sp-file-tabs {
@@ -1261,26 +1299,31 @@
   gap: 4px 12px;
   border-bottom: 1px solid var(--sp-line-divider);
 }
+/* one row of file tabs, scrolled sideways when they do not fit (UI-12) */
 .sp-file-tabs [role="tablist"] {
   display: flex;
-  flex-wrap: wrap;
   gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 .sp-file-tabs [role="tab"] {
-  min-height: 36px;
-  padding: 0 10px;
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 12px;
+  white-space: nowrap;
   border: 0;
   border-bottom: 2px solid transparent;
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--sp-text-secondary);
   background: none;
   cursor: pointer;
 }
 .sp-file-tabs [role="tab"][aria-selected="true"] {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--sp-text-primary);
-  border-bottom-color: var(--sp-state-running);
+  border-bottom-color: var(--sp-accent);
 }
 .sp-file-tabs [role="tab"]:focus-visible {
   outline: 2px solid var(--sp-line-focus);

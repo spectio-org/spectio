@@ -217,7 +217,12 @@ test("a task row in the sheet opens the task detail: its facts and its files, no
   expect(facts).toHaveFocus();
   expect(within(taskSheet).getByText("tsk_2")).toBeInTheDocument();
   expect(within(taskSheet).getByText("S02")).toBeInTheDocument();
-  expect(within(taskSheet).getByText("Running")).toBeInTheDocument();
+  // UI-12: the sticky head holds the title, the state (icon and word) and Close; the facts do not repeat it
+  const head = within(taskSheet).getByRole("heading", { level: 2, name: "ALIGN (S02)" }).closest(".sp-sheet-head") as HTMLElement;
+  expect(within(head).getByText("Running")).toBeInTheDocument();
+  expect(within(head).getByRole("button", { name: "Close" })).toBeInTheDocument();
+  expect(within(taskSheet).getAllByText("Running")).toHaveLength(1);
+  expect(within(taskSheet).queryByText("State", { selector: "dt" })).toBeNull();
   expect(within(taskSheet).getByText("Stage 2 · Align")).toBeInTheDocument();
   expect(within(taskSheet).getByRole("heading", { name: "Files" })).toBeInTheDocument();
   expect(await within(taskSheet).findByText("This attempt has no file to show.")).toBeInTheDocument();
@@ -253,12 +258,17 @@ test("a task row in the Tasks tab opens the task detail; Snakemake words", async
   await waitFor(() => expect(open).toHaveFocus());
 });
 
-test("on the phone, a process card opens a full-screen sheet", async () => {
+test("on the phone, a process card opens a bottom sheet that traps focus and returns it", async () => {
   viewport(390);
   detail();
   app(`/runs/${ID}`);
   const cards = await screen.findByRole("list", { name: "Processes of Align" });
   await userEvent.click(within(cards).getByRole("button", { name: `Open process ${ALIGN}` }));
+  const open = within(cards).getByRole("button", { name: `Open process ${ALIGN}` });
   const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
   expect(sheet).toHaveAttribute("aria-modal", "true");
+  expect(sheet).toHaveClass("sp-sheet-bottom");
+  expect(sheet).toContainElement(document.activeElement as HTMLElement);
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(open).toHaveFocus());
 });
