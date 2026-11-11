@@ -7,6 +7,7 @@ or the PATH, Java with it. The default `pytest` run skips them; `-m engines` run
 
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -741,8 +742,18 @@ def test_module_target_from_the_command_line(nextflow: str, tmp_path: Path) -> N
     }  # fmt: skip
 
 
+def nextflow_version(nextflow: str) -> tuple[int, int]:
+    """(26, 10) from `nextflow -version`'s "version 26.10.4" line; (0, 0) when it says none."""
+    argv = [nextflow, "-version"]
+    out = subprocess.run(argv, capture_output=True, text=True, timeout=120, check=False).stdout
+    found = re.search(r"version (\d+)\.(\d+)\.", out)
+    return (int(found[1]), int(found[2])) if found else (0, 0)
+
+
 def test_local_module_run_reports_its_target(nextflow: str, tmp_path: Path) -> None:
     """The single-module fixture, run alone, driven: `onFlowCreate` carries the target."""
+    if nextflow_version(nextflow) < (26, 4):
+        pytest.skip("`nextflow module run` needs Nextflow 26.04 or later (api §5.10)")
     plugins = tmp_path / "plugins"
     build(nextflow, str(plugins))
     launch = tmp_path / "launch"
