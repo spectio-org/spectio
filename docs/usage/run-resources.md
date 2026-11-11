@@ -33,6 +33,12 @@ Both are folding rows of **Where it runs**, under the environment. Both are opti
 - **Read once, kept with the run.** When you press Launch, the server reads the file (owner, mode and size, then a copy), hashes it, and keeps the copy in the run directory, mode 0600, as `extra.config` (`extra.yaml` or `extra.json` on Snakemake). A later edit of your file changes no run. At most 256 KiB, UTF-8.
 - **Refused with the reason** on the input, in the server's words: a file writable by group or others, a symbolic link, no such file, over 256 KiB, a Snakemake file that is not a map or sets `__use_yte__`. A `503` ("The extra config file could not be read: …") keeps your values.
 - **`includeConfig`** in a Nextflow file loads other files when the run starts; those are not kept, and Run detail warns.
+- **Said before you press Launch** (step FU-P3-121, batch [P3-B16](../progress/W5/P3-M9.md#batch-p3-b16)). Once a pipeline is loaded and a path is typed, the form asks the server what Launch would refuse (`GET /workflows:inspect` with `config_file` and `engine`, [api §5.7](../specs/api-and-data-model.md#57-run-resources-and-an-extra-config-file-001)), about 300 ms after the last key. A refusal shows under the input and as "Fix Extra config file: …" in **Before Launch**, which blocks Launch. The check is asked again when the browser window gets focus back, so a `chmod go-w` in a terminal clears it; if the only blocker is a refusal that may be old, Launch asks again and goes ahead on the same click. A check that fails to run shows nothing: the server's own read at Launch stays the real check.
+
+![Launch with an extra config file writable by group: the input is red with "the file is writable by group or others" and "Fix its mode (chmod go-w), then Launch again"; Before Launch lists "Fix Extra config file: the file is writable by group or others" and the Launch button is dimmed](../assets/shots/app-launch-config-warning_light.webp#only-light)
+![Launch with an extra config file writable by group, dark](../assets/shots/app-launch-config-warning_dark.webp#only-dark)
+
+*A demo file of mode 664 in the pipeline's own directory (`tools/media/b16_demo.py`). A path under the demo home is refused for its place, as the guide's API block says, not for its mode.*
 
 ## What the engines get
 

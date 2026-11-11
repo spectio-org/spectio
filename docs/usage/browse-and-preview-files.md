@@ -63,7 +63,7 @@ The page shows the file's name, its kind, size and time, its full path with **Co
 | TIFF | the first plane drawn on a canvas, with **Actual size** and a line of facts under it. See [TIFF files](#tiff-files) |
 | OME-TIFF (a file named `*.ome.tif` or `*.ome.tiff`) | on a desktop with WebGL 2, the image viewer with its channels; on a phone, or without WebGL 2, the flat view of the TIFF. See [OME-TIFF files](#ome-tiff-files) |
 | HTML report | in the results, the report viewer, in a sandbox, opened for you. In a work directory, a note and Download. See [HTML files](#html-files) |
-| OME-Zarr (a folder named `*.ome.zarr`) | the image viewer, with its channels. See [OME-Zarr](#ome-zarr) |
+| OME-Zarr (a folder named `*.ome.zarr`) | on a desktop with WebGL 2, the image viewer with its channels; on a phone, or without WebGL 2, the first plane flat. See [OME-Zarr](#ome-zarr) |
 | PDF, binary | the facts and Download. Spectio does not open them |
 
 - **Text is shown as text.** A file's content is never run as HTML, and an SVG is shown only in an `<img>`, where its scripts do nothing.
@@ -167,7 +167,7 @@ A CSV or TSV file opens in an [AG Grid](https://www.ag-grid.com/) table. The gri
 
 *Built on the integration branch (step FU-P3-102g, batch [P3-B13](../progress/W5/P3-M9.md#batch-p3-b13), 2026-11-10). The rules are owned by [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview), the limits by [api §5.3.1](../specs/api-and-data-model.md) and [development environment §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), requirement 19.*
 
-A folder named `*.ome.zarr` is the one folder whose row opens the preview page. The page opens it in the image viewer, on a desktop, in a browser with WebGL 2.
+A folder named `*.ome.zarr` is the one folder whose row opens the preview page. The page opens it in the image viewer, on a desktop, in a browser with WebGL 2; on a phone, or without WebGL 2, it draws the first plane flat (below).
 
 ![Preview of imaging/cells.ome.zarr: two channels, DAPI in blue and GFP in green, on a black canvas, with the channel list and a contrast range for each](../assets/shots/app-file-preview-zarr_light.webp#only-light)
 ![Preview of imaging/cells.ome.zarr: two channels, DAPI in blue and GFP in green, on a black canvas, with the channel list and a contrast range for each](../assets/shots/app-file-preview-zarr_dark.webp#only-dark)
@@ -181,7 +181,13 @@ A folder named `*.ome.zarr` is the one folder whose row opens the preview page. 
 - **A multi-channel store opens.** A read reserves up to 16 MiB of the view's byte budget (256 MiB) only once it has one of the 3 slots, so at most 3 × 16 MiB is held and a store with many channels is no longer stopped on its first paint (a blocker found in review, fixed before merge).
 - **Caps on what a store may claim:** a side of at most 2^31 − 1 pixels, channels × planes × time points at most 10,000, every level keeping level 0's channels, planes and time points. A store over a cap reads as too large, before anything is allocated.
 - **A Zarr v2 store in a work directory** reads "This OME-Zarr uses Zarr v2, which a work directory does not serve. Open it from the results once it is published."
-- **Not built yet (FU-P3-102h, part 2):** a phone and a browser without WebGL 2 show a note ("Open on a larger screen: Spectio shows an OME-Zarr in the image viewer only." or "This browser cannot open the image viewer: it needs WebGL 2, which is off or missing.") with **Browse folder**, not a flat picture. The two states for a store published as a link are not built either.
+- **On a phone, and without WebGL 2** (step FU-P3-102i, batch [P3-B16](../progress/W5/P3-M9.md#batch-p3-b16)). The page draws one plane flat: channel 1, the first plane and time point, from the largest level that fits (both sides at most 2,048 px on a phone, at most 50 megapixels elsewhere). It reads with the same checked store, caps, budget and decoder workers as the viewer, and draws the plane as the [TIFF flat view](#tiff-files) does, with **Copy path** and "Open on a larger screen". If no level fits a phone, or a plane would need more than 2,000 chunks (checked before any is read, SEC-P3FU102I-01), the page says it is too large. A browser that has no WebGL 2 reads "This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." and then shows the same flat picture. If the WebGL viewer fails after it opened, the flat view opens a store of its own, so one opening can read at most two budgets (SEC-P3FU102I-02; [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview)). **[The no-WebGL path is covered by `FilePreview.test.tsx`, not by a shot.]**
+
+    ![The OME-Zarr cells.ome.zarr on a phone: the breadcrumb and path, an Actual size button and the first plane, blobs on black, with "Shown: channel 1, first plane, 512 by 384 of 512 by 384 px"](../assets/shots/app-file-preview-zarr-phone_light.webp#only-light)
+    ![The same OME-Zarr on a phone, dark](../assets/shots/app-file-preview-zarr-phone_dark.webp#only-dark)
+
+    *The demo store of batch P3-B13 (`tools/media/b13_demo.py`) in headless Chromium at 390 by 844. The text under the plane, "Open on a larger screen", is below the fold of the shot.*
+- **A store behind a link** reads one of two final states, by place, because the server refuses every key below a link and the page cannot tell the Zarr version or the target. In the results: "Spectio cannot open this OME-Zarr here (published as a link)." with "Spectio does not read below a link. A Zarr v2 store cannot be opened from a link in 0.0.1; a Zarr v3 store opens from the task's work directory once Spectio reads Zarr v3." In a work directory: "Spectio cannot open this OME-Zarr here (a link in the work directory)." with "Spectio does not read below a link. Open it from the task that wrote it, or from the results once it is published." Both offer **Copy path**, not Download, and ask for no key. The split by place, not by version, is an assumption ([inbox #150](../reviews/inbox.md#150-assumed-ome-zarr-with-blosc-lz4-and-zstd-and-the-ome-zarr-flat-view-after-fu-p3-102g-fu-p3-102h)). **[The link states were not captured: no shot.]**
 
 ## What you can check on the API
 
