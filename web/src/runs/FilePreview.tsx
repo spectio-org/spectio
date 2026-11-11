@@ -2,10 +2,14 @@ import { Button } from "@mantine/core";
 import { Link, Navigate } from "@tanstack/react-router";
 import { type ReactNode, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { type ApiError, type ResultStat, type RunDetail, type TextRead, type WorkRoot, getRun, readResultText, resultUrl, statResult } from "../api";
-import { Icon } from "../icons";
+import { Icon, type IconName } from "../icons";
+import { CardHead } from "../shell/CardHead";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
+import { PageHead } from "../shell/PageHead";
+import { ErrorPanel, SkeletonRows } from "../shell/States";
 import { CopyButton } from "./CopyMenu";
+import { ViewControl } from "./ViewControl";
 import { LazyGrid } from "./LazyGrid";
 import { LogViewer } from "./LogViewer";
 import {
@@ -66,7 +70,13 @@ function Problem({ error, onRetry }: { error: ApiError; onRetry: () => void }) {
             : error.status === 503
               ? [OFFLINE, OFFLINE_WHY, true]
               : ["The file could not be read", error.message, true];
-  return <Note title={title} body={body} actions={retry ? <Button variant="default" size="xs" onClick={onRetry}>Retry</Button> : null} />;
+  if (!retry) return <Note title={title} body={body} />;
+  return (
+    <ErrorPanel onRetry={onRetry}>
+      <strong>{title}</strong>
+      {body && <> {body}</>}
+    </ErrorPanel>
+  );
 }
 
 const notAFile = (work?: WorkRoot) => (work ? "Not a file of this job's work directory." : "Not a file of this run's results.");
@@ -89,19 +99,20 @@ function DownloadLink({ href, name, label = "Download" }: { href: string; name: 
   );
 }
 
-/** Text shown whole: at most 20,000 lines, each cut at 10,000 characters, in LogViewer. */
-function Lines({ shown, label, levels, gutter, after, cap }: { shown: ReturnType<typeof capLines>; label: string; levels: boolean; gutter: boolean; after?: ReactNode; cap?: ReactNode }) {
+/** Text shown whole: at most 20,000 lines, each cut at 10,000 characters, in LogViewer, under one
+ * row of the view's `controls` and Wrap lines. A new `reset` starts LogViewer afresh; the row stays,
+ * so a pressed control keeps its focus. */
+function Lines({ shown, label, levels, gutter, controls, reset, after, cap }: { shown: ReturnType<typeof capLines>; label: string; levels: boolean; gutter: boolean; controls?: ReactNode; reset?: string; after?: ReactNode; cap?: ReactNode }) {
   const phone = usePhone();
   const [wrap, setWrap] = useState(phone);
   const { lines, capped } = shown;
   return (
     <>
-      <div className="sp-actions">
-        <Button variant="default" size="xs" aria-pressed={wrap} onClick={() => setWrap(!wrap)}>
-          Wrap lines
-        </Button>
+      <div className="sp-file-line">
+        {controls}
+        <ViewControl label="Wrap lines" icon="wrap" pressed={wrap} onClick={() => setWrap(!wrap)} />
       </div>
-      <LogViewer text={lines.map((l) => `${l}\n`).join("")} label={label} start="top" levels={levels} gutterFrom={gutter ? 1 : undefined} wrap={wrap} searchButton={phone} />
+      <LogViewer key={reset} text={lines.map((l) => `${l}\n`).join("")} label={label} start="top" levels={levels} gutterFrom={gutter ? 1 : undefined} wrap={wrap} searchButton={phone} />
       {after}
       {cap ?? (capped && <p className="sp-file-cap">{LINES_CAP}</p>)}
     </>
@@ -165,13 +176,9 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
   };
   const shownBytes = whole ? total : end ? READ : (next ?? 0);
   const pair = !whole && (
-    <div className="sp-segments" role="group" aria-label="Read from">
-      <button type="button" aria-pressed={!end} onClick={() => setEnd(false)}>
-        Start
-      </button>
-      <button type="button" aria-pressed={end} onClick={() => setEnd(true)}>
-        End
-      </button>
+    <div className="sp-file-pair" role="group" aria-label="Read from">
+      <ViewControl label="Start" icon="toStart" pressed={!end} onClick={() => setEnd(false)} />
+      <ViewControl label="End" icon="toEnd" pressed={end} onClick={() => setEnd(true)} />
     </div>
   );
   const pager = (
@@ -191,13 +198,15 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
   return (
     <div className="sp-file-viewer">
       {note && <p className="sp-muted">{note}</p>}
-      <div className="sp-file-line">
-        {!phone && pair}
-        <span className="sp-muted">
-          {whole ? `Whole file · ${size(total)}` : end ? `Last 64 KiB of ${size(total)}: line numbers not known` : shown.capped ? "Search covers the 20,000 lines shown" : `Search covers the ${kib(shownBytes)} shown`}
-        </span>
-      </div>
       <Lines
+        controls={
+          <>
+            {!phone && pair}
+            <span className="sp-muted">
+              {whole ? `Whole file · ${size(total)}` : end ? `Last 64 KiB of ${size(total)}: line numbers not known` : shown.capped ? "Search covers the 20,000 lines shown" : `Search covers the ${kib(shownBytes)} shown`}
+            </span>
+          </>
+        }
         shown={shown}
         label={`${file.name}, ${whole ? "whole file" : end ? "last 64 KiB" : "from the start"}`}
         levels={levels}
@@ -251,13 +260,19 @@ function JsonView({ id, file, retry }: { id: string; file: ResultStat; retry: ()
   }
   return (
     <div className="sp-file-viewer">
-      <div className="sp-file-line">
-        <Button variant="default" size="xs" aria-pressed={raw} onClick={() => setRaw(!raw)}>
-          Show as text
-        </Button>
-        {!raw && <span className="sp-muted">Formatted view: large numbers and repeated keys may differ</span>}
-      </div>
-      <Lines key={String(raw)} shown={capLines(raw ? text : view.text)} label={`${file.name}, ${raw ? "whole file" : "formatted"}`} levels={false} gutter />
+      <Lines
+        reset={String(raw)}
+        shown={capLines(raw ? text : view.text)}
+        label={`${file.name}, ${raw ? "whole file" : "formatted"}`}
+        levels={false}
+        gutter
+        controls={
+          <>
+            <ViewControl label="Show as text" icon="file" pressed={raw} onClick={() => setRaw(!raw)} />
+            {!raw && <span className="sp-muted">Formatted view: large numbers and repeated keys may differ</span>}
+          </>
+        }
+      />
     </div>
   );
 }
@@ -302,12 +317,8 @@ function TableView({ id, file, retry }: { id: string; file: ResultStat; retry: (
   return (
     <div className="sp-file-viewer">
       <div className="sp-file-line">
-        <Button variant="default" size="xs" aria-pressed={header} onClick={() => setHeader(!header)}>
-          First row is a header
-        </Button>
-        <Button variant="default" size="xs" onClick={() => setAsText(true)}>
-          Show as text
-        </Button>
+        <ViewControl label="First row is a header" icon="table" pressed={header} onClick={() => setHeader(!header)} />
+        <ViewControl label="Show as text" icon="file" onClick={() => setAsText(true)} />
       </div>
       {table.comments.length > 0 && <pre className="sp-file-comments">{table.comments.join("\n")}</pre>}
       <p className="sp-muted">{[file.name, cut ? "read from the first 1 MiB" : null, ...notes].filter(Boolean).join(" · ")}</p>
@@ -377,9 +388,7 @@ function ImageView({ id, file }: { id: string; file: ResultStat }) {
   return (
     <div className="sp-file-viewer">
       <div className="sp-actions">
-        <Button variant="default" size="xs" aria-pressed={actual} onClick={() => setActual(!actual)}>
-          Actual size
-        </Button>
+        <ViewControl label="Actual size" icon="actualSize" pressed={actual} onClick={() => setActual(!actual)} />
       </div>
       <div className="sp-file-backdrop">
         {actual ? (
@@ -458,9 +467,7 @@ function TiffView({ id, file, ome, zarr, actions }: { id: string; file: ResultSt
     <div className="sp-file-viewer">
       {flat.noOme && <p className="sp-muted">This file has no OME metadata: shown as a TIFF.</p>}
       <div className="sp-actions">
-        <Button variant="default" size="xs" aria-pressed={actual} onClick={() => setActual(!actual)}>
-          Actual size
-        </Button>
+        <ViewControl label="Actual size" icon="actualSize" pressed={actual} onClick={() => setActual(!actual)} />
       </div>
       <div className="sp-file-backdrop">
         {actual ? (
@@ -630,6 +637,22 @@ function Viewer({ id, file, kind, retry, search }: { id: string; file: ResultSta
   }
 }
 
+const KIND_ICONS: Partial<Record<Kind, IconName>> = { json: "braces", table: "table", image: "image", tiff: "image", ometiff: "image", omezarr: "image", html: "fileCode" };
+
+/** The viewer's card (ui-spec §12.7): the shared head with the facts line as its meta and Reload,
+ * then the viewer; it folds, as every titled section (§4.4 "Open sections"). */
+function PreviewCard({ icon, meta, actions, children }: { icon: IconName; meta: string; actions?: ReactNode; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <section className="sp-card sp-file-card" aria-labelledby="sp-preview-title">
+      <CardHead id="sp-preview" icon={icon} title="Preview" meta={meta} actions={actions} open={open} onToggle={() => setOpen(!open)} />
+      <div id="sp-preview-body" className="sp-file-card-body" hidden={!open}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
 /** `/runs/$id/results/file?path=<file>`, with the folder's `sort` and `q` it returns to, or the
  * `task` and `attempt` of the sheet a Preview of its Outputs came from. */
 export function FilePreview({ id, search, work }: { id: string; search: ResultsSearch; work?: WorkRoot }) {
@@ -640,7 +663,6 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
   const [error, setError] = useState<ApiError | null>(null);
   const [reads, setReads] = useState(0);
   const [readAt, setReadAt] = useState<Date | null>(null);
-  const title = useRef<HTMLHeadingElement>(null);
   const valid = isResultPath(path) && !(work && hasDotPart(path));
   const taskName = useTaskName(id, work);
 
@@ -666,7 +688,8 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
 
   const loaded = file !== null;
   useEffect(() => {
-    if (loaded) title.current?.focus();
+    // the page head's h1, in the page or in the phone's title row
+    if (loaded) document.querySelector<HTMLElement>("h1.sp-page-title")?.focus();
   }, [loaded]);
 
   const name = run ? runName(run) : null;
@@ -688,6 +711,8 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
   const retry = () => setReads((r) => r + 1);
   const shown = file?.path ?? "";
   const folder = parent(shown);
+  // the subtitle names the parent run (ui-spec §12.5); its link returns to the file's row in the folder
+  const up = (root: string) => `${name ?? "Run"} · ${folder.split("/").pop() || root}`;
   const parts = shown ? shown.split("/") : [];
   const where = file ? join(file.root, file.path) : null;
   const ended = run ? isTerminal(run.state) : true;
@@ -695,35 +720,25 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
   return (
     <Work.Provider value={work}>
       <div className="sp-runs sp-file-page">
-        {work ? (
-          <Link className="sp-report-back" to="/runs/$id/workdir" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name, task, attempt }}>
-            <Icon name="chevronLeft" /> {file ? folder.split("/").pop() || "work directory" : "Work directory"}
-          </Link>
-        ) : task && attempt ? (
-          <BackToRun id={id} run={run} task={task} attempt={attempt} />
-        ) : (
-          <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name }}>
-            <Icon name="chevronLeft" /> {file ? folder.split("/").pop() || "results" : "Results"}
-          </Link>
-        )}
-        <h1 ref={title} tabIndex={-1} className="sp-page-title sp-file-name">
-          {fileName ?? "File preview"}
-        </h1>
-        {file && kind && (
-          <div className="sp-file-facts">
-            <span>
-              {[kindWord(file.type === "link_outside" ? "link" : kind, !!work), file.size === null ? null : size(file.size), file.mtime ? `modified ${when(file.mtime)}` : null, !ended && readAt ? `read at ${clock(readAt)}` : null]
-                .filter(Boolean)
-                .join(" · ")}
-            </span>
-            {!ended && (
-              <Button variant="default" size="xs" leftSection={<Icon name="reload" size="button" />} onClick={retry}>
-                Reload
-              </Button>
-            )}
-          </div>
-        )}
-        {file && !ended && <p className="sp-muted">The view does not follow the file on its own: Reload reads it again.</p>}
+        <PageHead
+          section="runs"
+          icon="file"
+          title={fileName ?? "File preview"}
+          phoneTitle="title"
+          sub={
+            work ? (
+              <Link className="sp-report-back" to="/runs/$id/workdir" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name, task, attempt }}>
+                <Icon name="chevronLeft" /> {up("work directory")}
+              </Link>
+            ) : task && attempt ? (
+              <BackToRun id={id} run={run} task={task} attempt={attempt} />
+            ) : (
+              <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name }}>
+                <Icon name="chevronLeft" /> {up("results")}
+              </Link>
+            )
+          }
+        />
         {file && where && (
           <div className="sp-pathbar">
             <Crumbs id={id} parts={parts} work={work} />
@@ -739,13 +754,30 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
         ) : error ? (
           <Problem error={error} onRetry={retry} />
         ) : !file || !kind ? (
-          <p className="sp-muted">Loading the file…</p>
-        ) : file.type === "link_outside" && kind === "omezarr" ? (
-          <ZarrLink name={file.name} where={where!} work={!!work} />
-        ) : file.type === "link_outside" ? (
-          <Note title={work ? "A link outside the run: not followed." : "A link outside the results directory: not followed."} />
+          <SkeletonRows label="Loading the file…" />
         ) : (
-          <Viewer id={id} file={file} kind={kind} retry={retry} search={search} />
+          <PreviewCard
+            icon={KIND_ICONS[kind] ?? "file"}
+            meta={[kindWord(file.type === "link_outside" ? "link" : kind, !!work), file.size === null ? null : size(file.size), file.mtime ? `modified ${when(file.mtime)}` : null, !ended && readAt ? `read at ${clock(readAt)}` : null]
+              .filter(Boolean)
+              .join(" · ")}
+            actions={
+              !ended && (
+                <Button variant="default" leftSection={<Icon name="reload" size="button" />} onClick={retry}>
+                  Reload
+                </Button>
+              )
+            }
+          >
+            {!ended && <p className="sp-muted">The view does not follow the file on its own: Reload reads it again.</p>}
+            {file.type === "link_outside" && kind === "omezarr" ? (
+              <ZarrLink name={file.name} where={where!} work={!!work} />
+            ) : file.type === "link_outside" ? (
+              <Note title={work ? "A link outside the run: not followed." : "A link outside the results directory: not followed."} />
+            ) : (
+              <Viewer id={id} file={file} kind={kind} retry={retry} search={search} />
+            )}
+          </PreviewCard>
         )}
       </div>
     </Work.Provider>

@@ -90,3 +90,13 @@ test("opened from the Summary there is no folder path", async () => {
   await screen.findByRole("heading", { level: 1, name: "MultiQC report" });
   expect(screen.queryByRole("navigation", { name: "Folder" })).toBeNull();
 });
+
+test("the page head (ui-spec §12.5, UI-17): tile and h1 in one header, the run named in the subtitle", async () => {
+  serve({ [URL_]: detail() });
+  app(`/runs/${ID}/report?path=${encodeURIComponent(PATH)}`);
+  const head = (await screen.findByRole("heading", { level: 1, name: "MultiQC report" })).closest("header")!;
+  expect(head).toHaveClass("sp-head");
+  expect(head.querySelector(".sp-head-tile")).not.toBeNull();
+  expect(within(head).getByRole("link", { name: /rnaseq-2026-10-25 · Summary/ })).toBeInTheDocument();
+  expect(within(head).getByRole("link", { name: /Download/ })).toBeInTheDocument();
+});

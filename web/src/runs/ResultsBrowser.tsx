@@ -1,10 +1,14 @@
-import { ActionIcon, Button } from "@mantine/core";
+import { ActionIcon, Button, Select } from "@mantine/core";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, type Ref, useEffect, useMemo, useRef, useState } from "react";
 import { type ApiError, type ResultEntry, type Results, type RunDetail, type WorkRoot, getRun, listResults, resultUrl } from "../api";
 import { type IconName, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
+import { CardHead } from "../shell/CardHead";
+import { PageHead } from "../shell/PageHead";
+import { EmptyState, ErrorPanel, SkeletonRows } from "../shell/States";
+import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { CopyButton } from "./CopyMenu";
 import { type EntryKind, OFFLINE, OFFLINE_WHY, type Sort, SORTS, counts, entryKind, filterEntries, hasDotPart, join, sortEntries, taskSearch } from "./explorer";
 import { kindWord, size } from "./preview";
@@ -138,7 +142,8 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
   const sort = search.sort ?? "name";
   const [typed, setTyped] = useState(search.q ?? "");
   const [said, setSaid] = useState("");
-  const field = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(true);
+  const bar = useRef<HTMLDivElement>(null);
   const focused = useRef<HTMLAnchorElement>(null);
   const write = (change: Partial<ResultsSearch>) =>
     navigate({ search: (prev) => resultsSearch({ ...prev, ...change, focus: undefined }), replace: true });
@@ -161,18 +166,14 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
 
   if (!results.exists && work) {
     return (
-      <div className="sp-results-state">
-        <strong>The work directory is not there yet</strong>
-        <span className="sp-muted">The job creates it when it starts; on a shared file system it may take a moment to appear. Spectio checks again when you reload.</span>
-      </div>
+      <EmptyState icon="folder">
+        The work directory is not there yet. The job creates it when it starts; on a shared file system it may take a moment to appear. Spectio checks again when you reload.
+      </EmptyState>
     );
   }
   if (!results.exists) {
     return (
-      <div className="sp-results-state">
-        <strong>The results directory does not exist yet</strong>
-        <span className="sp-muted">The pipeline creates it when its first results are published. Spectio checks again when you reload.</span>
-      </div>
+      <EmptyState icon="folder">The results directory does not exist yet. The pipeline creates it when its first results are published. Spectio checks again when you reload.</EmptyState>
     );
   }
   const label = folder.split("/").pop() || (work ? "work directory" : "results");
@@ -181,7 +182,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
   const facts = (entry: ResultEntry) => [kindWord(entryKind(entry), !!work), entry.type === "file" && entry.size !== null ? size(entry.size) : null, when(entry.mtime)].filter(Boolean).join(" · ");
   const clear = () => {
     setTyped("");
-    field.current?.focus();
+    bar.current?.querySelector("input")?.focus();
   };
 
   const rows = phone ? (
@@ -256,7 +257,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
               <td>{when(entry.mtime)}</td>
               <td className="sp-explorer-act">
                 {entry.type === "file" && (
-                  <ActionIcon component="a" variant="default" size={32} href={resultUrl(id, join(folder, entry.name), { download: true }, work)} download aria-label={`Download ${entry.name}`}>
+                  <ActionIcon component="a" variant="default" size="md" href={resultUrl(id, join(folder, entry.name), { download: true }, work)} download aria-label={`Download ${entry.name}`}>
                     <Icon name="download" />
                   </ActionIcon>
                 )}
@@ -270,53 +271,55 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
 
   return (
     <>
-      <section className="sp-card sp-explorer" aria-labelledby={`${id}-explorer`}>
-        <div className="sp-explorer-head">
-          <h2 id={`${id}-explorer`}>
-            {work ? "Work directory" : "Results"} · {counts(entries)}
-          </h2>
-          <label className="sp-search-field">
-            <Icon name="search" />
-            <input ref={field} type="search" aria-label="Filter this folder" placeholder="Filter this folder" value={typed} onChange={(e) => setTyped(e.currentTarget.value)} />
-          </label>
-          {phone && (
-            <label className="sp-select">
-              Sort by
-              <select value={sort} onChange={(e) => write({ sort: e.currentTarget.value as Sort })}>
-                {SORTS.map((s) => (
-                  <option key={s} value={s}>
-                    {SORT_WORDS[s]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <span role="status" className="sp-sr">
-            {said}
-          </span>
-        </div>
-        {results.truncated && (
-          <div className="sp-note" role="note">
-            <p>This folder has more than 1,000 entries. Spectio lists 1,000 of them, in no particular order; sort and filter see only those.</p>
-            <p>
-              Open it on the cluster: <span className="sp-mono">{join(results.root, folder)}</span>
-            </p>
+      <section className="sp-card sp-explorer" aria-labelledby={`${id}-explorer-title`}>
+        <CardHead id={`${id}-explorer`} icon="folder" title={work ? "Work directory" : "Results"} meta={counts(entries)} open={open} onToggle={() => setOpen(!open)} />
+        <div id={`${id}-explorer-body`} className="sp-explorer-body" hidden={!open}>
+          <div ref={bar}>
+            <Toolbar
+              label="Filter and sort"
+              search={<ToolbarSearch label="Filter this folder" value={typed} onChange={setTyped} />}
+              filters={
+                phone && (
+                  <Select
+                    size="sm"
+                    label="Sort by"
+                    data={SORTS.map((s) => ({ value: s, label: SORT_WORDS[s] }))}
+                    value={sort}
+                    onChange={(v) => v && write({ sort: v as Sort })}
+                    allowDeselect={false}
+                  />
+                )
+              }
+            />
+            <span role="status" className="sp-sr">
+              {said}
+            </span>
           </div>
-        )}
-        {entries.length === 0 ? (
-          <p className="sp-muted">This folder is empty.</p>
-        ) : shown.length === 0 ? (
-          <div className="sp-note" role="note">
-            <strong>No entry in this folder matches '{typed}'</strong>
-            <div>
-              <Button variant="default" size="xs" onClick={clear}>
-                Clear
-              </Button>
+          {results.truncated && (
+            <div className="sp-note" role="note">
+              <p>This folder has more than 1,000 entries. Spectio lists 1,000 of them, in no particular order; sort and filter see only those.</p>
+              <p>
+                Open it on the cluster: <span className="sp-mono">{join(results.root, folder)}</span>
+              </p>
             </div>
-          </div>
-        ) : (
-          rows
-        )}
+          )}
+          {entries.length === 0 ? (
+            <EmptyState icon="folder">This folder is empty.</EmptyState>
+          ) : shown.length === 0 ? (
+            <EmptyState
+              icon="search"
+              action={
+                <Button variant="default" onClick={clear}>
+                  Clear
+                </Button>
+              }
+            >
+              No entry in this folder matches '{typed}'
+            </EmptyState>
+          ) : (
+            rows
+          )}
+        </div>
       </section>
       <p className="sp-muted">
         {work
@@ -451,8 +454,13 @@ export function ResultsBrowser({ id, search, work }: { id: string; search: Resul
   const where = results ? join(results.root, shown) : null;
   return (
     <div className="sp-runs">
-      {work ? <BackToTask id={id} work={work} name={taskName} /> : <BackToRun id={id} run={run} task={search.task} attempt={search.attempt} />}
-      <h1 className="sp-page-title">{work ? (taskName ? `Work directory · ${taskName} · attempt ${work.attempt}` : "Work directory") : "Results"}</h1>
+      <PageHead
+        section="runs"
+        icon="folder"
+        title={work ? (taskName ? `Work directory · ${taskName} · attempt ${work.attempt}` : "Work directory") : "Results"}
+        sub={work ? <BackToTask id={id} work={work} name={taskName} /> : <BackToRun id={id} run={run} task={search.task} attempt={search.attempt} />}
+        phoneTitle="title"
+      />
       <div className="sp-pathbar">
         <Crumbs id={id} parts={parts} work={work} sort={search.sort} />
         {where && (
@@ -465,21 +473,16 @@ export function ResultsBrowser({ id, search, work }: { id: string; search: Resul
       {!valid ? (
         <p role="alert">Not a folder of {where_}.</p>
       ) : error?.retry ? (
-        <div className="sp-note" role="alert">
+        <ErrorPanel onRetry={() => setReads((r) => r + 1)}>
           <strong>{error.title}</strong>
-          {error.body && <span>{error.body}</span>}
-          <div className="sp-actions">
-            <Button variant="default" size="xs" onClick={() => setReads((r) => r + 1)}>
-              Retry
-            </Button>
-          </div>
-        </div>
+          {error.body && <> {error.body}</>}
+        </ErrorPanel>
       ) : error ? (
         <p role="alert">{error.title}</p>
       ) : results ? (
         <Listing key={path} id={id} folder={path} results={results} search={search} work={work} />
       ) : (
-        <p className="sp-muted">Loading the folder…</p>
+        <SkeletonRows label="Loading the folder…" />
       )}
     </div>
   );

@@ -215,10 +215,10 @@ REGISTRY: dict[str, Shot] = {
         # environment itself): one 16-bit grayscale plane of 512 by 384, so the page says "Contrast stretched for display".
         Shot("app-file-preview-tiff", "/runs/$SPECTIO_DEMO_RUN/results/file?path=imaging/cells.tif", 1440, 1000,
              "0.0.1, live: the preview of a TIFF, its first plane on a canvas with Actual size and the line of facts under it",
-             themes=("light", "dark"), live=("wait:Actual size",)),
+             themes=("light", "dark"), live=("wait:Contrast stretched for display",)),
         Shot("app-file-preview-tiff-phone", "/runs/$SPECTIO_DEMO_RUN/results/file?path=imaging/cells.tif", 390, 844,
              "0.0.1, live: the same TIFF on a phone",
-             themes=("light", "dark"), live=("wait:Actual size",)),
+             themes=("light", "dark"), live=("wait:Contrast stretched for display",)),
         # Batch P3-B13 (FU-P3-87e, 101a, 102g), from `tools/media/b13_demo.py` (it sets the environment itself): a catalog
         # of three entries, seven runs, and one run whose results hold a 30-row TSV and an OME-Zarr.
         Shot("app-launch-catalog", "/launch", 1440, 1100,
