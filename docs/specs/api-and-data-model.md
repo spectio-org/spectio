@@ -690,6 +690,7 @@ All four answer `{items: []}` or empty `groups` with `200` when nothing matches;
 - **`read_up_to`** is the one principal's `principals.notifications_read_at` (migration 0014), null until the first mark.
 - `POST /me/notifications:mark-read`, body `{up_to: <timestamp with offset>}` (no other field): sets `read_up_to` to `up_to` when it is later, never earlier, and answers as `GET`. The web sends the newest item's `at`. It is a write, so it follows [dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 7 (a session, the loopback `Origin`, a JSON body).
 - Both routes sit behind the session, as `/me` (§5.8).
+- *Amended 2026-11-11 (assumed, [inbox #153](../reviews/inbox.md#153-assumed-ui-design-system-and-the-notifications-panel-2026-11-11); the panel: [ui-spec §12.13](ui-spec.md#1213-notifications-panel)):* each item gains `engine` (the run's `workflow.engine`); for `run_succeeded`, `run_failed` and `run_cancelled`, `at` is `min(ended_at, state_changed_at)` when `ended_at` is set (the producer's clock cannot place an item in the future and move the read mark past later items, SEC-P3UI05A-01), else `state_changed_at`, because an adopted run's `state_changed_at` is the time Spectio adopted it, not the time it ended (an adopted run that ended before `read_up_to` therefore reads as read); `gate_waiting` keeps `state_changed_at`. Per-item read (`ids` in the mark body) is Later; the watermark stays the only read state.
 
 ## 6. Identity, tenancy and permissions
 
