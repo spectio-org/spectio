@@ -83,9 +83,11 @@ test("the components' defaults", () => {
   expect(props("SegmentedControl")).toMatchObject({ color: "violet" });
   expect(props("Anchor")).toMatchObject({ underline: "hover" });
   expect(props("Modal")).toMatchObject({ padding: "lg" });
-  for (const name of ["Modal", "Drawer", "Popover", "Menu"]) {
+  for (const name of ["Modal", "Popover", "Menu"]) {
     expect(props(name)).toMatchObject({ radius: "md", shadow: "md" });
   }
+  // A drawer sits on a viewport edge: square corners (CR-P3UI01-01).
+  expect(props("Drawer")).toMatchObject({ radius: 0, shadow: "md", padding: "lg" });
   expect(props("Tooltip")).toMatchObject({ withArrow: false });
   expect(props("Input")).toMatchObject({ size: "sm" });
 });
