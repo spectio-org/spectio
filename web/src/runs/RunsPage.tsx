@@ -92,13 +92,18 @@ function SelectAll() {
     cell?.addEventListener("keydown", onKey);
     return () => cell?.removeEventListener("keydown", onKey);
   }, []);
+  const some = ids.filter((id) => selected.has(id)).length;
+  // mixed while some runs of the page are selected, not all (UX-P3FU115B-08)
+  useEffect(() => {
+    if (box.current) box.current.indeterminate = some > 0 && some < ids.length;
+  });
   return (
     <input
       ref={box}
       type="checkbox"
       className="sp-row-check"
       aria-label="Select all runs on this page"
-      checked={ids.length > 0 && ids.every((id) => selected.has(id))}
+      checked={ids.length > 0 && some === ids.length}
       onChange={(e) => toggle(ids, e.currentTarget.checked)}
     />
   );
@@ -141,8 +146,9 @@ function TasksCell({ run }: { run: Run }) {
   );
 }
 /** A run as a card, for the phone (MLiteRuns, MLiteHome; UX-PAR-10): the state and duration,
- * the name, the pipeline with its mark and the tasks, then the context. */
-export function RunCard({ run, select }: { run: Run; select?: ReactNode }) {
+ * the name, the pipeline with its mark and the tasks, then the context. The runs list gives
+ * its box and its pin (UX-P3FU115B-06); Home gives neither. */
+export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pin?: ReactNode }) {
   const { units } = words(run.workflow.engine);
   return (
     <li className="sp-run-card" data-rail="" data-tone={tone(run.state)}>
@@ -151,7 +157,14 @@ export function RunCard({ run, select }: { run: Run; select?: ReactNode }) {
         <StateWord state={run.state} />
         <span>{duration(run.started_at, run.ended_at)}</span>
       </span>
-      <RunLink run={run} />
+      {pin ? (
+        <span className="sp-run-cell">
+          <RunLink run={run} />
+          {pin}
+        </span>
+      ) : (
+        <RunLink run={run} />
+      )}
       <span className="sp-run-card-line">
         <Pipeline run={run} size={16} />
         <span>
@@ -288,7 +301,10 @@ export function RunsPage() {
   // Each change keeps the other param: the name filter lands 250 ms after typing, a click may come between.
   const setSearch = (change: { state?: string; q?: string; sort?: string }) =>
     navigate({ search: (prev) => runsSearch({ ...prev, ...change }), replace: true });
-  const setFilter = (i: number) => setSearch({ state: FILTERS[i].states ? FILTERS[i].key : undefined });
+  const setFilter = (i: number) => {
+    setSaid([]);
+    setSearch({ state: FILTERS[i].states ? FILTERS[i].key : undefined });
+  };
   const server = useServer();
   const phone = usePhone();
   // UX-G3a-05: Started drops below 1100 px, so the grid fits at 1024 px without a sideways scroll.
@@ -382,14 +398,17 @@ export function RunsPage() {
   const rows = {
     selected,
     ids: (runs ?? []).map((r) => r.id),
-    toggle: (ids: string[], on: boolean) =>
+    toggle: (ids: string[], on: boolean) => {
+      setSaid([]); // what the last delete or pin said goes with the next action (UX-P3FU115B-11)
       setSelected((was) => {
         const now = new Set(was);
         for (const id of ids) on ? now.add(id) : now.delete(id);
         return now;
-      }),
+      });
+    },
     pin: (run: Run) => {
-      pinning.current = { id: run.id, pinned: !run.pinned };
+      // a phone card keeps its key, so its pin keeps the focus: only the grid's row needs to be followed
+      pinning.current = phone ? null : { id: run.id, pinned: !run.pinned };
       setPinned(run.id, !run.pinned)
         .then(() => {
           setSaid([]);
@@ -429,13 +448,14 @@ export function RunsPage() {
   };
   const onSort = (e: SortChangedEvent<Run>) => {
     if (e.source !== "uiColumnSorted") return;
+    setSaid([]);
     const col = e.columns?.find((c) => c.getSort());
     setSearch({ sort: col ? `${col.getSort() === "desc" ? "-" : ""}${col.getColId()}` : undefined });
   };
   const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started")).map(
     (c): ColDef<Run> =>
       c.colId && SORTABLE.has(c.colId)
-        ? { ...c, sortable: true, unSortIcon: true, comparator: keep, sortingOrder: ["asc", "desc"], sort: sort === c.colId ? "asc" : sort === `-${c.colId}` ? "desc" : null }
+        ? { ...c, sortable: true, unSortIcon: true, comparator: keep, sortingOrder: ["asc", "desc", null], sort: sort === c.colId ? "asc" : sort === `-${c.colId}` ? "desc" : null }
         : c,
   );
 
@@ -474,7 +494,10 @@ export function RunsPage() {
             aria-label="Filter by run name"
             placeholder="Filter by run name"
             value={typed}
-            onChange={(e) => setTyped(e.currentTarget.value)}
+            onChange={(e) => {
+              setSaid([]);
+              setTyped(e.currentTarget.value);
+            }}
           />
         </label>
         <div className="sp-segments" role="group" aria-label="Show runs">
@@ -515,7 +538,7 @@ export function RunsPage() {
       {!!runs?.length && phone && (
         <ul className="sp-run-cards" aria-label="Runs">
           {runs.map((run) => (
-            <RunCard key={run.id} run={run} select={<SelectBox run={run} />} />
+            <RunCard key={run.id} run={run} select={<SelectBox run={run} />} pin={<PinButton run={run} />} />
           ))}
         </ul>
       )}
@@ -540,6 +563,7 @@ export function RunsPage() {
       {!!runs?.length && (
         <p className="sp-foot-line">
           {shownTotal !== null ? `${runs.length} of ${shownTotal} runs` : `${runs.length} ${runs.length === 1 ? "run" : "runs"}`} ·{" "}
+          {runs.some((r) => r.pinned) && "pinned first, then "}
           {(sort && SORTS[sort]) ?? "newest first"}
         </p>
       )}
