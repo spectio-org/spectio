@@ -414,6 +414,7 @@ class ProcessEfficiency(BaseModel):
 
     jobs: JobCount
     measured: int
+    pending_accounting: int  # ended jobs sacct has not answered yet (CR-P3FU119-01)
     cpu_mean: float | None
     cpu_max: float | None
     mem_mean: float | None

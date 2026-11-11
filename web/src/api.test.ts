@@ -122,6 +122,7 @@ const efficiency = {
 const processEfficiency = {
   jobs: { done: 1, total: 2 },
   measured: 1,
+  pending_accounting: 0,
   cpu_mean: 0.4,
   cpu_max: 0.4,
   mem_mean: null,

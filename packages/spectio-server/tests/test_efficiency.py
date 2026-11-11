@@ -342,12 +342,14 @@ def test_eff_states(settings: Settings, writer: Writer, fakebin: Fake, engine: s
         "state": "pending_accounting",
         "source": ENGINE_SOURCE[engine],
     }
+    assert processes(client)["ALIGN"]["efficiency"]["pending_accounting"] == 1  # CR-P3FU119-01
     assert not acct.step()  # the run is live
     run.end()
     task_items(client)
     assert acct.step() and fakebin.ids() == [NATIVE]
     (item,) = task_items(client)
     assert item["efficiency"] == {**NOTHING, **FROM_SACCT, "state": "available", "source": "sacct"}
+    assert processes(client)["ALIGN"]["efficiency"]["pending_accounting"] == 0
     assert item["resources"]["source"] == ENGINE_SOURCE[engine]  # as P1 Task 29 shows it
 
 
@@ -429,6 +431,7 @@ def test_aggregate(settings: Settings, writer: Writer, engine: str) -> None:
     assert found == {
         "jobs": {"done": 2, "total": 3},
         "measured": 2,
+        "pending_accounting": 0,  # a local run: its ended jobs are `unavailable`
         "cpu_mean": 0.5,
         "cpu_max": 0.75,
         "mem_mean": 0.375,
@@ -447,6 +450,7 @@ def test_aggregate_empty(settings: Settings, writer: Writer, engine: str) -> Non
     assert found == {
         "jobs": {"done": 0, "total": 1},
         "measured": 0,
+        "pending_accounting": 0,
         "cpu_mean": None,
         "cpu_max": None,
         "mem_mean": None,

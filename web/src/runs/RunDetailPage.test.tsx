@@ -869,6 +869,7 @@ test("FU-P3-119: an ended run whose jobs sacct has not measured yet is read agai
     const efficiency = () => ({
       jobs: { done: 12, total: 12 },
       measured,
+      pending_accounting: 12 - measured,
       cpu_mean: null, cpu_max: null, mem_mean: null, mem_max: null,
       requested: { cpus: null, mem_bytes: null, time_limit_s: null, varies: false },
       used: { peak_rss_bytes_max: null, elapsed_s_max: null },

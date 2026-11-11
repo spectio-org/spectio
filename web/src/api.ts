@@ -337,6 +337,8 @@ export type ProcessStatus =
 export interface ProcessEfficiency {
   jobs: { done: number; total: number };
   measured: number;
+  /** The ended jobs sacct has not answered yet (CR-P3FU119-01). */
+  pending_accounting: number;
   cpu_mean: number | null;
   cpu_max: number | null;
   mem_mean: number | null;
