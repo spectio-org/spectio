@@ -72,7 +72,7 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 .unit{display:flex;gap:6px;align-items:center;min-width:0}
 .unit input{flex:1 1 auto;min-width:0}
 .unit select{flex:0 0 78px;width:78px}
-.unit > label{font-size:12.5px;color:#4D5065;flex-shrink:0}
+.unit > label,.unit > .u{font-size:12.5px;color:#4D5065;flex-shrink:0}
 .hint{font-size:12px;color:#4D5065;line-height:1.45}
 .ferr{font-size:12px;color:#B02A2A;font-weight:600;line-height:1.45}
 .keep{display:flex;gap:7px;align-items:baseline;font-size:12px;color:#33364A;background:#F7F7FB;border-radius:9px;padding:6px 9px;line-height:1.45}
@@ -183,12 +183,12 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
                   </div>
                   <div class="fld">
                     <label for="res-mem">Memory per task</label>
-                    <span class="unit"><input id="res-mem" inputmode="numeric" value="6" placeholder="the pipeline's default" aria-describedby="res-mem-h res-hint"><label class="sr" for="res-mem-u">Memory per task, unit</label><select id="res-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
+                    <span class="unit"><input id="res-mem" inputmode="decimal" value="6" placeholder="the pipeline's default" aria-describedby="res-mem-h res-hint"><label class="sr" for="res-mem-u">Memory per task, unit</label><select id="res-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
                     <span id="res-mem-h" class="hint">Rounded to MiB · at most 8 GiB (Login node)</span>
                   </div>
-                  <fieldset class="fld" aria-describedby="res-time-h res-hint">
+                  <fieldset class="fld">
                     <legend>Time per task</legend>
-                    <span class="unit"><input id="res-time-h-in" inputmode="numeric" value="2" placeholder="–"><label for="res-time-h-in">h</label><input id="res-time-m-in" inputmode="numeric" value="0" placeholder="–"><label for="res-time-m-in">min</label></span>
+                    <span class="unit"><label class="sr" for="res-time-h-in">Time per task, hours</label><input id="res-time-h-in" inputmode="numeric" value="2" placeholder="–" aria-describedby="res-time-h res-hint"><span class="u" aria-hidden="true">h</span><label class="sr" for="res-time-m-in">Time per task, minutes</label><input id="res-time-m-in" inputmode="numeric" value="0" placeholder="–" aria-describedby="res-time-h res-hint"><span class="u" aria-hidden="true">min</span></span>
                     <span id="res-time-h" class="hint">1 min to 720 h (30 days)</span>
                   </fieldset>
                 </div>
@@ -344,12 +344,12 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
             </div>
             <div class="fld">
               <label for="rs1-mem">Memory per task</label>
-              <span class="unit"><input id="rs1-mem" inputmode="numeric" placeholder="32" aria-describedby="rs1-mem-h"><label class="sr" for="rs1-mem-u">Memory per task, unit</label><select id="rs1-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
+              <span class="unit"><input id="rs1-mem" inputmode="decimal" placeholder="32" aria-describedby="rs1-mem-h"><label class="sr" for="rs1-mem-u">Memory per task, unit</label><select id="rs1-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
               <span id="rs1-mem-h" class="hint">Empty: 32 GiB, from Long jobs, mylab</span>
             </div>
-            <fieldset class="fld" aria-describedby="rs1-time-h">
+            <fieldset class="fld">
               <legend>Time per task</legend>
-              <span class="unit"><input id="rs1-th" inputmode="numeric" placeholder="48"><label for="rs1-th">h</label><input id="rs1-tm" inputmode="numeric" placeholder="0"><label for="rs1-tm">min</label></span>
+              <span class="unit"><label class="sr" for="rs1-th">Time per task, hours</label><input id="rs1-th" inputmode="numeric" placeholder="48" aria-describedby="rs1-time-h"><span class="u" aria-hidden="true">h</span><label class="sr" for="rs1-tm">Time per task, minutes</label><input id="rs1-tm" inputmode="numeric" placeholder="0" aria-describedby="rs1-time-h"><span class="u" aria-hidden="true">min</span></span>
               <span id="rs1-time-h" class="hint">Empty: 48 h, from Long jobs, mylab</span>
             </fieldset>
           </div>
@@ -368,13 +368,13 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
             </div>
             <div class="fld">
               <label for="rs2-mem">Memory per task</label>
-              <span class="unit"><input id="rs2-mem" inputmode="numeric" value="12" aria-invalid="true" aria-describedby="rs2-mem-e rs2-mem-h"><label class="sr" for="rs2-mem-u">Memory per task, unit</label><select id="rs2-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
+              <span class="unit"><input id="rs2-mem" inputmode="decimal" value="12" aria-invalid="true" aria-describedby="rs2-mem-e rs2-mem-h"><label class="sr" for="rs2-mem-u">Memory per task, unit</label><select id="rs2-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
               <span id="rs2-mem-e" class="ferr">At most 8 GiB in Login node</span>
               <span id="rs2-mem-h" class="hint">1 MiB to 4,096 GiB (4 TiB)</span>
             </div>
-            <fieldset class="fld" aria-describedby="rs2-time-e rs2-time-h">
+            <fieldset class="fld">
               <legend>Time per task</legend>
-              <span class="unit"><input id="rs2-th" inputmode="numeric" value="0" aria-invalid="true"><label for="rs2-th">h</label><input id="rs2-tm" inputmode="numeric" value="0" aria-invalid="true"><label for="rs2-tm">min</label></span>
+              <span class="unit"><label class="sr" for="rs2-th">Time per task, hours</label><input id="rs2-th" inputmode="numeric" value="0" aria-invalid="true" aria-describedby="rs2-time-e rs2-time-h"><span class="u" aria-hidden="true">h</span><label class="sr" for="rs2-tm">Time per task, minutes</label><input id="rs2-tm" inputmode="numeric" value="0" aria-invalid="true" aria-describedby="rs2-time-e rs2-time-h"><span class="u" aria-hidden="true">min</span></span>
               <span id="rs2-time-e" class="ferr">At least 1 minute</span>
               <span id="rs2-time-h" class="hint">Above 720 h 0 min: “At most 720 hours (30 days)”</span>
             </fieldset>
@@ -399,18 +399,19 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
 
         <section aria-labelledby="rs4-h" class="cat-pnl">
           <h3 id="rs4-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">The server refused the file (422)</h3>
-          <span class="cat-note">Nothing was started. Focus moves to the input; the message is the server's reason, never the file's content.</span>
+          <span class="cat-note">Nothing was started. Focus moves to the input; the first line is the server's reason as it sends it, never the file's content; the second is the form's own hint.</span>
           <div class="fld">
             <label for="rs4-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
             <input id="rs4-xcfg" value="/home/amartin/configs/lab-tweaks.config" spellcheck="false" aria-invalid="true" aria-describedby="rs4-e rs4-o" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
-            <span id="rs4-e" role="alert" class="ferr">The file is writable by group or others: fix its mode (chmod go-w), then Launch again.</span>
+            <span id="rs4-e" role="alert" class="ferr" style="display: flex; flex-direction: column; gap: 2px;"><span>the file is writable by group or others</span><span style="font-weight: 400;">Fix its mode (chmod go-w), then Launch again.</span></span>
             <span id="rs4-o" class="hint">Other reasons, as the server words them: Choose a file in your home directory or in the pipeline · a .config file · there is no such file · the file is reached through a symbolic link, which is not read · the directory is not owned by this user · the file is larger than 256 KiB · the file is not UTF-8 text.</span>
           </div>
         </section>
 
         <section aria-labelledby="rs5-h" class="cat-pnl">
-          <h3 id="rs5-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">The file system did not answer (503)</h3>
-          <div role="alert" style="display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; background: #FDF2F2; box-shadow: inset 0 0 0 1px #F5C2C2; padding: 10px 12px; font-size: 13px; color: #7A1F1F; line-height: 1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8v5 M12 16h.01"/></svg><span>The extra config file could not be read: the file system did not answer in time. Nothing was started and your values are kept.</span></div>
+          <h3 id="rs5-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">The file could not be read (503)</h3>
+          <span class="cat-note">The server sends 503 for a timeout and for an I/O error (“the config file cannot be read: &lt;strerror&gt;”); its reason follows the colon as it comes.</span>
+          <div role="alert" style="display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; background: #FDF2F2; box-shadow: inset 0 0 0 1px #F5C2C2; padding: 10px 12px; font-size: 13px; color: #7A1F1F; line-height: 1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8v5 M12 16h.01"/></svg><span>The extra config file could not be read: <i>&lt;the server's reason&gt;</i>. Nothing was started and your values are kept.</span></div>
           <button type="button" class="btn-go" style="align-self: flex-start;">Launch again</button>
         </section>
 

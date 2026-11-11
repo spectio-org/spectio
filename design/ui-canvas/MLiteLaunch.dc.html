@@ -58,7 +58,7 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
 .unit{display:flex;gap:8px;align-items:center;min-width:0}
 .unit .m-in{flex:1 1 0}
 .unit select.m-in{flex:0 0 84px;width:84px}
-.unit > label{font-size:13px;color:#4D5065;flex-shrink:0}
+.unit > label,.unit > .u{font-size:13px;color:#4D5065;flex-shrink:0}
 .hint{font-size:12.5px;color:#4D5065;line-height:1.45}
 .ferr{font-size:12.5px;color:#B02A2A;font-weight:600;line-height:1.45}
 .keep{display:flex;gap:7px;align-items:baseline;font-size:12.5px;color:#33364A;background:#F7F7FB;border-radius:10px;padding:7px 10px;line-height:1.45;margin:0}
@@ -130,12 +130,12 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
           </div>
           <div class="fld">
             <label for="m-res-mem">Memory per task</label>
-            <span class="unit"><input id="m-res-mem" class="m-in" inputmode="numeric" value="6" placeholder="the pipeline's default" aria-describedby="m-res-mem-h m-res-hint"><label class="sr" for="m-res-mem-u">Memory per task, unit</label><select id="m-res-mem-u" class="m-in"><option>MiB</option><option selected>GiB</option></select></span>
+            <span class="unit"><input id="m-res-mem" class="m-in" inputmode="decimal" value="6" placeholder="the pipeline's default" aria-describedby="m-res-mem-h m-res-hint"><label class="sr" for="m-res-mem-u">Memory per task, unit</label><select id="m-res-mem-u" class="m-in"><option>MiB</option><option selected>GiB</option></select></span>
             <span id="m-res-mem-h" class="hint">Rounded to MiB · at most 8 GiB (Login node)</span>
           </div>
-          <fieldset class="fld" aria-describedby="m-res-time-h m-res-hint">
+          <fieldset class="fld">
             <legend>Time per task</legend>
-            <span class="unit"><input id="m-res-th" class="m-in" inputmode="numeric" value="2"><label for="m-res-th">h</label><input id="m-res-tm" class="m-in" inputmode="numeric" value="0"><label for="m-res-tm">min</label></span>
+            <span class="unit"><label class="sr" for="m-res-th">Time per task, hours</label><input id="m-res-th" class="m-in" inputmode="numeric" value="2" aria-describedby="m-res-time-h m-res-hint"><span class="u" aria-hidden="true">h</span><label class="sr" for="m-res-tm">Time per task, minutes</label><input id="m-res-tm" class="m-in" inputmode="numeric" value="0" aria-describedby="m-res-time-h m-res-hint"><span class="u" aria-hidden="true">min</span></span>
             <span id="m-res-time-h" class="hint">1 min to 720 h (30 days)</span>
           </fieldset>
         </div>
