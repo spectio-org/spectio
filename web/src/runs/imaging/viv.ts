@@ -146,6 +146,11 @@ export class Viewer {
   draw(view: ViewState, { z, t }: { z: number; t: number }, epoch: number, channels: Drawn[]) {
     const { data, rgb } = this.pixels;
     if (!channels.length) return this.deck?.setProps({ viewState: view, layers: [] }); // every channel off: black
+    // The luma.gl warning on `instancePickingColors` (FU-P3-108, retests g and h) stays: Viv's
+    // XRLayer vertex shader declares that attribute (@vivjs/layers 0.23.0 `dist/index.mjs:411`) and
+    // its attribute manager adds only `positions` (`dist/index.mjs:523-531`), so luma.gl 9.4.2 finds
+    // no buffer layout for it (`core/dist/adapter-utils/buffer-layout-utils.js:101`; that this is the
+    // retests' line is [to be validated]). `pickable: false` would not remove it: same shader.
     const layer = new MultiscaleImageLayer({
       id: `ome-${epoch}`,
       loader: data,
