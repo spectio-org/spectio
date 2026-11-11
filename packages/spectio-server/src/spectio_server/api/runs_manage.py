@@ -20,14 +20,14 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
-from sqlalchemy import Connection, Row, or_, select, update
+from sqlalchemy import Connection, Row, delete, or_, select, update
 
 from spectio.runner.rundir import RUN_ID, private_dir, run_paths
 from spectio_server.api import models
 from spectio_server.api.problems import Problem, not_found
 from spectio_server.api.runs_read import context, read, run_detail, run_row
 from spectio_server.projector.runs import TERMINAL
-from spectio_server.store.schema import launches, runs
+from spectio_server.store.schema import attempt_metrics, launches, runs
 from spectio_server.store.writer import Writer, note_change
 
 router = APIRouter()
@@ -147,6 +147,8 @@ def _mark(conn: Connection, body: DeleteIn, runs_root: Path) -> list[str]:
                 refused,
             )
     conn.execute(update(runs).where(runs.c.id.in_(body.ids)).values(deleted_at=datetime.now(UTC)))
+    # no query sees a deleted run's performance rows (FU-P3-105a, api §5.5)
+    conn.execute(delete(attempt_metrics).where(attempt_metrics.c.run_id.in_(body.ids)))
     for run_id in body.ids:
         note_change(conn, run_id)
     if not body.directories:

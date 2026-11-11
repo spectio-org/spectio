@@ -22,10 +22,12 @@ from typer.testing import CliRunner
 
 from spectio.cli.main import app
 from spectio.config import Settings
+from spectio.runner import sacct
 from spectio.runner.rundir import RunManifest, Workflow, make_run_dirs, write_run_manifest
 from spectio.runner.tmux import TmuxLauncher
 from spectio.runner.types import HeadReport
 from spectio_server import app as app_mod
+from spectio_server import metrics
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.files.pool import Stalled
 from spectio_server.rebuild import rebuild_index
@@ -33,6 +35,7 @@ from spectio_server.serve import Booted, ServeError, boot, start_text, started
 from spectio_server.sink import StoreSink
 from spectio_server.store.db import DB_FILE, open_db
 from spectio_server.store.schema import (
+    attempt_metrics,
     events,
     launches,
     run_inputs,
@@ -655,3 +658,70 @@ def test_rebuilt_queued_run_is_never_launched(settings: Settings, writer: Writer
     assert StoreSink(writer, root).lease_commands() == []
     commands = writer.submit(lambda c: c.execute(select(runner_commands)).all()).result()
     assert commands == []
+
+
+# --- Performance rows (FU-P3-105a; api §5.5) --------------------------------------------------
+
+
+def _metric_rows(booted: Booted) -> list[tuple[Any, ...]]:
+    """Every `attempt_metrics` row without its IDs, which a new index gives anew."""
+    ids = {"attempt_id", "task_id", "owner_id", "project_id", "environment_id"}
+    with booted.engine.connect() as conn:
+        found = conn.execute(select(attempt_metrics)).mappings().all()
+    return sorted((tuple(v for k, v in r.items() if k not in ids) for r in found), key=repr)
+
+
+def test_rebuild_gives_the_same_metric_rows_without_sacct(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def no_sacct(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("sacct called")
+
+    monkeypatch.setattr(sacct, "sacct_jobs", no_sacct)
+    db_dir = settings.db_dir
+    assert db_dir is not None
+    head_files(make_run(settings.runs_root, run_id(1), spool=NF))
+    found = []
+    for _ in range(2):
+        booted = boot(settings, db_dir)
+        try:
+            settle(booted)
+            found.append(_metric_rows(booted))
+        finally:
+            booted.close()
+        for name in os.listdir(db_dir):  # delete the database: the next boot rebuilds it
+            if name.startswith(DB_FILE):
+                (db_dir / name).unlink()
+    assert len(found[0]) == 67
+    assert found[0] == found[1]
+
+
+def test_a_blocked_sacct_json_does_not_delay_boot(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db_dir = settings.db_dir
+    assert db_dir is not None
+    head_files(make_run(settings.runs_root, run_id(1), spool=NF))
+    booted = boot(settings, db_dir)
+    settle(booted)
+    booted.close()
+    engine, _ = open_db(db_dir)
+    with engine.begin() as conn:  # an ended run whose file was never read
+        conn.execute(update(runs).values(metrics_sacct_at=None))
+    engine.dispose()
+    release, reading = threading.Event(), threading.Event()
+
+    def blocked(*args: Any) -> dict[str, Any]:  # a FIFO opened for a read, a stalled mount
+        reading.set()
+        release.wait(30)
+        return {}
+
+    monkeypatch.setattr(metrics, "read_cache", blocked)
+    began = time.monotonic()
+    booted = boot(settings, db_dir)
+    try:
+        assert time.monotonic() - began < 5.0
+        assert reading.wait(5)  # the fill reads in the background, after boot returned
+    finally:
+        release.set()
+        booted.close()

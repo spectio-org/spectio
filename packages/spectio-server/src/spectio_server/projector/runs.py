@@ -23,7 +23,15 @@ from sqlalchemy import Connection, func, insert, select, update
 
 from spectio.runner.rundir import RunPaths, run_paths
 from spectio_server.ids import new_id
-from spectio_server.store.schema import attempts, events, launches, run_processes, runs, tasks
+from spectio_server.store.schema import (
+    attempt_metrics,
+    attempts,
+    events,
+    launches,
+    run_processes,
+    runs,
+    tasks,
+)
 from spectio_server.store.writer import note_change
 
 if TYPE_CHECKING:
@@ -137,6 +145,11 @@ class Projection:
         if failure is not None:
             values["failure"] = failure
         self.conn.execute(update(runs).where(runs.c.id == self.run_id).values(**values))
+        self.conn.execute(  # the run's performance rows follow it (FU-P3-105a, api §5.5)
+            update(attempt_metrics)
+            .where(attempt_metrics.c.run_id == self.run_id)
+            .values(run_state=to)
+        )
         payload = {"from": self.state, "to": to}
         self.log("spectio.run.state_changed", payload, **{"source": "projector", **columns})
         self.state = to
