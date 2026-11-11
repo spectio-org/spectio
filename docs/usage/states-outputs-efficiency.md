@@ -131,14 +131,33 @@ For the synthetic test pipelines, the profile `fail_demo` makes `COMPARE` (Snake
 
 *Seven seeded run records (succeeded, running, failed, cancelled), not pipeline runs: Tasks, Started and Duration read "—" because no head reported. The state rail on each row's left edge is as before.*
 
-- **The grid keeps the API's order,** newest first, and its own filters (name and state above the table). No column sorts or filters here. **Load more** adds rows.
+- **The default order is newest first, pinned runs first,** with filters above the table (name and state). The headers of Run, State, Started and Duration sort on the server; see [Select, sort, pin and delete runs](#select-sort-pin-and-delete-runs). **Load more** adds rows.
 - **Keyboard.** The grid takes Tab and Enter for its cells, so a run's name is not a tab stop of its own. Move to the Run cell with the arrow keys and press **Enter** to open the run (a blocker found in review, fixed before merge).
 - **Below 1100 px** the Started column drops, so the table fits at 1024 px.
 - **On a phone** the list stays one card per run, and the grid is not loaded.
 
-### Delete and pin a run (API only for now)
+### Select, sort, pin and delete runs
 
-*Built on the integration branch (step FU-P3-115a, batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14)). Owned by the runs-table note of [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1) and the design of [ui-spec §4.3](../specs/ui-spec.md#43-runs-table-and-rows). **The runs list has no button for either yet:** the web part is FU-P3-115b, not built.*
+*Built on the integration branch: the API in step FU-P3-115a (batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14)), the screens in FU-P3-115b, -116 and -119 (batch [P3-B15](../progress/W5/P3-M9.md#batch-p3-b15)). Owned by the runs-table note of [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1) and [ui-spec §4.3](../specs/ui-spec.md#43-runs-table-and-rows).*
+
+![The runs table with two rows selected: a bar above the table reads "2 selected" with Delete... and Clear selection; liver-qc-batch-7 is pinned and first; Run, State, Started and Duration have a sort icon](../assets/shots/app-runs-actions_light.webp#only-light)
+![The runs table with two rows selected, dark](../assets/shots/app-runs-actions_dark.webp#only-dark)
+
+*A seeded server with seven run records, two of them selected. The records have no pipeline behind them: Tasks reads "—".*
+
+- **Select.** Each row has a checkbox named "Select run <name>"; the header box, "Select all runs on this page", selects the page. A bar then shows "n selected", **Delete…** and **Clear selection**.
+- **Sort.** Click the header of Run, State, Started or Duration; a second click reverses it and a third clears it, back to newest first. Every sortable header shows an icon, sorted or not. The address keeps it (`/runs?sort=name`). The footer says it in words: "pinned first, then newest first".
+- **Pin.** The pin button in a row (named "Pin run <name>") pins or unpins one run. **Pin** and **Unpin** are also in Run detail's header. Pinned runs come first in every sort.
+- **Delete.** **Delete…** opens a sheet: the runs it names, "Spectio forgets these runs: they leave the list, the counts and Home. Their files stay where they are.", and a box, off by default, **Also delete their run directories**. **Cancel** has the focus. A live run cannot be deleted; a refusal names the run and why, and nothing is deleted. **Delete…** is also in Run detail's header, for an ended run; the result lines then show on the Runs page.
+
+![The Delete sheet for two runs: rnaseq-treatC-ctrl Failed and rnaseq-pilot Cancelled, the box Also delete their run directories unchecked, and a note on what it removes](../assets/shots/app-runs-delete_light.webp#only-light)
+![The Delete sheet for two runs, dark](../assets/shots/app-runs-delete_dark.webp#only-dark)
+
+*The sheet was opened and not confirmed: the demo runs stay for the next shot.*
+
+- **On a phone** the list stays one card per run. The box in a card sits in a 44 px target and the bar's buttons are at least 44 px high. The cards have no pin yet (UX-P3FU115B-06, open).
+
+What the screens call, and what the API does:
 
 - **Delete.** `POST /runs:delete` with `{"ids": [...], "directories": false}` marks 1 to 200 ended runs deleted, all or nothing. A deleted run leaves the list, the summary and every `/runs/{id}` route (`404`). The run's directory stays unless `directories` is `true`.
 - **With `directories: true`** Spectio also removes each run's own directory, `<runs root>/<run ID>`, and nothing else, without following a link. It refuses, before deleting anything, a run that started from a terminal (its launch directory is yours), a run whose head has not been seen to exit, a directory that is not where the runs root says, and a directory that a run you did not select shares (a Resume child shares its parent's: delete them together). A Resume child's delete also removes the lineage root's directory, listed as its own entry.
@@ -159,7 +178,7 @@ POST /runs:delete {"ids": [<rnaseq-treatC>], "directories": true}
 GET /runs/<rnaseq-treatC>  404
 ```
 
-The run directory was gone from the demo runs root after the last delete. Every call needs the session cookie and the loopback `Origin`. Open: the log line of a delete does not name who deleted (CR-P3FU115A-03), up to 200 `rmtree` calls run inside one request (-04), and the task-file routes still serve a deleted run's files (-05, SEC-P3FU115A-03).
+The run directory was gone from the demo runs root after the last delete. Every call needs the session cookie and the loopback `Origin`. The screens above use these routes. Open: the log line of a delete does not name who deleted (CR-P3FU115A-03), up to 200 `rmtree` calls run inside one request (-04), and the task-file routes still serve a deleted run's files (-05, SEC-P3FU115A-03).
 
 ## Temporary and protected outputs
 

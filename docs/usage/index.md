@@ -50,5 +50,7 @@ The stop Spectio will generate, shown with plain Snakemake (`snakemake --until`)
 - [Your pipeline catalog](pipeline-catalog.md): saved pipelines, picked on Launch.
 - [Environments](environments.md): where a run's tasks go, kept in a file you own.
 - [Your profile](profile.md): who the server runs as, your session, the config paths and the theme.
+- [Search and notifications](search-and-notifications.md): find a run or a pipeline from the top bar; the bell.
+- [Run resources and an extra config file](run-resources.md): CPUs, memory and time per task, and one config file, for one run.
 - [Features](../features/index.md): what each part does.
 - [API and CLI](../api/index.md): doing it without the web interface.
