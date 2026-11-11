@@ -20,6 +20,12 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
 .cx-sum{font-family:'Inter',sans-serif;font-weight:400}
 .cx-btn[aria-expanded="true"] .cx-sum{display:none}
 .cx-btn[aria-expanded="true"] .cx-chev{transform:rotate(180deg)}
+/* ui-spec §4.4 and §4.6, note of 2026-11-10 (FU-P3-110c): the Default resources and Extra config file facts (api §5.7). */
+.fbtn{height:32px;padding:0 10px;border-radius:9px;border:none;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font:600 12.5px 'Inter',sans-serif;color:#22253A;cursor:pointer;flex-shrink:0}
+.fsub{display:block;margin-top:3px;font:400 12.5px 'Inter',sans-serif;color:#4D5065;line-height:1.45}
+.fmono{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:400}
+.fwarn{display:flex;gap:7px;align-items:baseline;margin-top:5px;font:400 12.5px 'Inter',sans-serif;color:#8F5806;line-height:1.45}
+.fstate{color:#4D5065;font-weight:400;font-style:normal}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -49,6 +55,15 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           <sc-for list="{{facts}}" as="f" hint-placeholder-count="8">
             <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0; grid-column: {{f.col}};"><dt style="color: #6E7287; font-size: 12px;">{{f.k}}</dt><dd style="margin: 0; font-weight: 500; font-family: {{f.font}}; font-size: {{f.size}}; overflow-wrap: anywhere;"><sc-if value="{{f.logo}}" hint-placeholder-val="{{false}}"><img src="{{f.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{f.v}}<sc-if value="{{f.badge}}" hint-placeholder-val="{{false}}"><span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; font: 600 11px 'Inter', sans-serif; background: {{f.bbg}}; color: {{f.bfg}}; margin-left: 8px; vertical-align: 1px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);"> · </span>{{f.badge}}</span></sc-if><sc-if value="{{f.sub}}" hint-placeholder-val="{{false}}"><span style="display: block; margin-top: 3px; font: 400 12.5px 'Inter', sans-serif; color: #4D5065;">{{f.sub}}</span></sc-if></dd></div>
           </sc-for>
+          <!-- ui-spec §4.4 / §4.6, note of 2026-11-10 (FU-P3-110c): GET /runs/{id} default_resources and config_file (api §5.7); no row when the launch set none, or for a run started from a terminal. -->
+          <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0; grid-column: span 2;"><dt style="color: #6E7287; font-size: 12px;">Default resources</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;">8 CPUs · 64 GiB · 12 h per task<span class="fsub">Set at Launch, in place of mylab-long's 48 h and 32 GiB · processes that set their own keep them</span></dd></div>
+          <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0; grid-column: span 2;"><dt id="xf-h" style="color: #6E7287; font-size: 12px;">Extra config file</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;">
+            <span class="fmono" style="color: #22253A;">/home/amartin/configs/lab-tweaks.config</span>
+            <span class="fsub">kept as <span class="fmono">extra.config</span> · 3.1 KiB · SHA-256 <span id="xf-sha" class="fmono">4f1c9a0b7e2d</span>…</span>
+            <span style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap;"><button type="button" class="fbtn" aria-haspopup="dialog">View extra.config</button><button type="button" class="fbtn" aria-label="Copy SHA-256 of extra.config" aria-describedby="xf-sha">Copy SHA-256</button></span>
+            <span role="status" class="fsub" style="color: #157A4B;">Copied the SHA-256 of extra.config</span>
+            <span class="fwarn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; align-self: center;"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg><span>It loads other files with includeConfig; those are not kept with the run.</span></span>
+          </dd></div>
         </dl>
         </div></section>
         <div aria-label="Tasks by state" role="group" style="padding: 10px 20px 14px; border-top: 1px solid #EEEFF5; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
@@ -173,6 +188,51 @@ tmux attach -t spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W</pre>
           </div></div></section>
         </aside>
       </div>
+      <!-- ui-spec §4.4 / §4.6 (FU-P3-110c): the other states of the two facts. -->
+      <section aria-labelledby="h-xf" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h2 id="h-xf" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Facts: default resources and the extra config file, other states</h2>
+          <span style="font-size: 12.5px; color: #4D5065;">From GET /runs/{id} (api §5.7). A run whose launch set neither has no row; a run started from a terminal has none. Drawn side by side; the page shows one state at a time.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; align-items: start;">
+          <section aria-labelledby="xs1-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; min-width: 0;">
+            <h3 id="xs1-h" style="margin: 0 0 8px; font-size: 14px; font-weight: 600;">Some keys set, Snakemake</h3>
+            <dl style="margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+              <div><dt style="color: #6E7287; font-size: 12px;">Default resources</dt><dd style="margin: 0; font-weight: 500;">16 GiB per task · time: 48 h from mylab-long<span class="fsub">Rules that set their own keep them · when the environment sets no time: “time: none set, the pipeline's default”</span></dd></div>
+              <div><dt style="color: #6E7287; font-size: 12px;">Extra config file</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;"><span class="fmono">/home/amartin/configs/kd-screen-extra.yaml</span><span class="fsub">kept as <span class="fmono">extra.yaml</span> · 412 B · SHA-256 <span id="xs1-sha" class="fmono">9a0e51c3d27b</span>…</span><span style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap;"><button type="button" class="fbtn" aria-haspopup="dialog">View extra.yaml</button><button type="button" class="fbtn" aria-label="Copy SHA-256 of extra.yaml" aria-describedby="xs1-sha">Copy SHA-256</button></span></dd></div>
+            </dl>
+          </section>
+          <section aria-labelledby="xs2-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; min-width: 0;">
+            <h3 id="xs2-h" style="margin: 0 0 8px; font-size: 14px; font-weight: 600;">Not readable (a bad manifest value)</h3>
+            <dl style="margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+              <div><dt style="color: #6E7287; font-size: 12px;">Default resources</dt><dd style="margin: 0; font-weight: 500;"><span class="fstate">Not readable</span><span class="fsub">The run's record of them is damaged; the run itself is not affected.</span></dd></div>
+              <div><dt style="color: #6E7287; font-size: 12px;">Extra config file</dt><dd style="margin: 0; font-weight: 500;"><span class="fstate">Not readable</span><span class="fsub">The run's record of it is damaged: no path, hash or View.</span></dd></div>
+            </dl>
+          </section>
+          <section aria-labelledby="xs4-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; min-width: 0;">
+            <h3 id="xs4-h" style="margin: 0 0 8px; font-size: 14px; font-weight: 600;">The environment's record is not readable</h3>
+            <dl style="margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+              <div><dt style="color: #6E7287; font-size: 12px;">Default resources</dt><dd style="margin: 0; font-weight: 500;">8 CPUs · 64 GiB · 12 h per task<span class="fsub">Set at Launch · processes that set their own keep them</span></dd></div>
+            </dl>
+            <span class="fsub">environment.state is not_readable: what these replaced is unknown, so there is no “in place of …”.</span>
+          </section>
+          <!-- ui-spec §4.4 / §4.6 (UX-P3FU110C-02, 09, 10): GET /runs/{id}/config-file is fetched only when View is pressed; changed and gone are known only here, never on the fact. -->
+          <section role="dialog" aria-modal="true" aria-labelledby="vs-h" aria-describedby="vs-sub" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 18px 40px -18px rgba(15,16,32,0.35); padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; gap: 10px; align-items: flex-start;">
+              <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><h3 id="vs-h" style="margin: 0; font-size: 14px; font-weight: 600;">extra.config</h3><span id="vs-sub" class="fmono" style="color: #4D5065; overflow-wrap: anywhere;">/home/amartin/configs/lab-tweaks.config · 3.1 KiB</span></span>
+              <button type="button" class="fbtn">Close</button>
+            </div>
+            <span class="fwarn" role="status" style="margin-top: 0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; align-self: center;"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg><span>Changed since the launch: the kept copy's SHA-256 is not the one recorded. The preview shows the file as it is now.</span></span>
+            <pre tabindex="0" aria-label="Contents of extra.config" style="margin: 0; border-radius: 10px; background: #F7F7FB; padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; color: #22253A; white-space: pre-wrap; max-height: 90px; overflow: auto;">process {
+  withName: 'STAR_ALIGN' { memory = 96.GB }
+}</pre>
+            <span class="fsub" style="margin-top: 0;">In place of the preview, the other states:</span>
+            <span role="alert" style="font: 600 12.5px 'Inter', sans-serif; color: #B02A2A; line-height: 1.45;">Gone: “The kept copy of extra.config is not in the run directory any more.”</span>
+            <span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;"><span role="alert" style="font: 600 12.5px 'Inter', sans-serif; color: #B02A2A; line-height: 1.45; flex: 1 1 200px;">503: The run directory did not answer; try again.</span><button type="button" class="fbtn">Retry</button></span>
+            <span class="fsub" style="margin-top: 0;">Focus starts on the sheet; Close and Escape return it to View extra.config.</span>
+          </section>
+        </div>
+      </section>
     </main>
 </div>
 </x-dc>
