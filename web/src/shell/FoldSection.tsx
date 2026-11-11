@@ -10,7 +10,7 @@ import { type IconName, Icon } from "../icons";
 
 const key = (screen: string, id: string) => `spectio-open:${screen}:${id}`;
 
-function remembered(screen: string, id: string): boolean | null {
+export function remembered(screen: string, id: string): boolean | null {
   try {
     const value = window.localStorage.getItem(key(screen, id));
     return value === null ? null : value === "1";
@@ -19,7 +19,7 @@ function remembered(screen: string, id: string): boolean | null {
   }
 }
 
-function remember(screen: string, id: string, open: boolean) {
+export function remember(screen: string, id: string, open: boolean) {
   try {
     window.localStorage.setItem(key(screen, id), open ? "1" : "0");
   } catch {

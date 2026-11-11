@@ -443,15 +443,20 @@ test('By process is a tab button; the waste line names the process', async ({ pa
   await expect(page.getByRole('tab', { name: 'Task list' })).toHaveAttribute('aria-selected', 'true');
 });
 
-test("the Copy menu is in the shared header on every tab and state, and announces 'Copied'", async ({ page, context }) => {
+test("the Copy items are in the shared header's More actions on every tab and state, and announce 'Copied'", async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await mockFailed(page);
   for (const tab of ['', '?tab=tasks', '?tab=parameters', '?tab=logs']) {
     await page.goto(`/runs/${RUN}${tab}`);
-    await expect(page.locator('header').getByRole('button', { name: 'Copy', exact: true })).toBeVisible();
+    await expect(page.locator('header').getByRole('button', { name: 'More actions', exact: true })).toBeVisible();
   }
-  await page.locator('header').getByRole('button', { name: 'Copy', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Run ID' }).click();
+  await page.locator('header').getByRole('button', { name: 'More actions', exact: true }).click();
+  // the menu stays in the viewport, on the phone too (UI-09)
+  const menu = page.getByRole('menu');
+  const box = (await menu.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  await menu.getByRole('menuitem', { name: 'Copy run ID' }).click();
   // The header holds the Copy status and, on the desktop, the Facts region's own status line.
   await expect(page.locator('header').getByRole('status').filter({ hasText: 'Copied' })).toHaveText('Copied the run ID');
 });
@@ -555,7 +560,9 @@ test('Copy to a new launch opens the form prefilled with the non-default values 
       custom_config_base: { type: 'string' } } },
   })));
   await page.goto(`/runs/${RUN}`);
-  await page.locator('header').getByRole('link', { name: 'Copy to a new launch' }).click();
+  // a failed run's primary is Resume: Copy to a new launch is in More actions (UI-09)
+  await page.locator('header').getByRole('button', { name: 'More actions', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Copy to a new launch' }).click();
   await expect(page).toHaveURL(new RegExp(`/launch\\?from=${RUN}$`));
   await expect(page.getByText(
     "Prefilled from rnaseq-mock (7T9V1W): 3 values differ from the pipeline's defaults: input, outdir, custom_config_base.",

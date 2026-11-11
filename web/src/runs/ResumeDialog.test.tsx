@@ -1,5 +1,6 @@
 // Resume, Copy to a new launch and the Copy menu's Command item in the shared run header (P1 Task
-// 32 part two; ui-spec §4.4 run tools note; boards LiteRunActions and MLiteResumeSheet).
+// 32 part two; ui-spec §4.4 run tools note; boards LiteRunActions and MLiteResumeSheet). Since
+// UI-09 the header shows one primary and puts the rest in More actions (ui-spec §12.4).
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -48,6 +49,11 @@ function detail(body: unknown, more: Record<string, unknown> = {}) {
 }
 
 const header = async () => (await screen.findByRole("heading", { level: 1 })).closest("header")!;
+/** Opens the header's More actions menu. */
+const openMore = async () => {
+  await userEvent.click(await within(await header()).findByRole("button", { name: "More actions" }));
+  return screen.findByRole("menu");
+};
 
 test("Resume asks in a modal dialog, focus on Cancel first and back on Resume", async () => {
   detail(failedRun());
@@ -160,18 +166,20 @@ test("a resumed run's facts say Resume of its parent", async () => {
 });
 
 test.each([
-  ["failed", true, true],
-  ["cancelled", true, true],
-  ["succeeded", false, true],
-  ["running", false, false],
+  ["failed", true, "menu"],
+  ["cancelled", true, "menu"],
+  ["succeeded", false, "primary"],
+  ["running", false, "none"],
 ])("a %s run: Resume %s, Copy to a new launch %s", async (state, resume, copy) => {
   detail(failedRun({ state, actions: { resume: { allowed: false, reason: "not_failed_or_cancelled" } } }));
   app(`/runs/${ID}`);
   const head = await header();
-  await within(head).findByRole("button", { name: "Copy" });
+  await within(head).findByRole("button", { name: "More actions" });
   expect(within(head).queryByRole("button", { name: "Resume" }) !== null).toBe(resume);
-  const link = within(head).queryByRole("link", { name: "Copy to a new launch" });
-  expect(link !== null).toBe(copy);
+  const primary = within(head).queryByRole("link", { name: "Copy to a new launch" });
+  const item = within(await openMore()).queryByRole("menuitem", { name: "Copy to a new launch" });
+  expect(primary ? "primary" : item ? "menu" : "none").toBe(copy);
+  const link = primary ?? item;
   if (link) expect(link.getAttribute("href")).toBe(`/launch?from=${ID}`);
 });
 
@@ -179,19 +187,20 @@ test("a run started from a terminal has neither Resume nor Copy to a new launch,
   detail(failedRun({ origin: "cli-observed", command: null, actions: { resume: { allowed: false, reason: "cli_observed" } } }));
   app(`/runs/${ID}`);
   const head = await header();
-  await userEvent.click(await within(head).findByRole("button", { name: "Copy" }));
-  expect(screen.queryByRole("menuitem", { name: "Command" })).toBeNull();
+  const menu = await openMore();
+  expect(within(menu).queryByRole("menuitem", { name: "Copy command" })).toBeNull();
+  expect(within(menu).queryByRole("menuitem", { name: "Copy to a new launch" })).toBeNull();
   expect(within(head).queryByRole("button", { name: "Resume" })).toBeNull();
   expect(within(head).queryByRole("link", { name: "Copy to a new launch" })).toBeNull();
 });
 
-test("Copy's Command item copies the engine command first in the menu", async () => {
+test("Copy's Command item copies the engine command, first of the Copy items", async () => {
   detail(failedRun());
   app(`/runs/${ID}`);
-  await userEvent.click(await within(await header()).findByRole("button", { name: "Copy" }));
-  const items = screen.getAllByRole("menuitem");
-  expect(items[0]).toHaveTextContent("Command");
-  await userEvent.click(items[0]);
+  const items = within(await openMore()).getAllByRole("menuitem");
+  const first = items.find((i) => i.textContent?.startsWith("Copy ") && i.textContent !== "Copy to a new launch")!;
+  expect(first).toHaveTextContent("Copy command");
+  await userEvent.click(first);
   expect(await navigator.clipboard.readText()).toBe("nextflow run /g/p -params-file params.json");
   expect(await within(await header()).findByText("Copied the command")).toBeInTheDocument();
 });
@@ -221,12 +230,11 @@ test("FU-P3-115b: Pin toggles the run's pin, and an ended run's Delete… delete
     "/api/v1/runs:summary": { groups: [] },
   });
   const router = app(`/runs/${ID}`);
-  const head = await header();
   // the label says the action, so no aria-pressed (it would contradict a changing name)
-  await userEvent.click(await within(head).findByRole("button", { name: "Pin" }));
-  expect(await within(head).findByRole("button", { name: "Unpin" })).not.toHaveAttribute("aria-pressed");
-  expect(sent[0]).toEqual({ url: URL_, method: "PATCH", body: '{"pinned":true}' });
-  await userEvent.click(within(head).getByRole("button", { name: "Delete…" }));
+  await userEvent.click(within(await openMore()).getByRole("menuitem", { name: "Pin" }));
+  await waitFor(() => expect(sent[0]).toEqual({ url: URL_, method: "PATCH", body: '{"pinned":true}' }));
+  expect(await within(await openMore()).findByRole("menuitem", { name: "Unpin" })).not.toHaveAttribute("aria-pressed");
+  await userEvent.click(screen.getByRole("menuitem", { name: "Delete…" }));
   const sheet = await screen.findByRole("dialog", { name: "Delete 1 run?" });
   expect(within(sheet).getByRole("listitem")).toHaveTextContent("wgs-cohort-12 · Failed");
   await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
@@ -237,9 +245,9 @@ test("FU-P3-115b: Pin toggles the run's pin, and an ended run's Delete… delete
 test("FU-P3-115b: a run that has not ended has Pin but no Delete…", async () => {
   detail(failedRun({ state: "running", ended_at: null }));
   app(`/runs/${ID}`);
-  const head = await header();
-  expect(await within(head).findByRole("button", { name: "Pin" })).toBeInTheDocument();
-  expect(within(head).queryByRole("button", { name: "Delete…" })).toBeNull();
+  const menu = await openMore();
+  expect(within(menu).getByRole("menuitem", { name: "Pin" })).toBeInTheDocument();
+  expect(within(menu).queryByRole("menuitem", { name: "Delete…" })).toBeNull();
 });
 
 test("FU-P3-110d: the sheet says the resume reuses the resources and the kept file; a changed copy's 422 is said in the server's words", async () => {

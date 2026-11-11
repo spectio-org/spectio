@@ -260,8 +260,11 @@ test("UX-PAR-20/21/22: a Snakemake run reads jobs and rules; facts sit in the he
   // CR-P3PARA-03: the engine's mark beside the Pipeline fact.
   const pipeline = within(header).getByText("wgs-germline (no version declared)").closest("dd")!;
   expect(within(pipeline).getByRole("img", { name: "Snakemake" })).toBeInTheDocument();
-  // The facts stay on every tab.
+  // The facts stay on every tab, folded on the tabs other than Summary (UI-09, ui-spec §12.7).
   await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
+  const facts = within(within(await runHeader()).getByRole("region", { name: "Facts" })).getByRole("button", { name: /^Facts/ });
+  expect(facts).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(facts);
   expect(within(await runHeader()).getByText("Snakemake 9.27.1 · test")).toBeInTheDocument();
   // CR-P3PARA-07: the Jobs tab names its filters and table in the engine's words.
   await userEvent.click(screen.getByRole("tab", { name: "Jobs" }));
@@ -432,34 +435,35 @@ test("P3-parC: an nf-core/ pipeline shows the nf-core mark in the header tile an
   expect(engine.querySelector("img")).toHaveAttribute("src", expect.stringContaining("logo-nextflow"));
 });
 
-test("P3-parC: Copy is a menu of native buttons: config, run directory and run ID; arrows move, Escape returns", async () => {
+test("P3-parC: Copy's items in More actions: config, run directory and run ID; arrows move, Escape returns", async () => {
   detail();
   app(`/runs/${ID}`);
-  const copy = await screen.findByRole("button", { name: "Copy" });
-  expect(copy).toHaveAttribute("aria-haspopup", "menu");
-  expect(copy).toHaveAttribute("aria-expanded", "false");
-  await userEvent.click(copy);
-  expect(copy).toHaveAttribute("aria-expanded", "true");
-  const menu = screen.getByRole("menu", { name: "Copy" });
+  const more = await within(await runHeader()).findByRole("button", { name: "More actions" });
+  expect(more).toHaveAttribute("aria-haspopup", "menu");
+  expect(more).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(more);
+  expect(more).toHaveAttribute("aria-expanded", "true");
+  const menu = await screen.findByRole("menu");
   const items = within(menu).getAllByRole("menuitem");
-  expect(items.map((i) => i.textContent)).toEqual(["Config (params.json)", "Run directory", "Run ID"]);
+  expect(items.map((i) => i.textContent)).toEqual(["Pin", "Copy config (params.json)", "Copy run directory", "Copy run ID"]);
   expect(items.every((i) => i.tagName === "BUTTON")).toBe(true);
-  await waitFor(() => expect(items[0]).toHaveFocus());
+  await userEvent.keyboard("{ArrowDown}");
+  expect(items[0]).toHaveFocus();
   await userEvent.keyboard("{ArrowDown}");
   expect(items[1]).toHaveFocus();
   await userEvent.keyboard("{ArrowUp}{ArrowUp}");
-  expect(items[2]).toHaveFocus(); // wraps
+  expect(items[3]).toHaveFocus(); // wraps
   await userEvent.keyboard("{Escape}");
-  expect(screen.queryByRole("menu")).toBeNull();
-  expect(copy).toHaveFocus();
+  await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+  await waitFor(() => expect(more).toHaveFocus());
 
-  await userEvent.click(copy);
-  await userEvent.click(within(screen.getByRole("menu")).getByRole("menuitem", { name: "Run directory" }));
+  await userEvent.click(more);
+  await userEvent.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Copy run directory" }));
   expect(await navigator.clipboard.readText()).toBe(`/scratch/amartin/spectio-runs/${ID}`);
   expect(screen.getByText("Copied the run directory")).toHaveAttribute("role", "status");
-  expect(copy).toHaveFocus();
-  await userEvent.click(copy);
-  await userEvent.click(screen.getByRole("menuitem", { name: "Config (params.json)" }));
+  await waitFor(() => expect(more).toHaveFocus());
+  await userEvent.click(more);
+  await userEvent.click(await screen.findByRole("menuitem", { name: "Copy config (params.json)" }));
   expect(JSON.parse(await navigator.clipboard.readText())).toEqual({ outdir: "results", depth: 3 });
 });
 
@@ -469,10 +473,10 @@ test("P3-parC: a Snakemake run copies its config as config.yaml; a run from a te
     workflow: { engine: "snakemake", engine_version: "9.27.1", location: "/g/demo-lab/pipelines/wgs", name: "wgs-germline", version: null },
   });
   app(`/runs/${ID}`);
-  await userEvent.click(await screen.findByRole("button", { name: "Copy" }));
-  const items = within(screen.getByRole("menu")).getAllByRole("menuitem");
-  expect(items.map((i) => i.textContent)).toEqual(["Config (config.yaml)", "Run ID"]);
-  await userEvent.click(items[0]);
+  await userEvent.click(await within(await runHeader()).findByRole("button", { name: "More actions" }));
+  const items = within(await screen.findByRole("menu")).getAllByRole("menuitem");
+  expect(items.map((i) => i.textContent)).toEqual(["Pin", "Copy config (config.yaml)", "Copy run ID"]);
+  await userEvent.click(items[1]);
   expect(await navigator.clipboard.readText()).toBe("outdir: results\ndepth: 3\n");
 });
 
@@ -853,7 +857,8 @@ test("UX-P3FU115B-04: Delete… on Run detail returns to Runs with what the dele
     },
   );
   const router = app(`/runs/${ID}`);
-  await userEvent.click(within(await runHeader()).getByRole("button", { name: "Delete…" }));
+  await userEvent.click(await within(await runHeader()).findByRole("button", { name: "More actions" }));
+  await userEvent.click(await screen.findByRole("menuitem", { name: "Delete…" }));
   const sheet = await screen.findByRole("dialog", { name: "Delete 1 run?" });
   await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(router.state.location.pathname).toBe("/runs"));

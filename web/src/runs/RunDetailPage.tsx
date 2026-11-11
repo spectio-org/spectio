@@ -1181,6 +1181,7 @@ export function RunDetailPage({ id }: { id: string }) {
         cancelError={cancelError}
         onChip={showTasks}
         onRun={setRun}
+        summaryTab={tab === "summary"}
       />
       {sheetLost && <p role="status">This job's sheet could not be reopened.</p>}
       <DetailSheet
