@@ -3,11 +3,13 @@ step: ISSUE-161
 wave: W5
 status: done
 pr: 255
-review: null
+review: approve
+review_score: 12/14
+review_ref: "journal 2026-11-11, ISSUE-161 doc-reviewer; required changes 1-6 applied"
 ---
 # Issue #161 · Runs that target one Nextflow module or one Snakemake rule
 
-!!! success "Done 2026-11-11 · [issue #161](https://github.com/spectio-org/spectio/issues/161) · PR [#255](https://github.com/spectio-org/spectio/pull/255) · 0.0.2, behind `[features] single_target` · not a pipeline step · `code-reviewer` and `security-reviewer` approve (web: 2 rounds; server, runner and bridges: 8 rounds) · `doc-reviewer` approve"
+!!! success "Done 2026-11-11 · [issue #161](https://github.com/spectio-org/spectio/issues/161) · PR [#255](https://github.com/spectio-org/spectio/pull/255) · 0.0.2, behind `[features] single_target` · not a pipeline step · `code-reviewer` and `security-reviewer` approve (web: 2 rounds; server, runner and bridges: 8 rounds) · `doc-reviewer` approve 12/14"
 
 ![A run can target one step. Left, a Nextflow module: installed from the registry with its checksum, one process and one node, nf-spectio reports the target, Spectio compares the checksum with earlier runs. Right, a Snakemake rule: a dry run counts 25 jobs, only the target and the jobs it needs run, the other rules are not needed. Bottom, both land in the runs list with a Scope badge and a Scope filter](../../assets/diagrams/module-run-161_light.png#only-light)
 ![A run can target one step. Left, a Nextflow module: installed from the registry with its checksum, one process and one node, nf-spectio reports the target, Spectio compares the checksum with earlier runs. Right, a Snakemake rule: a dry run counts 25 jobs, only the target and the jobs it needs run, the other rules are not needed. Bottom, both land in the runs list with a Scope badge and a Scope filter](../../assets/diagrams/module-run-161_dark.png#only-dark)
