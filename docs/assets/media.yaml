@@ -1069,3 +1069,32 @@ media:
     # is masked by a sed that the cast shows
     generator: unshare --uts --mount sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-cluster-checks.yaml'
     outputs: [docs/assets/casts/spectio-cluster-checks.cast]
+  - id: app-single-target-launch-module
+    kind: screenshot
+    # demo data with the API mocked, the checkout's web code on a vite dev server (no engine, no cluster), 1440 wide,
+    # full page; the PNG is 2-launch-module-loaded of the script (#161, ui-spec 4.15)
+    generator: "node tools/media/single_target_demo.js <out-dir>, then convert <png> -resize 1440x -define webp:lossless=true -define webp:method=6 2-launch-module-loaded.png app-single-target-launch-module_light.webp"
+    outputs: [docs/assets/shots/app-single-target-launch-module_light.webp]
+  - id: app-single-target-launch-rule
+    kind: screenshot
+    # as app-single-target-launch-module; the PNG is 3-launch-rule
+    generator: "node tools/media/single_target_demo.js <out-dir>, then convert <png> -resize 1440x -define webp:lossless=true -define webp:method=6 3-launch-rule.png app-single-target-launch-rule_light.webp"
+    outputs: [docs/assets/shots/app-single-target-launch-rule_light.webp]
+  - id: app-single-target-runs
+    kind: screenshot
+    # as app-single-target-launch-module, at 1440 x 1000; the PNG is 4-runs-list
+    generator: "node tools/media/single_target_demo.js <out-dir>, then convert <png> -resize 1440x -define webp:lossless=true -define webp:method=6 4-runs-list.png app-single-target-runs_light.webp"
+    outputs: [docs/assets/shots/app-single-target-runs_light.webp]
+  - id: app-single-target-run-rule
+    kind: screenshot
+    # as app-single-target-launch-module; the PNG is 6-run-rule
+    generator: "node tools/media/single_target_demo.js <out-dir>, then convert <png> -resize 1440x -define webp:lossless=true -define webp:method=6 6-run-rule.png app-single-target-run-rule_light.webp"
+    outputs: [docs/assets/shots/app-single-target-run-rule_light.webp]
+  - id: module-run-161
+    kind: diagram
+    generator: python3 tools/diagrams/module_run_161.py
+    outputs:
+      - docs/assets/diagrams/module-run-161_light.svg
+      - docs/assets/diagrams/module-run-161_dark.svg
+      - docs/assets/diagrams/module-run-161_light.png
+      - docs/assets/diagrams/module-run-161_dark.png
