@@ -45,6 +45,7 @@ export const crafted: Record<string, (s: Store) => void> = {
   "a .zattrs with __proto__ and constructor keys only": (s) =>
     s.set(".zattrs", new TextEncoder().encode(`{"__proto__": ${JSON.stringify(attrs())}, "constructor": {"prototype": {"polluted": 1}}}`)),
   "a bz2 compressor": (s) => s.set("0/.zarray", zarray([2, 10, 12], [1, 10, 12], { compressor: { id: "bz2", level: 1 } })),
+  "a blosc snappy compressor": (s) => s.set("0/.zarray", zarray([2, 10, 12], [1, 10, 12], { compressor: { id: "blosc", cname: "snappy", clevel: 5, shuffle: 1, blocksize: 0 } })),
   "an array shape of c = 10^9": (s) => s.set("0/.zarray", zarray([1e9, 10, 12], [1, 10, 12])),
   "a side over 2^31 - 1": (s) => s.set("0/.zarray", zarray([2, 10, 2 ** 31], [1, 10, 12])),
   "a level whose c differs from level 0": (s) => s.set("1/.zarray", zarray([3, 5, 6], [1, 5, 6])),

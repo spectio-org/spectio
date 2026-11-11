@@ -6,7 +6,7 @@ import "./decode"; // as in the page: our decoders are registered before Viv's c
 import { loadOmeZarrFromStore } from "@hms-dbmi/viv";
 import { deflate } from "pako";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { Stopped } from "./client";
+import { BUDGET, Stopped } from "./client";
 import { imageState } from "./flat";
 import fixtures from "./fixtures/codecs.json";
 import { type Store, attrs, crafted, raw, valid } from "./fixtures/zarr";
@@ -64,6 +64,7 @@ test.each([
   ["a 1 MiB + 1 .zgroup", "This image is too large to show here (Zarr metadata over 1 MiB). Download it to open it."],
   ["a .zattrs with __proto__ and constructor keys only", "This folder has no OME-Zarr image metadata."],
   ["a bz2 compressor", "Spectio cannot decode bz2 compression."],
+  ["a blosc snappy compressor", "Spectio cannot decode blosc snappy compression."],
   ["an array shape of c = 10^9", "This image is too large to show here (over 10,000 planes). Download it to open it."],
   ["a side over 2^31 - 1", "This image is too large to show here (a side over 2,147,483,647 px). Download it to open it."],
   ["a level whose c differs from level 0", "Not an image Spectio can read: a level's shape does not follow level 0"],
@@ -155,15 +156,29 @@ test.each([
   inFolder(s);
 });
 
-test("the byte budget is reserved before each read: chunks in flight never take a view past it", async () => {
-  const s = new ZarrStore(urlOf, undefined, { requests: 100, bytes: 17 * 1024 * 1024 });
+test("the byte budget is reserved only for reads in flight: 40 concurrent gets all succeed under the default budget", async () => {
+  const s = new ZarrStore(urlOf);
   await openZarr(s);
-  const read = await Promise.allSettled(["/0/0.0.0", "/0/1.0.0", "/1/0.0.0"].map((k) => s.get(k)));
-  expect(read.map((r) => r.status)).toEqual(["fulfilled", "rejected", "rejected"]); // 16 MiB held for the first: the others stop before their request
-  expect(asked.filter((u) => /\/\d\.\d\.\d\?/.test(u))).toHaveLength(1);
+  const before = s.bytes;
+  const keys = Array.from({ length: 40 }, (_, i) => ["/0/0.0.0", "/0/1.0.0", "/1/0.0.0", "/1/1.0.0"][i % 4]);
+  const read = await Promise.allSettled(keys.map((k) => s.get(k)));
+  expect(read.map((r) => r.status)).toEqual(keys.map(() => "fulfilled"));
+  expect(s.failure).toBeNull();
+  expect(s.bytes - before).toBe(keys.reduce((n, k) => n + store.get(k.slice(1))!.byteLength, 0)); // only what was read is counted
+});
+
+test("a view near the end of its byte budget stops before it reads past it", async () => {
+  const s = new ZarrStore(urlOf);
+  await openZarr(s);
+  store.set("0/0.0.0", new Uint8Array(2 * 1024 * 1024));
+  s.bytes = BUDGET.bytes - 1024 * 1024; // 1 MiB left: the 2 MiB chunk is cut at 1 MiB
+  await expect(s.get("/0/0.0.0")).rejects.toBeInstanceOf(Stopped);
   expect(s.failure).toBeInstanceOf(Stopped);
-  expect(s.bytes).toBeLessThan(1024 * 1024); // what was read, once the read ends
-  expect(await s.get("/1/0.0.0")).toHaveLength(60); // the reserve is given back: the next read fits
+  expect(s.bytes).toBe(BUDGET.bytes - 1024 * 1024); // nothing past the budget was counted
+  s.bytes = BUDGET.bytes; // none left: no request at all
+  const n = asked.length;
+  await expect(s.get("/1/0.0.0")).rejects.toBeInstanceOf(Stopped);
+  expect(asked).toHaveLength(n);
 });
 
 test("the multiscales version and the omero labels are capped", async () => {

@@ -80,25 +80,29 @@ export class ZarrStore {
     const parts = key.split("/");
     if (!parts.every((p, i) => (PART.test(p) && p !== "." && p !== "..") || (i === parts.length - 1 && META.has(p)))) throw new Refused(`not asked: ${key}`);
     if (this.requests + 1 > this.budget.requests) throw new Stopped("requests");
-    if (this.bytes + max > this.budget.bytes) throw new Stopped("bytes"); // reserved before the read (SEC-P3FU102G-03)
     this.requests++;
-    this.bytes += max;
-    let read = 0;
+    let [reserve, read] = [0, 0];
     while (this.active >= IN_FLIGHT) await new Promise<void>((go) => this.waiting.push(go));
     if (this.active++ === 0) this.onBusy?.(true);
     try {
+      // reserved in the slot, before the read: at most IN_FLIGHT reads are held (SEC-P3FU102G-03, SEC-P3FU102H-01)
+      const room = Math.min(max, this.budget.bytes - this.bytes);
+      if (room <= 0) throw new Stopped("bytes");
+      reserve = room;
+      this.bytes += reserve;
       const url = this.urlOf(key);
       this.log.push(url);
       const answer = await fetch(url, { signal: this.signal, credentials: "same-origin" });
       if (answer.status === 404) return (await answer.body?.cancel(), undefined);
       if (answer.status === 413) throw new TooLarge("a Zarr chunk over 16 MiB");
       if (answer.status !== 200) throw new Answered(answer.status, await problem(answer));
-      const data = await readAtMost(answer, max);
+      const data = await readAtMost(answer, reserve);
+      if (!data && reserve < max) throw new Stopped("bytes"); // the budget ends inside this read
       if (!data) throw new TooLarge(max === META_MAX ? "Zarr metadata over 1 MiB" : "a Zarr chunk over 16 MiB");
       read = data.byteLength;
       return data;
     } finally {
-      this.bytes -= max - read; // the reserve given back: only what was read is counted
+      this.bytes -= reserve - read; // the reserve given back: only what was read is counted
       this.active--;
       this.waiting.shift()?.();
       if (this.active === 0 && !this.waiting.length) this.onBusy?.(false);
@@ -144,6 +148,7 @@ function checkArray(meta: Record<string, unknown> | undefined, n: number): { zar
   const compressor = own(meta, "compressor") ?? null;
   const id = compressor === null ? null : own(compressor, "id");
   if (id !== null && (typeof id !== "string" || !COMPRESSORS.has(id))) throw new Unsupported(`Spectio cannot decode ${String(id)} compression.`);
+  if (id === "blosc" && own(compressor, "cname") === "snappy") throw new Unsupported("Spectio cannot decode blosc snappy compression.");
   const fill = own(meta, "fill_value") ?? null;
   if (!(fill === null || Number.isFinite(fill) || ["NaN", "Infinity", "-Infinity"].includes(fill as string))) throw new Unreadable("a level's fill value is not a number");
   // every compressor is decoded by the store, capped, and served as raw bytes
