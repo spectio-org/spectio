@@ -1,5 +1,6 @@
 // Search in 0.0.1 (FU-P3-89; ui-spec top bar note): a modal dialog over what the API already
 // serves (GET /runs?q=, GET /runs/{id}, GET /catalog) and the app's pages, no GET /search yet.
+import { readFileSync } from "node:fs";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -177,4 +178,11 @@ test("FU-P3-116: the short ID the UI shows (last 6 of the run ID) finds its run,
   const runs = await within(dialog).findByRole("region", { name: "Runs" });
   expect(within(runs).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual(["Run sarek-b, Running, Nextflow, 1 h ago"]);
   expect(within(dialog).getByRole("status")).toHaveTextContent("1 result");
+});
+
+test("the dialog's row classes share no name with the top bar search button (CR-P3UI06-01)", () => {
+  const classes = (file: string) => new Set(Array.from(readFileSync(file, "utf8").matchAll(/className="([^"]+)"/g), (m) => m[1].split(" ")).flat());
+  const bar = classes("src/shell/TopBar.tsx");
+  const shared = [...classes("src/shell/SearchDialog.tsx")].filter((name) => bar.has(name));
+  expect(shared).toEqual([]);
 });

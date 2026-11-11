@@ -220,7 +220,7 @@ export function SearchDialog({ opened, onClose, phone }: { opened: boolean; onCl
                           <span className="sp-search-tile" data-tone={hit.tile.tone}>
                             <Icon name={hit.tile.icon} />
                           </span>
-                          <span className="sp-search-text">
+                          <span className="sp-search-row-text">
                             <span className="sp-search-line">
                               <span className="sp-search-name">{hit.label}</span>
                               <span className="sp-search-word" data-tone={hit.tile.tone}>

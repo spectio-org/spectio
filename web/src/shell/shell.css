@@ -793,7 +793,7 @@ body {
   background: var(--tone-bg, var(--sp-surface-subtle));
   color: var(--tone-fg, var(--sp-text-secondary));
 }
-.sp-search-text {
+.sp-search-row-text {
   display: flex;
   flex: 1;
   flex-direction: column;
