@@ -747,6 +747,51 @@ def test_a_blocked_benchmark_delays_no_event(
         stop.set()
 
 
+def test_a_stalled_benchmark_keeps_one_route_slot_only(
+    writer: Writer, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3FU105B-01, SEC-P3FU105B-01: after a stall, no further read is submitted until the
+    stuck one ends, so the routes' file pool keeps its slots (dev-env §15.3 req. 13)."""
+    gate = threading.Event()
+    calls: list[str] = []
+
+    def blocked(*args: Any) -> Any:
+        calls.append(args[2])
+        gate.wait(10)  # a mount that does not answer
+        return None
+
+    monkeypatch.setattr(metrics, "read_benchmark", blocked)
+    pool = FilePool(2, 0)  # the routes' pool, small: two stuck benchmark reads would fill it
+    reader = metrics.Benchmarks(writer, settings.runs_root, pool, timeout_s=0.05)
+    stop = threading.Event()
+    reader.start(stop)
+    try:
+        for i in range(4):
+            reader.want(f"att_{i}", RUN, f"b{i}.tsv")
+        time.sleep(0.5)  # well past several timeouts
+        assert calls == ["b0.tsv"]  # one read in flight, the others wait
+        assert pool.run(lambda: "route", 1.0) == "route"  # a route read still has its slot
+        gate.set()
+        wait_for(lambda: len(calls) == 4)  # the stuck read ended: the queue goes on
+    finally:
+        gate.set()
+        stop.set()
+
+
+def test_a_tiny_benchmark_time_gives_no_huge_cpu_percent(
+    writer: Writer, settings: Settings
+) -> None:
+    """SEC-P3FU105B-02: CPU % is a ratio computed here, capped as §3.7's Ingest checks say."""
+    wanted = Wanted()
+    smk_job(writer, settings, wanted)
+    fields = BENCH_ROW.rstrip("\n").split("\t")
+    fields[0], fields[9] = "0.000000001", "1000"  # s, cpu_time: 1e14 %
+    bench_file(settings, BENCH_HEAD + "\t".join(fields) + "\n")
+    assert read_wanted(writer, settings, wanted)
+    [row] = rows(writer)
+    assert row.cpu_percent is None and row.cpu_eff is None
+
+
 def test_the_reader_drops_what_its_queue_cannot_hold(writer: Writer, settings: Settings) -> None:
     reader = metrics.Benchmarks(writer, settings.runs_root, FilePool(), backlog=1)
     began = time.monotonic()

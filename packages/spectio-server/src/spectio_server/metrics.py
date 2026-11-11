@@ -234,7 +234,7 @@ def benchmark_values(row: dict[str, str], stored: Any) -> dict[str, Any]:
     real = _number(row.get("s"))
     cpu_time = _number(row.get("cpu_time"))
     measured: dict[str, Any] = {
-        "cpu_percent": efficiency.ratio(None if cpu_time is None else cpu_time * 100, real),
+        "cpu_percent": ratio(None if cpu_time is None else cpu_time * 100, real),  # capped
         "peak_rss_bytes": _whole(row.get("max_rss"), MIB),
         "peak_vmem_bytes": _whole(row.get("max_vms"), MIB),
         "realtime_s": real,
@@ -270,7 +270,9 @@ class Benchmarks:
     (it runs on the writer, in the event's transaction); a thread of its own reads each file in
     the file pool with its timeout (`read_benchmark`: no link followed, a regular file, capped),
     then submits the values to the writer, after the event's transaction. A read that does not
-    answer, or a file refused, leaves the row's measures null."""
+    answer, or a file refused, leaves the row's measures null. After a read that did not answer,
+    the next waits until it ends: one stuck read at most keeps a slot of the routes' file pool
+    (dev-env §15.3 req. 13, CR-P3FU105B-01)."""
 
     def __init__(
         self,
@@ -284,6 +286,8 @@ class Benchmarks:
         self.writer, self.runs_root, self.files = writer, runs_root, files
         self.timeout_s = timeout_s
         self._todo: queue.Queue[tuple[str, str, str]] = queue.Queue(backlog)
+        self._idle = threading.Event()  # set when no read of ours is in the pool
+        self._idle.set()
 
     def want(self, attempt_id: str, dir_run: str, path: str) -> None:
         try:
@@ -296,9 +300,11 @@ class Benchmarks:
         job: Callable[[], dict[str, str] | None] = partial(
             read_benchmark, self.runs_root, dir_run, path
         )
+        ended = threading.Event()
         try:
-            found = self.files.run(job, self.timeout_s)
+            found = self.files.run(job, self.timeout_s, on_done=ended.set)
         except Stalled as exc:
+            self._idle = ended  # still in the pool: `run` waits for its end
             log.warning("benchmark of %s not read: %s", attempt_id, exc)
             return False
         if found is None:
@@ -309,6 +315,8 @@ class Benchmarks:
     def start(self, stop: threading.Event) -> threading.Thread:
         def run() -> None:
             while not stop.is_set():
+                if not self._idle.wait(0.2):
+                    continue
                 try:
                     wanted = self._todo.get(timeout=0.2)
                 except queue.Empty:
