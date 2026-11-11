@@ -1344,3 +1344,16 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Why.** Keeps 0.0.1's promotion clean; makes a run's pipeline version reproducible and an update visible at the point of launch, with one bounded call.
 - **Changed.** [inbox #152](../reviews/inbox.md#152-assumed-002-work-on-its-own-branch-and-pipeline-version-detection-2026-11-11). Specs change at the build (api §5.3, ui-spec §4.6).
 - **[to be validated].** `git ls-remote` through the sites' proxies.
+
+## 2026-11-11 — UI design system and the notifications panel (assumed)
+
+- **Context.** Thomas, 2026-11-11: "There is real UI work to redo. Many inconsistencies, bad placements of icons, buttons, etc. For example the notification bar/column is not modern at all. […] I really want everything coherent and consistent." An audit of the built app ([review record](../reviews/ui-audit-2026-11-11.md), 44 findings, 20 major) traced most of it to tokens that cover colour only, with no spacing, radius, type or icon scale and no Mantine `components` defaults.
+- **Decided (assumed — pending Thomas, [inbox #153](../reviews/inbox.md#153-assumed-ui-design-system-and-the-notifications-panel-2026-11-11); standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):**
+    - Mantine 7 is kept and themed: a 4 px spacing scale, radii 4 / 8 / 12 / full, type xs 12 to xl 20 with h1 28 / h2 20 / h3 16, weights 400 / 500 / 600, and `failed` and `review` colours from the state tokens in place of Mantine's `red` ([ui-spec §12](../specs/ui-spec.md#12-design-system-2026-11-11)).
+    - The own icon set stays, at one stroke (1.75) and one size per context, every path in `web/src/icons.tsx`.
+    - One rule each for buttons (one filled primary per view at the right of the page head, overflow in `…`, destructive last), the page head, toolbar, card, tables and dates (relative within 7 days, then ISO), links, the focus ring and the shared states; where the audit disagreed with §2, §3.4, §4.4, §4.11 or §7, the existing spec wins (ui-spec §12.14).
+    - The notifications panel becomes a Popover under the bell on desktop and a bottom Drawer on the phone, with All / Unread, day groups and state-tiled rows; All / Unread and grouping are client-side, per-item read is Later, items gain `engine` and an adopted run's `at` is its end time ([api §5.9](../specs/api-and-data-model.md#59-notifications-001), amendment of 2026-11-11).
+    - Built in 0.0.1, on `autopilot/integration`, as six P3 batches of the audit's 20 tasks; Catalog joins the sidebar.
+- **Why.** The inconsistencies come from missing shared values, not from the library; one themed set fixes them at the source and is cheaper than a change of library or icon package.
+- **Changed.** [ui-spec](../specs/ui-spec.md) new §12; [api](../specs/api-and-data-model.md) §5.9 (one dated line); [UI audit record](../reviews/ui-audit-2026-11-11.md); [inbox #153](../reviews/inbox.md#153-assumed-ui-design-system-and-the-notifications-panel-2026-11-11).
+- **[to be validated].** Nothing rests on another tool's behaviour beyond Mantine 7.17.8's default sizes, read in its `styles.css` (2026-11-11).
