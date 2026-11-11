@@ -1,4 +1,5 @@
 import "../runs/runs.css";
+import "./home.css";
 import { Button } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -10,9 +11,9 @@ import { NoRuns, RunCard } from "../runs/RunsPage";
 import { ACTIVE, executorLabel, isTerminal, plural, tone, when, words } from "../runs/stateWord";
 import { useServer } from "../server";
 import { PipelineMark } from "../shell/EngineMark";
-import { FoldSection } from "../shell/FoldSection";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
+import { HomeCard } from "./HomeCard";
 
 const CARD_ORDER: RunState[] = ["running", "queued", "cancelling", "failed", "succeeded", "cancelled"];
 /** The words of the active states in the subtitle, in the cards' order (UX-PAR-13). */
@@ -70,7 +71,7 @@ function WhereRunsGo({ server }: { server: ServerVersion }) {
   const local = server.executor === "local";
   const executor = executorLabel(server.executor);
   return (
-    <FoldSection id="home-where" screen="home" icon="server" title="Where your runs go" summary={`${server.node} · ${executor}`} card>
+    <HomeCard id="home-where" icon="server" title="Where your runs go" meta={`${server.node} · ${executor}`}>
       <ul className="sp-where">
         <li>
           <strong>Server</strong> Spectio {server.version} on {server.node}, under your account {server.account}
@@ -89,7 +90,7 @@ function WhereRunsGo({ server }: { server: ServerVersion }) {
           <strong>Run directories</strong> <span className="sp-mono">{server.runs_root}</span>
         </li>
       </ul>
-    </FoldSection>
+    </HomeCard>
   );
 }
 
@@ -134,7 +135,7 @@ export function HomePage() {
   const pipelines = [...new Map(recent.map((r) => [r.workflow.location, r])).values()].slice(0, 6);
 
   return (
-    <div className="sp-runs">
+    <div className="sp-runs sp-homepage">
       <PageHead
         section="home"
         title={greeting()}
@@ -184,10 +185,17 @@ export function HomePage() {
           </ul>
           <div className="sp-home-grid">
             <div className="sp-runs">
-              <FoldSection id="home-active" screen="home" icon="pulse" title="Active runs" summary={`${active.length} active`}>
-                <Link to="/runs" className="sp-link sp-link-end">
-                  All runs <Icon name="arrowRight" />
-                </Link>
+              <HomeCard
+                id="home-active"
+                icon="pulse"
+                title="Active runs"
+                meta={`${active.length} active`}
+                actions={
+                  <Link to="/runs" className="sp-link sp-link-end">
+                    All runs <Icon name="arrowRight" />
+                  </Link>
+                }
+              >
                 {active.length === 0 ? (
                   <p className="sp-muted">No run is active.</p>
                 ) : phone ? (
@@ -216,8 +224,8 @@ export function HomePage() {
                     ))}
                   </ul>
                 )}
-              </FoldSection>
-              <FoldSection id="home-ended" screen="home" icon="history" title="Finished recently" summary={`${ended.length} runs`}>
+              </HomeCard>
+              <HomeCard id="home-ended" icon="history" title="Finished recently" meta={plural(ended.length, "run", "runs")}>
                 {ended.length === 0 ? (
                   <p className="sp-muted">No run has ended yet.</p>
                 ) : phone ? (
@@ -245,14 +253,20 @@ export function HomePage() {
                     ))}
                   </ul>
                 )}
-              </FoldSection>
+              </HomeCard>
             </div>
             <div className="sp-runs">
-              <FoldSection id="home-pipelines" screen="home" icon="route" title="Your pipelines" summary={`${pipelines.length} directories`} card>
-                <Link to="/catalog" className="sp-link sp-link-end">
-                  Your catalog <Icon name="arrowRight" />
-                </Link>
-                <p className="sp-muted">Pipeline directories of your recent runs: open one in Launch.</p>
+              <HomeCard
+                id="home-pipelines"
+                icon="route"
+                title="Your pipelines"
+                meta={plural(pipelines.length, "directory", "directories")}
+                actions={
+                  <Link to="/catalog" className="sp-link sp-link-end">
+                    Your catalog <Icon name="arrowRight" />
+                  </Link>
+                }
+              >
                 <ul className="sp-quick">
                   {pipelines.map((run) => (
                     <li key={run.workflow.location}>
@@ -263,12 +277,12 @@ export function HomePage() {
                         aria-label={`Launch ${run.workflow.name ?? run.workflow.location}, ${run.workflow.location}`}
                       >
                         <Pipeline run={run} size={18} />
-                        <span className="sp-mono sp-muted">{run.workflow.location}</span>
+                        {run.workflow.name && <span className="sp-mono sp-muted">{run.workflow.location}</span>}
                       </Link>
                     </li>
                   ))}
                 </ul>
-              </FoldSection>
+              </HomeCard>
               {server && <WhereRunsGo server={server} />}
             </div>
           </div>
