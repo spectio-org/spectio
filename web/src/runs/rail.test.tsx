@@ -45,3 +45,16 @@ test("each state maps to one of the eight token tones", () => {
   expect(tone("cached")).toBe("cached");
   expect(tone("Done")).toBe("succeeded");
 });
+
+test("CR-P3UI12-01: the UI-12 title style stays in DetailSheet's head; other sheet titles keep 18/700", () => {
+  document.body.innerHTML = '<h2 class="sp-sheet-title">Resume run</h2>';
+  const base = getComputedStyle(document.body.firstElementChild!);
+  expect(base.fontSize).toBe("18px");
+  expect(base.fontWeight).toBe("700");
+  expect(base.fontFamily).not.toContain("--sp-font-display");
+  document.body.innerHTML = '<header class="sp-sheet-head"><h2 class="sp-sheet-title">ALIGN</h2></header>';
+  const head = getComputedStyle(document.querySelector("h2")!);
+  expect(head.fontWeight).toBe("600");
+  expect(head.fontFamily).toBe("var(--sp-font-display)");
+  expect(head.minWidth).toBe("0");
+});

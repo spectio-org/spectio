@@ -1129,6 +1129,11 @@
   border-bottom: 1px solid var(--sp-line-divider);
 }
 .sp-sheet-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+/* Only DetailSheet's title (the other sheets share .sp-sheet-title, CR-P3UI12-01). */
+.sp-sheet-head .sp-sheet-title {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
