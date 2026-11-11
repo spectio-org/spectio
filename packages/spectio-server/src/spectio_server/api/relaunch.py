@@ -415,9 +415,13 @@ def _template_environment(
     request: Request, column: dict[str, Any] | None
 ) -> tuple[str, str | None]:
     """The run's environment by name, with its current values, or the default with a notice
-    when that name is gone (api §5.4, A run keeps what it ran with)."""
-    _, entries, default = view(request)
+    when that name is gone or the file cannot be used now (api §5.4, A run keeps what it ran
+    with)."""
+    found, entries, default = view(request)
     name = None if column is None or column.get("state") != "recorded" else column.get("name")
     if name is None or any(env.name == name for env, *_ in entries):
         return name or default, None
+    if found.state not in ("ok", "missing"):  # only the built-ins are listed (CR-P3FU86BCD-03)
+        why = f"cannot be read: the environments file is {found.state}"
+        return default, f"The environment {name} of this run {why}; {default} is chosen."
     return default, f"The environment {name} of this run no longer exists: {default} is chosen."

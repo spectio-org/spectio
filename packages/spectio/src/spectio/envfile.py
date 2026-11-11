@@ -81,6 +81,11 @@ class File(Generic[E]):
     entries: tuple[E, ...] = ()  # in name order
     identity: Identity | None = None  # None when missing
 
+    def __post_init__(self) -> None:
+        # `view()` relies on it: only an `ok` file lists entries or names a default (CR-P3B10-01)
+        if self.state != "ok" and (self.entries or self.default is not None):
+            raise ValueError(f"a {self.state} file, not ok, has no entries and no default")
+
     @property
     def environments(self) -> tuple[E, ...]:
         return self.entries
@@ -242,8 +247,12 @@ def _parse(kind: Kind[E], data: bytes) -> File[E]:
             found.append(kind.model.model_validate({**table, "name": key}))
         except ValidationError as exc:
             first = exc.errors()[0]
-            message = "not a valid value" if first["type"] == "value_error" else first["msg"]
-            where = ".".join(p for p in (kind.table, key, _place(first["loc"])) if p)
+            loc, message = first["loc"], first["msg"]
+            if first["type"] == "value_error":
+                message = "not a valid value"
+            elif first["type"] == "extra_forbidden":  # the key is the file's text: not echoed
+                loc, message = loc[:-1], "unknown key"
+            where = ".".join(p for p in (kind.table, key, _place(loc)) if p)
             return _invalid(f"{where}: {message}")
     return File("ok", default=default, entries=tuple(found))
 
@@ -253,7 +262,7 @@ def check_default(found: File[E], builtin_names: Collection[str]) -> File[E]:
     if found.state != "ok" or found.default is None:
         return found
     if found.default not in {*builtin_names, *(_table(e)[0] for e in found.entries)}:
-        return replace(_invalid(f"default {found.default} names no environment"), identity=None)
+        return replace(_invalid("default names no environment"), identity=None)
     return found
 
 
