@@ -480,3 +480,11 @@ def test_each_filter_uses_an_index(writer: Writer, filters: dict[str, Any], inde
         assert not re.search(r"SCAN attempt_metrics(?! USING)", plan), plan
         if n == 0:
             assert f"INDEX {index} (" in main, plan
+
+
+def test_an_extreme_time_is_422_not_500(authed_client: TestClient) -> None:
+    """SEC-P3FU105E-02: `until` at year 1 with no `since` underflows `until - range`."""
+    found = authed_client.get(
+        API + "/performance:summary", params={"until": "0001-01-01T00:00:00Z"}
+    )
+    assert found.status_code == 422, found.text

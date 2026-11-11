@@ -176,7 +176,10 @@ def asked(
     """The filters every across-runs route takes: `until` defaults to now, `since` to `until`
     less `range`."""
     end = _time(until, "until") or datetime.now(UTC)
-    start = _time(since, "since") or end - RANGES[range_]
+    try:
+        start = _time(since, "since") or end - RANGES[range_]
+    except OverflowError:  # `until` near year 1 (SEC-P3FU105E-02)
+        raise Invalid("until", "out of range") from None
     if start >= end:
         raise Invalid("until", "must be after since")
     if end - start > timedelta(days=MAX_DAYS):
