@@ -1,10 +1,11 @@
-import { ActionIcon, Button } from "@mantine/core";
+import { ActionIcon, Button, Select } from "@mantine/core";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, type Ref, useEffect, useMemo, useRef, useState } from "react";
 import { type ApiError, type ResultEntry, type Results, type RunDetail, type WorkRoot, getRun, listResults, resultUrl } from "../api";
 import { type IconName, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
+import { CardHead } from "../shell/CardHead";
 import { PageHead } from "../shell/PageHead";
 import { EmptyState, ErrorPanel, SkeletonRows } from "../shell/States";
 import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
@@ -141,6 +142,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
   const sort = search.sort ?? "name";
   const [typed, setTyped] = useState(search.q ?? "");
   const [said, setSaid] = useState("");
+  const [open, setOpen] = useState(true);
   const bar = useRef<HTMLDivElement>(null);
   const focused = useRef<HTMLAnchorElement>(null);
   const write = (change: Partial<ResultsSearch>) =>
@@ -269,59 +271,55 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
 
   return (
     <>
-      <section className="sp-card sp-explorer" aria-labelledby={`${id}-explorer`}>
-        <div className="sp-explorer-head">
-          <h2 id={`${id}-explorer`}>
-            {work ? "Work directory" : "Results"} · {counts(entries)}
-          </h2>
-        </div>
-        <div ref={bar}>
-          <Toolbar
-            label="Filter and sort"
-            search={<ToolbarSearch label="Filter this folder" value={typed} onChange={setTyped} />}
-            filters={
-              phone && (
-                <label className="sp-select">
-                  Sort by
-                  <select value={sort} onChange={(e) => write({ sort: e.currentTarget.value as Sort })}>
-                    {SORTS.map((s) => (
-                      <option key={s} value={s}>
-                        {SORT_WORDS[s]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )
-            }
-          />
-          <span role="status" className="sp-sr">
-            {said}
-          </span>
-        </div>
-        {results.truncated && (
-          <div className="sp-note" role="note">
-            <p>This folder has more than 1,000 entries. Spectio lists 1,000 of them, in no particular order; sort and filter see only those.</p>
-            <p>
-              Open it on the cluster: <span className="sp-mono">{join(results.root, folder)}</span>
-            </p>
+      <section className="sp-card sp-explorer" aria-labelledby={`${id}-explorer-title`}>
+        <CardHead id={`${id}-explorer`} icon="folder" title={work ? "Work directory" : "Results"} meta={counts(entries)} open={open} onToggle={() => setOpen(!open)} />
+        <div id={`${id}-explorer-body`} className="sp-explorer-body" hidden={!open}>
+          <div ref={bar}>
+            <Toolbar
+              label="Filter and sort"
+              search={<ToolbarSearch label="Filter this folder" value={typed} onChange={setTyped} />}
+              filters={
+                phone && (
+                  <Select
+                    size="sm"
+                    label="Sort by"
+                    data={SORTS.map((s) => ({ value: s, label: SORT_WORDS[s] }))}
+                    value={sort}
+                    onChange={(v) => v && write({ sort: v as Sort })}
+                    allowDeselect={false}
+                  />
+                )
+              }
+            />
+            <span role="status" className="sp-sr">
+              {said}
+            </span>
           </div>
-        )}
-        {entries.length === 0 ? (
-          <EmptyState icon="folder">This folder is empty.</EmptyState>
-        ) : shown.length === 0 ? (
-          <EmptyState
-            icon="search"
-            action={
-              <Button variant="default" onClick={clear}>
-                Clear
-              </Button>
-            }
-          >
-            No entry in this folder matches '{typed}'
-          </EmptyState>
-        ) : (
-          rows
-        )}
+          {results.truncated && (
+            <div className="sp-note" role="note">
+              <p>This folder has more than 1,000 entries. Spectio lists 1,000 of them, in no particular order; sort and filter see only those.</p>
+              <p>
+                Open it on the cluster: <span className="sp-mono">{join(results.root, folder)}</span>
+              </p>
+            </div>
+          )}
+          {entries.length === 0 ? (
+            <EmptyState icon="folder">This folder is empty.</EmptyState>
+          ) : shown.length === 0 ? (
+            <EmptyState
+              icon="search"
+              action={
+                <Button variant="default" onClick={clear}>
+                  Clear
+                </Button>
+              }
+            >
+              No entry in this folder matches '{typed}'
+            </EmptyState>
+          ) : (
+            rows
+          )}
+        </div>
       </section>
       <p className="sp-muted">
         {work

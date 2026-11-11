@@ -66,6 +66,14 @@ export const ICONS = {
   pin: "M12 17v5 M9 4h6 M10 4v6l-3 4v3h10v-3l-3-4V4",
   more: "M5 12h1 M11.5 12h1 M18 12h1",
   trash: "M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v5 M14 11v5",
+  // the viewer controls of the file preview (UI-17)
+  wrap: "M4 6h16 M4 12h13a3 3 0 0 1 0 6h-4 M15 16l-2 2 2 2 M4 18h5",
+  toStart: "M5 4h14 M12 20V8 M7 13l5-5 5 5",
+  toEnd: "M5 20h14 M12 4v12 M7 11l5 5 5-5",
+  actualSize: "M4 5h16v14H4z M8 10l1-1v6 M14 10l1-1v6 M11.5 11h.01 M11.5 14h.01",
+  zoomIn: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4 M8 11h6 M11 8v6",
+  zoomOut: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4 M8 11h6",
+  fit: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5",
 } as const;
 
 export type IconName = keyof typeof ICONS;

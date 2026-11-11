@@ -1558,33 +1558,25 @@
   padding: 0;
   overflow: hidden;
 }
-.sp-explorer > .sp-note,
-.sp-explorer > p,
-.sp-explorer > .sp-emptystate,
+.sp-explorer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+.sp-explorer > .sp-cardhead {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+.sp-explorer-body > .sp-note,
+.sp-explorer-body > .sp-emptystate,
 .sp-explorer .sp-toolbar {
   margin: 0 var(--mantine-spacing-lg);
 }
-.sp-explorer > .sp-emptystate {
+.sp-explorer-body > .sp-emptystate {
   margin-bottom: var(--mantine-spacing-lg);
 }
 .sp-explorer .sp-note p {
   margin: 0 0 4px;
-}
-.sp-explorer-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--mantine-spacing-sm) var(--mantine-spacing-md);
-  min-height: 44px;
-  box-sizing: border-box;
-  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
-  border-bottom: 1px solid var(--sp-line-divider);
-}
-.sp-card .sp-explorer-head h2 {
-  flex: 1 1 auto;
-  margin: 0;
-  font-size: var(--mantine-font-size-lg);
-  font-weight: 600;
 }
 /* one row height for files and folders, icon, name, size and date on one centre line (§12.8) */
 .sp-explorer-table tbody th,
@@ -1801,12 +1793,20 @@
   overflow-wrap: anywhere;
   min-width: 0;
 }
-.sp-file-facts {
+.sp-file-pair {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  color: var(--sp-text-secondary);
+  gap: var(--mantine-spacing-xs);
+}
+.sp-file-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  min-width: 0;
+  margin-top: var(--mantine-spacing-md);
+}
+.sp-file-card-body[hidden],
+.sp-explorer-body[hidden] {
+  display: none;
 }
 .sp-file-viewer {
   display: flex;
@@ -1984,13 +1984,8 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .sp-file-pager .sp-file-more,
-  .sp-file-pager .sp-segments button {
+  .sp-file-pager .sp-file-more {
     min-height: 44px;
-  }
-  .sp-file-pager .sp-segments {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
   }
 }
 /* The runs table actions (FU-P3-115b; ui-spec §4.3 note of 2026-11-10; board LiteRuns): the bulk
