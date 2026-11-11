@@ -32,7 +32,7 @@ const two = (n: number) => String(n).padStart(2, "0");
 const isoDay = (d: Date) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
 
 /** ui-spec §12.8: "just now", "12 min ago", "5 h ago", "3 days ago", then "2026-10-28 07:01". */
-function ago(iso: string, now = new Date()): string {
+export function ago(iso: string, now = new Date()): string {
   const at = new Date(iso);
   const minutes = Math.floor((now.getTime() - at.getTime()) / 60000);
   if (minutes < 1) return "just now";
