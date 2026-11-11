@@ -294,7 +294,11 @@ test("FU-P3-115b: the Delete sheet lists the runs and sends directories only whe
   await tick("atac-d");
   await userEvent.click(screen.getByRole("button", { name: "Delete…" }));
   const again = await screen.findByRole("dialog", { name: "Delete 1 run?" });
-  await userEvent.click(within(again).getByRole("checkbox", { name: "Also delete their run directories" }));
+  // one run: the sheet's words are singular (FU-P3-116)
+  expect(again).toHaveTextContent("Spectio forgets this run: it leaves the list, the counts and Home. Its files stay where they are.");
+  expect(again).toHaveTextContent("Removes /scratch/amartin/spectio-runs/<run ID> of the run:");
+  expect(again).not.toHaveTextContent(/these runs|each run/);
+  await userEvent.click(within(again).getByRole("checkbox", { name: "Also delete its run directory" }));
   await userEvent.click(within(again).getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(bodies[1]).toEqual({ ids: [done.id], directories: true }));
 });
@@ -315,7 +319,7 @@ test("FU-P3-115b: a 409 keeps the sheet open with the run named and why", async 
   await tick("sarek-c");
   await userEvent.click(screen.getByRole("button", { name: "Delete…" }));
   const sheet = await screen.findByRole("dialog", { name: "Delete 1 run?" });
-  await userEvent.click(within(sheet).getByRole("checkbox", { name: "Also delete their run directories" }));
+  await userEvent.click(within(sheet).getByRole("checkbox", { name: "Also delete its run directory" }));
   await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
   const alert = await within(sheet).findByRole("alert");
   expect(alert).toHaveTextContent("Nothing was deleted. Spectio removes only a run directory it created and no other run uses.");
@@ -475,4 +479,36 @@ test("CR-P3FU115B-04: a pin that succeeds clears what a failed one said", async 
   fail = false;
   await userEvent.click(screen.getByRole("button", { name: "Pin run sarek-c" }));
   await waitFor(() => expect(screen.queryByText(/^sarek-c was not pinned/)).toBeNull());
+});
+
+// FU-P3-116: AG Grid's own icon set is left out (CSP, ui-spec §4.13), so every icon a grid shows
+// is ours: an empty `.ag-icon` would draw as a solid square.
+const shownIcons = (root: HTMLElement) => Array.from(root.querySelectorAll(".ag-icon")).filter((el) => !el.closest(".ag-hidden"));
+
+test("FU-P3-116: sortable headers hold our SVG icons, sorted or not, and no empty AG Grid icon shows", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), failed], next: null } });
+  app("/runs?sort=name");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const name = within(table).getByRole("columnheader", { name: "Run" });
+  await waitFor(() => expect(name).toHaveAttribute("aria-sort", "ascending"));
+  expect(name.querySelector(".ag-sort-ascending-icon:not(.ag-hidden) svg.sp-grid-icon")).not.toBeNull();
+  const state = within(table).getByRole("columnheader", { name: "State" });
+  expect(state.querySelector(".ag-sort-none-icon:not(.ag-hidden) svg.sp-grid-icon")).not.toBeNull();
+  expect(shownIcons(table)).toEqual([]);
+});
+
+test("FU-P3-116: after Pin, focus stays on the pinned run's Pin button once its row moves to the top", async () => {
+  let pinned = false;
+  serve({
+    "/api/v1/runs:summary": SUMMARY,
+    "/api/v1/runs/": () => ((pinned = true), json(200, { ...failed, pinned: true })),
+    "/api/v1/runs": () => json(200, { items: pinned ? [{ ...failed, pinned: true }, run()] : [run(), failed], next: null }),
+  });
+  app("/runs");
+  await screen.findByRole("grid", { name: "Runs" });
+  await userEvent.click(screen.getByRole("button", { name: "Pin run sarek-c" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Pin run sarek-c" })).toHaveAttribute("aria-pressed", "true"));
+  const rows = screen.getAllByRole("link", { name: /^Open run / }).map((a) => a.textContent);
+  expect(rows).toEqual(["sarek-c", "rnaseq-a"]);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Pin run sarek-c" })).toHaveFocus());
 });

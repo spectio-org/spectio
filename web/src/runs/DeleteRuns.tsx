@@ -44,6 +44,7 @@ export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string 
   const [error, setError] = useState<ReactNode>(null);
   const root = server?.runs_root ?? "<runs root>";
   const title = `Delete ${plural(runs.length, "run", "runs")}?`;
+  const one = runs.length === 1; // one run: singular words (FU-P3-116)
 
   const close = () => {
     setAsking(false);
@@ -76,14 +77,18 @@ export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string 
         ))}
       </ul>
       {runs.length > SHOWN && <p className="sp-muted">and {runs.length - SHOWN} more</p>}
-      <p>Spectio forgets these runs: they leave the list, the counts and Home. Their files stay where they are.</p>
+      <p>
+        {one
+          ? "Spectio forgets this run: it leaves the list, the counts and Home. Its files stay where they are."
+          : "Spectio forgets these runs: they leave the list, the counts and Home. Their files stay where they are."}
+      </p>
       <label className="sp-check">
         <input type="checkbox" checked={dirs} onChange={(e) => setDirs(e.currentTarget.checked)} aria-describedby="delete-dirs-hint" />
-        Also delete their run directories
+        {one ? "Also delete its run directory" : "Also delete their run directories"}
       </label>
       <p id="delete-dirs-hint" className="sp-note">
-        Removes {root}/&lt;run ID&gt; of each run: its work directory, logs and the results inside it. Results written outside the run
-        directory are kept. This cannot be undone.
+        Removes {root}/&lt;run ID&gt; of {one ? "the run" : "each run"}: its work directory, logs and the results inside it. Results written
+        outside the run directory are kept. This cannot be undone.
       </p>
       {error && (
         <div role="alert" className="sp-alert">
