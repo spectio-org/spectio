@@ -122,7 +122,14 @@
   cursor: pointer;
 }
 .sp-gnode[data-jobs] .sp-gnode-btn {
+  /* one line in the 40 px header (layout.ts HEADER): two lines did not fit and cut the name */
   height: 40px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.sp-gnode[data-jobs] .sp-gnode-meta {
+  flex-shrink: 0;
 }
 .sp-gnode-name {
   max-width: 100%;

@@ -10,6 +10,7 @@ import {
   MiniMap,
   type Edge,
   type Node,
+  type NodeHandle,
   type NodeProps,
   Position,
   ReactFlow,
@@ -137,6 +138,19 @@ interface NodeData extends Record<string, unknown> {
   badge: string | null;
   horizontal: boolean;
   onOpen: (n: ViewNode) => void;
+}
+
+/** A step's two handles, where `NodeBox` draws them: in at the top (left), out at the bottom (right). */
+function handlesOf(w: number, h: number, horizontal: boolean): NodeHandle[] {
+  return horizontal
+    ? [
+        { type: "target", position: Position.Left, x: 0, y: h / 2, width: 1, height: 1 },
+        { type: "source", position: Position.Right, x: w, y: h / 2, width: 1, height: 1 },
+      ]
+    : [
+        { type: "target", position: Position.Top, x: w / 2, y: 0, width: 1, height: 1 },
+        { type: "source", position: Position.Bottom, x: w / 2, y: h, width: 1, height: 1 },
+      ];
 }
 
 function NodeBox({ data }: NodeProps<Node<NodeData>>) {
@@ -284,6 +298,9 @@ function Map_({ settings, decor, shown, onOpen, title, nextRef }: { settings: Gr
         // React Flow sets `pointer-events: none` on a node that is neither selectable nor draggable
         // and has no handler of its own, so its button never got a click (found with the demo)
         style: { pointerEvents: "all" },
+        // Handles given rather than measured: React Flow drops the measured ones whenever a node
+        // object changes, and at the Jobs level they were not measured again, so no edge was drawn
+        handles: n.kind === "job" ? undefined : handlesOf(box.w, box.h, horizontal),
         data: {
           node: n,
           status: s,
