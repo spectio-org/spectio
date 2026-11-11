@@ -105,3 +105,19 @@ test("groupBox: a group's place is its steps' centre-top, or its folded box's, s
   expect(groupBox(folded, place(folded, "layered-lr"), g)).toEqual({ x: one.x + one.w / 2, y: one.y });
   expect(groupBox(open, at, "sub:nope")).toBeNull();
 });
+
+test("Layered top-down and left-right draw each group as an area around its steps; without groups, none", () => {
+  const v = collapse(DOC, "process");
+  for (const layout of ["layered-tb", "layered-lr"] as const) {
+    const at = place(v, layout);
+    const g = `sub:${P}ALIGN`;
+    const area = at.lanes.find((l) => l.id === g)!;
+    expect(area, layout).toBeDefined();
+    for (const n of v.nodes.filter((x) => x.lane === g)) {
+      const b = at.boxes.get(n.id)!;
+      expect(b.x >= area.x! && b.y >= area.y && b.x + b.w <= area.x! + area.w! && b.y + b.h <= area.y + area.h, `${layout} ${n.id}`).toBe(true);
+    }
+  }
+  const flat = { ...v, nodes: v.nodes.map((n) => ({ ...n, lane: null })) };
+  expect(place(flat, "layered-tb").lanes).toEqual([]);
+});

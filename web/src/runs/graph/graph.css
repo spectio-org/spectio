@@ -1271,7 +1271,7 @@
 
 /* a job out of its step's norm under a colour mode: an amber dashed outline (the words are in the
    node's meta line and accessible name, not only the colour) */
-.sp-gnode[data-odd] .sp-gnode-btn {
+.sp-gnode[data-odd] .sp-gnode-btn:not(:focus-visible) {
   outline: 2px dashed var(--sp-state-review, #d97706);
   outline-offset: 2px;
 }

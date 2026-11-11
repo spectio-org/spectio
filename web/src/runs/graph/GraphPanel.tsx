@@ -67,8 +67,8 @@ interface Props {
   onTasks: (process: string) => void;
 }
 
-/** A parameter's value in this run, its kind and its text: `undefined` when the run did not set
- * it (the pipeline's default applies). */
+/** A parameter's value in this run, its kind and its text; `set` is false when the run did not
+ * set it (the pipeline's default applies). */
 export function paramOf(params: Record<string, Json>, key: string): { kind: string; text: string; set: boolean } {
   let at: Json | undefined = params[key];
   if (at === undefined && key.includes(".")) {
@@ -81,7 +81,7 @@ export function paramOf(params: Record<string, Json>, key: string): { kind: stri
   if (typeof at === "number") return { kind: "number", text: String(at), set: true };
   if (Array.isArray(at)) return { kind: `list of ${at.length}`, text: at.map((v) => (typeof v === "string" ? v : JSON.stringify(v))).join(", "), set: true };
   if (typeof at === "object") return { kind: "map", text: JSON.stringify(at), set: true };
-  return { kind: /^(\/|\.{1,2}\/|~\/|[a-z][\w+.-]*:\/\/)|\.[a-z0-9]{1,6}$/i.test(at) && !/\s/.test(at) ? "path" : "text", text: at, set: true };
+  return { kind: /^(\/|\.{1,2}\/|~\/|[a-z][\w+.-]*:\/\/)|\/|\.[a-z][a-z0-9]{0,5}$/i.test(at) && !/\s/.test(at) ? "path" : "text", text: at, set: true };
 }
 
 /** A file's look: the icon and word of its kind, and whether its first lines are worth showing
@@ -633,7 +633,7 @@ function Declares({ name, label, code, engine, section, where }: { name: string;
                 <tr key={j}>
                   {j === 0 && (
                     <th scope="rowgroup" rowSpan={d.parts.length} className="sp-mono">
-                      {d.label ?? (engine === "snakemake" ? `#${i + 1}` : section === "input" ? `#${i + 1}` : "—")}
+                      {d.label ?? (engine === "snakemake" || section === "input" ? `#${i + 1}` : "—")}
                       {d.optional && <span className="sp-gdecl-opt">optional</span>}
                       {d.parts.length > 1 && <span className="sp-gdecl-opt">tuple</span>}
                     </th>
@@ -885,7 +885,13 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
         decor={{ selected: settings.node, edge: edge?.id ?? null, lineage: traced, diff, replayAt }}
         onOpen={(n) => (setEdge(null), set({ node: n.id }))}
         onEdge={setEdge}
-        onReset={() => (setEdge(null), setTrace(null), set({ node: null }))}
+        // only when something is open: a navigation to the same URL would reload the route
+        onReset={() => {
+          if (!edge && !trace && !settings.node) return;
+          setEdge(null);
+          setTrace(null);
+          if (settings.node) set({ node: null });
+        }}
         source={source}
         side={
           <>

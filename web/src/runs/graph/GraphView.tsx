@@ -17,7 +17,6 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
-  useStore,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -482,7 +481,6 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
   const flow = useReactFlow();
   const wrap = useRef<HTMLDivElement>(null);
   const [cursor, setCursor] = useState(0);
-  const zoom = useStore((st) => st.transform[2]);
   // the link under the mouse: a small card by the cursor (the same facts are in each step's panel,
   // whose links are buttons, so the keyboard reaches them too)
   const [over, setOver] = useState<{ edge: ViewEdge; x: number; y: number } | null>(null);
@@ -503,7 +501,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
       const kids = view.nodes.filter((n) => n.lane === lane.id);
       const states = [...new Set(kids.map((n) => statusWord(status.get(n.id) ?? null)))];
       const tip = `${lane.id.startsWith("stage:") ? "Stage" : lane.id.startsWith("file:") ? "Rule file" : kids[0]?.kind === "job" ? "Step" : "Subworkflow"} ${lane.label}: ${kids.length} ${kids.length === 1 ? "box" : "boxes"} (${states.join(", ")})`;
-      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: lane.x ?? 0, y: lane.y }, data: { label: lane.label, area: lane.x !== undefined, fold, onToggle, tip }, width: lane.w ?? width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1 });
+      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: lane.x ?? 0, y: lane.y }, data: { label: lane.label, area: lane.x !== undefined, fold, onToggle, tip }, width: lane.w ?? width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1, style: { pointerEvents: "all" } });
     }
     // what the open step or link lights up: itself, its links and the steps at their other end
     const lit = new Set<string>();
@@ -678,7 +676,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
   nextRef.current = next;
 
   return (
-    <div className="sp-graph-map" ref={wrap} data-searching={searching || undefined} aria-label={`Map of ${title}`} role="group" style={{ ["--sp-zoom" as string]: zoom }}>
+    <div className="sp-graph-map" ref={wrap} data-searching={searching || undefined} aria-label={`Map of ${title}`} role="group">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -694,8 +692,10 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
         zoomOnDoubleClick={false}
         onEdgeClick={onEdge ? (_, edge) => onEdge((edge.data as { edge: ViewEdge }).edge) : undefined}
         onPaneClick={onPane}
+        // the cards on the map keep their size: the zoom as a CSS variable, set without a render
+        onMove={(_, vp) => wrap.current?.style.setProperty("--sp-zoom", String(vp.zoom))}
+        onInit={(rf) => wrap.current?.style.setProperty("--sp-zoom", String(rf.getZoom()))}
         onEdgeMouseEnter={(ev, e) => hover(ev, e)}
-        onEdgeMouseMove={(ev, e) => hover(ev, e)}
         onEdgeMouseLeave={() => setOver(null)}
         // the empty inside of a group's area is the map too
         onNodeClick={onPane ? (e, n) => n.type === "lane" && !(e.target as Element).closest("button") && onPane() : undefined}
@@ -826,7 +826,8 @@ function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: Vi
   const [open, setOpen] = useState(false);
   const jobs = view.nodes.some((n) => n.kind === "job");
   const semantic = overlay === "cpu" || overlay === "memory";
-  const texts = view.nodes.map((n) => [overlayValue(n, overlay), overlayText(n, overlay)] as const).filter(([v]) => v !== null) as [number, string][];
+  // jobs are coloured against their own step's jobs: the key's ends then come from the steps only
+  const texts = view.nodes.filter((n) => n.kind !== "job").map((n) => [overlayValue(n, overlay), overlayText(n, overlay)] as const).filter(([v]) => v !== null) as [number, string][];
   const low = texts.length ? texts.reduce((a, b) => (b[0] < a[0] ? b : a)) : null;
   const high = texts.length ? texts.reduce((a, b) => (b[0] > a[0] ? b : a)) : null;
   const key =
@@ -854,6 +855,10 @@ function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: Vi
     ) : high ? (
       <span className="sp-gkey">
         {low![1]} <span className="sp-gramp" aria-hidden="true" /> {high[1]}
+      </span>
+    ) : jobs ? (
+      <span className="sp-gkey">
+        lowest <span className="sp-gramp" aria-hidden="true" /> highest, among each step's jobs
       </span>
     ) : (
       <span className="sp-gkey">No step has a value yet: steps keep their state colour.</span>
@@ -1070,6 +1075,8 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented || typing(e.target) || document.querySelector(".sp-ginspect, .sp-gcodepop")) return;
+      // the graph's own Escape: from inside it, or with nothing focused; not a page dialog's
+      if (e.target !== document.body && !(e.target instanceof Node && root.current?.contains(e.target))) return;
       if (focus) onSettings({ focus: null });
       else reset.current?.();
     };

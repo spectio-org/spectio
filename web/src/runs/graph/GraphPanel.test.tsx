@@ -482,3 +482,17 @@ test("paramOf gives each parameter's kind and text, and says when the run left i
   expect(paramOf(params, "z").kind).toBe("null");
   expect(paramOf(params, "missing").set).toBe(false);
 });
+
+test("Escape with nothing open leaves Focus first; an Escape from outside the graph does nothing", async () => {
+  mocks();
+  const router = app(`/runs/${ID}?tab=graph&show=list&focus=sub:${P}ALIGN`);
+  await listView();
+  const outside = document.createElement("div");
+  outside.tabIndex = -1;
+  document.body.append(outside);
+  fireEvent.keyDown(outside, { key: "Escape" });
+  expect(router.state.location.search).toMatchObject({ focus: `sub:${P}ALIGN` });
+  outside.remove();
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  await waitFor(() => expect(router.state.location.search.focus).toBeUndefined());
+});

@@ -602,7 +602,10 @@ export function outliers(view: View, overlay: GraphOverlay): Map<string, number>
   const steps = new Map<string, [string, number][]>();
   for (const n of view.nodes) {
     const v = n.kind === "job" ? overlayValue(n, overlay) : null;
-    if (v !== null && v > 0) steps.set(n.lane ?? "", [...(steps.get(n.lane ?? "") ?? []), [n.id, v]]);
+    if (v === null || v <= 0) continue;
+    const step = steps.get(n.lane ?? "") ?? [];
+    step.push([n.id, v]);
+    steps.set(n.lane ?? "", step);
   }
   for (const jobs of steps.values()) {
     if (jobs.length < 3) continue;
