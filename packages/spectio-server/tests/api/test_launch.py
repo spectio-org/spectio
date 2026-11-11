@@ -738,9 +738,11 @@ def test_engine_version_check_never_holds_the_process_exit() -> None:
     a ThreadPoolExecutor's workers held the exit until the check ended
     (`test_sigterm_stops_cleanly`, FU-P3-108c)."""
     script = (
-        "import sys, time\n"
+        "import os, sys, time\n"
         "from spectio_server.api import workflows as wf\n"
-        "wf.EngineVersions._one = lambda self, e: (print(e, flush=True), time.sleep(60))\n"
+        # one write a line: two threads' print() calls interleave (CR-161S8-04)
+        "wf.EngineVersions._one = lambda self, e: (\n"
+        "    os.write(1, (e + '\\n').encode()), time.sleep(60))\n"
         "wf.EngineVersions(None).warm()\n"
         "sys.stdin.readline()\n"  # the parent saw both checks start
     )

@@ -134,7 +134,7 @@ Both asked for changes: code-reviewer 1 major, 5 minors; security-reviewer 2 maj
 | Id | Severity | Finding | Status |
 |---|---|---|---|
 | CR-161S6-01 / SEC-161S6-01 | major | a `config.yaml` over 1 MiB was still refused: `_read` capped it at 1 MiB before the 256 KiB test | fixed in `de66920`: `TooLarge` (a subclass of `Unreadable`) from `_read` at 256 KiB gives `schema_source: none`; the size is checked before decoding, so a large non-UTF-8 config gives `none` too (tested at 290 KiB, 1.2 MiB and 300 KiB of non-UTF-8 bytes, each with a launch giving `201`, since CR-161S7-02) |
-| SEC-161S6-02 | major (before #161) | a schema or config nested 250 to 990 levels passed parsing and failed when the response was encoded, a 500 | fixed in `0fa93d8`: `_object` refuses past 64 levels (tested for `nextflow_schema.json`, `config.schema.yaml` and `config.yaml`; each fails without the fix) |
+| SEC-161S6-02 | major (before #161) | a schema or config nested 250 to 990 levels passed parsing and failed when the response was encoded, a 500 | fixed in `0fa93d8`: `_object` refuses past 64 levels (tested for `nextflow_schema.json`, `config.schema.yaml` and `config.yaml`; each fails without the fix; since CR-161S7-01 a config that deep infers `none`, and the third case is `workflow/schemas/config.schema.yaml`) |
 | CR-161S6-02 | minor | the token budget could refuse a dense `config.yaml` under 256 KiB | fixed in `de66920`: the budget raises `TooLarge`, so the config gives `none` (tested) |
 | CR-161S6-03 | minor | the catch-all said "not YAML" for JSON | fixed in `de66920`: "not JSON or YAML this server reads" |
 | CR-161S6-04 | minor | the surrogate path of `module view` had no test | fixed in `de66920`: the same view gives `200`, with a lone surrogate `502` |
@@ -154,10 +154,14 @@ Both approved: code-reviewer with 3 minors, all fixed below; security-reviewer w
 
 ### Fix review (`2332f2d..d00353d`)
 
-security-reviewer approved with one minor; code-reviewer: see below.
+Both approved: security-reviewer with one minor, code-reviewer with four (CR-161S8-01 is the same as SEC-161S8-01).
 
 | Id | Severity | Finding | Status |
 |---|---|---|---|
-| SEC-161S8-01 | minor | the specs said any `config.yaml` past 64 levels infers no form; past about 250 block levels PyYAML's composer raises `RecursionError`, and past 64 flow brackets the scanner refuses, both a `422` that quotes nothing | spec reworded to the window (65 to about 250 block levels); the code fails closed |
+| SEC-161S8-01 | minor | the specs said any `config.yaml` past 64 levels infers no form; past about 250 block levels PyYAML's composer raises `RecursionError`, and past 64 flow brackets the scanner refuses, both a `422` that quotes nothing | spec reworded to the window (65 to about 300 block levels, measured); the code fails closed |
+| CR-161S8-01 | minor | the same as SEC-161S8-01 | the same rewording |
+| CR-161S8-02 | minor | the record cited FU-161-01 in the PR body before it was there | added to the PR body's follow-ups at hand-off |
+| CR-161S8-03 | minor | the SEC-161S6-02 row described the depth test as it was before CR-161S7-01 | row updated |
+| CR-161S8-04 | minor (outside the range) | `test_engine_version_check_never_holds_the_process_exit` failed 2 runs in 5: two daemon threads' `print` calls interleave (`['', 'nextflowsnakemake']`) | fixed: each line is one `os.write`, atomic on a pipe under `PIPE_BUF` |
 
 Seen by the worker and not changed here: a resumed registry module run is named after `parent.workflow_name`; and `GET /runs/{id}` shows `nextflow run` as the command of a module run.
