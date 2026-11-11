@@ -127,11 +127,11 @@ export function DeleteRuns({
           {error}
         </div>
       )}
-      <div className="sp-actions" data-stack={phone || undefined}>
+      <div className="sp-dialog-foot" data-stack={phone || undefined}>
         <Button variant="default" data-autofocus onClick={close} fullWidth={phone}>
           Cancel
         </Button>
-        <Button color="red" onClick={confirm} loading={sending} fullWidth={phone}>
+        <Button color="failed" onClick={confirm} loading={sending} fullWidth={phone}>
           Delete
         </Button>
       </div>
@@ -142,7 +142,6 @@ export function DeleteRuns({
       {!owned && (
         <Button
           variant="default"
-          color="red"
           onClick={() => why || setAsking(true)}
           aria-disabled={why ? true : undefined}
           data-disabled={why ? true : undefined}
@@ -168,7 +167,7 @@ export function DeleteRuns({
           {body}
         </Drawer>
       ) : (
-        <Modal opened={asking} onClose={close} title={title} returnFocus={!owned} centered>
+        <Modal opened={asking} onClose={close} title={title} returnFocus={!owned} centered classNames={{ title: "sp-sheet-title" }}>
           {body}
         </Modal>
       )}

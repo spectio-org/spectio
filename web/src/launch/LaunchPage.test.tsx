@@ -395,15 +395,13 @@ test("P3-parC: Pipeline, Parameters, Where it runs and the preview are sections 
   expect(fold).toHaveAttribute("aria-expanded", "false");
 });
 
-test("P3-parC: Launch sits in the page head too, the same action with the same reason", async () => {
+test("UI-13: on the desktop Launch is the page head's only, with its reason (ui-spec §12.4)", async () => {
   const onLaunched = page();
-  const [head, side] = screen.getAllByRole("button", { name: "Launch" });
+  const [head, ...others] = screen.getAllByRole("button", { name: "Launch" });
+  expect(others).toEqual([]);
   expect(head.closest("header")).not.toBeNull();
-  expect(side.closest("header")).toBeNull();
-  for (const b of [head, side]) {
-    expect(b).toHaveAttribute("aria-disabled", "true");
-    expect(b).toHaveAccessibleDescription("Load a pipeline first");
-  }
+  expect(head).toHaveAttribute("aria-disabled", "true");
+  expect(head).toHaveAccessibleDescription("Load a pipeline first");
   await load();
   expect(head).toHaveAccessibleDescription("Fill the required field: input");
   await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
@@ -540,7 +538,8 @@ test("FU-P3-86h: Before Launch lists every reason, each a link that moves focus 
   expect(screen.getByRole("textbox", { name: /^depth/ })).toHaveFocus();
   await userEvent.click(links[0]);
   expect(screen.getByRole("textbox", { name: /^input/ })).toHaveFocus();
-  // both Launch buttons are described by the whole list
+  // Launch is described by the whole list, and the reasons are the one link style (ui-spec §12.10)
+  for (const a of links) expect(a).toHaveClass("mantine-Anchor-root");
   for (const b of screen.getAllByRole("button", { name: "Launch" })) {
     expect(b).toHaveAttribute("aria-describedby", before().id);
     expect(b).toHaveAccessibleDescription("Fill the required field: input Fix depth: Must be at most 9.");
@@ -583,7 +582,7 @@ test("FU-P3-86h: Load a pipeline first links the Pipeline field; nothing missing
   expect(launch()).toHaveAccessibleDescription("Nothing is missing.");
 });
 
-test("FU-P3-86h: the aside has the summary, then Before Launch, the preview folded, then Launch", async () => {
+test("FU-P3-86h: the aside has the summary, then Before Launch, the preview folded (Launch is in the head, UI-13)", async () => {
   page();
   await load();
   await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
@@ -602,7 +601,11 @@ test("FU-P3-86h: the aside has the summary, then Before Launch, the preview fold
   ]);
   const preview = within(aside).getByRole("button", { name: /^params.json preview/ });
   expect(preview).toHaveAttribute("aria-expanded", "false");
-  const order = [summary, before(), preview, within(aside).getByRole("button", { name: "Launch" })];
+  expect(within(aside).queryByRole("button", { name: "Launch" })).toBeNull();
+  // every section is a card, the summary's title a card title (ui-spec §12.7)
+  expect(screen.getByRole("region", { name: "Parameters" })).toHaveClass("sp-card");
+  expect(within(summary).getByRole("heading", { name: "Summary" }).tagName).toBe("H3");
+  const order = [summary, before(), preview];
   for (let i = 1; i < order.length; i++) {
     expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   }
@@ -638,4 +641,15 @@ test("FU-P3-108b: the Engine head reads the same in Where it runs and in the sum
   page();
   const heads = [...document.querySelectorAll("dt")].filter((dt) => dt.textContent === "Engine head");
   expect(heads.map((dt) => dt.nextElementSibling?.textContent)).toEqual(["Not chosen yet", "Not chosen yet"]);
+});
+
+test("CR-P3UI13-03: on the desktop a launch error sits under Before Launch, and no pinned bar is drawn", async () => {
+  page();
+  await load();
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  fetchMock.mockResolvedValueOnce(json(500, { status: 500, title: "Server error" }));
+  await userEvent.click(launch());
+  const alert = await screen.findByText(/^Not launched: /);
+  expect(screen.getByRole("region", { name: "Summary" })).toContainElement(alert);
+  expect(document.querySelector(".launch-bar")).toBeNull();
 });

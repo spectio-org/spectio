@@ -1,0 +1,24 @@
+/* Launch's cards (ui-spec §12.2, §12.7; UI-13): one padding (lg, md on the phone), card titles
+   16/600 in the display font, the summary's title as the fold cards'. Loaded after app.css. */
+.launch-page .sp-card,
+.launch-page .sp-card.sp-foldsec {
+  padding: var(--mantine-spacing-lg);
+}
+.launch-page .sp-card .sp-fold-title,
+.launch-summary-title {
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
+}
+.launch-summary-title {
+  margin: 0 0 var(--mantine-spacing-md);
+}
+.launch-grid {
+  gap: var(--mantine-spacing-lg);
+}
+@media (max-width: 767.98px) {
+  .launch-page .sp-card,
+  .launch-page .sp-card.sp-foldsec {
+    padding: var(--mantine-spacing-md);
+  }
+}

@@ -1,0 +1,98 @@
+/* Home (UI-07): ui-spec §12.7 cards, §12.8 rows. One card padding (16, 12 on the phone) and one
+   gap between cards (16); sections 24 apart. Loaded after runs.css, so these win at equal weight. */
+.sp-homepage {
+  gap: var(--mantine-spacing-xl);
+}
+.sp-home-grid,
+.sp-home-grid > .sp-runs,
+.sp-homepage .sp-cards {
+  gap: var(--mantine-spacing-lg);
+}
+.sp-home-card,
+.sp-homepage .sp-cards li {
+  border: 1px solid var(--sp-line-border);
+  border-radius: var(--mantine-radius-md);
+  box-shadow: none;
+}
+@media (min-width: 1200px) {
+  .sp-home-grid {
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+}
+.sp-home-card {
+  /* a grid item shrinks below its content, so long paths wrap inside it (FU-P3-109) */
+  min-width: 0;
+  padding: var(--mantine-spacing-lg);
+}
+@media (max-width: 767.98px) {
+  .sp-home-card {
+    padding: var(--mantine-spacing-md);
+  }
+}
+.sp-home-card-body {
+  margin-top: var(--mantine-spacing-sm);
+}
+.sp-home-card .sp-link-end {
+  margin: 0;
+  white-space: nowrap;
+}
+.sp-home-card .sp-quick {
+  margin: 0;
+}
+
+/* Stat tiles: one height, the rail only (§3.1). */
+.sp-homepage .sp-cards {
+  grid-auto-rows: 1fr;
+}
+.sp-homepage .sp-cards li[data-rail] {
+  box-shadow: inset 4px 0 0 var(--tone);
+}
+.sp-homepage .sp-cards li > a {
+  height: 100%;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-xl);
+  border-radius: var(--mantine-radius-md);
+}
+.sp-homepage .sp-cards li > a > .sp-muted {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Lists of runs: 44 px rows inside the card, a divider between them, each line on one line. */
+.sp-home-card .sp-list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+}
+.sp-home-card .sp-list li,
+.sp-home-card .sp-list.sp-ended li[data-rail] {
+  align-items: center;
+  min-height: 44px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md) var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 4px 0 0 var(--tone), inset 0 -1px 0 var(--sp-line-divider);
+}
+.sp-home-card .sp-list li > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* not the pipelines' paths: those wrap and stay whole (FU-P3-109) */
+.sp-home-card .sp-cardhead-title,
+.sp-home-card .sp-list li > span > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.sp-home-card .sp-ended-state {
+  flex: 0 0 120px;
+}
+.sp-home-card .sp-list li > :last-child:not(:first-child) {
+  align-items: flex-end;
+  text-align: right;
+}
