@@ -333,7 +333,7 @@ test("while the list loads: its line and the cards' skeleton", async () => {
   serve({ [API]: () => new Promise<Response>(() => {}), "/api/v1/version": SLURM });
   app("/environments");
   expect(await screen.findByText("Loading environments…")).toBeInTheDocument();
-  expect(document.querySelectorAll(".sp-env[aria-hidden]").length).toBeGreaterThan(0);
+  expect(document.querySelectorAll(".sp-skelrows .mantine-Skeleton-root").length).toBeGreaterThan(0);
 });
 
 test("phone: a card is one link to its page, with no action buttons", async () => {
@@ -403,4 +403,33 @@ test("CR-P3FU111-02: New does not read the list, only a duplicate does", async (
   app("/environments/new");
   await screen.findByLabelText("Name");
   expect(reads).toEqual([]);
+});
+
+test("UI-14: the shared states, the view switch in the toolbar with the count, one environment in the singular", async () => {
+  let fail = true;
+  serve({ [API]: () => (fail ? json(500, { title: "Server error", detail: "boom" }) : json(200, list([BUILTINS[0]]))), "/api/v1/version": SLURM });
+  app("/environments");
+  expect((await screen.findByRole("alert")).closest(".sp-errorpanel")).not.toBeNull();
+  fail = false;
+  await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+  const bar = await screen.findByRole("group", { name: "Environments view" });
+  expect(bar).toHaveClass("sp-toolbar");
+  expect(within(bar).getByRole("button", { name: "Cards" })).toBeInTheDocument();
+  expect(bar).toHaveTextContent("1 environment");
+  expect(bar).not.toHaveTextContent("1 environments");
+  expect(document.querySelector(".sp-emptystate")).toHaveTextContent(/Only the built-in environments so far/);
+});
+
+test("UI-14: loading is the shared skeleton; a pristine form shows no error; a built-in's Duplicate to edit is in the page head", async () => {
+  serve({ [API]: () => new Promise<Response>(() => {}), "/api/v1/version": SLURM });
+  app("/environments");
+  expect((await screen.findByText("Loading environments…")).closest(".sp-skelrows")).not.toBeNull();
+  serve({ [`${API}/slurm`]: BUILTINS[0], "/api/v1/version": SLURM });
+  app("/environments/slurm");
+  const dup = await screen.findByRole("link", { name: "Duplicate to edit slurm" });
+  expect(dup.closest(".sp-head-actions")).not.toBeNull();
+  serve({ [API]: list([...BUILTINS]), "/api/v1/version": SLURM });
+  app("/environments/new");
+  const why = await screen.findByText(/^Fix .* first$/);
+  expect(why).not.toHaveClass("sp-alert");
 });

@@ -248,3 +248,15 @@ test("the list is shared: with onEdit, Edit is a button that calls it (the Manag
   await userEvent.click(screen.getByRole("button", { name: "Edit rnaseq-test" }));
   expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ name: "rnaseq-test" }));
 });
+
+test("UI-15: loading, empty and error are the shared states", async () => {
+  let answer: (r: Response) => void = () => {};
+  serve({ [API]: () => new Promise<Response>((r) => (answer = r)) });
+  app("/catalog");
+  expect((await screen.findByText("Loading the catalog…")).closest(".sp-skelrows")).not.toBeNull();
+  answer(json(200, list([], "missing")));
+  expect((await screen.findByText(/^Your catalog is empty/)).closest(".sp-emptystate")).not.toBeNull();
+  serve({ [API]: () => json(500, { title: "Server error", detail: "boom" }) });
+  app("/catalog");
+  expect((await screen.findByRole("alert")).closest(".sp-errorpanel")).not.toBeNull();
+});

@@ -185,7 +185,7 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
           Cancel
         </Button>
         {why && (
-          <span id="env-save-why" className="sp-alert">
+          <span id="env-save-why" className={Object.keys(shown).length ? "sp-alert" : "sp-env-hint"}>
             {why}
           </span>
         )}

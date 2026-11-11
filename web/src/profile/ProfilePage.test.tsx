@@ -85,7 +85,7 @@ test("the config paths are read-only text, each with its own Copy button", async
   const paths = (await screen.findByRole("heading", { name: "Config paths" })).closest("section")!;
   expect(within(paths).queryByRole("textbox")).toBeNull();
   for (const path of Object.values(ME.paths)) expect(within(paths).getByText(path)).toBeInTheDocument();
-  const copies = within(paths).getAllByRole("button");
+  const copies = within(paths).getAllByRole("button", { name: /^Copy / });
   expect(copies.map((b) => b.getAttribute("aria-label"))).toEqual([
     "Copy the config file path",
     "Copy the data directory path",
@@ -141,4 +141,20 @@ test("FU-P3-116: /profile names the browser tab, as the other pages do", async (
   app("/profile");
   await screen.findByRole("heading", { level: 1, name: "Profile" });
   await waitFor(() => expect(document.title).toBe("Profile · Spectio"));
+});
+
+test("UI-16: each card has the shared card head with its tile and fold; Copy and the theme are Mantine controls", async () => {
+  serve({ [ME_URL]: ME });
+  app("/profile");
+  const paths = (await screen.findByRole("heading", { name: "Config paths" })).closest("section")!;
+  expect(paths.querySelector(".sp-cardhead .sp-cardhead-tile svg")).not.toBeNull();
+  const fold = within(paths).getByRole("button", { name: "Config paths" });
+  expect(fold).toHaveAttribute("aria-expanded", "true");
+  await userEvent.click(fold);
+  expect(fold).toHaveAttribute("aria-expanded", "false");
+  expect(within(paths).queryByRole("button", { name: "Copy the config file path" })).toBeNull();
+  await userEvent.click(fold);
+  expect(within(paths).getByRole("button", { name: "Copy the config file path" })).toHaveClass("mantine-ActionIcon-root");
+  const group = screen.getByRole("radiogroup", { name: "Theme" });
+  expect(within(group).getByRole("radio", { name: "Dark" })).toHaveClass("mantine-Radio-radio");
 });

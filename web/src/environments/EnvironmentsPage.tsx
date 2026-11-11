@@ -1,6 +1,6 @@
 import "../runs/runs.css";
 import "./environments.css";
-import { Button, Drawer, Modal, Skeleton } from "@mantine/core";
+import { Button, Drawer, Modal } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, type EnvironmentItem, type EnvironmentList, deleteEnvironment, getEnvironment, listEnvironments, makeDefault } from "../api";
@@ -9,6 +9,8 @@ import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
+import { EmptyState, ErrorPanel, SkeletonRows } from "../shell/States";
+import { Toolbar } from "../shell/Toolbar";
 import { EnvironmentForm } from "./EnvironmentForm";
 import { EMPTY, copyName, fromItem, label, summary } from "./fields";
 
@@ -28,7 +30,7 @@ let shownView: { view?: "table" } = {};
 const KIND_ICONS: Record<string, IconName> = { slurm: "server", local: "terminal" };
 const KindIcon = ({ env }: { env: EnvironmentItem }) => (
   <span className="sp-env-kind" data-kind={env.executor}>
-    <Icon name={KIND_ICONS[env.executor] ?? "server"} size="nav" />
+    <Icon name={KIND_ICONS[env.executor] ?? "server"} />
   </span>
 );
 const kindBadge = (env: EnvironmentItem) => <span className="sp-chip">{env.executor === "slurm" ? "SLURM" : "Local"}</span>;
@@ -117,8 +119,7 @@ export function EnvironmentsPage() {
     return (
       <div className="sp-page">
         <PageHead section="environments" title="Environments" />
-        <p role="alert" className="sp-note sp-alert">Environments could not be read. {error}</p>
-        <Button variant="default" onClick={() => (setError(null), load())}>Retry</Button>
+        <ErrorPanel onRetry={() => (setError(null), load())}>Environments could not be read. {error}</ErrorPanel>
       </div>
     );
   }
@@ -156,7 +157,7 @@ export function EnvironmentsPage() {
         </Button>
       )}
       {!env.builtin && (
-        <Button variant="light" color="red" size="sm" aria-label={`Delete ${env.name}`} onClick={() => !why && setAsking(env)} {...waits(why)}>
+        <Button variant="default" size="sm" aria-label={`Delete ${env.name}`} onClick={() => !why && setAsking(env)} {...waits(why)}>
           Delete
         </Button>
       )}
@@ -168,15 +169,21 @@ export function EnvironmentsPage() {
       <PageHead
         section="environments"
         title="Environments"
-        sub={data && `Where the tasks of a run go: the executor and its defaults · ${items.length} environments · the default is ${data.default}`}
+        sub={data && `Where the tasks of a run go: the executor and its defaults · the default is ${data.default}`}
         primary={<Waiting why={why} to="/environments/new" primary>New environment</Waiting>}
       />
-      <div className="sp-segments sp-env-views" role="group" aria-label="Show environments as">
-        <button type="button" aria-pressed={view.view !== "table"} onClick={() => show(false)}>Cards</button>
-        <button type="button" aria-pressed={view.view === "table"} onClick={() => show(true)}>Table</button>
-      </div>
+      <Toolbar
+        label="Environments view"
+        filters={
+          <div className="sp-segments" role="group" aria-label="Show environments as">
+            <button type="button" aria-pressed={view.view !== "table"} onClick={() => show(false)}>Cards</button>
+            <button type="button" aria-pressed={view.view === "table"} onClick={() => show(true)}>Table</button>
+          </div>
+        }
+        caption={data && `${items.length} ${items.length === 1 ? "environment" : "environments"}`}
+      />
       <p role="status" className="sp-sr">{said}</p>
-      {data === null && <p className="sp-muted">Loading environments…</p>}
+      {data === null && <SkeletonRows rows={2} height={120} label="Loading environments…" />}
       {data && FILE_LINES[state] && (
         <div className="sp-note" role={state === "unreachable" ? undefined : "note"}>
           {FILE_LINES[state](data.file.path, data.file.detail ?? "")}{" "}
@@ -184,15 +191,7 @@ export function EnvironmentsPage() {
         </div>
       )}
       {why && <p id="env-waits" className="sp-env-hint">New environment, Edit, Duplicate, Make default and Delete: {why.toLowerCase()}</p>}
-      {(view.view !== "table" || data === null) && <div className="sp-envs">
-        {data === null &&
-          [0, 1].map((i) => (
-            <article key={i} className="sp-card sp-env" aria-hidden>
-              <Skeleton height={18} width="45%" />
-              <Skeleton height={12} mt={12} />
-              <Skeleton height={12} mt={8} width="70%" />
-            </article>
-          ))}
+      {data && view.view !== "table" && <div className="sp-envs">
         {items.map((env) => (
           <article key={env.name} className="sp-card sp-env" data-default={env.default || undefined}>
             <div className="sp-env-top">
@@ -256,7 +255,9 @@ export function EnvironmentsPage() {
           </table>
         </div>
       )}
-      {data && own === 0 && (state === "ok" || state === "missing") && <p className="sp-muted">Only the built-in environments so far. New environment saves your partition, account and limits under a name.</p>}
+      {data && own === 0 && (state === "ok" || state === "missing") && (
+        <EmptyState icon="server">Only the built-in environments so far. New environment saves your partition, account and limits under a name.</EmptyState>
+      )}
       {data && <p className="sp-env-hint">Saved in <span className="sp-mono">{data.file.path}</span></p>}
       <DeleteAsk env={asking} onClose={() => setAsking(null)} onDeleted={() => asking && removed(asking)} onReload={load} />
     </div>
@@ -303,12 +304,11 @@ export function EnvironmentPage({ name, from }: { name: string | null; from?: st
     return (
       <div className="sp-page">
         <PageHead section="environments" title={name ?? "New environment"} />
-        <p role="alert" className="sp-note sp-alert">{wanted} could not be read. {failed.text}</p>
-        <Button variant="default" onClick={() => (setFailed(null), reload())}>Retry</Button>
+        <ErrorPanel onRetry={() => (setFailed(null), reload())}>{wanted} could not be read. {failed.text}</ErrorPanel>
       </div>
     );
   }
-  if (wanted && !item) return <p className="sp-muted">Loading environments…</p>;
+  if (wanted && !item) return <SkeletonRows label="Loading environments…" />;
   const builtin = !!(name && item?.builtin);
   // A duplicate gets a new name, `<name>-copy` (FU-P3-111); a built-in's label ("SLURM (from spectio init)") is not copied.
   const initial = item ? { ...fromItem(item), ...(name ? {} : { name: copyName(item.name, taken), ...(item.builtin ? { label: "" } : {}) }) } : EMPTY;
@@ -327,15 +327,19 @@ export function EnvironmentPage({ name, from }: { name: string | null; from?: st
         </Button>
       )}
       <Button component={Link} to={`/environments/new?from=${encodeURIComponent(name)}`} variant="default" fullWidth>{duplicateWords(item)} {name}</Button>
-      {!item.builtin && <Button variant="light" color="red" fullWidth onClick={() => setAsking(true)}>Delete {name}</Button>}
+      {!item.builtin && <Button variant="default" fullWidth onClick={() => setAsking(true)}>Delete {name}</Button>}
       {moreError && <p role="alert" className="sp-note sp-alert">{moreError}</p>}
       <DeleteAsk env={asking ? item : null} onClose={() => setAsking(false)} onDeleted={() => toList(`Deleted ${name}`, null)} onReload={reload} />
     </div>
   );
   return (
     <div className="sp-page">
-      <PageHead section="environments" title={name ? label(item!) : "New environment"} sub="The executor and its defaults, saved under a name you choose at Launch" />
-      {builtin && !phone && <Button component={Link} to={`/environments/new?from=${encodeURIComponent(name)}`} variant="default" aria-label={`Duplicate to edit ${name}`}>Duplicate to edit</Button>}
+      <PageHead
+        section="environments"
+        title={name ? label(item!) : "New environment"}
+        sub="The executor and its defaults, saved under a name you choose at Launch"
+        secondary={builtin && !phone ? [<Button component={Link} to={`/environments/new?from=${encodeURIComponent(name)}`} variant="default" aria-label={`Duplicate to edit ${name}`}>Duplicate to edit</Button>] : undefined}
+      />
       <EnvironmentForm
         key={`${round}:${item?.etag ?? ""}`}
         initial={initial}
