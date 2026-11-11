@@ -792,14 +792,11 @@
   background: var(--sp-surface-subtle);
 }
 
-/* Phone (ui-spec §4.11): a smaller title, a full-width Cancel, and the process table keeps its
+/* Phone (ui-spec §4.11): a smaller title, and the process table keeps its
    name, state, done and failed columns. */
 @media (max-width: 767.98px) {
   .sp-head h1 {
     font-size: 24px;
-  }
-  .sp-head > .mantine-Button-root {
-    width: 100%;
   }
   .sp-table [data-narrow] {
     display: none;

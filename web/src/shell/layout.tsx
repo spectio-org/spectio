@@ -38,7 +38,7 @@ export function PhoneTitle({ title, sub, back, titleRef }: Props) {
         </Link>
       )}
       <div className="sp-mtitle-text">
-        <h1 ref={titleRef} tabIndex={titleRef ? -1 : undefined} className="sp-page-title">
+        <h1 ref={titleRef} tabIndex={-1} className="sp-page-title">
           {title}
         </h1>
         {sub && <p className="sp-sub sp-page-sub">{sub}</p>}

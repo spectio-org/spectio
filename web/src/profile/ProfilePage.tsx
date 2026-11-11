@@ -7,7 +7,8 @@ import { Icon } from "../icons";
 import { copyText } from "../runs/CopyMenu";
 import { when } from "../runs/stateWord";
 import { usePageCrumb } from "../shell/crumb";
-import { PhoneTitle, usePhone } from "../shell/layout";
+import { usePhone } from "../shell/layout";
+import { PageHead } from "../shell/PageHead";
 
 // The Profile page of 0.0.1 (FU-P3-112; ui-spec §4.10.1; boards LiteProfile, MLiteProfile), from
 // the avatar in the top bar, in single-user mode: who the server runs as, this session and Sign
@@ -113,21 +114,7 @@ export function ProfilePage() {
   };
   return (
     <div className="sp-page sp-prof">
-      {phone ? (
-        <PhoneTitle title={TITLE} sub={me ? `Single-user mode · ${me.principal.user}` : undefined} />
-      ) : (
-        <header className="sp-head">
-          <div className="sp-head-main">
-            <span className="sp-head-tile" data-section="home">
-              <Icon name="person" size="tile" />
-            </span>
-            <div>
-              <h1 className="sp-page-title" tabIndex={-1}>{TITLE}</h1>
-              <p className="sp-sub sp-page-sub">{SUB}</p>
-            </div>
-          </div>
-        </header>
-      )}
+      <PageHead section="home" icon="person" title={TITLE} sub={phone ? me && `Single-user mode · ${me.principal.user}` : SUB} />
       {error ? (
         <>
           <p role="alert" className="sp-note sp-alert">Your profile could not be read. {error}</p>
