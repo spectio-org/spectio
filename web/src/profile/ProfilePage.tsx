@@ -1,6 +1,6 @@
 import "../runs/runs.css";
 import "./profile.css";
-import { ActionIcon, Button, type MantineColorScheme, Radio, useMantineColorScheme } from "@mantine/core";
+import { Button, type MantineColorScheme, Radio, useMantineColorScheme } from "@mantine/core";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { type Me, getMe, signOut } from "../api";
 import { Icon, type IconName } from "../icons";
@@ -55,9 +55,15 @@ function Card({ id, icon, title, focus, children }: { id: string; icon: IconName
 function Paths({ paths }: { paths: Me["paths"] }) {
   const phone = usePhone();
   const [said, setSaid] = useState("");
-  const copy = (text: string, what: string) =>
+  const [copied, setCopied] = useState("");
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(""), 2000); // "Copied" for 2 s (ui-spec §12.4)
+    return () => clearTimeout(t);
+  }, [copied]);
+  const copy = (key: string, text: string, what: string) =>
     copyText(text).then(
-      () => setSaid(`Copied ${what}`),
+      () => (setSaid(`Copied ${what}`), setCopied(key)),
       () => setSaid(`Could not copy ${what}: the browser gave no clipboard`),
     );
   return (
@@ -68,9 +74,15 @@ function Paths({ paths }: { paths: Me["paths"] }) {
             <dt>{label}</dt>
             <dd>
               <code>{paths[key]}</code>
-              <ActionIcon variant="default" size={phone ? "xl" : "lg"} aria-label={`Copy ${what}`} onClick={() => copy(paths[key], what)}>
-                <Icon name="copy" />
-              </ActionIcon>
+              <Button
+                variant="default"
+                size={phone ? "md" : "sm"}
+                leftSection={<Icon name="copy" />}
+                aria-label={`Copy ${what}`}
+                onClick={() => copy(key, paths[key], what)}
+              >
+                {copied === key ? "Copied" : "Copy"}
+              </Button>
             </dd>
           </div>
         ))}

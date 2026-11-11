@@ -148,7 +148,15 @@ test("the form posts the typed values; a 422 lands on its field", async () => {
   await userEvent.type(screen.getByLabelText("Hours"), "2");
   await userEvent.type(screen.getByLabelText("Minutes"), "30");
   await userEvent.type(screen.getByLabelText("Memory per job"), "1.5");
-  await userEvent.selectOptions(screen.getByLabelText("Unit"), "GiB");
+  const unit = screen.getByRole("textbox", { name: "Unit" });
+  expect(unit).toHaveClass("mantine-Select-input");
+  Element.prototype.scrollIntoView = () => {}; // Mantine's Combobox scrolls the selected option; jsdom has no scrollIntoView
+  try {
+    await userEvent.click(unit);
+    await userEvent.click(await screen.findByRole("option", { name: "GiB" }));
+  } finally {
+    Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+  }
   await userEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(screen.getByLabelText("Name")).toHaveAccessibleDescription(/An environment named mylab exists/));
   expect(bodies[0]).toMatchObject({ name: "mylab", executor: "slurm", slurm: { time_min: 150, mem_mib: 1536 } });
@@ -259,21 +267,22 @@ test("FU-P3-111: a duplicate's name stays within 32 characters", async () => {
   expect(await screen.findByLabelText("Name")).toHaveValue("a-very-long-environment-nam-copy");
 });
 
-test("FU-P3-111: each kind has its icon; Cards and Table are a pressed pair kept in the URL", async () => {
+test("FU-P3-111: each kind has its icon; Cards and Table are a SegmentedControl kept in the URL", async () => {
   serve({ [API]: list([...BUILTINS, ...MINE]), "/api/v1/version": SLURM });
   const router = app("/environments");
   const card = (await screen.findByRole("heading", { name: "Long jobs, mylab" })).closest("article")!;
   expect(card.querySelector('[data-kind="slurm"] svg')).toHaveAttribute("aria-hidden", "true");
   const local = screen.getByRole("heading", { name: "Login node" }).closest("article")!;
   expect(local.querySelector('[data-kind="local"] svg')).not.toBeNull();
-  const views = screen.getByRole("group", { name: "Show environments as" });
-  const cards = within(views).getByRole("button", { name: "Cards" });
-  const table = within(views).getByRole("button", { name: "Table" });
-  expect(cards).toHaveAttribute("aria-pressed", "true");
-  expect(table).toHaveAttribute("aria-pressed", "false");
+  const views = screen.getByRole("radiogroup", { name: "Show environments as" });
+  expect(views.closest(".mantine-SegmentedControl-root")).not.toBeNull();
+  const cards = within(views).getByRole("radio", { name: "Cards" });
+  const table = within(views).getByRole("radio", { name: "Table" });
+  expect(cards).toBeChecked();
+  expect(table).not.toBeChecked();
   await userEvent.click(table);
   await waitFor(() => expect(router.state.location.search).toEqual({ view: "table" }));
-  expect(table).toHaveAttribute("aria-pressed", "true");
+  expect(table).toBeChecked();
   const grid = screen.getByRole("table", { name: "Environments, built-ins first" });
   expect(within(grid).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Environment", "Kind", "Settings", "State", "Actions"]);
   const row = within(grid).getByRole("rowheader", { name: /Long jobs, mylab/ }).closest("tr")!;
@@ -314,8 +323,8 @@ test("FU-P3-111 phone: cards by default; the table has no Actions and its names 
   serve({ [API]: list([...BUILTINS, ...MINE]), "/api/v1/version": SLURM });
   app("/environments");
   await screen.findByRole("link", { name: "Long jobs, mylab" });
-  expect(screen.getByRole("button", { name: "Cards" })).toHaveAttribute("aria-pressed", "true");
-  await userEvent.click(screen.getByRole("button", { name: "Table" }));
+  expect(screen.getByRole("radio", { name: "Cards" })).toBeChecked();
+  await userEvent.click(screen.getByRole("radio", { name: "Table" }));
   const grid = await screen.findByRole("table");
   expect(within(grid).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Environment", "Kind", "Settings", "State"]);
   expect(within(grid).queryAllByRole("button")).toEqual([]);
@@ -414,7 +423,7 @@ test("UI-14: the shared states, the view switch in the toolbar with the count, o
   await userEvent.click(screen.getByRole("button", { name: "Retry" }));
   const bar = await screen.findByRole("group", { name: "Environments view" });
   expect(bar).toHaveClass("sp-toolbar");
-  expect(within(bar).getByRole("button", { name: "Cards" })).toBeInTheDocument();
+  expect(within(bar).getByRole("radio", { name: "Cards" })).toBeInTheDocument();
   expect(bar).toHaveTextContent("1 environment");
   expect(bar).not.toHaveTextContent("1 environments");
   expect(document.querySelector(".sp-emptystate")).toHaveTextContent(/Only the built-in environments so far/);

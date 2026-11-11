@@ -1,6 +1,6 @@
 import "../runs/runs.css";
 import "./environments.css";
-import { Button, Drawer, Modal } from "@mantine/core";
+import { Button, Drawer, Modal, SegmentedControl } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, type EnvironmentItem, type EnvironmentList, deleteEnvironment, getEnvironment, listEnvironments, makeDefault } from "../api";
@@ -175,10 +175,13 @@ export function EnvironmentsPage() {
       <Toolbar
         label="Environments view"
         filters={
-          <div className="sp-segments" role="group" aria-label="Show environments as">
-            <button type="button" aria-pressed={view.view !== "table"} onClick={() => show(false)}>Cards</button>
-            <button type="button" aria-pressed={view.view === "table"} onClick={() => show(true)}>Table</button>
-          </div>
+          <SegmentedControl
+            size="sm"
+            aria-label="Show environments as"
+            data={["Cards", "Table"]}
+            value={view.view === "table" ? "Table" : "Cards"}
+            onChange={(v) => show(v === "Table")}
+          />
         }
         caption={data && `${items.length} ${items.length === 1 ? "environment" : "environments"}`}
       />

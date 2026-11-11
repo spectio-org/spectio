@@ -1,4 +1,4 @@
-import { Button, NativeSelect, Radio, TextInput } from "@mantine/core";
+import { Button, Radio, Select, TextInput } from "@mantine/core";
 import { useState } from "react";
 import { ApiError, type EnvironmentItem, createEnvironment, replaceEnvironment } from "../api";
 import { useServer } from "../server";
@@ -100,7 +100,16 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
     />
   );
   const unit = (key: "memUnit" | "localUnit") => (
-    <NativeSelect aria-label="Unit" data={["MiB", "GiB"]} value={draft[key]} onChange={(e) => set(key)(e.currentTarget.value as Unit)} disabled={readOnly} />
+    <Select
+      size="sm"
+      label="Unit"
+      allowDeselect={false}
+      data={["MiB", "GiB"]}
+      value={draft[key]}
+      onChange={(v) => v && set(key)(v as Unit)}
+      disabled={readOnly}
+      w={100}
+    />
   );
   const node = server?.node ?? "this node";
   return (

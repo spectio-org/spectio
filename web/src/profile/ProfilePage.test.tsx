@@ -95,6 +95,9 @@ test("the config paths are read-only text, each with its own Copy button", async
   await userEvent.click(within(paths).getByRole("button", { name: "Copy the database directory path" }));
   expect(writeText).toHaveBeenCalledWith("/tmp/spectio-1000");
   expect(await within(paths).findByText("Copied the database directory path")).toBeInTheDocument();
+  expect(within(paths).getByRole("button", { name: "Copy the database directory path" })).toHaveTextContent("Copied");
+  expect(within(paths).getByRole("button", { name: "Copy the config file path" })).toHaveTextContent(/^Copy$/);
+  await waitFor(() => expect(within(paths).getByRole("button", { name: "Copy the database directory path" })).toHaveTextContent(/^Copy$/), { timeout: 3000 });
 });
 
 test("the theme is three native radios: Light, Dark, System", async () => {
@@ -154,7 +157,7 @@ test("UI-16: each card has the shared card head with its tile and fold; Copy and
   expect(fold).toHaveAttribute("aria-expanded", "false");
   expect(within(paths).queryByRole("button", { name: "Copy the config file path" })).toBeNull();
   await userEvent.click(fold);
-  expect(within(paths).getByRole("button", { name: "Copy the config file path" })).toHaveClass("mantine-ActionIcon-root");
+  expect(within(paths).getByRole("button", { name: "Copy the config file path" })).toHaveClass("mantine-Button-root");
   const group = screen.getByRole("radiogroup", { name: "Theme" });
   expect(within(group).getByRole("radio", { name: "Dark" })).toHaveClass("mantine-Radio-radio");
 });
