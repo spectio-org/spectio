@@ -19,6 +19,7 @@ from spectio_sdk.events import (
     NextflowProcess,
     NextflowTask,
 )
+from spectio_server import metrics
 from spectio_server.failure import nf_request, trace_resources
 from spectio_server.files.taskfiles import native_id, task_work_rel
 from spectio_server.ids import new_id
@@ -114,6 +115,10 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
         p.conn.execute(update(attempts).where(attempts.c.id == attempt_id).values(**values))
     else:
         return  # a late event of a lower or equal rank: logged, no change
+    if hook == "onTaskComplete":  # its performance row (FU-P3-105a, api §5.5)
+        launched = p.conn.execute(select(runs.c.created_at).where(runs.c.id == p.run_id))
+        found = metrics.trace_metrics(data.trace, launched.scalar_one(), p.event_time or p.now)
+        metrics.write(p.conn, attempt_id, task_id, n, state, p.state, "nextflow", found)
     if terminated:  # the first one: seq order
         p.conn.execute(
             update(launches)

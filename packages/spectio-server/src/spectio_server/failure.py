@@ -484,11 +484,7 @@ class Accounting:
                 return
         found: dict[str, SacctRow | None] = {}
         try:
-            with private_dir(self.runs_root, run_id, ".spectio") as fd:
-                data = read_small(fd, CACHE_FILE, MAX_CACHE_BYTES)
-            found = _parse_cache(data) if data is not None else {}
-        except FileNotFoundError:
-            pass
+            found = read_cache(self.runs_root, run_id)
         except (OSError, ValueError, RecursionError) as exc:  # a symlink, another owner, too
             # large, not JSON, nested past the parser's depth (SEC-P3T29-02)
             log.warning("%s of %s not read: %s", CACHE_FILE, run_id, exc)
@@ -621,6 +617,18 @@ def _launched(created_at: Any, started_at: Any) -> float:
     """The run's launch, epoch seconds: the earlier of its row's creation and the engine's
     start (a run started from a terminal is created after its first jobs)."""
     return float(min(t for t in (created_at, started_at) if t is not None).timestamp())
+
+
+def read_cache(runs_root: Path, run_id: str) -> dict[str, SacctRow | None]:
+    """The run's `sacct.json`, read strictly (no link followed, a regular file of the user
+    that others cannot write, at most MAX_CACHE_BYTES; FU-P3-105a reads it too); empty when it
+    or its directory is missing. Raises OSError or ValueError when it is refused."""
+    try:
+        with private_dir(runs_root, run_id, ".spectio") as fd:
+            data = read_small(fd, CACHE_FILE, MAX_CACHE_BYTES)
+    except FileNotFoundError:
+        return {}
+    return _parse_cache(data) if data is not None else {}
 
 
 def _parse_cache(data: bytes) -> dict[str, SacctRow | None]:

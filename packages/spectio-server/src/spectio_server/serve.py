@@ -64,6 +64,7 @@ from spectio_server.auth.routes import NO_PASTE, link_url
 from spectio_server.auth.secrets import ServerKey
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.files.pool import READ_TIMEOUT_S, FilePool
+from spectio_server.metrics import start_fill
 from spectio_server.rebuild import Rebuilt, rebuild_index
 from spectio_server.sink import StoreSink
 from spectio_server.stages.freeze import FREEZE_WORKERS
@@ -89,8 +90,10 @@ class Booted:
     loop: RunnerLoop
     files: FilePool  # the routes' reads of a run's files (req. 13)
     stage_files: FilePool  # the freeze's: route reads never take its slots (SEC-P3T28-06)
+    fill_stop: threading.Event = field(default_factory=threading.Event)  # the sacct.json fill
 
     def close(self) -> None:
+        self.fill_stop.set()
         self.writer.close()
         self.engine.dispose()
 
@@ -197,7 +200,10 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
         writer.close()
         engine.dispose()
         raise
-    return Booted(engine, writer, new, rebuilt, loop, files, stage_files)
+    booted = Booted(engine, writer, new, rebuilt, loop, files, stage_files)
+    # the ended runs' sacct.json values, in the background (FU-P3-105a, api §5.5)
+    start_fill(writer, settings.runs_root, files, booted.fill_stop)
+    return booted
 
 
 def _lock(db_dir: Path) -> int:

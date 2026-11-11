@@ -11,11 +11,13 @@ from typing import Any
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
     DateTime,
     Dialect,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -246,6 +248,9 @@ runs = Table(
     # null when the run has none.
     Column("default_resources", Json),
     Column("config_file", Json),
+    # When the values of the run's `sacct.json` were added to its `attempt_metrics` rows, once
+    # (FU-P3-105a, api §5.5); null until the background fill has read the file.
+    Column("metrics_sacct_at", UTCDateTime()),
     _check("runs", "state", RUN_STATES),
     _check("runs", "origin", RUN_ORIGINS, nullable=True),
     Index("ix_runs_project_created", "project_id", "created_at"),
@@ -448,4 +453,62 @@ snakemake_jobs = Table(
     Column("launch_id", String, ForeignKey("launches.id"), primary_key=True),
     Column("jobid", Integer, primary_key=True),
     Column("task_id", String, ForeignKey("tasks.id"), nullable=False),
+)
+
+METRIC_STATES = ("succeeded", "failed", "aborted")  # an attempt that ended (api §5.5)
+METRIC_SOURCES = ("trace", "benchmark", "sacct")
+# The performance measures of each ended attempt (FU-P3-105a; api §5.5, schedulers §3.7): the
+# run's identity copied in, so the across-runs filters need no join; deleted with the run.
+# Typed columns, ratios as 0.63 for 63 %; a value the source does not give is null. No path,
+# host, node, account, QOS, command or environment value.
+attempt_metrics = Table(
+    "attempt_metrics",
+    metadata,
+    Column("attempt_id", String, ForeignKey("attempts.id"), primary_key=True),
+    Column("run_id", String, ForeignKey("runs.id"), nullable=False),
+    Column("task_id", String, ForeignKey("tasks.id"), nullable=False),
+    Column("attempt", Integer, nullable=False),
+    Column("tag", String),
+    Column("process_or_rule", String, nullable=False),
+    Column("engine", String),
+    Column("pipeline", String),
+    Column("pipeline_version", String),
+    Column("environment_id", String),
+    Column("project_id", String, nullable=False),
+    Column("owner_id", String),
+    Column("run_state", String, nullable=False),
+    Column("state", String, nullable=False),
+    Column("submitted_at", UTCDateTime()),
+    Column("started_at", UTCDateTime()),
+    Column("ended_at", UTCDateTime()),
+    Column("partition", String),
+    Column("source", String),
+    Column("cpus", Integer),
+    Column("mem_bytes", BigInteger),
+    Column("time_limit_s", Float),
+    Column("cpu_percent", Float),
+    Column("cpu_eff", Float),
+    Column("peak_rss_bytes", BigInteger),
+    Column("peak_vmem_bytes", BigInteger),
+    Column("mem_eff", Float),
+    Column("realtime_s", Float),
+    Column("time_eff", Float),
+    Column("wait_s", Float),
+    Column("rchar_bytes", BigInteger),
+    Column("wchar_bytes", BigInteger),
+    Column("read_bytes", BigInteger),
+    Column("write_bytes", BigInteger),
+    _check("attempt_metrics", "state", METRIC_STATES),
+    _check("attempt_metrics", "source", METRIC_SOURCES, nullable=True),
+    Index("ix_attempt_metrics_project_ended", "project_id", "ended_at"),
+    Index("ix_attempt_metrics_project_process", "project_id", "process_or_rule", "ended_at"),
+    Index(
+        "ix_attempt_metrics_project_pipeline",
+        "project_id",
+        "pipeline",
+        "process_or_rule",
+        "ended_at",
+    ),
+    Index("ix_attempt_metrics_project_partition", "project_id", "partition", "ended_at"),
+    Index("ix_attempt_metrics_run", "run_id"),
 )
