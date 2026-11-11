@@ -754,7 +754,8 @@ body {
   color: var(--sp-text-muted);
 }
 
-/* Notifications (FU-P3-113): the bell's unread count, and its panel at the top right. */
+/* Notifications (ui-spec §12.13): the bell's unread count, and its panel (a popover under the bell,
+   a bottom sheet on the phone). Unread is not a failure: the count uses the accent (§3.4). */
 .sp-bell {
   position: relative;
 }
@@ -767,16 +768,12 @@ body {
   padding: 0 5px;
   box-sizing: border-box;
   border-radius: 9px;
-  background: var(--sp-state-failed-fg);
-  color: var(--sp-surface-raised); /* inverts with the theme, so the count keeps its contrast */
+  background: var(--sp-accent);
+  color: var(--sp-accent-on);
   font-size: 11px;
   font-weight: 600;
   line-height: 18px;
   text-align: center;
-}
-.sp-notif-inner {
-  justify-content: flex-end;
-  padding-right: 16px;
 }
 .sp-link-button {
   padding: 0;
@@ -787,35 +784,190 @@ body {
   text-decoration: underline;
   cursor: pointer;
 }
-.sp-notif-empty {
+.sp-notif-popover {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  padding: 0;
+  border: 1px solid var(--sp-line);
+  overflow: hidden;
+}
+.sp-notif-sheet {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  max-height: 90dvh;
+  overflow: hidden;
+}
+.sp-notif-sheet .sp-notif-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+.sp-notif-sheet .sp-notif-title {
+  font-size: 16px;
+}
+.sp-notif-sheet .sp-notif-line {
+  font-size: 15px;
+}
+.sp-notif-title {
   margin: 0;
-  color: var(--sp-text-secondary);
+  font-size: 16px;
+  font-weight: 600;
+}
+.sp-notif-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 8px 16px;
+  border-bottom: 1px solid var(--sp-line);
+}
+.sp-notif-head .sp-notif-title {
+  flex: 1;
+}
+.sp-notif-sheet .sp-notif-head {
+  justify-content: space-between;
+  padding: 0 16px 8px;
+}
+.sp-notif-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 12px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--sp-state-failed-bg);
+  color: var(--sp-state-failed-fg);
+  font-size: 13px;
+}
+.sp-notif-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 4px;
+}
+.sp-notif-day {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 8px 16px 4px;
+  background: var(--sp-surface-raised);
+  color: var(--sp-ink-500);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .sp-notif-list {
-  margin: 8px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
-.sp-notif-item {
+.sp-notif-row,
+.sp-notif-skeleton {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  color: inherit;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+.sp-notif-row {
+  color: var(--sp-text-primary);
   text-decoration: none;
 }
-.sp-notif-item:hover,
-.sp-notif-item:focus-visible {
+.sp-notif-row[data-unread] {
+  background: var(--sp-accent-subtle);
+}
+.sp-notif-row:hover,
+.sp-notif-row:focus-visible {
   background: var(--sp-surface-subtle);
 }
-.sp-notif-when {
+.sp-notif-row:focus-visible {
+  outline-offset: -2px;
+}
+.sp-notif-tile {
+  display: inline-flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+.sp-notif-tile[data-tone="failed"] { background: var(--sp-state-failed-bg); color: var(--sp-state-failed-fg); }
+.sp-notif-tile[data-tone="succeeded"] { background: var(--sp-state-succeeded-bg); color: var(--sp-state-succeeded-fg); }
+.sp-notif-tile[data-tone="cancelled"] { background: var(--sp-state-cancelled-bg); color: var(--sp-state-cancelled-fg); }
+.sp-notif-tile[data-tone="review"] { background: var(--sp-state-review-bg); color: var(--sp-state-review-fg); }
+.sp-notif-state[data-tone="failed"] { color: var(--sp-state-failed-fg); }
+.sp-notif-state[data-tone="succeeded"] { color: var(--sp-state-succeeded-fg); }
+.sp-notif-state[data-tone="cancelled"] { color: var(--sp-state-cancelled-fg); }
+.sp-notif-state[data-tone="review"] { color: var(--sp-state-review-fg); }
+.sp-notif-text {
   display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.sp-notif-line {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 18px;
+}
+.sp-notif-name {
+  overflow: hidden;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sp-notif-state {
+  flex-shrink: 0;
+  font-size: 13px;
+}
+.sp-notif-meta {
+  gap: 6px;
   font-size: 12px;
+  line-height: 16px;
   color: var(--sp-text-secondary);
 }
-.sp-notif-new {
-  font-weight: 600;
-  color: var(--sp-text-primary);
+.sp-notif-dot {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sp-accent);
+}
+.sp-notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: var(--sp-text-secondary);
+  text-align: center;
+}
+.sp-notif-empty p {
+  margin: 0;
+}
+.sp-notif-foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--sp-line);
+}
+.sp-notif-all {
+  color: var(--sp-accent);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.sp-notif-all:hover,
+.sp-notif-all:focus-visible {
+  text-decoration: underline;
 }
