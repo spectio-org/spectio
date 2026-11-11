@@ -11,7 +11,7 @@ export const ACCOUNTING_READS = 10;
 
 /** Whether an ended job sacct has not answered yet: not `measured < jobs.done`, which a resumed
  * run's cached tasks keep true and a measured failed job can hide (CR-P3FU119-01). */
-const unmeasured = (processes: Process[]) => processes.some((p) => (p.efficiency?.pending_accounting ?? 0) > 0);
+const awaitingAccounting = (processes: Process[]) => processes.some((p) => (p.efficiency?.pending_accounting ?? 0) > 0);
 
 /** `read` again ACCOUNTING_READ_MS after each read of an ended run that still has a job waiting
  * for sacct, at most ACCOUNTING_READS times per run. A read that fails counts and is tried again
@@ -20,7 +20,7 @@ export function useAccountingReads(read: () => void, runId: string, ended: boole
   const reads = useRef({ runId, n: 0 });
   if (reads.current.runId !== runId) reads.current = { runId, n: 0 };
   const [fired, setFired] = useState(0); // the next timer follows each read, whatever it gave
-  const due = ended && unmeasured(processes) && reads.current.n < ACCOUNTING_READS;
+  const due = ended && awaitingAccounting(processes) && reads.current.n < ACCOUNTING_READS;
   useEffect(() => {
     if (!due) return;
     const timer = setTimeout(() => {
