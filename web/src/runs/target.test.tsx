@@ -72,3 +72,10 @@ test("a kind or a flag this screen does not know is written as given, not a cras
   show(odd);
   expect(screen.getByRole("group", { name: "Target: job x (omit_from)" })).toHaveTextContent(/^jobxomit_from$/);
 });
+
+test.each(["toString", "constructor", "__proto__"])("a kind or flag named %s is text, not an inherited member", (name) => {
+  const odd = target({ kind: name as RunTarget["kind"], name: "x", flag: name as RunTarget["flag"] });
+  expect(targetText(odd)).toBe(`${name} x (${name})`);
+  show(odd);
+  expect(screen.getByRole("group", { name: `Target: ${name} x (${name})` })).toBeInTheDocument();
+});

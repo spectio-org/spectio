@@ -6,6 +6,9 @@ import { plural } from "./stateWord";
 // run header and the runs list write it the same way; null is the whole pipeline.
 
 const FLAG = { target: "", until: " (--until)", allowed_rules: " (--allowed-rules)" };
+/** `table[key]` for its own keys only: a kind or flag this screen does not know (even "toString")
+ * gives undefined, not an inherited member. */
+const own = <T,>(table: Record<string, T>, key: string): T | undefined => (Object.hasOwn(table, key) ? table[key] : undefined);
 
 /** "module nf-core/fastqc 0.0.0-6d1763b", "rule qc_report (--until)": the version is always written. */
 export function targetText(t: RunTarget): string {
@@ -13,7 +16,7 @@ export function targetText(t: RunTarget): string {
     return `module ${t.name} ${t.version ?? "(no version)"}${t.source === "local" ? " · local" : ""}`;
   }
   const more = t.more > 0 ? ` + ${plural(t.more, "more target", "more targets")}` : "";
-  return `${t.kind} ${t.name}${more}${FLAG[t.flag ?? "target"] ?? ` (${t.flag})`}`;
+  return `${t.kind} ${t.name}${more}${own(FLAG, t.flag ?? "target") ?? ` (${t.flag})`}`;
 }
 
 const SCOPES = {
@@ -28,7 +31,7 @@ const SCOPES = {
  * a single step. */
 export function Scope({ target }: { target: RunTarget | null | undefined }) {
   const kind = target?.kind ?? "pipeline";
-  const { label, cells } = SCOPES[kind] ?? { label: String(kind), cells: [] };
+  const { label, cells } = own(SCOPES, kind) ?? { label: String(kind), cells: [] };
   return (
     <span className="sp-scope" data-scope={kind}>
       <span className="sp-scope-cells" aria-hidden="true">
@@ -65,7 +68,7 @@ export function TargetTail({ target }: { target: RunTarget | null | undefined })
  * module's checksum), then a changed checksum as a warning with what it means. */
 export function TargetLine({ target }: { target: RunTarget }) {
   const registry = target.kind === "module" && target.source === "registry";
-  const kind = SCOPES[target.kind]?.label ?? String(target.kind);
+  const kind = own(SCOPES, target.kind)?.label ?? String(target.kind);
   return (
     <span className="sp-lines sp-target">
       <span className="sp-target-badge" aria-label={`Target: ${targetText(target)}`} role="group">
@@ -76,7 +79,7 @@ export function TargetLine({ target }: { target: RunTarget }) {
         {target.kind === "module" && <span className="sp-mono">{target.version ?? "no version"}</span>}
         {target.source === "local" && <span>local</span>}
         {target.more > 0 && <span>+ {plural(target.more, "more target", "more targets")}</span>}
-        {target.flag && target.flag !== "target" && <span className="sp-mono">{FLAG[target.flag]?.trim() ?? target.flag}</span>}
+        {target.flag && target.flag !== "target" && <span className="sp-mono">{own(FLAG, target.flag)?.trim() ?? target.flag}</span>}
         {registry &&
           (target.hash && /^[0-9a-f]{64}$/.test(target.hash) ? (
             <span className="sp-copy-line">

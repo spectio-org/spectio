@@ -171,13 +171,13 @@ test("a copy of a Snakemake file-target run opens as a Snakemake step, not a Nex
   expect(JSON.parse(String(inspect?.[1]?.body))).toMatchObject({ engine: "snakemake" });
 });
 
-test("a copy of a module run sends no extra config file, even when the template had one (api §5.10)", async () => {
+test("a copy of a module run sends no extra config file (api §5.10), and the profile it sends is the one shown", async () => {
   const mock = serve({
     "/api/v1/version": { ...VERSION, features: { single_target: true } },
     [`${URL_}:launch-template`]: {
       ...TEMPLATE,
       workflow: { location: "nf-core/fastqc", revision: null, engine: "nextflow" },
-      profiles: [],
+      profiles: ["docker"],
       params: { meta: { id: "a" }, reads: "/data/a.fq.gz" },
       non_default: ["meta", "reads"],
       code_loading: [],
@@ -201,10 +201,12 @@ test("a copy of a module run sends no extra config file, even when the template 
   });
   app(`/launch?from=${ID}`);
   await screen.findByText("Runs module nf-core/fastqc 0.0.0-6d1763b, from the registry");
+  // the copied profile is not one a registry module lists, yet Launch sends it: the select shows it (SEC-161W-R2-02)
+  expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveDisplayValue("docker (not in this pipeline)");
   await userEvent.click(screen.getAllByRole("button", { name: "Launch module" }).at(-1)!);
   await waitFor(() => expect(mock.mock.calls.some(([u, i]) => String(u).endsWith("/api/v1/runs") && i?.method === "POST")).toBe(true));
   const [, init] = mock.mock.calls.find(([u, i]) => String(u).endsWith("/api/v1/runs") && i?.method === "POST")!;
   const sent = JSON.parse(String(init?.body));
-  expect(sent).toMatchObject({ target: { kind: "module", version: "0.0.0-6d1763b" } });
+  expect(sent).toMatchObject({ target: { kind: "module", version: "0.0.0-6d1763b" }, profiles: ["docker"] });
   expect(sent).not.toHaveProperty("config_file");
 });

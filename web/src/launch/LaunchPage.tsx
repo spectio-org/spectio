@@ -997,7 +997,12 @@ export function LaunchPage({
                   inputWrapperOrder={["label", "input", "description", "error"]}
                   value={profile}
                   onChange={(e) => setPicked(e.currentTarget.value)}
-                  data={[{ value: "", label: "(none)" }, ...(loaded?.profiles ?? [])]}
+                  data={[
+                    { value: "", label: "(none)" },
+                    ...(loaded?.profiles ?? []),
+                    // a copied profile this pipeline does not list stays visible, since Launch sends it
+                    ...(profile && !loaded?.profiles.includes(profile) ? [{ value: profile, label: `${profile} (not in this pipeline)` }] : []),
+                  ]}
                   description={
                     <>
                       {engine ? PROFILE_HINTS[engine] : "From the pipeline's own configuration; passed to the engine as its profile."}
