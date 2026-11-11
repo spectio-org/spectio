@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { type ApiError, type RunDetail, getRun, resultUrl } from "../api";
 import { Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
+import { PageHead } from "../shell/PageHead";
+import { SkeletonRows } from "../shell/States";
 import type { Sort } from "./explorer";
 import { resultsSearch } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
@@ -71,7 +73,7 @@ export function ReportViewer({ id, path, from, sort, q }: { id: string } & Retur
   if (!run) {
     return (
       <div className="sp-runs">
-        {error ? <p role="alert">The run could not be read: {error}</p> : <p className="sp-muted">Loading the run…</p>}
+        {error ? <p role="alert">The run could not be read: {error}</p> : <SkeletonRows label="Loading the run…" />}
       </div>
     );
   }
@@ -90,16 +92,25 @@ export function ReportViewer({ id, path, from, sort, q }: { id: string } & Retur
   if (!path || !isReport(path)) {
     return (
       <div className="sp-runs">
-        {back}
-        <h1 className="sp-page-title">{title}</h1>
+        <PageHead section="runs" icon="fileCode" title={title} sub={back} phoneTitle="title" />
         <p>Only an HTML file of the run's results opens here.</p>
       </div>
     );
   }
   return (
     <div className="sp-runs sp-report">
-      {back}
-      <h1 className="sp-page-title">{title}</h1>
+      <PageHead
+        section="runs"
+        icon="fileCode"
+        title={title}
+        sub={back}
+        phoneTitle="title"
+        secondary={[
+          <Button key="download" component="a" href={resultUrl(id, path, { download: true })} variant="default" leftSection={<Icon name="download" size="button" />}>
+            Download
+          </Button>,
+        ]}
+      />
       {parts && (
         <nav className="sp-pathbar" aria-label="Folder">
           <ol>
@@ -125,9 +136,6 @@ export function ReportViewer({ id, path, from, sort, q }: { id: string } & Retur
           </p>
           <p className="sp-muted">Written by the pipeline. It runs in a sandbox and cannot reach Spectio. Spectio never asks you to paste a link.</p>
         </div>
-        <Button component="a" href={resultUrl(id, path, { download: true })} variant="default" leftSection={<Icon name="download" size="button" />}>
-          Download
-        </Button>
       </div>
       <iframe
         className="sp-report-frame"

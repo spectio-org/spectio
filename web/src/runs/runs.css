@@ -1615,12 +1615,12 @@
 }
 .sp-result-name {
   display: inline-flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-result-name svg {
   flex-shrink: 0;
-  margin-top: 3px;
+  color: var(--sp-text-muted);
 }
 .sp-result-name {
   min-width: 0;
@@ -1633,32 +1633,36 @@
 .sp-explorer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
   padding: 0;
   overflow: hidden;
 }
-.sp-explorer > .sp-note,
-.sp-explorer > p {
-  margin: 0 16px 12px;
+.sp-explorer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+.sp-explorer > .sp-cardhead {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+.sp-explorer-body > .sp-note,
+.sp-explorer-body > .sp-emptystate,
+.sp-explorer .sp-toolbar {
+  margin: 0 var(--mantine-spacing-lg);
+}
+.sp-explorer-body > .sp-emptystate {
+  margin-bottom: var(--mantine-spacing-lg);
 }
 .sp-explorer .sp-note p {
   margin: 0 0 4px;
 }
-.sp-explorer-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--sp-line-divider);
-}
-.sp-card .sp-explorer-head h2 {
-  flex: 1 1 auto;
-  margin: 0;
-  font-size: 15px;
-}
-.sp-explorer-head .sp-search-field {
-  flex: 0 1 260px;
+/* one row height for files and folders, icon, name, size and date on one centre line (§12.8) */
+.sp-explorer-table tbody th,
+.sp-explorer-table tbody td {
+  height: 44px;
+  box-sizing: border-box;
+  vertical-align: middle;
 }
 .sp-explorer-table {
   border-radius: 0;
@@ -1863,18 +1867,26 @@
   color: var(--sp-text-faint);
   user-select: none;
 }
-.sp-file-name,
+.sp-file-page .sp-page-title,
 .sp-file-page .sp-pathbar [aria-current],
 .sp-file-page .sp-copy-line .sp-mono {
   overflow-wrap: anywhere;
   min-width: 0;
 }
-.sp-file-facts {
+.sp-file-pair {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  color: var(--sp-text-secondary);
+  gap: var(--mantine-spacing-xs);
+}
+.sp-file-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  min-width: 0;
+  margin-top: var(--mantine-spacing-md);
+}
+.sp-file-card-body[hidden],
+.sp-explorer-body[hidden] {
+  display: none;
 }
 .sp-file-viewer {
   display: flex;
@@ -2052,13 +2064,8 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .sp-file-pager .sp-file-more,
-  .sp-file-pager .sp-segments button {
+  .sp-file-pager .sp-file-more {
     min-height: 44px;
-  }
-  .sp-file-pager .sp-segments {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
   }
 }
 /* The runs table actions (FU-P3-115b; ui-spec §4.3 note of 2026-11-10; board LiteRuns): the bulk

@@ -48,7 +48,7 @@ test("the folder page: h1, back link to the task sheet, 'work directory' crumb, 
   expect(query(back)).toEqual({ task: "tsk_19", attempt: "2" });
   const bar = screen.getByRole("navigation", { name: "Folder" });
   expect(within(bar).getByText("work directory")).toHaveAttribute("aria-current", "page");
-  expect(await screen.findByRole("heading", { level: 2, name: "Work directory · 1 folder, 3 files" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { level: 3, name: "Work directory" })).toBeInTheDocument();
   expect(screen.getByText(`${WORK}/`)).toBeInTheDocument(); // the path bar, as the results root
   const t = screen.getByRole("table", { name: "work directory" });
   const html = within(t).getByRole("link", { name: "S19.featureCounts.html" });
@@ -83,7 +83,7 @@ test("a dot name in the URL is refused before any read; 410 says the directory w
   await router.navigate({ to: "/runs/$id/workdir", params: { id: ID }, search: { task: "tsk_19", attempt: 2, path: "sub" } });
   expect(await screen.findByText("The work directory was removed")).toBeInTheDocument();
   await router.navigate({ to: "/runs/$id/workdir", params: { id: ID }, search: { task: "tsk_19", attempt: 2 } });
-  expect(await screen.findByText("The work directory is not there yet")).toBeInTheDocument();
+  expect((await screen.findByText(/^The work directory is not there yet\./)).closest(".sp-emptystate")).not.toBeNull();
 });
 
 test("the file page of an HTML file: not opened, Download only, back to its folder, the task in the title", async () => {
@@ -97,7 +97,7 @@ test("the file page of an HTML file: not opened, Download only, back to its fold
   expect(screen.queryByRole("link", { name: /report viewer/ })).toBeNull();
   // CR-P3FU85E-01: back to its folder, with sort, q and focus (ui-spec §4.4.1 Preview)
   const bar = screen.getByRole("navigation", { name: "Folder" });
-  const backs = screen.getAllByRole("link", { name: "work directory" }).filter((a) => !bar.contains(a));
+  const backs = await screen.findAllByRole("link", { name: "rnaseq-2026-10-25 · work directory" }); // the run named (ui-spec §12.5)
   expect(backs).toHaveLength(1);
   expect(pathOf(backs[0])).toBe(`/runs/${ID}/workdir`);
   expect(query(backs[0])).toEqual({ sort: "size", q: "S19", focus: path, task: "tsk_19", attempt: "2" });
@@ -134,7 +134,7 @@ test.each([
   expect(within(alert).getByText(title)).toBeInTheDocument();
   if (detail) expect(within(alert).getByText(detail)).toBeInTheDocument();
   fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
-  expect(await screen.findByRole("heading", { level: 2, name: "Work directory · 1 folder, 3 files" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { level: 3, name: "Work directory" })).toBeInTheDocument();
 });
 
 test("without a task and an attempt the page is not found", async () => {

@@ -41,13 +41,18 @@ function results(listing: unknown = FASTQC, over: Record<string, unknown> = {}) 
 const query = (a: HTMLElement) => Object.fromEntries(new URL(a.getAttribute("href")!, "http://x").searchParams);
 const table = () => screen.findByRole("table", { name: "fastqc" });
 /** The explorer card's polite region (the path bar's Copy path has its own). */
-const live = () => within(screen.getByRole("region", { name: /^Results · / })).getByRole("status");
+const live = () => within(screen.getByRole("region", { name: "Results" })).getByRole("status");
 const rowNames = (t: HTMLElement) => within(t).getAllByRole("rowheader").map((th) => th.textContent);
 
 test("one card: the counts, Kind badges, a file opening its preview, the Download icon button", async () => {
   results();
   app(`/runs/${ID}/results?path=fastqc`);
-  expect(await screen.findByRole("heading", { level: 2, name: "Results · 1 folder, 4 files" })).toBeInTheDocument();
+  const title = await screen.findByRole("heading", { level: 3, name: "Results" });
+  // the shared card head (ui-spec §12.7): the tile, the h3, the counts as its meta, the fold
+  const head = title.closest<HTMLElement>(".sp-cardhead")!;
+  expect(head.querySelector(".sp-cardhead-tile svg")).not.toBeNull();
+  expect(within(head).getByText("1 folder, 4 files")).toHaveClass("sp-cardhead-meta");
+  expect(within(head).getByRole("button", { name: "Results" })).toHaveAttribute("aria-expanded", "true");
   const t = await table();
   const kinds = within(t).getAllByRole("row").slice(1).map((r) => r.querySelector("[data-kind]")?.textContent);
   expect(kinds).toEqual(["Folder", "Link outside", "File", "HTML report", "Text"]);
@@ -130,7 +135,7 @@ test("the live region waits until typing stops for 150 ms", async () => {
 test("no match: the line names the filter, Clear empties it and the URL", async () => {
   results();
   const router = app(`/runs/${ID}/results?path=fastqc&q=S03`);
-  await screen.findByRole("heading", { level: 2, name: "Results · 1 folder, 4 files" });
+  await screen.findByRole("heading", { level: 3, name: "Results" });
   const field = screen.getByRole("searchbox", { name: "Filter this folder" });
   expect(field).toHaveValue("S03");
   expect(screen.getByText("No entry in this folder matches 'S03'")).toBeInTheDocument();
@@ -174,7 +179,9 @@ test("phone: one link per row, 'Kind · size · modified' under the name, a Sort
   expect(within(list).queryByRole("link", { name: /^Download/ })).toBeNull();
   expect(within(list).getByText("latest")).toBeInTheDocument();
   expect(screen.queryByRole("table")).toBeNull();
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Sort by" }), "-mtime");
+  // a Mantine Select, not a native <select> (ui-spec §12.6, §12.9)
+  await userEvent.click(screen.getByRole("textbox", { name: "Sort by" }));
+  await userEvent.click(await screen.findByRole("option", { name: "Modified, newest first" }));
   await waitFor(() => expect(router.state.location.search).toMatchObject({ sort: "-mtime" }));
   expect(within(list).getAllByRole("link").map((a) => a.querySelector("[data-name]")?.textContent)).toEqual(["zips", "versions.yml", "README", "S01_fastqc.html"]);
 });
@@ -185,4 +192,50 @@ test("a folder opened from the task sheet's Outputs goes back to the sheet", asy
   const back = await screen.findByRole("link", { name: /rnaseq-2026-10-25 · job, attempt 2/ });
   expect(new URL(back.getAttribute("href")!, "http://x").pathname).toBe(`/runs/${ID}`);
   expect(query(back)).toEqual({ task: "tsk_19", attempt: "2" });
+});
+
+// UI-17 (ui-spec §12.5, §12.6, §12.12): the page head, the toolbar, the shared states.
+test("the page head: the section tile, the h1, the parent run named in the subtitle, no row above it", async () => {
+  results();
+  app(`/runs/${ID}/results?path=fastqc`);
+  const h1 = await screen.findByRole("heading", { level: 1, name: "Results" });
+  const head = h1.closest("header")!;
+  expect(head).toHaveClass("sp-head");
+  expect(head.querySelector(".sp-head-tile")).not.toBeNull();
+  expect(await within(head).findByRole("link", { name: /rnaseq-2026-10-25 · Summary/ })).toBeInTheDocument();
+  expect(head.previousElementSibling).toBeNull();
+});
+
+test("the toolbar: one named group with the search box and the sort on the phone", async () => {
+  viewport(390);
+  results();
+  app(`/runs/${ID}/results?path=fastqc`);
+  const bar = await screen.findByRole("group", { name: "Filter and sort" });
+  expect(bar).toHaveClass("sp-toolbar");
+  expect(within(bar).getByRole("searchbox", { name: "Filter this folder" })).toBeInTheDocument();
+  expect(within(bar).getByRole("textbox", { name: "Sort by" })).toHaveValue("Name, A to Z");
+  expect(bar.querySelector("select")).toBeNull();
+});
+
+test("an empty folder is the shared EmptyState", async () => {
+  results({ ...FASTQC, entries: [] });
+  app(`/runs/${ID}/results?path=fastqc`);
+  expect((await screen.findByText("This folder is empty.")).closest(".sp-emptystate")).not.toBeNull();
+});
+
+test("a missing results directory is an EmptyState", async () => {
+  results({ ...FASTQC, path: "", exists: false, entries: [] });
+  app(`/runs/${ID}/results`);
+  expect((await screen.findByText(/The results directory does not exist yet/)).closest(".sp-emptystate")).not.toBeNull();
+});
+
+test("an unreachable directory is the shared ErrorPanel with Retry", async () => {
+  serve({
+    [`${URL_}/results`]: () => new Response(JSON.stringify({ title: "Directory not reachable", status: 409 }), { status: 409, headers: { "content-type": "application/problem+json" } }),
+    [URL_]: { ...DETAIL, ...run({ state: "succeeded", name: "rnaseq-2026-10-25" }), results_dir: ROOT },
+  });
+  app(`/runs/${ID}/results?path=fastqc`);
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveClass("sp-errorpanel");
+  expect(within(alert).getByRole("button", { name: "Retry" })).toBeInTheDocument();
 });
