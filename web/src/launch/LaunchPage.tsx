@@ -48,7 +48,7 @@ import { EnvironmentRow } from "./EnvironmentRow";
 import { guessEngine } from "./guessEngine";
 import { ConfigFileRow, type Draft, NO_DRAFT, RESOURCE_LABELS, ResourcesRow, draftFrom, keptAs, readResources, summaryLine } from "./RunExtras";
 import { TryPipelines } from "./TryPipelines";
-import { REGISTRY_NAME, moduleInspected, planText } from "./target";
+import { REGISTRY_NAME, TRY_MODULES, moduleInspected } from "./target";
 import {
   type Field,
   type Row,
@@ -140,6 +140,22 @@ const PROFILE_HINTS: Record<Engine, string> = {
   snakemake: "From the pipeline's profiles/ directory · passed as --workflow-profile",
 };
 
+/** The two cards of "What to run" (ui-spec §4.15): a pipeline of three steps, and one step alone. */
+const MODES = [
+  { single: false, title: "Whole pipeline", sub: "Every step of a Nextflow or Snakemake pipeline", icon: "M3 4h6v5H3z M15 4h6v5h-6z M9 15h6v5H9z M6 9v2.5h12V9 M12 11.5V15" },
+  { single: true, title: "One step", sub: "A Nextflow module, or one Snakemake rule and what it needs", icon: "M7 7h10v10H7z M10 12h4" },
+] as const;
+
+/** One step's kind: a Nextflow module or a Snakemake rule, each with its engine and page head. */
+type Kind = "module" | "rule";
+const KINDS: Record<Kind, { label: string; engine: Engine; title: string; sub: string }> = {
+  module: { label: "Nextflow module", engine: "nextflow", title: "Launch one module", sub: "Run a single Nextflow module, outside any pipeline." },
+  rule: { label: "Snakemake rule", engine: "snakemake", title: "Launch one rule", sub: "Run one Snakemake rule and only the jobs it needs." },
+};
+
+/** A rule's dry run (§4.15): counting, its jobs by rule, or why it failed. */
+type Plan = { state: "counting" } | { state: "ok"; jobs: Record<string, number>; total: number } | { state: "failed"; error: string };
+
 /** Copy to a new launch (ui-spec §4.4 run tools note): the run the form was prefilled from. */
 interface Prefill {
   template: LaunchTemplate;
@@ -218,12 +234,13 @@ export function LaunchPage({
   // lists its rules, and the chosen rule's dry run is previewed.
   const singleOffered = !!server?.features?.single_target;
   const [single, setSingle] = useState(false);
+  const [kind, setKind] = useState<Kind>("module");
   const [version, setVersion] = useState("");
   const [pinned, setPinned] = useState<string | null>(null);
   const [module, setModule] = useState<Extract<TargetInspected, { kind: "module" }> | null>(null);
   const [rules, setRules] = useState<string[] | null>(null);
   const [rule, setRule] = useState("");
-  const [plan, setPlan] = useState<{ text: string; ok: boolean } | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
   const planFlight = useRef<AbortController | null>(null);
   const revisionField = useRef<HTMLInputElement>(null);
 
@@ -267,7 +284,7 @@ export function LaunchPage({
             : null;
 
   const targeting = single;
-  const moduleName = targeting && REGISTRY_NAME.test(location.trim());
+  const moduleName = targeting && kind === "module" && REGISTRY_NAME.test(location.trim());
   const extras = { engine, profile, env: chosen };
   const res = readResources(resources, extras);
   // with a Snakemake extra file, only the keys set: the file's other keys stay (api §5.7)
@@ -312,9 +329,15 @@ export function LaunchPage({
     edit(() => setSingle(to), "");
   }
 
+  /** Nextflow module or Snakemake rule: the field keeps its text, and the form starts again from Load. */
+  function switchKind(to: Kind) {
+    edit(setLocation, location);
+    setKind(to);
+  }
+
   /** Single target Load (§4.15): a registry module through `module view`; else the pipeline's
    * inspect, then its rules (Snakemake) or the module of its directory (Nextflow). */
-  async function inspectSingle(where: string, rev: string | null, ver: string, signal: AbortSignal): Promise<Inspected> {
+  async function inspectSingle(where: string, rev: string | null, ver: string, want: Kind, signal: AbortSignal): Promise<Inspected> {
     const asModule = async (location: string, pipeline: Inspected | null) => {
       const answer = await inspectTarget({ engine: "nextflow", location, version: pipeline ? null : ver.trim() || null }, signal);
       if (answer.kind !== "module") throw new Error("not a module");
@@ -325,9 +348,9 @@ export function LaunchPage({
       }
       return moduleInspected(answer, location, pipeline);
     };
-    if (REGISTRY_NAME.test(where)) return asModule(where, null);
+    if (want === "module" && REGISTRY_NAME.test(where)) return asModule(where, null);
     const pipeline = await inspect(where, rev, signal);
-    if (!ENGINE_FILES.snakemake.some((f) => pipeline.engine_files.includes(f))) return asModule(pipeline.location, pipeline);
+    if (want === "module") return asModule(pipeline.location, pipeline);
     const answer = await inspectTarget({ engine: "snakemake", location: where, revision: rev }, signal);
     setRules(answer.kind === "rule" ? answer.rules : []);
     return pipeline;
@@ -341,18 +364,14 @@ export function LaunchPage({
     if (!to || !loaded) return;
     const controller = new AbortController();
     planFlight.current = controller;
-    setPlan({ text: "Counting the jobs…", ok: false });
+    setPlan({ state: "counting" });
     inspectTarget({ engine: "snakemake", location: loaded.location, revision: loaded.revision, rule: to }, controller.signal)
       .then((answer) => {
         if (controller.signal.aborted) return;
         const found = answer.kind === "rule" ? answer : null;
-        setPlan(
-          found?.plan
-            ? { text: `Will run: ${planText(found.plan)}`, ok: true }
-            : { text: `The dry run failed: ${found?.error ?? "no plan"}`, ok: false },
-        );
+        setPlan(found?.plan ? { state: "ok", ...found.plan } : { state: "failed", error: found?.error ?? "no plan" });
       })
-      .catch((e: Error) => controller.signal.aborted || setPlan({ text: `The dry run failed: ${e.message}`, ok: false }));
+      .catch((e: Error) => controller.signal.aborted || setPlan({ state: "failed", error: e.message }));
   }
 
   /** An entry chosen in the picker only fills the form; Load inspects it. None keeps the fields. */
@@ -383,10 +402,10 @@ export function LaunchPage({
     setConfigFile("");
   }
 
-  async function load(at = location, rev = revision, copy?: Omit<Prefill, "left">, wantSingle = single, ver = version) {
+  async function load(at = location, rev = revision, copy?: Omit<Prefill, "left">, wantSingle = single, ver = version, want = kind) {
     const where = at.trim();
     const isRepo = where !== "" && !where.startsWith("/");
-    const isModule = wantSingle && REGISTRY_NAME.test(where);
+    const isModule = wantSingle && want === "module" && REGISTRY_NAME.test(where);
     if (where === "") {
       setErrors({ location: "Give an absolute path or a repository." });
       return;
@@ -403,7 +422,7 @@ export function LaunchPage({
     try {
       const from = !copy && entry?.location === where ? entry : null;
       const found = wantSingle
-        ? await inspectSingle(where, isRepo && !isModule ? rev.trim() : null, ver, controller.signal)
+        ? await inspectSingle(where, isRepo && !isModule ? rev.trim() : null, ver, want, controller.signal)
         : await inspect(where, isRepo ? rev.trim() : null, controller.signal, from?.params_file);
       setLoaded(found);
       setTried(false);
@@ -424,8 +443,9 @@ export function LaunchPage({
         setConfigFile(copy.template.config_file ?? ""); // read again at this launch (api §5.7)
         setPrefill({ ...copy, left });
       } else {
-        // the entry's engine and params file (§4.7.1); every value the form does not place is listed
-        const was = from?.engine ?? guessEngine(found.engine_files);
+        // one step's engine is its kind's; else the entry's engine and params file (§4.7.1); every
+        // value the form does not place is listed
+        const was = wantSingle ? KINDS[want].engine : (from?.engine ?? guessEngine(found.engine_files));
         const shape = schemaFields(found.schema, [], was === "snakemake").flatMap((s) => s.fields);
         const params = found.params_file?.values ?? {};
         setEngine(was);
@@ -470,10 +490,12 @@ export function LaunchPage({
         const target = template.target ?? null; // the copy keeps the target (§4.15)
         setLocation(at);
         setRevision(rev ?? "");
+        const want: Kind = target?.kind === "rule" ? "rule" : "module";
         setSingle(!!target);
+        setKind(want);
         setVersion(target?.version ?? "");
         const copy = { template, run: `${runName(run)} (${shortId(run.id)})`, name: runName(run) };
-        void load(at, rev ?? "", copy, !!target, target?.version ?? "").then(() => target?.kind === "rule" && setRule(target.name ?? ""));
+        void load(at, rev ?? "", copy, !!target, target?.version ?? "", want).then(() => target?.kind === "rule" && setRule(target.name ?? ""));
       })
       .catch((e: Error) => controller.signal.aborted || setPrefillError(e.message));
     return () => controller.abort();
@@ -529,7 +551,7 @@ export function LaunchPage({
       return;
     }
     const params = buildParams(fields, values, rows, leaves);
-    const path = configFile.trim();
+    const path = targeting && kind === "module" ? "" : configFile.trim(); // none for a module (api §5.10)
     const target: TargetIn | null = !targeting
       ? null
       : module
@@ -618,7 +640,7 @@ export function LaunchPage({
       aria-describedby={summary ? "launch-missing launch-reason" : "launch-missing"}
       leftSection={<Icon path={ICONS.runs} size={16} />}
     >
-      {sending ? "Launching…" : "Launch"}
+      {sending ? "Launching…" : !targeting ? "Launch" : kind === "module" ? "Launch module" : `Launch ${rule || "rule"}`}
     </Button>
   );
   const local = server?.executor === "local";
@@ -656,8 +678,8 @@ export function LaunchPage({
     <Stack className="launch-page" gap="md">
       <PageHead
         section="launch"
-        title="Launch a workflow"
-        sub="A directory or a Git repository: Spectio guesses the engine and builds the form from its schema."
+        title={targeting ? KINDS[kind].title : "Launch a workflow"}
+        sub={targeting ? KINDS[kind].sub : "A directory or a Git repository: Spectio guesses the engine and builds the form from its schema."}
         phoneBar="title"
         action={
           <span className="launch-head">
@@ -689,18 +711,51 @@ export function LaunchPage({
       <div className="launch-grid">
         <Stack gap="md">
           {singleOffered && (
-            <fieldset className="sp-card launch-what">
-              <legend>What to run</legend>
-              <label>
-                <input type="radio" name="launch-what" checked={!single} onChange={() => switchMode(false)} /> Whole pipeline
-              </label>
-              <label>
-                <input type="radio" name="launch-what" checked={single} onChange={() => switchMode(true)} /> Single module / rule
-              </label>
-            </fieldset>
+            <div className="launch-what" role="radiogroup" aria-label="What to run">
+              {MODES.map((m, i) => (
+                <label key={m.title} className="launch-mode">
+                  <span className="launch-mode-icon">
+                    <Icon path={m.icon} size={22} />
+                  </span>
+                  <span className="sp-grow">
+                    <span id={`launch-mode-${i}`} className="launch-mode-title">
+                      {m.title}
+                    </span>
+                    <span id={`launch-mode-${i}-sub`} className="launch-mode-sub">
+                      {m.sub}
+                    </span>
+                  </span>
+                  <input
+                    type="radio"
+                    name="launch-what"
+                    aria-labelledby={`launch-mode-${i}`}
+                    aria-describedby={`launch-mode-${i}-sub`}
+                    checked={single === m.single}
+                    onChange={() => switchMode(m.single)}
+                  />
+                </label>
+              ))}
+            </div>
           )}
-          <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card reveal={goTo === "location" || goTo === "engine"}>
-            <CatalogPicker data={catalog} failed={catalogFailed} onRetry={loadCatalog} chosen={entry} onChoose={choose} onClear={clear}>
+          <FoldSection
+            id="launch-pipeline"
+            icon={ICONS.route}
+            title={targeting ? (kind === "module" ? "Module" : "Rule") : "Pipeline"}
+            card
+            reveal={goTo === "location" || goTo === "engine" || goTo === "rule"}
+          >
+            {targeting && (
+              <div className="launch-seg" role="radiogroup" aria-label="Kind of step">
+                {(Object.keys(KINDS) as Kind[]).map((k) => (
+                  <label key={k}>
+                    <input type="radio" name="launch-kind" className="sp-sr" checked={kind === k} onChange={() => switchKind(k)} />
+                    <EngineMark engine={KINDS[k].engine} size={16} named />
+                    {KINDS[k].label}
+                  </label>
+                ))}
+              </div>
+            )}
+            {!targeting && <CatalogPicker data={catalog} failed={catalogFailed} onRetry={loadCatalog} chosen={entry} onChoose={choose} onClear={clear}>
               {paramsFile && (
                 <p className="sp-muted" aria-live="polite">
                   {paramsFile.error
@@ -714,20 +769,24 @@ export function LaunchPage({
                         .join(" ")}
                 </p>
               )}
-            </CatalogPicker>
-            <TryPipelines runs={recent} onPick={pick} saved={catalog?.items.filter((e) => e.revision === null).map((e) => e.location)} />
+            </CatalogPicker>}
+            {!targeting && <TryPipelines runs={recent} onPick={pick} saved={catalog?.items.filter((e) => e.revision === null).map((e) => e.location)} />}
             <Group align="flex-start" gap="sm" wrap="wrap">
               <TextInput
                 style={{ flex: "999 1 280px" }}
                 id="launch-location"
-                label={targeting ? "Module or pipeline" : "Pipeline"}
+                label={!targeting ? "Pipeline" : kind === "module" ? "Module" : "Snakemake pipeline"}
                 inputWrapperOrder={["label", "input", "description", "error"]}
                 value={location}
                 onChange={(e) => edit(setLocation, e.currentTarget.value)}
                 error={errors.location}
                 description={
                   targeting ? (
-                    "A registry module such as nf-core/fastqc, the absolute path of a module directory, or a Snakemake pipeline to run one rule of."
+                    kind === "module" ? (
+                      "A registry module such as nf-core/fastqc, or the absolute path of a module directory."
+                    ) : (
+                      "An absolute path or a Git repository; Load lists its rules."
+                    )
                   ) : (
                   <>
                     An absolute path your account can read, a GitHub or nf-core name such as
@@ -784,6 +843,18 @@ export function LaunchPage({
                 {loading ? (repo ? "Fetching…" : "Loading…") : "Load"}
               </Button>
             </Group>
+            {targeting && kind === "module" && (
+              <div className="launch-try" role="group" aria-labelledby="launch-try-modules">
+                <span id="launch-try-modules" className="launch-try-label">
+                  Try:
+                </span>
+                {TRY_MODULES.map((m) => (
+                  <button key={m} type="button" className="launch-chip" aria-label={`Try ${m}`} onClick={() => edit(setLocation, m)}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+            )}
             {loaded && (
               <Paper bg="var(--sp-surface-subtle)" p="sm" mt="sm" className="launch-loaded" data-loaded>
                 <span className="launch-loaded-mark">
@@ -800,11 +871,14 @@ export function LaunchPage({
                   </Text>
                   {module ? (
                     <>
-                      <Text size="sm" c="dimmed">
-                        {module.source === "registry" ? "A module from the registry" : "A module directory on this machine"}
-                        {` · ${plural(module.inputs.length, "input", "inputs")}`}
-                      </Text>
                       {module.description && <Text size="sm">{module.description}</Text>}
+                      <div className="launch-chips">
+                        <span className="launch-chip" data-tone="accent">
+                          {module.source === "registry" ? "from the registry" : "local"}
+                        </span>
+                        {loaded.engine_versions.nextflow && <span className="launch-chip">{`Nextflow ${loaded.engine_versions.nextflow}`}</span>}
+                        {module.source === "registry" && <span className="launch-chip">checksum: after install</span>}
+                      </div>
                     </>
                   ) : (
                     <Text size="sm" c="dimmed">
@@ -830,34 +904,91 @@ export function LaunchPage({
             )}
             {targeting && rules !== null && (
               <Stack gap="xs" mt="sm">
-                <NativeSelect
+                <Text size="sm" fw={500}>
+                  <span id="launch-rule-label">Rule</span>
+                  <span className="launch-quiet">{` · ${plural(rules.length, "rule", "rules")}; the jobs the rule needs run with it`}</span>
+                </Text>
+                {/* one toggle button per rule, a radio each (CLAUDE.md: native buttons, named by the rule) */}
+                <div
                   id="launch-rule"
-                  label="Rule"
-                  inputWrapperOrder={["label", "input", "description", "error"]}
-                  value={rule}
-                  onChange={(e) => chooseRule(e.currentTarget.value)}
-                  data={[{ value: "", label: "Choose a rule" }, ...rules]}
-                  description="The rule to run; the jobs it needs run with it."
-                  error={errors.rule}
-                />
+                  className="launch-rules"
+                  role="radiogroup"
+                  aria-labelledby="launch-rule-label"
+                  aria-describedby={errors.rule ? "launch-rule-error" : undefined}
+                >
+                  {rules.map((r) => {
+                    const target = r === rule;
+                    const needed = !target && plan?.state === "ok" && Object.hasOwn(plan.jobs, r);
+                    return (
+                      <button key={r} type="button" role="radio" aria-checked={target} data-needed={needed || undefined} className="launch-rule" onClick={() => chooseRule(r)}>
+                        <span>{r}</span>
+                        {(target || needed) && (
+                          <>
+                            {" "}
+                            <small>{target ? "target" : "needed"}</small>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {errors.rule && (
+                  <Text id="launch-rule-error" size="sm" c="red" role="alert">
+                    {errors.rule}
+                  </Text>
+                )}
                 {plan && (
-                  <div role="status" className="launch-plan">
-                    <span>{plan.text}</span>
-                    {plan.ok && <span className="sp-muted">The rule and the jobs it needs, counted from an empty directory</span>}
+                  <div role="status" aria-labelledby="launch-plan-title" className="launch-plan">
+                    <h3 id="launch-plan-title" className="launch-plan-title">
+                      What will run
+                      {plan.state === "ok" && <span className="launch-quiet">{` · dry run, ${plural(plan.total, "job", "jobs")}`}</span>}
+                    </h3>
+                    {plan.state === "counting" && <p>Counting the jobs…</p>}
+                    {plan.state === "failed" && <p>{`The dry run failed: ${plan.error}`}</p>}
+                    {plan.state === "ok" && (
+                      <>
+                        <ol className="launch-plan-steps">
+                          {Object.entries(plan.jobs).map(([r, n]) => (
+                            <li key={r}>
+                              <span className="launch-plan-node" data-target={r === rule || undefined}>
+                                <span className="sp-mono">{r}</span>
+                                <span>{`${plural(n, "job", "jobs")}${r === rule ? " · target" : ""}`}</span>
+                              </span>
+                            </li>
+                          ))}
+                        </ol>
+                        {rules.some((r) => !Object.hasOwn(plan.jobs, r)) && (
+                          <p className="launch-chips">
+                            Not run:
+                            {rules
+                              .filter((r) => !Object.hasOwn(plan.jobs, r))
+                              .map((r) => (
+                                <Fragment key={r}>
+                                  {" "}
+                                  <span className="launch-chip">{r}</span>
+                                </Fragment>
+                              ))}
+                          </p>
+                        )}
+                        <p className="sp-muted">The rule and the jobs it needs, counted from an empty directory</p>
+                      </>
+                    )}
                   </div>
                 )}
                 {rule && <span className="sp-mono">snakemake … {rule}</span>}
               </Stack>
             )}
             <Stack gap="md" mt="md">
-              <EngineButtons
-                value={engine}
-                onChange={(e) => setEngine(e)}
-                note={engineNote}
-                error={errors.engine}
-              />
+              {!targeting && (
+                <EngineButtons
+                  value={engine}
+                  onChange={(e) => setEngine(e)}
+                  note={engineNote}
+                  error={errors.engine}
+                />
+              )}
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <NativeSelect
+                {!(targeting && kind === "module") && <NativeSelect
                   label="Profile"
                   inputWrapperOrder={["label", "input", "description", "error"]}
                   value={profile}
@@ -875,7 +1006,7 @@ export function LaunchPage({
                     </>
                   }
                   error={errors.profile}
-                />
+                />}
                 <TextInput
                   label="Run name (optional)"
                   inputWrapperOrder={["label", "input", "description", "error"]}
@@ -914,18 +1045,21 @@ export function LaunchPage({
               errors={errors}
               reveal={goTo?.startsWith("resources") ? "link" : Object.keys(errors).some((k) => k.startsWith("resources"))}
             />
-            <ConfigFileRow
-              path={configFile}
-              onChange={(p) => {
-                setConfigFile(p);
-                dropErrors("config_file");
-              }}
-              engine={engine}
-              error={errors.config_file}
-              reading={sending}
-              node={server?.node ?? "the server"}
-              reveal={goTo === "config_file" ? "link" : !!errors.config_file}
-            />
+            {/* a module run takes no extra config file: its roots are a pipeline's (api §5.10) */}
+            {!(targeting && kind === "module") && (
+              <ConfigFileRow
+                path={configFile}
+                onChange={(p) => {
+                  setConfigFile(p);
+                  dropErrors("config_file");
+                }}
+                engine={engine}
+                error={errors.config_file}
+                reading={sending}
+                node={server?.node ?? "the server"}
+                reveal={goTo === "config_file" ? "link" : !!errors.config_file}
+              />
+            )}
             <dl className="facts">
               <dt>Engine head</dt>
               <dd>
@@ -949,7 +1083,13 @@ export function LaunchPage({
             </Text>
           </FoldSection>
           {loaded && (
-            <FoldSection id="launch-params" icon={ICONS.sliders} title="Parameters" reveal={!!goTo?.startsWith("params.")}>
+            <FoldSection
+              id="launch-params"
+              icon={ICONS.sliders}
+              title={module ? "Module inputs" : "Parameters"}
+              status={module ? `${fields.filter((f) => f.required).length} required` : undefined}
+              reveal={!!goTo?.startsWith("params.")}
+            >
               {sections.length > 1 && (
                 <Text size="sm" c="dimmed" mb="sm">
                   {`One section per ${grouped ? "schema group" : "map of the config, its keys dotted"} · ${changed === 1 ? "1 value differs from its default" : `${changed} values differ from their defaults`}`}
@@ -995,7 +1135,7 @@ export function LaunchPage({
               Summary
             </h2>
             <dl className="facts">
-              <dt>Pipeline</dt>
+              <dt>{targeting && kind === "module" ? "Module" : "Pipeline"}</dt>
               <dd>
                 {loaded
                   ? [`${loaded.name}${loaded.version ? ` ${loaded.version}` : ""}${fromEntry ? `, from the catalog entry ${fromEntry.name}` : ""}`, profile && `profile ${profile}`]
@@ -1021,8 +1161,12 @@ export function LaunchPage({
               <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
               <dt>Resources</dt>
               <dd>{summaryLine(res.sent, extras)}</dd>
-              <dt>Extra config</dt>
-              <dd className="sp-mono">{configFile.trim() || "none"}</dd>
+              {!(targeting && kind === "module") && (
+                <>
+                  <dt>Extra config</dt>
+                  <dd className="sp-mono">{configFile.trim() || "none"}</dd>
+                </>
+              )}
               <dt>Engine head</dt>
               <dd>{engine ? headLine : "Not chosen yet"}</dd>
               <dt>Tasks</dt>

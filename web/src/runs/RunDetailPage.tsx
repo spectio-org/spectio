@@ -216,18 +216,37 @@ function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
 
 /** The rules a target run does not need, folded into one row that opens to their names
  * (ui-spec §4.15). */
-function OutsideTarget({ rules }: { rules: string[] }) {
-  const [open, setOpen] = useState(false);
+/** A Snakemake target run as the chain Launch showed (ui-spec §4.15): the rules it runs in pipeline
+ * order, each with its jobs done and its state's tone, the target last; then the rules it does not
+ * need, dimmed. The process table below keeps the counts. */
+function TargetSteps({ run, steps, outside, ended, open }: { run: RunDetail; steps: Process[]; outside: string[]; ended: boolean; open: string[] }) {
+  const w = words(run.workflow.engine);
+  const target = run.target?.name;
   return (
-    <div className="sp-outside-target">
-      <button type="button" className="sp-link-button sp-outside" aria-expanded={open} onClick={() => setOpen(!open)}>
-        Outside the target ({plural(rules.length, "rule", "rules")})
-      </button>
-      {open && (
-        <ul className="sp-plain-list" aria-label="Rules outside the target">
-          {rules.map((r) => (
-            <li key={r} className="sp-mono">
-              {r}
+    <div className="sp-target-steps">
+      <ol className="sp-steps" aria-label="Steps to the target">
+        {[...steps]
+          .sort((x, y) => (x.pipeline_order ?? 0) - (y.pipeline_order ?? 0))
+          .map((p) => {
+            const { state, word } = processState(p, ended, open);
+            const done = sum(p.counts, "succeeded", "cached", "stored");
+            return (
+              <li key={p.process} className="sp-step" data-tone={tone(state)} data-target={p.process === target || undefined}>
+                <ProcessName name={p.process} />
+                <span className="sp-step-count">
+                  {word} · {done} / {total(p.counts)} {total(p.counts) === 1 ? w.unit : w.units}
+                  {p.process === target && " · target"}
+                </span>
+              </li>
+            );
+          })}
+      </ol>
+      {outside.length > 0 && (
+        <ul className="sp-steps sp-steps-out" aria-label="Rules outside the target">
+          {outside.map((r) => (
+            <li key={r} className="sp-step">
+              <span className="sp-mono">{r}</span>
+              <span className="sp-step-count">not needed</span>
             </li>
           ))}
         </ul>
@@ -301,8 +320,10 @@ function StagesOrProcesses({
       <FoldSection id="processes" screen="run" icon={ICONS.list} title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
         {note}
         {!run.target && <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>}
+        {run.target && run.target.kind !== "module" && listed.length > 0 && (
+          <TargetSteps run={run} steps={listed} outside={outside} ended={ended} open={open} />
+        )}
         <ProcessTable processes={listed} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
-        {outside.length > 0 && <OutsideTarget rules={outside} />}
         {legend}
       </FoldSection>
     );

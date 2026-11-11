@@ -7,6 +7,7 @@ import { type Page, type Run, type RunsSort, type ServerVersion, type Summary, l
 import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
+import { Scope, TargetTail } from "./target";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
 import { DeleteRuns } from "./DeleteRuns";
@@ -35,12 +36,12 @@ const SORTS: Partial<Record<RunsSort, string>> = {
   "-duration": "longest first",
 };
 
-/** The Runs select (ui-spec §4.15): every run, the runs that target one module or rule, or the
+/** The Scope buttons (ui-spec §4.15): every run, the runs that target one module or rule, or the
  * whole-pipeline runs; `key` is the `?target=` of the URL and of `GET /runs` (api §5.10). */
-const TARGETS: { key: "all" | "any" | "none"; label: string }[] = [
-  { key: "all", label: "All runs" },
-  { key: "any", label: "Single module or rule" },
-  { key: "none", label: "Whole pipeline" },
+const TARGETS: { key?: "any" | "none"; label: string }[] = [
+  { label: "Any scope" },
+  { key: "none", label: "Pipelines" },
+  { key: "any", label: "Single steps" },
 ];
 
 type RunsSearch = { state?: string; q?: string; sort?: RunsSort; target?: "any" | "none" };
@@ -167,6 +168,7 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
       <span className="sp-run-card-top">
         {select}
         <StateWord state={run.state} />
+        {run.target && <Scope target={run.target} />}
         <span>{duration(run.started_at, run.ended_at)}</span>
       </span>
       {pin ? (
@@ -179,6 +181,7 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
       )}
       <span className="sp-run-card-line">
         <Pipeline run={run} size={16} />
+        <TargetTail target={run.target} />
         <span>
           {" · "}
           {tasksText(run)} {units}
@@ -241,7 +244,18 @@ const COLUMNS: ColDef<Run>[] = [
       </>
     ),
   },
-  { headerName: "Workflow", flex: 1.4, cellRenderer: ({ data: run }: { data: Run }) => <Pipeline run={run} /> },
+  { headerName: "Scope", colId: "scope", flex: 0.8, minWidth: 140, cellRenderer: ({ data: run }: { data: Run }) => <Scope target={run.target} /> },
+  {
+    headerName: "Workflow",
+    colId: "workflow",
+    flex: 1.4,
+    cellRenderer: ({ data: run }: { data: Run }) => (
+      <span className="sp-what-ran">
+        <Pipeline run={run} />
+        <TargetTail target={run.target} />
+      </span>
+    ),
+  },
   { headerName: "Tasks", cellRenderer: ({ data: run }: { data: Run }) => <TasksCell run={run} /> },
   { headerName: "Started", colId: "started_at", valueGetter: ({ data: run }) => (run ? when(run.started_at ?? run.created_at) : "") },
   { headerName: "Duration", colId: "duration", valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : "") },
@@ -465,7 +479,10 @@ export function RunsPage() {
     const col = e.columns?.find((c) => c.getSort());
     setSearch({ sort: col ? `${col.getSort() === "desc" ? "-" : ""}${col.getColId()}`  as RunsSort : undefined });
   };
-  const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started")).map(
+  // The Scope column and buttons once single targets can exist here: the flag, or a run that has one
+  // (a terminal run is captured whatever the flag says; api §5.10).
+  const scoped = !!server?.features?.single_target || target !== undefined || !!list?.rows.some((r) => r.target);
+  const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started") && (scoped || c.colId !== "scope")).map(
     (c): ColDef<Run> =>
       c.colId && SORTABLE.has(c.colId)
         ? { ...c, sortable: true, unSortIcon: true, comparator: keep, sortingOrder: ["asc", "desc", null], sort: sort === c.colId ? "asc" : sort === `-${c.colId}` ? "desc" : null }
@@ -522,16 +539,15 @@ export function RunsPage() {
             </button>
           ))}
         </div>
-        <label className="sp-select-field">
-          <span>Runs</span>
-          <select value={target ?? "all"} onChange={(e) => setSearch({ target: e.currentTarget.value as RunsSearch["target"] })}>
+        {scoped && (
+          <div className="sp-segments" role="group" aria-label="Scope">
             {TARGETS.map((t) => (
-              <option key={t.key} value={t.key}>
+              <button key={t.label} type="button" aria-pressed={target === t.key} onClick={() => setSearch({ target: t.key })}>
                 {t.label}
-              </option>
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+        )}
       </div>
 
       {error && (

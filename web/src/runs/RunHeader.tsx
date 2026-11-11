@@ -114,9 +114,23 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
   const ended = isTerminal(run.state);
   const engine = [engineName(w.engine), w.engine_version].filter(Boolean).join(" ");
   const pipeline = w.name ? (w.version ? `${w.name} ${w.version}` : `${w.name} (no version declared)`) : w.location;
+  // a module run names its module, and only a local one has a directory (ui-spec §4.15)
+  const module = run.target?.kind === "module" ? run.target : null;
+  const directory: [string, ReactNode][] =
+    module?.source === "registry"
+      ? []
+      : [
+          [
+            module ? "Module directory" : "Pipeline directory",
+            <span className="sp-copy-line">
+              <span className="sp-mono">{w.location}</span>
+              <CopyButton text={w.location} label="Copy" name={module ? "Copy the module directory" : "Copy the pipeline directory"} />
+            </span>,
+          ],
+        ];
   const facts: [string, ReactNode][] = [
     [
-      "Pipeline",
+      module ? "Module" : "Pipeline",
       // the pipeline's mark: nf-core for an nf-core/ name, else the engine's (inbox #91)
       <span className="sp-pipeline">
         <PipelineMark engine={w.engine} name={w.name} size={18} />
@@ -136,13 +150,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     ["Head", headWord(run)],
     ["Login node", run.head?.node ?? server?.node ?? "—"],
     ["Exit code", run.head?.exit_code != null ? String(run.head.exit_code) : ended ? "—" : "— (still running)"],
-    [
-      "Pipeline directory",
-      <span className="sp-copy-line">
-        <span className="sp-mono">{w.location}</span>
-        <CopyButton text={w.location} label="Copy" name="Copy the pipeline directory" />
-      </span>,
-    ],
+    ...directory,
     ["Run directory", <span className="sp-mono">{runDirectory(run, server) ?? "—"}</span>],
     ...environmentFacts(run, server),
     ...extrasFacts(run),

@@ -2012,50 +2012,6 @@
   overflow-wrap: anywhere;
   font-size: 13px;
 }
-.sp-warn-line {
-  color: var(--sp-state-review-fg);
-}
-/* The rules a Snakemake target run does not need, folded into one row (ui-spec §4.15). */
-.sp-outside {
-  display: block;
-  width: 100%;
-  text-align: start;
-}
-/* The Runs select beside the state filter (ui-spec §4.15); under it, full width, on the phone. */
-.sp-select-field {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.sp-select-field select {
-  height: 40px;
-  padding: 0 8px;
-  border: 1px solid var(--sp-line-input);
-  border-radius: 10px;
-  font: inherit;
-  color: inherit;
-  background: var(--sp-surface-raised);
-}
-@media (max-width: 767.98px) {
-  .sp-select-field {
-    flex: 1 1 100%;
-  }
-  .sp-select-field select {
-    flex: 1;
-    min-height: 44px;
-  }
-}
-.sp-outside-target {
-  margin-top: 8px;
-}
-.sp-plain-list {
-  margin: 4px 0 0;
-  padding-left: 20px;
-}
-@media (max-width: 767.98px) {
-  .sp-outside {
-    min-height: 44px;
-  }
 /* The runs table actions (FU-P3-115b; ui-spec §4.3 note of 2026-11-10; board LiteRuns): the bulk
    bar over the table, the pin beside a run's name, the Delete sheet's list and box. */
 .sp-bulk {
@@ -2143,4 +2099,173 @@
   font-size: 12px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* The runs list's Scope badge (ui-spec §4.15): grey for a whole pipeline, the accent for a module,
+   the environments' sky for a rule or file; the cells repeat the colour's meaning. */
+.sp-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-sunken);
+}
+.sp-scope[data-scope="module"] {
+  color: var(--sp-accent);
+  background: var(--sp-accent-subtle);
+}
+.sp-scope[data-scope="rule"],
+.sp-scope[data-scope="file"] {
+  color: var(--sp-section-environments);
+  background: color-mix(in srgb, var(--sp-section-environments) 14%, transparent);
+}
+.sp-scope-cells {
+  display: inline-flex;
+  gap: 2px;
+}
+.sp-scope-cells i {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.3;
+}
+.sp-scope-cells i[data-on] {
+  opacity: 1;
+}
+.sp-what-ran {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.sp-target-to {
+  font-family: var(--sp-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sp-section-environments);
+  overflow-wrap: anywhere;
+}
+.sp-chip.sp-chip-warn {
+  color: var(--sp-state-review-fg);
+  background: var(--sp-state-review-bg);
+}
+
+/* The run header's target badge (ui-spec §4.15): its parts side by side, the kind first in the
+   Scope colours; a changed checksum is a warning box under it. */
+.sp-target-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  width: fit-content;
+  flex-wrap: wrap;
+  align-items: stretch;
+  max-width: 100%;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 13px;
+}
+.sp-target-badge > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-left: 1px solid var(--sp-line-divider);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sp-target-badge > span:first-child {
+  border-left: 0;
+}
+.sp-target-kind {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sp-accent);
+  background: var(--sp-accent-subtle);
+}
+.sp-target-kind[data-scope="rule"],
+.sp-target-kind[data-scope="file"] {
+  color: var(--sp-section-environments);
+  background: color-mix(in srgb, var(--sp-section-environments) 14%, transparent);
+}
+.sp-target-warn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--sp-state-review-fg);
+  background: var(--sp-state-review-bg);
+}
+/* A Snakemake target run's steps (ui-spec §4.15): the chain, then the rules it does not need. */
+.sp-target-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sp-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-steps > li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+  padding: 8px 12px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 8px;
+  background: var(--sp-surface-subtle);
+}
+ol.sp-steps > li + li::before {
+  content: "→";
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sp-text-faint);
+}
+.sp-steps > li[data-tone="succeeded"] {
+  border-color: var(--sp-state-succeeded);
+  background: var(--sp-state-succeeded-bg);
+}
+.sp-steps > li[data-tone="running"] {
+  border-color: var(--sp-state-running);
+  background: var(--sp-state-running-bg);
+}
+.sp-steps > li[data-tone="failed"] {
+  border-color: var(--sp-state-failed);
+  background: var(--sp-state-failed-bg);
+}
+.sp-steps > li[data-target] {
+  border-width: 2px;
+}
+.sp-steps-out {
+  gap: 8px;
+}
+.sp-steps-out > li {
+  border-style: dashed;
+  background: none;
+  opacity: 0.6;
+}
+.sp-step-count {
+  font-size: 12px;
+  color: var(--sp-text-secondary);
 }

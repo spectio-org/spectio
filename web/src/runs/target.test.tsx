@@ -30,7 +30,8 @@ const show = (t: RunTarget) =>
 
 test("a registry module shows its checksum, or that it comes after install", () => {
   const { unmount } = show({ ...fastqc, hash: "b64b18ed0123456789abcdef0123456789abcdef0123456789abcdef01234567" });
-  expect(screen.getByText("module nf-core/fastqc 0.0.0-6d1763b")).toBeInTheDocument();
+  const badge = screen.getByRole("group", { name: "Target: module nf-core/fastqc 0.0.0-6d1763b" });
+  expect(badge).toHaveTextContent(/^Modulenf-core\/fastqc0\.0\.0-6d1763bchecksum b64b18ed…Copy$/);
   expect(screen.getByText("checksum b64b18ed…")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Copy the module checksum" })).toBeInTheDocument();
   expect(screen.queryByText(/checksum differs/)).not.toBeInTheDocument();
@@ -39,10 +40,19 @@ test("a registry module shows its checksum, or that it comes after install", () 
   expect(screen.getByText("checksum: after install")).toBeInTheDocument();
 });
 
-test("a changed checksum is a status line naming the module and its version", () => {
+test("a changed checksum is a titled warning naming the module and its version", () => {
   show({ ...fastqc, hash: "c".repeat(64), checksum_changed: true });
-  const warning = screen.getByText("This version's checksum differs from an earlier run of nf-core/fastqc 0.0.0-6d1763b");
-  expect(warning).toHaveAttribute("role", "status");
+  const warning = screen.getByText("Same version, different content").closest("[role=status]");
+  expect(warning).toHaveTextContent(
+    "This version's checksum differs from an earlier run of nf-core/fastqc 0.0.0-6d1763b: the registry served other files, so results may not match.",
+  );
+});
+
+test("a rule badge names the rule and how the run was limited", () => {
+  show(target({ name: "merge", flag: "until", more: 1 }));
+  expect(screen.getByRole("group", { name: "Target: rule merge + 1 more target (--until)" })).toHaveTextContent(
+    /^Rulemerge\+ 1 more target\(--until\)$/,
+  );
 });
 
 test("a rule or a local module has no checksum part", () => {

@@ -7,6 +7,9 @@ import type { Inspected, JSONSchema, TargetInspected } from "../api";
 /** A registry module, as the server checks it (`spectio_sdk.targets.REGISTRY_NAME`). */
 export const REGISTRY_NAME = /^[a-z0-9][a-z0-9_-]{0,63}\/[a-z0-9][a-z0-9_.-]{0,127}$/;
 
+/** The registry modules offered as "Try:" chips under the Module field (ui-spec §4.15 mock A). */
+export const TRY_MODULES = ["nf-core/fastqc", "nf-core/multiqc"];
+
 type ModuleAnswer = Extract<TargetInspected, { kind: "module" }>;
 
 /** A module's input type as a schema type: a map is JSON, a number stays one, the rest is text. */
@@ -38,10 +41,4 @@ export function moduleInspected(module: ModuleAnswer, location: string, pipeline
     profiles: pipeline?.profiles ?? [],
     params_file: null,
   };
-}
-
-/** "make_reads 12, qc_stats 12, qc_report 1 (25 jobs)" */
-export function planText(plan: { jobs: Record<string, number>; total: number }): string {
-  const jobs = Object.entries(plan.jobs).map(([rule, n]) => `${rule} ${n}`);
-  return `${jobs.join(", ")} (${plan.total} ${plan.total === 1 ? "job" : "jobs"})`;
 }

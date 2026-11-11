@@ -848,7 +848,7 @@ const TARGET_NONE = { version: null, hash: null, source: null, path: null, more:
 const RULE_TARGET = { ...TARGET_NONE, kind: "rule", name: "qc_report", flag: "target" };
 const MODULE_TARGET = { ...TARGET_NONE, kind: "module", name: "nf-core/fastqc", version: "0.0.0-6d1763b", source: "registry", flag: null };
 
-test("#161: a rule target run folds the rules it does not need into one 'Outside the target' row", async () => {
+test("#161: a rule target run shows its steps to the target, and the rules it does not need apart", async () => {
   const rule = (process: string, status: string, counts = {}) => ({ process, stage_id: null, counts, retries: 0, status, is_checkpoint: false, lower_bound: false });
   detail(
     { workflow: SNAKEMAKE, target: RULE_TARGET, task_counts: { succeeded: 25 } },
@@ -861,19 +861,20 @@ test("#161: a rule target run folds the rules it does not need into one 'Outside
   );
   app(`/runs/${ID}`);
   const header = await runHeader();
-  expect(within(header).getByText("rule qc_report")).toBeInTheDocument();
+  expect(within(header).getByRole("group", { name: "Target: rule qc_report" })).toBeInTheDocument();
   const table = await screen.findByRole("table", { name: "Rules" });
   expect(within(table).queryByRole("button", { name: "Open rule merge" })).toBeNull();
   expect(within(table).getByRole("button", { name: "Open rule qc_report" })).toBeInTheDocument();
   expect(screen.getByText("This run targets rule qc_report")).toBeInTheDocument();
   expect(screen.queryByText(/No stages for this pipeline/)).toBeNull();
-  const fold = screen.getByRole("button", { name: "Outside the target (2 rules)" });
-  expect(fold).toHaveAttribute("aria-expanded", "false");
-  expect(screen.queryByText("merge")).toBeNull();
-  await userEvent.click(fold);
-  expect(fold).toHaveAttribute("aria-expanded", "true");
+  // the chain to the target, in pipeline order, then the rules it does not need, dimmed
+  const steps = screen.getByRole("list", { name: "Steps to the target" });
+  expect(within(steps).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+    "make_readsDone · 12 / 12 jobs",
+    "qc_reportDone · 1 / 1 job · target",
+  ]);
   const list = screen.getByRole("list", { name: "Rules outside the target" });
-  expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["merge", "align"]);
+  expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["mergenot needed", "alignnot needed"]);
   expect(screen.getByText(/Outside the target: the rule is not needed to make the target\./)).toBeInTheDocument();
   expect(screen.queryByText(/Not needed in this run:/)).toBeNull();
 });
@@ -888,8 +889,11 @@ test("#161: a module run names its module and version, and says it publishes no 
   );
   app(`/runs/${ID}`);
   const header = await runHeader();
-  expect(within(header).getByText("module nf-core/fastqc 0.0.0-6d1763b")).toBeInTheDocument();
+  expect(within(header).getByRole("group", { name: "Target: module nf-core/fastqc 0.0.0-6d1763b" })).toBeInTheDocument();
   expect(within(header).getByText("checksum: after install")).toBeInTheDocument();
+  // a registry module has no directory to copy; the facts name the module
+  expect(within(header).getAllByText("Module")).toHaveLength(2); // the badge and the facts
+  expect(within(header).queryByText("Pipeline directory")).toBeNull();
   expect(await screen.findByText("This run targets one module")).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "Stages" })).toBeNull();
   expect(
