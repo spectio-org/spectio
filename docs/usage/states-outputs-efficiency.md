@@ -89,6 +89,10 @@ On SLURM the sheet also shows the request that is set (partition, CPUs, memory, 
 
 When SLURM accounting cannot answer, the Efficiency block says "No accounting for this job" and the reason in brackets: "local run", "sacct not found or accounting off", "no SLURM job ID", "not in SLURM accounting", "reused from an earlier run, no job ran", or, since FU-P3-106b (batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14)), "the window is over the site's sacct limit (MaxQueryTimeRange)". The last one means the site's slurmdbd refused the time window of the `sacct` call, so Spectio stops asking for that job instead of asking again every 10 minutes. It applies only to a job whose launch set the window; the other jobs of the same call are asked again with a narrower one. The rule is owned by [schedulers §3.8](../specs/schedulers-and-monitoring.md#38-slurm-query-budget). The test `test_sacct_site_time_range_limit_is_final` and its server-side twins pass; **no real slurmdbd with a `MaxQueryTimeRange` was run** **[to be validated]**.
 
+## Measured fills in after `sacct`
+
+The server sends no event when `sacct` answers a job that has ended, so the run page reads the processes again. It does so only while the run has ended and at least one job is waiting for `sacct`: `efficiency.pending_accounting` of a process, in [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), the processes route, is above 0. It reads every 30 s and at most 10 times for a run in one visit, and a read that fails counts toward the 10 and is tried again (step FU-P3-122, batch [P3-B16](../progress/W5/P3-M9.md#batch-p3-b16); the first version, FU-P3-119, tested `measured < done`). A resumed run's reused tasks count in `done` and never in `measured`, so they no longer keep the page reading. **[Tested in `accounting.test.ts`; not run against a real slurmdbd.]**
+
 ## A log that cannot be read
 
 When the Logs tab or a job's files cannot find the run's directory, the answer now says which case it is. Both messages name the directory that was tried, a path under your own runs root.

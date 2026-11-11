@@ -2,13 +2,13 @@
 .sp-envs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
-  gap: 12px;
+  gap: var(--mantine-spacing-lg);
 }
 .sp-env-top {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 10px;
+  align-items: center;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
 }
 .sp-env-top h2 {
   margin: 0;
@@ -20,11 +20,21 @@
   outline-offset: 2px;
 }
 .sp-env p {
-  margin: 6px 0;
+  margin: var(--mantine-spacing-xs) 0;
   font-size: 14px;
 }
+/* UI-14 (ui-spec §12.7): one card look, padding 16 (12 on the phone), radius md, a 1 px border. */
 .sp-env {
   position: relative;
+  padding: var(--mantine-spacing-lg);
+  border: 1px solid var(--sp-line-border);
+  border-radius: var(--mantine-radius-md);
+  box-shadow: none;
+}
+@media (max-width: 767.98px) {
+  .sp-env {
+    padding: var(--mantine-spacing-md);
+  }
 }
 /* The phone: the heading's link covers the whole card (UX-PRE-FU86-R1-22). */
 .sp-env-link {
@@ -47,7 +57,7 @@
 .sp-env-more {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-env-more h2 {
   margin: 0;
@@ -57,28 +67,34 @@
   min-height: 44px;
 }
 .sp-env[data-default] {
-  box-shadow: inset 3px 0 0 var(--sp-section-environments), var(--sp-shadow);
+  box-shadow: inset 3px 0 0 var(--sp-section-environments);
 }
 .sp-env-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--mantine-spacing-lg);
   max-width: 640px;
 }
 .sp-env-form fieldset {
   margin: 0;
-  padding: 12px 14px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
   border: 1px solid var(--sp-line-divider);
-  border-radius: 12px;
+  border-radius: var(--mantine-radius-md);
+}
+/* §12.9: a legend uses the label style (sm/500). */
+.sp-env-form legend {
+  padding: 0 var(--mantine-spacing-xs);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
 }
 .sp-env-pair {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 8px 12px;
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-md);
 }
 .sp-env-hint {
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-xs);
   color: var(--sp-text-muted);
 }
 .sp-page {
@@ -90,9 +106,9 @@
 /* FU-P3-111: the kind's icon tile, the view switch and the table view. */
 .sp-env-kind {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--mantine-radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -103,9 +119,6 @@
 .sp-env-kind[data-kind="local"] {
   color: var(--sp-text-secondary);
   background: var(--sp-surface-sunken);
-}
-.sp-env-views {
-  align-self: flex-start;
 }
 .sp-env-table th[scope="row"] {
   background: none;
@@ -122,7 +135,7 @@
 .sp-env-name {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-env-line {
   display: block;

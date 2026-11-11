@@ -1050,7 +1050,7 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
   const running = sum(run.task_counts, "running");
   const pending = sum(run.task_counts, "pending", "submitted");
   return (
-    <Modal opened={opened} onClose={onClose} title="Cancel this run?" returnFocus centered>
+    <Modal opened={opened} onClose={onClose} title="Cancel this run?" returnFocus centered classNames={{ title: "sp-sheet-title" }}>
       <p>
         {local
           ? "Spectio stops its head with signals, and the engine stops its tasks."
@@ -1066,11 +1066,11 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
           : "Ctrl-C to the engine in its tmux session, then SIGTERM and SIGKILL after 60 s each."}{" "}
         The run shows Cancelling, then Cancelled.
       </p>
-      <div className="sp-actions">
+      <div className="sp-dialog-foot">
         <Button variant="default" data-autofocus onClick={onClose}>
           Keep running
         </Button>
-        <Button color="red" onClick={onConfirm}>
+        <Button color="failed" onClick={onConfirm}>
           Cancel the run
         </Button>
       </div>

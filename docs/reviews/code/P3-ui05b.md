@@ -3,7 +3,7 @@
 `code-reviewer` on `autopilot/P3-ui05b` against base `origin/autopilot/P3-ui02`, 2026-11-11. Spec: [ui-spec §12.13](../../specs/ui-spec.md). Format: [README.md](../README.md).
 
 ```text
-CODE  rounds=2  verdict=changes-applied  security=skipped  findings=8 (5 major, 3 minor)  fixed=5  commits=072796b9,02ad8147
+CODE  step=P3-ui05b  review=changes-fixed b/M/m=0/4/4  security=skipped  rounds=2  simplify=skipped -0/+0  tests=pass
 ```
 
 Security review skipped: no sensitive path.
@@ -18,7 +18,7 @@ Security review skipped: no sensitive path.
 | CR-P3UI05B-04 | major | `KINDS` and 8 tone rules duplicated `runWord`, `tone`, `TONE_ICONS` and runs.css | fixed: `STATE` map, exports from `RunState.tsx`, `--tone-bg`/`--tone-fg` |
 | CR-P3UI05B-05 | minor | Hover and focus replaced the unread tint | fixed: focus shows the outline only; unread hover keeps `--sp-accent-subtle` |
 | CR-P3UI05B-06 | minor | No Tooltip on a truncated run name (§12.8) | open |
-| CR-P3UI05B-07 | minor | simplify: intersection ref type, unused `ago` export, `setTimeout` focus return instead of `returnFocus` | open |
+| CR-P3UI05B-07 | minor | simplify: intersection ref type, unused `ago` export, `setTimeout` focus return instead of `returnFocus` | partly fixed by the batch simplifier (`46fc7ddc`): `ago` is no longer exported. The ref type and the `setTimeout` focus return are left: both are behaviour-sensitive |
 | CR-P3UI05B-08 | minor | Non-modal Popover in a portal: Tab order leaves to the end of the document | open |
 
 ## Assumptions

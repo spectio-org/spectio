@@ -1,14 +1,16 @@
 import "../runs/runs.css";
 import "./profile.css";
-import { Button, type MantineColorScheme, useMantineColorScheme } from "@mantine/core";
+import { Button, type MantineColorScheme, Radio, useMantineColorScheme } from "@mantine/core";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { type Me, getMe, signOut } from "../api";
-import { Icon } from "../icons";
+import { Icon, type IconName } from "../icons";
 import { copyText } from "../runs/CopyMenu";
 import { when } from "../runs/stateWord";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
+import { CardHead } from "../shell/CardHead";
 import { PageHead } from "../shell/PageHead";
+import { ErrorPanel, SkeletonRows } from "../shell/States";
 
 // The Profile page of 0.0.1 (FU-P3-112; ui-spec §4.10.1; boards LiteProfile, MLiteProfile), from
 // the avatar in the top bar, in single-user mode: who the server runs as, this session and Sign
@@ -33,33 +35,54 @@ const THEMES: { value: MantineColorScheme; label: string }[] = [
 
 const focusIt = (el: HTMLElement | null) => el?.focus();
 
-function Card({ id, title, focus, children }: { id: string; title: string; focus?: boolean; children: ReactNode }) {
+/** A card with the shared head (ui-spec §12.7, UI-16): tile, title, fold. `focus` moves focus to
+ * its title once it shows (UX-P3FU112-01); CardHead's h3 takes it through a tabindex of -1. */
+function Card({ id, icon, title, focus, children }: { id: string; icon: IconName; title: string; focus?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+  useEffect(() => {
+    const h = focus ? document.getElementById(`${id}-title`) : null;
+    h?.setAttribute("tabindex", "-1");
+    h?.focus();
+  }, [id, focus]);
   return (
-    <section className="sp-card sp-prof-card" aria-labelledby={id}>
-      <h2 id={id} tabIndex={focus ? -1 : undefined} ref={focus ? focusIt : undefined}>{title}</h2>
-      {children}
+    <section className="sp-card sp-prof-card" aria-labelledby={`${id}-title`}>
+      <CardHead id={id} icon={icon} title={title} open={open} onToggle={() => setOpen((o) => !o)} />
+      {open && <div id={`${id}-body`} className="sp-prof-body">{children}</div>}
     </section>
   );
 }
 
 function Paths({ paths }: { paths: Me["paths"] }) {
+  const phone = usePhone();
   const [said, setSaid] = useState("");
-  const copy = (text: string, what: string) =>
+  const [copied, setCopied] = useState("");
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(""), 2000); // "Copied" for 2 s (ui-spec §12.4)
+    return () => clearTimeout(t);
+  }, [copied]);
+  const copy = (key: string, text: string, what: string) =>
     copyText(text).then(
-      () => setSaid(`Copied ${what}`),
+      () => (setSaid(`Copied ${what}`), setCopied(key)),
       () => setSaid(`Could not copy ${what}: the browser gave no clipboard`),
     );
   return (
-    <Card id="prof-paths" title="Config paths">
+    <Card id="prof-paths" icon="folder" title="Config paths">
       <dl className="sp-prof-paths">
         {PATHS.map(({ key, label, what }) => (
           <div key={key}>
             <dt>{label}</dt>
             <dd>
               <code>{paths[key]}</code>
-              <button type="button" className="sp-key" aria-label={`Copy ${what}`} onClick={() => copy(paths[key], what)}>
-                <Icon name="copy" />
-              </button>
+              <Button
+                variant="default"
+                size={phone ? "md" : "sm"}
+                leftSection={<Icon name="copy" />}
+                aria-label={`Copy ${what}`}
+                onClick={() => copy(key, paths[key], what)}
+              >
+                {copied === key ? "Copied" : "Copy"}
+              </Button>
             </dd>
           </div>
         ))}
@@ -73,13 +96,10 @@ function Paths({ paths }: { paths: Me["paths"] }) {
 function Theme() {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   return (
-    <Card id="prof-theme" title="Theme">
-      <div role="radiogroup" aria-labelledby="prof-theme" className="sp-prof-themes">
+    <Card id="prof-theme" icon="sun" title="Theme">
+      <div role="radiogroup" aria-labelledby="prof-theme-title" className="sp-prof-themes">
         {THEMES.map(({ value, label }) => (
-          <label key={value}>
-            <input type="radio" name="theme" value={value} checked={colorScheme === value} onChange={() => setColorScheme(value)} />
-            {label}
-          </label>
+          <Radio key={value} size="sm" name="theme" value={value} label={label} checked={colorScheme === value} onChange={() => setColorScheme(value)} />
         ))}
       </div>
       <p className="sp-sub">Kept in this browser. System follows your device's setting.</p>
@@ -116,22 +136,21 @@ export function ProfilePage() {
     <div className="sp-page sp-prof">
       <PageHead section="home" icon="person" title={TITLE} sub={phone ? me && `Single-user mode · ${me.principal.user}` : SUB} />
       {error ? (
-        <>
-          <p role="alert" className="sp-note sp-alert">Your profile could not be read. {error}</p>
-          <Button variant="default" style={{ alignSelf: "flex-start" }} onClick={() => (setRetried(true), load())}>Retry</Button>
-        </>
+        <ErrorPanel onRetry={() => (setRetried(true), load())}>Your profile could not be read. {error}</ErrorPanel>
       ) : !me ? (
-        <p role="status" className="sp-sub" tabIndex={-1} ref={retried ? focusIt : undefined}>Loading your profile…</p>
+        <div tabIndex={-1} ref={retried ? focusIt : undefined}>
+          <SkeletonRows label="Loading your profile…" />
+        </div>
       ) : (
         <>
-          <Card id="prof-who" title="Who the server runs as" focus={retried}>
+          <Card id="prof-who" icon="person" title="Who the server runs as" focus={retried}>
             <dl className="sp-facts">
               <div><dt>Unix user</dt><dd>{me.principal.user}</dd></div>
               <div><dt>UID</dt><dd>{me.principal.uid}</dd></div>
             </dl>
             <p className="sp-sub">You are the only principal: runs, files and settings are this user's.</p>
           </Card>
-          <Card id="prof-session" title="This session">
+          <Card id="prof-session" icon="clock" title="This session">
             {out === "yes" ? (
               <p role="status" className="sp-note" tabIndex={-1} ref={focusIt}>{SIGNED_OUT}</p>
             ) : (

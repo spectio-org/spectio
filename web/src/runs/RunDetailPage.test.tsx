@@ -69,6 +69,9 @@ test("Cancel asks first in a modal dialog, returns focus, then posts :cancel", a
   expect(
     within(dialog).getByText("Spectio stops its head with signals, and the engine stops its tasks."),
   ).toBeInTheDocument();
+  // ui-spec §12.4 (UI-18): Keep running then the confirm, in the theme's failed colour
+  expect(within(dialog.querySelector(".sp-dialog-foot") as HTMLElement).getAllByRole("button").map((b) => b.textContent)).toEqual(["Keep running", "Cancel the run"]);
+  expect(within(dialog).getByRole("button", { name: "Cancel the run" }).getAttribute("style")).toContain("--mantine-color-failed");
   await userEvent.click(within(dialog).getByRole("button", { name: "Keep running" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   await waitFor(() => expect(cancel).toHaveFocus());

@@ -56,7 +56,7 @@ function Sheet({ opened, onClose, title, focusTitle, children }: { opened: boole
       <Modal.Overlay />
       <Modal.Content>
         <Modal.Header>
-          <Modal.Title {...heading}>{title}</Modal.Title>
+          <Modal.Title className="sp-sheet-title" {...heading}>{title}</Modal.Title>
           <Modal.CloseButton aria-label="Close" />
         </Modal.Header>
         <Modal.Body>{children}</Modal.Body>
@@ -92,7 +92,7 @@ export function CatalogPicker({ data, failed, onRetry, chosen, onChoose, onClear
     body = (
       <div className="launch-env-state">
         <p className="sp-alert">The catalog could not be read.</p>
-        <Button variant="default" size="xs" onClick={onRetry}>Retry</Button>
+        <Button variant="default" onClick={onRetry}>Retry</Button>
       </div>
     );
   } else if (!data) {
@@ -107,7 +107,7 @@ export function CatalogPicker({ data, failed, onRetry, chosen, onChoose, onClear
       <div className="launch-cat-row">
         <p className="sp-note">
           {FILE_LINES[data.file.state]}{" "}
-          {data.file.state === "unreachable" && <Button variant="default" size="xs" onClick={onRetry}>Retry</Button>}
+          {data.file.state === "unreachable" && <Button variant="default" onClick={onRetry}>Retry</Button>}
         </p>
         {manage}
       </div>
@@ -222,7 +222,6 @@ export function SaveToCatalog({ data, failed, entry, pipeline, draft, onSaved }:
       {entry && <span className="sp-muted">In your catalog as {entry.name}</span>}
       <Button
         variant="default"
-        size="xs"
         onClick={() => !why && setOpen(true)}
         aria-disabled={why ? true : undefined}
         data-disabled={why ? true : undefined}

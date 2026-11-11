@@ -3,7 +3,7 @@
 `code-reviewer` and `security-reviewer` on `autopilot/P3-ui05a`, 2026-11-11. Format: [README.md](../README.md).
 
 ```text
-CODE  step=P3-ui05a  review=approve b/M/m=0/0/1  security=changes b/M/m=0/1/1  rounds=2  simplify=skipped -0/+0  tests=pass
+CODE  step=P3-ui05a  review=approve b/M/m=0/0/1  security=changes-fixed b/M/m=0/1/1  rounds=2  simplify=skipped -0/+0  tests=pass
 ```
 
 | Id | Severity | Finding | Status |

@@ -43,7 +43,7 @@ export function EngineButtons({ value, onChange, note, error }: Props) {
         </Text>
       </Group>
       {error && (
-        <Text id="engine-error" size="sm" c="red" role="alert" mt={4}>
+        <Text id="engine-error" size="sm" c="var(--sp-state-failed-fg)" role="alert" mt={4}>
           {error}
         </Text>
       )}
