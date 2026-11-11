@@ -43,6 +43,7 @@ import { CatalogPicker, SaveToCatalog } from "./CatalogPicker";
 import { EngineButtons } from "./EngineButtons";
 import { EnvironmentRow } from "./EnvironmentRow";
 import { guessEngine } from "./guessEngine";
+import { ConfigFileRow, type Draft, NO_DRAFT, RESOURCE_LABELS, ResourcesRow, draftFrom, keptAs, readResources, summaryLine } from "./RunExtras";
 import { TryPipelines } from "./TryPipelines";
 import {
   type Field,
@@ -74,7 +75,7 @@ const SOURCES: Record<Inspected["schema_source"], string> = {
   none: "no parameter schema: add parameters as name and value",
 };
 
-type Errors = Record<string, string>; // by form key: location, revision, engine, name, profile, environment, params.<key>, form
+type Errors = Record<string, string>; // by form key: location, revision, engine, name, profile, environment, resources(.cpus|.mem|.time), config_file, params.<key>, form
 
 /** One line of "Before Launch" (ui-spec §4.6 layout note, FU-P3-86h): its words, and the form key
  * (location, engine, environment, params.<key>) of the field its link moves focus to. */
@@ -91,6 +92,8 @@ function targetId(to: string): string {
   if (to === "location") return "launch-location";
   if (to === "engine") return "engine-buttons";
   if (to === "environment") return "launch-where-body";
+  if (to === "config_file") return "launch-config-file";
+  if (to.startsWith("resources.")) return { "resources.cpus": "res-cpus", "resources.mem": "res-mem" }[to] ?? "res-time-h";
   return paramId(to.slice("params.".length));
 }
 
@@ -99,7 +102,11 @@ function targetId(to: string): string {
  * (`params.ref.release` on `ref.release`, UX-PAR-31). */
 function formKey(field: string, keys: string[]): string {
   const bare = field.replace(/^workflow\./, "");
-  if (["location", "revision", "engine", "name", "environment"].includes(bare)) return bare;
+  if (["location", "revision", "engine", "name", "environment", "config_file"].includes(bare)) return bare;
+  // api §5.7: default_resources.cpus, .mem_mib, .time_min, or the whole (a Snakemake profile)
+  if (bare.startsWith("default_resources")) {
+    return { "default_resources.cpus": "resources.cpus", "default_resources.mem_mib": "resources.mem", "default_resources.time_min": "resources.time" }[bare] ?? "resources";
+  }
   if (bare.startsWith("profiles")) return "profile";
   if (!bare.startsWith("params.")) return "form";
   const rest = bare.slice("params.".length);
@@ -137,7 +144,13 @@ interface Prefill {
 
 /** A `code_loading` field as the form names it. */
 const loadingLabel = (field: string) =>
-  field === "workflow.location" ? "Pipeline" : field.startsWith("params.") ? field.slice(7) : `engine option ${field.replace(/^engine\./, "")}`;
+  field === "workflow.location"
+    ? "Pipeline"
+    : field === "config_file"
+      ? "Extra config file"
+      : field.startsWith("params.")
+        ? field.slice(7)
+        : `engine option ${field.replace(/^engine\./, "")}`;
 
 /** `recent`: the server's recent runs, for "Try a test pipeline" (null while they load: nothing
  * shown). `initialLocation`: a pipeline to fill in and load at once (/launch?location=).
@@ -187,6 +200,10 @@ export function LaunchPage({
   const [paramsFile, setParamsFile] = useState<ParamsFile | null>(null);
   // The form key a "Before Launch" link is moving focus to: its sections open (FU-P3-86h)
   const [goTo, setGoTo] = useState<string | null>(null);
+  // Resources and the extra config file (api §5.7, FU-P3-110d); the 503 of a file that could not be read
+  const [resources, setResources] = useState<Draft>(NO_DRAFT);
+  const [configFile, setConfigFile] = useState("");
+  const [configDown, setConfigDown] = useState<string | null>(null);
   const inFlight = useRef<AbortController | null>(null);
   const revisionField = useRef<HTMLInputElement>(null);
 
@@ -229,6 +246,11 @@ export function LaunchPage({
             ? `The environment's profile ${wanted} is not in this pipeline: none selected`
             : null;
 
+  const extras = { engine, profile, env: chosen };
+  const res = readResources(resources, extras);
+  // with a Snakemake extra file, only the keys set: the file's other keys stay (api §5.7)
+  const leaves = engine === "snakemake" && configFile.trim() !== "";
+
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
   const skipped: string[] = [];
@@ -239,6 +261,9 @@ export function LaunchPage({
   const keys = fields.map((f) => f.key);
   const grouped = !!loaded?.schema && ("$defs" in loaded.schema || "definitions" in loaded.schema);
   const changed = fields.filter((f) => isChanged(f, own(values, f.key))).length + rows.filter((r) => r.key.trim()).length;
+
+  /** An edit of a resource or of the extra config file forgets the server's error on it. */
+  const dropErrors = (prefix: string) => setErrors((old) => Object.fromEntries(Object.entries(old).filter(([k]) => !k.startsWith(prefix))));
 
   /** An edit of Pipeline or Revision cancels the inspect in flight and forgets the last one. */
   function edit(set: (v: string) => void, value: string) {
@@ -278,6 +303,8 @@ export function LaunchPage({
     setPicked(null);
     setValues({});
     setRows([]);
+    setResources(NO_DRAFT);
+    setConfigFile("");
   }
 
   async function load(at = location, rev = revision, copy?: Omit<Prefill, "left">) {
@@ -314,6 +341,8 @@ export function LaunchPage({
         setEnvName(copy.template.environment);
         setValues(filled);
         setRows(shape.length ? [] : Object.entries(params).map(([key, v]) => ({ key, value: typeof v === "string" ? v : JSON.stringify(v) })));
+        setResources(draftFrom(copy.template.default_resources));
+        setConfigFile(copy.template.config_file ?? ""); // read again at this launch (api §5.7)
         setPrefill({ ...copy, left });
       } else {
         // the entry's engine and params file (§4.7.1); every value the form does not place is listed
@@ -381,6 +410,9 @@ export function LaunchPage({
       const other = engineName(engine === "nextflow" ? "snakemake" : "nextflow");
       found.push({ text: `No ${ENGINE_FILES[engine].join(" or ")} in this directory: press ${other} or check the path`, to: "engine" });
     }
+    for (const [to, wrong] of Object.entries(res.errors)) {
+      found.push({ text: `Fix ${RESOURCE_LABELS[to as keyof typeof RESOURCE_LABELS]}: ${wrong.brief}`, to });
+    }
     for (const field of fields) {
       const wrong = checkValue(field, own(values, field.key));
       const to = `params.${field.key}`;
@@ -411,9 +443,11 @@ export function LaunchPage({
       setTried(true);
       return;
     }
-    const params = buildParams(fields, values, rows);
+    const params = buildParams(fields, values, rows, leaves);
+    const path = configFile.trim();
     setSending(true);
     setErrors({});
+    setConfigDown(null);
     try {
       const run = await launch({
         workflow: { location: loaded.location, revision: loaded.revision, engine },
@@ -421,14 +455,22 @@ export function LaunchPage({
         profiles: profile ? [profile] : [],
         ...(chosen ? { environment: chosen.name } : {}),
         params,
+        ...(Object.keys(res.sent).length ? { default_resources: res.sent } : {}),
+        ...(path ? { config_file: path } : {}),
       });
       onLaunched(run.id);
     } catch (error) {
-      setErrors(
-        error instanceof ApiError && error.errors.length
-          ? toErrors(error.errors, keys)
-          : { form: `Not launched: ${(error as Error).message}` },
-      );
+      const fileDown = /^the config file cannot be read: /;
+      if (path && error instanceof ApiError && error.status === 503 && fileDown.test(error.message)) {
+        // a timeout or an I/O error of the read, not choose()'s own 503 (CR-P3FU110D-01): its reason
+        // follows the server's own words (api §5.7)
+        setConfigDown(error.message.replace(fileDown, "").replace(/\.$/, ""));
+        return;
+      }
+      const found =
+        error instanceof ApiError && error.errors.length ? toErrors(error.errors, keys) : { form: `Not launched: ${(error as Error).message}` };
+      setErrors(found);
+      if (found.config_file) focusField("config_file");
     } finally {
       setSending(false);
     }
@@ -480,7 +522,7 @@ export function LaunchPage({
       aria-describedby={summary ? "launch-missing launch-reason" : "launch-missing"}
       leftSection={<Icon path={ICONS.runs} size={16} />}
     >
-      Launch
+      {sending ? "Launching…" : "Launch"}
     </Button>
   );
   const local = server?.executor === "local";
@@ -539,6 +581,15 @@ export function LaunchPage({
         </Text>
       )}
       {prefill && <PrefillBanner prefill={prefill} onClear={onClear} />}
+      {configDown !== null && (
+        <div role="alert" className="launch-banner">
+          <Icon path={ICONS.alert} size={16} />
+          <span className="sp-grow">{`The extra config file could not be read: ${configDown}. Nothing was started and your values are kept.`}</span>
+          <Button size="xs" onClick={submit}>
+            Launch again
+          </Button>
+        </div>
+      )}
       <div className="launch-grid">
         <Stack gap="md">
           <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card reveal={goTo === "location" || goTo === "engine"}>
@@ -681,7 +732,13 @@ export function LaunchPage({
               </SimpleGrid>
             </Stack>
           </FoldSection>
-          <FoldSection id="launch-where" icon={ICONS.server} title="Where it runs" card reveal={goTo === "environment"}>
+          <FoldSection
+            id="launch-where"
+            icon={ICONS.server}
+            title="Where it runs"
+            card
+            reveal={goTo === "environment" || goTo === "config_file" || !!goTo?.startsWith("resources")}
+          >
             <EnvironmentRow
               list={envs}
               failed={envsFailed}
@@ -690,6 +747,28 @@ export function LaunchPage({
               onRetry={loadEnvs}
               onCreated={(item) => void loadEnvs().then(() => setEnvName(item.name))}
               error={errors.environment}
+            />
+            <ResourcesRow
+              draft={resources}
+              onChange={(d) => {
+                setResources(d);
+                dropErrors("resources");
+              }}
+              c={extras}
+              errors={errors}
+              reveal={goTo?.startsWith("resources") ? "link" : Object.keys(errors).some((k) => k.startsWith("resources"))}
+            />
+            <ConfigFileRow
+              path={configFile}
+              onChange={(p) => {
+                setConfigFile(p);
+                dropErrors("config_file");
+              }}
+              engine={engine}
+              error={errors.config_file}
+              reading={sending}
+              node={server?.node ?? "the server"}
+              reveal={goTo === "config_file" ? "link" : !!errors.config_file}
             />
             <dl className="facts">
               <dt>Engine head</dt>
@@ -772,6 +851,10 @@ export function LaunchPage({
               <dd>{engine ? `${engineName(engine)} ${loaded?.engine_versions[engine] ?? "(version not found)"}` : "Not chosen yet"}</dd>
               <dt>Environment</dt>
               <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
+              <dt>Resources</dt>
+              <dd>{summaryLine(res.sent, extras)}</dd>
+              <dt>Extra config</dt>
+              <dd className="sp-mono">{configFile.trim() || "none"}</dd>
               <dt>Engine head</dt>
               <dd>{engine ? headLine : "Not chosen yet"}</dd>
               <dt>Tasks</dt>
@@ -807,7 +890,7 @@ export function LaunchPage({
               )}
             </div>
           </section>
-          {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} />}
+          {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} extra={leaves ? keptAs(engine, configFile) : null} />}
           <div className="launch-bar">
             <div className="launch-bar-row">
               {launchButton}
@@ -966,12 +1049,12 @@ function ParamRows({
 
 /** What Launch sends, built by the same `buildParams` as the request (UX-PAR-32). Nextflow reads
  * it as params.json; Snakemake gets the same JSON as a config file, shown here as YAML. */
-function ParamsPreview({ engine, fields, values, rows }: { engine: Engine; fields: Field[]; values: Values; rows: Row[] }) {
+function ParamsPreview({ engine, fields, values, rows, extra }: { engine: Engine; fields: Field[]; values: Values; rows: Row[]; extra: string | null }) {
   const snakemake = engine === "snakemake";
   const label = snakemake ? "Config preview, as YAML" : "params.json preview";
   let text: string | null;
   try {
-    const params = buildParams(fields, values, rows);
+    const params = buildParams(fields, values, rows, extra !== null);
     text = snakemake ? toYaml(params) : `${JSON.stringify(params, null, 2)}\n`;
   } catch {
     text = null;
@@ -979,7 +1062,9 @@ function ParamsPreview({ engine, fields, values, rows }: { engine: Engine; field
   return (
     <FoldSection id="launch-preview" icon={ICONS.fileCode} title={label} card className="launch-preview-card" defaultOpen={false}>
       <Text size="sm" className="launch-preview-note" mb="sm">
-        {snakemake
+        {extra
+          ? `Only the keys you set · written to the run directory and passed with --configfile, after ${extra} · other keys come from ${extra}, then the pipeline`
+          : snakemake
           ? "Only the values set, and a nested map whole once one of its values is set. Spectio writes them to .spectio/params.json in the run directory, passed with --configfile; shown here as YAML."
           : "Only the values set. Spectio writes them to .spectio/params.json in the run directory, passed with -params-file."}
       </Text>

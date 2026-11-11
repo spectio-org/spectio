@@ -2067,3 +2067,28 @@
   gap: 8px;
   font-weight: 600;
 }
+
+/* Run detail's Extra config file fact and its sheet (FU-P3-110d, LiteRunDetail). */
+.sp-extra-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.sp-extra-warn {
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  color: var(--sp-state-review-fg);
+}
+.sp-extra-text {
+  max-height: 60vh;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sp-surface-subtle);
+  font-family: var(--sp-font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
