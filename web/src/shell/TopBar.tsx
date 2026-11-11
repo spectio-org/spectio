@@ -101,7 +101,9 @@ function ThemeSwitch({ className = "sp-key" }: { className?: string }) {
       aria-label="Dark theme"
       onClick={() => setColorScheme(dark ? "light" : "dark")}
     >
-      <Icon name={dark ? "sun" : "moon"} size="nav" />
+      <span className="sp-key-face">
+        <Icon name={dark ? "sun" : "moon"} size="nav" />
+      </span>
     </button>
   );
 }
@@ -180,7 +182,9 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
       <span className="sp-rule" aria-hidden="true" />
       <Breadcrumbs crumb={crumb} />
       <button type="button" className="sp-search" aria-label="Search runs, pipelines and pages" aria-keyshortcuts="Meta+K Control+K" onClick={() => setSearching(true)}>
-        <Icon name="search" />
+        <span className="sp-key-face">
+          <Icon name="search" size="nav" />
+        </span>
         <span className="sp-search-text">Search</span>
         <kbd aria-hidden="true">⌘K</kbd>
       </button>
