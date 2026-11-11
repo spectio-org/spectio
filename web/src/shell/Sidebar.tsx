@@ -73,7 +73,7 @@ export function Sidebar({ open, onFold, server, down }: Props) {
             data-section={item.section}
             {...marked(item.to, mark)}
           >
-            <Icon name={item.icon} size="nav" />
+            <Icon name={item.icon} size="sidebar" />
             <span className={open ? undefined : "sp-sr"}>{item.label}</span>
             {item.to === "/runs" && active > 0 && (
               <>
