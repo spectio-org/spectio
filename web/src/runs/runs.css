@@ -1136,9 +1136,6 @@
   display: grid;
   gap: 12px;
 }
-.sp-sheet:focus {
-  outline: none;
-}
 .sp-sheet:focus-visible {
   outline: 2px solid var(--sp-line-focus);
   outline-offset: 4px;
