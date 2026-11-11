@@ -58,4 +58,24 @@ CODE  step=ISSUE-161/server  review=changes b/M/m=0/3/17 (round 1)  security=blo
 | CR-161S-15 to -19 | minor (simplify) | an unused `label`, the `local_module` tuple, a repeated `module_source`, a split `if` | fixed in `f0bfaad`; `HASH` is kept and now used by `fits` |
 | CR-161S-20 | minor (simplify) | `freeze` read stage sources for a target run | partly: skipped for a module only, because a rule target needs the Snakefile's rules to list the others as `not_needed` |
 
-Seen by the worker and not changed here: PyYAML's parse time grows with the square of the flow nesting depth, for every caller of `load_yaml` (meta.yml reads are capped at 64 KiB); a resumed registry module run is named after `parent.workflow_name`; and `GET /runs/{id}` shows `nextflow run` as the command of a module run.
+### Round 2 (`e11c029`, fixes `1863ee4`)
+
+code-reviewer approved with 9 minors; security-reviewer asked for changes (1 major, 4 minors), so a third round runs on `e11c029..1863ee4`.
+
+| Id | Severity | Finding | Status |
+|---|---|---|---|
+| SEC-161S2-01 | major | deep flow nesting in a local `meta.yml` made `load_yaml` take minutes (PyYAML's parse time grows with the square of the depth) while it held a file-pool thread | fixed in `1863ee4`: a linear bracket count refuses past 64 before PyYAML parses; `meta.yml` read up to 64 KiB; 60 000 `[` refused in under 1 s (tested) |
+| SEC-161S2-02 / CR-161S2-01 | minor | grouped short stop flags (`-pU merge`, `-nRx`) passed the rule-target guard | fixed in `1863ee4`: a single-dash cluster with `U`, `O` or `R` is refused; four cases added. A Snakemake profile that sets `until:` is not checked: recorded in api §5.10 |
+| SEC-161S2-03 | minor | `POST /runs` of a registry module ran `module view` outside the two-slot bound | fixed in `1863ee4`: `targets.bounded` wraps every engine call; tested with both slots held (503, no engine call) |
+| SEC-161S2-04 | minor | `local_dir` stat the location outside the file pool | fixed in `1863ee4`: inside the pooled read, for Launch and Resume |
+| SEC-161S2-05 | minor | a non-UTF-8 `meta.yml` gave a 422 that quoted the decoder's bytes | fixed in `1863ee4`: "main.nf or meta.yml is not UTF-8 text" (tested) |
+| CR-161S2-02 | minor | a reported registry target with no checksum was accepted | fixed in `1863ee4`: required; `nohash` case added |
+| CR-161S2-03 | minor | comparing the version could drop the checksum of every launched registry run whose `meta.yml` names the version otherwise **[to be validated]** | fixed in `1863ee4`: compared by name and source; the pin is kept, the hash added (tested) |
+| CR-161S2-04 | minor | nf-spectio sent a local module's path as found | fixed in `1863ee4`: absolute and normalised |
+| CR-161S2-05 | minor | `target_refused` missing from the api §14.1 drop table | fixed in `1863ee4` |
+| CR-161S2-06 | minor | cap tests allowed one extra chunk and any non-zero code | fixed in `1863ee4`: `rc == 125`, output within the cap |
+| CR-161S2-07 | minor (simplify) | two tests of the options a rule target keeps | merged in `1863ee4` |
+| CR-161S2-08 | minor (simplify) | `run_login` keeps two read paths | not changed: the uncapped path serves every other login call |
+| CR-161S2-09 | minor (simplify) | `launch_template` repeated the pool's 503 and a `None` check | fixed in `1863ee4`: `pooled` |
+
+Seen by the worker and not changed here: a resumed registry module run is named after `parent.workflow_name`; and `GET /runs/{id}` shows `nextflow run` as the command of a module run.
