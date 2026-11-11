@@ -64,7 +64,7 @@ from spectio_server.auth.routes import NO_PASTE, link_url
 from spectio_server.auth.secrets import ServerKey
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.files.pool import READ_TIMEOUT_S, FilePool
-from spectio_server.metrics import start_fill
+from spectio_server.metrics import Benchmarks, start_fill
 from spectio_server.rebuild import Rebuilt, rebuild_index
 from spectio_server.sink import StoreSink
 from spectio_server.stages.freeze import FREEZE_WORKERS
@@ -90,7 +90,8 @@ class Booted:
     loop: RunnerLoop
     files: FilePool  # the routes' reads of a run's files (req. 13)
     stage_files: FilePool  # the freeze's: route reads never take its slots (SEC-P3T28-06)
-    fill_stop: threading.Event = field(default_factory=threading.Event)  # the sacct.json fill
+    # stops the sacct.json fill and the benchmark reader (FU-P3-105a, 105b)
+    fill_stop: threading.Event = field(default_factory=threading.Event)
 
     def close(self) -> None:
         self.fill_stop.set()
@@ -164,6 +165,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
     """Open the database, add the missing runs and make the first runner tick."""
     engine, new = open_db(db_dir)
     writer = Writer(engine)
+    stop = threading.Event()
     try:
         config = {"runs_root": str(settings.runs_root)}
         writer.submit(
@@ -174,6 +176,9 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
         files, stage_files = FilePool(), FilePool(FREEZE_WORKERS, 0)
         # runs started from a terminal: their file-system work, bounded (SEC-P3T25-01)
         observed_files = FilePool(backlog=0)
+        # Snakemake benchmark files, read in the routes' pool off the writer (FU-P3-105b)
+        benchmarks = Benchmarks(writer, settings.runs_root, files)
+        benchmarks.start(stop)
         rebuilt = rebuild_index(writer, settings.runs_root, home=Path.home(), files=observed_files)
         log.info("index %s: %d runs added", "rebuilt" if new else "reconciled", rebuilt.added)
         launcher = LocalLauncher() if settings.executor == "local" else TmuxLauncher()
@@ -184,6 +189,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
                 settings.data_dir / "overlays",
                 settings.data_dir,
                 stage_files,
+                benchmarks,
             ),
             launcher,
             settings,
@@ -197,10 +203,11 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
         except Exception:  # as RunnerLoop.run does: the next tick tries again
             log.exception("first runner tick failed")
     except BaseException:
+        stop.set()
         writer.close()
         engine.dispose()
         raise
-    booted = Booted(engine, writer, new, rebuilt, loop, files, stage_files)
+    booted = Booted(engine, writer, new, rebuilt, loop, files, stage_files, stop)
     # the ended runs' sacct.json values, in the background (FU-P3-105a, api §5.5)
     start_fill(writer, settings.runs_root, files, booted.fill_stop)
     return booted

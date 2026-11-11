@@ -10,6 +10,10 @@ One `attempt_metrics` row per ended attempt, with the run's identity copied in:
   strict reader (`failure.read_cache`: no link followed, a regular file of the user, capped,
   parsed strictly) in the file pool with its timeout, never on the writer; the writer then
   updates the rows and sets the run's marker `runs.metrics_sacct_at`. No `sacct` call;
+- Snakemake (FU-P3-105b): written by the projector at the job's end, in the event's transaction,
+  with the requested values of `job_info`; the job's `benchmark:` file is then asked of
+  `Benchmarks`, which reads it in the file pool on a thread of its own, never on the writer, and
+  hands the values to the writer: a blocked file delays no event;
 - the end-of-run sweep (FU-P3-105c, `failure.sweep_run`): each answer, as it comes, by
   `apply_sweep` on the writer, whatever the marker says (a run filled before its file existed
   gets its values too).
@@ -18,6 +22,7 @@ The rows of old runs come from the migration (0015), from the database only.
 """
 
 import logging
+import queue
 import re
 import threading
 from collections.abc import Callable
@@ -31,7 +36,7 @@ from sqlalchemy import Connection, insert, select, update
 from spectio.runner.sacct import SacctRow
 from spectio_sdk.events import NextflowTrace
 from spectio_server import efficiency
-from spectio_server.failure import _number, _whole, read_cache
+from spectio_server.failure import MIB, _number, _whole, read_benchmark, read_cache
 from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 from spectio_server.projector.runs import TERMINAL
 from spectio_server.store.schema import (
@@ -50,6 +55,7 @@ MAX_RATIO = 1_000_000  # a larger ratio is null (schedulers §3.7, Ingest checks
 PARTITION = re.compile(r"[A-Za-z0-9_.-]{1,64}")
 WINDOW = timedelta(minutes=5)  # a wait whose ends fall outside the run's window is null
 FILL_CHUNK = 100  # runs selected per round of the fill
+BENCH_BACKLOG = 10_000  # benchmark reads waiting; one more is dropped, with a warning
 
 
 def capped(found: float | None) -> float | None:
@@ -205,6 +211,130 @@ def sacct_values(row: SacctRow, stored: Any) -> dict[str, Any]:
         "time_eff": ratio(real, limit),
         "wait_s": _first(row.wait_s, stored.wait_s),
     }
+
+
+def smk_values(resources: dict[str, Any] | None, ended: datetime) -> dict[str, Any]:
+    """The values of a Snakemake job at its end: the requested ones `smk_resources` kept on
+    the attempt; its measures come from its benchmark file (`benchmark_values`) or `sacct`."""
+    own = resources or {}
+    return {
+        "ended_at": ended,
+        "cpus": own.get("cpus"),
+        "mem_bytes": own.get("memory_bytes"),
+        "time_limit_s": own.get("time_s"),
+    }
+
+
+SACCT_MEASURES = ("cpu_percent", "peak_rss_bytes", "realtime_s")  # what `sacct` measures too
+
+
+def benchmark_values(row: dict[str, str], stored: Any) -> dict[str, Any]:
+    """What a benchmark row gives (schedulers §3.7, Snakemake local column), each through
+    `_number` (`NA`, `-` or empty is null): `s` in seconds, CPU % as `cpu_time` / `s` x 100,
+    `max_rss`, `max_vms`, `io_in` and `io_out` in MiB (Snakemake 9.27.1 divides each by
+    1024 x 1024, `benchmark.py:446-453`, §3.7 note 2026-11-11; whether `io_in` and `io_out`
+    count disk bytes only is [to be validated]). Over a row `sacct` measured, its measures stay
+    first (§3.6's source order); the ratios are taken against the row's requested values."""
+    real = _number(row.get("s"))
+    cpu_time = _number(row.get("cpu_time"))
+    measured: dict[str, Any] = {
+        "cpu_percent": ratio(None if cpu_time is None else cpu_time * 100, real),  # capped
+        "peak_rss_bytes": _whole(row.get("max_rss"), MIB),
+        "peak_vmem_bytes": _whole(row.get("max_vms"), MIB),
+        "realtime_s": real,
+        "read_bytes": _whole(row.get("io_in"), MIB),
+        "write_bytes": _whole(row.get("io_out"), MIB),
+    }
+    source = "benchmark" if any(v is not None for v in measured.values()) else stored.source
+    if stored.source == "sacct":
+        source = "sacct"
+        for name in SACCT_MEASURES:
+            measured[name] = _first(getattr(stored, name), measured[name])
+    cpu, peak, real = (measured[k] for k in SACCT_MEASURES)
+    return {
+        **measured,
+        "source": source,
+        "cpu_eff": ratio(cpu, None if stored.cpus is None else 100 * stored.cpus),
+        "mem_eff": ratio(peak, stored.mem_bytes),
+        "time_eff": ratio(real, stored.time_limit_s),
+    }
+
+
+def _apply_benchmark(conn: Connection, attempt_id: str, row: dict[str, str]) -> bool:
+    key = attempt_metrics.c.attempt_id == attempt_id
+    stored = conn.execute(select(attempt_metrics).where(key)).one_or_none()
+    if stored is None:  # the run was deleted meanwhile
+        return False
+    conn.execute(update(attempt_metrics).where(key).values(**benchmark_values(row, stored)))
+    return True
+
+
+class Benchmarks:
+    """The Snakemake benchmark files, each read once at its job's end. `want` only queues
+    (it runs on the writer, in the event's transaction); a thread of its own reads each file in
+    the file pool with its timeout (`read_benchmark`: no link followed, a regular file, capped),
+    then submits the values to the writer, after the event's transaction. A read that does not
+    answer, or a file refused, leaves the row's measures null. After a read that did not answer,
+    the next waits until it ends: one stuck read at most keeps a slot of the routes' file pool
+    (dev-env §15.3 req. 13, CR-P3FU105B-01)."""
+
+    def __init__(
+        self,
+        writer: Writer,
+        runs_root: Path,
+        files: FilePool,
+        *,
+        timeout_s: float = READ_TIMEOUT_S,
+        backlog: int = BENCH_BACKLOG,
+    ) -> None:
+        self.writer, self.runs_root, self.files = writer, runs_root, files
+        self.timeout_s = timeout_s
+        self._todo: queue.Queue[tuple[str, str, str]] = queue.Queue(backlog)
+        self._idle = threading.Event()  # set when no read of ours is in the pool
+        self._idle.set()
+
+    def want(self, attempt_id: str, dir_run: str, path: str) -> None:
+        try:
+            self._todo.put_nowait((attempt_id, dir_run, path))
+        except queue.Full:
+            log.warning("benchmark of %s not read: too many waiting", attempt_id)
+
+    def read(self, attempt_id: str, dir_run: str, path: str) -> bool:
+        """Read one file and store its values; False when nothing was stored."""
+        job: Callable[[], dict[str, str] | None] = partial(
+            read_benchmark, self.runs_root, dir_run, path
+        )
+        ended = threading.Event()
+        try:
+            found = self.files.run(job, self.timeout_s, on_done=ended.set)
+        except Stalled as exc:
+            self._idle = ended  # still in the pool: `run` waits for its end
+            log.warning("benchmark of %s not read: %s", attempt_id, exc)
+            return False
+        if found is None:
+            return False
+        stored = partial(_apply_benchmark, attempt_id=attempt_id, row=found)
+        return self.writer.submit(stored).result()
+
+    def start(self, stop: threading.Event) -> threading.Thread:
+        def run() -> None:
+            while not stop.is_set():
+                if not self._idle.wait(0.2):
+                    continue
+                try:
+                    wanted = self._todo.get(timeout=0.2)
+                except queue.Empty:
+                    continue
+                try:
+                    self.read(*wanted)
+                except RuntimeError:  # the writer closed
+                    return
+                except Exception:
+                    log.exception("benchmark of %s not read", wanted[0])
+
+        thread = threading.Thread(target=run, name="spectio-metrics-benchmarks", daemon=True)
+        thread.start()
+        return thread
 
 
 # --- The background fill of sacct.json --------------------------------------------------------

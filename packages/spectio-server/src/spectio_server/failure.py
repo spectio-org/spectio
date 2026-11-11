@@ -1138,23 +1138,34 @@ def task_resources(
     return found
 
 
-def _benchmark(ctx: Context, dir_run: str, path: str) -> dict[str, Any] | None:
-    """The last row of a Snakemake benchmark file, `s` (wall seconds), `max_rss` (MiB),
-    `mean_load` (CPU %) and `cpu_time` (seconds) (`snakemake/benchmark.py`, [to be validated]);
-    None when it cannot be read. Read in the launch directory with no link followed, as a job
-    file is."""
+def read_benchmark(runs_root: Path, dir_run: str, path: str) -> dict[str, str] | None:
+    """The last row of a Snakemake benchmark file, column → text; None when it cannot be read.
+    Read in the launch directory with no link followed, as a job file is: a regular file of the
+    user (a FIFO is refused at its open), at most MAX_BENCHMARK_BYTES (a larger one is not read,
+    FU-P3-105b)."""
     try:
         with (
-            run_root(ctx.runs_root, dir_run, "launch") as root,
+            run_root(runs_root, dir_run, "launch") as root,
             open_confined(root, safe_rel(path)) as f,
         ):
+            if os.fstat(f.fileno()).st_size > MAX_BENCHMARK_BYTES:
+                return None
             text = read_at(f, 0, MAX_BENCHMARK_BYTES).decode("utf-8", "replace")
     except (NotFound, NotAllowed, OSError):
         return None
     lines = [line.split("\t") for line in text.splitlines() if line.strip()]
     if len(lines) < 2:
         return None
-    row = dict(zip(lines[0], lines[-1], strict=False))
+    return dict(zip(lines[0], lines[-1], strict=False))
+
+
+def _benchmark(ctx: Context, dir_run: str, path: str) -> dict[str, Any] | None:
+    """`s` (wall seconds), `max_rss` (MiB), `mean_load` (CPU %) and `cpu_time` (seconds) of
+    the benchmark's last row (`snakemake/benchmark.py`, [to be validated]); None when it
+    cannot be read."""
+    row = read_benchmark(ctx.runs_root, dir_run, path)
+    if row is None:
+        return None
     found = {
         "realtime_s": _number(row.get("s")),
         "cpu_percent": _number(row.get("mean_load")),
