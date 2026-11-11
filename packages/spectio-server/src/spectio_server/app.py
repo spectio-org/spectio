@@ -131,11 +131,13 @@ def create_app(
     accounting: Accounting | None = None,
     server_key: ServerKey | None = None,
     on_socket: bool = False,
+    fill: metrics.FillProgress | None = None,
 ) -> FastAPI:
     """The app; `files` is the pool the routes read run files in, `accounting` the server's
     one gate to `sacct` (each made from the settings when None), `server_key` the key of
     `auth/links` (one kept in memory only when None). `on_socket`: served on the Unix socket of
-    `spectio serve`, so the API is mounted; on TCP, `no_api_reason` decides."""
+    `spectio serve`, so the API is mounted; on TCP, `no_api_reason` decides. `fill`: how far the
+    boot's `sacct.json` fill went (one not started yet when None)."""
     app = FastAPI(
         title="Spectio",
         version=API_VERSION,
@@ -151,6 +153,7 @@ def create_app(
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
+    app.state.fill = metrics.FillProgress() if fill is None else fill
     wire_sweep(app)
     app.state.engine_versions = workflows.EngineVersions(settings)
     app.state.server_key = server_key or ServerKey.new()
@@ -183,8 +186,8 @@ def create_app(
         app.state.performance = performance.Cache()  # the answers of ended runs (api §5.5)
 
         def committed(changes: Changes) -> None:  # the writer thread, after each commit
+            app.state.performance.changed(changes)  # first: it never raises (SEC-P3FU105D-02)
             app.state.stream.notify(changes)
-            app.state.performance.changed(changes)
 
         writer.on_commit = committed
         # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`

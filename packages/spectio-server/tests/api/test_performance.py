@@ -290,6 +290,40 @@ def test_pending_accounting_counts_slurm_jobs_sacct_has_not_answered(
     assert perf(authed_client)["pending_accounting"] == 0  # the sweep or the fill is done
 
 
+def test_pending_accounting_reads_the_accounting_queue(
+    authed_client: TestClient, writer: Writer, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3FU105D-01: once the boot fill is past the run, `pending_accounting` is what the
+    accounting still waits for, from memory: a job given up is not pending, the run then
+    cached; a job waiting for its follow-up after the first application is; so is an earlier
+    attempt's job, whatever `attempts=` counts."""
+    make(
+        writer,
+        settings,
+        {"native_id": "101"},
+        {"native_id": "102", "n": 0, "attempt": 2},  # task 0 again: its attempt 1 was 101
+        {"native_id": "103", "n": 1},
+        environment=SLURM_RUN,
+    )
+    state = authed_client.app.state  # type: ignore[attr-defined]
+    state.accounting.enabled = True
+    state.fill.done = True  # the boot fill ended
+    waiting: set[str] | None = set()  # every job given up: nothing touched, nothing marked
+    monkeypatch.setattr(state.accounting, "waiting", lambda run_id: waiting)
+    assert perf(authed_client)["pending_accounting"] == 0
+    assert len(state.performance._items) == 1  # an ended run with nothing pending: cached
+    now = datetime.now(UTC)
+    writer.submit(
+        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(metrics_sacct_at=now))
+    ).result()
+    waiting = {"103"}  # applied once, its follow-up still queued
+    assert perf(authed_client)["pending_accounting"] == 1
+    waiting = {"101", "103"}  # 101 is task 0's first attempt, not counted with `last`
+    assert perf(authed_client)["pending_accounting"] == 2
+    waiting = None  # the run's sweep is due: every job with an ID that sacct has not answered
+    assert perf(authed_client)["pending_accounting"] == 3
+
+
 def test_no_pending_accounting_with_accounting_off(
     authed_client: TestClient, writer: Writer, settings: Settings
 ) -> None:
@@ -419,6 +453,50 @@ def test_a_live_run_is_not_cached(
     perf(authed_client)
     writer.submit(lambda c: c.execute(update(attempt_metrics).values(cpu_eff=0.9))).result()
     assert perf(authed_client)["points"]["items"][0]["cpu_eff"] == 0.9
+
+
+def test_a_run_over_the_row_ceiling_is_range_too_wide(
+    authed_client: TestClient, writer: Writer, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3FU105D-01 (api §5.5 Load): the row count is checked before any row is read."""
+    monkeypatch.setattr(performance, "MAX_ROWS", 2)
+    make(writer, settings, {"cpu_eff": 0.1}, {"cpu_eff": 0.2}, {"cpu_eff": 0.3})
+    found = authed_client.get(f"{API}/runs/{RUN}/performance")
+    assert found.status_code == 422, found.text
+    assert found.json()["type"] == "/problems/range-too-wide" and found.json()["count"] == 3
+
+
+def test_a_read_over_the_time_budget_is_range_too_wide(
+    authed_client: TestClient, writer: Writer, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3FU105D-01 (api §5.5 Load): the reads run under the progress-handler budget; the
+    connection goes back to the pool without it."""
+    make(writer, settings, {"cpu_eff": 0.1})
+    monkeypatch.setattr(performance, "BUDGET_S", -1.0)
+    monkeypatch.setattr(performance, "PROGRESS_OPS", 1)
+    found = authed_client.get(f"{API}/runs/{RUN}/performance")
+    assert found.status_code == 422, found.text
+    assert found.json()["type"] == "/problems/range-too-wide"
+    monkeypatch.setattr(performance, "BUDGET_S", 5.0)
+    assert perf(authed_client)["total"] == 1
+
+
+def test_a_failing_stream_still_stamps_the_run(
+    authed_client: TestClient, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3FU105D-02: the cache hears of a commit before the live stream, so a stream that
+    raises never leaves a stale answer cached."""
+    state = authed_client.app.state  # type: ignore[attr-defined]
+
+    def broken(changes: Any) -> None:
+        raise RuntimeError("stream down")
+
+    monkeypatch.setattr(state.stream, "notify", broken)
+    before = state.performance.stamp(RUN)
+    assert writer.on_commit is not None
+    with pytest.raises(RuntimeError):
+        writer.on_commit({RUN: set()})
+    assert state.performance.stamp(RUN) != before
 
 
 def test_the_cache_is_bounded() -> None:

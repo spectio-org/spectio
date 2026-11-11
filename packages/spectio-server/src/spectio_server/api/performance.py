@@ -7,20 +7,25 @@ Origin) checks of the middleware, then the run by its ID, `404` when unknown or 
 has one user, so no project scoping. Statistics are computed on read over every counted
 attempt (each task's last by default, `attempts=all` on request), never over the capped points.
 The answer of an ended run with nothing pending accounting is kept in a bounded `Cache`.
+Load (api §5.5): the run's row count is checked first, the reads run under a time budget;
+past either the answer is `422 range-too-wide`.
 """
 
 import math
 import threading
+import time
 from collections import OrderedDict
-from collections.abc import Hashable, Iterable
+from collections.abc import Hashable, Iterable, Iterator
+from contextlib import contextmanager
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Query, Request
-from sqlalchemy import Row, func, select
+from sqlalchemy import Connection, Row, func, select
+from sqlalchemy.exc import OperationalError
 
 from spectio_server import efficiency
 from spectio_server.api import models
-from spectio_server.api.problems import Invalid
+from spectio_server.api.problems import Invalid, Problem
 from spectio_server.api.runs_read import _rulegraphs, process_order, read, run_row
 from spectio_server.failure import _last_attempt, on_slurm
 from spectio_server.projector.runs import TERMINAL
@@ -55,6 +60,28 @@ POINTS_PER_PROCESS, POINTS_PER_ANSWER = 2_000, 20_000
 MAX_PROCESSES = 200
 WASTE_BELOW, WASTE_JOBS = 0.25, 3  # schedulers §3.6, Waste
 CACHE_ENTRIES, CACHE_POINTS, CACHE_RUNS = 32, 200_000, 4_096
+MAX_ROWS = 200_000  # a run's attempt_metrics rows read into memory at most (api §5.5, Load)
+BUDGET_S, PROGRESS_OPS = 5.0, 10_000  # the reads' time budget, checked every PROGRESS_OPS ops
+
+
+def too_wide(detail: str, **extra: Any) -> Problem:
+    return Problem(422, "range-too-wide", "Range too wide", detail, **extra)
+
+
+@contextmanager
+def budget(conn: Connection) -> Iterator[None]:
+    """SQLite stops a statement still running BUDGET_S after this began (api §5.5, Load)."""
+    raw: Any = conn.connection.driver_connection  # sqlite3.Connection
+    end = time.monotonic() + BUDGET_S
+    raw.set_progress_handler(lambda: time.monotonic() > end, PROGRESS_OPS)
+    try:
+        yield
+    except OperationalError as exc:
+        if time.monotonic() > end:  # interrupted by the handler
+            raise too_wide(f"the run's performance was not read within {BUDGET_S:g} s") from exc
+        raise
+    finally:
+        raw.set_progress_handler(None, 0)  # the connection goes back to the pool without it
 
 
 def quantile(values: list[float], p: float) -> float:
@@ -210,6 +237,20 @@ def _rows(conn: Any, run_id: str, chosen: list[str], every: bool) -> list[Row[An
     return list(conn.execute(query).all())
 
 
+def _pending(conn: Any, run_id: str, waiting: set[str] | None) -> int:
+    """The rows of every attempt, not only those counted, whose job the accounting waits for:
+    `waiting` from its memory, or None for every job with an ID `sacct` has not answered."""
+    am = attempt_metrics.c
+    query = (
+        select(schema.attempts.c.native_id, am.source)
+        .join(attempt_metrics, am.attempt_id == schema.attempts.c.id)
+        .where(am.run_id == run_id, schema.attempts.c.native_id.is_not(None))
+    )
+    if waiting is None:
+        return sum(1 for job, source in conn.execute(query) if source != "sacct")
+    return sum(1 for job, _ in conn.execute(query) if job in waiting)
+
+
 def _jobs(conn: Any, run_id: str) -> dict[str, dict[str, int]]:
     """Per process: its tasks' count and those done (§3.6's `jobs`, before the planned count)."""
     found: dict[str, dict[str, int]] = {}
@@ -286,19 +327,24 @@ def run_performance(
     cache: Cache = state.performance
     stamp: Hashable = cache.stamp(run_id)  # before any row is read
     key = (run_id, only, tuple(chosen), points, attempts)
-    with read(request) as conn:
+    with read(request) as conn, budget(conn):
         run = run_row(conn, run_id)
         swept = conn.execute(select(runs.c.metrics_sacct_at).where(runs.c.id == run_id)).scalar()
         stamp = (stamp, swept)
         if (found := cache.get(key, stamp)) is not None:
             return found
+        count = select(func.count()).where(attempt_metrics.c.run_id == run_id)
+        if (n := conn.execute(count).scalar_one()) > MAX_ROWS:
+            raise too_wide(f"the run has {n} attempt rows, over {MAX_ROWS}", count=n)
         rows = _rows(conn, run_id, chosen, attempts == "all")
         order, ranks, known = process_order(conn, run, _rulegraphs(conn, run))
         jobs = _jobs(conn, run_id)
-    slurm = on_slurm(run.environment, state.settings) and state.accounting.enabled
-    pending = 0
-    if slurm and swept is None:
-        pending = sum(1 for r in rows if r.native_id is not None and r.source != "sacct")
+        pending = 0
+        if on_slurm(run.environment, state.settings) and state.accounting.enabled:
+            # an ended run the boot fill has not reached: every job it may answer still waits
+            unfilled = run.state in TERMINAL and swept is None and state.fill.ahead(run_id)
+            waiting = None if unfilled else state.accounting.waiting(run_id)
+            pending = _pending(conn, run_id, waiting)
     of: dict[str, list[Row[Any]]] = {}
     for r in rows:
         of.setdefault(r.process_or_rule, []).append(r)

@@ -941,6 +941,34 @@ def test_sacct_refused_tool_gives_up_at_once(
     assert acct.failed(RUN, "8812401") and acct._limiter.wait_s() is None
 
 
+def test_waiting_follows_the_queue(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """CR-P3FU105D-01: `waiting` is the run's jobs still to be answered, from memory: a job
+    waiting for its follow-up is in it, a job given up is not, and every job waits while the
+    run's sweep is due (None)."""
+    (fakebin.dir / "lag").write_text("-,-")  # no row on the first call nor on the follow-up
+    clock = Clock()
+    run = Run(settings, writer)
+    acct = Accounting(
+        settings.runs_root, fakebin.path, start_thread=False, clock=clock, interval_s=0
+    )
+    acct.load(RUN)
+    assert acct.waiting(RUN) == set()
+    acct.want(RUN, [("8812401", str(run.paths.work_dir))], 0.0)
+    assert acct.waiting(RUN) == {"8812401"}
+    assert acct.step() and acct.waiting(RUN) == {"8812401"}  # its follow-up is queued
+    clock.now += failure.FOLLOW_UP_S
+    assert acct.step() and acct.waiting(RUN) == set()  # answered: kept as None
+    fakebin.path.chmod(0o777)  # refused on every call: given up at once
+    acct.want(RUN, [("8812402", str(run.paths.work_dir))], 0.0)
+    assert acct.step() and acct.failed(RUN, "8812402") and acct.waiting(RUN) == set()
+    seen: list[set[str] | None] = []
+    acct.sweeper = lambda run_id: seen.append(acct.waiting(run_id))
+    acct.ended([RUN])
+    assert acct.waiting(RUN) is None and acct.waiting("run_other") == set()
+    assert acct.step() and seen == [None]  # while it is swept too
+    assert acct.waiting(RUN) == set()
+
+
 def test_sacct_site_limit_gives_up_only_the_oldest_run(
     settings: Settings, writer: Writer, fakebin: Fake
 ) -> None:

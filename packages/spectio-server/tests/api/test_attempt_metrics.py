@@ -450,6 +450,16 @@ def test_fill_without_a_file_marks_the_run(writer: Writer, settings: Settings) -
     assert rows(writer)[0].source == "trace" and marker(writer) is not None
 
 
+def test_the_fill_tells_how_far_it_went(writer: Writer, settings: Settings) -> None:
+    """CR-P3FU105D-01: the performance route counts a run's jobs as pending only while the
+    fill may still reach it."""
+    ended_run(writer, settings)
+    progress = metrics.FillProgress()
+    assert progress.ahead(RUN)
+    metrics.fill_sacct(writer, settings.runs_root, FilePool(), progress=progress)
+    assert (progress.at, progress.done) == (RUN, True) and not progress.ahead(RUN)
+
+
 def test_a_symlinked_sacct_json_fills_nothing(
     writer: Writer, settings: Settings, tmp_path: Path
 ) -> None:

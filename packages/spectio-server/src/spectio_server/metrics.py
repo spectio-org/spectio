@@ -387,6 +387,18 @@ def _update(conn: Connection, run_id: str, found: dict[str, SacctRow | None], *w
     conn.execute(marked)
 
 
+class FillProgress:
+    """How far `fill_sacct` went (runs in ID order): `at` the run it reads now, `done` once it
+    ended or stopped. A route reads it with no lock: each is one assignment (CR-P3FU105D-01)."""
+
+    def __init__(self) -> None:
+        self.at, self.done = "", False
+
+    def ahead(self, run_id: str) -> bool:
+        """True while the fill may still reach the run."""
+        return not self.done and run_id >= self.at
+
+
 def fill_sacct(
     writer: Writer,
     runs_root: Path,
@@ -394,12 +406,28 @@ def fill_sacct(
     *,
     timeout_s: float = READ_TIMEOUT_S,
     stop: threading.Event | None = None,
+    progress: FillProgress | None = None,
 ) -> int:
     """Add the `sacct.json` values of every ended run not filled yet, run by run; the number of
     runs marked. A missing or refused file (a symlink, a FIFO, another owner, too large, not
     JSON) marks its run with nothing added; a read that does not answer within `timeout_s`
     stops the fill, this run and the rest left for the next boot: its stuck read keeps a slot
     of the routes' file pool (dev-env §15.3 req. 13), so no further read is submitted."""
+    progress = FillProgress() if progress is None else progress
+    try:
+        return _fill(writer, runs_root, files, timeout_s, stop, progress)
+    finally:
+        progress.done = True
+
+
+def _fill(
+    writer: Writer,
+    runs_root: Path,
+    files: FilePool,
+    timeout_s: float,
+    stop: threading.Event | None,
+    progress: FillProgress,
+) -> int:
     done, after = 0, ""
     while not (stop is not None and stop.is_set()):
         todo = writer.submit(partial(_unfilled, after=after)).result()
@@ -408,7 +436,7 @@ def fill_sacct(
         for run_id in todo:
             if stop is not None and stop.is_set():
                 break
-            after = run_id
+            after = progress.at = run_id
             read: Callable[[], dict[str, SacctRow | None]] = partial(read_cache, runs_root, run_id)
             try:
                 found = files.run(read, timeout_s)
@@ -424,13 +452,17 @@ def fill_sacct(
 
 
 def start_fill(
-    writer: Writer, runs_root: Path, files: FilePool, stop: threading.Event
+    writer: Writer,
+    runs_root: Path,
+    files: FilePool,
+    stop: threading.Event,
+    progress: FillProgress | None = None,
 ) -> threading.Thread:
     """`fill_sacct` on a thread of its own, so that no file delays the boot."""
 
     def run() -> None:
         try:
-            filled = fill_sacct(writer, runs_root, files, stop=stop)
+            filled = fill_sacct(writer, runs_root, files, stop=stop, progress=progress)
             log.info("performance: sacct.json of %d runs added", filled)
         except RuntimeError:  # the writer closed: the next boot goes on
             pass
