@@ -6,7 +6,7 @@ import { PipelineMark } from "../shell/EngineMark";
 import { type Tone, classWord, lastSegment, plural, runWord, shortId, tone, words } from "./stateWord";
 
 // The icons of ui-spec §3.1, one per tone: clock, play, flag, pause, check, cross, slash.
-const TONE_ICONS: Record<Tone, IconName> = {
+export const TONE_ICONS: Record<Tone, IconName> = {
   queued: "clock",
   running: "play",
   review: "flag",

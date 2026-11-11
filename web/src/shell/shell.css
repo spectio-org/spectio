@@ -785,7 +785,7 @@ body {
   flex-direction: column;
   max-height: 70vh;
   padding: 0;
-  border: 1px solid var(--sp-line);
+  border: 1px solid var(--sp-line-border);
   overflow: hidden;
 }
 .sp-notif-sheet {
@@ -818,7 +818,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 12px 12px 8px 16px;
-  border-bottom: 1px solid var(--sp-line);
+  border-bottom: 1px solid var(--sp-line-divider);
 }
 .sp-notif-head .sp-notif-title {
   flex: 1;
@@ -852,7 +852,7 @@ body {
   margin: 0;
   padding: 8px 16px 4px;
   background: var(--sp-surface-raised);
-  color: var(--sp-ink-500);
+  color: var(--sp-text-muted);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -863,25 +863,25 @@ body {
   padding: 0;
   list-style: none;
 }
-.sp-notif-row,
-.sp-notif-skeleton {
+.sp-notif-row {
   display: flex;
   align-items: center;
   gap: 12px;
   height: 56px;
   padding: 0 16px;
   box-sizing: border-box;
-}
-.sp-notif-row {
   color: var(--sp-text-primary);
   text-decoration: none;
 }
 .sp-notif-row[data-unread] {
   background: var(--sp-accent-subtle);
 }
-.sp-notif-row:hover,
-.sp-notif-row:focus-visible {
+.sp-notif-row:hover {
   background: var(--sp-surface-subtle);
+}
+/* An unread row keeps its tint on hover; focus shows the ring only (CR-P3UI05B-05). */
+.sp-notif-row[data-unread]:hover {
+  background: var(--sp-accent-subtle);
 }
 .sp-notif-row:focus-visible {
   outline-offset: -2px;
@@ -894,15 +894,9 @@ body {
   width: 28px;
   height: 28px;
   border-radius: 6px;
+  background: var(--tone-bg);
+  color: var(--tone-fg);
 }
-.sp-notif-tile[data-tone="failed"] { background: var(--sp-state-failed-bg); color: var(--sp-state-failed-fg); }
-.sp-notif-tile[data-tone="succeeded"] { background: var(--sp-state-succeeded-bg); color: var(--sp-state-succeeded-fg); }
-.sp-notif-tile[data-tone="cancelled"] { background: var(--sp-state-cancelled-bg); color: var(--sp-state-cancelled-fg); }
-.sp-notif-tile[data-tone="review"] { background: var(--sp-state-review-bg); color: var(--sp-state-review-fg); }
-.sp-notif-state[data-tone="failed"] { color: var(--sp-state-failed-fg); }
-.sp-notif-state[data-tone="succeeded"] { color: var(--sp-state-succeeded-fg); }
-.sp-notif-state[data-tone="cancelled"] { color: var(--sp-state-cancelled-fg); }
-.sp-notif-state[data-tone="review"] { color: var(--sp-state-review-fg); }
 .sp-notif-text {
   display: flex;
   flex: 1;
@@ -926,6 +920,7 @@ body {
 }
 .sp-notif-state {
   flex-shrink: 0;
+  color: var(--tone-fg);
   font-size: 13px;
 }
 .sp-notif-meta {
@@ -941,21 +936,9 @@ body {
   border-radius: 50%;
   background: var(--sp-accent);
 }
-.sp-notif-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 32px 16px;
-  color: var(--sp-text-secondary);
-  text-align: center;
-}
-.sp-notif-empty p {
-  margin: 0;
-}
 .sp-notif-foot {
   padding: 10px 16px;
-  border-top: 1px solid var(--sp-line);
+  border-top: 1px solid var(--sp-line-divider);
 }
 .sp-notif-all {
   color: var(--sp-accent);

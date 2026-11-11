@@ -1,21 +1,31 @@
-import { ActionIcon, Button, Drawer, Popover, SegmentedControl, Skeleton, Tooltip } from "@mantine/core";
+import { ActionIcon, Button, Drawer, Popover, SegmentedControl, Tooltip } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import { type KeyboardEvent, useCallback, useEffect, useId, useRef, useState } from "react";
-import { type Notification, type NotificationKind, type Notifications, listNotifications, markNotificationsRead } from "../api";
-import { type IconName, Icon } from "../icons";
+import {
+  type Notification,
+  type NotificationKind,
+  type Notifications,
+  type RunState,
+  listNotifications,
+  markNotificationsRead,
+} from "../api";
+import { Icon } from "../icons";
 import { useFrames } from "../live";
-import { engineName } from "../runs/stateWord";
+import { TONE_ICONS } from "../runs/RunState";
+import { engineName, runWord, tone } from "../runs/stateWord";
 import { EngineMark } from "./EngineMark";
+import { EmptyState, ErrorPanel, SkeletonRows } from "./States";
 
 // The notifications panel (ui-spec §12.13): items the server derives from the runs (api §5.9),
 // refreshed on each run change of the event stream. A non-modal popover under the bell on the
 // desktop and tablet, a modal bottom sheet on the phone; focus goes back to the bell on close.
 
-const KINDS: Record<NotificationKind, { tone: string; word: string; icon: IconName }> = {
-  run_failed: { tone: "failed", word: "Failed", icon: "cross" },
-  run_succeeded: { tone: "succeeded", word: "Succeeded", icon: "check" },
-  run_cancelled: { tone: "cancelled", word: "Cancelled", icon: "slash" },
-  gate_waiting: { tone: "review", word: "Awaiting review", icon: "flag" },
+// The run state each kind shows; its word, tone and icon are those of ui-spec §3.1.
+const STATE: Record<NotificationKind, RunState> = {
+  run_failed: "failed",
+  run_succeeded: "succeeded",
+  run_cancelled: "cancelled",
+  gate_waiting: "awaiting_review",
 };
 
 const two = (n: number) => String(n).padStart(2, "0");
@@ -144,14 +154,7 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
         />
         {markAll}
       </div>
-      {error && (
-        <div className="sp-notif-error" role="alert">
-          <span>Notifications could not be loaded: {error}</span>
-          <Button size="xs" variant="default" onClick={load}>
-            Retry
-          </Button>
-        </div>
-      )}
+      {error && <ErrorPanel onRetry={load}>Notifications could not be loaded: {error}</ErrorPanel>}
       {markError && (
         <div className="sp-notif-error" role="alert">
           <span>Could not mark as read: {markError}</span>
@@ -161,32 +164,23 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
         </div>
       )}
       <div className="sp-notif-body" onKeyDown={rove}>
-        {!found &&
-          !error &&
-          [0, 1, 2].map((n) => (
-            <div key={n} className="sp-notif-skeleton">
-              <Skeleton width={28} height={28} radius="sm" />
-              <div className="sp-notif-text">
-                <Skeleton height={10} width="60%" />
-                <Skeleton height={8} width="35%" />
-              </div>
-            </div>
-          ))}
-        {found && shown.length === 0 && (
-          <div className="sp-notif-empty">
-            <Icon name="bell" size="tile" />
-            {filter === "All" ? (
-              <p>No notifications yet</p>
-            ) : (
-              <>
-                <p>No unread notifications</p>
+        {!found && !error && <SkeletonRows rows={3} height={56} />}
+        {found &&
+          shown.length === 0 &&
+          (filter === "All" ? (
+            <EmptyState icon="bell">No notifications yet</EmptyState>
+          ) : (
+            <EmptyState
+              icon="bell"
+              action={
                 <Button size="xs" variant="default" onClick={() => setFilter("All")}>
                   Show all
                 </Button>
-              </>
-            )}
-          </div>
-        )}
+              }
+            >
+              No unread notifications
+            </EmptyState>
+          ))}
         {groups.map((group, g) => (
           <section key={group.label}>
             <h3 id={`${titleId}-${g}`} className="sp-notif-day">
@@ -195,10 +189,12 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
             <ul className="sp-notif-list" aria-labelledby={`${titleId}-${g}`}>
               {group.items.map((item) => {
                 const i = ++index;
-                const kind = KINDS[item.kind];
+                const state = STATE[item.kind];
+                const word = runWord(state);
+                const t = tone(state);
                 const name = item.run_name ?? item.run_id;
                 const time = ago(item.at, now);
-                const label = [name, kind.word, item.engine && engineName(item.engine), time, !item.read && "unread"].filter(Boolean).join(", ");
+                const label = [name, word, item.engine && engineName(item.engine), time, !item.read && "unread"].filter(Boolean).join(", ");
                 return (
                   <li key={item.id}>
                     <Link
@@ -214,14 +210,14 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
                       onFocus={() => setActive(i)}
                       onClick={close}
                     >
-                      <span className="sp-notif-tile" data-tone={kind.tone}>
-                        <Icon name={kind.icon} />
+                      <span className="sp-notif-tile" data-tone={t}>
+                        <Icon name={TONE_ICONS[t]} />
                       </span>
                       <span className="sp-notif-text">
                         <span className="sp-notif-line">
                           <span className="sp-notif-name">{name}</span>
-                          <span className="sp-notif-state" data-tone={kind.tone}>
-                            {kind.word}
+                          <span className="sp-notif-state" data-tone={t}>
+                            {word}
                           </span>
                         </span>
                         <span className="sp-notif-line sp-notif-meta">

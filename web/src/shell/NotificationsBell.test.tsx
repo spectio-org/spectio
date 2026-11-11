@@ -2,6 +2,8 @@
 // popover (a bottom sheet on the phone) of items derived from the runs (GET /me/notifications),
 // grouped by local day, each row a link to its run; "Mark all as read" posts the newest item's time
 // (POST /me/notifications:mark-read).
+/// <reference types="node" />
+import { readFileSync } from "node:fs";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -137,12 +139,14 @@ test("the list is one Tab stop with a roving tabindex: arrows, Home and End, Ent
   await waitFor(() => expect(bell).toHaveFocus());
 });
 
-test("loading: three skeleton rows", async () => {
+test("loading: three skeleton rows that screen readers hear as Loading (CR-P3UI05B-03)", async () => {
   serve({ "/api/v1/me/notifications": () => new Promise<Response>(() => {}) });
   app("/environments");
   await userEvent.click(await screen.findByRole("button", { name: "Notifications" }));
   const panel = await screen.findByRole("dialog", { name: "Notifications" });
-  expect(panel.querySelectorAll(".sp-notif-skeleton")).toHaveLength(3);
+  const status = within(panel).getByRole("status");
+  expect(status).toHaveTextContent("Loading…");
+  expect(status.querySelectorAll(".mantine-Skeleton-root")).toHaveLength(3);
 });
 
 test("no notification yet: the empty state, and no Mark all as read", async () => {
@@ -150,6 +154,8 @@ test("no notification yet: the empty state, and no Mark all as read", async () =
   app("/environments");
   const { panel } = await openPanel(0);
   expect(within(panel).getByText("No notifications yet")).toBeInTheDocument();
+  // the shared empty state of UI-03 (CR-P3UI05B-03)
+  expect(within(panel).getByText("No notifications yet").closest(".sp-emptystate")).not.toBeNull();
   expect(within(panel).queryByRole("button", { name: "Mark all as read" })).toBeNull();
 });
 
@@ -183,6 +189,8 @@ test("a failed load shows an error line with Retry", async () => {
   await userEvent.click(await screen.findByRole("button", { name: "Notifications" }));
   const panel = await screen.findByRole("dialog", { name: "Notifications" });
   expect(await within(panel).findByText("Notifications could not be loaded: down")).toBeInTheDocument();
+  // the shared error panel of UI-03 (CR-P3UI05B-03)
+  expect(within(panel).getByRole("alert")).toHaveClass("sp-errorpanel");
   fail = false;
   await userEvent.click(within(panel).getByRole("button", { name: "Retry" }));
   expect(await within(panel).findByRole("link", { name: /^rnaseq-a, Failed/ })).toBeInTheDocument();
@@ -229,4 +237,17 @@ test("on a 360 px phone the panel is a modal bottom sheet with a visible Mark al
   await userEvent.keyboard("{Escape}");
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   await waitFor(() => expect(bell).toHaveFocus());
+});
+
+// Vitest loads no CSS, so the stylesheet is read as text (the suite runs from web/).
+test("the panel's lines and day labels use theme tokens (CR-P3UI05B-01, -02)", () => {
+  const css = readFileSync("src/shell/shell.css", "utf8");
+  const rule = (selector: string) => css.match(new RegExp(`\\n${selector.replace(/\./g, "\\.")} \\{([^}]*)\\}`))?.[1] ?? "";
+  expect(css).not.toMatch(/var\(--sp-line\)/);
+  expect(rule(".sp-notif-popover")).toMatch(/border: 1px solid var\(--sp-line-border\)/);
+  expect(rule(".sp-notif-head")).toMatch(/border-bottom: 1px solid var\(--sp-line-divider\)/);
+  expect(rule(".sp-notif-foot")).toMatch(/border-top: 1px solid var\(--sp-line-divider\)/);
+  expect(rule(".sp-notif-day")).toMatch(/color: var\(--sp-text-muted\)/);
+  // focus and hover keep the unread tint (CR-P3UI05B-05)
+  expect(css).not.toMatch(/\.sp-notif-row:focus-visible\s*\{[^}]*background/);
 });
