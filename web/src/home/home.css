@@ -20,6 +20,8 @@
   }
 }
 .sp-home-card {
+  /* a grid item shrinks below its content, so long paths wrap inside it (FU-P3-109) */
+  min-width: 0;
   padding: var(--mantine-spacing-lg);
 }
 @media (max-width: 767.98px) {
