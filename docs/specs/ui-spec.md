@@ -1009,3 +1009,134 @@ Actions that cannot take effect now are relabelled or disabled with their reason
 **Phone.** A status strip under the top bar with Live / "Reconnecting… last update 10:42" / Offline (actions disabled with the reason), on Run detail and Review detail.
 
 The Legend board carries a "Live data" row (live, stale, reconnecting, head silent).
+
+## 12. Design system (2026-11-11)
+
+*Assumed — pending Thomas, [inbox #153](../reviews/inbox.md#153-assumed-ui-design-system-and-the-notifications-panel-2026-11-11); standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30). Source: Thomas, 2026-11-11 ("many inconsistencies, bad placements of icons, buttons… I really want everything coherent and consistent"), and the [UI audit of 2026-11-11](../reviews/ui-audit-2026-11-11.md).*
+
+This section owns the visual and interaction contract that every screen shares: tokens, icons, buttons, page head, toolbar, card, tables and dates, links, focus, the shared states and the notifications panel. Screen sections (§4) say what a screen shows; this section says how it is drawn. A screen note that disagrees with this section is superseded by it, except where the table in §12.14 says otherwise. It builds on, and never overrides, §1 (principles), §3 (state colours, icon + word, contrast in §3.4), §4.11 (phone rules, keyboard and screen readers) and §11 (component states).
+
+### 12.1 Implementation
+
+- **Mantine 7, themed.** Every value below is a key of the Mantine theme in `web/src/shell/theme.ts` (`spacing`, `radius`, `fontSizes`, `headings`, `defaultRadius`, `colors`, `components` defaults), read in CSS through `--mantine-*` variables, or a `--sp-*` role token of `design/tokens/spectio-tokens.css`. No screen writes a raw px value, hex or font size outside these, except 1 px borders and dividers and the 4 px state rail of §3.1.
+- **Overrides change Mantine's defaults.** Mantine 7.17.8 ships spacing xs 10, sm 12, md 16, lg 20, xl 32 px, radius sm 4, md 8 px and font sizes xs 12 to xl 20 px (`@mantine/core` 7.17.8 `styles.css`, read 2026-11-11); the values of §12.2 replace them, so components that read them move too. The visual-regression set of §12.14 catches that.
+- **No second component library**, and no icon package (§12.3).
+
+### 12.2 Tokens
+
+| Token | Values | Use |
+|---|---|---|
+| Spacing (`theme.spacing`, 4 px base) | xs 4 · sm 8 · md 12 · lg 16 · xl 24; `--sp-space-2xl` 32 and `--sp-space-3xl` 48 (CSS variables of the theme's resolver) | Page gutter xl (lg on the phone); section gap xl; card gap lg; card padding lg (md on the phone); inline gap sm; icon-to-label gap sm |
+| Radius (`theme.radius`, `defaultRadius: "sm"`) | xs 4 · sm 8 · md 12 · lg 12 · xl 9999 | xs: chips, bars, badges; sm: inputs, buttons, menu items; md: cards, popovers, menus, dialogs, sheets; xl: pills, avatars, the unread dot. lg equals md so a Mantine default that reads lg stays on the scale |
+| Font size (`theme.fontSizes`) | xs 12 · sm 13 · md 14 · lg 16 · xl 20 | md is body text on desktop and tablet; lg is body text on the phone (§4.11 asks 15–16 px); sm for secondary lines and table cells; xs for labels, group labels, badges |
+| Headings (`theme.headings`, display font) | h1 28 · h2 20 · h3 16 | h1 the page title; h2 a section; h3 a card title. The phone h1 is 20 |
+| Mono | 13 | Paths, IDs, commands, logs |
+| Weight | 400 · 500 · 600 | 400 text; 500 names and labels; 600 headings and counts. No 700, no half pixels |
+
+### 12.3 Icons
+
+- **One set, one API.** Every path lives in `web/src/icons.tsx`, drawn lucide-style on a 24 unit grid, at **stroke 1.75** for every size. The shell paths that live elsewhere today (bell, sun, moon, fold, unfold, slash) move there. A screen uses `<Icon name size>`, never an inline `<svg>` or `<path>`; engine and pipeline marks are images (§4.3) and are not icons.
+- **One size per context.**
+
+| Context | Size |
+|---|---|
+| Inline with text, buttons, menu items, table cells, card heads | 16 |
+| Top bar, phone tab bar | 20 |
+| Sidebar items | 25, as §2 says |
+| Page-head tile, empty states | 24 |
+
+- Icons beside a word are `aria-hidden`; an icon alone is inside a control that has an accessible name (§12.4). An icon never carries a state alone (§1.3).
+
+### 12.4 Buttons and actions
+
+- **Sizes.** Button `size="sm"` (36 px in Mantine 7.17.8) is the theme default. `size="xs"` (30 px) only inside dense table rows and log toolbars. No `md`, `lg` or `compact-*` sizes. `ActionIcon` is `size="lg"` (34 px) beside sm controls, `md` (28 px) in dense rows.
+- **Phone.** Below 768 px every button and action icon has a hit area of at least 44 × 44 px (§4.11): the theme sets `--button-height` to 44 px there, and an icon-only control uses `ActionIcon size="xl"` (44 px).
+- **One primary per view.** At most one filled button (`variant="filled"`, `--sp-accent`, §3.4) per view, at the far right of the page head, after the secondaries. Secondaries are `variant="default"`. Tertiary in-text actions are `variant="subtle"`. A view with more than three page-level actions shows the primary, at most two secondaries and a `…` `Menu` with the rest (an `ActionIcon` named "More actions").
+- **Destructive actions.** In a menu, a destructive item is the last one, after a divider, with its icon and text in `--sp-state-failed-fg`. A filled destructive button appears only as the confirm button of its confirmation dialog. A page or toolbar never shows a filled destructive button (the bulk bar's Delete… is a default button that opens the dialog).
+- **Colours.** The theme defines two Mantine colours from the state tokens: `failed` (from `--sp-state-failed-fg`, `#B02A2A`, 6.54:1 with white; dark `#F59A9A` with `--sp-accent-on` text) and `review` (from `--sp-state-review-fg`, §3.4). Mantine's default `red` is never used, for buttons, field errors or badges: `#FA5252` gives 3.28:1 on white, below §3.4's 4.5:1. Field errors use `--sp-state-failed-fg`.
+- **Icon left of the label**, 16 px, gap sm. A trailing chevron only on a button that opens a menu.
+- **Copy.** One pattern: a default button with the copy icon and the word "Copy" (xs in a dense row), or a menu item "Copy …" when several things can be copied. On success it reads "Copied" for 2 s, announced in a `role="status"`.
+- **Dialogs.** Title in the display font at 16/600. Footer right-aligned, Cancel (`default`) then Confirm (`filled`, accent, or `failed` when it destroys), both sm, gap sm. On the phone a dialog is a bottom sheet with the two buttons full width, Confirm last (§4.11).
+
+### 12.5 Page head
+
+Every routed page has one `PageHead`, in this order on one row: the section tile (48 px, tinted in the section's colour, 24 px icon, as the page-head rule of §7), the h1 with a one-line subtitle under it (truncated, full text reachable as §12.8 says), then the actions at the right (§12.4). Run detail uses the same head, with the engine mark in the tile and the state rail on top (§3.1). Results, the file preview and the report viewer use it too, with the parent run named in the subtitle. No back link and no other row sits above the head; the way up is the top bar's breadcrumb (§2) on desktop and tablet, and the back chevron of the phone's title row (§4.11). On the phone the head is the title row of §4.11 and the primary action moves to the bar pinned above the tab bar.
+
+### 12.6 Toolbar
+
+One row under the page head, 36 px high (the sm controls): search on the left (`TextInput` with the search icon, takes the free width), then filters (`SegmentedControl` sm or `Select` sm), then actions at the right. Captions and counts sit at the end of the row in sm muted text, not on a row of their own. Below 768 px the toolbar may wrap to a second row; segments scroll sideways as pills (§4.11), with the selected one scrolled into view and a fade at the cut edge so a hidden pill is visible as cut.
+
+### 12.7 Card
+
+A `Paper` with radius md, a 1 px `--sp-line` border, no shadow except the state rail (§3.1), padding lg (md on the phone). Its head is 44 px: a 28 px tile with a 16 px icon, the title (h3, 16/600), a meta line or summary in sm muted text, the card's actions or its section link ("All runs →") at the right, then the fold chevron. Every titled section folds, as the "Open sections" rule of §4.4 says; which sections start open is that rule's, and Facts start folded on every run tab except Summary. A section link sits in the head, never on its own row. Cards in a grid share one height per row.
+
+### 12.8 Tables and dates
+
+- **Rows.** 44 px (36 px in a compact table such as tasks), header row sm/600 in `--sp-ink-500`. The state rail and State column follow §3.1.
+- **One line per line.** A cell has its main line and, where §3.1 asks for one, a context line; each is one line, truncated with an ellipsis. The full value is reachable by keyboard: the truncated text is inside a focusable element (the row's link, or a button) whose accessible name holds the full value, and a `Tooltip` shows it on focus as well as on hover; on the phone a tap opens the details sheet of §4.11. A `title` attribute is never the only carrier (§4.11).
+- **Pin and row icons** have a fixed column of their own, not inline after a name of varying length.
+- **Dates.** One formatter for every screen: under 1 min "just now", under 1 h "12 min ago", under 24 h "5 h ago", under 7 days "3 days ago", then the ISO date and 24 h local time "2026-10-28 07:01". The exact time is always in a `<time datetime>` and in the accessible name. Durations ("14 s", "2 h 3 min") and the live line of §11 ("updated 2 s ago") are not dates and keep their own form.
+- **Counts and enums.** A zero count is neutral (never an amber or red badge). A raw enum value (`tool_error`) is never shown; it maps to words (§3.1, §3.3). Plurals agree ("1 environment").
+
+### 12.9 Tabs, segments and form controls
+
+- Mantine `Tabs` switch the views of one object (run detail, a task's files); `SegmentedControl` filters a list or switches a view mode. Both are accent-coloured when selected, never a run-state colour (§3.4). Tabs are keyboard-operable as §4.11 says.
+- Sort is a `Select` or a sortable column header, never radio buttons.
+- Every select is a Mantine `Select`; no native `<select>` and no native radio styled by the browser. A fieldset legend uses the label style (sm/500).
+- A pristine form shows no error; field errors appear after a blur or a refused submit (§4.4 "Open sections" moves focus).
+
+### 12.10 Links
+
+One `Anchor` style: `--sp-accent`, weight 500, underlined on hover and focus. A link inside running text is always underlined (WCAG 2.1 SC 1.4.1, https://www.w3.org/TR/WCAG21/#use-of-color). A row's title link (a run name in a table) is the one variant: the text colour, weight 500, underlined on hover and focus. A trailing arrow marks a link that leaves the view ("All runs →"). No bare `<a>` with browser colours, no other link class.
+
+### 12.11 Focus
+
+A global `:focus-visible` ring in `web/src/app.css`, not scoped to the shell, so it reaches Mantine's portals (menus, popovers, modals, drawers): a 2 px `--sp-accent` outline, offset 2 px (5.41:1 with white, above SC 1.4.11's 3:1). A route-focus target (a heading with `tabIndex=-1` that receives focus on navigation) shows no outline. No component keeps the browser's default ring.
+
+### 12.12 States
+
+One `EmptyState` (24 px icon, one sentence that says why, the next step as a link or button), one `ErrorPanel` (what failed, Retry, the request ID; the problem `type` mapped to a sentence) and skeletons of the final layout, as §11 defines them, used by every screen and inside cards and sheets. A log or file with no content shows `EmptyState` inside its frame, not text in the code block. Field errors are §12.4's.
+
+### 12.13 Notifications panel
+
+Replaces the panel of the §2 note of 2026-11-10 (FU-P3-113) and the phone sheet of §4.11; the bell itself is unchanged except that its count badge uses `--sp-accent`, since unread is not a failure (§3.4).
+
+| Part | Contract |
+|---|---|
+| Container, desktop and tablet | A Mantine `Popover` anchored under the bell, 380 px wide, radius md, no overlay, no arrow, at most 70 vh with its list scrolling. A non-modal dialog (`role="dialog"`, named by its title); focus moves to its first control on open; a click outside, Escape, or opening a row closes it, and focus returns to the bell |
+| Container, phone | A bottom `Drawer` (§4.11 sheet), at most 90 % of the height, radius md on top, `aria-modal="true"`, focus trapped and returned to the bell |
+| Header | The title "Notifications" (h2, 16/600); an All / Unread `SegmentedControl` xs; at the right "Mark all as read", an `ActionIcon` with the check-check icon, `aria-label="Mark all as read"` and a `Tooltip` shown on hover and focus. On the phone the same action is a subtle button with its visible text, 44 px |
+| Body | Grouped by the item's local day: Today, Yesterday, then the ISO date. Group labels are sticky, xs/600 uppercase, `--sp-ink-500` |
+| Row (56 px, a link to `/runs/<id>`) | A 28 px tile in the state's `-bg` with the run-state icon in its `-fg` (§3.1); line 1 the run name (500, truncated) and the state word in its `-fg`; line 2 the engine mark (16 px) and the relative time of §12.8; when unread, an 8 px `--sp-accent` dot at the right and an `--sp-accent-subtle` tint. Accessible name: "rnaseq-a, Failed, Nextflow, 12 min ago, unread" |
+| Footer | "View all runs →" (§12.10), to `/runs` |
+| Empty | `EmptyState` with the bell: "No notifications yet" (All, the §2 note's wording); "No unread notifications" with a "Show all" button (Unread) |
+| Loading | Three skeleton rows |
+| Error | A compact `ErrorPanel` with Retry; a failed mark keeps its own line "Could not mark as read: …" with Retry (§2 note) |
+| Keyboard | The list is one Tab stop with a roving tabindex: Arrow Up and Down move between rows, Home and End jump, Enter opens the run. Tab moves header → list → footer |
+
+**Data fit** ([api §5.9](api-and-data-model.md#59-notifications-001), which owns the routes):
+- All / Unread and the day groups are computed in the browser from `items[].read` and `items[].at`. The server keeps its 50 newest items; the panel says nothing about older ones.
+- Per-item read is **Later**: the API has only the `up_to` watermark (`POST /me/notifications:mark-read`), so the panel offers Mark all as read only, and opening a row does not mark it.
+- The engine mark needs `engine` on each item, and `at` must be the run's end time for an adopted run; both are api §5.9's amendment of 2026-11-11.
+- A failure line on the row (why it failed) needs a `detail` field; not in this design.
+
+### 12.14 Where the audit was adjusted to the existing spec
+
+| Audit proposal | This section | Because |
+|---|---|---|
+| 40 px page-head tile | 48 px | §7 page-head rule and the 0.0.1 note (UX-PAR-03) |
+| A breadcrumb inside the page head | Top-bar breadcrumb only; no back link above the head | §2 puts breadcrumbs in the top bar; a second copy would repeat it |
+| Phone state filter as a `Select` | Pills that scroll sideways, with a visible cut | §4.11 phone rules |
+| Fold chevrons only on optional cards | Every titled section folds | §4.4 "Open sections" rule |
+| 11 px group labels | 12 px (xs) | §12.2 type scale |
+| A tooltip as the Mark-all label | `aria-label`, a tooltip on hover and focus, visible text on the phone | §4.11: nothing hover-only |
+| Phone page head with tile and full-width primary | Title row and pinned action bar | §4.11 phone shell |
+| A `failed` colour for every danger button | Only the confirm button of a confirmation dialog | §3.4 keeps state colours out of fills, with the review exception; this adds one |
+| Button xs 28 px | xs 30 px | Mantine 7.17.8 `styles.css` |
+| "You're all caught up" for an empty panel | "No notifications yet" | the §2 note of 2026-11-10 |
+
+### 12.15 Verification
+
+- `web/src/icons.test.ts` rejects an `<svg>` or `<path>` outside `icons.tsx`, a stroke other than 1.75 and a size outside §12.3.
+- A CSS test rejects, outside an allowlist (1 px lines, the 4 px rail), a raw px value for spacing, radius or font size, a hex outside the token files, and `color="red"` in TSX.
+- A visual-regression shot set (desktop 1440 px, phone 390 px, light and dark) of the screens the [audit](../reviews/ui-audit-2026-11-11.md) captured, re-taken after the rebuild and compared by eye with this section; the notifications panel open, empty, loading and in error.

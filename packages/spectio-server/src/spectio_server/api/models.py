@@ -365,7 +365,8 @@ class Notification(BaseModel):
     kind: NotificationKind
     run_id: str
     run_name: str | None
-    at: str
+    engine: str | None  # the run's `workflow.engine`, as `WorkflowRef`
+    at: str  # an ended run's `ended_at`, else `state_changed_at` (api §5.9, 2026-11-11)
     read: bool
 
 
