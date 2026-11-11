@@ -173,15 +173,16 @@ const FILES_SHOWN = 12;
  * `--retries`): each opens the job's sheet, whose attempts tab shows every execution. */
 function Retries({ run, process, onOpen }: { run: RunDetail; process: string; onOpen: (detail: Detail) => void }) {
   const [items, setItems] = useState<Task[] | null>(null);
-  const load = useCallback(() => {
+  useEffect(() => {
+    setItems(null);
     const controller = new AbortController();
+    // optional: on an error the section is left out, the Tasks tab still lists every attempt
     listTasks(run.id, { process, limit: JOBS_PER_STEP }, controller.signal).then(
       (page) => setItems(page.items ?? []),
       () => controller.signal.aborted || setItems([]),
     );
     return () => controller.abort();
   }, [run.id, process]);
-  useEffect(load, [load]);
   const again = (items ?? []).filter((t) => (t.attempt_n ?? 1) > 1);
   if (again.length === 0) return null;
   return (
@@ -648,8 +649,8 @@ function EdgeSheet({ run, doc, view, edge, onClose, onNode }: { run: RunDetail; 
           </div>
           <H icon={smk ? GICONS.file : GICONS.channel}>{smk ? "Files, as the code declares them" : "Channel type, as the code declares it"}</H>
           <div className="sp-gdecls">
-            <Declares name={upStep} label={from?.kind === "job" ? from.step ?? upStep : from?.label ?? upStep} code={byDoc.get(upStep)?.code} engine={doc.engine} section="output" where={where} />
-            <Declares name={downStep} label={to?.kind === "job" ? to.step ?? downStep : to?.label ?? downStep} code={byDoc.get(downStep)?.code} engine={doc.engine} section="input" where={where} />
+            <Declares name={upStep} label={byDoc.get(upStep)?.name ?? upStep} code={byDoc.get(upStep)?.code} engine={doc.engine} section="output" where={where} />
+            <Declares name={downStep} label={byDoc.get(downStep)?.name ?? downStep} code={byDoc.get(downStep)?.code} engine={doc.engine} section="input" where={where} />
           </div>
           {edge.pairs.length > 1 && (
             <>
@@ -851,8 +852,9 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
               // a step listed in a group's panel: open its groups where we are, at the same
               // level, so it is drawn and its panel opens (Thomas: the panel just closed)
               onMember={(id) => {
-                const around = groupsAround(doc, id);
                 const opened = settings.level === "subworkflow" || settings.level === "stage";
+                // at a folded level, only the groups it folds: its subworkflows, or its stage
+                const around = groupsAround(doc, id).filter((g) => !opened || g.startsWith(settings.level === "stage" ? "stage:" : "sub:"));
                 set({ node: id, fold: opened ? [...new Set([...settings.fold, ...around])] : settings.fold.filter((f) => !around.includes(f)) });
               }}
               onTrace={(direction) => {

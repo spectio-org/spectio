@@ -652,7 +652,7 @@ export interface Declared {
 
 const NF_SECTION = /^\s*(input|output|when|script|shell|exec|stub|topic)\s*:/;
 const NF_PART = /\b(val|path|file|env|stdout|stdin|each|eval)\b(?:\s*\(\s*((?:[^()]|\([^()]*\))*)\s*\)|\s+("[^"]*"|'[^']*'|\w+))?/g;
-const SMK_SECTION = /^(\s*)(input|output|params|log|benchmark|threads|resources|conda|container|shell|run|script|wrapper|notebook|message|priority|retries|group|localrule|cache|handover|default_target|envmodules|singularity|wildcard_constraints)\s*:/;
+const SMK_SECTION = /^(\s*)(input|output)\s*:/;
 
 /** The `input:` or `output:` declarations of a process or rule in its code, best effort: what
  * the code says flows, not what flowed. Empty when the block is not found. */
@@ -664,9 +664,19 @@ export function declarations(code: string, engine: string, section: "input" | "o
     if (at < 0) return out;
     const indent = SMK_SECTION.exec(lines[at])![1].length;
     const first = lines[at].replace(SMK_SECTION, "").trim();
-    const body = [first, ...lines.slice(at + 1).filter((_, i, all) => all.slice(0, i + 1).every((l) => l.trim() === "" || l.search(/\S/) > indent))];
-    for (const raw of body.join("\n").split(/,\s*\n|\n/)) {
-      const text = raw.trim().replace(/,$/, "");
+    const rest = lines.slice(at + 1);
+    const end = rest.findIndex((l) => l.trim() !== "" && l.search(/\S/) <= indent);
+    // one entry per top-level item: a line break inside brackets (a multi-line expand) joins
+    const items: string[] = [];
+    let depth = 0;
+    for (const line of [first, ...(end < 0 ? rest : rest.slice(0, end))]) {
+      if (depth > 0) items[items.length - 1] += " " + line.trim();
+      else items.push(line);
+      for (const c of line) depth += c === "(" || c === "[" ? 1 : c === ")" || c === "]" ? -1 : 0;
+      depth = Math.max(0, depth);
+    }
+    for (const raw of items) {
+      const text = raw.trim().replace(/,$/, "").replace(/\(\s+/g, "(").replace(/,\s*\)/g, ")");
       if (!text || text.startsWith("#")) continue;
       const named = /^(\w+)\s*=\s*(.+)$/.exec(text);
       const value = named ? named[2] : text;
@@ -680,10 +690,10 @@ export function declarations(code: string, engine: string, section: "input" | "o
   const at = lines.findIndex((l) => NF_SECTION.exec(l)?.[1] === section);
   if (at < 0) return out;
   for (const line of lines.slice(at + 1)) {
-    if (NF_SECTION.test(line) || /^\s*}\s*$/.test(line)) break;
+    if (NF_SECTION.test(line) || /^\s*}\s*$/.test(line) || /^\s*("""|''')/.test(line)) break; // a script body without its label
     const text = line.replace(/\/\/.*$/, "").trim();
     if (!text) continue;
-    const parts = [...text.matchAll(NF_PART)].map((m) => ({ kind: m[1], name: (m[2] ?? m[3] ?? "").trim() }));
+    const parts = [...text.replace(/,\s*(emit|topic|optional)\s*:.*$/, "").matchAll(NF_PART)].map((m) => ({ kind: m[1], name: (m[2] ?? m[3] ?? "").trim() }));
     if (parts.length === 0) continue;
     out.push({ text, parts, label: /\bemit\s*:\s*(\w+)/.exec(text)?.[1] ?? null, optional: /\boptional\s*:\s*true\b/.test(text) });
   }

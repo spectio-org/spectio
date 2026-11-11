@@ -175,3 +175,12 @@ export function place(view: View, layout: GraphLayout): Placed {
   else placed = { boxes: layered(view, layout === "layered-lr" ? "LR" : "TB"), lanes: [] };
   return placed;
 }
+
+/** The centre-top of what a group occupies on the map: its folded box, or its steps' boxes. */
+export function groupBox(view: View, placed: Placed, group: string): { x: number; y: number } | null {
+  const boxes = view.nodes.filter((n) => n.id === group || n.group === group).map((n) => placed.boxes.get(n.id)).filter((b) => !!b);
+  if (boxes.length === 0) return null;
+  const left = Math.min(...boxes.map((b) => b.x));
+  const right = Math.max(...boxes.map((b) => b.x + b.w));
+  return { x: (left + right) / 2, y: Math.min(...boxes.map((b) => b.y)) };
+}

@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import type { Task } from "../../api";
 import { DOC } from "./fixture";
-import { NODE_W, hasUpstream, place, sizeOf } from "./layout";
+import { NODE_W, groupBox, hasUpstream, place, sizeOf } from "./layout";
 import { collapse } from "./model";
 
 const P = "NFCORE_DEMO:DEMO:";
@@ -89,4 +89,19 @@ test("with no edges, every layout wraps lanes into rows instead of one long line
     expect(width, layout).toBeLessThan(8 * (NODE_W + 40));
     noOverlaps(boxes, view.nodes.map((n) => n.id));
   }
+});
+
+test("groupBox: a group's place is its steps' centre-top, or its folded box's, so one fold keeps it in view", () => {
+  const open = collapse(DOC, "process");
+  const at = place(open, "layered-lr");
+  const g = `sub:${P}ALIGN`;
+  const steps = open.nodes.filter((n) => n.group === g).map((n) => at.boxes.get(n.id)!);
+  expect(steps.length).toBeGreaterThan(1);
+  const box = groupBox(open, at, g)!;
+  expect(box.y).toBe(Math.min(...steps.map((b) => b.y)));
+  expect(box.x).toBe((Math.min(...steps.map((b) => b.x)) + Math.max(...steps.map((b) => b.x + b.w))) / 2);
+  const folded = collapse(DOC, "process", {}, [g]);
+  const one = place(folded, "layered-lr").boxes.get(g)!;
+  expect(groupBox(folded, place(folded, "layered-lr"), g)).toEqual({ x: one.x + one.w / 2, y: one.y });
+  expect(groupBox(open, at, "sub:nope")).toBeNull();
 });

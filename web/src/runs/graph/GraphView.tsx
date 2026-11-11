@@ -26,7 +26,7 @@ import { usePhone } from "../../shell/layout";
 import { tone } from "../stateWord";
 import { Code, type CodeSource } from "./Code";
 import { download, svgToPng, toHtml, toSvg } from "./export";
-import { type Placed, hasUpstream, place } from "./layout";
+import { groupBox, hasUpstream, place } from "./layout";
 import {
   type Flag,
   type NodeDiff,
@@ -330,7 +330,7 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
   );
 }
 
-/** A group's band or area. In Metro and Compact its title is the group's fold button (Thomas:
+/** A group's band or area. Drawn as an area (Metro), its title is the group's fold button (Thomas:
  * folding belongs to the subworkflow or stage, not to each step). */
 function LaneBox({ data }: NodeProps<Node<{ label: string; area: boolean; fold: string | null; onToggle: (group: string) => void }>>) {
   return (
@@ -417,14 +417,6 @@ function ariaOf(n: ViewNode, status: ProcessStatus | null, extra: string[]): str
   return [...parts, ...extra].join(", ");
 }
 
-/** The centre-top of what a group occupies on the map: its folded box, or its steps' boxes. */
-function groupBox(view: View, placed: Placed, group: string): { x: number; y: number } | null {
-  const boxes = view.nodes.filter((n) => n.id === group || n.group === group).map((n) => placed.boxes.get(n.id)).filter((b) => !!b);
-  if (boxes.length === 0) return null;
-  const left = Math.min(...boxes.map((b) => b.x));
-  const right = Math.max(...boxes.map((b) => b.x + b.w));
-  return { x: (left + right) / 2, y: Math.min(...boxes.map((b) => b.y)) };
-}
 
 function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title, nextRef, engine, groupNames }: { engine: string; groupNames: Map<string, string>; settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
   const dark = useComputedColorScheme("light") === "dark";
@@ -572,9 +564,9 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
   const shape = `${settings.level}|${layout}|${settings.focus}|${settings.hide.join()}`;
   const before = useRef({ shape, fold: settings.fold, view, placed });
   const first = useRef(true);
+  const foldKey = settings.fold.join();
   useEffect(() => {
     const was = before.current;
-    before.current = { shape, fold: settings.fold, view, placed };
     if (first.current) return void (first.current = false);
     if (was.shape === shape && was.fold.join() === settings.fold.join()) return;
     const toggled = [...settings.fold.filter((g) => !was.fold.includes(g)), ...was.fold.filter((g) => !settings.fold.includes(g))];
@@ -587,7 +579,11 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
     }
     const timer = setTimeout(() => void flow.fitView({ duration: 200 }), 60);
     return () => clearTimeout(timer);
-  }, [shape, settings.fold]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shape, foldKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // after the effect above: the drawing it compares the next change with
+  useEffect(() => {
+    before.current = { shape, fold: settings.fold, view, placed };
+  });
 
   // Enter in the search box: the next match, centred and focused
   const order = useMemo(() => topoOrder(view).filter((id) => matches.has(id)), [view, matches]);

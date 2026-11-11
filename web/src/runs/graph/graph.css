@@ -646,7 +646,7 @@
   border-color: color-mix(in srgb, var(--sp-accent) 25%, var(--sp-line-border));
   background: color-mix(in srgb, var(--sp-accent) 4%, var(--sp-surface-page));
 }
-.sp-glane span {
+.sp-glane > span {
   display: inline-flex;
   align-items: center;
   gap: 5px;

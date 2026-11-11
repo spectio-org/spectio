@@ -14,7 +14,7 @@ export interface CodeSource {
 }
 
 /** A step's code text: the document's copy, else read by name; null while unknown. */
-export function useCode(name: string, code?: string | null, where?: CodeSource | null): { text: string | null; error: string | null } {
+export function useCode(name: string, code?: string | null, where?: CodeSource | null): { text: string | null; block: SourceBlock | null; error: string | null } {
   const [block, setBlock] = useState<SourceBlock | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -25,20 +25,11 @@ export function useCode(name: string, code?: string | null, where?: CodeSource |
     getSource(where.location, where.revision, name, controller.signal).then(setBlock, (e: Error) => controller.signal.aborted || setError(e.message));
     return () => controller.abort();
   }, [name, code, where?.location, where?.revision]);
-  return { text: code ?? block?.code ?? null, error: code ? null : error ?? (where ? null : "not available here") };
+  return { text: code ?? block?.code ?? null, block, error: code ? null : error ?? (where ? null : "not available here") };
 }
 
 export function Code({ name, code, where }: { name: string; code?: string | null; where?: CodeSource | null }) {
-  const [block, setBlock] = useState<SourceBlock | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    setBlock(null);
-    setError(null);
-    if (code || !where) return;
-    const controller = new AbortController();
-    getSource(where.location, where.revision, name, controller.signal).then(setBlock, (e: Error) => controller.signal.aborted || setError(e.message));
-    return () => controller.abort();
-  }, [name, code, where?.location, where?.revision]);
+  const { block, error } = useCode(name, code, where);
   if (code) return <Lines text={code} first={1} label={`Code of ${name}`} name={name} />;
   if (!where) return <p className="sp-muted">The code is not available here.</p>;
   if (error) return <p className="sp-muted">The code was not found: {error}</p>;

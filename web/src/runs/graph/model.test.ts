@@ -275,3 +275,13 @@ test("a job keeps its step's checkpoint, temp and conditional marks, and is mark
   expect(v.nodes.find((n) => n.id === "job:b1")!.flags).toEqual(["temp", "conditional"]);
   expect(v.nodes.find((n) => n.id === "job:b2")!.flags).toEqual(["temp", "conditional", "retried"]);
 });
+
+test("declarations skip emit and topic names, stop at an unlabelled script, and join a multi-line expand", () => {
+  const nf = "process P {\n  input:\n  path reads\n  output:\n  path 'x.txt', emit: file\n  \"\"\"\n  cat file\n  \"\"\"\n}";
+  expect(declarations(nf, "nextflow", "output").map((d) => [d.label, d.parts])).toEqual([["file", [{ kind: "path", name: "'x.txt'" }]]]);
+  const smk = 'rule all:\n    input:\n        expand(\n            "qc/{s}.html",\n            s=S,\n        ),\n        "done.txt"\n    shell: "x"\n';
+  expect(declarations(smk, "snakemake", "input").map((d) => d.parts[0])).toEqual([
+    { kind: "expand", name: '"qc/{s}.html"' },
+    { kind: "file", name: '"done.txt"' },
+  ]);
+});
