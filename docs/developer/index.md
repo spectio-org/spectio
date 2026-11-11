@@ -37,5 +37,5 @@ The specifications, where the work stands, and what was decided.
 
 - English for everything in the repository; one spec owns each topic; section numbers stay stable.
 - Every change leaves its docs and passes `python3 tools/docs/check.py`.
-- Releases: [Claim the package names](claim-package-names.md) lists what Thomas does on the Nextflow registry and on PyPI before the first release.
+- Releases: [Claim the package names](claim-package-names.md) lists what to do on the Nextflow registry and on PyPI before the first release.
 - Details: [CONTRIBUTING](https://github.com/weber8thomas/spectio/blob/main/CONTRIBUTING.md) and the [documentation system](../specs/documentation-system.md).

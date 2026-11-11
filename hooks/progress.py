@@ -47,34 +47,38 @@ def _strip(pipeline, steps, base: str = "") -> str:
             f'<span class="sp-wave__id">{wave["id"]}</span>'
             f'<span class="sp-wave__bar"><span style="width:{pct}%"></span></span>'
             f'<span class="sp-wave__count">{done}/{len(ids)}</span>'
-            f'<span class="sp-wave__title">{wave["title"]}</span></a>'
+            f'<span class="sp-wave__title">{_short(wave["title"])}</span></a>'
         )
     return '<div class="sp-waves" markdown>' + "".join(cells) + "</div>"
 
 
+def _short(title: str) -> str:
+    """A wave's title up to its first comma or parenthesis: "Foundations", "Synthesis"."""
+    return re.split(r"[,(]", title, maxsplit=1)[0].strip()
+
+
 def _title(page: pathlib.Path) -> str:
+    """A step page's heading without its step id, notes in italics or names."""
     for line in page.read_text().splitlines():
         if line.startswith("# "):
-            return line[2:].strip()
+            t = re.sub(r"\s*\*\(.*?\)\*", "", line[2:])
+            t = re.sub(r"\bThomas's\s+|\s*\bThomas\b", "", t)
+            return re.sub(r"^[A-Z0-9-]+(?: [A-Z0-9-]+)?\s*[·:]\s*", "", t).strip()
     return page.stem
 
 
 def _table(pipeline, steps, page_dir: pathlib.Path) -> str:
-    """One short section per wave: how many steps are done, then its pages, folded once the wave is done."""
+    """One folded line per wave: its short title and steps done; open it for the wave's pages."""
     out = []
     for wave in pipeline["waves"]:
         ids = [s["id"] for s in wave["steps"]]
         done = sum(_status(steps, i) == "done" for i in ids)
-        title = re.sub(r"\s*\(.*?\)", "", wave["title"]).strip()
-        out.append(f'\n## {wave["id"]} · {title} {{ #{wave["id"].lower()} }}\n')
-        out.append(f'<p class="sp-progress">{done} of {len(ids)} steps done</p>\n')
         order = {sid: n for n, sid in enumerate(ids)}
         pages = sorted((page_dir / wave["id"]).glob("*.md"), key=lambda f: (order.get(f.stem, len(order)), f.stem))
-        if not pages:
-            continue
-        fold = "???" if done == len(ids) else "???+"
-        out.append(f'{fold} note "Pages ({len(pages)})"\n')
-        out += [f"    - [{_title(f)}]({wave['id']}/{f.name})" for f in pages]
+        kind, fold = ("success", "???") if done == len(ids) else ("info", "???+")
+        out.append(f'\n<a id="{wave["id"].lower()}" class="sp-progress"></a>\n')
+        out.append(f'{fold} {kind} "{wave["id"]} · {_short(wave["title"])} · {done} of {len(ids)} done"\n')
+        out += [f"    - [{_title(f)}]({wave['id']}/{f.name})" for f in pages] or ["    No page yet."]
     return "\n".join(out) + "\n"
 
 
