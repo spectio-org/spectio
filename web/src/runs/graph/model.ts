@@ -180,7 +180,7 @@ export function collapsedSubworkflow(doc: GraphDocument): Map<string, string | n
   return out;
 }
 
-const jobStatus: Record<string, ProcessStatus> = {
+export const jobStatus: Record<string, ProcessStatus> = {
   pending: "pending",
   submitted: "pending",
   running: "running",
@@ -244,6 +244,12 @@ function jobOf(t: Task, step: ViewNode): ViewNode {
     group: step.group,
     key: t.tag,
     step: step.label,
+    // the step's marks that hold for each of its jobs, and this job's own
+    flags: [
+      ...(step.flags ?? []).filter((f) => f === "checkpoint" || f === "temp" || f === "conditional"),
+      ...((t.attempt_n ?? 1) > 1 ? (["retried"] as Flag[]) : []),
+      ...(t.state === "cached" || t.state === "stored" ? (["cached"] as Flag[]) : []),
+    ],
   };
 }
 
@@ -632,3 +638,54 @@ export function autoFold(view: View, max: number): string[] {
  * above (more used than asked: memory near its limit, or more CPUs used than asked). */
 export type Band = "low" | "fair" | "good" | "over";
 export const bandOf = (ratio: number): Band => (ratio < 0.3 ? "low" : ratio < 0.7 ? "fair" : ratio <= 1.05 ? "good" : "over");
+
+/** One declaration of a step's `input:` or `output:` block, read from its code: for Nextflow a
+ * channel item (`tuple val(meta), path(reads), emit: reads`), for Snakemake a file pattern. */
+export interface Declared {
+  text: string;
+  /** Nextflow: the qualifiers in order (`val meta`, `path *.fq.gz`); Snakemake: one `file`. */
+  parts: { kind: string; name: string }[];
+  /** Nextflow `emit:` or a Snakemake named file. */
+  label: string | null;
+  optional: boolean;
+}
+
+const NF_SECTION = /^\s*(input|output|when|script|shell|exec|stub|topic)\s*:/;
+const NF_PART = /\b(val|path|file|env|stdout|stdin|each|eval)\b(?:\s*\(\s*((?:[^()]|\([^()]*\))*)\s*\)|\s+("[^"]*"|'[^']*'|\w+))?/g;
+const SMK_SECTION = /^(\s*)(input|output|params|log|benchmark|threads|resources|conda|container|shell|run|script|wrapper|notebook|message|priority|retries|group|localrule|cache|handover|default_target|envmodules|singularity|wildcard_constraints)\s*:/;
+
+/** The `input:` or `output:` declarations of a process or rule in its code, best effort: what
+ * the code says flows, not what flowed. Empty when the block is not found. */
+export function declarations(code: string, engine: string, section: "input" | "output"): Declared[] {
+  const lines = code.split("\n");
+  const out: Declared[] = [];
+  if (engine === "snakemake") {
+    const at = lines.findIndex((l) => SMK_SECTION.exec(l)?.[2] === section);
+    if (at < 0) return out;
+    const indent = SMK_SECTION.exec(lines[at])![1].length;
+    const first = lines[at].replace(SMK_SECTION, "").trim();
+    const body = [first, ...lines.slice(at + 1).filter((_, i, all) => all.slice(0, i + 1).every((l) => l.trim() === "" || l.search(/\S/) > indent))];
+    for (const raw of body.join("\n").split(/,\s*\n|\n/)) {
+      const text = raw.trim().replace(/,$/, "");
+      if (!text || text.startsWith("#")) continue;
+      const named = /^(\w+)\s*=\s*(.+)$/.exec(text);
+      const value = named ? named[2] : text;
+      const wrap = /^(temp|protected|directory|ancient|pipe|touch|expand)\(/.exec(value);
+      // expand("a/{sample}.txt", sample=SAMPLES): the pattern, one file per value
+      const name = wrap?.[1] === "expand" ? (/^expand\(\s*("[^"]*"|'[^']*')/.exec(value)?.[1] ?? value) : value.replace(/^\w+\((.*)\)$/, "$1");
+      out.push({ text, parts: [{ kind: wrap ? wrap[1] : "file", name }], label: named ? named[1] : null, optional: false });
+    }
+    return out;
+  }
+  const at = lines.findIndex((l) => NF_SECTION.exec(l)?.[1] === section);
+  if (at < 0) return out;
+  for (const line of lines.slice(at + 1)) {
+    if (NF_SECTION.test(line) || /^\s*}\s*$/.test(line)) break;
+    const text = line.replace(/\/\/.*$/, "").trim();
+    if (!text) continue;
+    const parts = [...text.matchAll(NF_PART)].map((m) => ({ kind: m[1], name: (m[2] ?? m[3] ?? "").trim() }));
+    if (parts.length === 0) continue;
+    out.push({ text, parts, label: /\bemit\s*:\s*(\w+)/.exec(text)?.[1] ?? null, optional: /\boptional\s*:\s*true\b/.test(text) });
+  }
+  return out;
+}

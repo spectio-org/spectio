@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import type { Task } from "../../api";
 import { DOC } from "./fixture";
 import {
+  declarations,
   acyclic,
   aggregateStatus,
   autoFold,
@@ -222,4 +223,55 @@ test("autoFold folds the biggest groups first, until the view fits", () => {
 
 test("efficiency bands", () => {
   expect([0.1, 0.5, 0.9, 1.3].map(bandOf)).toEqual(["low", "fair", "good", "over"]);
+});
+
+test("declarations read a process's channel items and a rule's files", () => {
+  const nf = `process TRIM {
+    input:
+    tuple val(meta), path(reads)
+    path index // the index
+    output:
+    tuple val(meta), path("*.fq.gz"), emit: reads
+    path "*.log", emit: log, optional: true
+    script:
+    """
+    trim
+    """
+}`;
+  expect(declarations(nf, "nextflow", "input").map((d) => d.parts)).toEqual([
+    [
+      { kind: "val", name: "meta" },
+      { kind: "path", name: "reads" },
+    ],
+    [{ kind: "path", name: "index" }],
+  ]);
+  const outs = declarations(nf, "nextflow", "output");
+  expect(outs.map((d) => [d.label, d.optional])).toEqual([
+    ["reads", false],
+    ["log", true],
+  ]);
+  expect(outs[1].parts).toEqual([{ kind: "path", name: '"*.log"' }]);
+  const smk = `rule bwa_map:
+    input:
+        reads="trimmed/{sample}.fq.gz",
+        ref=config["ref"]
+    output:
+        temp("mapped/{sample}.bam")
+    shell:
+        "bwa mem {input} > {output}"`;
+  expect(declarations(smk, "snakemake", "input").map((d) => [d.label, d.parts[0].name])).toEqual([
+    ["reads", '"trimmed/{sample}.fq.gz"'],
+    ["ref", 'config["ref"]'],
+  ]);
+  expect(declarations(smk, "snakemake", "output")[0].parts[0]).toEqual({ kind: "temp", name: '"mapped/{sample}.bam"' });
+  expect(declarations('rule all:\n    input:\n        expand("qc/{sample}.html", sample=SAMPLES)\n', "snakemake", "input")[0].parts).toEqual([{ kind: "expand", name: '"qc/{sample}.html"' }]);
+});
+
+test("a job keeps its step's checkpoint, temp and conditional marks, and is marked retried on its own", () => {
+  const BWA = `${P}ALIGN:BWA`;
+  const doc = { ...DOC, nodes: DOC.nodes.map((n) => (n.id === BWA ? { ...n, temp: true, condition: "params.align", retries: 1 } : n)) };
+  const again = { ...job("b2", BWA, "S2"), attempt_n: 2 } as Task;
+  const v = collapse(doc, "jobs", { [BWA]: [job("b1", BWA, "S1"), again] });
+  expect(v.nodes.find((n) => n.id === "job:b1")!.flags).toEqual(["temp", "conditional"]);
+  expect(v.nodes.find((n) => n.id === "job:b2")!.flags).toEqual(["temp", "conditional", "retried"]);
 });

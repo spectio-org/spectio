@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, FakeEventSource, app, fetched, run, serve, stubStream, viewport } from "../../testing";
 import { resetFeatures } from "./features";
-import { keyPairs } from "./GraphPanel";
+import { groupsAround, keyPairs } from "./GraphPanel";
 import { DOC } from "./fixture";
 import type { GraphDocument } from "./types";
 
@@ -412,4 +412,48 @@ test("an output whose path climbs out of its folder gets no thumbnail, no first 
   expect(await within(sheet).findByText("x.png")).toBeInTheDocument();
   expect(within(sheet).queryByRole("link", { name: "Open x.png" })).toBeNull();
   expect(sheet.querySelector("img")).toBeNull();
+});
+
+test("groupsAround names a step's stage and its subworkflow chain", () => {
+  expect(groupsAround(DOC, `${P}ALIGN:BWA`).sort()).toEqual(["stage:align", "sub:NFCORE_DEMO", "sub:NFCORE_DEMO:DEMO", "sub:NFCORE_DEMO:DEMO:ALIGN"].sort());
+});
+
+test("a link says the channel type each side declares in its code", async () => {
+  const code = (id: string) =>
+    id === `${P}ALIGN:TRIM`
+      ? "process TRIM {\n  output:\n  tuple val(meta), path('*.fq.gz'), emit: reads\n  script:\n  ''\n}"
+      : id === `${P}ALIGN:BWA`
+        ? "process BWA {\n  input:\n  tuple val(meta), path(reads)\n  path index\n  script:\n  ''\n}"
+        : null;
+  mocks(["graph_view"], { [`${URL_}/graph`]: { ...DOC, nodes: DOC.nodes.map((n) => ({ ...n, code: code(n.id) })) } });
+  app(`/runs/${ID}?tab=graph&show=list`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
+  await userEvent.click(within(sheet).getByRole("button", { name: /^Channel from TRIM: what flows$/ }));
+  const edge = await screen.findByRole("complementary", { name: /^TRIM → BWA \(channel\)$/ });
+  const emits = within(edge).getByRole("list", { name: "TRIM emits" });
+  expect(emits.textContent).toContain("reads");
+  expect(emits.textContent).toContain("path");
+  expect(within(edge).getByRole("list", { name: "BWA takes" }).textContent).toContain("index");
+});
+
+test("a step whose jobs ran again lists them under Executions, each opening its attempts", async () => {
+  mocks(["graph_view"], {
+    [`${URL_}/tasks`]: { items: [{ id: "tsk_7", process: `${P}ALIGN:BWA`, tag: "S2", name: null, state: "succeeded", stage_id: "align", attempt_n: 3, resources: {} }], next: null },
+  });
+  app(`/runs/${ID}?tab=graph&show=list`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
+  expect(await within(sheet).findByRole("button", { name: /^Open S2: 3 attempts/ })).toBeInTheDocument();
+});
+
+test("at the Subworkflow level, a step listed in a group's sheet opens that group and the step's sheet", async () => {
+  mocks();
+  const router = app(`/runs/${ID}?tab=graph&show=list&level=subworkflow`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: /^Open subworkflow ALIGN/ }));
+  const group = await screen.findByRole("complementary", { name: /^ALIGN/ });
+  await userEvent.click(within(group).getByRole("button", { name: /^Show BWA on the graph/ }));
+  expect(await screen.findByRole("complementary", { name: "BWA (process)" })).toBeInTheDocument();
+  expect(router.state.location.search).toMatchObject({ level: "subworkflow" });
+  expect(String(router.state.location.search.fold)).toContain(`sub:${P}ALIGN`);
 });

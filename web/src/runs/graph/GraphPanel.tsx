@@ -8,13 +8,13 @@ import { ApiError, type Json, type Run, type RunDetail, type Task, listRuns, lis
 import { useFrames } from "../../live";
 import { usePhone } from "../../shell/layout";
 import type { Detail } from "../DetailSheet";
-import { isTerminal, runWord } from "../stateWord";
+import { isTerminal, runWord, taskWord } from "../stateWord";
 import { Icon } from "../../icons";
-import { Code } from "./Code";
+import { Code, type CodeSource, useCode } from "./Code";
 import { isResultPath } from "../ReportViewer";
 import { fileKind, size as sizeText } from "../preview";
 import { BAND_WORDS, FlagChip, GICONS, GraphView, Panel, formatSeconds, kindIcon, kindWord, progress, statusTone, statusWord, viewOf } from "./GraphView";
-import { type NodeDiff, type View, type ViewEdge, type ViewNode, bandOf, diffGraphs, durationOf, lineage, timeSpan, toggled } from "./model";
+import { type Declared, declarations, jobStatus, type NodeDiff, type View, type ViewEdge, type ViewNode, bandOf, diffGraphs, durationOf, lineage, timeSpan, toggled } from "./model";
 import { type GraphSearch, type GraphSettings, searchOf, settingsOf } from "./settings";
 import { type GraphDocument, type GraphNode, type NodeOutput, getNodeOutputs, getOutputHead, getRunGraph } from "./types";
 
@@ -168,6 +168,41 @@ function FileCard({ run, process, item }: { run: RunDetail; process: string; ite
 }
 
 const FILES_SHOWN = 12;
+
+/** The jobs of one step that ran more than once (Nextflow `errorStrategy 'retry'`, Snakemake
+ * `--retries`): each opens the job's sheet, whose attempts tab shows every execution. */
+function Retries({ run, process, onOpen }: { run: RunDetail; process: string; onOpen: (detail: Detail) => void }) {
+  const [items, setItems] = useState<Task[] | null>(null);
+  const load = useCallback(() => {
+    const controller = new AbortController();
+    listTasks(run.id, { process, limit: JOBS_PER_STEP }, controller.signal).then(
+      (page) => setItems(page.items ?? []),
+      () => controller.signal.aborted || setItems([]),
+    );
+    return () => controller.abort();
+  }, [run.id, process]);
+  useEffect(load, [load]);
+  const again = (items ?? []).filter((t) => (t.attempt_n ?? 1) > 1);
+  if (again.length === 0) return null;
+  return (
+    <>
+      <H icon={GICONS.job}>Executions</H>
+      <p className="sp-ghelp">
+        {again.length} {again.length === 1 ? "job was" : "jobs were"} run again after a failure; open one to see each attempt, its exit code and its logs.
+      </p>
+      <ul className="sp-gsteps" aria-label={`Jobs of ${process} run more than once`}>
+        {again.map((t) => (
+          <li key={t.id}>
+            <button type="button" className="sp-gwire-chip" data-tone={statusTone(jobStatus[t.state] ?? null)} aria-label={`Open ${t.name ?? t.tag ?? t.id}: ${t.attempt_n} attempts, ${taskWord(t.state)}`} onClick={() => onOpen({ kind: "task", task: t })}>
+              <span>{t.tag ?? t.name ?? t.id}</span>
+              <span className="sp-muted">{t.attempt_n} attempts</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
 
 function Outputs({ run, process, task }: { run: RunDetail; process: string; task?: string }) {
   const [items, setItems] = useState<NodeOutput[] | null>(null);
@@ -496,6 +531,7 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
             <>
               <H icon={GICONS.outputs}>Outputs</H>
               <Outputs run={run} process={single.id} />
+              <Retries run={run} process={single.id} onOpen={onOpen} />
               <p className="sp-gjobs-links">
                 <button type="button" className="sp-link-button" onClick={() => onOpen({ kind: "process", name: single.id })}>
                   Open its jobs
@@ -534,6 +570,41 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
   );
 }
 
+/** What a step's code declares on one side of a link: Nextflow channel items (`tuple val(meta),
+ * path(reads)`, with their `emit:` names), Snakemake files (with `temp`, `directory`…). */
+function Declares({ name, label, code, engine, section, where }: { name: string; label: string; code?: string | null; engine: string; section: "input" | "output"; where: CodeSource }) {
+  const { text, error } = useCode(name, code, where);
+  const found: Declared[] = text ? declarations(text, engine, section) : [];
+  const title = `${label} ${section === "output" ? (engine === "snakemake" ? "writes" : "emits") : engine === "snakemake" ? "reads" : "takes"}`;
+  return (
+    <div className="sp-gdecl">
+      <p className="sp-gdecl-title">
+        <Icon path={section === "output" ? GICONS.outputs : GICONS.up} size={13} stroke={1.9} /> {title}
+      </p>
+      {text === null ? (
+        <p className="sp-muted">{error ? "Its code is not available." : "Reading its code…"}</p>
+      ) : found.length === 0 ? (
+        <p className="sp-muted">No {section} block found in its code.</p>
+      ) : (
+        <ul className="sp-gdecl-list" aria-label={title}>
+          {found.map((d, i) => (
+            <li key={i} title={d.text}>
+              {d.label && <span className="sp-gdecl-label sp-mono">{d.label}</span>}
+              {d.parts.map((p, j) => (
+                <span key={j} className="sp-gdecl-part" data-kind={p.kind}>
+                  <span className="sp-gdecl-kind">{p.kind}</span>
+                  {p.name && <span className="sp-mono">{p.name}</span>}
+                </span>
+              ))}
+              {d.optional && <span className="sp-muted">optional</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** What flows along a link: Snakemake links steps through files, Nextflow through channels whose
  * items are the files the upstream step emitted. Shown: the two steps, the link between them, and
  * the upstream side's recorded outputs as file cards. */
@@ -545,6 +616,10 @@ function EdgeSheet({ run, doc, view, edge, onClose, onNode }: { run: RunDetail; 
   const sources = edge ? [...new Set(edge.pairs.map(([a]) => a))] : [];
   const job = from?.kind === "job" ? from.id.slice("job:".length) : undefined;
   const smk = doc.engine === "snakemake";
+  // the two steps' own names (a job's step, a folded box's first link)
+  const [upStep, downStep] = edge ? edge.pairs[0] ?? [from?.members[0] ?? edge.source, to?.members[0] ?? edge.target] : ["", ""];
+  const byDoc = new Map(doc.nodes.map((n) => [n.id, n]));
+  const where: CodeSource = { location: run.workflow.location, revision: null, fromRun: true };
   const idle = !from?.status || from.status === "pending" || from.status === "not_needed" || from.status === "no_tasks";
   const end = (n: ViewNode | undefined, id: string) => (
     <button type="button" className="sp-gflow-end" data-tone={statusTone(n?.status ?? null)} onClick={() => onNode(id)} aria-label={`Open ${n?.label ?? id}`}>
@@ -571,10 +646,11 @@ function EdgeSheet({ run, doc, view, edge, onClose, onNode }: { run: RunDetail; 
             </div>
             {end(to, edge.target)}
           </div>
-          <p className="sp-ghelp">
-            <Icon path={GICONS.legend} size={13} stroke={1.8} />{" "}
-            {smk ? "The downstream rule reads files the upstream rule writes." : "Each item the upstream process emits (files, often with a sample id) goes to the downstream process."}
-          </p>
+          <H icon={smk ? GICONS.file : GICONS.channel}>{smk ? "Files, as the code declares them" : "Channel type, as the code declares it"}</H>
+          <div className="sp-gdecls">
+            <Declares name={upStep} label={from?.kind === "job" ? from.step ?? upStep : from?.label ?? upStep} code={byDoc.get(upStep)?.code} engine={doc.engine} section="output" where={where} />
+            <Declares name={downStep} label={to?.kind === "job" ? to.step ?? downStep : to?.label ?? downStep} code={byDoc.get(downStep)?.code} engine={doc.engine} section="input" where={where} />
+          </div>
           {edge.pairs.length > 1 && (
             <>
               <H icon={GICONS.link}>Links it stands for ({edge.pairs.length})</H>
@@ -600,6 +676,16 @@ function EdgeSheet({ run, doc, view, edge, onClose, onNode }: { run: RunDetail; 
       )}
     </Panel>
   );
+}
+
+/** The groups a step sits in: its stage, and its subworkflow and every one above it. */
+export function groupsAround(doc: GraphDocument, id: string): string[] {
+  const n = doc.nodes.find((x) => x.id === id);
+  if (!n) return [];
+  const parent = new Map(doc.groups.map((g) => [g.id, g.parent ?? null]));
+  const out = n.stage_id ? [`stage:${n.stage_id}`] : [];
+  for (let at = n.subworkflow ?? null; at; at = parent.get(at) ?? null) out.push(at);
+  return out;
 }
 
 const groupLabel = (doc: GraphDocument, id: string): string => doc.groups.find((g) => g.id === id)?.name ?? id.replace(/^(stage|sub):/, "");
@@ -762,7 +848,13 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
               task={task}
               diff={selected ? diff?.get(selected.id) ?? null : null}
               onClose={() => set({ node: null })}
-              onMember={(id) => set({ level: "process", node: id })}
+              // a step listed in a group's panel: open its groups where we are, at the same
+              // level, so it is drawn and its panel opens (Thomas: the panel just closed)
+              onMember={(id) => {
+                const around = groupsAround(doc, id);
+                const opened = settings.level === "subworkflow" || settings.level === "stage";
+                set({ node: id, fold: opened ? [...new Set([...settings.fold, ...around])] : settings.fold.filter((f) => !around.includes(f)) });
+              }}
               onTrace={(direction) => {
                 setTrace(direction && selected ? { id: selected.id, direction } : null);
               }}

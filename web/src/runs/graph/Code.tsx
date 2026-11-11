@@ -13,6 +13,21 @@ export interface CodeSource {
   fromRun?: boolean;
 }
 
+/** A step's code text: the document's copy, else read by name; null while unknown. */
+export function useCode(name: string, code?: string | null, where?: CodeSource | null): { text: string | null; error: string | null } {
+  const [block, setBlock] = useState<SourceBlock | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setBlock(null);
+    setError(null);
+    if (code || !where) return;
+    const controller = new AbortController();
+    getSource(where.location, where.revision, name, controller.signal).then(setBlock, (e: Error) => controller.signal.aborted || setError(e.message));
+    return () => controller.abort();
+  }, [name, code, where?.location, where?.revision]);
+  return { text: code ?? block?.code ?? null, error: code ? null : error ?? (where ? null : "not available here") };
+}
+
 export function Code({ name, code, where }: { name: string; code?: string | null; where?: CodeSource | null }) {
   const [block, setBlock] = useState<SourceBlock | null>(null);
   const [error, setError] = useState<string | null>(null);

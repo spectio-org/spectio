@@ -26,7 +26,7 @@ import { usePhone } from "../../shell/layout";
 import { tone } from "../stateWord";
 import { Code, type CodeSource } from "./Code";
 import { download, svgToPng, toHtml, toSvg } from "./export";
-import { hasUpstream, place } from "./layout";
+import { type Placed, hasUpstream, place } from "./layout";
 import {
   type Flag,
   type NodeDiff,
@@ -117,11 +117,11 @@ export const kindIcon = (kind: string): string => GICONS[kind as keyof typeof GI
 
 /** The marks of a step: a short visible mark, and the words its accessible name gets. */
 export const FLAG_MARKS: Record<Flag, { mark: string; words: string }> = {
-  checkpoint: { mark: "checkpoint", words: "checkpoint: the graph grows once it ends" },
-  temp: { mark: "temp", words: "writes temporary files, removed once read" },
-  conditional: { mark: "if", words: "runs only under a condition" },
-  retried: { mark: "retried", words: "some jobs were retried" },
-  cached: { mark: "cached", words: "some jobs reused from an earlier run" },
+  checkpoint: { mark: "checkpoint", words: "checkpoint: the steps after it are known only once it ends, so the graph can grow" },
+  temp: { mark: "temp", words: "temp: writes temporary files, deleted once every step that reads them has run" },
+  conditional: { mark: "if", words: "if: runs only when a condition in the code holds; its panel gives the condition" },
+  retried: { mark: "retried", words: "retried: a job failed and the engine ran it again; its panel lists each job's attempts" },
+  cached: { mark: "cached", words: "cached: reused from an earlier run (resume or up to date), not run again" },
 };
 
 /** A mark: on the map a small round badge (its words are in the node's name), elsewhere a
@@ -131,6 +131,10 @@ export function FlagChip({ flag, badge = false }: { flag: Flag; badge?: boolean 
     return (
       <span className="sp-gbadge" data-flag={flag}>
         <Icon path={GICONS[flag]} size={10} stroke={2.2} />
+        <span className="sp-gbadge-word">{FLAG_MARKS[flag].mark}</span>
+        <span className="sp-gbadge-tip" role="tooltip">
+          {FLAG_MARKS[flag].words}
+        </span>
       </span>
     );
   return (
@@ -245,6 +249,8 @@ interface NodeData extends Record<string, unknown> {
   onCode: (n: ViewNode, x: number, y: number) => void;
   /** The name of the group the node folds into, or of the folded group it stands for. */
   groupName: string;
+  /** Its group is drawn as an area whose title folds it: no fold button on the step. */
+  areaFold?: boolean;
 }
 
 /** A step's two handles, where `NodeBox` draws them: in at the top (left), out at the bottom (right). */
@@ -306,7 +312,7 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
         </span>
       )}
       {data.badge && <span className="sp-gnode-badge">{data.badge}</span>}
-      {node.group && (
+      {node.group && (folded || !data.areaFold) && (
         <button
           type="button"
           className="sp-gfold"
@@ -324,13 +330,25 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
   );
 }
 
-function LaneBox({ data }: NodeProps<Node<{ label: string; area: boolean }>>) {
+/** A group's band or area. In Metro and Compact its title is the group's fold button (Thomas:
+ * folding belongs to the subworkflow or stage, not to each step). */
+function LaneBox({ data }: NodeProps<Node<{ label: string; area: boolean; fold: string | null; onToggle: (group: string) => void }>>) {
   return (
-    <div className="sp-glane" data-area={data.area || undefined} aria-hidden="true">
-      <span>
-        <Icon path={GICONS.subworkflow} size={12} stroke={1.9} />
-        {data.label}
-      </span>
+    <div className="sp-glane" data-area={data.area || undefined}>
+      {data.fold ? (
+        <button type="button" className="sp-glane-fold nodrag nopan" onClick={() => data.onToggle(data.fold!)} onDoubleClick={(e) => e.stopPropagation()} aria-label={`Fold ${data.label} into one box`}>
+          <span className="sp-glane-fold-icon" aria-hidden="true">
+            <Icon path={GICONS.fold} size={11} stroke={2.4} />
+          </span>
+          <Icon path={GICONS.subworkflow} size={12} stroke={1.9} />
+          {data.label}
+        </button>
+      ) : (
+        <span aria-hidden="true">
+          <Icon path={GICONS.subworkflow} size={12} stroke={1.9} />
+          {data.label}
+        </span>
+      )}
     </div>
   );
 }
@@ -399,6 +417,15 @@ function ariaOf(n: ViewNode, status: ProcessStatus | null, extra: string[]): str
   return [...parts, ...extra].join(", ");
 }
 
+/** The centre-top of what a group occupies on the map: its folded box, or its steps' boxes. */
+function groupBox(view: View, placed: Placed, group: string): { x: number; y: number } | null {
+  const boxes = view.nodes.filter((n) => n.id === group || n.group === group).map((n) => placed.boxes.get(n.id)).filter((b) => !!b);
+  if (boxes.length === 0) return null;
+  const left = Math.min(...boxes.map((b) => b.x));
+  const right = Math.max(...boxes.map((b) => b.x + b.w));
+  return { x: (left + right) / 2, y: Math.min(...boxes.map((b) => b.y)) };
+}
+
 function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title, nextRef, engine, groupNames }: { engine: string; groupNames: Map<string, string>; settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
   const dark = useComputedColorScheme("light") === "dark";
   const { view, status, matches, crit, heat: heated } = shown;
@@ -413,8 +440,13 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
   const { nodes, edges } = useMemo(() => {
     const nodes: Node[] = [];
     const width = Math.max(0, ...[...placed.boxes.values()].map((b) => b.x + b.w)) + 40;
+    // an area that is a foldable group carries the fold button; its steps then need none
+    const foldable = new Set(view.nodes.filter((n) => n.group).map((n) => n.group!));
+    const areaFolds = new Set<string>();
     for (const lane of placed.lanes) {
-      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: lane.x ?? 0, y: lane.y }, data: { label: lane.label, area: lane.x !== undefined }, width: lane.w ?? width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1 });
+      const fold = lane.x !== undefined && foldable.has(lane.id) ? lane.id : null;
+      if (fold) areaFolds.add(fold);
+      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: lane.x ?? 0, y: lane.y }, data: { label: lane.label, area: lane.x !== undefined, fold, onToggle }, width: lane.w ?? width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1 });
     }
     // what the open step or link lights up: itself, its links and the steps at their other end
     const lit = new Set<string>();
@@ -487,6 +519,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
           onOpen,
           onToggle,
           onCode,
+          areaFold: !!n.group && areaFolds.has(n.group),
           groupName: n.group ? groupNames.get(n.group) ?? n.group.replace(/^(stage|sub|file):/, "") : "",
         },
       };
@@ -534,13 +567,27 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
   }, [selected]); // on a new selection only, not on every layout
 
   // a new level, layout, fold, focus or hidden set: fit the new drawing (React Flow fits only once)
-  const shape = `${settings.level}|${layout}|${settings.fold.join()}|${settings.focus}|${settings.hide.join()}`;
+  // One group folded or unfolded by hand keeps the zoom, and keeps that group where it was on
+  // screen (Thomas: "on ne garde pas le zoom et la vue"); anything else fits the new drawing.
+  const shape = `${settings.level}|${layout}|${settings.focus}|${settings.hide.join()}`;
+  const before = useRef({ shape, fold: settings.fold, view, placed });
   const first = useRef(true);
   useEffect(() => {
+    const was = before.current;
+    before.current = { shape, fold: settings.fold, view, placed };
     if (first.current) return void (first.current = false);
+    if (was.shape === shape && was.fold.join() === settings.fold.join()) return;
+    const toggled = [...settings.fold.filter((g) => !was.fold.includes(g)), ...was.fold.filter((g) => !settings.fold.includes(g))];
+    const from = was.shape === shape && toggled.length === 1 ? groupBox(was.view, was.placed, toggled[0]) : null;
+    const to = from ? groupBox(view, placed, toggled[0]) : null;
+    if (from && to) {
+      const { x, y, zoom } = flow.getViewport();
+      void flow.setViewport({ x: x + (from.x - to.x) * zoom, y: y + (from.y - to.y) * zoom, zoom }, { duration: 200 });
+      return;
+    }
     const timer = setTimeout(() => void flow.fitView({ duration: 200 }), 60);
     return () => clearTimeout(timer);
-  }, [shape]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shape, settings.fold]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enter in the search box: the next match, centred and focused
   const order = useMemo(() => topoOrder(view).filter((id) => matches.has(id)), [view, matches]);
