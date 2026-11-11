@@ -27,6 +27,9 @@ export interface Inspected {
   /** Asked with `params_file` (api §5.6): every top-level key of the file, or `values: null` and
    * an `error` in words; what in it, or the file itself, loads code. */
   params_file: ParamsFile | null;
+  /** Asked with `config_file` and `engine` (FU-P3-121): what Launch would refuse of the extra
+   * config file, in its words, or `error: null`; never the file's bytes (api §5.7). */
+  config_file?: { path: string; error: string | null } | null;
 }
 
 export interface ParamsFile {
@@ -511,10 +514,15 @@ export function inspect(
   revision: string | null,
   signal?: AbortSignal,
   paramsFile?: string | null,
+  configFile?: { path: string; engine: Engine },
 ): Promise<Inspected> {
   const query = new URLSearchParams({ location });
   if (revision) query.set("revision", revision);
   if (paramsFile) query.set("params_file", paramsFile);
+  if (configFile) {
+    query.set("config_file", configFile.path);
+    query.set("engine", configFile.engine);
+  }
   return call(`/workflows:inspect?${query}`, { signal });
 }
 

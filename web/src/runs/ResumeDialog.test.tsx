@@ -257,11 +257,15 @@ test("FU-P3-110d: the sheet says the resume reuses the resources and the kept fi
   expect(within(dialog).getByRole("alert")).not.toHaveTextContent("config_file:");
 });
 
-test("FU-P3-110d: only resources, or only the kept file, are named on their own", async () => {
-  detail(failedRun({ default_resources: { cpus: 4, mem_mib: null, time_min: null, state: "recorded" }, config_file: null }));
+const KEPT = { path: "/home/amartin/x.config", kept_as: "extra.config", sha256: "a".repeat(64), size: 10, includes: false, state: "recorded" };
+test.each([
+  ["only resources", { default_resources: { cpus: 4, mem_mib: null, time_min: null, state: "recorded" }, config_file: null }, "Same resources as before.", "kept config file"],
+  ["only the kept file", { default_resources: null, config_file: KEPT }, "The same kept config file (extra.config) as before.", "resources"],
+])("FU-P3-110d: %s, named on its own (CR-P3FU110D-02)", async (_case, over, said, unsaid) => {
+  detail(failedRun(over));
   app(`/runs/${ID}`);
   await userEvent.click(await within(await header()).findByRole("button", { name: "Resume" }));
   const dialog = await screen.findByRole("dialog", { name: "Resume this run?" });
-  expect(dialog).toHaveTextContent("Same resources as before.");
-  expect(dialog).not.toHaveTextContent("kept config file");
+  expect(dialog).toHaveTextContent(said);
+  expect(dialog).not.toHaveTextContent(unsaid);
 });
