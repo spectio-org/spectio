@@ -98,7 +98,8 @@ jobs:
         env:
           SPECTIO_BUILD_SHA: ${{ env.SHA }}
           SPECTIO_PREVIEW: ${{ steps.alias.outputs.alias }}
-        run: uvx --with mkdocs-material mkdocs build --strict -d site
+        # Previews are for reviewers: the developer site (mkdocs.dev.yml), which keeps /progress/ and the specs.
+        run: uvx --with mkdocs-material mkdocs build --strict -f mkdocs.dev.yml -d site
 
       - name: Skip notice (no Cloudflare secrets yet)
         if: steps.cf.outputs.has != 'true'
