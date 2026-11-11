@@ -5,6 +5,8 @@ import { type ApiError, type ResultStat, type RunDetail, type TextRead, type Wor
 import { Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
+import { PageHead } from "../shell/PageHead";
+import { ErrorPanel, SkeletonRows } from "../shell/States";
 import { CopyButton } from "./CopyMenu";
 import { LazyGrid } from "./LazyGrid";
 import { LogViewer } from "./LogViewer";
@@ -66,7 +68,13 @@ function Problem({ error, onRetry }: { error: ApiError; onRetry: () => void }) {
             : error.status === 503
               ? [OFFLINE, OFFLINE_WHY, true]
               : ["The file could not be read", error.message, true];
-  return <Note title={title} body={body} actions={retry ? <Button variant="default" size="xs" onClick={onRetry}>Retry</Button> : null} />;
+  if (!retry) return <Note title={title} body={body} />;
+  return (
+    <ErrorPanel onRetry={onRetry}>
+      <strong>{title}</strong>
+      {body && <> {body}</>}
+    </ErrorPanel>
+  );
 }
 
 const notAFile = (work?: WorkRoot) => (work ? "Not a file of this job's work directory." : "Not a file of this run's results.");
@@ -640,7 +648,6 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
   const [error, setError] = useState<ApiError | null>(null);
   const [reads, setReads] = useState(0);
   const [readAt, setReadAt] = useState<Date | null>(null);
-  const title = useRef<HTMLHeadingElement>(null);
   const valid = isResultPath(path) && !(work && hasDotPart(path));
   const taskName = useTaskName(id, work);
 
@@ -666,7 +673,8 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
 
   const loaded = file !== null;
   useEffect(() => {
-    if (loaded) title.current?.focus();
+    // the page head's h1, in the page or in the phone's title row
+    if (loaded) document.querySelector<HTMLElement>("h1.sp-page-title")?.focus();
   }, [loaded]);
 
   const name = run ? runName(run) : null;
@@ -695,20 +703,25 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
   return (
     <Work.Provider value={work}>
       <div className="sp-runs sp-file-page">
-        {work ? (
-          <Link className="sp-report-back" to="/runs/$id/workdir" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name, task, attempt }}>
-            <Icon name="chevronLeft" /> {file ? folder.split("/").pop() || "work directory" : "Work directory"}
-          </Link>
-        ) : task && attempt ? (
-          <BackToRun id={id} run={run} task={task} attempt={attempt} />
-        ) : (
-          <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name }}>
-            <Icon name="chevronLeft" /> {file ? folder.split("/").pop() || "results" : "Results"}
-          </Link>
-        )}
-        <h1 ref={title} tabIndex={-1} className="sp-page-title sp-file-name">
-          {fileName ?? "File preview"}
-        </h1>
+        <PageHead
+          section="runs"
+          icon="file"
+          title={fileName ?? "File preview"}
+          phoneTitle="title"
+          sub={
+            work ? (
+              <Link className="sp-report-back" to="/runs/$id/workdir" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name, task, attempt }}>
+                <Icon name="chevronLeft" /> {file ? folder.split("/").pop() || "work directory" : "Work directory"}
+              </Link>
+            ) : task && attempt ? (
+              <BackToRun id={id} run={run} task={task} attempt={attempt} />
+            ) : (
+              <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name }}>
+                <Icon name="chevronLeft" /> {file ? folder.split("/").pop() || "results" : "Results"}
+              </Link>
+            )
+          }
+        />
         {file && kind && (
           <div className="sp-file-facts">
             <span>
@@ -739,7 +752,7 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
         ) : error ? (
           <Problem error={error} onRetry={retry} />
         ) : !file || !kind ? (
-          <p className="sp-muted">Loading the file…</p>
+          <SkeletonRows label="Loading the file…" />
         ) : file.type === "link_outside" && kind === "omezarr" ? (
           <ZarrLink name={file.name} where={where!} work={!!work} />
         ) : file.type === "link_outside" ? (

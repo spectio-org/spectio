@@ -186,3 +186,48 @@ test("a folder opened from the task sheet's Outputs goes back to the sheet", asy
   expect(new URL(back.getAttribute("href")!, "http://x").pathname).toBe(`/runs/${ID}`);
   expect(query(back)).toEqual({ task: "tsk_19", attempt: "2" });
 });
+
+// UI-17 (ui-spec §12.5, §12.6, §12.12): the page head, the toolbar, the shared states.
+test("the page head: the section tile, the h1, the parent run named in the subtitle, no row above it", async () => {
+  results();
+  app(`/runs/${ID}/results?path=fastqc`);
+  const h1 = await screen.findByRole("heading", { level: 1, name: "Results" });
+  const head = h1.closest("header")!;
+  expect(head).toHaveClass("sp-head");
+  expect(head.querySelector(".sp-head-tile")).not.toBeNull();
+  expect(await within(head).findByRole("link", { name: /rnaseq-2026-10-25 · Summary/ })).toBeInTheDocument();
+  expect(head.previousElementSibling).toBeNull();
+});
+
+test("the toolbar: one named group with the search box and the sort on the phone", async () => {
+  viewport(390);
+  results();
+  app(`/runs/${ID}/results?path=fastqc`);
+  const bar = await screen.findByRole("group", { name: "Filter and sort" });
+  expect(bar).toHaveClass("sp-toolbar");
+  expect(within(bar).getByRole("searchbox", { name: "Filter this folder" })).toBeInTheDocument();
+  expect(within(bar).getByRole("combobox", { name: "Sort by" })).toBeInTheDocument();
+});
+
+test("an empty folder is the shared EmptyState", async () => {
+  results({ ...FASTQC, entries: [] });
+  app(`/runs/${ID}/results?path=fastqc`);
+  expect((await screen.findByText("This folder is empty.")).closest(".sp-emptystate")).not.toBeNull();
+});
+
+test("a missing results directory is an EmptyState", async () => {
+  results({ ...FASTQC, path: "", exists: false, entries: [] });
+  app(`/runs/${ID}/results`);
+  expect((await screen.findByText(/The results directory does not exist yet/)).closest(".sp-emptystate")).not.toBeNull();
+});
+
+test("an unreachable directory is the shared ErrorPanel with Retry", async () => {
+  serve({
+    [`${URL_}/results`]: () => new Response(JSON.stringify({ title: "Directory not reachable", status: 409 }), { status: 409, headers: { "content-type": "application/problem+json" } }),
+    [URL_]: { ...DETAIL, ...run({ state: "succeeded", name: "rnaseq-2026-10-25" }), results_dir: ROOT },
+  });
+  app(`/runs/${ID}/results?path=fastqc`);
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveClass("sp-errorpanel");
+  expect(within(alert).getByRole("button", { name: "Retry" })).toBeInTheDocument();
+});

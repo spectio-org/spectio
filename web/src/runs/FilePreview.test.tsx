@@ -710,3 +710,17 @@ test("WebGL 2 is probed once per page, and the probe's context is lost at once",
   expect(probe).toHaveBeenCalledOnce();
   expect(lose).toHaveBeenCalledOnce();
 });
+
+test("the page head and the shared ErrorPanel (ui-spec §12.5, §12.12, UI-17)", async () => {
+  serve({
+    [`${RUN}/results/stat/x.txt`]: () => json(503, { title: "Offline" }),
+    [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
+  });
+  open("x.txt");
+  const head = (await heading("x.txt")).closest("header")!;
+  expect(head).toHaveClass("sp-head");
+  expect(head.querySelector(".sp-head-tile")).not.toBeNull();
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveClass("sp-errorpanel");
+  expect(within(alert).getByRole("button", { name: "Retry" })).toBeInTheDocument();
+});

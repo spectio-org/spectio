@@ -83,7 +83,7 @@ test("a dot name in the URL is refused before any read; 410 says the directory w
   await router.navigate({ to: "/runs/$id/workdir", params: { id: ID }, search: { task: "tsk_19", attempt: 2, path: "sub" } });
   expect(await screen.findByText("The work directory was removed")).toBeInTheDocument();
   await router.navigate({ to: "/runs/$id/workdir", params: { id: ID }, search: { task: "tsk_19", attempt: 2 } });
-  expect(await screen.findByText("The work directory is not there yet")).toBeInTheDocument();
+  expect((await screen.findByText(/^The work directory is not there yet\./)).closest(".sp-emptystate")).not.toBeNull();
 });
 
 test("the file page of an HTML file: not opened, Download only, back to its folder, the task in the title", async () => {
