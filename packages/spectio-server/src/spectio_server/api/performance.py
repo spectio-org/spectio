@@ -15,7 +15,7 @@ import math
 import threading
 import time
 from collections import OrderedDict
-from collections.abc import Hashable, Iterable, Iterator
+from collections.abc import Hashable, Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from typing import Annotated, Any, Literal
 
@@ -69,7 +69,7 @@ def too_wide(detail: str, **extra: Any) -> Problem:
 
 
 @contextmanager
-def budget(conn: Connection) -> Iterator[None]:
+def budget(conn: Connection, what: str = "the run's performance") -> Iterator[None]:
     """SQLite stops a statement still running BUDGET_S after this began (api §5.5, Load)."""
     raw: Any = conn.connection.driver_connection  # sqlite3.Connection
     end = time.monotonic() + BUDGET_S
@@ -78,7 +78,7 @@ def budget(conn: Connection) -> Iterator[None]:
         yield
     except OperationalError as exc:
         if time.monotonic() > end:  # interrupted by the handler
-            raise too_wide(f"the run's performance was not read within {BUDGET_S:g} s") from exc
+            raise too_wide(f"{what} was not read within {BUDGET_S:g} s") from exc
         raise
     finally:
         raw.set_progress_handler(None, 0)  # the connection goes back to the pool without it
@@ -200,13 +200,14 @@ def _chosen(value: str | None) -> list[str]:
     return names
 
 
-def _filter(values: list[str] | None) -> tuple[str, ...] | None:
+def _filter(values: Sequence[str] | None, field: str = "process") -> tuple[str, ...] | None:
+    """A repeatable filter's values (api §5.5, Input checks), sorted, or None when absent."""
     if values is None:
         return None
     if len(values) > MAX_FILTER:
-        raise Invalid("process", f"at most {MAX_FILTER} values")
+        raise Invalid(field, f"at most {MAX_FILTER} values")
     if any(len(v) > MAX_VALUE for v in values):
-        raise Invalid("process", f"at most {MAX_VALUE} characters a value")
+        raise Invalid(field, f"at most {MAX_VALUE} characters a value")
     return tuple(sorted(set(values)))
 
 

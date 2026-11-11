@@ -697,3 +697,86 @@ class RunPerformance(BaseModel):
     processes_truncated: bool
     processes: list[ProcessPerformance]
     points: Points | None  # null with `points=false`
+
+
+class PerformanceTotals(BaseModel):
+    jobs: int  # the attempts counted, over every group
+    runs: int
+
+
+class PerformanceGroup(BaseModel):
+    """One group of `GET /performance:summary`: its key (`process_or_rule`, `partition`,
+    `pipeline`, `run_id`, `period_start`, as `group_by` asks), and each metric over its rows."""
+
+    key: dict[str, str | None]
+    runs: int
+    n: int
+    stats: dict[str, Stats | None]
+
+
+class PerformanceSummary(BaseModel):
+    totals: PerformanceTotals
+    groups: list[PerformanceGroup]
+    truncated: bool  # more than 500 groups: the largest `n` first are kept
+    scanned: int  # the rows in the filters, before `attempts=last`
+
+
+class PerformanceAttempt(BaseModel):
+    """One row of `attempt_metrics` (api §5.5), with its run's name; no owner, project or
+    environment ID."""
+
+    attempt_id: str
+    run_id: str
+    run_name: str | None
+    task_id: str
+    attempt: int
+    tag: str | None
+    process_or_rule: str
+    engine: str | None
+    pipeline: str | None
+    pipeline_version: str | None
+    run_state: str
+    state: str
+    submitted_at: str | None
+    started_at: str | None
+    ended_at: str | None
+    partition: str | None
+    source: str | None
+    cpus: int | None
+    mem_bytes: int | None
+    time_limit_s: float | None
+    cpu_percent: float | None
+    cpu_eff: float | None
+    peak_rss_bytes: int | None
+    peak_vmem_bytes: int | None
+    mem_eff: float | None
+    realtime_s: float | None
+    time_eff: float | None
+    wait_s: float | None
+    rchar_bytes: int | None
+    wchar_bytes: int | None
+    read_bytes: int | None
+    write_bytes: int | None
+
+
+class PerformanceAttempts(BaseModel):
+    items: list[PerformanceAttempt]
+    next: str | None
+
+
+class EnvironmentRef(BaseModel):
+    id: str
+    name: str  # "another environment" when the caller may not read it
+
+
+class PerformanceFacets(BaseModel):
+    """The distinct values in the range, at most 500 each, each computed with every filter
+    but its own; `truncated` names the facets cut at 500."""
+
+    pipeline: list[str]
+    pipeline_version: list[str]
+    process_or_rule: list[str]
+    partition: list[str]
+    environment: list[EnvironmentRef]
+    engine: list[str]
+    truncated: list[str]

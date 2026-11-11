@@ -145,6 +145,7 @@ def test_the_table_holds_exactly_the_spec_columns(writer: Writer) -> None:
         ("project_id", "pipeline", "process_or_rule", "ended_at"),
         ("project_id", "partition", "ended_at"),
         ("run_id",),
+        ("project_id", "pipeline", "ended_at"),  # `pipeline=` alone (FU-P3-105e, 0016)
     }
 
 

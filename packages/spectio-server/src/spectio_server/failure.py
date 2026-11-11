@@ -834,10 +834,11 @@ def sweep_run(conn: Connection, run_id: str, ctx: Context) -> None:
             return
 
 
-def _last_attempt() -> Any:
-    """The ID of the task's last attempt (api §7.2: its state is the task's)."""
+def _last_attempt(task_id: Any = tasks.c.id) -> Any:
+    """The ID of the last attempt of the task `task_id` names (api §7.2: its state is the
+    task's), a column of the outer query: `tasks.id` by default."""
     other = attempts.alias("newest")
-    newest = select(other.c.id).where(other.c.task_id == tasks.c.id).correlate(tasks)
+    newest = select(other.c.id).where(other.c.task_id == task_id).correlate(task_id.table)
     newest = newest.order_by(other.c.launch_n.desc(), other.c.n.desc()).limit(1)
     return newest.scalar_subquery()
 
