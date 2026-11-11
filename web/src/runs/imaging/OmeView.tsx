@@ -5,7 +5,8 @@
 // buttons for the zoom, Z and T ranges, and a status line for what stopped the reading. The
 // channel list and the view in the URL (FU-P3-102f): read once when the viewer opens, written back
 // with a history replace after a pause, so a Reload of the page or of the open keeps the view.
-// An OME-Zarr folder (FU-P3-102g) is read through our own store instead, key by key (`zarr`).
+// An OME-Zarr folder (FU-P3-102g) is read through our own store instead, key by key (`zarr`), its
+// chunks decoded in the decoder workers (FU-P3-102h).
 import { Button } from "@mantine/core";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { ApiError } from "../../api";
@@ -69,10 +70,12 @@ export default function OmeView({ url, size, name, zarr, workdir = false, fallba
     setStatus(null);
     if (flatOnly) return;
     const controller = new AbortController();
-    let pool: DecoderPool | undefined; // the TIFF's decoder workers; a Zarr needs none
+    let pool: DecoderPool | undefined; // the decoder workers: the TIFF's tiles, or the Zarr's chunks
     (async () => {
       if (zarr) {
         const store = new ZarrStore(zarr, controller.signal);
+        const workers = (pool = new DecoderPool());
+        store.decode = async (chunk, data) => new Uint8Array(await workers.decode(chunk, data.buffer as ArrayBuffer, "chunk"));
         store.work = workdir;
         store.onBusy = (b) => controller.signal.aborted || setBusy(b);
         const pixels = await openZarrPixels(store);

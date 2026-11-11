@@ -5,10 +5,11 @@
 // metadata first (Zarr v2: `.zattrs`, `.zgroup`, each level's `.zarray`; at most 1 MiB each, the
 // JSON depth pre-scan, then JSON.parse); the store then serves only that checked metadata, rebuilt
 // from the fields Viv reads, and the chunk keys of the checked levels, each checked against its
-// decoded size before decode. `.zmetadata` and any other key are never asked.
+// decoded size by our decoders (codecs.ts, in the decoder worker in the page). `.zmetadata` and
+// any other key are never asked.
 import { MIB, tooDeep } from "../preview";
 import { Answered, BUDGET, IN_FLIGHT, Refused, Stopped, problem, readAtMost } from "./client";
-import { NotDecoded, inflate } from "./decode";
+import { type Chunk, decodeChunk } from "./codecs";
 import { Unsupported } from "./flat";
 import { IFDS_MAX, TooLarge, Unreadable } from "./walk";
 
@@ -22,9 +23,11 @@ const PART = /^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,254}$/; // api §5.3.1 step 5, a mi
 const META = new Set([".zattrs", ".zgroup", ".zarray", "zarr.json"]); // the last part; no `.zmetadata`
 const CHUNK = /^\d{1,10}([./]\d{1,10}){0,9}$/;
 const DTYPES: Record<string, number> = { u1: 1, i1: 1, u2: 2, i2: 2, u4: 4, i4: 4, f4: 4 };
-// zstd: no decoded size before decode; blosc and lz4: numcodecs 0.3.2 builds its embind invokers
-// with `Function` (dist/blosc.js:193, dist/lz4.js:192), which the CSP refuses (inbox #135)
-const COMPRESSORS = new Set(["zlib", "gzip"]);
+// decoded by codecs.ts, not numcodecs 0.3.2, whose Blosc, LZ4 and zstd glue runs through
+// `Function` (dist/blosc.js:193, dist/lz4.js:192), which the CSP refuses (inbox #150)
+const COMPRESSORS = new Set(["zlib", "gzip", "blosc", "lz4", "zstd"]);
+const LABEL_MAX = 64; // a channel's name, in characters (SEC-P3FU102G-04)
+const VERSION = /^[0-9A-Za-z.-]{1,16}$/; // the multiscales version copied to Viv
 
 /** A folder with no OME-Zarr image, a plate or labels: shown with Browse folder. */
 export class NotImage extends Unsupported {}
@@ -43,6 +46,8 @@ export class ZarrStore {
   failure: Error | null = null;
   work = false; // a work directory's store: it refuses every dot part, so a v2 `.zattrs` gets a 422
   onBusy?: (busy: boolean) => void;
+  /** A chunk's decoder: in the page, the decoder pool's worker (OmeView); here by default. */
+  decode = async (chunk: Chunk, data: Uint8Array) => new Uint8Array(decodeChunk(chunk, data.buffer as ArrayBuffer));
   private served = new Map<string, Uint8Array>(); // the checked metadata, by key
   private levels = new Map<string, Level>(); // the checked levels, by path
   private active = 0;
@@ -63,7 +68,7 @@ export class ZarrStore {
     if (!level) return undefined; // never asked: absent
     try {
       const data = await this.fetchKey(k, CHUNK_READ_MAX);
-      return data && checkChunk(data, level);
+      return data && (await this.decode({ compressor: level.compressor, bytes: level.bytes }, data));
     } catch (err) {
       if ((err as Error).name !== "AbortError") this.failure = err as Error;
       throw err;
@@ -75,8 +80,10 @@ export class ZarrStore {
     const parts = key.split("/");
     if (!parts.every((p, i) => (PART.test(p) && p !== "." && p !== "..") || (i === parts.length - 1 && META.has(p)))) throw new Refused(`not asked: ${key}`);
     if (this.requests + 1 > this.budget.requests) throw new Stopped("requests");
-    if (this.bytes >= this.budget.bytes) throw new Stopped("bytes");
+    if (this.bytes + max > this.budget.bytes) throw new Stopped("bytes"); // reserved before the read (SEC-P3FU102G-03)
     this.requests++;
+    this.bytes += max;
+    let read = 0;
     while (this.active >= IN_FLIGHT) await new Promise<void>((go) => this.waiting.push(go));
     if (this.active++ === 0) this.onBusy?.(true);
     try {
@@ -88,9 +95,10 @@ export class ZarrStore {
       if (answer.status !== 200) throw new Answered(answer.status, await problem(answer));
       const data = await readAtMost(answer, max);
       if (!data) throw new TooLarge(max === META_MAX ? "Zarr metadata over 1 MiB" : "a Zarr chunk over 16 MiB");
-      this.bytes += data.byteLength;
+      read = data.byteLength;
       return data;
     } finally {
+      this.bytes -= max - read; // the reserve given back: only what was read is counted
       this.active--;
       this.waiting.shift()?.();
       if (this.active === 0 && !this.waiting.length) this.onBusy?.(false);
@@ -138,21 +146,9 @@ function checkArray(meta: Record<string, unknown> | undefined, n: number): { zar
   if (id !== null && (typeof id !== "string" || !COMPRESSORS.has(id))) throw new Unsupported(`Spectio cannot decode ${String(id)} compression.`);
   const fill = own(meta, "fill_value") ?? null;
   if (!(fill === null || Number.isFinite(fill) || ["NaN", "Infinity", "-Infinity"].includes(fill as string))) throw new Unreadable("a level's fill value is not a number");
-  // zlib and gzip are inflated here, capped, and served as raw bytes
+  // every compressor is decoded by the store, capped, and served as raw bytes
   const zarray = { zarr_format: 2, shape, chunks, dtype, compressor: null, fill_value: fill, order: order === "F" ? "F" : "C", filters: null, dimension_separator: sep === "/" ? "/" : "." };
   return { zarray, level: { bytes: values * DTYPES[type], compressor: id as string | null, shape: dims } };
-}
-
-/** A chunk whose decoded size is its level's: inflated with that cap, or raw of that size. */
-function checkChunk(data: Uint8Array, { bytes, compressor }: Level): Uint8Array {
-  const lying = (n: number) => new NotDecoded(`the chunk holds ${n} bytes, not ${bytes}`);
-  if (compressor === "zlib" || compressor === "gzip") {
-    const out = new Uint8Array(inflate(data.slice().buffer, bytes));
-    if (out.byteLength !== bytes) throw lying(out.byteLength);
-    return out;
-  }
-  if (data.byteLength !== bytes) throw lying(data.byteLength);
-  return data;
 }
 
 /** Reads and checks the OME-Zarr image's metadata, then locks the store to it (ui-spec §4.4.1 states). */
@@ -178,7 +174,8 @@ export async function openZarr(store: ZarrStore): Promise<ZarrMeta> {
   const group = await readJson(store, ".zgroup");
   if (!group || own(group, "zarr_format") !== 2) throw new Unreadable("the folder is not a Zarr v2 group");
   const served = new Map<string, Uint8Array>([[".zgroup", json({ zarr_format: 2 })]]);
-  served.set(".zattrs", json({ multiscales: [{ version: own(first, "version") ?? "0.4", axes: labels.map((name) => ({ name })), datasets: paths.map((path) => ({ path })) }] }));
+  const version = own(first, "version");
+  served.set(".zattrs", json({ multiscales: [{ version: typeof version === "string" && VERSION.test(version) ? version : "0.4", axes: labels.map((name) => ({ name })), datasets: paths.map((path) => ({ path })) }] }));
   const levels = new Map<string, Level>();
   for (const path of paths as string[]) {
     const { zarray, level } = checkArray(await readJson(store, `${path}/.zarray`), labels.length);
@@ -192,7 +189,7 @@ export async function openZarr(store: ZarrStore): Promise<ZarrMeta> {
   const count = labels.includes("c") ? shape[labels.indexOf("c")] : 1;
   const channels = own(own(attrs, "omero"), "channels");
   const meta = (i: number, k: string) => (Array.isArray(channels) ? own(channels[i], k) : undefined);
-  const names = Array.from({ length: count }, (_, c) => (typeof meta(c, "label") === "string" && (meta(c, "label") as string).trim()) || `Channel ${c + 1}`);
+  const names = Array.from({ length: count }, (_, c) => (typeof meta(c, "label") === "string" && (meta(c, "label") as string).trim().slice(0, LABEL_MAX)) || `Channel ${c + 1}`);
   const colours = Array.from({ length: count }, (_, c) => {
     const hex = meta(c, "color");
     return typeof hex === "string" && /^[0-9A-Fa-f]{6}$/.test(hex) ? ([0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number]) : null;
