@@ -1,7 +1,7 @@
 export const meta = {
-  name: 'p3-batch',
+  name: 'p3-batch-full',
   description: 'Close a batch of merged P3 tasks: one simplify pass on the batch diff, the full Progress page, one figure, the docs gate and doc-reviewer',
-  whenToUse: 'The autopilot runs it after 3 to 5 P3 tasks have merged into autopilot/integration, or when a milestone ends (docs/playbooks/autopilot.md §11). The orchestrator then pushes, opens the PR, merges it and promotes to main once.',
+  whenToUse: 'Superseded on 2026-11-10 by tools/autopilot/lean/ (autopilot.md §14); kept for non-P3 reference. The autopilot runs it after 3 to 5 P3 tasks have merged into autopilot/integration, or when a milestone ends (docs/playbooks/autopilot.md §11). The orchestrator then pushes, opens the PR, merges it and promotes to main once.',
   phases: [
     { title: 'Simplify', detail: 'code-simplifier on the batch diff, re-review when more than trivial' },
     { title: 'Docs', detail: 'doc-writer and diagram-artist, docs gate, doc-reviewer' },
