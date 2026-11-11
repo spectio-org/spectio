@@ -3,11 +3,10 @@ icon: material/server-network-outline
 ---
 # Environments: how a run is sent to the compute
 
-!!! note "Built on the integration branch, not released yet"
+!!! note "Not checked on SLURM"
+    Everything here ran on a local executor (`spectio init --local`): no SLURM environment was created or launched, so the SLURM form is not shown. The SLURM fields are described from the code and tests.
 
-    The server side (steps FU-P3-86a to FU-P3-86d, batch [P3-B10](../progress/W5/P3-M9.md#batch-p3-b10)) the screens (FU-P3-86f to FU-P3-86h, batch [P3-B11](../progress/W5/P3-M9.md#batch-p3-b11)) and the kind icons, the table view and Duplicate to edit (FU-P3-111, batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14)) work today from a checkout, 2026-11-09. The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). **Everything here ran on a local executor only** (`spectio init --local`): no SLURM environment was created or launched, so the SLURM form is not shown (see [Not shown](#not-shown)).
-
-An **environment** is a named set of launch defaults for one executor: where the engine sends its tasks, and how much it may ask for. It never changes where Spectio's own head runs. The fields, the rules and the routes are owned by [api §5.4](../specs/api-and-data-model.md#54-environments-001); the behaviour of the screens by [ui-spec §4.8.1](../specs/ui-spec.md#481-environments-in-001).
+An **environment** is a named set of launch defaults for one executor: where the engine sends its tasks, and how much it may ask for. It never changes where Spectio's own head runs.
 
 ## Two built-ins and your own
 
@@ -44,7 +43,7 @@ In every state but `ok`, only the built-ins are listed. A file that is `refused`
 
 ## On screen
 
-The pages are in the sidebar under **Environments**, and the form of a new one opens from **Launch**. The screens below are the real app, from a local server run as `alice` on `login1` with two environments in the file.
+The pages are in the sidebar under **Environments**, and the form of a new one opens from **Launch**. The screens below are from a local demo server run as `alice` on `login1` with two environments in the file.
 
 ### The Environments page
 
@@ -56,7 +55,7 @@ The pages are in the sidebar under **Environments**, and the form of a new one o
 - **Make default** changed the line under the title from "the default is two-cores" to "the default is local" at once (it was clicked on the built-in's card).
 - **Delete** asks first: "Delete eight-cores? Runs that used it keep their settings." After the confirmation the environment was gone from the file, and `GET /runs/<id>` of a run that used it still gave `"name": "eight-cores"`, `"state": "recorded"`.
 - The path of `environments.toml` is shown under the cards.
-- When the file is `refused`, `invalid` or `unreachable`, the actions that write wait and each says why ("Waits until the mistake in the file is fixed"). This was read from the code and its tests, **not** reproduced in a browser.
+- When the file is `refused`, `invalid` or `unreachable`, the actions that write wait and each says why ("Waits until the mistake in the file is fixed"). This is covered by tests and was not reproduced in a browser.
 
 On a phone a card is one link to the environment's page, which carries the actions (Duplicate and Delete last):
 
@@ -64,8 +63,6 @@ On a phone a card is one link to the environment's page, which carries the actio
 [![The Environments page on a phone, dark](../assets/shots/app-environments-phone_dark.webp#only-dark)](../assets/shots/app-environments-phone_dark.webp)
 
 ### Cards or a table
-
-*Step FU-P3-111, batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14). Owner: [ui-spec §4.8.1](../specs/ui-spec.md#481-environments-in-001).*
 
 A switch under the title, **Show environments as** Cards or Table, changes the list's view. The view is kept in the address (`/environments?view=table`; cards when absent), so Reload and a copied link keep it, and Save or Cancel on a form returns to the view the list last showed.
 
@@ -81,7 +78,7 @@ A switch under the title, **Show environments as** Cards or Table, changes the l
 
 *The built-in `local` has no limit, so the CPU and memory fields are empty. The page title reads "New environment": a duplicate is a new one.*
 
-- **Not drawn as the boards draw it** (open minors): the board's switch buttons carry icons and the app's do not; a table row has no "Not usable: <reason>" in its State column; the phone table view and "Duplicate to edit" exist on the board only as footnotes ([P3-fu111](../reviews/code/P3-fu111.md)).
+- **Small gaps:** the view switch has no icons, and a table row has no "Not usable: <reason>" in its State column.
 
 ### The form
 
@@ -90,7 +87,7 @@ A switch under the title, **Show environments as** Cards or Table, changes the l
 
 - The name, an optional label, the executor and its fields, and a default profile for each engine. On this server the executor is fixed: "This server was set up with spectio init --local: it has no SLURM".
 - The local caps are CPUs and memory with a MiB or GiB unit.
-- A value the server refuses (a `422`) shows under its field. One for a field the form does not show goes to an alert banner. Both are from the tests; with the name `Bad Name` typed, the browser run showed Save not enabled.
+- A value the server refuses (a `422`) shows under its field. One for a field the form does not show goes to an alert banner. With the name `Bad Name` typed, Save stays disabled.
 
 ### On Launch and on Run detail
 
@@ -98,7 +95,7 @@ A switch under the title, **Show environments as** Cards or Table, changes the l
 [![Launch with Where it runs and the aside, dark](../assets/shots/app-launch-environment_dark.webp#only-dark)](../assets/shots/app-launch-environment_dark.webp)
 
 - **Where it runs** has the **Environment** row. With one usable environment it is a text line; two to six are radio cards, as above; more are a select. The default is chosen until you pick another. **New environment** opens the form in a dialog (a bottom sheet on a phone) and **Save and choose it** keeps your launch form.
-- **Summary**, top right: pipeline and profile, engine and its version, environment, engine head, tasks, run directory. In the browser run, choosing the new `one-core` changed the Environment line from "This machine · Local" to "One core · Local" and the Tasks line to "run on login1 by Nextflow · at most 1 CPUs" (the "1 CPUs" is a plural slip, [DW-P3B11-02](../reviews/code/P3-B11.md#findings)).
+- **Summary**, top right: pipeline and profile, engine and its version, environment, engine head, tasks, run directory. In the browser run, choosing the new `one-core` changed the Environment line from "This machine · Local" to "One core · Local" and the Tasks line to "run on login1 by Nextflow · at most 1 CPUs" (the "1 CPUs" is a plural slip).
 - **Before Launch** lists every reason Launch waits, each a link to its field. A link opens the folded section that holds the field and moves focus there. Here, with `scale` set to 0: "Fix scale: Must be at least 1." With nothing wrong it reads "Nothing is missing." Both Launch buttons are described by this list.
 - The params preview is folded at first.
 
@@ -111,7 +108,7 @@ A run launched from the screen with `one-core` chosen was `succeeded`, its `GET 
 
 ## Using them (the API)
 
-The screens call these routes. All of them are under `/api/v1`, need a signed-in session, and write only with a same-origin request. These calls ran against a real `spectio serve` (local mode, Nextflow 26.10.4), signed in as `alice` on `login1`. Long answers are shortened here to the fields that matter.
+The screens call these routes. All of them are under `/api/v1`, need a signed-in session, and write only with a same-origin request. These calls ran against a real `spectio serve` (local mode, Nextflow 26.10.4). Long answers are shortened to the fields that matter.
 
 **List.** With no file, the built-in only:
 
@@ -178,9 +175,9 @@ executor {
 }
 ```
 
-- The first line of the head's output names the environment. The config is the only place its values reach Nextflow; for Snakemake they become arguments (the table is in [api §5.4](../specs/api-and-data-model.md#54-environments-001), and was checked on Nextflow only).
+- The first line of the head's output names the environment. The config is the only place its values reach Nextflow; for Snakemake they become arguments (checked on Nextflow only).
 - **Cpus and memory are caps,** not what the tasks use.
-- **A pipeline's own settings still win** for a process that sets its own time or memory (Nextflow's configuration order, per api §5.4).
+- **A pipeline's own settings still win** for a process that sets its own time or memory (Nextflow's configuration order).
 - **A launch that cannot work is a `422` on `environment`,** and no run is created:
 
 | `environment` | Server state | Answer |
@@ -227,13 +224,10 @@ warn environments /srv/demo-b10/data/environments.toml: refused (environments.to
 
 The `detail` of an `invalid` file never holds bytes of the file: a parser message is cut at its first quote and keeps only its place (`not TOML: Cannot overwrite a value (at line 3, column 22)`). Putting the file back (mode 600) made the next list `ok` again, with `two-cores` as the default.
 
-## Not shown
+## Not checked
 
-- **A SLURM environment:** no create, no launch, no `sacct`. The `slurm` fields, the Snakemake arguments and `--local-cores 2` are covered by tests (`test_headscript.py`, `test_environment_snapshot.py`), not run on a cluster.
-- **An `unreachable` file:** it needs a file system that stops answering. The tests make it with a patched `os.open` (`ESTALE`) and a stalled pool.
-- **Snakemake with an environment:** not launched here, only tested.
-- **The SLURM form and a SLURM environment on screen:** the server was local, so the executor is fixed to Local and no partition or account field was seen.
-- **A file that is `refused`, `invalid` or `unreachable` on screen:** the page's banners and waiting buttons are covered by Vitest (`EnvironmentsPage.test.tsx`), not run in a browser against a bad file.
+- **A SLURM environment:** no create, no launch, no `sacct`. The `slurm` fields, the Snakemake arguments and `--local-cores 2` are covered by tests, not run on a cluster.
+- **Snakemake with an environment:** not launched, only tested.
+- **A file that is `refused`, `invalid` or `unreachable` on screen:** the banners and waiting buttons are covered by unit tests, not run in a browser against a bad file.
 - **Firefox, WebKit and a screen reader:** screens were taken with Chromium only.
 - **Launch and Run detail on a phone:** only the Environments list was taken on a phone.
-- **`POST /runs:validate`:** 0.0.1 has no such route (it answers `404`); the field is read by `POST /runs`. See [DW-P3B10-01](../reviews/code/P3-B10.md#findings).

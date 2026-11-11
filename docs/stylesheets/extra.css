@@ -217,7 +217,9 @@
 .md-typeset .sp-hero2__sub { font-size: .9rem; color: var(--sp-text-2); margin: 0 0 1.4rem; }
 .md-typeset .sp-hero2__actions .md-button { margin: 0 .3rem .5rem; border-radius: .4rem; }
 .md-typeset .sp-hero2__media { max-width: 64rem; margin: 0 auto 1rem; }
-.md-typeset .sp-hero2__media video { width: 100%; display: block; border-radius: .7rem; border: 1px solid var(--sp-line); box-shadow: 0 16px 40px rgba(15, 16, 32, .14); }
+.md-typeset .sp-hero2__media video, .md-typeset .sp-hero2__media img { width: 100%; border-radius: .7rem; border: 1px solid var(--sp-line); box-shadow: 0 16px 40px rgba(15, 16, 32, .14); }
+.md-typeset .sp-hero2__media video { display: block; }
+/* An img keeps its display so that Material's #only-light / #only-dark rules can hide it. */
 .md-typeset .sp-hero2__media figcaption { font-size: .68rem; color: var(--sp-text-3); }
 .md-typeset .sp-h2 { text-align: center; font-size: 1.5rem; font-weight: 600; margin: 3.4rem 0 1.4rem; }
 .md-typeset .sp-h2 .headerlink { display: none; }

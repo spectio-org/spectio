@@ -3,11 +3,7 @@ icon: material/bookshelf
 ---
 # Your pipeline catalog on Launch
 
-!!! note "Built on the integration branch, not released yet"
-
-    The catalog file, its routes and its pages (steps FU-P3-87a to FU-P3-87d, batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14)) and the picker on Launch (FU-P3-87e, batch [P3-B13](../progress/W5/P3-M9.md#batch-p3-b13)) work today from a checkout, 2026-11-10. The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). The screens below come from servers seeded by `tools/media/b13_demo.py` and `tools/media/b14_demo.py`, not from a pipeline run.
-
-The catalog is a short list of pipelines you use often, each under a name. Launch lets you pick one instead of typing its path again. The fields, the file and the routes are owned by [api §5.6](../specs/api-and-data-model.md#56-pipeline-catalog-001); the screens by [ui-spec §4.7.1](../specs/ui-spec.md#471-pipeline-catalog-in-001).
+The catalog is a short list of pipelines you use often, each under a name. Launch lets you pick one instead of typing its path again.
 
 ## What an entry holds
 
@@ -30,7 +26,7 @@ The page is `/catalog`, reached from Home ("Your catalog") and from **Manage cat
 ![The Catalog page: three cards, Liver QC (Snakemake), nf-core-rnaseq (Nextflow, at 3.27.0, profile test) and RNA-seq test (Nextflow, profile test, parameters from conf/test.yaml), each with Edit and Delete, and Add pipeline at the top right](../assets/shots/app-catalog_light.webp#only-light)
 ![The Catalog page: three cards, each with Edit and Delete, and Add pipeline at the top right](../assets/shots/app-catalog_dark.webp#only-dark)
 
-*Three demo entries in a seeded `catalog.toml`. The line under the cards names the file, "Saved in /srv/demo-b14/data/catalog.toml".*
+*Three demo entries in a `catalog.toml`. The line under the cards names the file, "Saved in /srv/demo-b14/data/catalog.toml".*
 
 - **One card per entry:** its label (or its name), the engine, the name when there is a label, the location with `@revision` for a repository, and "profile test · parameters from conf/test.yaml" when set.
 - **Add pipeline** opens an empty form. **Edit** and **Delete** are named per entry ("Edit rnaseq-test") for a screen reader. **Back to Launch** is above the heading.
@@ -51,11 +47,11 @@ The page is `/catalog`, reached from Home ("Your catalog") and from **Manage cat
 - **Saving checks how the fields are written, not that the pipeline exists:** Launch reads it. This is the line above Save.
 - **A conflict** ("This entry changed in another tab.", "The file changed on disk since this page read it.") shows a banner with **Reload**, which discards your changes.
 - After **Save** the list opens with "Saved rnaseq-test" read out and the focus on that card; after **Cancel** the focus returns to the button that opened the form.
-- **A known wrong line:** the form's last line reads "Saving rewrites ~/.spectio/catalog.toml" whatever the data directory is. The list's "Saved in" line names the real file ([DW-P3B14-03](../reviews/code/P3-B14.md#findings)).
+- **A known wrong line:** the form's last line reads "Saving rewrites ~/.spectio/catalog.toml" whatever the data directory is. The list's "Saved in" line names the real file.
 
 ## On the API
 
-The routes are `GET` and `POST /catalog` and `GET`, `PUT` and `DELETE /catalog/{name}`, with an `ETag` and `If-Match` as for environments; an entry is a shortcut, not a launch value. The workflow inspect route takes the entry's `params_file` and answers `values: null` with a fixed error ("not JSON", "not YAML") when the file does not parse, never a `500` ([api §5.6](../specs/api-and-data-model.md#56-pipeline-catalog-001)). Against the demo server of the screens above (`/api/v1`, signed in as `alice`):
+The routes are `GET` and `POST /catalog` and `GET`, `PUT` and `DELETE /catalog/{name}`, with an `ETag` and `If-Match` as for environments; an entry is a shortcut, not a launch value. The workflow inspect route takes the entry's `params_file` and answers `values: null` with a fixed error ("not JSON", "not YAML") when the file does not parse, never a `500`. Against the demo server of the screens above (`/api/v1`):
 
 ```console
 GET /catalog
@@ -105,10 +101,9 @@ In every state the free Pipeline field and **Try a test pipeline** still work. S
 
 ## Not built in 0.0.1
 
-A Launch action on each entry, a link such as `/launch?catalog=`, browsing nf-core or the Snakemake catalogue, shared catalogs, and checking a path on save: [ui-spec §4.7.1, Later](../specs/ui-spec.md#471-pipeline-catalog-in-001).
+A Launch action on each entry, a link such as `/launch?catalog=`, browsing nf-core or the Snakemake catalogue, shared catalogs, and checking a path on save.
 
-## Not shown
+## Not checked
 
-- The phone view of the Catalog page and of its form (batch P3-B14), a file in the refused, invalid or unreachable state, the Delete dialog, and a saved entry: not captured. The tests cover them (`CatalogPage.test.tsx`, 17 tests).
-- The phone view of the picker and of the dialog: the batch did not capture it. The tests cover the phone sheet ([`LaunchCatalog.test.tsx`](https://github.com/spectio-org/spectio/blob/HEAD/web/src/launch/LaunchCatalog.test.tsx)), and the focus return on Cancel and Escape has no test yet (CR-P3FU87E-04, open).
-- The file states (refused, invalid, unreachable) on screen: the server was seeded with a good file.
+- The phone view of the Catalog page, its form and the picker, a file in the refused, invalid or unreachable state, the Delete dialog, and a saved entry were not captured. Unit tests cover them.
+- The file states on screen: the demo server was set up with a good file.
