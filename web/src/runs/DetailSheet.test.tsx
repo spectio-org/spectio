@@ -192,7 +192,7 @@ test("Open in Tasks goes to the Tasks tab filtered on the process, kept in the U
   await userEvent.click(within(sheet).getByRole("button", { name: "Open ALIGN in Tasks" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(router.state.location.search).toEqual({ tab: "tasks", process: ALIGN });
-  expect(await screen.findByRole("combobox", { name: /Process/ })).toHaveValue(ALIGN);
+  expect(((await screen.findByRole("textbox", { name: "Process" })) as HTMLInputElement).value).toMatch(/^ALIGN \(/);
   await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Tasks" })).toHaveFocus());
   await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/tasks?process=${ALIGN}&limit=50`));
 });
@@ -200,9 +200,12 @@ test("Open in Tasks goes to the Tasks tab filtered on the process, kept in the U
 test("the URL ?tab=tasks&process= opens the Tasks tab on that process; changing it keeps the URL", async () => {
   detail();
   const router = app(`/runs/${ID}?tab=tasks&process=${encodeURIComponent(ALIGN)}`);
-  const select = await screen.findByRole("combobox", { name: /Process/ });
-  expect(select).toHaveValue(ALIGN);
-  await userEvent.selectOptions(select, "");
+  const select = await screen.findByRole("textbox", { name: "Process" });
+  expect((select as HTMLInputElement).value).toMatch(/^ALIGN \(/);
+  Element.prototype.scrollIntoView = () => {}; // jsdom has none; the Select scrolls to its option
+  await userEvent.click(select);
+  await userEvent.click(await screen.findByRole("option", { name: /^All processes/ }));
+  Reflect.deleteProperty(Element.prototype, "scrollIntoView");
   await waitFor(() => expect(router.state.location.search).toEqual({ tab: "tasks" }));
 });
 

@@ -376,15 +376,16 @@
   border-radius: 0 0 12px 12px;
   box-shadow: inset 0 1px 0 var(--sp-line-divider);
 }
+/* one mono size in the log viewer, 12/18 (UI-11) */
 .sp-log {
   max-height: min(60vh, 560px);
   overflow: auto;
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 14px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: var(--mantine-font-size-xs);
+  line-height: 18px;
   color: var(--sp-code-text);
   background: var(--sp-surface-code);
 }
@@ -976,13 +977,7 @@
     overflow: hidden;
     overflow-wrap: anywhere;
   }
-  /* Logs (MLiteRunLogs): the sources share the width, the file path wraps above its Copy. */
-  .sp-log-tools .sp-segments {
-    width: 100%;
-  }
-  .sp-log-tools .sp-segments button {
-    flex: 1 0 auto;
-  }
+  /* Logs (MLiteRunLogs): the file path wraps above its Copy. */
   .sp-log-file code {
     flex-basis: 100%;
     order: 1;
@@ -1035,7 +1030,43 @@
   overflow-x: auto;
 }
 .sp-logs {
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
+}
+/* the run tabs (ui-spec §12.9): 36 px, accent from the theme */
+.sp-run-tabs .mantine-Tabs-tab {
+  height: 36px;
+}
+/* the frame of an empty, failed or loading log (ui-spec §12.12), the viewer's place */
+.sp-log-frame {
+  padding: var(--mantine-spacing-lg);
+  border: 1px solid var(--sp-line-border);
+  border-radius: var(--mantine-radius-md);
+}
+/* the log toolbar holds many tools: the search keeps a usable width, the levels one row */
+.sp-logs .sp-toolbar-search,
+.sp-file-page .sp-toolbar-search {
+  flex: 1 1 160px;
+  min-width: 160px;
+}
+/* the run tabs' toolbars (UI-10, UI-11): segments keep one row, the Process select a fixed width */
+.sp-runs .sp-toolbar .sp-segments {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+.sp-task-group {
+  width: 200px;
+}
+@media (max-width: 767.98px) {
+  /* on the phone the segments scroll sideways as pills (ui-spec §12.6) */
+  .sp-runs .sp-toolbar .sp-segments {
+    flex: 0 1 auto;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+.sp-log-caption {
+  margin: 0;
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-log-file {
   display: flex;
@@ -1236,14 +1267,10 @@
 .sp-sheet-facts dd {
   margin: 2px 0 0;
 }
-.sp-log-search {
-  margin-bottom: 8px;
-}
 .sp-log-count {
-  min-width: 64px;
   font-variant-numeric: tabular-nums;
 }
-.sp-log-search .sp-segments button[data-tone] {
+.sp-log-levels button[data-tone] {
   color: var(--tone-fg);
 }
 /* the viewer is dark in both schemes: a match is dark text on the code palette's amber, the
@@ -1836,6 +1863,7 @@
 }
 .sp-log-n {
   text-align: right;
+  font-variant-numeric: tabular-nums;
   color: var(--sp-text-faint);
   user-select: none;
 }

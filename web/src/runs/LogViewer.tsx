@@ -1,6 +1,8 @@
 import { type KeyboardEvent, type ReactNode, memo, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@mantine/core";
-import { Icon } from "../icons";
+import { ActionIcon, Button, TextInput, Tooltip } from "@mantine/core";
+import { Icon, type IconName } from "../icons";
+import { SkeletonRows } from "../shell/States";
+import { Toolbar } from "../shell/Toolbar";
 
 // The run's log viewer (LiteRunLogs; P3-parD, Thomas 2026-10-31: "logs pas searchable"): the lines
 // tinted by level, a level filter, and a search whose matches are marked, with an "n / m" counter,
@@ -69,23 +71,42 @@ const Line = memo(function Line({ text, tone, hits = [], size, current, n }: { t
   );
 });
 
+/** An icon-only toolbar action (ui-spec §12.4): named by `label`, which its tooltip shows on hover
+ * and focus; `pressed` makes it a toggle; `href` makes it a link that opens a new tab. */
+export function ToolButton({ label, icon, pressed, onClick, disabled, href }: { label: string; icon: IconName; pressed?: boolean; onClick?: () => void; disabled?: boolean; href?: string }) {
+  const link = href ? ({ component: "a", href, target: "_blank", rel: "noopener noreferrer" } as const) : {};
+  return (
+    <Tooltip label={label} withinPortal={false}>
+      <ActionIcon variant={pressed ? "light" : "default"} size="lg" aria-label={label} aria-pressed={pressed} onClick={onClick} disabled={disabled} {...link}>
+        <Icon name={icon} />
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
 /** A log's lines, each tinted by its level (the Summary's last lines). */
 export function LogLines({ text }: { text: string }) {
   return splitLines(text).map((line, i) => <Line key={i} text={line} tone={level(line)} size={0} current={-1} />);
 }
 
-/** The whole viewer: the search and level tools, then the lines. A run log opens at its end with
- * level tints and filter; the file preview (ui-spec §4.4.1) passes `start: "top"`, `levels`
+/** The whole viewer: one toolbar (ui-spec §12.6: search, the stream and level filters, the match
+ * counter, then the actions), then the lines. A run log opens at its end, follows it (Follow the
+ * end) and has its own Wrap lines; the file preview (ui-spec §4.4.1) passes `start: "top"`, `levels`
  * only for .log, .out and .err, `gutterFrom` (the first line's number; no gutter for an End
- * read), `wrap`, and on the phone `searchButton`: the search behind a Search button. */
+ * read), its own `wrap`, and on the phone `searchButton`: the search behind a Search button.
+ * `filters` and `actions` join the toolbar; `placeholder` (an empty or error state) replaces the
+ * lines, and while `text` is null skeleton lines do (ui-spec §12.12). */
 export function LogViewer({
   text,
   label,
   start = "end",
   levels = true,
   gutterFrom,
-  wrap = false,
+  wrap,
   searchButton = false,
+  filters,
+  actions,
+  placeholder,
 }: {
   text: string | null;
   label: string;
@@ -94,7 +115,13 @@ export function LogViewer({
   gutterFrom?: number;
   wrap?: boolean;
   searchButton?: boolean;
+  filters?: ReactNode;
+  actions?: ReactNode;
+  placeholder?: ReactNode;
 }) {
+  const [wrapping, setWrapping] = useState(false);
+  const [follow, setFollow] = useState(start === "end");
+  const wrapped = wrap ?? wrapping;
   const [typed, setTyped] = useState("");
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState<Level>("all");
@@ -140,10 +167,10 @@ export function LogViewer({
   useEffect(() => {
     viewer.current?.querySelector("mark[data-current]")?.scrollIntoView?.({ block: "center", inline: "nearest" });
   }, [at, matches]);
-  // a log opens at the end: the newest lines
+  // a log opens at the end, the newest lines, and stays there while Follow the end is on
   useEffect(() => {
-    if (start === "end" && text !== null && viewer.current) viewer.current.scrollTop = viewer.current.scrollHeight;
-  }, [text, start]);
+    if (follow && text !== null && viewer.current) viewer.current.scrollTop = viewer.current.scrollHeight;
+  }, [text, follow]);
 
   useEffect(() => {
     if (searching) field.current?.focus(); // Search pressed: focus moves into the field
@@ -162,22 +189,24 @@ export function LogViewer({
     }
   };
   const name = label.toLowerCase();
+  const frame = placeholder ?? (text === null ? <SkeletonRows rows={6} height={18} label={`Loading the ${name}…`} /> : null);
   return (
     <>
-      <div className="sp-filters sp-log-search">
-        {searchButton && (
-          // the style of Wrap lines beside it (FU-P3-104)
-          <Button variant="default" size="xs" aria-expanded={open} onClick={() => setSearching(!open)}>
-            Search
-          </Button>
-        )}
-        {open && (
+      <Toolbar
+        label={`${label} tools`}
+        search={
           <>
-            <label className="sp-search-field">
-              <Icon name="search" />
-              <input
+            {searchButton && (
+              // the style of Wrap lines beside it (FU-P3-104)
+              <Button variant="default" size="xs" aria-expanded={open} onClick={() => setSearching(!open)}>
+                Search
+              </Button>
+            )}
+            {open && (
+              <TextInput
                 ref={field}
                 type="search"
+                size="sm"
                 aria-label={`Search the ${name}`}
                 placeholder={`Search the ${name}`}
                 value={typed}
@@ -185,36 +214,52 @@ export function LogViewer({
                 onKeyDown={onKey}
                 spellCheck={false}
                 autoComplete="off"
+                leftSection={<Icon name="search" />}
               />
-            </label>
-            <span className="sp-muted sp-log-count" data-testid="log-search-count" aria-live="polite">
+            )}
+          </>
+        }
+        filters={
+          <>
+            {filters}
+            {levels && !frame && (
+              <div className="sp-segments sp-log-levels" role="group" aria-label="Show lines">
+                {LEVELS.map((l) => (
+                  <button key={l.key} type="button" aria-pressed={shown === l.key} data-tone={l.tone} onClick={() => setShown(l.key)}>
+                    {l.label}
+                    <span className="sp-count">{counts[l.key]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        }
+        caption={
+          open && (
+            <span className="sp-log-count" data-testid="log-search-count" aria-live="polite">
               {query ? (matches.length ? `${at + 1} / ${matches.length}` : "No match") : ""}
             </span>
-            <span className="sp-actions">
-              <button type="button" className="sp-key" aria-label="Previous match" disabled={!matches.length} onClick={() => step(-1)}>
-                <Icon name="chevronLeft" />
-              </button>
-              <button type="button" className="sp-key" aria-label="Next match" disabled={!matches.length} onClick={() => step(1)}>
-                <Icon name="chevronRight" />
-              </button>
-            </span>
-          </>
-        )}
-        {levels && (
-          <div className="sp-segments" role="group" aria-label="Show lines">
-            {LEVELS.map((l) => (
-              <button key={l.key} type="button" aria-pressed={shown === l.key} data-tone={l.tone} onClick={() => setShown(l.key)}>
-                {l.label}
-                <span className="sp-count">{counts[l.key]}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <pre ref={viewer} className={wrap ? "sp-log" : "sp-log sp-nowrap"} data-wrap={wrap || undefined} tabIndex={0} aria-label={label}>
-        {text === null
-          ? "Loading…"
-          : visible.length === 0
+          )
+        }
+        actions={
+          <span className="sp-actions">
+            {query && (
+              <>
+                <ToolButton label="Previous match" icon="chevronLeft" disabled={!matches.length} onClick={() => step(-1)} />
+                <ToolButton label="Next match" icon="chevronRight" disabled={!matches.length} onClick={() => step(1)} />
+              </>
+            )}
+            {wrap === undefined && <ToolButton label="Wrap lines" icon="wrap" pressed={wrapping} onClick={() => setWrapping(!wrapping)} />}
+            {start === "end" && <ToolButton label="Follow the end" icon="follow" pressed={follow} onClick={() => setFollow(!follow)} />}
+            {actions}
+          </span>
+        }
+      />
+      {frame ? (
+        <div className="sp-log-frame">{frame}</div>
+      ) : (
+        <pre ref={viewer} className={wrapped ? "sp-log" : "sp-log sp-nowrap"} data-wrap={wrapped || undefined} tabIndex={0} aria-label={label}>
+          {visible.length === 0
             ? "No line at this level."
             : visible.map((i) => (
                 <Line
@@ -227,7 +272,8 @@ export function LogViewer({
                   n={gutterFrom === undefined ? undefined : gutterFrom + i}
                 />
               ))}
-      </pre>
+        </pre>
+      )}
     </>
   );
 }

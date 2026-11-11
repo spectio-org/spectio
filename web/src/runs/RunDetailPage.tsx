@@ -1,4 +1,4 @@
-import { Button, Modal, Tabs } from "@mantine/core";
+import { Button, Modal, SegmentedControl, Select, Tabs } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { type KeyboardEvent, type Ref, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
@@ -23,13 +23,16 @@ import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { FoldSection } from "../shell/FoldSection";
+import { CardHead } from "../shell/CardHead";
 import { usePhone } from "../shell/layout";
+import { EmptyState, ErrorPanel } from "../shell/States";
+import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { useAccountingReads } from "./accounting";
-import { CopyButton } from "./CopyMenu";
+import { CopyButton, useCopyStatus } from "./CopyMenu";
 import { type Detail, DetailSheet } from "./DetailSheet";
 import { taskSearch } from "./explorer";
 import { FailureSummary } from "./FailureSummary";
-import { LogLines, LogViewer } from "./LogViewer";
+import { LogLines, LogViewer, ToolButton } from "./LogViewer";
 import { ByProcess } from "./ByProcess";
 import { bytes, isLow, isNear, nearLimit, percent, resourcesLine, seconds } from "./resources";
 import { ResultsSection } from "./ResultsSection";
@@ -674,11 +677,54 @@ function TasksPanel({
   const counts = process ? (processes.find((p) => p.process === process)?.counts ?? {}) : run.task_counts;
   const count = (states: string[] | null) => (states ? sum(counts, ...states) : total(counts));
   const tasks = shown?.rows ?? null;
-  const tabs = <ViewTabs view={view} setView={setView} w={w} />;
+  // one toolbar for both views (ui-spec §12.6), the view tabs first so they keep focus on a switch
+  const toolbar = (
+    <Toolbar
+      label={`${w.Units} tools`}
+      filters={
+        <>
+          <ViewTabs view={view} setView={setView} w={w} />
+          {view === "list" && (
+            <>
+              <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
+                {TASK_FILTERS.map((f, i) => (
+                  <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
+                    {f.label}
+                    <span className="sp-count">{count(f.states)}</span>
+                  </button>
+                ))}
+              </div>
+              <Select
+                size="sm"
+                className="sp-task-group"
+                aria-label={w.Group}
+                allowDeselect={false}
+                value={process}
+                onChange={(value) => setProcess(value ?? "")}
+                data={[
+                  { value: "", label: `All ${w.groups} (${processes.length})` },
+                  ...processes.map((p) => ({ value: p.process, label: `${lastSegment(p.process)} (${total(p.counts)})` })),
+                  ...(process && !processes.some((p) => p.process === process) ? [{ value: process, label: lastSegment(process) }] : []),
+                ]}
+              />
+            </>
+          )}
+        </>
+      }
+      caption={
+        view === "list" && (
+          <>
+            In the order {engineName(run.workflow.engine)} first reported them
+            {active && <LiveStatus />}
+          </>
+        )
+      }
+    />
+  );
   if (view === "process") {
     return (
       <section className="sp-runs" aria-label={w.Units}>
-        {tabs}
+        {toolbar}
         <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" hidden />
         <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process">
           <ByProcess
@@ -695,37 +741,9 @@ function TasksPanel({
   }
   return (
     <section className="sp-runs" aria-label={w.Units}>
-      {tabs}
+      {toolbar}
       <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process" hidden />
       <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" className="sp-runs">
-        <div className="sp-filters">
-          <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
-            {TASK_FILTERS.map((f, i) => (
-              <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
-                {f.label}
-                <span className="sp-count">{count(f.states)}</span>
-              </button>
-            ))}
-          </div>
-          <label className="sp-select">
-            {w.Group}{" "}
-            <select value={process} onChange={(e) => setProcess(e.currentTarget.value)}>
-              <option value="">
-                All {w.groups} ({processes.length})
-              </option>
-              {processes.map((p) => (
-                <option key={p.process} value={p.process}>
-                  {lastSegment(p.process)} ({total(p.counts)})
-                </option>
-              ))}
-              {process && !processes.some((p) => p.process === process) && <option value={process}>{lastSegment(process)}</option>}
-            </select>
-          </label>
-        </div>
-        <p className="sp-sub">
-          <span>In the order {engineName(run.workflow.engine)} first reported them</span>
-          {active && <LiveStatus />}
-        </p>
         {error && <p role="alert">The {w.units} could not be read: {error}</p>}
         {tasks === null && !error && <p className="sp-muted">Loading the {w.units}…</p>}
         {tasks?.length === 0 && <p className="sp-empty">No {w.unit} matches these filters.</p>}
@@ -875,16 +893,21 @@ function LogsPanel({
   onBack?: () => void;
 }) {
   const [text, setText] = useState<string | null>(null);
+  // a read that did not give the text: "missing" (404, not written yet) or the error's message
+  const [failure, setFailure] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
+  const [said, copy] = useCopyStatus();
   const w = words(run.workflow.engine);
   useEffect(() => {
     const controller = new AbortController();
     setText(null);
+    setFailure(null);
     getLog(run.id, source, controller.signal)
       .then(setText)
-      .catch((e: ApiError) => controller.signal.aborted || setText(e.status === 404 ? "Not written yet." : `Could not read it: ${e.message}`));
+      .catch((e: ApiError) => controller.signal.aborted || setFailure(e.status === 404 ? "missing" : e.message));
     return () => controller.abort();
   }, [run.id, source, reloads]);
+  const reload = () => setReloads((n) => n + 1);
   const label = LOGS.find((l) => l.source === source)!.label;
   const file = logFile(run, server, source);
   const download = () => {
@@ -905,36 +928,6 @@ function LogsPanel({
           <Icon name="chevronLeft" /> Back to Summary
         </button>
       )}
-      <div className="sp-filters sp-log-tools">
-        <div className="sp-segments" role="group" aria-label="Log">
-          {LOGS.map((l) => (
-            <button key={l.source} type="button" aria-pressed={source === l.source} onClick={() => setSource(l.source)}>
-              {l.label}
-            </button>
-          ))}
-        </div>
-        <span className="sp-muted sp-grow">
-          {DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it
-        </span>
-        <span className="sp-actions">
-          <Button variant="default" leftSection={<Icon name="reload" size="button" />} onClick={() => setReloads((n) => n + 1)}>
-            Reload
-          </Button>
-          <Button variant="default" leftSection={<Icon name="download" size="button" />} onClick={download} disabled={text === null}>
-            Download last 64 KiB
-          </Button>
-          <Button
-            component="a"
-            variant="default"
-            href={logUrl(run.id, source)}
-            target="_blank"
-            rel="noopener noreferrer"
-            leftSection={<Icon name="externalLink" size="button" />}
-          >
-            Open raw<span className="sp-sr"> (opens in a new tab)</span>
-          </Button>
-        </span>
-      </div>
       {file && (
         <div className="sp-log-file">
           <span id="log-file-label" className="sp-muted">
@@ -945,7 +938,30 @@ function LogsPanel({
           <CopyButton text={file.path} label="Copy" name={`Copy the ${label.toLowerCase()} path`} />
         </div>
       )}
-      <LogViewer text={text} label={label} />
+      <LogViewer
+        text={text}
+        label={label}
+        filters={<SegmentedControl size="sm" aria-label="Log" value={source} onChange={(value) => setSource(value as LogSource)} data={LOGS.map((l) => ({ value: l.source, label: l.label }))} />}
+        actions={
+          <>
+            <ToolButton label="Reload" icon="reload" onClick={reload} />
+            <ToolButton label={`Copy the ${label.toLowerCase()}`} icon="copy" disabled={text === null} onClick={() => copy({ label, what: `the ${label.toLowerCase()}`, text: text ?? "" })} />
+            <ToolButton label="Download last 64 KiB" icon="download" disabled={text === null} onClick={download} />
+            <ToolButton label="Open raw (opens in a new tab)" icon="externalLink" href={logUrl(run.id, source)} />
+          </>
+        }
+        placeholder={
+          failure === "missing" ? (
+            <EmptyState icon="file">This log is not written yet.</EmptyState>
+          ) : failure ? (
+            <ErrorPanel onRetry={reload}>
+              The {label.toLowerCase()} could not be read: {failure}
+            </ErrorPanel>
+          ) : undefined
+        }
+      />
+      <p className="sp-muted sp-log-caption">{DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it <span role="status">{said}</span>
+      </p>
       <p className="sp-log-note">
         <Icon name="file" />
         <span>
@@ -957,6 +973,52 @@ function LogsPanel({
           </button>
         </span>
       </p>
+    </section>
+  );
+}
+
+/** The Parameters tab (ui-spec §12.6, §12.7; UI-10): a filter in the toolbar, then the parameters
+ * set at launch in a card, a table on desktop and a list on the phone. */
+function ParamsPanel({ params }: { params: RunDetail["params"] }) {
+  const phone = usePhone();
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(true);
+  const all = Object.entries(params);
+  if (all.length === 0) return <EmptyState icon="sliders">No parameters were set at launch.</EmptyState>;
+  const needle = query.trim().toLowerCase();
+  const shown = all.filter(([key, value]) => !needle || `${key} ${JSON.stringify(value)}`.toLowerCase().includes(needle));
+  return (
+    <section className="sp-runs" aria-label="Parameters">
+      <Toolbar label="Parameters tools" search={<ToolbarSearch label="Filter the parameters" value={query} onChange={setQuery} />} />
+      <div className="sp-card">
+        <CardHead id="run-params" icon="sliders" title="Parameters" meta={needle ? `${shown.length} of ${all.length}` : `${all.length} set at launch`} open={open} onToggle={() => setOpen(!open)} />
+        <div id="run-params-body" hidden={!open}>
+          {shown.length === 0 ? (
+            <EmptyState icon="search">No parameter matches this filter.</EmptyState>
+          ) : phone ? (
+            <ParamsList params={Object.fromEntries(shown)} />
+          ) : (
+            <div className="sp-table-wrap">
+              <table className="sp-table" aria-label="Parameters">
+                <thead>
+                  <tr>
+                    <th scope="col">Parameter</th>
+                    <th scope="col">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map(([key, value]) => (
+                    <tr key={key}>
+                      <td className="sp-mono">{key}</td>
+                      <td>{typeof value === "string" ? value : JSON.stringify(value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
@@ -1038,7 +1100,6 @@ export async function findTask(runId: string, taskId: string, signal: AbortSigna
 export function RunDetailPage({ id }: { id: string }) {
   const valid = RUN_ID.test(id);
   const server = useServer();
-  const phone = usePhone();
   const [run, setRun] = useState<RunDetail | null>(null);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -1166,7 +1227,6 @@ export function RunDetailPage({ id }: { id: string }) {
     go("tasks", { process });
   };
   const w = words(run.workflow.engine);
-  const params = Object.keys(run.params).length;
 
   return (
     <div className="sp-runs">
@@ -1196,7 +1256,7 @@ export function RunDetailPage({ id }: { id: string }) {
       />
       <CancelDialog run={run} server={server} opened={asking} onClose={() => setAsking(false)} onConfirm={confirm} />
 
-      <Tabs value={tab} onChange={(t) => go(TABS.find((x) => x === t) ?? "summary")} keepMounted={false}>
+      <Tabs className="sp-run-tabs" value={tab} onChange={(t) => go(TABS.find((x) => x === t) ?? "summary")} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
           <Tabs.Tab value="tasks">{w.Units}</Tabs.Tab>
@@ -1224,32 +1284,7 @@ export function RunDetailPage({ id }: { id: string }) {
           />
         </Tabs.Panel>
         <Tabs.Panel value="parameters" pt="md">
-          {params === 0 ? (
-            <p className="sp-empty">No parameters were set at launch.</p>
-          ) : phone ? (
-            <div className="sp-card">
-              <ParamsList params={run.params} />
-            </div>
-          ) : (
-            <div className="sp-table-wrap">
-              <table className="sp-table" aria-label="Parameters">
-                <thead>
-                  <tr>
-                    <th scope="col">Parameter</th>
-                    <th scope="col">Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(run.params).map(([key, value]) => (
-                    <tr key={key}>
-                      <td className="sp-mono">{key}</td>
-                      <td>{typeof value === "string" ? value : JSON.stringify(value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <ParamsPanel params={run.params} />
         </Tabs.Panel>
         <Tabs.Panel value="logs" pt="md" ref={panels.logs} tabIndex={-1}>
           <LogsPanel
