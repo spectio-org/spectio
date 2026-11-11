@@ -8,7 +8,7 @@ Owning specs: [api §5.10](../../specs/api-and-data-model.md#510-run-target-one-
 
 ```text
 CODE  step=ISSUE-161/web     review=approve b/M/m=0/0/4 (round 2; round 1 changes 0/1/9)  security=approve b/M/m=0/0/2 (round 2; round 1 changes 0/1/3)  rounds=2
-CODE  step=ISSUE-161/server  review=changes b/M/m=0/3/17 (round 1)  security=block b/M/m=1/2/10 (round 1)  rounds=1, round 2 running
+CODE  step=ISSUE-161/server  review=approve b/M/m=0/0/4 (round 8; round 1 changes 0/3/17)  security=approve b/M/m=0/0/1 (round 8; round 1 block 1/2/10)  rounds=8 (security majors open until round 7, inbox #75)  simplify=changed -3/+1  tests=pass
 ```
 
 ## Web redesign (`6a6244c..915f48e`, fixes to `d907d27`)
