@@ -7,23 +7,17 @@ The specifications, where the work stands, and what was decided.
 
 <div class="grid cards" markdown>
 
--   :material-file-tree:{ .lg } **[Documentation map](../map.md)**
-
-    ---
-
-    Every specification and the topic it owns. Start here.
-
 -   :material-progress-check:{ .lg } **[Progress](../progress/index.md)**
 
     ---
 
     Where the work stands, wave by wave.
 
--   :material-book-open-variant:{ .lg } **[Specifications](../specs/synthesis.md)**
+-   :material-book-open-variant:{ .lg } **[Specifications](../map.md)**
 
     ---
 
-    How Spectio is designed, one topic per spec.
+    How Spectio is designed: every spec, its topic and a reading order.
 
 -   :material-scale-balance:{ .lg } **[Decisions](../decisions/log.md)**
 
