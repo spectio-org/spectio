@@ -546,9 +546,12 @@
 }
 /* a step's fold button shows on hover, on keyboard focus and on the open step; a folded box's
    unfold button always shows (and both are in the details panel and on double-click) */
-.sp-gfold:not([data-folded]) {
-  opacity: 0;
-  transition: opacity 120ms;
+@media (hover: hover) {
+  /* shown on hover; on a touch screen it stays visible, never an invisible tap target (CR-10) */
+  .sp-gfold:not([data-folded]) {
+    opacity: 0;
+    transition: opacity 120ms;
+  }
 }
 .sp-gnode:hover > .sp-gfold,
 .sp-gnode[data-ring] > .sp-gfold,
@@ -572,10 +575,9 @@
   opacity: 0.28;
 }
 .react-flow__edge.sp-gedge-near .react-flow__edge-path {
+  /* solid: a dashed line means a condition (CR-11) */
   stroke: var(--sp-accent);
-  stroke-width: 3;
-  stroke-dasharray: 8 5;
-  animation: sp-gflowing 0.9s linear infinite;
+  stroke-width: 3.5;
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--sp-accent) 60%, transparent));
 }
 .react-flow__edge.sp-gedge-if .react-flow__edge-path {
@@ -583,16 +585,6 @@
 }
 .react-flow__edge.sp-gedge-dim {
   opacity: 0.12;
-}
-@keyframes sp-gflowing {
-  to {
-    stroke-dashoffset: -13;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .react-flow__edge.sp-gedge-near .react-flow__edge-path {
-    animation: none;
-  }
 }
 .sp-glane {
   width: 100%;

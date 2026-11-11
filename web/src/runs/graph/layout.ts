@@ -100,7 +100,8 @@ function metro(view: View): Placed {
 }
 
 /** Compact: each lane is a near-square grid in topological order, and the lanes are packed in
- * rows (shelves) about as wide as they are tall, rather than one long band each. */
+ * rows (shelves) about twice as wide as the square of the same area, to suit a wide screen,
+ * rather than one long band each. */
 function compact(view: View): Placed {
   const order = topoOrder(view);
   const at = new Map(order.map((id, i) => [id, i]));

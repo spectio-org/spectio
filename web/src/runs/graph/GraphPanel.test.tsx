@@ -96,7 +96,7 @@ test("a step's sheet shows this run's parameter values, its links, and its outpu
   expect(within(sheet).getByRole("list", { name: "What BWA reads from" })).toBeInTheDocument();
   expect(await within(sheet).findByText("S1.bam")).toBeInTheDocument();
   expect(within(sheet).getAllByText(/removed \(temporary\)/).length).toBeGreaterThan(0);
-  expect(within(sheet).getByRole("link", { name: "Open S1.bam" })).toHaveAttribute("href", expect.stringContaining("path=align"));
+  expect(within(sheet).getByRole("link", { name: "Open align/S1.bam" })).toHaveAttribute("href", expect.stringContaining("path=align"));
   expect(within(sheet).queryByRole("link", { name: "Open S1.tmp.sam" })).toBeNull();
 
   const before = fetched(mock).filter((u) => u.endsWith("/outputs")).length;
@@ -116,7 +116,7 @@ test("Trace upstream keeps only the step's ancestors in the List", async () => {
   mocks();
   app(`/runs/${ID}?tab=graph&show=list&node=${encodeURIComponent(`${P}QC:gate`)}`);
   const sheet = await screen.findByRole("complementary", { name: "QC gate (QC gate)" });
-  await userEvent.click(within(sheet).getByRole("button", { name: "What leads here" }));
+  await userEvent.click(within(sheet).getByRole("button", { name: "Before: what leads to QC gate" }));
   await waitFor(() => expect(within(screen.getByRole("table", { name: "Graph as a list" })).getAllByRole("row")).toHaveLength(4));
   expect(screen.getByText(/Showing what leads to QC gate/)).toBeInTheDocument();
 });
@@ -280,6 +280,45 @@ test("each link in a step's sheet is a button that opens what flows along it", a
   expect(within(edge).getByText(/Files emitted upstream/)).toBeInTheDocument();
 });
 
+test("a channel lists the upstream files, published or still in a work directory, each previewable", async () => {
+  const trim = `${URL_}/processes/${encodeURIComponent(`${P}ALIGN:TRIM`)}/outputs`;
+  mocks(["graph_view"], {
+    [trim]: { items: [{ path: "S1.trimmed.fq.gz", work_path: "S1.trimmed.fq.gz", task_id: "tsk_9", attempt_n: 1, state: "present", temp: false, root: "work", size: 4096 }] },
+  });
+  app(`/runs/${ID}?tab=graph&show=list`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
+  await userEvent.click(within(sheet).getByRole("button", { name: /^Channel from TRIM: what flows$/ }));
+  const edge = await screen.findByRole("complementary", { name: /^TRIM → BWA \(channel\)$/ });
+  expect(await within(edge).findByRole("button", { name: "First lines of S1.trimmed.fq.gz" })).toBeInTheDocument();
+  expect(within(edge).getByRole("link", { name: "Open S1.trimmed.fq.gz" })).toHaveAttribute("href", expect.stringContaining("/workdir/file"));
+});
+
+test("Snakemake: a link is files, and lists what the upstream rule wrote", async () => {
+  const trim = `${URL_}/processes/${encodeURIComponent(`${P}ALIGN:TRIM`)}/outputs`;
+  mocks(["graph_view"], {
+    [`${URL_}/graph`]: { ...DOC, engine: "snakemake" },
+    [trim]: { items: [{ path: "trimmed/S1.fq.gz", task_id: "tsk_9", attempt_n: 1, state: "present", temp: false, root: "launch", size: 4096 }] },
+  });
+  app(`/runs/${ID}?tab=graph&show=list`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
+  const sheet = await screen.findByRole("complementary", { name: /^BWA/ });
+  await userEvent.click(within(sheet).getByRole("button", { name: /^Files from TRIM: what flows$/ }));
+  const edge = await screen.findByRole("complementary", { name: /^TRIM → BWA \(files\)$/ });
+  expect(within(edge).getByText(/Files written upstream/)).toBeInTheDocument();
+  expect(await within(edge).findByRole("button", { name: "First lines of trimmed/S1.fq.gz" })).toBeInTheDocument();
+});
+
+test("a link whose upstream step has not run says nothing has flowed", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&show=list`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process REPORT" }));
+  const sheet = await screen.findByRole("complementary", { name: "REPORT (process)" });
+  await userEvent.click(within(sheet).getAllByRole("button", { name: /^Channel from .+: what flows$/ }).find((b) => /QC gate/.test(b.getAttribute("aria-label") ?? ""))!);
+  const edge = await screen.findByRole("complementary", { name: /→ REPORT \(channel\)$/ });
+  expect(within(edge).getByText(/has not run yet: nothing has flowed/)).toBeInTheDocument();
+});
+
 test("keyPairs splits Snakemake wildcards and keeps a Nextflow tag whole", () => {
   expect(keyPairs("region=chr1, sample=A")).toEqual([
     ["region", "chr1"],
@@ -311,9 +350,9 @@ test("an output's first lines open in place; a BAM has no first lines but opens 
   await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
   const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
   expect(await within(sheet).findByText(/3 GiB/)).toBeInTheDocument();
-  expect(within(sheet).queryByRole("button", { name: "First lines of S1.bam" })).toBeNull();
-  expect(within(sheet).getByRole("link", { name: "Open S1.bam" })).toBeInTheDocument();
-  const peek = within(sheet).getByRole("button", { name: "First lines of S1.fq.gz" });
+  expect(within(sheet).queryByRole("button", { name: "First lines of align/S1.bam" })).toBeNull();
+  expect(within(sheet).getByRole("link", { name: "Open align/S1.bam" })).toBeInTheDocument();
+  const peek = within(sheet).getByRole("button", { name: "First lines of trim/S1.fq.gz" });
   await userEvent.click(peek);
   expect(peek).toHaveAttribute("aria-expanded", "true");
   expect(await within(sheet).findByText(/ACGT/)).toBeInTheDocument();
@@ -331,7 +370,7 @@ test("Hide leaves a step out, says so, and Show all brings it back; Focus shows 
   await userEvent.click(screen.getByRole("button", { name: "Show all" }));
   expect(await within(await listView()).findByRole("button", { name: "Open process TRIM" })).toBeInTheDocument();
   await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
-  await userEvent.click(within(await screen.findByRole("complementary", { name: "BWA (process)" })).getByRole("button", { name: "Show only ALIGN" }));
+  await userEvent.click(within(await screen.findByRole("complementary", { name: "BWA (process)" })).getByRole("button", { name: "Focus: show only ALIGN" }));
   await waitFor(() => expect(within(screen.getByRole("table", { name: "Graph as a list" })).getAllByRole("button").map((b) => b.textContent).sort()).toEqual(["BWA", "TRIM"]));
   expect(screen.getByText(/Only ALIGN is shown/)).toBeInTheDocument();
 });
@@ -343,4 +382,34 @@ test("Escape in the search box clears it", async () => {
   await userEvent.type(box, "bwa");
   await userEvent.keyboard("{Escape}");
   await waitFor(() => expect(box).toHaveValue(""));
+});
+
+test("Focus at the Subworkflow level opens the group and shows only its steps (CR-02)", async () => {
+  mocks();
+  const router = app(`/runs/${ID}?tab=graph&show=list&level=subworkflow&fold=sub:${P}ALIGN`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
+  await userEvent.click(within(await screen.findByRole("complementary", { name: "BWA (process)" })).getByRole("button", { name: "Focus: show only ALIGN" }));
+  await waitFor(() => expect(router.state.location.search).toMatchObject({ focus: `sub:${P}ALIGN` }));
+  await waitFor(() => expect(within(screen.getByRole("table", { name: "Graph as a list" })).getAllByRole("button").map((b) => b.textContent).sort()).toEqual(["BWA", "TRIM"]));
+});
+
+test("a step folded away after it was opened dims nothing on the map (CR-01)", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&node=${encodeURIComponent(`${P}ALIGN:BWA`)}&fold=sub:${P}ALIGN`);
+  await screen.findByRole("toolbar", { name: "Graph view" });
+  await waitFor(() => expect(document.querySelectorAll(".sp-gnode").length).toBeGreaterThan(0));
+  expect(document.querySelectorAll(".sp-gnode[data-dim]")).toHaveLength(0);
+});
+
+test("an output whose path climbs out of its folder gets no thumbnail, no first lines and no link (SEC-160-07)", async () => {
+  const bwa = `${URL_}/processes/${encodeURIComponent(`${P}ALIGN:BWA`)}/outputs`;
+  mocks(["graph_view"], {
+    [bwa]: { items: [{ path: "x.png", work_path: "../../x.png", task_id: "tsk_1", attempt_n: 1, state: "present", temp: false, root: "absolute", size: 10 }] },
+  });
+  app(`/runs/${ID}?tab=graph&show=list`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
+  expect(await within(sheet).findByText("x.png")).toBeInTheDocument();
+  expect(within(sheet).queryByRole("link", { name: "Open x.png" })).toBeNull();
+  expect(sheet.querySelector("img")).toBeNull();
 });

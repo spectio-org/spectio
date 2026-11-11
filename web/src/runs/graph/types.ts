@@ -78,7 +78,7 @@ export interface NodeOutput {
   state: "present" | "removed" | "missing" | "unknown";
   temp: boolean;
   /** What `path` is relative to: the launch directory, the results directory, or none. */
-  root: "launch" | "results" | "absolute";
+  root: "launch" | "results" | "absolute" | "work"; // work: the attempt's work directory
   /** Bytes, when present. */
   size?: number | null;
   /** Nextflow: the copy in the attempt's work directory, relative to it. */

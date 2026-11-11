@@ -100,6 +100,7 @@ export const GICONS = {
   compact: "M4 7h16 M4 12h10 M4 17h6 M17 14l3 3-3 3",
   legend: ICONS.info,
   copy: ICONS.copy,
+  open: ICONS.externalLink,
   image: ICONS.image,
   table: ICONS.table,
   reads: ICONS.dna,
@@ -369,6 +370,9 @@ interface Shown {
 
 /** The view the map, the list and the details panel show: the level, the folds, then the
  * focused group and the hidden steps. */
+/** Whether a key went to a field the user types in. */
+const typing = (t: EventTarget | null) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || (t instanceof HTMLElement && t.isContentEditable);
+
 export function viewOf(doc: GraphDocument, settings: GraphSettings, jobs?: Record<string, Task[]>): View {
   return restrict(doc, collapse(doc, settings.level, jobs, settings.fold), settings.focus, settings.hide);
 }
@@ -419,7 +423,8 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
     if (openEdge) {
       lit.add(openEdge.source).add(openEdge.target);
       litEdges.add(openEdge.id);
-    } else if (decor.selected) {
+    } else if (decor.selected && view.nodes.some((n) => n.id === decor.selected)) {
+      // only a step on the map: one folded away or hidden lights nothing (CR-01)
       lit.add(decor.selected);
       for (const e of view.edges)
         if (e.source === decor.selected || e.target === decor.selected) {
@@ -885,8 +890,9 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
     if (kind === "svg") download(name, new Blob([svg], { type: "image/svg+xml" }));
     else if (kind === "html") download(name, new Blob([toHtml(shown.view, placed, title, doc.engine)], { type: "text/html" }));
     else if (kind === "copy")
-      svgToPng(svg)
-        .then((b) => navigator.clipboard.write([new ClipboardItem({ "image/png": b })]))
+      // the item takes the promise, so the write starts within the click (Safari, CR-12)
+      Promise.resolve()
+        .then(() => navigator.clipboard.write([new ClipboardItem({ "image/png": svgToPng(svg) })]))
         .then(
           () => setSaid("The map is copied as a PNG."),
           () => setExportError("The PNG could not be copied: this browser refused the clipboard. Use the PNG button instead."),
@@ -920,7 +926,7 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
   useEffect(() => {
     if (!focus) return;
     const key = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented || document.querySelector(".sp-ginspect")) return;
+      if (e.key !== "Escape" || e.defaultPrevented || typing(e.target) || document.querySelector(".sp-ginspect")) return;
       onSettings({ focus: null });
     };
     document.addEventListener("keydown", key);
@@ -1048,7 +1054,6 @@ export function Panel({ id, opened, title, icon, onClose, children, tone, kind }
     if (!opened || phone) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     ref.current?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
-    const typing = (t: EventTarget | null) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || (t instanceof HTMLElement && t.isContentEditable);
     const key = (e: KeyboardEvent) => e.key === "Escape" && !e.defaultPrevented && !typing(e.target) && close.current();
     document.addEventListener("keydown", key);
     return () => {

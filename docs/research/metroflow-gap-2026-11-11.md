@@ -117,3 +117,8 @@ Not features: `findAllPaths` (`data_utils.js:32`) and the start and end node set
 - Whether the MetroFlow repository can be cloned without credentials, and so whether the spike's licence question is closed **[to be validated]**.
 - R1 and R3 depend on React Flow and dagre features named above **[to be validated]** at the pinned versions.
 - I4: what share of nf-core `if` conditions are simple `params` tests **[to be validated]** on rnaseq and sarek.
+
+## 5. Status, 2026-11-11 (second redesign, PR #251)
+
+- **Done:** R1 (arrows and spotlight), R2 (round fold button), R3 (Metro as dagre compound group areas: `@dagrejs/dagre` 3.1.2 `compound: true`, used in `web/src/runs/graph/layout.ts`), R4 (Focus, `?focus=`), R6 (Copy PNG), R7 (full screen), R8 (Auto-fold, Fold all), R9 (Hide, `?hide=`), I2 (first lines of an output, `outputs:head`), I6 (efficiency gauges).
+- **Left:** R5 (subworkflow card), R10 (grouping by condition), I1 (stable positions while live), I3 (Launch map from the last run), I4 (evaluating conditions), I5 (static estimate for runs), I7 (channel names).

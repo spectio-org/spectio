@@ -11,6 +11,7 @@ import type { Detail } from "../DetailSheet";
 import { isTerminal, runWord } from "../stateWord";
 import { Icon } from "../../icons";
 import { Code } from "./Code";
+import { isResultPath } from "../ReportViewer";
 import { fileKind, size as sizeText } from "../preview";
 import { BAND_WORDS, FlagChip, GICONS, GraphView, Panel, formatSeconds, kindIcon, kindWord, progress, statusTone, statusWord, viewOf } from "./GraphView";
 import { type NodeDiff, type View, type ViewEdge, type ViewNode, bandOf, diffGraphs, durationOf, lineage, timeSpan, toggled } from "./model";
@@ -83,7 +84,7 @@ export function fileLook(path: string): { icon: string; word: string; peek: bool
   const name = path.split("/").pop() ?? path;
   if (/\.(fq|fastq)(\.b?gz)?$/i.test(name)) return { icon: GICONS.reads, word: "reads", peek: true, image: false };
   if (GZ_TEXT.test(name)) return { icon: GICONS.file, word: "gzip text", peek: true, image: false };
-  if (/\.(bam|cram|bai|crai|csi|tbi|bcf)$/i.test(name)) return { icon: GICONS.binary, word: "alignments (binary)", peek: false, image: false };
+  if (/\.(bam|cram|bai|crai|csi|tbi|bcf)$/i.test(name)) return { icon: GICONS.binary, word: /\.(bam|cram)$/i.test(name) ? "alignments (binary)" : /\.bcf$/i.test(name) ? "variants (binary)" : "index (binary)", peek: false, image: false };
   const kind = fileKind(name);
   if (kind === "image") return { icon: GICONS.image, word: "image", peek: false, image: true };
   if (kind === "table") return { icon: GICONS.table, word: "table", peek: true, image: false };
@@ -102,7 +103,8 @@ function FileCard({ run, process, item }: { run: RunDetail; process: string; ite
   const look = fileLook(item.path);
   const name = item.path.split("/").pop() ?? item.path;
   const dir = item.path.slice(0, item.path.length - name.length).replace(/\/$/, "");
-  const present = item.state === "present";
+  // a path with an empty, `.` or `..` part, or a control or format character, is never asked for
+  const present = item.state === "present" && isResultPath(item.path) && (!item.work_path || isResultPath(item.work_path));
   const work = item.work_path ? { task: item.task_id, attempt: item.attempt_n } : undefined;
   const page = present && item.root === "results" ? { to: "/runs/$id/results/file" as const, search: { path: item.path } } : present && work ? { to: "/runs/$id/workdir/file" as const, search: { path: item.work_path!, ...work } } : null;
   const thumb = look.image && present && (item.size ?? Infinity) <= THUMB_MAX && (item.root === "results" || work) ? resultUrl(run.id, work ? item.work_path! : item.path, { as: "image" }, work) : null;
@@ -135,13 +137,13 @@ function FileCard({ run, process, item }: { run: RunDetail; process: string; ite
       </span>
       <span className="sp-gfile-acts">
         {look.peek && present && (
-          <button type="button" className="sp-gicon" aria-expanded={open} aria-label={`First lines of ${name}`} onClick={toggle}>
+          <button type="button" className="sp-gicon" aria-expanded={open} aria-label={`First lines of ${item.path}`} onClick={toggle}>
             <Icon path={GICONS.peek} size={15} stroke={1.8} />
           </button>
         )}
         {page && (
-          <Link className="sp-gicon" to={page.to} params={{ id: run.id }} search={page.search} aria-label={`Open ${name}`}>
-            <Icon path={ICONS_OPEN} size={15} stroke={1.8} />
+          <Link className="sp-gicon" to={page.to} params={{ id: run.id }} search={page.search} aria-label={`Open ${item.path}`}>
+            <Icon path={GICONS.open} size={15} stroke={1.8} />
           </Link>
         )}
       </span>
@@ -153,7 +155,7 @@ function FileCard({ run, process, item }: { run: RunDetail; process: string; ite
             <p className="sp-muted">{head}</p>
           ) : (
             <>
-              <pre className="sp-gcode" tabIndex={0} aria-label={`First lines of ${name}`}>
+              <pre className="sp-gcode" tabIndex={0} aria-label={`First lines of ${item.path}`}>
                 {head.text}
               </pre>
               {head.more && <p className="sp-muted">First lines only.</p>}
@@ -165,7 +167,6 @@ function FileCard({ run, process, item }: { run: RunDetail; process: string; ite
   );
 }
 
-const ICONS_OPEN = "M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6";
 const FILES_SHOWN = 12;
 
 function Outputs({ run, process, task }: { run: RunDetail; process: string; task?: string }) {
@@ -188,7 +189,7 @@ function Outputs({ run, process, task }: { run: RunDetail; process: string; task
     <>
       <ul className="sp-gfiles" aria-label={`Outputs of ${process}`}>
         {shown.map((o) => (
-          <FileCard key={`${o.task_id}:${o.path}`} run={run} process={process} item={o} />
+          <FileCard key={`${o.task_id}:${o.work_path ?? o.path}`} run={run} process={process} item={o} />
         ))}
       </ul>
       {mine.length > shown.length && (
@@ -403,22 +404,22 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
                 {folded ? "Unfold" : "Fold"}
               </button>
             )}
-            <button type="button" className="sp-gaction" aria-pressed={trace === "up"} onClick={() => onTrace(trace === "up" ? null : "up")} aria-label="What leads here">
+            <button type="button" className="sp-gaction" aria-pressed={trace === "up"} onClick={() => onTrace(trace === "up" ? null : "up")} aria-label={`Before: what leads to ${node.label}`}>
               <Icon path={GICONS.up} size={14} stroke={2} />
               Before
             </button>
-            <button type="button" className="sp-gaction" aria-pressed={trace === "down"} onClick={() => onTrace(trace === "down" ? null : "down")} aria-label="What follows">
+            <button type="button" className="sp-gaction" aria-pressed={trace === "down"} onClick={() => onTrace(trace === "down" ? null : "down")} aria-label={`After: what follows ${node.label}`}>
               <Icon path={GICONS.down} size={14} stroke={2} />
               After
             </button>
             {group && (
-              <button type="button" className="sp-gaction" onClick={() => onFocus(group)} aria-label={`Show only ${groupLabel(doc, group)}`}>
+              <button type="button" className="sp-gaction" onClick={() => onFocus(group)} aria-label={`Focus: show only ${groupLabel(doc, group)}`}>
                 <Icon path={GICONS.focus} size={14} stroke={2} />
                 Focus
               </button>
             )}
             {node.kind !== "stage" && node.kind !== "subworkflow" && (
-              <button type="button" className="sp-gaction" onClick={() => onHide(node.kind === "job" ? node.step ?? node.id : node.id)} aria-label={`Hide ${node.kind === "job" ? node.step : node.label} from the map`}>
+              <button type="button" className="sp-gaction" onClick={() => onHide(node.kind === "job" ? node.members[0] : node.id)} aria-label={`Hide ${node.kind === "job" ? node.step : node.label} from the map`}>
                 <Icon path={GICONS.hide} size={14} stroke={2} />
                 Hide
               </button>
@@ -544,6 +545,7 @@ function EdgeSheet({ run, doc, view, edge, onClose, onNode }: { run: RunDetail; 
   const sources = edge ? [...new Set(edge.pairs.map(([a]) => a))] : [];
   const job = from?.kind === "job" ? from.id.slice("job:".length) : undefined;
   const smk = doc.engine === "snakemake";
+  const idle = !from?.status || from.status === "pending" || from.status === "not_needed" || from.status === "no_tasks";
   const end = (n: ViewNode | undefined, id: string) => (
     <button type="button" className="sp-gflow-end" data-tone={statusTone(n?.status ?? null)} onClick={() => onNode(id)} aria-label={`Open ${n?.label ?? id}`}>
       <Icon path={kindIcon(n?.kind ?? "process")} size={14} stroke={1.9} />
@@ -586,7 +588,9 @@ function EdgeSheet({ run, doc, view, edge, onClose, onNode }: { run: RunDetail; 
             </>
           )}
           <H icon={GICONS.outputs}>{smk ? "Files written upstream" : "Files emitted upstream"}</H>
-          {sources.map((p) => (
+          {idle ? (
+            <p className="sp-muted">{`${from?.label ?? edge.source} ${from?.status === "not_needed" ? "is not needed in this run" : "has not run yet"}: nothing has flowed through this link.`}</p>
+          ) : sources.map((p) => (
             <div key={p}>
               {sources.length > 1 && <p className="sp-gfrom sp-mono">{names.get(p) ?? p}</p>}
               <Outputs run={run} process={p} task={job} />
@@ -766,7 +770,8 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
               onOpen={(d) => (set({ node: null }), onOpen(d))}
               onTasks={onTasks}
               onToggle={(g) => set({ fold: toggled(settings.fold, g), node: null })}
-              onFocus={(g) => set({ focus: g, fold: settings.fold.filter((f) => f !== g) })}
+              // at the folded levels `fold` lists the opened groups; elsewhere the folded ones (CR-02)
+              onFocus={(g) => set({ focus: g, fold: settings.level === "subworkflow" || settings.level === "stage" ? [...new Set([...settings.fold, g])] : settings.fold.filter((f) => f !== g) })}
               onHide={(id) => set({ hide: [...settings.hide, id], node: null })}
               onEdge={(e) => (set({ node: null }), setEdge(e))}
             />

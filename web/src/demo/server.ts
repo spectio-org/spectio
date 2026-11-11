@@ -111,12 +111,18 @@ function outputsOf(id: string, process: string) {
   const sim = sims()[id];
   const step = STEPS.find((s) => s.id === process);
   if (!sim || !step) return [];
+  // as the server: what a finished task published (from its work directory), and the files a
+  // running task's work directory holds so far, which a channel carries unpublished
   return sim.tasks
-    .filter((t) => t.step.id === process && t.state === "succeeded")
+    .filter((t) => t.step.id === process && t.state !== "pending")
     .flatMap((t) =>
       step.outputs.map((o) => {
         const path = o.replace("{s}", t.sample ?? "");
-        return { path, task_id: t.id, attempt_n: t.attempt, state: "present", temp: false, root: "results", size: sizeOf(path) };
+        const name = path.split("/").pop()!;
+        const attempt_n = t.attempt || 1;
+        return t.state === "running"
+          ? { path: name, task_id: t.id, attempt_n, state: "present", temp: false, root: "work", size: sizeOf(path), work_path: name }
+          : { path, task_id: t.id, attempt_n, state: "present", temp: false, root: "results", size: sizeOf(path), work_path: name };
       }),
     );
 }
@@ -157,6 +163,8 @@ export function answer(url: URL, method = "GET"): Response {
     const items = [LIVE, DONE, SMK].map(runOf).filter((r) => !states || states.includes(String(r!.state)));
     return json(200, { items, next: null });
   }
+  const work = /^\/tasks\/[^/]+\/attempts\/\d+\/workdir\/(stat|text|raw)\/(.+)$/.exec(path);
+  if (work) return fileReply(work[1], work[2], "/scratch/demo/spectio-runs/work/ab/cdef");
   const m = /^\/runs\/([^/]+)(\/.*)?$/.exec(path);
   if (!m) return missing(path);
   const [, id, rest = ""] = m;
@@ -182,15 +190,17 @@ export function answer(url: URL, method = "GET"): Response {
     return text === null ? json(422, { type: "/problems/not-text", title: "Not text", detail: "a binary file has no head to show" }) : json(200, { text: text.split("\n").slice(0, 40).join("\n"), more: true, gzip: /\.gz$/.test(p) });
   }
   const res = /^\/results\/(stat|text|raw)\/(.+)$/.exec(rest);
-  if (res) {
-    const [, how, p] = res;
-    const name = p.split("/").pop()!;
-    if (how === "stat") return json(200, { root: "/scratch/demo/results", path: p, name, type: "file", size: sizeOf(p), mtime: "2026-11-10T10:30:00Z" });
-    const text = contentOf(p);
-    if (text === null) return missing("This file's content");
-    return new Response(text, { status: 200, headers: { "content-type": how === "raw" && p.endsWith(".svg") ? "image/svg+xml" : "text/plain; charset=utf-8" } });
-  }
+  if (res) return fileReply(res[1], res[2], "/scratch/demo/results");
   return missing(path);
+}
+
+/** A file of the results or of a work directory: its stat, or its made-up content. */
+function fileReply(how: string, p: string, root: string): Response {
+  const name = p.split("/").pop()!;
+  if (how === "stat") return json(200, { root, path: p, name, type: "file", size: sizeOf(p), mtime: "2026-11-10T10:30:00Z" });
+  const text = contentOf(p);
+  if (text === null) return missing("This file's content");
+  return new Response(text, { status: 200, headers: { "content-type": how === "raw" && p.endsWith(".svg") ? "image/svg+xml" : "text/plain; charset=utf-8" } });
 }
 
 type Handler = (event: MessageEvent) => void;

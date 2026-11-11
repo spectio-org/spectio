@@ -582,27 +582,30 @@ export function restrict(doc: GraphDocument, view: View, focus: string | null, h
     return false;
   };
   const hidden = new Set(hide);
-  const gone = (n: ViewNode) => hidden.has(n.id) || (n.members.length === 1 && hidden.has(n.members[0])) || (n.step !== undefined && hidden.has(n.step));
+  const gone = (n: ViewNode) => hidden.has(n.id) || (n.members.length === 1 && hidden.has(n.members[0]));
   const keep = new Set(view.nodes.filter((n) => (!focus || n.id === focus || n.members.some(within)) && !gone(n)).map((n) => n.id));
-  const out = new Map<string, string[]>();
-  for (const e of view.edges) out.set(e.source, [...(out.get(e.source) ?? []), e.target]);
+  const out = new Map<string, ViewEdge[]>();
+  for (const e of view.edges) out.set(e.source, [...(out.get(e.source) ?? []), e]);
   const hiddenIds = new Set(view.nodes.filter(gone).map((n) => n.id));
   const edges: ViewEdge[] = view.edges.filter((e) => keep.has(e.source) && keep.has(e.target));
   const have = new Set(edges.map((e) => `${e.source}>${e.target}`));
   for (const e of view.edges) {
     if (!keep.has(e.source) || !hiddenIds.has(e.target)) continue;
-    // walk through hidden steps only, to the kept steps they lead to
+    // walk through hidden steps only, to the kept steps they lead to, keeping the conditions
+    // met on the way (CR-14)
     const seen = new Set<string>();
-    const stack = [e.target];
+    const stack: [string, string[]][] = [[e.target, e.conditions]];
     while (stack.length) {
-      const at = stack.pop()!;
+      const [at, conditions] = stack.pop()!;
       if (seen.has(at)) continue;
       seen.add(at);
-      for (const t of out.get(at) ?? []) {
-        if (hiddenIds.has(t)) stack.push(t);
+      for (const next of out.get(at) ?? []) {
+        const t = next.target;
+        const all = [...new Set([...conditions, ...next.conditions])];
+        if (hiddenIds.has(t)) stack.push([t, all]);
         else if (keep.has(t) && !have.has(`${e.source}>${t}`)) {
           have.add(`${e.source}>${t}`);
-          edges.push({ id: `${e.source}->${t}`, source: e.source, target: t, conditions: [], pairs: [] });
+          edges.push({ id: `${e.source}->${t}`, source: e.source, target: t, conditions: all, pairs: [] });
         }
       }
     }
