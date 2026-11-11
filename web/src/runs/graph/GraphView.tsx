@@ -66,14 +66,50 @@ const KIND_WORDS: Record<string, string> = {
   job: "job",
 };
 
+/** The graph's light line icons (24 × 24 paths, as `ICONS`). */
+export const GICONS = {
+  process: "M7 7h10v10H7z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4",
+  rule: ICONS.fileCode,
+  job: ICONS.tag,
+  gate: ICONS.shield,
+  stage: ICONS.layers,
+  subworkflow: ICONS.folder,
+  checkpoint: "M5 21V4 M5 4h11l-2 4 2 4H5",
+  temp: "M7 3h10 M7 21h10 M8 3c0 5 8 5 8 9s-8 4-8 9 M16 3c0 5-8 5-8 9s8 4 8 9",
+  conditional: "M6 3v12 M18 9a3 3 0 1 0 0-.01 M6 21a3 3 0 1 0 0-.01 M18 9c0 6-12 3-12 9",
+  retried: ICONS.reload,
+  cached: "M3 5h18v4H3z M5 9v11h14V9 M10 13h4",
+  fold: "M8 3v5H3 M16 3v5h5 M8 21v-5H3 M16 21v-5h5",
+  unfold: "M3 8V3h5 M21 8V3h-5 M3 16v5h5 M21 16v5h-5",
+  up: "M12 19V5 M5 12l7-7 7 7",
+  down: "M12 5v14 M19 12l-7 7-7-7",
+  channel: "M3 9h18v6H3z M8 9v6 M13 9v6 M18 9v6",
+  file: ICONS.file,
+  code: ICONS.braces,
+  close: ICONS.cross,
+  link: "M5 12h14 M13 6l6 6-6 6",
+} as const;
+
+export const kindIcon = (kind: string): string => GICONS[kind as keyof typeof GICONS] ?? GICONS.process;
+
 /** The marks of a step: a short visible mark, and the words its accessible name gets. */
 export const FLAG_MARKS: Record<Flag, { mark: string; words: string }> = {
-  checkpoint: { mark: "◆ checkpoint", words: "checkpoint: the graph grows once it ends" },
+  checkpoint: { mark: "checkpoint", words: "checkpoint: the graph grows once it ends" },
   temp: { mark: "temp", words: "writes temporary files, removed once read" },
   conditional: { mark: "if", words: "runs only under a condition" },
-  retried: { mark: "↻", words: "some jobs were retried" },
+  retried: { mark: "retried", words: "some jobs were retried" },
   cached: { mark: "cached", words: "some jobs reused from an earlier run" },
 };
+
+/** A mark as a chip: its icon and its short word. */
+export function FlagChip({ flag }: { flag: Flag }) {
+  return (
+    <span className="sp-gflag" data-flag={flag}>
+      <Icon path={GICONS[flag]} size={11} stroke={2} />
+      {FLAG_MARKS[flag].mark}
+    </span>
+  );
+}
 
 export const statusWord = (s: ProcessStatus | null): string => (s ? STATUS_WORDS[s] ?? s : "Not run yet");
 /** The colour family of a process status ("done" is the succeeded tone, stateWord.ts knows "Done"). */
@@ -148,6 +184,8 @@ export function Links({ view, id, onEdge }: { view: View; id: string; onEdge?: (
 /** What else changes how nodes look: the open node, a traced lineage, a diff, a replay time. */
 export interface Decor {
   selected?: string | null;
+  /** The open link's id: drawn like the open step's links. */
+  edge?: string | null;
   lineage?: Set<string> | null;
   diff?: Map<string, NodeDiff> | null;
   replayAt?: number | null;
@@ -170,6 +208,8 @@ interface NodeData extends Record<string, unknown> {
   onOpen: (n: ViewNode) => void;
   onToggle: (group: string) => void;
   onCode: (n: ViewNode, x: number, y: number) => void;
+  /** The name of the group the node folds into, or of the folded group it stands for. */
+  groupName: string;
 }
 
 /** A step's two handles, where `NodeBox` draws them: in at the top (left), out at the bottom (right). */
@@ -187,8 +227,7 @@ function handlesOf(w: number, h: number, horizontal: boolean): NodeHandle[] {
 
 function NodeBox({ data }: NodeProps<Node<NodeData>>) {
   const { node, horizontal } = data;
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
+  const folded = node.kind === "stage" || node.kind === "subworkflow";
   const style = data.heat !== null ? { ["--sp-heat" as string]: `${Math.round(10 + data.heat * 80)}%` } : undefined;
   return (
     <div
@@ -201,14 +240,7 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
       data-selected={data.selected || undefined}
       data-heat={data.heat !== null || undefined}
       style={style}
-      onDoubleClick={
-        node.group
-          ? () => {
-              if (timer.current) clearTimeout(timer.current);
-              data.onToggle(node.group!);
-            }
-          : undefined
-      }
+      onDoubleClick={node.group ? () => data.onToggle(node.group!) : undefined}
       onContextMenu={(e) => {
         e.preventDefault();
         data.onCode(node, e.clientX, e.clientY);
@@ -220,28 +252,36 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
         className="sp-gnode-btn"
         data-gid={node.id}
         aria-label={data.aria}
-        // a box with a group waits a moment before opening its sheet, so a double-click folds
-        // the group without the sheet opening over the map first
-        onClick={(e) => {
-          if (timer.current) clearTimeout(timer.current);
-          if (!node.group || e.detail === 0) return data.onOpen(node); // Enter or Space: at once
-          if (e.detail === 1) timer.current = setTimeout(() => data.onOpen(node), 250);
-        }}
+        onClick={() => data.onOpen(node)}
       >
         {node.kind === "job" && node.step && <span className="sp-gnode-step">{node.step}</span>}
-        <span className="sp-gnode-name">{data.label}</span>
+        <span className="sp-gnode-name">
+          <Icon path={kindIcon(node.kind)} size={13} stroke={1.8} />
+          {data.label}
+        </span>
         <span className="sp-gnode-meta">{data.meta}</span>
         {node.flags && node.flags.length > 0 && (
           <span className="sp-gflags" aria-hidden="true">
             {node.flags.map((f) => (
-              <span key={f} className="sp-gflag" data-flag={f}>
-                {FLAG_MARKS[f].mark}
-              </span>
+              <FlagChip key={f} flag={f} />
             ))}
           </span>
         )}
         {data.badge && <span className="sp-gnode-badge">{data.badge}</span>}
       </button>
+      {node.group && (
+        <button
+          type="button"
+          className="sp-gfold"
+          onDoubleClick={(e) => e.stopPropagation()}
+          data-folded={folded || undefined}
+          onClick={() => data.onToggle(node.group!)}
+          aria-label={folded ? `Unfold ${data.groupName}: show its ${node.members.length} steps` : `Fold ${data.groupName} into one box`}
+        >
+          <Icon path={folded ? GICONS.unfold : GICONS.fold} size={12} stroke={2} />
+          {folded && <span>{node.members.length}</span>}
+        </button>
+      )}
       <Handle type="source" position={horizontal ? Position.Right : Position.Bottom} isConnectable={false} />
     </div>
   );
@@ -276,6 +316,8 @@ interface Props {
   onEdge?: (edge: ViewEdge) => void;
   /** Shown above the map (notes on the producer, the jobs shown). */
   notes?: ReactNode;
+  /** Docked beside the map: the open step's or link's details (not on phones, which use sheets). */
+  side?: ReactNode;
 }
 
 interface Shown {
@@ -308,7 +350,7 @@ function ariaOf(n: ViewNode, status: ProcessStatus | null, extra: string[]): str
   return [...parts, ...extra].join(", ");
 }
 
-function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title, nextRef }: { settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
+function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title, nextRef, engine, groupNames }: { engine: string; groupNames: Map<string, string>; settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
   const dark = useComputedColorScheme("light") === "dark";
   const { view, status, matches, crit, heat: heated } = shown;
   const layout = settings.layout === "upstream" && !hasUpstream(view) ? "layered-tb" : settings.layout;
@@ -372,6 +414,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
           onOpen,
           onToggle,
           onCode,
+          groupName: n.group ? groupNames.get(n.group) ?? n.group.replace(/^(stage|sub|file):/, "") : "",
         },
       };
     };
@@ -379,20 +422,39 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
     const edges: Edge[] = view.edges.map((e) => {
       const onCrit = crit?.edges.has(e.id) ?? false;
       const dim = (searching && !(matches.has(e.source) && matches.has(e.target))) || (decor.lineage ? !(decor.lineage.has(e.source) && decor.lineage.has(e.target)) : false);
+      const near = decor.selected === e.source || decor.selected === e.target || decor.edge === e.id;
       return {
+        label: near ? (engine === "snakemake" ? "files" : "channel") : undefined,
+        labelBgPadding: [4, 2] as [number, number],
+        labelBgBorderRadius: 4,
         id: e.id,
         source: e.source,
         target: e.target,
         type: layout === "metro" || layout === "compact" ? "smoothstep" : "default",
         focusable: false,
-        className: [onCrit && "sp-gedge-crit", dim && "sp-gedge-dim"].filter(Boolean).join(" ") || undefined,
+        className: [onCrit && "sp-gedge-crit", dim && "sp-gedge-dim", near && "sp-gedge-near"].filter(Boolean).join(" ") || undefined,
         animated: status.get(e.target) === "running" && !dim,
         interactionWidth: 14,
         data: { edge: e },
       };
     });
     return { nodes, edges };
-  }, [view, placed, status, matches, crit, heated, decor, searching, horizontal, layout, onOpen, onToggle, onCode, settings.overlay]);
+  }, [view, placed, status, matches, crit, heated, decor, searching, horizontal, layout, onOpen, onToggle, onCode, settings.overlay, engine, groupNames]);
+
+  // the opened step stays in view when the details panel narrows the map: checked once the
+  // map has its new width and a double-click is over, and moved only when it is out of view
+  const selected = decor.selected ?? null;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const b = selected ? placed.boxes.get(selected) : undefined;
+      const r = wrap.current?.getBoundingClientRect();
+      if (!b || !r) return;
+      const a = flow.flowToScreenPosition({ x: b.x, y: b.y });
+      const z = flow.flowToScreenPosition({ x: b.x + b.w, y: b.y + b.h });
+      if (a.x < r.left || z.x > r.right || a.y < r.top || z.y > r.bottom) void flow.setCenter(b.x + b.w / 2, b.y + b.h / 2, { zoom: flow.getZoom(), duration: 200 });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [selected]); // on a new selection only, not on every layout
 
   // Enter in the search box: the next match, centred and focused
   const order = useMemo(() => topoOrder(view).filter((id) => matches.has(id)), [view, matches]);
@@ -533,11 +595,17 @@ function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: Vi
           ))}
         </ul>
         <ul className="sp-gkey" aria-label="Marks">
-          {Object.values(FLAG_MARKS).map((f) => (
-            <li key={f.mark}>
-              <span className="sp-gflag">{f.mark}</span> {f.words}
+          {(Object.keys(FLAG_MARKS) as Flag[]).map((f) => (
+            <li key={f}>
+              <FlagChip flag={f} /> {FLAG_MARKS[f].words}
             </li>
           ))}
+          <li>
+            <span className="sp-gflag">
+              <Icon path={GICONS.fold} size={11} stroke={2} />
+            </span>{" "}
+            fold a subworkflow or stage into one box (or double-click a step)
+          </li>
         </ul>
         {help}
       </div>
@@ -630,7 +698,8 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
   );
 }
 
-function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor = {}, onOpen, onEdge, source, extra, notes }: Props) {
+function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor = {}, onOpen, onEdge, source, extra, notes, side }: Props) {
+  const groupNames = useMemo(() => new Map(doc.groups.map((g) => [g.id, g.name])), [doc.groups]);
   const shown = useShown(doc, settings, jobs, decor, runtime);
   const [exportError, setExportError] = useState<string | null>(null);
   const layout = settings.layout === "upstream" && !hasUpstream(shown.view) ? "layered-tb" : settings.layout;
@@ -672,11 +741,14 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
       )}
       {notes}
       {runtime && settings.show === "map" && <Legend overlay={settings.overlay} view={shown.view} />}
-      {settings.show === "map" ? (
-        <Map_ nextRef={nextRef} settings={settings} decor={decor} shown={shown} onOpen={onOpen} onToggle={onToggle} onCode={onCode} onEdge={onEdge} title={title} />
-      ) : (
-        <List shown={shown} settings={settings} onOpen={onOpen} decor={decor} />
-      )}
+      <div className="sp-gbody" data-side={side ? true : undefined}>
+        {settings.show === "map" ? (
+          <Map_ nextRef={nextRef} settings={settings} decor={decor} shown={shown} onOpen={onOpen} onToggle={onToggle} onCode={onCode} onEdge={onEdge} title={title} engine={doc.engine} groupNames={groupNames} />
+        ) : (
+          <List shown={shown} settings={settings} onOpen={onOpen} decor={decor} />
+        )}
+        {side}
+      </div>
     </div>
   );
 }
@@ -695,9 +767,14 @@ function CodePop({ doc, pop, source, onClose }: { doc: GraphDocument; pop: { nod
     return () => document.querySelector<HTMLElement>(`[data-gid="${CSS.escape(nodeId)}"]`)?.focus();
   }, [nodeId]);
   useEffect(() => {
-    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", key);
-    return () => document.removeEventListener("keydown", key);
+    // first, in the capture phase, so the details panel under the card stays open
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      onClose();
+    };
+    document.addEventListener("keydown", key, true);
+    return () => document.removeEventListener("keydown", key, true);
   }, [onClose]);
   const left = Math.max(12, Math.min(pop.x, window.innerWidth - 572));
   const top = Math.max(12, Math.min(pop.y, window.innerHeight - 320));

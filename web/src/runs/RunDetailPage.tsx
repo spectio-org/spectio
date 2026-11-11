@@ -1273,7 +1273,7 @@ export function RunDetailPage({ id }: { id: string }) {
               <GraphPanel
                 run={run}
                 search={graphSearch(search)}
-                onSearch={(graph) => navigate({ search: runSearch({ tab: "graph", ...graph }) })}
+                onSearch={(graph) => navigate({ search: runSearch({ tab: "graph", ...graph }), resetScroll: false })}
                 onOpen={(view) => setViews([view])}
                 onTasks={showProcess}
               />

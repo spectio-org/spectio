@@ -1,12 +1,12 @@
 // The Launch form's Workflow map (issue #160; ui-spec §4.14): the pipeline's graph before any
 // run, from GET /workflows:graph. Explore it, search it, open a step to see its source,
 // condition and the parameters it reads.
-import { Drawer } from "@mantine/core";
 import { useEffect, useState } from "react";
 import type { ApiError } from "../../api";
 import { usePhone } from "../../shell/layout";
 import { Code } from "./Code";
-import { GraphView, Links, kindWord } from "./GraphView";
+import { GraphView, Links, kindIcon, kindWord } from "./GraphView";
+import { Panel } from "./Panel";
 import { type ViewNode, collapse } from "./model";
 import { type GraphSettings, settingsOf } from "./settings";
 import { type GraphDocument, getWorkflowGraph } from "./types";
@@ -40,6 +40,35 @@ export function LaunchMap({ location, revision, name }: { location: string; revi
         onSettings={(p) => setSettings((s) => ({ ...s, ...p }))}
         onOpen={setOpen}
         source={{ location, revision }}
+        side={
+          <Panel id={open?.id ?? null} opened={open !== null} onClose={() => setOpen(null)} title={open ? `${open.label} (${kindWord(open.kind)})` : ""} icon={kindIcon(open?.kind ?? "process")}>
+            {open && (
+              <section className="sp-sheet" aria-label={open.label}>
+                <Links view={collapse(doc, settings.level, undefined, settings.fold)} id={open.id} />
+                <ul className="sp-gsheet-list" aria-label={`Steps of ${open.label}`}>
+                  {members.map((m) => (
+                    <li key={m.id}>
+                      <span className="sp-mono">{m.id}</span>
+                      {m.source && <span className="sp-muted">{`${m.source.file}${m.source.line ? `:${m.source.line}` : ""}`}</span>}
+                      {m.condition && (
+                        <span>
+                          when <code>{m.condition}</code>
+                        </span>
+                      )}
+                      {m.params.length > 0 && <span className="sp-muted">reads {m.params.join(", ")}</span>}
+                    </li>
+                  ))}
+                </ul>
+                {members.length === 1 && (
+                  <>
+                    <h3 className="sp-sheet-h">Code</h3>
+                    <Code name={members[0].id} code={members[0].code} where={{ location, revision }} />
+                  </>
+                )}
+              </section>
+            )}
+          </Panel>
+        }
         notes={
           doc.producer === "stages-only" ? (
             <p className="sp-gnote">The links between steps are not known before the run: steps are grouped by stage, without arrows.</p>
@@ -48,42 +77,6 @@ export function LaunchMap({ location, revision, name }: { location: string; revi
           ) : null
         }
       />
-      <Drawer
-        opened={open !== null}
-        onClose={() => setOpen(null)}
-        position="right"
-        size={phone ? "100%" : 440}
-        title={open ? `${open.label} (${kindWord(open.kind)})` : ""}
-        returnFocus
-        closeButtonProps={{ "aria-label": "Close" }}
-        classNames={{ title: "sp-sheet-title" }}
-      >
-        {open && (
-          <section className="sp-sheet" aria-label={open.label}>
-            <Links view={collapse(doc, settings.level, undefined, settings.fold)} id={open.id} />
-            <ul className="sp-gsheet-list" aria-label={`Steps of ${open.label}`}>
-              {members.map((m) => (
-                <li key={m.id}>
-                  <span className="sp-mono">{m.id}</span>
-                  {m.source && <span className="sp-muted">{`${m.source.file}${m.source.line ? `:${m.source.line}` : ""}`}</span>}
-                  {m.condition && (
-                    <span>
-                      when <code>{m.condition}</code>
-                    </span>
-                  )}
-                  {m.params.length > 0 && <span className="sp-muted">reads {m.params.join(", ")}</span>}
-                </li>
-              ))}
-            </ul>
-            {members.length === 1 && (
-              <>
-                <h3 className="sp-sheet-h">Code</h3>
-                <Code name={members[0].id} code={members[0].code} where={{ location, revision }} />
-              </>
-            )}
-          </section>
-        )}
-      </Drawer>
     </>
   );
 }

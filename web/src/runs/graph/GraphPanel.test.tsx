@@ -88,11 +88,11 @@ test("a step's sheet shows this run's parameter values, its links, and its outpu
   const mock = mocks();
   app(`/runs/${ID}?tab=graph&show=list`);
   await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
-  const sheet = await screen.findByRole("dialog", { name: "BWA (process)" });
-  expect(sheet).toHaveAttribute("aria-modal", "true");
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
+  expect(within(sheet).getByRole("heading", { name: "BWA (process)" })).toHaveFocus();
   expect(within(sheet).getByText("genome")).toBeInTheDocument();
   expect(within(sheet).getByText("GRCh38")).toBeInTheDocument();
-  expect(within(sheet).getByText("Runs after")).toBeInTheDocument();
+  expect(within(sheet).getByRole("list", { name: "What BWA receives" })).toBeInTheDocument();
   expect(await within(sheet).findByText("align/S1.bam")).toBeInTheDocument();
   expect(within(sheet).getByText("Removed (temporary)")).toBeInTheDocument();
   expect(within(sheet).getByRole("link", { name: "Preview align/S1.bam" })).toHaveAttribute("href", expect.stringContaining("path=align"));
@@ -106,7 +106,7 @@ test("a step's sheet shows this run's parameter values, its links, and its outpu
 test("Open in Tasks from the sheet goes to the Tasks tab on that process", async () => {
   mocks();
   const router = app(`/runs/${ID}?tab=graph&show=list&node=${encodeURIComponent(`${P}ALIGN:BWA`)}`);
-  const sheet = await screen.findByRole("dialog", { name: "BWA (process)" });
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
   await userEvent.click(within(sheet).getByRole("button", { name: "Open in Tasks" }));
   await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: "tasks", process: `${P}ALIGN:BWA` }));
 });
@@ -114,8 +114,8 @@ test("Open in Tasks from the sheet goes to the Tasks tab on that process", async
 test("Trace upstream keeps only the step's ancestors in the List", async () => {
   mocks();
   app(`/runs/${ID}?tab=graph&show=list&node=${encodeURIComponent(`${P}QC:gate`)}`);
-  const sheet = await screen.findByRole("dialog", { name: "QC gate (QC gate)" });
-  await userEvent.click(within(sheet).getByRole("button", { name: "Trace upstream" }));
+  const sheet = await screen.findByRole("complementary", { name: "QC gate (QC gate)" });
+  await userEvent.click(within(sheet).getByRole("button", { name: "What leads here" }));
   await waitFor(() => expect(within(screen.getByRole("table", { name: "Graph as a list" })).getAllByRole("row")).toHaveLength(4));
   expect(screen.getByText(/Showing what leads to QC gate/)).toBeInTheDocument();
 });
@@ -229,22 +229,28 @@ test("the Jobs level loads every started step, in pipeline order, under the job 
 
 const bwaOnMap = () => screen.findByRole("button", { name: "BWA, process, Running, 2 of 4 jobs done", hidden: true });
 
-test("a click on a node opens its sheet after a moment; a double-click folds its subworkflow instead", async () => {
+test("a click opens the step's details beside the map; double-click or the fold button folds its subworkflow", async () => {
   mocks();
   const router = app(`/runs/${ID}?tab=graph`);
   // click events only: d3-zoom's mousedown handler needs a window jsdom's user-event does not give
   fireEvent.click(await bwaOnMap(), { detail: 1 });
-  expect(screen.queryByRole("dialog", { name: "BWA (process)" })).toBeNull(); // not yet: a double-click may follow
-  await userEvent.click(within(await screen.findByRole("dialog", { name: "BWA (process)" })).getByRole("button", { name: "Close" }));
+  await waitFor(() => expect(router.state.location.search).toMatchObject({ node: `${P}ALIGN:BWA` }));
+  const panel = await screen.findByRole("complementary", { name: "BWA (process)" });
+  expect(router.state.location.search).toMatchObject({ node: `${P}ALIGN:BWA` });
+  await userEvent.click(within(panel).getByRole("button", { name: "Close" }));
+  expect(screen.queryByRole("complementary", { name: "BWA (process)" })).toBeNull();
 
+  // a real double-click: click, click, then dblclick
   const bwa = await bwaOnMap();
   fireEvent.click(bwa, { detail: 1 });
   fireEvent.click(bwa, { detail: 2 });
   fireEvent.dblClick(bwa, { detail: 2 });
   await waitFor(() => expect(String(router.state.location.search.fold)).toContain("sub:NFCORE_DEMO:DEMO:ALIGN"));
-  await new Promise((r) => setTimeout(r, 300));
-  expect(screen.queryByRole("dialog", { name: "BWA (process)" })).toBeNull();
   expect(screen.queryByRole("button", { name: "BWA, process, Running, 2 of 4 jobs done", hidden: true })).toBeNull();
+  // the folded box has a visible unfold button
+  fireEvent.click(await screen.findByRole("button", { name: /^Unfold ALIGN: show its 2 steps$/, hidden: true }));
+  await waitFor(() => expect(String(router.state.location.search.fold ?? "")).not.toContain("ALIGN"));
+  expect(await screen.findAllByRole("button", { name: "Fold ALIGN into one box", hidden: true })).toHaveLength(2);
 });
 
 test("a right-click shows the step's code by the node; Escape closes it and focus goes back to the node", async () => {
@@ -267,9 +273,9 @@ test("each link in a step's sheet is a button that opens what flows along it", a
   mocks();
   app(`/runs/${ID}?tab=graph&show=list`);
   await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
-  const sheet = await screen.findByRole("dialog", { name: "BWA (process)" });
-  await userEvent.click(within(sheet).getAllByRole("button", { name: /^What flows: .+ to BWA$/ })[0]);
-  const edge = await screen.findByRole("dialog", { name: /→ BWA$/ });
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
+  await userEvent.click(within(sheet).getAllByRole("button", { name: /^Channel from .+: what flows$/ })[0]);
+  const edge = await screen.findByRole("complementary", { name: /→ BWA$/ });
   expect(within(edge).getByText(/Files emitted upstream/)).toBeInTheDocument();
 });
 
@@ -280,4 +286,16 @@ test("keyPairs splits Snakemake wildcards and keeps a Nextflow tag whole", () =>
   ]);
   expect(keyPairs("S1 (lane 2)")).toEqual([["tag", "S1 (lane 2)"]]);
   expect(keyPairs(null)).toEqual([]);
+});
+
+test("Escape closes a step's details and focus goes back to what opened them", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&show=list`);
+  const opener = within(await listView()).getByRole("button", { name: "Open process BWA" });
+  await userEvent.click(opener);
+  const panel = await screen.findByRole("complementary", { name: "BWA (process)" });
+  expect(within(panel).getByRole("heading", { name: "BWA (process)" })).toHaveFocus();
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("complementary", { name: "BWA (process)" })).toBeNull());
+  expect(within(await listView()).getByRole("button", { name: "Open process BWA" })).toHaveFocus();
 });

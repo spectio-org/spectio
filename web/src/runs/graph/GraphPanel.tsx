@@ -1,7 +1,7 @@
 // The run's Graph tab (issue #160; ui-spec §4.14): the graph of GET /runs/{id}/graph, refetched
 // live, with the Jobs level, Compare with another run, Replay, lineage and the node sheet
 // (status, parameters with this run's values, outputs read live, jobs).
-import { Drawer, NativeSelect } from "@mantine/core";
+import { NativeSelect } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, type Json, type Run, type RunDetail, type Task, listRuns, listTasks } from "../../api";
@@ -9,8 +9,10 @@ import { useFrames } from "../../live";
 import { usePhone } from "../../shell/layout";
 import type { Detail } from "../DetailSheet";
 import { isTerminal, runWord } from "../stateWord";
+import { Icon } from "../../icons";
 import { Code } from "./Code";
-import { GraphView, Links, formatSeconds, kindWord, progress, statusTone, statusWord } from "./GraphView";
+import { Panel } from "./Panel";
+import { FlagChip, GICONS, GraphView, formatSeconds, kindIcon, kindWord, progress, statusTone, statusWord } from "./GraphView";
 import { type NodeDiff, type View, type ViewEdge, type ViewNode, collapse, diffGraphs, durationOf, lineage, timeSpan, toggled } from "./model";
 import { type GraphSearch, type GraphSettings, searchOf, settingsOf } from "./settings";
 import { type GraphDocument, type GraphNode, type NodeOutput, getNodeOutputs, getRunGraph } from "./types";
@@ -108,6 +110,36 @@ function Outputs({ run, process, task }: { run: RunDetail; process: string; task
   );
 }
 
+/** A node's links one way, each a button that opens what flows along it: files for Snakemake,
+ * a channel for Nextflow. */
+function Flows({ view, node, engine, way, onEdge }: { view: View; node: ViewNode; engine: string; way: "in" | "out"; onEdge: (e: ViewEdge) => void }) {
+  const byId = new Map(view.nodes.map((n) => [n.id, n]));
+  const edges = view.edges.filter((e) => (way === "in" ? e.target : e.source) === node.id);
+  const smk = engine === "snakemake";
+  if (edges.length === 0) return <p className="sp-muted">{way === "in" ? "Nothing known: it starts from the pipeline's inputs." : "Nothing known downstream."}</p>;
+  return (
+    <ul className="sp-gflows" aria-label={way === "in" ? `What ${node.label} receives` : `What ${node.label} sends`}>
+      {edges.map((e) => {
+        const other = byId.get(way === "in" ? e.source : e.target);
+        const name = other?.label ?? (way === "in" ? e.source : e.target);
+        return (
+          <li key={e.id}>
+            <button type="button" className="sp-gflow" onClick={() => onEdge(e)} aria-label={`${smk ? "Files" : "Channel"} ${way === "in" ? "from" : "to"} ${name}${e.conditions.length ? `, if ${e.conditions.join(" or ")}` : ""}: what flows`}>
+              <Icon path={smk ? GICONS.file : GICONS.channel} size={14} stroke={1.8} />
+              <span className="sp-gflow-what">{smk ? "files" : "channel"}</span>
+              <span>{way === "in" ? "from" : "to"}</span>
+              <Icon path={kindIcon(other?.kind ?? "process")} size={13} stroke={1.8} />
+              <strong>{name}</strong>
+              {e.conditions.length > 0 && <span className="sp-gtag">if {e.conditions.join(" or ")}</span>}
+              <Icon path={GICONS.link} size={13} stroke={1.8} />
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 interface SheetProps {
   run: RunDetail;
   doc: GraphDocument;
@@ -122,6 +154,7 @@ interface SheetProps {
   onTasks: (process: string) => void;
   onToggle: (group: string) => void;
   onEdge: (edge: ViewEdge) => void;
+  trace: "up" | "down" | null;
 }
 
 /** A job's key as name and value pairs: Snakemake's `k=v` wildcards, or Nextflow's tag. */
@@ -169,24 +202,15 @@ function JobFacts({ task }: { task: Task }) {
   );
 }
 
-function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks, onToggle, onEdge }: SheetProps) {
-  const phone = usePhone();
+function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks, onToggle, onEdge, trace }: SheetProps) {
   const byId = new Map(doc.nodes.map((n) => [n.id, n]));
   const members = node ? node.members.map((m) => byId.get(m)).filter((m) => !!m) : [];
   const single = node && members.length === 1 && node.id === members[0].id ? members[0] : null;
   const params = [...new Set(members.flatMap((m) => m.params))].sort();
   const { done, total } = node ? progress(node.counts) : { done: 0, total: 0 };
+  const folded = node?.kind === "stage" || node?.kind === "subworkflow";
   return (
-    <Drawer
-      opened={node !== null}
-      onClose={onClose}
-      position="right"
-      size={phone ? "100%" : 480}
-      title={node ? `${node.label} (${kindWord(node.kind)})` : ""}
-      returnFocus
-      closeButtonProps={{ "aria-label": "Close" }}
-      classNames={{ title: "sp-sheet-title" }}
-    >
+    <Panel id={node?.id ?? null} opened={node !== null} onClose={onClose} title={node ? `${node.label} (${kindWord(node.kind)})` : ""} icon={kindIcon(node?.kind ?? "process")}>
       {node && (
         <section className="sp-sheet" aria-label={node.label}>
           <p>
@@ -198,38 +222,63 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
           </p>
           {diff && diff.change === "added" && <p className="sp-gnote">New in this run: the compared run did not have it.</p>}
           {single?.id && <p className="sp-mono sp-sheet-name">{single.id}</p>}
-          {node.kind === "job" && <p className="sp-muted">A job of {node.step}.</p>}
-          {node.group && (
-            <p>
-              <button type="button" className="sp-gbtn" onClick={() => onToggle(node.group!)}>
-                {node.kind === "stage" || node.kind === "subworkflow" ? `Show the steps of ${node.label}` : `Fold ${groupLabel(doc, node.group)} into one box`}
-              </button>{" "}
-              <span className="sp-muted">(or double-click it on the map)</span>
+          {node.flags && node.flags.length > 0 && (
+            <p className="sp-gflags">
+              {node.flags.map((f) => (
+                <FlagChip key={f} flag={f} />
+              ))}
             </p>
           )}
-          {single?.condition && (
-            <p>
-              Runs when <code>{single.condition}</code>
-            </p>
-          )}
-          {single?.source && (
-            <p className="sp-muted">
-              Defined in <span className="sp-mono">{single.source.file}{single.source.line ? `:${single.source.line}` : ""}</span>
-            </p>
-          )}
-          <div className="sp-gview" role="group" aria-label="Trace">
-            <button type="button" className="sp-gbtn" onClick={() => onTrace("up")}>
-              Trace upstream
+          <div className="sp-gactions" role="group" aria-label={`Actions on ${node.label}`}>
+            {node.group && (
+              <button type="button" className="sp-gaction" onClick={() => onToggle(node.group!)}>
+                <Icon path={folded ? GICONS.unfold : GICONS.fold} size={14} stroke={2} />
+                {folded ? `Unfold ${node.label}` : `Fold ${groupLabel(doc, node.group)}`}
+              </button>
+            )}
+            <button type="button" className="sp-gaction" aria-pressed={trace === "up"} onClick={() => onTrace(trace === "up" ? null : "up")}>
+              <Icon path={GICONS.up} size={14} stroke={2} />
+              What leads here
             </button>
-            <button type="button" className="sp-gbtn" onClick={() => onTrace("down")}>
-              Trace downstream
-            </button>
-            <button type="button" className="sp-gbtn" onClick={() => onTrace(null)}>
-              Clear trace
+            <button type="button" className="sp-gaction" aria-pressed={trace === "down"} onClick={() => onTrace(trace === "down" ? null : "down")}>
+              <Icon path={GICONS.down} size={14} stroke={2} />
+              What follows
             </button>
           </div>
-          <h3 className="sp-sheet-h">Links</h3>
-          <Links view={view} id={node.id} onEdge={onEdge} />
+          <dl className="sp-gfacts">
+            {node.kind === "job" && (
+              <>
+                <dt>Step</dt>
+                <dd>{node.step}</dd>
+              </>
+            )}
+            {single?.source && (
+              <>
+                <dt>
+                  <Icon path={GICONS.file} size={13} stroke={1.8} /> Defined in
+                </dt>
+                <dd className="sp-mono">
+                  {single.source.file}
+                  {single.source.line ? `:${single.source.line}` : ""}
+                </dd>
+              </>
+            )}
+            {single?.condition && (
+              <>
+                <dt>
+                  <Icon path={GICONS.conditional} size={13} stroke={1.8} /> Runs when
+                </dt>
+                <dd>
+                  <code>{single.condition}</code>
+                </dd>
+              </>
+            )}
+          </dl>
+          <h3 className="sp-sheet-h">Receives</h3>
+          <p className="sp-muted sp-ghelp">{doc.engine === "snakemake" ? "Files its input names, written by these rules." : "Items (files, often with a sample id) these processes emit into its input channels."}</p>
+          <Flows view={view} node={node} engine={doc.engine} way="in" onEdge={onEdge} />
+          <h3 className="sp-sheet-h">Sends</h3>
+          <Flows view={view} node={node} engine={doc.engine} way="out" onEdge={onEdge} />
           {task && (
             <>
               <JobFacts task={task} />
@@ -296,14 +345,13 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
           )}
         </section>
       )}
-    </Drawer>
+    </Panel>
   );
 }
 
 /** What flows along a link: Snakemake links steps through files, Nextflow through channels whose
  * items are the files the upstream step emitted. Shown: the upstream side's recorded outputs. */
 function EdgeSheet({ run, doc, view, edge, onClose }: { run: RunDetail; doc: GraphDocument; view: View; edge: ViewEdge | null; onClose: () => void }) {
-  const phone = usePhone();
   const byId = new Map(view.nodes.map((n) => [n.id, n]));
   const names = new Map(doc.nodes.map((n) => [n.id, n.name]));
   const from = edge ? byId.get(edge.source) : undefined;
@@ -312,18 +360,24 @@ function EdgeSheet({ run, doc, view, edge, onClose }: { run: RunDetail; doc: Gra
   const job = from?.kind === "job" ? from.id.slice("job:".length) : undefined;
   const smk = doc.engine === "snakemake";
   return (
-    <Drawer
-      opened={edge !== null}
-      onClose={onClose}
-      position="right"
-      size={phone ? "100%" : 480}
-      title={edge ? `${from?.label ?? edge.source} → ${to?.label ?? edge.target}` : ""}
-      returnFocus
-      closeButtonProps={{ "aria-label": "Close" }}
-      classNames={{ title: "sp-sheet-title" }}
-    >
+    <Panel id={edge?.id ?? null} opened={edge !== null} onClose={onClose} title={edge ? `${from?.label ?? edge.source} → ${to?.label ?? edge.target}` : ""} icon={smk ? GICONS.file : GICONS.channel}>
       {edge && (
         <section className="sp-sheet" aria-label="Link">
+          <div className="sp-gpipe" aria-hidden="true">
+            <span className="sp-gpipe-end">
+              <Icon path={kindIcon(from?.kind ?? "process")} size={14} stroke={1.8} />
+              {from?.label ?? edge.source}
+            </span>
+            <span className="sp-gpipe-mid">
+              <Icon path={smk ? GICONS.file : GICONS.channel} size={14} stroke={1.8} />
+              {smk ? "files" : "channel"}
+              <Icon path={GICONS.link} size={14} stroke={1.8} />
+            </span>
+            <span className="sp-gpipe-end">
+              <Icon path={kindIcon(to?.kind ?? "process")} size={14} stroke={1.8} />
+              {to?.label ?? edge.target}
+            </span>
+          </div>
           <p>
             {smk
               ? "Snakemake links two rules through files: the downstream rule's input is a file the upstream rule writes."
@@ -358,7 +412,7 @@ function EdgeSheet({ run, doc, view, edge, onClose }: { run: RunDetail; doc: Gra
           ))}
         </section>
       )}
-    </Drawer>
+    </Panel>
   );
 }
 
@@ -507,10 +561,33 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
         onSettings={set}
         runtime
         jobs={settings.level === "jobs" ? jobs : undefined}
-        decor={{ selected: settings.node, lineage: traced, diff, replayAt }}
-        onOpen={(n) => set({ node: n.id })}
+        decor={{ selected: settings.node, edge: edge?.id ?? null, lineage: traced, diff, replayAt }}
+        onOpen={(n) => (setEdge(null), set({ node: n.id }))}
         onEdge={setEdge}
         source={source}
+        side={
+          <>
+            <EdgeSheet run={run} doc={doc} view={view} edge={edge} onClose={() => setEdge(null)} />
+            <NodeSheet
+              run={run}
+              doc={doc}
+              view={view}
+              node={selected}
+              task={task}
+              diff={selected ? diff?.get(selected.id) ?? null : null}
+              onClose={() => set({ node: null })}
+              onMember={(id) => set({ level: "process", node: id })}
+              onTrace={(direction) => {
+                setTrace(direction && selected ? { id: selected.id, direction } : null);
+              }}
+              trace={trace && selected && trace.id === selected.id ? trace.direction : null}
+              onOpen={(d) => (set({ node: null }), onOpen(d))}
+              onTasks={onTasks}
+              onToggle={(g) => set({ fold: toggled(settings.fold, g), node: null })}
+              onEdge={(e) => (set({ node: null }), setEdge(e))}
+            />
+          </>
+        }
         extra={
           <>
             <Compare run={run} value={compareId} onChange={setCompareId} />
@@ -538,25 +615,6 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
             )}
           </>
         }
-      />
-      <EdgeSheet run={run} doc={doc} view={view} edge={edge} onClose={() => setEdge(null)} />
-      <NodeSheet
-        run={run}
-        doc={doc}
-        view={view}
-        node={selected}
-        task={task}
-        diff={selected ? diff?.get(selected.id) ?? null : null}
-        onClose={() => set({ node: null })}
-        onMember={(id) => set({ level: "process", node: id })}
-        onTrace={(direction) => {
-          setTrace(direction && selected ? { id: selected.kind === "job" ? selected.members[0] : selected.id, direction } : null);
-          set({ node: null });
-        }}
-        onOpen={(d) => (set({ node: null }), onOpen(d))}
-        onTasks={onTasks}
-        onToggle={(g) => set({ fold: toggled(settings.fold, g), node: null })}
-        onEdge={(e) => (set({ node: null }), setEdge(e))}
       />
     </>
   );
