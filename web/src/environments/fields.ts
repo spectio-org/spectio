@@ -1,6 +1,7 @@
 // The environment form's fields and their rules (ui-spec §4.8.1; api §5.4 owns the rules): the
 // strings the inputs hold, the typed body they become, and the summary line of a card.
 import type { EnvironmentBody, EnvironmentItem } from "../api";
+import { plural } from "../runs/stateWord";
 
 export type Unit = "MiB" | "GiB";
 export interface Draft {
@@ -125,7 +126,7 @@ export function summary(item: Pick<EnvironmentItem, "executor" | "slurm" | "loca
     return parts.length ? parts.join(" · ") : "SLURM's defaults for your account";
   }
   const where = serverExecutor === "slurm" ? `on ${node} (the login node)` : "this machine";
-  const caps = [item.local?.cpus && `${item.local.cpus} CPUs`, item.local?.mem_mib && memWords(item.local.mem_mib)].filter(Boolean);
+  const caps = [item.local?.cpus && plural(item.local.cpus, "CPU", "CPUs"), item.local?.mem_mib && memWords(item.local.mem_mib)].filter(Boolean);
   return `${where} · ${caps.length ? `at most ${caps.join(" and ")}` : "no limit"}`;
 }
 

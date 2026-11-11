@@ -33,7 +33,7 @@ import {
 import { label as envLabel } from "../environments/fields";
 import { ICONS, Icon, groupIcon } from "../icons";
 import { runName } from "../runs/RunState";
-import { executorLabel, plural, shortId } from "../runs/stateWord";
+import { engineName, executorLabel, plural, shortId } from "../runs/stateWord";
 import { useServer } from "../server";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
@@ -67,7 +67,6 @@ import {
 // (UX-PAR-32).
 
 const SHORT_NAME = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9_][A-Za-z0-9._-]{0,99}$/;
-const NAMES: Record<Engine, string> = { nextflow: "Nextflow", snakemake: "Snakemake" };
 const SOURCES: Record<Inspected["schema_source"], string> = {
   "nextflow_schema.json": "form from nextflow_schema.json",
   "config.schema.yaml": "form from config.schema.yaml",
@@ -379,7 +378,7 @@ export function LaunchPage({
     if (!engine) found.push({ text: "Choose the engine", to: "engine" });
     if (!chosen && !envsFailed) found.push({ text: "Choose where it runs", to: "environment" });
     if (engine && !ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f))) {
-      const other = NAMES[engine === "nextflow" ? "snakemake" : "nextflow"];
+      const other = engineName(engine === "nextflow" ? "snakemake" : "nextflow");
       found.push({ text: `No ${ENGINE_FILES[engine].join(" or ")} in this directory: press ${other} or check the path`, to: "engine" });
     }
     for (const field of fields) {
@@ -459,7 +458,7 @@ export function LaunchPage({
     phone && loaded && engine && !why
       ? [
           `${loaded.name}${loaded.version ? ` ${loaded.version}` : ""}`,
-          NAMES[engine],
+          engineName(engine),
           profile,
           chosen && (chosen.label ?? chosen.name),
           `${plural(changed, "value", "values")} changed`,
@@ -487,7 +486,7 @@ export function LaunchPage({
   const runDirectory = server ? `${server.runs_root}/<run ID>` : "…";
   /** The Tasks row reads the chosen environment, never `GET /version` (ui-spec §4.8.1). */
   const tasksLine = () => {
-    const by = engine ? NAMES[engine] : "the engine";
+    const by = engine ? engineName(engine) : "the engine";
     if (!chosen) return envsFailed ? `by ${by}, in the server's default environment` : "…";
     const fromProfile = engine === "snakemake" && profile;
     if (chosen.executor === "slurm") {
@@ -502,7 +501,7 @@ export function LaunchPage({
   const guessed = loaded && guessEngine(loaded.engine_files);
   const entryEngine = (fromEntry ?? entry)?.engine;
   const engineNote = engine && engine === entryEngine && (!loaded || ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f)))
-    ? `${NAMES[engine]}, from the catalog entry`
+    ? `${engineName(engine)}, from the catalog entry`
     : !loaded
     ? "Load the pipeline to guess the engine"
     : loaded.engine_files.length === 0
@@ -510,7 +509,7 @@ export function LaunchPage({
       : !guessed
         ? `No guess: ${loaded.engine_files.join(" and ")} found · choose the engine`
         : engine && !ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f))
-          ? `${ENGINE_FILES[engine].join(" or ")} not found: Launch will refuse. Guessed: ${NAMES[guessed]}`
+          ? `${ENGINE_FILES[engine].join(" or ")} not found: Launch will refuse. Guessed: ${engineName(guessed)}`
           : `Guessed from ${loaded.engine_files.join(", ")} · change it if the guess is wrong`;
 
   return (
@@ -656,16 +655,16 @@ export function LaunchPage({
                   onChange={(e) => setPicked(e.currentTarget.value)}
                   data={[{ value: "", label: "(none)" }, ...(loaded?.profiles ?? [])]}
                   description={
-                <>
-                  {engine ? PROFILE_HINTS[engine] : "From the pipeline's own configuration; passed to the engine as its profile."}
-                  {profileNote && (
                     <>
-                      <br />
-                      <span>{profileNote}</span>
+                      {engine ? PROFILE_HINTS[engine] : "From the pipeline's own configuration; passed to the engine as its profile."}
+                      {profileNote && (
+                        <>
+                          <br />
+                          <span>{profileNote}</span>
+                        </>
+                      )}
                     </>
-                  )}
-                </>
-              }
+                  }
                   error={errors.profile}
                 />
                 <TextInput
@@ -696,7 +695,7 @@ export function LaunchPage({
                 {engine ? (
                   <span className="launch-engine">
                     <EngineMark engine={engine} size={16} named />
-                    {`${NAMES[engine]} ${loaded?.engine_versions[engine] ?? "(version not found)"}`}
+                    {`${engineName(engine)} ${loaded?.engine_versions[engine] ?? "(version not found)"}`}
                     {server && `, as ${headLine}`}
                   </span>
                 ) : (
@@ -768,7 +767,7 @@ export function LaunchPage({
                   : "Not loaded yet"}
               </dd>
               <dt>Engine</dt>
-              <dd>{engine ? `${NAMES[engine]} ${loaded?.engine_versions[engine] ?? "(version not found)"}` : "Not chosen yet"}</dd>
+              <dd>{engine ? `${engineName(engine)} ${loaded?.engine_versions[engine] ?? "(version not found)"}` : "Not chosen yet"}</dd>
               <dt>Environment</dt>
               <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
               <dt>Engine head</dt>
