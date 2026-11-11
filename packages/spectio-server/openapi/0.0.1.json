@@ -1290,6 +1290,17 @@
             "title": "At",
             "type": "string"
           },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -1329,6 +1340,7 @@
           "kind",
           "run_id",
           "run_name",
+          "engine",
           "at",
           "read"
         ],
@@ -5962,6 +5974,42 @@
                 }
               ],
               "title": "Params File"
+            }
+          },
+          {
+            "in": "query",
+            "name": "config_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Config File"
+            }
+          },
+          {
+            "in": "query",
+            "name": "engine",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "nextflow",
+                    "snakemake"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Engine"
             }
           }
         ],

@@ -140,6 +140,7 @@ nav:
           - Inbox (questions for Thomas): reviews/inbox.md
           - "R8b: depictio tooling re-audit": reviews/R8b-depictio-tooling.md
           - "R12: UI scenarios": reviews/R12-ui-scenarios.md
+          - "UI audit: design system (2026-11-11)": reviews/ui-audit-2026-11-11.md
           - "R10: synthesis and go / no-go": reviews/R10-synthesis.md
           - "R1: consistency": reviews/R1-consistency.md
           - "R2: open validations": reviews/R2-open-validations.md

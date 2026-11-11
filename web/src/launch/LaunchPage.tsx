@@ -204,6 +204,11 @@ export function LaunchPage({
   const [resources, setResources] = useState<Draft>(NO_DRAFT);
   const [configFile, setConfigFile] = useState("");
   const [configDown, setConfigDown] = useState<string | null>(null);
+  // What Launch would refuse of that file, asked of inspect before Launch (FU-P3-121); asked again
+  // when the window comes back (a chmod in a terminal) and when Launch is pressed while it blocks;
+  // kept with what it was asked for (pipeline, engine, path), so a change drops it (CR-P3FU121-02)
+  const [configCheck, setConfigCheck] = useState<{ asked: string; found: Inspected["config_file"] } | null>(null);
+  const [recheck, setRecheck] = useState(0);
   const inFlight = useRef<AbortController | null>(null);
   const revisionField = useRef<HTMLInputElement>(null);
 
@@ -396,6 +401,33 @@ export function LaunchPage({
     return () => controller.abort();
   }, [copyFrom]);
 
+  const configAsked = loaded && engine && configFile.trim() ? JSON.stringify([loaded.location, loaded.revision, engine, configFile.trim()]) : null;
+  /** The pre-check of the extra config file; a failed one shows nothing: Launch's own read stays the check. */
+  function checkConfig(signal?: AbortSignal) {
+    if (!loaded || !engine || !configAsked) return Promise.resolve(null);
+    const asked = configAsked;
+    return inspect(loaded.location, loaded.revision, signal, null, { path: configFile.trim(), engine }).then(
+      (found) => {
+        const check = { asked, found: found.config_file ?? null };
+        setConfigCheck(check);
+        return check;
+      },
+      () => (signal?.aborted || setConfigCheck(null), null),
+    );
+  }
+  useEffect(() => {
+    if (!configAsked) return setConfigCheck(null);
+    const controller = new AbortController();
+    const timer = setTimeout(() => void checkConfig(controller.signal), 300);
+    return () => (clearTimeout(timer), controller.abort());
+  }, [configAsked, recheck]);
+  useEffect(() => {
+    const again = () => setRecheck((n) => n + 1);
+    window.addEventListener("focus", again);
+    return () => window.removeEventListener("focus", again);
+  }, []);
+  const configRefused = configCheck && configCheck.asked === configAsked ? (configCheck.found?.error ?? null) : null;
+
   /** Every reason Launch waits, in order (ui-spec §4.6): the list of "Before Launch". */
   function reasons(): Reason[] {
     if (loading) return [{ text: "Wait for the pipeline to load", to: "location" }];
@@ -413,6 +445,7 @@ export function LaunchPage({
     for (const [to, wrong] of Object.entries(res.errors)) {
       found.push({ text: `Fix ${RESOURCE_LABELS[to as keyof typeof RESOURCE_LABELS]}: ${wrong.brief}`, to });
     }
+    if (configRefused) found.push({ text: `Fix Extra config file: ${configRefused}`, to: "config_file" });
     for (const field of fields) {
       const wrong = checkValue(field, own(values, field.key));
       const to = `params.${field.key}`;
@@ -439,13 +472,17 @@ export function LaunchPage({
   }
 
   async function submit() {
-    if (reasons().length || !loaded || !engine) {
-      setTried(true);
-      return;
-    }
+    // a refusal of the pre-check may be stale (a chmod since): asked again, and awaited, before
+    // deciding, so the click is not dropped (CR-P3FU121-01)
+    const others = reasons().filter((r) => !(configRefused && r.to === "config_file"));
+    if (others.length || !loaded || !engine) return setTried(true);
     const params = buildParams(fields, values, rows, leaves);
     const path = configFile.trim();
     setSending(true);
+    if (configRefused && (await checkConfig())?.found?.error) {
+      setSending(false);
+      return setTried(true);
+    }
     setErrors({});
     setConfigDown(null);
     try {
@@ -765,7 +802,7 @@ export function LaunchPage({
                 dropErrors("config_file");
               }}
               engine={engine}
-              error={errors.config_file}
+              error={errors.config_file ?? configRefused ?? undefined}
               reading={sending}
               node={server?.node ?? "the server"}
               reveal={goTo === "config_file" ? "link" : !!errors.config_file}

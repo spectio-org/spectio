@@ -565,12 +565,29 @@ def _params(request: Request, resolved: Resolved, engine: str | None, rel: str) 
     return {"path": rel, "values": values, "code_loading": loading, "error": error}
 
 
+def _config_check(request: Request, resolved: Resolved, path: str, engine: str | None) -> Any:
+    """Inspect's `config_file` (FU-P3-121): the checks and the read of `POST /runs` (api §5.7),
+    so the form says before Launch what Launch would refuse; `error` in Launch's words, null
+    when it would be accepted. Only the path and the error are answered, never the bytes."""
+    from spectio_server.api.extras import checked_config_file  # extras imports this module
+
+    if engine is None:
+        return {"path": path, "error": "choose the engine first"}
+    try:
+        checked_config_file(request, path, resolved.directory, engine)
+    except Invalid as exc:
+        return {"path": path, "error": exc.errors[0]["message"]}
+    return {"path": path, "error": None}
+
+
 @router.get("/workflows:inspect")
 def inspect(
     request: Request,
     location: str,
     revision: str | None = None,
     params_file: str | None = None,
+    config_file: str | None = None,
+    engine: Literal["nextflow", "snakemake"] | None = None,
 ) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
     if params_file is not None:  # before anything is fetched (SEC-PRE-FU87-04)
@@ -579,6 +596,9 @@ def inspect(
     resolved = resolve(settings.data_dir, location, revision)
     found = inspect_dir(resolved.directory, resolved.default_name)
     params = None if params_file is None else _params(request, resolved, found.engine, params_file)
+    config = None
+    if config_file is not None:
+        config = _config_check(request, resolved, config_file, engine or found.engine)
     versions = request.app.state.engine_versions()
     return {
         "location": resolved.location,
@@ -593,6 +613,7 @@ def inspect(
         "schema_source": found.schema_source,
         "profiles": found.profiles,
         "params_file": params,
+        "config_file": config,
     }
 
 

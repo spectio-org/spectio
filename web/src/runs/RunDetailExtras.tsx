@@ -72,7 +72,7 @@ function ConfigFileFact({ id, kept }: { id: string; kept: RunConfigFile }) {
     return () => clearTimeout(timer);
   }, [said]);
   if (kept.state !== "recorded" || !kept.path || !kept.kept_as || !kept.sha256) {
-    return <Damaged what="The run's record of it is damaged: no path, hash or View." />;
+    return <Damaged what="The run's record of it is damaged" />;
   }
   const { path, kept_as: name, sha256 } = kept;
   const size = kib(kept.size ?? 0);
@@ -97,29 +97,34 @@ function ConfigFileFact({ id, kept }: { id: string; kept: RunConfigFile }) {
       <span role="status" className="sp-muted">
         {said}
       </span>
-      {kept.includes && (
-        <span className="sp-extra-warn">
-          <Icon name="alert" />
-          <span>It loads other files with includeConfig; those are not kept with the run.</span>
-        </span>
-      )}
-      <KeptFileSheet id={id} name={name} path={path} size={size} sha256={sha256} opened={viewing} onClose={() => setViewing(false)} />
+      {kept.includes && <IncludesWarning />}
+      <KeptFileSheet id={id} name={name} path={path} size={size} sha256={sha256} includes={!!kept.includes} opened={viewing} onClose={() => setViewing(false)} />
+    </span>
+  );
+}
+
+function IncludesWarning() {
+  return (
+    <span className="sp-extra-warn">
+      <Icon name="alert" />
+      <span>It loads other files with includeConfig; those are not kept with the run.</span>
     </span>
   );
 }
 
 type Read = { state: "reading" } | { state: "read"; text: string; changed: boolean } | { state: "gone" } | { state: "failed" };
 
-/** The kept text in a sheet (aria-modal; Close and Escape return focus to View). */
-function KeptFileSheet(props: { id: string; name: string; path: string; size: string; sha256: string; opened: boolean; onClose: () => void }) {
-  const { id, name, path, size, sha256, opened, onClose } = props;
+/** The kept text in a sheet (aria-modal; Close and Escape return focus to View); the text is
+ * dropped when it closes, as it may hold credentials (SEC-P3FU110D-01). */
+function KeptFileSheet(props: { id: string; name: string; path: string; size: string; sha256: string; includes: boolean; opened: boolean; onClose: () => void }) {
+  const { id, name, path, size, sha256, includes, opened, onClose } = props;
   const phone = usePhone();
   const [read, setRead] = useState<Read>({ state: "reading" });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    setRead({ state: "reading" });
     if (!opened) return;
     const controller = new AbortController();
-    setRead({ state: "reading" });
     getConfigFile(id, controller.signal)
       .then((got) => setRead({ state: "read", text: got.text, changed: got.sha256 !== null && got.sha256 !== sha256 }))
       .catch((e: Error) => controller.signal.aborted || setRead({ state: e instanceof ApiError && e.status === 404 ? "gone" : "failed" }));
@@ -128,6 +133,7 @@ function KeptFileSheet(props: { id: string; name: string; path: string; size: st
   return (
     <Modal opened={opened} onClose={onClose} title={name} size="lg" fullScreen={phone} closeButtonProps={{ "aria-label": "Close" }}>
       <p className="sp-muted sp-mono">{`${path} · ${size}`}</p>
+      {includes && <IncludesWarning />}
       {read.state === "reading" && <p role="status">Reading the kept copy…</p>}
       {read.state === "gone" && <p role="alert">{`The kept copy of ${name} is not in the run directory any more.`}</p>}
       {read.state === "failed" && (
