@@ -134,3 +134,16 @@ test("the pool decodes Zarr chunks in the decoder worker, and answers a refusal 
   await expect(refused).rejects.toThrow("the chunk holds 10000 bytes, not 10002");
   pool.destroy();
 });
+
+test("a Blosc block whose size is not a multiple of its typesize is one stream, never split at fractional offsets (CR-P3FU102H-05)", () => {
+  const n = 3 * 128 + 1; // typesize 3: a split would be 128.33 bytes
+  const values = Uint8Array.from({ length: n }, (_, i) => i % 251);
+  const data = new Uint8Array(16 + 4 + 4 + n);
+  const view = new DataView(data.buffer);
+  data.set([2, 1, 0, 3]); // version 2, blosclz 1, no shuffle and not memcpyed, typesize 3
+  [n, n, data.length].forEach((v, i) => view.setUint32(4 + 4 * i, v, true)); // nbytes, blocksize, cbytes
+  view.setUint32(16, 20, true); // the block starts after its own start
+  view.setUint32(20, n, true); // one stream of n bytes, stored
+  data.set(values, 24);
+  expect(decode("blosc", n, data)).toEqual(values);
+});

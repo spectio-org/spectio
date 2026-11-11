@@ -103,5 +103,7 @@ spectio_server/web/assets/lzw-*.js
 spectio_server/web/assets/packbits-*.js
 spectio_server/web/assets/raw-*.js
 spectio_server/web/assets/webimage-*.js
+spectio_server/web/assets/zarr-*.js
+spectio_server/web/assets/zarrflat-*.js
 spectio_server/web/assets/zstd-*.js
 spectio_server/web/index.html
