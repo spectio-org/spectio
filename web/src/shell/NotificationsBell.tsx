@@ -1,6 +1,6 @@
 import { Modal } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type NotificationKind, type Notifications, listNotifications, markNotificationsRead } from "../api";
 import { Icon } from "../icons";
 import { useFrames } from "../live";
@@ -24,6 +24,8 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
   const [error, setError] = useState<string | null>(null);
   const [markError, setMarkError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  // Mark all as read goes once nothing is unread: focus moves to the panel's heading (FU-P3-116)
+  const heading = useRef<HTMLSpanElement>(null);
   const load = useCallback(() => {
     listNotifications().then(
       (answer) => {
@@ -43,6 +45,7 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
       (answer) => {
         setFound(answer);
         setMarkError(null);
+        setTimeout(() => heading.current?.focus());
       },
       (e: Error) => setMarkError(e.message),
     );
@@ -70,7 +73,11 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
       <Modal
         opened={open}
         onClose={() => setOpen(false)}
-        title="Notifications"
+        title={
+          <span ref={heading} tabIndex={-1}>
+            Notifications
+          </span>
+        }
         returnFocus
         fullScreen={phone}
         size="sm"

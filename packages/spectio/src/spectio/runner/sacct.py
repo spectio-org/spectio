@@ -421,9 +421,10 @@ class SacctLimiter:
     a call that failed or took over `slow_s`, up to `max_interval_s`, and reset by a quick
     answer. `later` queues IDs once a delay has passed (a follow-up). The caller's thread runs
     the call: the server runs it on a thread of its own, never the writer's or a request's.
-    A Refused call (a policy refusal of the tool or an ID) is FINAL, logged at warning, and
-    one sacct refused for the site's `MaxQueryTimeRange` (TooWide) is SITE_LIMIT: the caller
-    gives up the jobs whose launch set `-S` and puts the rest back (SEC-P3FU106B-01).
+    A Refused call (a policy refusal of the tool or an ID) is FINAL, logged at warning (the same
+    text at most once per `max_interval_s`, CR-P3FU106A-04), and one sacct refused for the
+    site's `MaxQueryTimeRange` (TooWide) is SITE_LIMIT: the caller gives up the jobs whose
+    launch set `-S` and puts the rest back (SEC-P3FU106B-01).
     Too much output is the only failure that points at the IDs: the batch is split in two, each
     of its IDs recorded with half its size until it is next taken, and one ID alone is FINAL.
     Any other failure (a timeout, a non-zero exit, an OSError of the tool's stat) answers None:
@@ -453,6 +454,7 @@ class SacctLimiter:
         self._size: dict[str, int] = {}  # job ID of a split batch → at most this many per call
         self._last: float | None = None
         self._busy = False
+        self._warned: tuple[str, float] | None = None  # the last refusal logged, and when
         self._lock = threading.Lock()
 
     def request(self, ids: Iterable[str]) -> list[str]:
@@ -529,7 +531,7 @@ class SacctLimiter:
         try:
             rows = self._call(ids)
         except Refused as exc:  # the tool or an ID: every call of them would be refused
-            log.warning("sacct not called for %d IDs: %s", len(ids), exc)
+            self._log_refused(len(ids), str(exc))
             rows = FINAL
         except TooWide as exc:  # the site's window limit: the caller gives up the oldest jobs
             log.warning("%s", exc)
@@ -556,3 +558,15 @@ class SacctLimiter:
                 else:
                     self._interval = self._base
         return ids, rows
+
+    def _log_refused(self, count: int, why: str) -> None:
+        """At warning, unless the same text was logged less than `max_interval_s` ago: then at
+        debug, as a refused tool refuses every call (CR-P3FU106A-04). Only one call is in
+        flight, so this needs no lock."""
+        now = self._clock()
+        last = self._warned
+        warn = last is None or last[0] != why or now - last[1] >= self._max_interval
+        if warn:
+            self._warned = (why, now)
+        level = logging.WARNING if warn else logging.DEBUG
+        log.log(level, "sacct not called for %d IDs: %s", count, why)

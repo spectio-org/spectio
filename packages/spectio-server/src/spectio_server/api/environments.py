@@ -79,11 +79,16 @@ class Store(Generic[E]):
         change: Callable[[envfile.File[E]], tuple[str | None, list[E]]],
     ) -> envfile.File[E]:
         """`envfile.update_kind` in the pool. A write whose answer timed out may still land: the
-        client reads the list again."""
+        client reads the list again. The lock is waited for here, in the request's thread, never
+        in a pool worker (dev-env §15.3 req. 13, SEC-P3FU86BCD-02); the job releases it."""
         names, noun = self._names(settings), self.noun
         try:
+            if not envfile.WRITE.acquire(timeout=envfile.LOCK_TIMEOUT_S):
+                raise Stalled(f"another write of {self.kind.file} has not ended")
             return files.run(
-                lambda: envfile.update_kind(self.kind, self.path, names, change), READ_TIMEOUT_S
+                lambda: envfile.update_kind(self.kind, self.path, names, change, locked=True),
+                READ_TIMEOUT_S,
+                on_done=envfile.WRITE.release,
             )
         except Stalled as exc:
             raise offline(exc) from None

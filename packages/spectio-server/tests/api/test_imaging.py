@@ -562,3 +562,22 @@ def test_pool_on_done_failure_keeps_the_reader() -> None:
 
     assert pool.run(lambda: 1, 2.0, boom) == 1
     assert pool.run(lambda: 2, 2.0) == 2
+
+
+def test_pool_thread_start_failure_gives_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A reader thread that cannot start gives the slot back and calls `on_done`, so a write
+    lock released there is not held until a restart (CR-P3FU120-01, SEC-P3FU120-01)."""
+    from spectio_server.files.pool import FilePool
+
+    pool = FilePool(1, backlog=0)
+    done: list[int] = []
+
+    def no_thread(self: threading.Thread) -> None:
+        raise RuntimeError("can't start new thread")
+
+    monkeypatch.setattr(threading.Thread, "start", no_thread)
+    with pytest.raises(RuntimeError):
+        pool.run(lambda: 1, 2.0, lambda: done.append(1))
+    assert done == [1]
+    monkeypatch.undo()
+    assert pool.run(lambda: 2, 2.0) == 2  # the only slot came back

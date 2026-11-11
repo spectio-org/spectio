@@ -263,6 +263,34 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-profile-phone", "/", 390, 844,
              "0.0.1, live: the Profile page on a phone, opened from the avatar",
              themes=("light", "dark"), live=("link:Profile", "wait:Config paths")),
+        # Batch P3-B15 (FU-P3-89, 113, 115b, 110d), from `tools/media/b15_demo.py` (it sets the environment itself): a catalog
+        # of three entries, environments.toml with two-cores (the default, 2 CPUs and 4 GiB), seven run records (one pinned)
+        # and `rnaseq-tuned`, launched with default resources and an extra config file.
+        Shot("app-search", "/", 1440, 900,
+             "0.0.1, live: the search dialog opened from the top bar with rna typed: runs by name, and the catalog's pipelines, each result a button",
+             themes=("light", "dark"), live=("click:Search runs, pipelines and pages", "fill:Search runs, pipelines and pages=rna", "wait:RNA-seq test", "pause:600")),
+        Shot("app-notifications", "/", 1440, 900,
+             "0.0.1, live: the notifications panel behind the bell: unread count, one item per ended run, Mark all as read",
+             themes=("light", "dark"), live=("click:Notifications, $SPECTIO_DEMO_UNREAD unread", "wait:Mark all as read", "pause:600")),
+        Shot("app-runs-actions", "/runs", 1440, 900,
+             "0.0.1, live: the runs table with two rows selected, the bulk bar with Delete and Clear selection, a pinned run first, sort icons on four headers",
+             themes=("light", "dark"), live=("check:Select run rnaseq-treatC-ctrl", "check:Select run rnaseq-pilot", "wait:2 selected")),
+        Shot("app-runs-delete", "/runs", 1440, 900,
+             "0.0.1, live: the Delete sheet for two selected runs, with the box Also delete their run directories off",
+             themes=("light", "dark"),
+             live=("check:Select run rnaseq-treatC-ctrl", "check:Select run rnaseq-pilot", "click:Delete\u2026", "wait:Also delete their run directories", "pause:600")),
+        Shot("app-launch-resources", "/launch", 1440, 1500,
+             "0.0.1, live: Launch with the Resources row (CPUs, memory and time per task) and the Extra config file row opened, values typed",
+             themes=("light", "dark"),
+             live=("wait:From your catalog", "select:From your catalog=RNA-seq test \u00b7 Nextflow", "click:Load", "wait:Loaded",
+                   "open:Resources The pipeline", "fill:CPUs per task=2", "fill:Memory per task=3", "fill:Time per task, hours=1",
+                   "open:Extra config file", "fill:Extra config file=$SPECTIO_DEMO_HOME/lab-tweaks.config", "view:Extra config file (optional)")),
+        Shot("app-run-resources", "/runs/$SPECTIO_DEMO_TUNED", 1440, 700,
+             "0.0.1, live: a run's facts with Default resources and Extra config file: the path, the kept name, the size and the SHA-256, View and Copy SHA-256",
+             themes=("light", "dark"), live=("wait:Default resources", "wait:kept as extra.config")),
+        Shot("app-run-config-file", "/runs/$SPECTIO_DEMO_TUNED", 1440, 800,
+             "0.0.1, live: View extra.config opened in its sheet: the kept copy as text, the path and size above it",
+             themes=("light", "dark"), live=("wait:Default resources", "click:View extra.config", "wait:errorStrategy", "pause:600")),
         Shot("app-workdir", "/runs/$SPECTIO_DEMO_RUN/workdir?task=$SPECTIO_DEMO_TASK&attempt=1", 1440, 1000,
              "0.0.1, live: the work directory of one Nextflow task attempt, in the same explorer, with the way back to the task's sheet",
              themes=("light", "dark"), live=("wait:treatA_vs_ctrl.tsv",)),
@@ -307,8 +335,11 @@ def render(shot: Shot, theme: str) -> Path | None:
             # live.js reads $SPECTIO_URL and expands $VARS in the steps itself: no environment value goes into argv
             cmd = [*preload, str(Path(__file__).resolve().parent / "live.js"), shot.board,
                    str(shot.width), str(shot.height), str(png), *shot.live]
-        subprocess.run(cmd, check=True, capture_output=True, cwd=REPO,
-                       env={**os.environ, "SPECTIO_PAGE_TEXT": str(text), "SPECTIO_THEME": theme})
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=REPO,
+                           env={**os.environ, "SPECTIO_PAGE_TEXT": str(text), "SPECTIO_THEME": theme})
+        except subprocess.CalledProcessError as e:  # say which step failed, not only that one did
+            sys.exit(f"{shot.name} [{theme}]: {e.stderr.strip()[-1500:]}")
         found = sanitize.leaks(text.read_text(encoding="utf-8"))
         if found:
             sys.exit(f"{shot.name}: forbidden term visible in the rendered page: {found}")

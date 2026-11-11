@@ -8,6 +8,8 @@ import { RUN_ID } from "../runs/RunDetailPage";
 // the dialog asks what the API already serves: runs by name prefix (GET /runs?q=), one run by its
 // exact ID (GET /runs/{id}), the catalog's pipelines (GET /catalog), and the app's pages by name.
 // Results are native buttons under headings; the arrow keys move between the input and them.
+// The short ID the UI shows (the last 6 characters of the run ID, `shortId`) finds its run among
+// the 200 newest, in any case (FU-P3-116): the API has no ID-suffix match until GET /search.
 
 type Group = "Runs" | "Pipelines" | "Pages";
 type Go = ReturnType<typeof useNavigate>;
@@ -37,6 +39,10 @@ const PAGES = [
   page("Profile", "/profile"),
 ];
 
+/** A short run ID: 6 characters of the ULID alphabet (Crockford base32), in any case. */
+const SHORT_ID = /^[0-9A-HJKMNP-TV-Z]{6}$/i;
+const NEWEST = 200;
+
 const runHit = (r: { id: string; name: string | null }): Hit => ({
   key: r.id,
   group: "Runs",
@@ -48,16 +54,19 @@ const runHit = (r: { id: string; name: string | null }): Hit => ({
 /** Every hit for `q`, and the first failure's words; an aborted search throws. */
 async function search(q: string, signal: AbortSignal): Promise<{ hits: Hit[]; error: string | null }> {
   const needle = q.toLowerCase();
-  const [runs, exact, catalog] = await Promise.allSettled([
+  const short = SHORT_ID.test(q) ? q.toUpperCase() : null;
+  const [runs, exact, bySuffix, catalog] = await Promise.allSettled([
     listRuns({ q, limit: 5 }, signal),
     // a 404 is no match, not a failure
     RUN_ID.test(q) ? getRun(q, signal).catch((e) => (e instanceof ApiError && e.status === 404 ? null : Promise.reject(e))) : null,
+    short ? listRuns({ limit: NEWEST }, signal).then((page) => page.items.filter((r) => r.id.endsWith(short))) : [],
     listCatalog(signal),
   ]);
   if (signal.aborted) throw new DOMException("aborted", "AbortError");
   const hits: Hit[] = [];
   if (exact.status === "fulfilled" && exact.value) hits.push(runHit(exact.value));
-  if (runs.status === "fulfilled") hits.push(...runs.value.items.filter((r) => r.id !== q).map(runHit));
+  if (bySuffix.status === "fulfilled") hits.push(...bySuffix.value.map(runHit));
+  if (runs.status === "fulfilled") hits.push(...runs.value.items.filter((r) => !hits.some((h) => h.key === r.id)).map(runHit));
   if (catalog.status === "fulfilled") {
     for (const p of catalog.value.items) {
       if (![p.name, p.label ?? "", p.location].some((s) => s.toLowerCase().includes(needle))) continue;
@@ -65,7 +74,7 @@ async function search(q: string, signal: AbortSignal): Promise<{ hits: Hit[]; er
     }
   }
   hits.push(...PAGES.filter((p) => p.label.toLowerCase().includes(needle)));
-  const failed = [runs, exact, catalog].find((r) => r.status === "rejected");
+  const failed = [runs, exact, bySuffix, catalog].find((r) => r.status === "rejected");
   return { hits, error: failed ? `Search failed: ${(failed.reason as Error).message}` : null };
 }
 

@@ -61,6 +61,24 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 .prow > label,.prow > .pname{grid-column:1}
 .prow > .pmeta{grid-column:2;grid-row:1;font-size:12px;color:#6E7287;text-align:right}
 .plist{display:flex;flex-direction:column}
+/* ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): the Resources and Extra config file rows of "Where it runs"; fields and bounds in api §5.7. */
+.xrow{border-radius:14px;box-shadow:inset 0 0 0 1px #DFE1EA;padding:2px 14px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.xrow h3{margin:0;font-size:14px;font-weight:600}
+.xrow-b{display:flex;flex-direction:column;gap:10px;min-width:0}
+.res-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.fld{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld > label,.fld > legend{padding:0;font-size:13px;font-weight:600}
+.fld > legend{margin-bottom:5px}
+.unit{display:flex;gap:6px;align-items:center;min-width:0}
+.unit input{flex:1 1 auto;min-width:0}
+.unit select{flex:0 0 78px;width:78px}
+.unit > label,.unit > .u{font-size:12.5px;color:#4D5065;flex-shrink:0}
+.hint{font-size:12px;color:#4D5065;line-height:1.45}
+.ferr{font-size:12px;color:#B02A2A;font-weight:600;line-height:1.45}
+.keep{display:flex;gap:7px;align-items:baseline;font-size:12px;color:#33364A;background:#F7F7FB;border-radius:9px;padding:6px 9px;line-height:1.45}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+select[aria-invalid="true"]{border-color:#DC3B3B}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -152,6 +170,39 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               </div>
               <button type="button" class="btn-env" aria-haspopup="dialog">New environment</button>
             </fieldset>
+            <!-- ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): Resources and Extra config file, two folding rows after Environment, drawn open; Nextflow on Login node (caps 2 CPUs and 8 GiB). Bounds and messages: api §5.7, spectio.environments.DefaultResources. -->
+            <div class="xrow">
+              <h3 id="xr-res-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="xr-res" style="min-height: 40px;"><span>Resources</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Defaults: 2 CPUs · 6 GiB · 2 h per task</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
+              <div id="xr-res" class="xrow-b">
+                <span id="res-hint" class="hint">Used by every process that does not set its own. A process that sets its own CPUs, memory or time keeps them. Replaces the pipeline's own default for all processes. Each is optional.</span>
+                <div class="res-f">
+                  <div class="fld">
+                    <label for="res-cpus">CPUs per task</label>
+                    <input id="res-cpus" inputmode="numeric" value="2" placeholder="the pipeline's default" aria-describedby="res-cpus-h res-hint">
+                    <span id="res-cpus-h" class="hint">1 to 256 · at most 2 (Login node)</span>
+                  </div>
+                  <div class="fld">
+                    <label for="res-mem">Memory per task</label>
+                    <span class="unit"><input id="res-mem" inputmode="decimal" value="6" placeholder="the pipeline's default" aria-describedby="res-mem-h res-hint"><label class="sr" for="res-mem-u">Memory per task, unit</label><select id="res-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
+                    <span id="res-mem-h" class="hint">Rounded to MiB · at most 8 GiB (Login node)</span>
+                  </div>
+                  <fieldset class="fld">
+                    <legend>Time per task</legend>
+                    <span class="unit"><label class="sr" for="res-time-h-in">Time per task, hours</label><input id="res-time-h-in" inputmode="numeric" value="2" placeholder="–" aria-describedby="res-time-h res-hint"><span class="u" aria-hidden="true">h</span><label class="sr" for="res-time-m-in">Time per task, minutes</label><input id="res-time-m-in" inputmode="numeric" value="0" placeholder="–" aria-describedby="res-time-h res-hint"><span class="u" aria-hidden="true">min</span></span>
+                    <span id="res-time-h" class="hint">1 min to 720 h (30 days)</span>
+                  </fieldset>
+                </div>
+              </div>
+            </div>
+            <div class="xrow">
+              <h3 id="xr-cfg-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="xr-cfg" style="min-height: 40px;"><span>Extra config file</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">lab-tweaks.config</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
+              <div id="xr-cfg" class="xrow-b fld">
+                <label for="f-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+                <input id="f-xcfg" value="/home/amartin/configs/lab-tweaks.config" placeholder="/home/amartin/…/my.config" spellcheck="false" autocomplete="off" aria-describedby="f-xcfg-h f-xcfg-k" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+                <span id="f-xcfg-h" class="hint">A .config file, passed with -c after the pipeline's own. It runs as you, like the pipeline's nextflow.config. Your withName and withLabel settings apply; the defaults above replace its general process settings. In your home directory or in the pipeline: type its absolute path (the browser cannot list the server's files).</span>
+                <span id="f-xcfg-k" class="keep"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; align-self: center;"><path d="M6 11h12v9H6z M9 11V8a3 3 0 0 1 6 0v3"/></svg><span>Read once at Launch and kept with the run as <span class="mono">extra.config</span>, readable by you only (0600), with its SHA-256 · at most 256 KiB · a later edit of your file changes no run.</span></span>
+              </div>
+            </div>
             <dl style="margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
               <sc-for list="{{where}}" as="w" hint-placeholder-count="4">
                 <div style="display: flex; gap: 10px; align-items: baseline;"><dt style="flex: 0 0 92px; color: #6E7287; font-size: 12px;">{{w.k}}</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;"><sc-if value="{{w.logo}}" hint-placeholder-val="{{false}}"><img src="{{w.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{w.v}}</dd></div>
@@ -247,6 +298,8 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               <div><dt>Pipeline</dt><dd>nf-core/rnaseq 3.27.0 · profile singularity</dd></div>
               <div><dt>Engine</dt><dd><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="14" height="14" alt="" style="display: inline-block; vertical-align: -2px; margin-right: 5px;">Nextflow 25.10.4</dd></div>
               <div><dt>Environment</dt><dd>Login node · Local</dd></div>
+              <div><dt>Resources</dt><dd>2 CPUs · 6 GiB · 2 h per task; processes that set their own keep them</dd></div>
+              <div><dt>Extra config</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 400;">/home/amartin/configs/lab-tweaks.config</dd></div>
               <div><dt>Engine head</dt><dd>tmux session on login1</dd></div>
               <div><dt>Tasks</dt><dd>run on login1 by Nextflow · at most 2 CPUs</dd></div>
               <div><dt>Run directory</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 400;">/scratch/amartin/spectio-runs/&lt;run ID&gt;</dd></div>
@@ -271,6 +324,110 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
           <span id="launch-what" style="font-size: 12px; color: #4D5065;">Starts the engine in a new tmux session on login1 and opens the run page. The run shows Queued until the engine has started.</span>
         </aside>
       </div>
+
+      <!-- ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): the states of the Resources and Extra config file rows. -->
+      <section aria-labelledby="h-xr" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h2 id="h-xr" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Where it runs: resources and the extra config file, other states</h2>
+          <span style="font-size: 12.5px; color: #4D5065;">ui-spec §4.6, api §5.7. The browser checks the bounds and the environment's caps before Launch; only the server reads the file, so its refusals come back on the input after Launch. Drawn side by side; the page shows one state at a time.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 14px; align-items: start;">
+
+        <section aria-labelledby="rs1-h" class="cat-pnl">
+          <h3 id="rs1-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">A SLURM environment: its values as placeholders</h3>
+          <span class="cat-note">Long jobs, mylab chosen, nothing typed: each empty input shows what the run gets. A value above the partition's limit fails at the first sbatch, with its reason on Run detail; Spectio does not ask SLURM first.</span>
+          <div class="res-f">
+            <div class="fld">
+              <label for="rs1-cpus">CPUs per task</label>
+              <input id="rs1-cpus" inputmode="numeric" placeholder="the pipeline's default" aria-describedby="rs1-cpus-h">
+              <span id="rs1-cpus-h" class="hint">1 to 256</span>
+            </div>
+            <div class="fld">
+              <label for="rs1-mem">Memory per task</label>
+              <span class="unit"><input id="rs1-mem" inputmode="decimal" placeholder="32" aria-describedby="rs1-mem-h"><label class="sr" for="rs1-mem-u">Memory per task, unit</label><select id="rs1-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
+              <span id="rs1-mem-h" class="hint">Empty: 32 GiB, from Long jobs, mylab</span>
+            </div>
+            <fieldset class="fld">
+              <legend>Time per task</legend>
+              <span class="unit"><label class="sr" for="rs1-th">Time per task, hours</label><input id="rs1-th" inputmode="numeric" placeholder="48" aria-describedby="rs1-time-h"><span class="u" aria-hidden="true">h</span><label class="sr" for="rs1-tm">Time per task, minutes</label><input id="rs1-tm" inputmode="numeric" placeholder="0" aria-describedby="rs1-time-h"><span class="u" aria-hidden="true">min</span></span>
+              <span id="rs1-time-h" class="hint">Empty: 48 h, from Long jobs, mylab</span>
+            </fieldset>
+          </div>
+          <p class="cat-line">Folded: <b style="font-weight: 600;">Resources</b> · From the environment: 48 h · 32 GiB per task</p>
+        </section>
+
+        <section aria-labelledby="rs2-h" class="cat-pnl">
+          <h3 id="rs2-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Out of bounds, before Launch</h3>
+          <span class="cat-note">Login node (at most 2 CPUs and 8 GiB). Each error sits under its input and in Before Launch, which links it; Launch waits. The CPU line is the server's words; the memory and time lines are the form's own.</span>
+          <div class="res-f">
+            <div class="fld">
+              <label for="rs2-cpus">CPUs per task</label>
+              <input id="rs2-cpus" inputmode="numeric" value="4" aria-invalid="true" aria-describedby="rs2-cpus-e rs2-cpus-h">
+              <span id="rs2-cpus-e" class="ferr">At most 2 CPUs in Login node</span>
+              <span id="rs2-cpus-h" class="hint">1 to 256 · at most 2 (Login node)</span>
+            </div>
+            <div class="fld">
+              <label for="rs2-mem">Memory per task</label>
+              <span class="unit"><input id="rs2-mem" inputmode="decimal" value="12" aria-invalid="true" aria-describedby="rs2-mem-e rs2-mem-h"><label class="sr" for="rs2-mem-u">Memory per task, unit</label><select id="rs2-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
+              <span id="rs2-mem-e" class="ferr">At most 8 GiB in Login node</span>
+              <span id="rs2-mem-h" class="hint">1 MiB to 4,096 GiB (4 TiB)</span>
+            </div>
+            <fieldset class="fld">
+              <legend>Time per task</legend>
+              <span class="unit"><label class="sr" for="rs2-th">Time per task, hours</label><input id="rs2-th" inputmode="numeric" value="0" aria-invalid="true" aria-describedby="rs2-time-e rs2-time-h"><span class="u" aria-hidden="true">h</span><label class="sr" for="rs2-tm">Time per task, minutes</label><input id="rs2-tm" inputmode="numeric" value="0" aria-invalid="true" aria-describedby="rs2-time-e rs2-time-h"><span class="u" aria-hidden="true">min</span></span>
+              <span id="rs2-time-e" class="ferr">At least 1 minute</span>
+              <span id="rs2-time-h" class="hint">Above 720 h 0 min: “At most 720 hours (30 days)”</span>
+            </fieldset>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; line-height: 1.45; color: #B02A2A;">
+            <b style="font-weight: 600; color: #22253A;">Before Launch</b>
+            <span><a href="#rs2-cpus" style="color: #B02A2A;">Fix CPUs per task</a>: at most 2 on Login node</span>
+            <span><a href="#rs2-mem" style="color: #B02A2A;">Fix Memory per task</a>: at most 8 GiB on Login node</span>
+            <span><a href="#rs2-th" style="color: #B02A2A;">Fix Time per task</a>: at least 1 minute</span>
+          </div>
+        </section>
+
+        <section aria-labelledby="rs3-h" class="cat-pnl">
+          <h3 id="rs3-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Launch pressed: the file is being read</h3>
+          <div class="fld">
+            <label for="rs3-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+            <input id="rs3-xcfg" value="/home/amartin/configs/lab-tweaks.config" readonly spellcheck="false" aria-describedby="rs3-st" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; background: #F7F7FB;">
+            <span id="rs3-st" role="status" style="display: flex; gap: 7px; align-items: center; font-size: 12.5px; color: #33364A;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M12 3a9 9 0 1 0 9 9"/></svg>Reading lab-tweaks.config on login1: its owner, mode and size, then a copy for the run…</span>
+          </div>
+          <button type="button" class="btn-go" aria-disabled="true" aria-describedby="rs3-st" style="align-self: flex-start;">Launching…</button>
+        </section>
+
+        <section aria-labelledby="rs4-h" class="cat-pnl">
+          <h3 id="rs4-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">The server refused the file (422)</h3>
+          <span class="cat-note">Nothing was started. Focus moves to the input; the first line is the server's reason as it sends it, never the file's content; the second is the form's own hint.</span>
+          <div class="fld">
+            <label for="rs4-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+            <input id="rs4-xcfg" value="/home/amartin/configs/lab-tweaks.config" spellcheck="false" aria-invalid="true" aria-describedby="rs4-e rs4-o" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="rs4-e" role="alert" class="ferr" style="display: flex; flex-direction: column; gap: 2px;"><span>the file is writable by group or others</span><span style="font-weight: 400;">Fix its mode (chmod go-w), then Launch again.</span></span>
+            <span id="rs4-o" class="hint">Other reasons, as the server words them: Choose a file in your home directory or in the pipeline · a .config file · there is no such file · the file is reached through a symbolic link, which is not read · the directory is not owned by this user · the file is larger than 256 KiB · the file is not UTF-8 text.</span>
+          </div>
+        </section>
+
+        <section aria-labelledby="rs5-h" class="cat-pnl">
+          <h3 id="rs5-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">The file could not be read (503)</h3>
+          <span class="cat-note">The server sends 503 for a timeout and for an I/O error (“the config file cannot be read: &lt;strerror&gt;”); its reason follows the colon as it comes.</span>
+          <div role="alert" style="display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; background: #FDF2F2; box-shadow: inset 0 0 0 1px #F5C2C2; padding: 10px 12px; font-size: 13px; color: #7A1F1F; line-height: 1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8v5 M12 16h.01"/></svg><span>The extra config file could not be read: <i>&lt;the server's reason&gt;</i>. Nothing was started and your values are kept.</span></div>
+          <button type="button" class="btn-go" style="align-self: flex-start;">Launch again</button>
+        </section>
+
+        <section aria-labelledby="rs6-h" class="cat-pnl">
+          <h3 id="rs6-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Both rows folded (the default)</h3>
+          <div class="xrow">
+            <h4 style="margin: 0; font-size: 14px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="false" aria-controls="rs6-res" style="min-height: 40px;"><span>Resources</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Defaults: 2 CPUs · 6 GiB · 2 h per task</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h4>
+            <div id="rs6-res" hidden></div>
+          </div>
+          <div class="xrow">
+            <h4 style="margin: 0; font-size: 14px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="false" aria-controls="rs6-cfg" style="min-height: 40px;"><span>Extra config file</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">No extra config file</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h4>
+            <div id="rs6-cfg" hidden></div>
+          </div>
+        </section>
+        </div>
+      </section>
 
       <section aria-labelledby="h-env-inv" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
         <div style="display: flex; flex-direction: column; gap: 2px;">

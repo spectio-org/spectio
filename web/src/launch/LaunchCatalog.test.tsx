@@ -5,7 +5,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
+import { VERSION, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -30,12 +30,12 @@ const INSPECTED = {
   version: "3.27.0",
   engine_version: null,
   engine_versions: { nextflow: "26.10.4", snakemake: "9.27.1" },
-  schema: { type: "object", properties: { depth: { type: "integer", default: 3 }, input: { type: "string" } } },
+  schema: { type: "object", properties: { depth: { type: "integer", default: 3 }, input: { type: "string" }, custom_config_base: { type: "string" } } },
   schema_source: "nextflow_schema.json",
   profiles: ["docker", "test"],
   params_file: {
     path: "conf/test.yaml",
-    values: { depth: 5, input: "s3://x/samples.csv", foo: 1, bar: "b" },
+    values: { depth: 5, input: "s3://x/samples.csv", custom_config_base: "/g/lab/conf", foo: 1, bar: "b" },
     code_loading: [
       { field: "params.custom_config_base", value: "/g/lab/conf", writable_by_others: false },
       { field: "params_file", value: "/data/rnaseq/conf/test.yaml", writable_by_others: true },
@@ -85,7 +85,7 @@ test("choosing an entry only fills the form; Load inspects with its params file;
   expect(screen.getByRole("button", { name: "Nextflow" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveValue("test");
   expect(screen.getByRole("textbox", { name: /^depth/ })).toHaveValue("5");
-  expect(screen.getByText("2 values of conf/test.yaml fill the form and read changed. 2 values of conf/test.yaml have no field in this form, and are not sent: foo, bar")).toBeInTheDocument();
+  expect(screen.getByText("3 values of conf/test.yaml fill the form and read changed. 2 values of conf/test.yaml have no field in this form, and are not sent: foo, bar")).toBeInTheDocument();
   expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml sets custom_config_base: /g/lab/conf")).toBeInTheDocument();
   expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml loads code or configuration · writable by others")).toBeInTheDocument();
   expect(within(screen.getByRole("region", { name: "Summary" })).getByText(/from the catalog entry rnaseq-test/)).toBeInTheDocument();
@@ -94,8 +94,29 @@ test("choosing an entry only fills the form; Load inspects with its params file;
   expect(posted[0]).toMatchObject({
     workflow: { location: "https://github.com/nf-core/rnaseq", revision: "3.27.0", engine: "nextflow" },
     profiles: ["test"],
-    params: { depth: 5, input: "s3://x/samples.csv" },
+    params: { depth: 5, input: "s3://x/samples.csv", custom_config_base: "/g/lab/conf" },
   });
+});
+
+test("a code_loading warning names what Launch sends: none for a hidden field or a changed value (SEC-P3FU87E-02)", async () => {
+  const hidden = { ...INSPECTED.schema, properties: { ...INSPECTED.schema.properties, custom_config_base: { type: "string", hidden: true } } };
+  launchWith(list([RNASEQ]), { "/api/v1/workflows:inspect": { ...INSPECTED, schema: hidden } });
+  await userEvent.selectOptions(await picker(), "rnaseq-test");
+  await userEvent.click(loadButton());
+  await screen.findByText("Loaded");
+  expect(screen.getByText(/have no field in this form, and are not sent: custom_config_base, foo, bar/)).toBeInTheDocument();
+  expect(within(before()).queryByText(/sets custom_config_base/)).toBeNull();
+  expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml loads code or configuration · writable by others")).toBeInTheDocument();
+});
+
+test("a code_loading warning goes when the value is changed in the form (SEC-P3FU87E-02)", async () => {
+  launchWith(list([RNASEQ]));
+  await userEvent.selectOptions(await picker(), "rnaseq-test");
+  await userEvent.click(loadButton());
+  await screen.findByText("Loaded");
+  expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml sets custom_config_base: /g/lab/conf")).toBeInTheDocument();
+  await userEvent.clear(screen.getByRole("textbox", { name: /^custom_config_base/ }));
+  expect(within(before()).queryByText(/sets custom_config_base/)).toBeNull();
 });
 
 test("the params file itself not writable by others is still named before Launch (SEC-P3FU87E-01)", async () => {
@@ -165,6 +186,16 @@ test("the entry's profile not in the pipeline: its line, and the environment's r
   await userEvent.click(loadButton());
   expect(await screen.findByText("The catalog's profile embl is not in this pipeline: none selected")).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveValue("");
+});
+
+test("the entry's profile not in the pipeline, the environment's is: the line says it was selected instead (CR-P3FU87E-05)", async () => {
+  const env = { name: "slurm", label: null, executor: "slurm", builtin: true, default: true, usable: true, unusable_reason: null, slurm: { partition: "htc", account: null, time_min: null, mem_mib: null }, local: null, profiles: { nextflow: "docker", snakemake: null }, etag: '"slurm"' };
+  const environments = { items: [env], default: "slurm", file: { path: "/home/amartin/.spectio/environments.toml", state: "ok", detail: null } };
+  launchWith(list([entry("rnaseq-test", { profile: "embl" })]), { "/api/v1/environments": environments });
+  await userEvent.selectOptions(await picker(), "rnaseq-test");
+  await userEvent.click(loadButton());
+  expect(await screen.findByText("The catalog's profile embl is not in this pipeline: the environment's profile docker is selected")).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveValue("docker");
 });
 
 test("an entry whose pipeline is gone: the error names the entry, and the picker keeps it", async () => {
@@ -278,6 +309,36 @@ test("Save to catalog: a dialog prefilled with a unique name; on Save the entry 
   expect(screen.getByText("In your catalog as nf-core-rnaseq-2")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Edit nf-core-rnaseq-2" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Save to catalog" })).toBeNull();
+});
+
+/** Launch with a loaded pipeline not in the catalog; returns its Save to catalog button. */
+async function loadedNotSaved() {
+  launchWith(list([]), { "/api/v1/workflows:inspect": { ...INSPECTED, params_file: null } });
+  await screen.findByText("Your catalog is empty. Load a pipeline, then Save to catalog.");
+  await userEvent.type(pipeline(), "nf-core/rnaseq");
+  await userEvent.type(screen.getByRole("textbox", { name: /Revision/ }), "3.27.0");
+  await userEvent.click(loadButton());
+  await screen.findByText("Loaded");
+  return screen.getByRole("button", { name: "Save to catalog" });
+}
+
+test.each([
+  ["Cancel", 1440],
+  ["Escape", 1440],
+  ["Cancel", 390],
+  ["Escape", 390],
+])("Save to catalog: %s at %ipx closes the dialog and focus goes back to Save to catalog (CR-P3FU87E-04)", async (how, width) => {
+  viewport(width);
+  const save = await loadedNotSaved();
+  await userEvent.click(save);
+  const dialog = await screen.findByRole("dialog", { name: "Save to catalog" });
+  expect(dialog).toHaveAttribute("aria-modal", "true");
+  expect(!!dialog.closest(".sp-bottom-sheet")).toBe(width === 390); // the phone's full-height sheet
+  await waitFor(() => expect(within(dialog).getByRole("textbox", { name: /^Name/ })).toHaveFocus());
+  if (how === "Cancel") await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  else await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  await waitFor(() => expect(save).toHaveFocus());
 });
 
 test("Save to catalog waits while the catalog cannot be read", async () => {

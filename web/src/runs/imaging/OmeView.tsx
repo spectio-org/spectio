@@ -5,7 +5,8 @@
 // buttons for the zoom, Z and T ranges, and a status line for what stopped the reading. The
 // channel list and the view in the URL (FU-P3-102f): read once when the viewer opens, written back
 // with a history replace after a pause, so a Reload of the page or of the open keeps the view.
-// An OME-Zarr folder (FU-P3-102g) is read through our own store instead, key by key (`zarr`).
+// An OME-Zarr folder (FU-P3-102g) is read through our own store instead, key by key (`zarr`), its
+// chunks decoded in the decoder workers (FU-P3-102h).
 import { Button } from "@mantine/core";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { ApiError } from "../../api";
@@ -16,7 +17,7 @@ import { DecoderPool } from "./pool";
 import { ZOOM, parseView, writeView } from "./url-state";
 import { type Pixels, type Stats, type ViewState, Viewer, openPixels, openZarrPixels } from "./viv";
 import { guardParses } from "./walk";
-import { ZarrStore } from "./zarr";
+import { ZarrStore, inWorkers } from "./zarr";
 
 type Opened = { pixels: Pixels; client: { failure: Error | null } }; // the TIFF's pinned client or the Zarr store
 type Status = { title: string; action: "reload" | "retry" } | null;
@@ -69,10 +70,10 @@ export default function OmeView({ url, size, name, zarr, workdir = false, fallba
     setStatus(null);
     if (flatOnly) return;
     const controller = new AbortController();
-    let pool: DecoderPool | undefined; // the TIFF's decoder workers; a Zarr needs none
+    let pool: DecoderPool | undefined; // the decoder workers: the TIFF's tiles, or the Zarr's chunks
     (async () => {
       if (zarr) {
-        const store = new ZarrStore(zarr, controller.signal);
+        const store = new ZarrStore(zarr, inWorkers((pool = new DecoderPool())), controller.signal);
         store.work = workdir;
         store.onBusy = (b) => controller.signal.aborted || setBusy(b);
         const pixels = await openZarrPixels(store);

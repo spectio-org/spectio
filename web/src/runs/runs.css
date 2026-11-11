@@ -910,6 +910,14 @@
   .sp-bulk .mantine-Button-root {
     min-height: 44px;
   }
+  /* the card's pin, beside its name: 44 px too (UX-P3FU115B-06) */
+  .sp-run-card .sp-pin {
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -8px -14px -8px auto;
+  }
   /* Home: count cards two by two. */
   .sp-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2024,7 +2032,8 @@
 }
 .sp-pin {
   display: inline-flex;
-  padding: 4px;
+  /* a 25 px hit target around its 15 px icon, over WCAG 2.5.8's 24 px (UX-P3FU115B-05) */
+  padding: 5px;
   border: 0;
   border-radius: 6px;
   color: var(--sp-text-secondary);
@@ -2057,4 +2066,29 @@
   align-items: center;
   gap: 8px;
   font-weight: 600;
+}
+
+/* Run detail's Extra config file fact and its sheet (FU-P3-110d, LiteRunDetail). */
+.sp-extra-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.sp-extra-warn {
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  color: var(--sp-state-review-fg);
+}
+.sp-extra-text {
+  max-height: 60vh;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sp-surface-subtle);
+  font-family: var(--sp-font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

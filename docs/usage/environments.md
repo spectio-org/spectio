@@ -208,13 +208,13 @@ Both states below were made by editing the file by hand while the server ran. Th
 ```console
 GET /environments   (the file now holds: default = "ghost")
 200  items: [local]  default: "local"
-     file: {"state": "invalid", "detail": "default ghost names no environment"}
+     file: {"state": "invalid", "detail": "default names no environment"}
 
 POST /environments   {"name": "other", "executor": "local"}
-409  /problems/environments-file-unusable: The environments file is invalid: default ghost names no environment
+409  /problems/environments-file-unusable: The environments file is invalid: default names no environment
 
 $ spectio doctor | grep environments
-warn environments /srv/demo-b10/data/environments.toml: invalid (default ghost names no environment), default local
+warn environments /srv/demo-b10/data/environments.toml: invalid (default names no environment), default local
 ```
 
 ```console

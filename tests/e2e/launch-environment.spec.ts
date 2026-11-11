@@ -31,7 +31,7 @@ test('define an environment from Launch, launch with it, and read it on the run'
     await page.getByRole('textbox', { name: /^Pipeline/ }).fill(PIPELINE);
     await page.getByRole('button', { name: 'Load' }).click();
     await expect(page.getByText('Loaded', { exact: true })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Where it runs' })).toContainText('at most 1 CPUs');
+    await expect(page.getByRole('region', { name: 'Where it runs' })).toContainText(/at most 1 CPU(?!s)/);
     const posted = page.waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/v1/runs');
     await page.getByRole('button', { name: 'Launch' }).last().click();
     expect((await posted).postDataJSON()).toMatchObject({ environment: name });
@@ -39,7 +39,7 @@ test('define an environment from Launch, launch with it, and read it on the run'
     await expect(page).toHaveURL(/\/runs\/run_/);
     const fact = page.locator('dt', { hasText: /^Environment$/ }).locator('xpath=following-sibling::dd[1]');
     await expect(fact).toContainText(`${name} · Local`);
-    await expect(fact).toContainText('at most 1 CPUs');
+    await expect(fact).toContainText(/at most 1 CPU(?!s)/);
   } finally {
     const item = await request.get(`/api/v1/environments/${name}`);
     if (item.ok()) {
