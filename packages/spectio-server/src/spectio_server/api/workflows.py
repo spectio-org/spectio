@@ -65,6 +65,7 @@ MAX_DEPTH = 32  # of the params (FU-P3-17), sent or read from a params file
 NO_ALIASES = "YAML aliases are not read"
 MAX_NUMBER = 128  # characters of a YAML number (SEC-161S4-01)
 MAX_YAML = 256 * 1024  # a Snakemake schema or config file inspect parses (req. 21, SEC-161S4-04)
+MAX_SCHEMA_DEPTH = 64  # a schema or config inspect returns; the response encoder stops near 255
 MAX_TOKENS = 131_072  # YAML tokens in one file: about 2 s of pure-Python PyYAML (SEC-161S5-04)
 
 
@@ -501,8 +502,12 @@ def schema_of(root: Path) -> tuple[dict[str, Any] | None, SchemaSource]:
 
 
 def _object(value: Any, name: str) -> dict[str, Any]:
+    """A mapping nested at most `MAX_SCHEMA_DEPTH` levels: deeper, the response could not be
+    encoded, a 500 (SEC-161S6-02)."""
     if not isinstance(value, dict):
         raise Unreadable(f"{name} is not a mapping")
+    if depth(value) > MAX_SCHEMA_DEPTH:
+        raise Unreadable(f"{name} is nested deeper than {MAX_SCHEMA_DEPTH} levels")
     return value
 
 

@@ -862,3 +862,31 @@ def test_token_budget_bounds_deep_bursts(authed_client: TestClient, tmp_path: Pa
     response = authed_client.get(INSPECT, params={"location": str(root)})
     assert time.monotonic() - start < 4
     assert response.status_code == 422 and "more than 131072 YAML tokens" in response.text
+
+
+@pytest.mark.parametrize(
+    ("rel", "text"),
+    [
+        ("nextflow_schema.json", '{"a":' * 300 + "1" + "}" * 300),
+        (
+            "config.schema.yaml",
+            "".join("  " * i + f"k{i}:\n" for i in range(300)) + "  " * 300 + "1\n",
+        ),
+        (
+            "config/config.yaml",
+            "".join("  " * i + f"k{i}:\n" for i in range(300)) + "  " * 300 + "1\n",
+        ),
+    ],
+)
+def test_deep_schema_is_a_422(
+    authed_client: TestClient, tmp_path: Path, rel: str, text: str
+) -> None:
+    """SEC-161S6-02: a schema or config nested past 64 levels is refused; the response
+    encoder would fail on it, a 500."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / ("main.nf" if rel.endswith(".json") else "Snakefile")).write_text("\n")
+    (root / rel).write_text(text)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422, response.text
+    assert "nested deeper than 64 levels" in response.text

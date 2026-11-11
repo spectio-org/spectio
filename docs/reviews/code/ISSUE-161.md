@@ -127,4 +127,19 @@ Both asked for changes: code-reviewer 1 major, 3 minors; security-reviewer 2 maj
 | CR-161S5-04 | minor (simplify) | `_small_yaml` duplicated `_read`'s cap | fixed in `1766e6c`: `_read(…, cap=)` |
 | (no id) | note | other routes still fetch Git without a slot; req. 21 now says the fetch slots bound `targets:inspect` only | spec in `1766e6c` |
 
+### Round 6 (`c00f7a8..1766e6c`, fixes `de66920`, `HEAD`)
+
+Both asked for changes: code-reviewer 1 major, 5 minors; security-reviewer 2 majors, 1 minor. A seventh round runs on the fixes, since a security major was open.
+
+| Id | Severity | Finding | Status |
+|---|---|---|---|
+| CR-161S6-01 / SEC-161S6-01 | major | a `config.yaml` over 1 MiB was still refused: `_read` capped it at 1 MiB before the 256 KiB test | fixed in `de66920`: `TooLarge` (a subclass of `Unreadable`) from `_read` at 256 KiB gives `schema_source: none`; the size is checked before decoding, so a large non-UTF-8 config gives `none` too (tested at 290 KiB and 1.2 MiB, and a launch gives `201`) |
+| SEC-161S6-02 | major (before #161) | a schema or config nested 250 to 990 levels passed parsing and failed when the response was encoded, a 500 | fixed: `_object` refuses past 64 levels (tested for `nextflow_schema.json`, `config.schema.yaml` and `config.yaml`; each fails without the fix) |
+| CR-161S6-02 | minor | the token budget could refuse a dense `config.yaml` under 256 KiB | fixed in `de66920`: the budget raises `TooLarge`, so the config gives `none` (tested) |
+| CR-161S6-03 | minor | the catch-all said "not YAML" for JSON | fixed in `de66920`: "not JSON or YAML this server reads" |
+| CR-161S6-04 | minor | the surrogate path of `module view` had no test | fixed in `de66920`: the same view gives `200`, with a lone surrogate `502` |
+| CR-161S6-05 | minor | the large-config test never launched | fixed in `de66920`: `POST /runs` gives `201` |
+| CR-161S6-06 | minor (simplify) | `_module_files` repeated `_read`'s cap | fixed in `de66920`: `_read(…, cap=MAX_MODULE_FILE)` |
+| SEC-161S6-03 | minor (before #161, outside the range) | the ingest YAML readers of `stages/freeze.py` take no bound, and a bad tag's traceback reaches the log | not changed here: req. 21 now says it covers the request paths and names this as open; a follow-up issue moves `_Loader` to a shared module |
+
 Seen by the worker and not changed here: a resumed registry module run is named after `parent.workflow_name`; and `GET /runs/{id}` shows `nextflow run` as the command of a module run.
