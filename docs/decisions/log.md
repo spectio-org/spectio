@@ -1336,3 +1336,11 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Changed.** [api](../specs/api-and-data-model.md) new §5.7, a pointer in §5.2; [ui-spec](../specs/ui-spec.md) a note in §4.6; [dev-env](../specs/dev-environment-and-testing.md) §15.3 req. 20; [MVP 0.0.1](../specs/mvp-0.0.1.md) (one row); [inbox #151](../reviews/inbox.md#151-assumed-run-resources-and-an-extra-config-file-fu-p3-110).
 - **Build.** FU-P3-110a to -110d, one P3 batch after FU-P3-87, server first, security review on a and b.
 - **[to be validated].** That the later file of Nextflow's `-c` list wins; the `sbatch` options Nextflow writes for `cpus`, `memory` and `time`; that Nextflow's local executor and Snakemake refuse a task above the caps; that Snakemake's local execution does not enforce `runtime`; that a `-c` `process.*` replaces nf-core's `base.config` defaults but not its labels (nf-core/rnaseq).
+
+## 2026-11-11 — 0.0.2 work on its own branch, and pipeline version detection (assumed)
+
+- **Context.** Thomas, 2026-11-11, asked how pipeline and module versions are handled and updated, and for a long plan of steps; 0.0.1 is not released, FU-P3-105 is 0.0.2. A Git revision is fetched once and never again (`api/workflows.py:177-194`); nothing detects a newer version.
+- **Decided (assumed — pending Thomas, [inbox #152](../reviews/inbox.md#152-assumed-002-work-on-its-own-branch-and-pipeline-version-detection-2026-11-11)):** 0.0.2 is built on `autopilot/next-0.0.2`, merged into integration after the 0.0.1 release; 0.0.2 records the resolved commit of every Git revision and checks for a newer tag or a moved branch on Load with one `git ls-remote`; the module session (#161) is told the same.
+- **Why.** Keeps 0.0.1's promotion clean; makes a run's pipeline version reproducible and an update visible at the point of launch, with one bounded call.
+- **Changed.** [inbox #152](../reviews/inbox.md#152-assumed-002-work-on-its-own-branch-and-pipeline-version-detection-2026-11-11). Specs change at the build (api §5.3, ui-spec §4.6).
+- **[to be validated].** `git ls-remote` through the sites' proxies.
