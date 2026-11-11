@@ -1,11 +1,12 @@
 import "../environments/environments.css";
 import "./catalog.css";
-import { Button, Drawer, Modal, Skeleton } from "@mantine/core";
+import { Button, Drawer, Modal } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ApiError, type CatalogItem, type CatalogList as List, deleteCatalogEntry } from "../api";
 import { EngineMark } from "../shell/EngineMark";
 import { usePhone } from "../shell/layout";
+import { EmptyState, SkeletonRows } from "../shell/States";
 
 // The one catalog list (ui-spec §4.7.1; boards LiteCatalog, LiteCatalogStates, MLiteCatalog): the
 // Catalog page's, and later the Manage catalog dialog's on Launch (FU-P3-87e), which passes
@@ -103,7 +104,7 @@ export function CatalogList({ data, onChanged, onReload, onEdit }: Props) {
   };
   return (
     <>
-      {data === null && <p className="sp-muted">Loading the catalog…</p>}
+      {data === null && <SkeletonRows rows={2} height={120} label="Loading the catalog…" />}
       {data && FILE_LINES[state] && (
         <div className="sp-note" role={state === "unreachable" ? undefined : "note"}>
           {FILE_LINES[state](data.file.path, data.file.detail ?? "")}{" "}
@@ -112,13 +113,6 @@ export function CatalogList({ data, onChanged, onReload, onEdit }: Props) {
       )}
       {why && <p id={WAITS_ID} className="sp-env-hint">Add pipeline: {why.toLowerCase()}</p>}
       <div className="sp-envs">
-        {data === null &&
-          [0, 1].map((i) => (
-            <article key={i} className="sp-card sp-env" aria-hidden>
-              <Skeleton height={18} width="45%" />
-              <Skeleton height={12} mt={12} width="70%" />
-            </article>
-          ))}
         {items.map((entry) => {
           const extras = [entry.profile && `profile ${entry.profile}`, entry.params_file && `parameters from ${entry.params_file}`].filter(Boolean);
           return (
@@ -145,7 +139,7 @@ export function CatalogList({ data, onChanged, onReload, onEdit }: Props) {
               {!phone && (
                 <div className="sp-actions">
                   {edit(entry)}
-                  <Button variant="light" color="red" size="sm" aria-label={`Delete ${entry.name}`} onClick={() => setAsking(entry)}>Delete</Button>
+                  <Button variant="default" size="sm" aria-label={`Delete ${entry.name}`} onClick={() => setAsking(entry)}>Delete</Button>
                 </div>
               )}
             </article>
@@ -153,7 +147,7 @@ export function CatalogList({ data, onChanged, onReload, onEdit }: Props) {
         })}
       </div>
       {data && items.length === 0 && (state === "ok" || state === "missing") && (
-        <p className="sp-muted">Your catalog is empty. Add pipeline saves a path or a repository under a name, to pick at Launch.</p>
+        <EmptyState icon="list">Your catalog is empty. Add pipeline saves a path or a repository under a name, to pick at Launch.</EmptyState>
       )}
       {data && <p className="sp-env-hint">Saved in <span className="sp-mono">{data.file.path}</span></p>}
       <DeleteAsk entry={asking} onClose={() => setAsking(null)} onDeleted={() => asking && removed(asking)} onReload={onReload} />
