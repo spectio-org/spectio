@@ -72,7 +72,7 @@ export type IconName = keyof typeof ICONS;
 
 /** The four icon sizes (ui-audit D): inline with text and in buttons and menus 16, top bar, sidebar
  * and tab bar 20, a page head's tile 24. */
-export const ICON_PX = { inline: 16, button: 16, nav: 20, tile: 24 } as const;
+export const ICON_PX = { inline: 16, button: 16, nav: 20, sidebar: 25, tile: 24 } as const;
 export type IconSize = keyof typeof ICON_PX;
 const STROKE = 1.75;
 
