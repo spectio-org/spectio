@@ -354,6 +354,9 @@ test("a column filters on what its box contains; cells are text, never markup", 
   expect(grid.querySelector("b")).toBeNull();
   await userEvent.type(within(grid).getByRole("textbox", { name: "id Filter Input" }), "a");
   await waitFor(() => expect(column(grid, 0)).toEqual(["a1", "a3"]));
+  // the filtered column's funnel and the box's clear button are our SVG: AG Grid's icon set is
+  // left out, so an empty .ag-icon would draw as a solid square (FU-P3-116)
+  expect(Array.from(grid.querySelectorAll(".ag-icon")).filter((el) => !el.closest(".ag-hidden"))).toEqual([]);
 });
 
 test("an image is an <img> of the raw route with as=image; a failure is one state with Retry and Download", async () => {

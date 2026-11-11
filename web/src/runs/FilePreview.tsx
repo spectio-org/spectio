@@ -6,6 +6,7 @@ import { ICONS, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
+import { LazyGrid } from "./LazyGrid";
 import { LogViewer } from "./LogViewer";
 import {
   COLUMNS_MAX,
@@ -33,7 +34,6 @@ import { OFFLINE, OFFLINE_WHY, hasDotPart, join } from "./explorer";
 import { BackToRun, Crumbs, type ResultsSearch, useTaskName } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
 import { compareText } from "./gridText";
-import type GridOf from "./DataGrid";
 import { runName } from "./RunState";
 import { isTerminal, when } from "./stateWord";
 
@@ -262,8 +262,6 @@ function JsonView({ id, file, retry }: { id: string; file: ResultStat; retry: ()
   );
 }
 
-// AG Grid is its own chunk, loaded with the first table (ui-spec §4.13).
-const DataGrid = lazy(() => import("./DataGrid")) as unknown as typeof GridOf;
 /** Up to this many rows the table grows to them; past it, a fixed height scrolls them virtually. */
 const SHORT = 15;
 
@@ -314,26 +312,25 @@ function TableView({ id, file, retry }: { id: string; file: ResultStat; retry: (
       {table.comments.length > 0 && <pre className="sp-file-comments">{table.comments.join("\n")}</pre>}
       <p className="sp-muted">{[file.name, cut ? "read from the first 1 MiB" : null, ...notes].filter(Boolean).join(" · ")}</p>
       <div className="sp-file-table" role="region" aria-label={`${file.name}, table`} data-scroll={rows.length > SHORT ? "" : undefined}>
-        <Suspense fallback={<p className="sp-muted">Loading the table…</p>}>
-          <DataGrid<string[]>
-            key={String(header)}
-            label={file.name}
-            rowData={rows}
-            domLayout={rows.length > SHORT ? "normal" : "autoHeight"}
-            defaultColDef={{ flex: 1, minWidth: 120 }}
-            columnDefs={Array.from({ length: columns }, (_, i) => ({
-              colId: String(i),
-              headerName: head ? (head[i] ?? "") : `Column ${i + 1}`,
-              valueGetter: ({ data }) => data?.[i] ?? "",
-              comparator: compareText,
-              filter: "agTextColumnFilter",
-              floatingFilter: true,
-              suppressFloatingFilterButton: true,
-              suppressHeaderMenuButton: true,
-              suppressHeaderFilterButton: true,
-            }))}
-          />
-        </Suspense>
+        <LazyGrid<string[]>
+          loadingLine="Loading the table…"
+          key={String(header)}
+          label={file.name}
+          rowData={rows}
+          domLayout={rows.length > SHORT ? "normal" : "autoHeight"}
+          defaultColDef={{ flex: 1, minWidth: 120 }}
+          columnDefs={Array.from({ length: columns }, (_, i) => ({
+            colId: String(i),
+            headerName: head ? (head[i] ?? "") : `Column ${i + 1}`,
+            valueGetter: ({ data }) => data?.[i] ?? "",
+            comparator: compareText,
+            filter: "agTextColumnFilter",
+            floatingFilter: true,
+            suppressFloatingFilterButton: true,
+            suppressHeaderMenuButton: true,
+            suppressHeaderFilterButton: true,
+          }))}
+        />
       </div>
       {notes.map((n) => (
         <p key={n} className="sp-muted">

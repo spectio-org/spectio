@@ -2,15 +2,15 @@ import { Button } from "@mantine/core";
 import { Link, useNavigate, useRouterState, useSearch } from "@tanstack/react-router";
 import { useMediaQuery } from "@mantine/hooks";
 import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent, SortChangedEvent } from "ag-grid-community";
-import { type ReactNode, Suspense, createContext, lazy, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { type Page, type Run, type RunsSort, type ServerVersion, type Summary, listRuns, runsSummary, setPinned } from "../api";
 import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
-import type GridOf from "./DataGrid";
 import { DeleteRuns } from "./DeleteRuns";
+import { LazyGrid } from "./LazyGrid";
 import { Pipeline, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
 import { ACTIVE, duration, isTerminal, plural, shortId, tone, when, words } from "./stateWord";
 
@@ -172,9 +172,6 @@ export function RunCard({ run, select }: { run: Run; select?: ReactNode }) {
   );
 }
 
-// AG Grid is its own chunk, loaded with the desktop list; the phone keeps its cards (ui-spec §4.13).
-const DataGrid = lazy(() => import("./DataGrid")) as unknown as typeof GridOf;
-
 /** The 0.0.1 columns (ui-spec §4.3) after the select box. Run, State, Started and Duration sort
  * on the server (`colId` is the `sort=` key): the grid keeps the API's order (`comparator` 0) and
  * filters nothing on its own. The state rail is the row's left edge, in its tone. */
@@ -309,6 +306,8 @@ export function RunsPage() {
   const arrived = useRouterState({ select: (s) => s.location.state.said });
   const [said, setSaid] = useState<string[]>(arrived ?? []);
   const saidLine = useRef<HTMLDivElement>(null);
+  // the run whose pin was just pressed, and what it asked for: focus follows its row (FU-P3-116)
+  const pinning = useRef<{ id: string; pinned: boolean } | null>(null);
   // a delete on Run detail lands here: focus its lines, as after a delete from the table
   useEffect(() => {
     if (arrived?.length) saidLine.current?.focus();
@@ -389,14 +388,29 @@ export function RunsPage() {
         for (const id of ids) on ? now.add(id) : now.delete(id);
         return now;
       }),
-    pin: (run: Run) =>
+    pin: (run: Run) => {
+      pinning.current = { id: run.id, pinned: !run.pinned };
       setPinned(run.id, !run.pinned)
         .then(() => {
           setSaid([]);
           load(true);
         })
-        .catch((e: Error) => setSaid([`${runName(run)} was not pinned: ${e.message}`])),
+        .catch((e: Error) => {
+          pinning.current = null;
+          setSaid([`${runName(run)} was not pinned: ${e.message}`]);
+        });
+    },
   };
+  /** Once the pinned run's row has moved and shows its new state, focus goes to its Pin button,
+   * not to the cell now at its old row index; the grid's focused cell follows the focus. */
+  const onRowData = () =>
+    setTimeout(() => {
+      const want = pinning.current;
+      const button = want && document.querySelector<HTMLElement>(`.ag-row[row-id="${CSS.escape(want.id)}"] button.sp-pin`);
+      if (!want || !button || (button.getAttribute("aria-pressed") === "true") !== want.pinned) return;
+      pinning.current = null;
+      button.focus();
+    });
   const deleted = (lines: string[], ids: string[]) => {
     // a refresh keeps the rows Load more added that the first page lacks, as a deleted run is
     const gone = new Set(ids);
@@ -498,21 +512,22 @@ export function RunsPage() {
           ))}
         </ul>
       )}
+      {/* AG Grid is its own chunk, loaded with the desktop list; the phone keeps its cards (ui-spec §4.13) */}
       {!!runs?.length && !phone && (
-        <Suspense fallback={<p className="sp-muted">Loading the runs…</p>}>
-          <DataGrid<Run>
-            label="Runs"
-            className="sp-grid-runs"
-            rowData={runs}
-            columnDefs={columns}
-            defaultColDef={{ sortable: false, autoHeight: true, wrapText: true, flex: 1, minWidth: 110, suppressHeaderMenuButton: true }}
-            getRowId={({ data }) => data.id}
-            getRowStyle={({ data }) => (data ? { "--tone": `var(--sp-state-${tone(data.state)})` } : undefined)}
-            domLayout="autoHeight"
-            onCellKeyDown={onCellKey}
-            onSortChanged={onSort}
-          />
-        </Suspense>
+        <LazyGrid<Run>
+          loadingLine="Loading the runs…"
+          label="Runs"
+          className="sp-grid-runs"
+          rowData={runs}
+          columnDefs={columns}
+          defaultColDef={{ sortable: false, autoHeight: true, wrapText: true, flex: 1, minWidth: 110, suppressHeaderMenuButton: true }}
+          getRowId={({ data }) => data.id}
+          getRowStyle={({ data }) => (data ? { "--tone": `var(--sp-state-${tone(data.state)})` } : undefined)}
+          domLayout="autoHeight"
+          onCellKeyDown={onCellKey}
+          onSortChanged={onSort}
+          onRowDataUpdated={onRowData}
+        />
       )}
       </Rows.Provider>
       {!!runs?.length && (

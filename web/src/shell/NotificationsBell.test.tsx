@@ -119,3 +119,12 @@ test("on a 360 px phone the bell shows and the panel is a full-screen sheet (CR-
   expect(screen.getByRole("switch", { name: "Dark theme", hidden: true })).toHaveClass("sp-narrow-hide");
   expect(panel).toHaveAttribute("data-full-screen", "true");
 });
+
+test("FU-P3-116: after Mark all as read, focus stays in the panel, on its heading", async () => {
+  serve({ "/api/v1/me/notifications:mark-read": READ, "/api/v1/me/notifications": LIST });
+  app("/environments");
+  const { panel } = await openPanel();
+  await userEvent.click(within(panel).getByRole("button", { name: "Mark all as read" }));
+  await waitFor(() => expect(within(panel).queryByRole("button", { name: "Mark all as read" })).toBeNull());
+  await waitFor(() => expect(within(panel).getByRole("heading", { name: "Notifications" }).contains(document.activeElement)).toBe(true));
+});
