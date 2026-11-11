@@ -47,7 +47,7 @@ from spectio_server.store.schema import (
     workflow_versions,
     workflows,
 )
-from spectio_server.store.writer import Writer
+from spectio_server.store.writer import Writer, note_change
 
 log = logging.getLogger(__name__)
 
@@ -266,6 +266,7 @@ def _apply_benchmark(conn: Connection, attempt_id: str, row: dict[str, str]) -> 
     if stored is None:  # the run was deleted meanwhile
         return False
     conn.execute(update(attempt_metrics).where(key).values(**benchmark_values(row, stored)))
+    note_change(conn, stored.run_id)  # the run's performance answer is read again (api §5.5)
     return True
 
 

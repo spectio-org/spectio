@@ -523,23 +523,6 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     with read(request) as conn:
         run = run_row(conn, run_id)
         mine = tasks.c.run_id == run_id
-        known = conn.execute(
-            select(
-                run_processes.c.name,
-                run_processes.c.stage_id,
-                run_processes.c.ended,
-                run_processes.c.jobs_planned,
-                run_processes.c.is_checkpoint,
-            )
-            .where(run_processes.c.run_id == run_id)
-            .order_by(run_processes.c.position)
-        ).all()
-        from_tasks = conn.execute(
-            select(tasks.c.process_or_rule, func.max(tasks.c.stage_id))
-            .where(mine)
-            .group_by(tasks.c.process_or_rule)
-            .order_by(func.min(tasks.c.id))
-        ).all()
         counts = conn.execute(
             select(tasks.c.process_or_rule, tasks.c.state, func.count())
             .where(mine)
@@ -554,6 +537,7 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
             ).all()
         )
         graphs = _rulegraphs(conn, run)
+        order, ranks, rows = process_order(conn, run, graphs)
         facts = _run_facts(conn, run, graphs[-1] if graphs else {})
         jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, None, context(request))
     by_process: dict[str, dict[str, int]] = {}
@@ -562,15 +546,6 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     of_process: dict[str, list[dict[str, Any]]] = {}
     for job in jobs.values():
         of_process.setdefault(job["process"], []).append(job)
-    rows = {r.name: r for r in known}
-    task_stage: dict[str, str | None] = dict(from_tasks)  # in first task's order
-    # Snakemake's rules recorded at the freeze are not seen yet: first-seen is the first job
-    seen = list(task_stage) if run.engine == "snakemake" else []
-    order: dict[str, str | None] = {}
-    for name in [*seen, *rows, *task_stage]:
-        order.setdefault(name, rows[name].stage_id if name in rows else task_stage[name])
-    pipeline = _pipeline_order(list(order), graphs, set(seen))
-    ranks = {name: n for n, name in enumerate(pipeline)}
     items = []
     for process, stage_id in order.items():
         r = rows.get(process)
@@ -593,6 +568,39 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
             }
         )
     return {"items": items}
+
+
+def process_order(
+    conn: Connection, run: Row[Any], graphs: list[dict[str, Any]]
+) -> tuple[dict[str, str | None], dict[str, int], dict[str, Any]]:
+    """The run's processes or rules in first-seen order (see `list_processes`) with the stage
+    each froze with, each one's `pipeline_order`, and their `run_processes` rows."""
+    known = conn.execute(
+        select(
+            run_processes.c.name,
+            run_processes.c.stage_id,
+            run_processes.c.ended,
+            run_processes.c.jobs_planned,
+            run_processes.c.is_checkpoint,
+        )
+        .where(run_processes.c.run_id == run.id)
+        .order_by(run_processes.c.position)
+    ).all()
+    from_tasks = conn.execute(
+        select(tasks.c.process_or_rule, func.max(tasks.c.stage_id))
+        .where(tasks.c.run_id == run.id)
+        .group_by(tasks.c.process_or_rule)
+        .order_by(func.min(tasks.c.id))
+    ).all()
+    rows: dict[str, Any] = {r.name: r for r in known}
+    task_stage: dict[str, str | None] = dict(from_tasks)  # in first task's order
+    # Snakemake's rules recorded at the freeze are not seen yet: first-seen is the first job
+    seen = list(task_stage) if run.engine == "snakemake" else []
+    order: dict[str, str | None] = {}
+    for name in [*seen, *rows, *task_stage]:
+        order.setdefault(name, rows[name].stage_id if name in rows else task_stage[name])
+    pipeline = _pipeline_order(list(order), graphs, set(seen))
+    return order, {name: n for n, name in enumerate(pipeline)}, rows
 
 
 def _pipeline_order(names: list[str], graphs: list[dict[str, Any]], seen: set[str]) -> list[str]:

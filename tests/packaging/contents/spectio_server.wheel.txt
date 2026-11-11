@@ -13,6 +13,7 @@ spectio_server/api/logs.py
 spectio_server/api/me.py
 spectio_server/api/models.py
 spectio_server/api/notifications.py
+spectio_server/api/performance.py
 spectio_server/api/problems.py
 spectio_server/api/relaunch.py
 spectio_server/api/results.py

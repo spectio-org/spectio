@@ -46,6 +46,7 @@ from spectio_server.api import (
     logs,
     me,
     notifications,
+    performance,
     problems,
     relaunch,
     results,
@@ -61,7 +62,7 @@ from spectio_server.auth import host, middleware, routes, writes
 from spectio_server.auth.secrets import ServerKey, SessionStore, TicketStore
 from spectio_server.failure import Accounting, Context, Measures, sweep_run
 from spectio_server.files.pool import READ_TIMEOUT_S, FilePool
-from spectio_server.store.writer import Writer
+from spectio_server.store.writer import Changes, Writer
 
 log = logging.getLogger(__name__)
 
@@ -179,7 +180,13 @@ def create_app(
 
     if reason is None:
         app.state.stream = stream.Stream(writer.engine)
-        writer.on_commit = app.state.stream.notify  # the writer thread, after each commit
+        app.state.performance = performance.Cache()  # the answers of ended runs (api §5.5)
+
+        def committed(changes: Changes) -> None:  # the writer thread, after each commit
+            app.state.stream.notify(changes)
+            app.state.performance.changed(changes)
+
+        writer.on_commit = committed
         # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`
         app.state.reports = {}  # the reports of ended runs (P1 Task 31)
         app.state.follows = logs.Follows()  # dev-env §15.3 req. 14
@@ -193,6 +200,7 @@ def create_app(
             runs_manage,
             relaunch,
             runs_read,
+            performance,
             logs,
             taskfiles,
             results,
