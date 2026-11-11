@@ -225,7 +225,7 @@ export function LaunchPage({
       : fromCatalog && wanted && !inPipeline
         ? `The catalog's profile ${fromCatalog} and the environment's profile ${wanted} are not in this pipeline: none selected`
         : fromCatalog
-          ? `The catalog's profile ${fromCatalog} is not in this pipeline${inPipeline ? "" : ": none selected"}`
+          ? `The catalog's profile ${fromCatalog} is not in this pipeline: ${inPipeline ? `the environment's profile ${wanted} is selected` : "none selected"}`
           : wanted && !inPipeline
             ? `The environment's profile ${wanted} is not in this pipeline: none selected`
             : null;
@@ -442,13 +442,15 @@ export function LaunchPage({
       : {};
   const missing = reasons();
   const warnings: Reason[] = notes.outdir && prefill ? [{ text: `Warning, not a blocker: outdir is the same as ${prefill.name}`, to: "params.outdir" }] : [];
-  // what in the params file, or the file itself, loads code (SEC-PRE-FU87-01): warnings, not blockers
+  // what in the params file, or the file itself, loads code (SEC-PRE-FU87-01): warnings, not blockers;
+  // a file's value only while Launch sends it as read, not one left out or changed (SEC-P3FU87E-02)
+  const sent = buildParams(fields, values, rows);
   for (const c of paramsFile?.code_loading ?? []) {
     const others = c.writable_by_others ? " · writable by others" : "";
     if (c.field === "params_file") {
       warnings.push({ text: `Warning, not a blocker: ${paramsFile!.path} loads code or configuration${others}` });
     } else if (c.field.startsWith("params.")) {
-      warnings.push({ text: `Warning, not a blocker: ${paramsFile!.path} sets ${c.field.slice(7)}: ${c.value}${others}` });
+      if (own(sent, c.field.slice(7)) === c.value) warnings.push({ text: `Warning, not a blocker: ${paramsFile!.path} sets ${c.field.slice(7)}: ${c.value}${others}` });
     } else warnings.push({ text: `Warning, not a blocker: ${loadingLabel(c.field)} ${c.value} loads code or configuration${others}` });
   }
   const unplaced = paramsFile?.values && fields.length ? valuesFrom(fields, paramsFile.values).left : [];
