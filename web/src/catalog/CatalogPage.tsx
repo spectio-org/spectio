@@ -30,15 +30,14 @@ export function CatalogPage() {
   }, [load]);
   const why = waitsFor(data);
   const add = why ? (
-    <Button size="md" aria-disabled data-disabled aria-describedby={WAITS_ID}>Add pipeline</Button>
+    <Button aria-disabled data-disabled aria-describedby={WAITS_ID}>Add pipeline</Button>
   ) : (
-    <Button component={Link} to="/catalog/new" size="md">Add pipeline</Button>
+    <Button component={Link} to="/catalog/new">Add pipeline</Button>
   );
   const count = data && `${data.items.length} ${data.items.length === 1 ? "pipeline" : "pipelines"}`;
   return (
     <div className="sp-page">
-      <Link to="/launch" className="sp-link sp-cat-back">Back to Launch</Link>
-      <PageHead section="launch" title="Catalog" sub={`Pipelines saved under a name, to pick at Launch${count ? ` · ${count}` : ""}`} action={add} />
+      <PageHead section="launch" title="Catalog" sub={`Pipelines saved under a name, to pick at Launch${count ? ` · ${count}` : ""}`} primary={add} />
       <p role="status" className="sp-sr">{said}</p>
       {error ? (
         <>

@@ -369,6 +369,8 @@ test("phone: the page stacks its actions, named with the environment, Delete las
   await userEvent.click(within(sheet).getByRole("button", { name: "Delete gpu-test" }));
   expect(await screen.findByText("Deleted gpu-test")).toHaveAttribute("role", "status");
   expect(screen.queryByRole("link", { name: "gpu-test" })).toBeNull();
+  // CR-P3UI03-01: the title row's h1 takes the focus, not <body>.
+  await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "Environments" })).toHaveFocus());
 });
 
 test("FU-P3-111 phone: a built-in's page offers Duplicate to edit, and no Delete", async () => {

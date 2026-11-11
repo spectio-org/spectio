@@ -47,7 +47,7 @@ test("/catalog: Launch is marked, the head reads Launch › Catalog, rows name t
   expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Liver time course QC", "rnaseq-test", "Strand-seq QC"]);
   expect(screen.getByText(/^Saved in/)).toHaveTextContent(`Saved in ${PATH}`);
   expect(screen.getByRole("link", { name: "Add pipeline" })).toHaveAttribute("href", "/catalog/new");
-  expect(screen.getByRole("link", { name: "Back to Launch" })).toHaveAttribute("href", "/launch");
+  expect(screen.queryByRole("link", { name: "Back to Launch" })).toBeNull(); // the breadcrumb is the way up (ui-spec §12.5, UI-03)
   const nav = screen.getByRole("navigation", { name: "Main" });
   expect(within(nav).getByRole("link", { name: "Launch" })).toHaveAttribute("aria-current", "page");
   expect(within(nav).getAllByRole("link")).toHaveLength(4); // no NAV item for the catalog
