@@ -611,3 +611,33 @@ test("UX-P3FU115B-11: what a delete said goes once the list is filtered or a run
   await userEvent.click(screen.getByRole("button", { name: /^Failed/ }));
   expect(screen.queryByText("1 run deleted")).toBeNull();
 });
+
+test("UI-08: the search and the state filter share the toolbar row of ui-spec §12.6", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const bar = await screen.findByRole("group", { name: "Filter runs" });
+  expect(bar).toHaveClass("sp-toolbar");
+  expect(within(bar).getByRole("searchbox", { name: "Filter by run name" })).toBeInTheDocument();
+  expect(within(bar).getByRole("group", { name: "Show runs" })).toBeInTheDocument();
+});
+
+test("UI-08: Started is a §12.8 date in a <time>, the exact time in its name; the pin has its own slot", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-31T09:40:05+00:00"));
+  try {
+    serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+    app("/runs");
+    const table = await screen.findByRole("grid", { name: "Runs" });
+    const row = within(table).getByRole("link", { name: "Open run rnaseq-a" }).closest('[role="row"]') as HTMLElement;
+    const at = within(row).getByText("2 h ago");
+    expect(at.tagName).toBe("TIME");
+    expect(at).toHaveAttribute("datetime", "2026-10-31T07:40:05+00:00");
+    expect(at.getAttribute("aria-label")).toMatch(/^2 h ago, 2026-10-31 \d\d:40$/);
+    // the name and its pin sit in two slots, so the pin lines up from row to row (§12.8)
+    const pin = within(row).getByRole("button", { name: "Pin run rnaseq-a" });
+    expect(pin.closest(".sp-run-cell")?.lastElementChild).toBe(pin);
+    expect(within(row).getByRole("link", { name: "Open run rnaseq-a" }).parentElement).toHaveClass("sp-run-name");
+  } finally {
+    vi.useRealTimers();
+  }
+});
