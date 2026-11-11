@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { ICONS, Icon } from "../icons";
+import { type IconName, Icon } from "../icons";
 
 // A titled section that folds (ui-spec §4.4 "Open sections", UX-318; UX-PAR-02), as on the lite
 // boards: the h2 holds a native button (aria-expanded, aria-controls) with a light line icon in a
@@ -31,7 +31,7 @@ interface Props {
   id: string;
   /** The screen whose choices this section shares: "home", "run". Without one nothing is kept. */
   screen?: string;
-  icon: string;
+  icon: IconName;
   title: string;
   /** Shown while folded: "8 stages · 4 running", "4 set at launch". */
   summary?: ReactNode;
@@ -84,7 +84,7 @@ export function FoldSection({
           onClick={toggle}
         >
           <span className="sp-fold-tile">
-            <Icon path={icon} size={17} stroke={1.6} />
+            <Icon name={icon} />
           </span>
           <span id={`${id}-title`} className="sp-fold-title">
             {title}
@@ -99,7 +99,7 @@ export function FoldSection({
             </>
           )}
           <span className="sp-fold-chev">
-            <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+            <Icon name="chevronDown" />
           </span>
         </button>
       </h2>

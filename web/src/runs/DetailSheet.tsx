@@ -1,7 +1,7 @@
 import { Button, Drawer } from "@mantine/core";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type Counts, type Process, type RunDetail, type Stage, type Task, listTasks } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { useFrames } from "../live";
 import { usePhone } from "../shell/layout";
 import { bytes, nearLimit, seconds } from "./resources";
@@ -256,7 +256,7 @@ function TaskView({ run, stages, processes, task, attempt, onOpen }: { run: RunD
       w.Group,
       known ? (
         <button type="button" className="sp-link-button" aria-label={`Open ${w.group} ${task.process}`} onClick={() => onOpen({ kind: "process", name: task.process })}>
-          <span className="sp-mono">{lastSegment(task.process)}</span> <Icon path={ICONS.arrowRight} size={13} />
+          <span className="sp-mono">{lastSegment(task.process)}</span> <Icon name="arrowRight" />
         </button>
       ) : (
         <span className="sp-mono">{task.process}</span>
@@ -315,7 +315,7 @@ export function DetailSheet({ run, stages, processes, views, onOpen, onBack, onC
         <section key={views.length} ref={shown} className="sp-sheet" aria-label={name} tabIndex={-1}>
           {previous && (
             <button type="button" className="sp-link-button" onClick={onBack}>
-              <Icon path={ICONS.chevronLeft} size={13} /> Back to {previous}
+              <Icon name="chevronLeft" /> Back to {previous}
             </button>
           )}
           {body ?? <p className="sp-muted">The server no longer reports it for this run.</p>}

@@ -35,7 +35,7 @@ export function PageHead({
     <header className="sp-head">
       <div className="sp-head-main">
         <span className="sp-head-tile" data-section={section}>
-          <Icon path={item.icon} size={22} />
+          <Icon name={item.icon} size="tile" />
         </span>
         <div>
           <h1 className="sp-page-title" tabIndex={-1}>{title}</h1>

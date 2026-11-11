@@ -1,5 +1,6 @@
-// The light line icons of the lite boards (24 × 24 paths, round caps), in one place. A board's
-// section icon is drawn at 1.6 stroke in a 26–30 px tile; the shell's at 1.8.
+// The light line icons of the lite boards (24 × 24 paths, round caps), in one place, drawn only
+// through `Icon` (or `iconSvg`) at four sizes and one stroke (ui-audit D, UI-02); the lint test in
+// icons.test.tsx rejects a path or a stroke anywhere else.
 
 export const ICONS = {
   // shell (LiteSidebar, LiteTopbar)
@@ -13,6 +14,22 @@ export const ICONS = {
   check: "M5 12l5 5 9-10",
   cross: "M6 6l12 12 M18 6L6 18",
   search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4",
+  bell: "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0",
+  sun: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.2 4.2l1.4 1.4 M18.4 18.4l1.4 1.4 M1 12h2 M21 12h2 M4.2 19.8l1.4-1.4 M18.4 5.6l1.4-1.4",
+  moon: "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z",
+  person: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0",
+  fold: "M4 5h16v14H4z M9 5v14 M16 10l-2 2 2 2",
+  unfold: "M4 5h16v14H4z M9 5v14 M14 10l2 2-2 2",
+  // run states (ui-spec §3.1): clock, play, flag, pause, slash; done and failed reuse check and cross
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2",
+  play: "M7 5l12 7-12 7z",
+  flag: "M5 21V4 M5 4h11l-2 4 2 4H5",
+  pause: "M8 5v14 M16 5v14",
+  slash: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M6 18L18 6",
+  // table headers (AG Grid): sort arrows and the unsorted pair
+  sortUp: "M12 19.5v-15 M6 10.5l6-6 6 6",
+  sortDown: "M12 4.5v15 M6 13.5l6 6 6-6",
+  sortBoth: "M7.5 9l4.5-4.5 4.5 4.5 M7.5 15l4.5 4.5 4.5-4.5",
   // sections (LiteHome, LiteRunDetail, LiteRunFailed)
   info: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01",
   layers: "M12 3l9 5-9 5-9-5z M3 13l9 5 9-5",
@@ -48,65 +65,83 @@ export const ICONS = {
   pin: "M12 17v5 M9 4h6 M10 4v6l-3 4v3h10v-3l-3-4V4",
 } as const;
 
-export function Icon({ path, size = 24, stroke = 1.8 }: { path: string; size?: number; stroke?: number }) {
+export type IconName = keyof typeof ICONS;
+
+/** The four icon sizes (ui-audit D): inline with text and in buttons and menus 16, top bar, sidebar
+ * and tab bar 20, a page head's tile 24. */
+export const ICON_PX = { inline: 16, button: 16, nav: 20, tile: 24 } as const;
+export type IconSize = keyof typeof ICON_PX;
+const STROKE = 1.75;
+
+/** A line icon. Decorative (`aria-hidden`) unless `label` names it, which makes it an image. */
+export function Icon({ name, size = "inline", label }: { name: IconName; size?: IconSize; label?: string }) {
+  const px = ICON_PX[size];
+  const a11y = label ? { role: "img", "aria-label": label } : { "aria-hidden": true };
   return (
     <svg
-      width={size}
-      height={size}
+      className="sp-icon"
+      width={px}
+      height={px}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={stroke}
+      strokeWidth={STROKE}
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-hidden="true"
+      {...a11y}
     >
-      <path d={path} />
+      <path d={ICONS[name]} />
     </svg>
   );
 }
 
+/** The same icon as markup, for a host that takes HTML strings only (AG Grid's `icons`). */
+export function iconSvg(name: IconName, size: IconSize = "inline", className = "sp-icon"): string {
+  const px = ICON_PX[size];
+  return `<svg class="${className}" width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${STROKE}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[name]}"/></svg>`;
+}
+
 // nf-core groups name a Font Awesome icon (`fa_icon`); Spectio draws a few of them as its own line
 // icons and every other one as the neutral sliders (UX-PAR-30). No icon font is loaded.
-const GROUP_ICONS: Record<string, string> = {
-  folder: ICONS.folder,
-  "folder-open": ICONS.folder,
-  "file-import": ICONS.file,
-  dna: ICONS.dna,
-  cut: ICONS.scissors,
-  scissors: ICONS.scissors,
-  "fast-forward": ICONS.skip,
-  cog: ICONS.sliders,
-  cogs: ICONS.sliders,
-  wrench: ICONS.sliders,
-  microchip: ICONS.server,
-  server: ICONS.server,
-  database: ICONS.server,
-  terminal: ICONS.terminal,
-  "chart-bar": ICONS.chart,
-  filter: ICONS.filter,
-  tag: ICONS.tag,
-  tags: ICONS.tag,
-  shield: ICONS.shield,
-  "shield-alt": ICONS.shield,
-  "user-shield": ICONS.shield,
-  university: ICONS.building,
-  building: ICONS.building,
-  institution: ICONS.building,
-  "map-signs": ICONS.signpost,
-  "align-center": ICONS.signpost,
-  download: ICONS.download,
-  "file-download": ICONS.download,
-  question: ICONS.info,
-  "question-circle": ICONS.info,
-  info: ICONS.info,
-  "info-circle": ICONS.info,
-  "exclamation-triangle": ICONS.alert,
-  bug: ICONS.alert,
+const GROUP_ICONS: Record<string, IconName> = {
+  folder: "folder",
+  "folder-open": "folder",
+  "file-import": "file",
+  dna: "dna",
+  cut: "scissors",
+  scissors: "scissors",
+  "fast-forward": "skip",
+  cog: "sliders",
+  cogs: "sliders",
+  wrench: "sliders",
+  microchip: "server",
+  server: "server",
+  database: "server",
+  terminal: "terminal",
+  "chart-bar": "chart",
+  filter: "filter",
+  tag: "tag",
+  tags: "tag",
+  shield: "shield",
+  "shield-alt": "shield",
+  "user-shield": "shield",
+  university: "building",
+  building: "building",
+  institution: "building",
+  "map-signs": "signpost",
+  "align-center": "signpost",
+  download: "download",
+  "file-download": "download",
+  question: "info",
+  "question-circle": "info",
+  info: "info",
+  "info-circle": "info",
+  "exclamation-triangle": "alert",
+  bug: "alert",
 };
 
 /** The line icon of a schema group's `fa_icon` ("fas fa-folder-open"), or the neutral one. */
-export function groupIcon(faIcon: string | null): string {
+export function groupIcon(faIcon: string | null): IconName {
   const name = faIcon?.match(/fa-([a-z-]+)\s*$/)?.[1];
-  return (name && Object.hasOwn(GROUP_ICONS, name) && GROUP_ICONS[name]) || ICONS.sliders; // SEC-P3PARB-02
+  return (name && Object.hasOwn(GROUP_ICONS, name) && GROUP_ICONS[name]) || "sliders"; // SEC-P3PARB-02
 }

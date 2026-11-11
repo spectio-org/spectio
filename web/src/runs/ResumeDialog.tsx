@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { ApiError, type RunDetail, type ServerVersion, resumeRun } from "../api";
 import { runEnvName } from "../environments/fields";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { engineName, isTerminal, runWord, words } from "./stateWord";
 
@@ -133,7 +133,7 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
     </Button>
   );
   const go = (
-    <Button onClick={confirm} loading={sending} leftSection={<Icon path={ICONS.reload} size={15} />} fullWidth={phone}>
+    <Button onClick={confirm} loading={sending} leftSection={<Icon name="reload" size="button" />} fullWidth={phone}>
       Resume
     </Button>
   );
@@ -160,14 +160,14 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
         aria-disabled={allowed ? undefined : true}
         data-disabled={allowed ? undefined : true}
         aria-describedby={why ? "resume-why" : undefined}
-        leftSection={<Icon path={ICONS.reload} size={15} />}
+        leftSection={<Icon name="reload" size="button" />}
         fullWidth={fullWidth}
       >
         Resume
       </Button>
       {why && (
         <p id="resume-why" className="sp-resume-why">
-          <Icon path={ICONS.info} size={15} /> <span>{why}</span>
+          <Icon name="info" /> <span>{why}</span>
         </p>
       )}
       {phone ? (

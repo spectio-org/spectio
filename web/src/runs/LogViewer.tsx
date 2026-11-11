@@ -1,6 +1,6 @@
 import { type KeyboardEvent, type ReactNode, memo, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@mantine/core";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 
 // The run's log viewer (LiteRunLogs; P3-parD, Thomas 2026-10-31: "logs pas searchable"): the lines
 // tinted by level, a level filter, and a search whose matches are marked, with an "n / m" counter,
@@ -174,7 +174,7 @@ export function LogViewer({
         {open && (
           <>
             <label className="sp-search-field">
-              <Icon path={ICONS.search} size={16} />
+              <Icon name="search" />
               <input
                 ref={field}
                 type="search"
@@ -192,10 +192,10 @@ export function LogViewer({
             </span>
             <span className="sp-actions">
               <button type="button" className="sp-key" aria-label="Previous match" disabled={!matches.length} onClick={() => step(-1)}>
-                <Icon path={ICONS.chevronLeft} size={16} />
+                <Icon name="chevronLeft" />
               </button>
               <button type="button" className="sp-key" aria-label="Next match" disabled={!matches.length} onClick={() => step(1)}>
-                <Icon path={ICONS.chevronRight} size={16} />
+                <Icon name="chevronRight" />
               </button>
             </span>
           </>

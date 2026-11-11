@@ -2,13 +2,12 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test } from "vitest";
 import { FoldSection } from "./FoldSection";
-import { ICONS } from "../icons";
 
 beforeEach(() => window.localStorage.clear());
 
 function fold(defaultOpen = true) {
   return render(
-    <FoldSection id="params" screen="run" icon={ICONS.sliders} title="Parameters" summary="4 set at launch" defaultOpen={defaultOpen}>
+    <FoldSection id="params" screen="run" icon="sliders" title="Parameters" summary="4 set at launch" defaultOpen={defaultOpen}>
       <p>outdir = results</p>
     </FoldSection>,
   );
@@ -65,7 +64,7 @@ test("UX-PAR-02: storage that throws does not break the section", async () => {
 
 test("UX-PAR-30: a status stays beside the title open or folded, a description under it, and no screen means no memory", async () => {
   render(
-    <FoldSection id="g0" icon={ICONS.folder} title="Input/output" sub="Where the data is · 2 parameters" status="1 changed" defaultOpen={false}>
+    <FoldSection id="g0" icon="folder" title="Input/output" sub="Where the data is · 2 parameters" status="1 changed" defaultOpen={false}>
       <p>fields</p>
     </FoldSection>,
   );

@@ -11,7 +11,6 @@ import { when } from "../runs/stateWord";
 // Modal (aria-modal, focus trapped, Escape closes, focus back to the bell): at the top right on the
 // desktop, a full-screen sheet on the phone.
 
-const BELL = "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0";
 const WHAT: Record<NotificationKind, string> = {
   run_succeeded: "succeeded",
   run_failed: "failed",
@@ -62,7 +61,7 @@ export function NotificationsBell({ phone, className = "sp-key" }: { phone: bool
         onClick={() => setOpen(true)}
       >
         <span className="sp-key-face">
-          <Icon path={BELL} size={19} />
+          <Icon name="bell" size="nav" />
         </span>
         {unread > 0 && (
           <span className="sp-bell-count" aria-hidden="true">

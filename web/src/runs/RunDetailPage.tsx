@@ -18,7 +18,7 @@ import {
   listTasks,
   logUrl,
 } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
@@ -269,7 +269,7 @@ function StagesOrProcesses({
   );
   if (!stages.length) {
     return (
-      <FoldSection id="processes" screen="run" icon={ICONS.list} title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
+      <FoldSection id="processes" screen="run" icon="list" title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
         {note}
         <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>
         <ProcessTable processes={processes} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
@@ -280,14 +280,14 @@ function StagesOrProcesses({
   const loose = processes.filter((p) => !stages.some((s) => s.id === p.stage_id));
   const running = stages.filter((s) => s.state === "running").length;
   return (
-    <FoldSection id="stages" screen="run" icon={ICONS.layers} title="Stages" summary={`${plural(stages.length, "stage", "stages")} · ${running} running`}>
+    <FoldSection id="stages" screen="run" icon="layers" title="Stages" summary={`${plural(stages.length, "stage", "stages")} · ${running} running`}>
       {note}
       <p className="sp-intro">
         {plural(stages.length, "stage", "stages")}, in order, each with its {w.groups} in the order {engine} first reported
         them. Open a stage to see its {w.groups}. A stage declared in <span className="sp-mono">spectio.yml</span> shows
         Declared; a detected one shows Detected and is for display only.{" "}
         <button type="button" className="sp-link-button" onClick={onTasks}>
-          All {w.units} <Icon path={ICONS.arrowRight} size={13} />
+          All {w.units} <Icon name="arrowRight" />
         </button>
       </p>
       {stages.map((stage) => {
@@ -310,12 +310,12 @@ function StagesOrProcesses({
                 {done} of {all} {w.units}
               </span>
               <span className="sp-chev">
-                <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+                <Icon name="chevronDown" />
               </span>
             </summary>
             <p className="sp-link-end">
               <button type="button" className="sp-link-button" aria-label={`Open stage ${stage.name ?? stage.id}`} onClick={() => onOpen({ kind: "stage", id: stage.id })}>
-                Stage details <Icon path={ICONS.arrowRight} size={13} />
+                Stage details <Icon name="arrowRight" />
               </button>
             </p>
             <ProcessTable processes={mine} ended={ended} open={open} label={`${w.Groups} of ${stage.name ?? stage.id}`} w={w} onOpen={onOpen} />
@@ -329,7 +329,7 @@ function StagesOrProcesses({
               <strong>Not in a stage</strong>
             </span>
             <span className="sp-chev">
-              <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+              <Icon name="chevronDown" />
             </span>
           </summary>
           <ProcessTable processes={loose} ended={ended} open={open} label={`${w.Groups} not in a stage`} w={w} onOpen={onOpen} />
@@ -373,11 +373,11 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
   const failed = run.summary.tasks.failed;
   const headline = failed > 0 ? `${plural(failed, unit, units)} failed, and the run stopped` : kind ? `The run stopped: ${classWord(kind)}` : "The run stopped";
   return (
-    <FoldSection id="why" screen="run" icon={ICONS.alert} title="Why it failed" summary={kind ? classWord(kind) : undefined}>
+    <FoldSection id="why" screen="run" icon="alert" title="Why it failed" summary={kind ? classWord(kind) : undefined}>
       {failed > 0 && (
         <p className="sp-link-end">
           <button type="button" className="sp-link-button" onClick={onTasks}>
-            {Units}, filtered to Failed <Icon path={ICONS.arrowRight} size={13} />
+            {Units}, filtered to Failed <Icon name="arrowRight" />
           </button>
         </p>
       )}
@@ -403,7 +403,7 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
                   aria-label={`Open ${w.group} ${culprit.process}`}
                   onClick={() => onOpen({ kind: "process", name: culprit.process })}
                 >
-                  {w.Group} {lastSegment(culprit.process)} <Icon path={ICONS.arrowRight} size={13} />
+                  {w.Group} {lastSegment(culprit.process)} <Icon name="arrowRight" />
                 </button>
               </>
             )}
@@ -432,7 +432,7 @@ function HeadByHand({ run, server }: { run: RunDetail; server: ServerVersion | n
   if (local ? pid === undefined : !HOST_NAME.test(head.node) || !SESSION_NAME.test(session)) return null;
   const commands = local ? `ps -o pid,etime,args --sid ${pid}` : `ssh -- '${head.node}'\ntmux attach -t '=${session}'`;
   return (
-    <FoldSection id="attach" screen="run" icon={ICONS.terminal} title="Open the head by hand" summary={local ? `process ${pid}` : `tmux on ${head.node}`} card>
+    <FoldSection id="attach" screen="run" icon="terminal" title="Open the head by hand" summary={local ? `process ${pid}` : `tmux on ${head.node}`} card>
       <p className="sp-muted">
         {local
           ? `The engine runs as process ${pid}, in its own session on ${head.node}, with no terminal to attach to. To see it and what it started:`
@@ -464,7 +464,7 @@ function LogTail({ id, source, ended, onAll, openerRef }: { id: string; source: 
         {text === null ? "Loading…" : <LogLines text={text} />}
       </pre>
       <button ref={openerRef} type="button" className="sp-link-button" onClick={() => onAll(source)}>
-        Open the full {label.toLowerCase()} <Icon path={ICONS.arrowRight} size={13} />
+        Open the full {label.toLowerCase()} <Icon name="arrowRight" />
       </button>
     </>
   );
@@ -497,7 +497,7 @@ function SummaryAside({ run, server, onLogs, logOpener }: { run: RunDetail; serv
       <FoldSection
         id={failed ? "head-err" : "engine-log"}
         screen="run"
-        icon={ICONS.file}
+        icon="file"
         title={failed ? "Head errors · last lines" : "Engine log · last lines"}
         card
       >
@@ -507,7 +507,7 @@ function SummaryAside({ run, server, onLogs, logOpener }: { run: RunDetail; serv
         <FoldSection
           id="head-ended"
           screen="run"
-          icon={ICONS.power}
+          icon="power"
           title="The head has ended"
           summary={head.exit_code != null ? `exit ${head.exit_code}` : undefined}
           defaultOpen={false}
@@ -520,7 +520,7 @@ function SummaryAside({ run, server, onLogs, logOpener }: { run: RunDetail; serv
         </FoldSection>
       )}
       {run.origin !== "cli-observed" && <ResultsSection run={run} />}
-      <FoldSection id="params" screen="run" icon={ICONS.sliders} title="Parameters" summary={`${params} set at launch`} defaultOpen={false} card>
+      <FoldSection id="params" screen="run" icon="sliders" title="Parameters" summary={`${params} set at launch`} defaultOpen={false} card>
         <ParamsList params={run.params} />
       </FoldSection>
     </aside>
@@ -605,7 +605,7 @@ function FilesButton({ task, onOpen, wide = false }: { task: Task; onOpen: (d: D
       size={wide ? "md" : "xs"}
       fullWidth={wide}
       className={wide ? "sp-files-button" : undefined}
-      leftSection={<Icon path={ICONS.file} size={14} />}
+      leftSection={<Icon name="file" size="button" />}
       aria-label={`Files of ${taskLabel(task)}${attempt}`}
       onClick={() => onOpen({ kind: "task", task })}
     >
@@ -902,7 +902,7 @@ function LogsPanel({
     <section className="sp-runs sp-logs" aria-label="Logs">
       {onBack && (
         <button type="button" className="sp-link-button sp-logs-back" onClick={onBack}>
-          <Icon path={ICONS.chevronLeft} size={13} /> Back to Summary
+          <Icon name="chevronLeft" /> Back to Summary
         </button>
       )}
       <div className="sp-filters sp-log-tools">
@@ -917,10 +917,10 @@ function LogsPanel({
           {DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it
         </span>
         <span className="sp-actions">
-          <Button variant="default" leftSection={<Icon path={ICONS.reload} size={15} />} onClick={() => setReloads((n) => n + 1)}>
+          <Button variant="default" leftSection={<Icon name="reload" size="button" />} onClick={() => setReloads((n) => n + 1)}>
             Reload
           </Button>
-          <Button variant="default" leftSection={<Icon path={ICONS.download} size={15} />} onClick={download} disabled={text === null}>
+          <Button variant="default" leftSection={<Icon name="download" size="button" />} onClick={download} disabled={text === null}>
             Download last 64 KiB
           </Button>
           <Button
@@ -929,7 +929,7 @@ function LogsPanel({
             href={logUrl(run.id, source)}
             target="_blank"
             rel="noopener noreferrer"
-            leftSection={<Icon path={ICONS.externalLink} size={15} />}
+            leftSection={<Icon name="externalLink" size="button" />}
           >
             Open raw<span className="sp-sr"> (opens in a new tab)</span>
           </Button>
@@ -947,13 +947,13 @@ function LogsPanel({
       )}
       <LogViewer text={text} label={label} />
       <p className="sp-log-note">
-        <Icon path={ICONS.file} size={15} stroke={1.6} />
+        <Icon name="file" />
         <span>
           {run.workflow.engine === "snakemake"
             ? "Each job's own log, as its rule declares it, is not in these logs:"
             : "Each task's own files (.command.log, .command.err, .command.sh …) stay in its work directory, not in these logs:"}{" "}
           <button type="button" className="sp-link-button" onClick={onTasks}>
-            open a {w.unit} in {w.Units} <Icon path={ICONS.arrowRight} size={13} />
+            open a {w.unit} in {w.Units} <Icon name="arrowRight" />
           </button>
         </span>
       </p>

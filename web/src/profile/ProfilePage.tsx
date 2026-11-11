@@ -3,12 +3,11 @@ import "./profile.css";
 import { Button, type MantineColorScheme, useMantineColorScheme } from "@mantine/core";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { type Me, getMe, signOut } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { copyText } from "../runs/CopyMenu";
 import { when } from "../runs/stateWord";
 import { usePageCrumb } from "../shell/crumb";
 import { PhoneTitle, usePhone } from "../shell/layout";
-import { PERSON } from "../shell/TopBar";
 
 // The Profile page of 0.0.1 (FU-P3-112; ui-spec §4.10.1; boards LiteProfile, MLiteProfile), from
 // the avatar in the top bar, in single-user mode: who the server runs as, this session and Sign
@@ -58,7 +57,7 @@ function Paths({ paths }: { paths: Me["paths"] }) {
             <dd>
               <code>{paths[key]}</code>
               <button type="button" className="sp-key" aria-label={`Copy ${what}`} onClick={() => copy(paths[key], what)}>
-                <Icon path={ICONS.copy} size={16} />
+                <Icon name="copy" />
               </button>
             </dd>
           </div>
@@ -120,7 +119,7 @@ export function ProfilePage() {
         <header className="sp-head">
           <div className="sp-head-main">
             <span className="sp-head-tile" data-section="home">
-              <Icon path={PERSON} size={22} />
+              <Icon name="person" size="tile" />
             </span>
             <div>
               <h1 className="sp-page-title" tabIndex={-1}>{TITLE}</h1>

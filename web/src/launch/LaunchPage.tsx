@@ -31,7 +31,7 @@ import {
   listEnvironments,
 } from "../api";
 import { label as envLabel } from "../environments/fields";
-import { ICONS, Icon, groupIcon } from "../icons";
+import { Icon, groupIcon } from "../icons";
 import { runName } from "../runs/RunState";
 import { engineName, executorLabel, plural, shortId } from "../runs/stateWord";
 import { useServer } from "../server";
@@ -520,7 +520,7 @@ export function LaunchPage({
       aria-disabled={why ? true : undefined}
       data-disabled={why ? true : undefined}
       aria-describedby={summary ? "launch-missing launch-reason" : "launch-missing"}
-      leftSection={<Icon path={ICONS.runs} size={16} />}
+      leftSection={<Icon name="runs" size="button" />}
     >
       {sending ? "Launching…" : "Launch"}
     </Button>
@@ -583,7 +583,7 @@ export function LaunchPage({
       {prefill && <PrefillBanner prefill={prefill} onClear={onClear} />}
       {configDown !== null && (
         <div role="alert" className="launch-banner">
-          <Icon path={ICONS.alert} size={16} />
+          <Icon name="alert" />
           <span className="sp-grow">{`The extra config file could not be read: ${configDown}. Nothing was started and your values are kept.`}</span>
           <Button size="xs" onClick={submit}>
             Launch again
@@ -592,7 +592,7 @@ export function LaunchPage({
       )}
       <div className="launch-grid">
         <Stack gap="md">
-          <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card reveal={goTo === "location" || goTo === "engine"}>
+          <FoldSection id="launch-pipeline" icon="route" title="Pipeline" card reveal={goTo === "location" || goTo === "engine"}>
             <CatalogPicker data={catalog} failed={catalogFailed} onRetry={loadCatalog} chosen={entry} onChoose={choose} onClear={clear}>
               {paramsFile && (
                 <p className="sp-muted" aria-live="polite">
@@ -665,7 +665,7 @@ export function LaunchPage({
                   {markFor(guessed, loaded.name) ? (
                     <PipelineMark engine={guessed} name={loaded.name} size={24} />
                   ) : (
-                    <Icon path={ICONS.folder} size={20} />
+                    <Icon name="folder" size="tile" />
                   )}
                 </span>
                 <div className="sp-grow">
@@ -680,7 +680,7 @@ export function LaunchPage({
                   </Text>
                 </div>
                 <span className="launch-loaded-status">
-                  <Icon path={ICONS.check} size={14} stroke={2.4} />
+                  <Icon name="check" />
                   <span>Loaded</span>
                 </span>
                 <SaveToCatalog
@@ -734,7 +734,7 @@ export function LaunchPage({
           </FoldSection>
           <FoldSection
             id="launch-where"
-            icon={ICONS.server}
+            icon="server"
             title="Where it runs"
             card
             reveal={goTo === "environment" || goTo === "config_file" || !!goTo?.startsWith("resources")}
@@ -793,7 +793,7 @@ export function LaunchPage({
             </Text>
           </FoldSection>
           {loaded && (
-            <FoldSection id="launch-params" icon={ICONS.sliders} title="Parameters" reveal={!!goTo?.startsWith("params.")}>
+            <FoldSection id="launch-params" icon="sliders" title="Parameters" reveal={!!goTo?.startsWith("params.")}>
               {sections.length > 1 && (
                 <Text size="sm" c="dimmed" mb="sm">
                   {`One section per ${grouped ? "schema group" : "map of the config, its keys dotted"} · ${changed === 1 ? "1 value differs from its default" : `${changed} values differ from their defaults`}`}
@@ -1060,7 +1060,7 @@ function ParamsPreview({ engine, fields, values, rows, extra }: { engine: Engine
     text = null;
   }
   return (
-    <FoldSection id="launch-preview" icon={ICONS.fileCode} title={label} card className="launch-preview-card" defaultOpen={false}>
+    <FoldSection id="launch-preview" icon="fileCode" title={label} card className="launch-preview-card" defaultOpen={false}>
       <Text size="sm" className="launch-preview-note" mb="sm">
         {extra
           ? `Only the keys you set · written to the run directory and passed with --configfile, after ${extra} · other keys come from ${extra}, then the pipeline`

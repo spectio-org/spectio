@@ -1,21 +1,20 @@
 import "./runs.css";
 import { Link } from "@tanstack/react-router";
 import type { Run, RunState, Task } from "../api";
-import { ICONS, Icon } from "../icons";
+import { type IconName, Icon } from "../icons";
 import { PipelineMark } from "../shell/EngineMark";
 import { type Tone, classWord, lastSegment, plural, runWord, shortId, tone, words } from "./stateWord";
 
 // The icons of ui-spec §3.1, one per tone: clock, play, flag, pause, check, cross, slash.
-const SLASH = "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M6 18L18 6";
-const TONE_ICONS: Record<Tone, string> = {
-  queued: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2",
-  running: "M7 5l12 7-12 7z",
-  review: "M5 21V4 M5 4h11l-2 4 2 4H5",
-  paused: "M8 5v14 M16 5v14",
-  succeeded: "M5 12l5 5 9-10",
-  failed: "M6 6l12 12 M18 6L6 18",
-  cancelled: SLASH,
-  cached: "M5 12l5 5 9-10",
+const TONE_ICONS: Record<Tone, IconName> = {
+  queued: "clock",
+  running: "play",
+  review: "flag",
+  paused: "pause",
+  succeeded: "check",
+  failed: "cross",
+  cancelled: "slash",
+  cached: "check",
 };
 
 /** Icon and word, never colour alone (ui-spec §3.1); the colour is the state's tone token. `state`
@@ -24,7 +23,7 @@ export function Word({ state, word }: { state: string; word: string }) {
   const t = tone(state);
   return (
     <span className="sp-state" data-state={state} data-tone={t}>
-      <Icon path={TONE_ICONS[t]} size={15} />
+      <Icon name={TONE_ICONS[t]} />
       {word}
     </span>
   );
@@ -39,7 +38,7 @@ export function NearLimit({ on }: { on: boolean }) {
 export function CheckpointMark() {
   return (
     <span className="sp-checkpoint">
-      <Icon path={ICONS.signpost} size={13} /> Checkpoint
+      <Icon name="signpost" /> Checkpoint
     </span>
   );
 }

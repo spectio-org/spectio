@@ -2,7 +2,7 @@ import { Button } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type ApiError, type RunDetail, getRun, resultUrl } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import type { Sort } from "./explorer";
 import { resultsSearch } from "./ResultsBrowser";
@@ -80,11 +80,11 @@ export function ReportViewer({ id, path, from, sort, q }: { id: string } & Retur
   const folder = parts ? parts.slice(0, -1) : [];
   const back = parts ? (
     <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder.join("/") || undefined, sort, q, focus: parts[parts.length - 1] }}>
-      <Icon path={ICONS.chevronLeft} size={14} /> {folder[folder.length - 1] ?? "results"}
+      <Icon name="chevronLeft" /> {folder[folder.length - 1] ?? "results"}
     </Link>
   ) : (
     <Link className="sp-report-back" to="/runs/$id" params={{ id }}>
-      <Icon path={ICONS.chevronLeft} size={14} /> {name} · Summary
+      <Icon name="chevronLeft" /> {name} · Summary
     </Link>
   );
   if (!path || !isReport(path)) {
@@ -118,14 +118,14 @@ export function ReportViewer({ id, path, from, sort, q }: { id: string } & Retur
         </nav>
       )}
       <div className="sp-report-banner">
-        <Icon path={ICONS.shield} size={20} />
+        <Icon name="shield" />
         <div>
           <p>
             Untrusted report: <code>{path}</code>
           </p>
           <p className="sp-muted">Written by the pipeline. It runs in a sandbox and cannot reach Spectio. Spectio never asks you to paste a link.</p>
         </div>
-        <Button component="a" href={resultUrl(id, path, { download: true })} variant="default" leftSection={<Icon path={ICONS.download} size={16} />}>
+        <Button component="a" href={resultUrl(id, path, { download: true })} variant="default" leftSection={<Icon name="download" size="button" />}>
           Download
         </Button>
       </div>
