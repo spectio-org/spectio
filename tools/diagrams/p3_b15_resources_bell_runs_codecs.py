@@ -75,8 +75,9 @@ this session, so the PR pages were not read):
   diff of .ts and .tsx files (vitest not run for this figure);
 - the batch simplifier: 3 commits, -9 +10 (extras.py `_checked`, headscript.py
   `write_launch_files`, ResumeDialog.tsx `Ask`); pytest 1,710 passed, 4 skipped, 32 deselected
-  before and after; ruff, mypy, lint-imports, `uv lock --check` pass; web: no node_modules in the
-  worktree, a borrowed one lacked fzstd, so tsc and 6 imaging vitest files failed before and after.
+  before and after; ruff, mypy, lint-imports, `uv lock --check` pass; web: the simplifier's worktree
+  borrowed a `node_modules` without fzstd (tsc and 6 imaging files failed there); at the head, after
+  `npm ci`, tsc exits 0 and all 58 vitest files pass, 768 tests (Progress page, Evidence).
 """
 
 from __future__ import annotations
@@ -893,10 +894,10 @@ def build(theme: Theme) -> Sketch:
     small(s, x + 24, y0 + 380, "simplifier gate: 1,710 passed, 4 skipped, 32 deselected,", size=11,
           dim=False)
     small(s, x + 24, y0 + 396, "before and after; ruff, mypy, lint-imports, `uv lock --check`", size=11)
-    s.warning(x + 8, y0 + 418, size=7)
-    small(s, x + 24, y0 + 422, "web: a borrowed `node_modules` lacked fzstd, so tsc and", size=11,
+    s.tick(x + 8, y0 + 418, size=6)
+    small(s, x + 24, y0 + 422, "web, after `npm ci` at the head: tsc exits 0 and", size=11,
           dim=False)
-    small(s, x + 24, y0 + 438, "6 imaging vitest files failed before and after; 52 pass", size=11)
+    small(s, x + 24, y0 + 438, "all 58 vitest files pass (768 tests)", size=11)
 
     s.text(50, H - 52, "pins: every blocker and major of the batch, all fixed · r1: the first code "
            "review round · ux: the ux-reviewer pass · step 7 has no product code",
