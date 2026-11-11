@@ -488,7 +488,7 @@ export function LaunchPage({
     Promise.all([getLaunchTemplate(copyFrom, controller.signal), getRun(copyFrom, controller.signal)])
       .then(([template, run]) => {
         const { location: at, revision: rev } = template.workflow;
-        const target = template.target ?? null; // the copy keeps the target (§4.15)
+        const target = template.target ?? null; // the copy keeps a module or rule target; a file target opens with no rule chosen (§4.15)
         setLocation(at);
         setRevision(rev ?? "");
         const want: Kind = target && target.kind !== "module" ? "rule" : "module";
@@ -1055,7 +1055,7 @@ export function LaunchPage({
               reveal={goTo?.startsWith("resources") ? "link" : Object.keys(errors).some((k) => k.startsWith("resources"))}
             />
             {/* a module run takes no extra config file: its roots are a pipeline's (api §5.10) */}
-            {!(oneModule) && (
+            {!oneModule && (
               <ConfigFileRow
                 path={configFile}
                 onChange={(p) => {
@@ -1170,7 +1170,7 @@ export function LaunchPage({
               <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
               <dt>Resources</dt>
               <dd>{summaryLine(res.sent, extras)}</dd>
-              {!(oneModule) && (
+              {!oneModule && (
                 <>
                   <dt>Extra config</dt>
                   <dd className="sp-mono">{configFile.trim() || "none"}</dd>

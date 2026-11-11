@@ -169,6 +169,8 @@ test("a copy of a Snakemake file-target run opens as a Snakemake step, not a Nex
   await waitFor(() => expect(fetched(mock)).toContain("/api/v1/targets:inspect"));
   const inspect = mock.mock.calls.find(([u]) => String(u).endsWith("/targets:inspect"));
   expect(JSON.parse(String(inspect?.[1]?.body))).toMatchObject({ engine: "snakemake" });
+  // a file is not a rule: the copy opens with no rule chosen, and says so (ui-spec §4.15)
+  expect(await screen.findByRole("link", { name: "Choose a rule" })).toBeInTheDocument();
 });
 
 test("a copy of a module run sends no extra config file (api §5.10), and the profile it sends is the one shown", async () => {

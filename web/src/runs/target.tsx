@@ -81,7 +81,7 @@ export function TargetLine({ target }: { target: RunTarget }) {
         {target.more > 0 && <span>+ {plural(target.more, "more target", "more targets")}</span>}
         {target.flag && target.flag !== "target" && <span className="sp-mono">{own(FLAG, target.flag)?.trim() ?? target.flag}</span>}
         {registry &&
-          (target.hash && /^[0-9a-f]{64}$/.test(target.hash) ? (
+          (target.hash && /^[0-9a-f]{64}$/i.test(target.hash) ? (
             <span className="sp-copy-line">
               <span className="sp-mono sp-muted">checksum {target.hash.slice(0, 8)}…</span>
               <CopyButton text={target.hash} label="Copy" name="Copy the module checksum" />

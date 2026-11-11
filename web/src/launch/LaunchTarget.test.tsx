@@ -222,6 +222,23 @@ test("a Snakemake rule: Load lists the rules, choosing one previews the jobs, La
   expect(sent).toMatchObject({ workflow: { location: "/data/synth", engine: "snakemake" }, target: { kind: "rule", name: "qc_report" } });
 });
 
+test("one step with no engine file for the kind: Before Launch points at the path, not the engine (CR-161R-06)", async () => {
+  fetchMock.mockImplementation(async (url) => {
+    const u = String(url);
+    if (u.startsWith("/api/v1/workflows:inspect")) return json(200, { ...SMK, engine_files: ["main.nf"] });
+    if (u === "/api/v1/targets:inspect") return json(200, { kind: "rule", rules: ["all"], plan: null });
+    return json(404, {});
+  });
+  page();
+  await singleMode();
+  await ruleKind();
+  await userEvent.type(screen.getByRole("textbox", { name: /^Snakemake pipeline/ }), "/data/synth");
+  await userEvent.click(screen.getByRole("button", { name: "Load" }));
+  const reason = await screen.findByRole("link", { name: "No Snakefile or workflow/Snakefile in this directory: check the path" });
+  await userEvent.click(reason);
+  expect(screen.getByRole("textbox", { name: /^Snakemake pipeline/ })).toHaveFocus();
+});
+
 test("a dry run that fails says why, and Launch stays allowed", async () => {
   fetchMock.mockImplementation(async (url, init) => {
     const u = String(url);
