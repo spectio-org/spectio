@@ -775,10 +775,14 @@ def test_req18_snapshot_local_cores_last(
 def test_req18_snapshot_later_cores_wins_on_snakemake(home: Path) -> None:
     """The [to be validated] of api §5.4: a later `--cores` wins over an earlier `--jobs`, `-j`,
     `--cores` or a workflow profile's `cores` (Snakemake 9.27.1 `cli.py:2103-2109`: `--jobs`
-    is an alias only while `--cores` is unset)."""
+    is an alias only while `--cores` is unset). It runs only on that version, the one it cites
+    (CR-P3FU86BCD-06)."""
     snakemake = shutil.which("snakemake")
     if snakemake is None:
         pytest.skip("no snakemake on PATH")
+    version = subprocess.run([snakemake, "--version"], capture_output=True, text=True, timeout=60)
+    if version.stdout.strip() != "9.27.1":
+        pytest.skip(f"snakemake {version.stdout.strip() or '?'} on PATH, not 9.27.1")
     where = home / "smk"
     (where / "prof").mkdir(parents=True)
     (where / "Snakefile").write_text(
