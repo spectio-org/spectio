@@ -5,7 +5,8 @@ upgrade a read lock (the cause of SQLITE_BUSY), and writes run one at a time, in
 A job notes the runs and tasks it changed with `note_change`; once its transaction commits, the
 writer thread hands them to `on_commit` (the live stream of P1 Task 18), which must not block;
 the runs a job ended (`note_ended`) go to `on_ended` the same way (the end-of-run sweep,
-FU-P3-105c).
+FU-P3-105c). Runs ended before `on_ended` is set (the first spool replay of `boot`) are kept and
+handed over when it is set (CR-P3FU105C-01).
 Readers open their own connections on `engine`.
 """
 
@@ -49,7 +50,8 @@ class Writer:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
         self.on_commit: Callable[[Changes], None] | None = None
-        self.on_ended: Callable[[set[str]], None] | None = None
+        self._on_ended: Callable[[set[str]], None] | None = None
+        self._ended: set[str] = set()  # ended while `on_ended` was None
         self._jobs: queue.Queue[_Job | None] = queue.Queue()
         self._lock = threading.Lock()
         self._closed = False
@@ -57,6 +59,20 @@ class Writer:
             target=self._run, args=(engine,), name="spectio-writer", daemon=True
         )
         self._thread.start()
+
+    @property
+    def on_ended(self) -> Callable[[set[str]], None] | None:
+        return self._on_ended
+
+    @on_ended.setter
+    def on_ended(self, listener: Callable[[set[str]], None] | None) -> None:
+        with self._lock:
+            self._on_ended = listener
+            if listener is None:
+                return
+            kept, self._ended = self._ended, set()
+        if kept:
+            _tell(listener, kept)
 
     def submit(self, fn: Callable[[Connection], T]) -> "Future[T]":
         """Run `fn(conn)` in one transaction on the writer thread; commit unless it raises."""
@@ -79,8 +95,13 @@ class Writer:
     def _committed(self, changes: Changes | None, ended: set[str] | None) -> None:
         if changes and self.on_commit is not None:
             _tell(self.on_commit, changes)
-        if ended and self.on_ended is not None:
-            _tell(self.on_ended, ended)
+        if not ended:
+            return
+        with self._lock:
+            if (listener := self._on_ended) is None:
+                self._ended |= ended
+        if listener is not None:
+            _tell(listener, ended)
 
     def _run(self, engine: Engine) -> None:
         try:

@@ -30,7 +30,7 @@ from spectio.runner.rundir import RunPaths, make_run_dirs
 from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server import failure
-from spectio_server.app import wire_sweep
+from spectio_server.app import create_app, wire_sweep
 from spectio_server.failure import Accounting, parse_smk_slurm_message
 from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.projector.ingest import ingest
@@ -1073,6 +1073,26 @@ def test_sweep_dropped_on_server_stop(settings: Settings, writer: Writer, fakebi
     run.push("nextflow.onFlowComplete", success=True)
     acct.close()
     assert not acct.step() and fakebin.calls() == []
+
+
+def test_sweep_of_run_ended_at_boot(settings: Settings, fakebin: Fake) -> None:
+    """CR-P3FU105C-01: a run that ended while the server was stopped is ended by the first
+    spool replay of `boot`, before `create_app` wires the sweep; the writer keeps it and hands
+    it over once wired: exactly one sweep."""
+    assert settings.db_dir is not None
+    rid = run_id(7)
+    spool = ("nextflow-26.10.4_plugin_toolerr.spool.jsonl", "nf-spectio-1-0001.jsonl")
+    head_files(make_run(settings.runs_root, rid, spool=spool))
+    booted = boot(settings, settings.db_dir)
+    try:
+        acct = accounting(settings, fakebin)
+        create_app(settings, booted.writer, accounting=acct)
+        swept: list[str] = []
+        acct.sweeper = swept.append
+        assert acct.step() and swept == [rid]
+        assert not acct.step() and swept == [rid]
+    finally:
+        booted.close()
 
 
 def test_req15_cache_file(
