@@ -1,9 +1,11 @@
 """Performance measures per attempt, the server part (FU-P3-105a; api §5.5, schedulers §3.7):
 the `attempt_metrics` table, its migration and fill, the Nextflow row at `onTaskComplete`,
-the run's state and delete, and the background `sacct.json` fill."""
+the run's state and delete, and the background `sacct.json` fill; the Snakemake row at the
+job's end and its benchmark file, read in the file pool (FU-P3-105b)."""
 
 import json
 import os
+import threading
 import time
 from collections import Counter
 from datetime import UTC, datetime, timedelta
@@ -18,13 +20,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy import insert, inspect, select, update
 
 from spectio.config import Settings
-from spectio.runner.rundir import private_dir, write_file
+from spectio.runner.rundir import make_run_dirs, private_dir, write_file
 from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
-from spectio_server import metrics
-from spectio_server.failure import read_cache
+from spectio_server import failure, metrics
+from spectio_server.failure import read_benchmark, read_cache
 from spectio_server.files.pool import FilePool
 from spectio_server.projector.ingest import ingest
+from spectio_server.stages.freeze import StageSources
 from spectio_server.store.schema import attempt_metrics, attempts, runs, tasks
 from spectio_server.store.writer import Writer
 
@@ -511,3 +514,308 @@ def test_an_observed_run_holds_no_launch_window(writer: Writer, settings: Settin
     ingest_all(writer, launch, complete(1, submit=str(MS0 - 3_600_000), start=str(MS0)))
     [row] = rows(writer)
     assert row.wait_s == 3600.0  # submitted an hour before the server saw the run
+
+
+# --- Snakemake: the row at the job's end, the benchmark read in the file pool (FU-P3-105b) ---
+
+MIB = 2**20
+BENCH_HEAD = "s\th:m:s\tmax_rss\tmax_vms\tmax_uss\tmax_pss\tio_in\tio_out\tmean_load\tcpu_time\n"
+# 60 s, 1024 MiB resident, 2048 MiB virtual, 10 MiB in, 20 MiB out, 90 CPU seconds
+BENCH_ROW = "60.00\t0:01:00\t1024.00\t2048.00\t1\t1\t10.00\t20.00\t150.00\t90.00\n"
+BENCH = "benchmarks/S1.tsv"
+
+
+def smk_event(n: int, type_: str, run_id: str = RUN, **data: Any) -> SpoolEvent:
+    return SpoolEvent.model_validate(
+        {
+            "v": 1,
+            "id": f"evt_s{run_id[-3:]}{n}",
+            "run": run_id,
+            "launch": 1,
+            "producer": "snakemake-logger-spectio/0.0.1",
+            "seq": n,
+            "time": (T0 + timedelta(minutes=20)).isoformat(),
+            "type": f"snakemake.{type_}",
+            "data": data,
+        }
+    )
+
+
+def job_info(settings: Settings, n: int, jobid: int, run_id: str = RUN, **more: Any) -> SpoolEvent:
+    launch_dir = make_run_dirs(settings.runs_root, run_id).launch_dir
+    return smk_event(
+        n,
+        "job_info",
+        run_id,
+        jobid=jobid,
+        rule_name="align",
+        wildcards={"sample": f"S{jobid}"},
+        threads=2,
+        resources={"mem_mb": 2048, "runtime": 10},
+        benchmark=str(launch_dir / f"benchmarks/S{jobid}.tsv"),
+        **more,
+    )
+
+
+def bench_file(settings: Settings, text: str, jobid: int = 1, run_id: str = RUN) -> Path:
+    path = make_run_dirs(settings.runs_root, run_id).launch_dir / f"benchmarks/S{jobid}.tsv"
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path.write_text(text)
+    path.chmod(0o600)
+    return path
+
+
+def smk_ingest(
+    writer: Writer, settings: Settings, launch_id: str, bench: Any, *evs: SpoolEvent
+) -> None:
+    sources = StageSources(None, settings.runs_root, benchmarks=bench)
+    batch = SpoolBatch(list(evs), {}, Counter())
+    writer.submit(lambda c: ingest(c, launch_id, batch, sources)).result()
+
+
+class Wanted:
+    """A benchmark reader that only records what the projector asks."""
+
+    def __init__(self) -> None:
+        self.asked: list[tuple[str, str, str]] = []
+
+    def want(self, attempt_id: str, dir_run: str, path: str) -> None:
+        self.asked.append((attempt_id, dir_run, path))
+
+
+def smk_job(writer: Writer, settings: Settings, bench: Any = None, **more: Any) -> str:
+    launch = add_run(writer, settings, RUN, "smk", created_at=T0, engine="snakemake")
+    smk_ingest(
+        writer,
+        settings,
+        launch,
+        bench,
+        job_info(settings, 1, 1, **more),
+        smk_event(2, "job_finished", job_id=1),
+    )
+    return launch
+
+
+def benchmarks(writer: Writer, settings: Settings, timeout_s: float = 5.0) -> metrics.Benchmarks:
+    return metrics.Benchmarks(writer, settings.runs_root, FilePool(), timeout_s=timeout_s)
+
+
+def read_wanted(writer: Writer, settings: Settings, wanted: Wanted) -> bool:
+    [(attempt_id, dir_run, path)] = wanted.asked
+    return benchmarks(writer, settings).read(attempt_id, dir_run, path)
+
+
+def test_snakemake_row_at_job_end_asks_its_benchmark(writer: Writer, settings: Settings) -> None:
+    wanted = Wanted()
+    smk_job(writer, settings, wanted)
+    [row] = rows(writer)
+    attempt = writer.submit(lambda c: c.execute(select(attempts)).one()).result()
+    assert wanted.asked == [(attempt.id, RUN, BENCH)]
+    assert row.attempt_id == attempt.id and (row.engine, row.tag) == ("snakemake", "sample=S1")
+    assert (row.run_state, row.state, row.source) == ("running", "succeeded", None)
+    assert (row.cpus, row.mem_bytes, row.time_limit_s) == (2, 2048 * MIB, 600.0)
+    assert row.ended_at == T0 + timedelta(minutes=20)
+    assert row.realtime_s is None and row.wait_s is None and row.partition is None
+
+
+def test_snakemake_failed_job_has_its_row(writer: Writer, settings: Settings) -> None:
+    launch = add_run(writer, settings, RUN, "smk", created_at=T0, engine="snakemake")
+    smk_ingest(
+        writer,
+        settings,
+        launch,
+        None,  # no reader (a test, a rebuild): the row has no measure
+        job_info(settings, 1, 1),
+        smk_event(2, "job_error", jobid=1),
+    )
+    [row] = rows(writer)
+    assert (row.state, row.source, row.cpus) == ("failed", None, 2)
+
+
+def test_benchmark_values_and_units(writer: Writer, settings: Settings) -> None:
+    wanted = Wanted()
+    smk_job(writer, settings, wanted)
+    bench_file(settings, BENCH_HEAD + BENCH_ROW)
+    assert read_wanted(writer, settings, wanted)
+    [row] = rows(writer)
+    assert row.source == "benchmark"
+    assert (row.realtime_s, row.time_eff) == (60.0, 0.1)
+    assert (row.cpu_percent, row.cpu_eff) == (150.0, 0.75)  # cpu_time / s x 100, of 2 CPUs
+    assert (row.peak_rss_bytes, row.mem_eff) == (1024 * MIB, 0.5)  # MiB
+    assert row.peak_vmem_bytes == 2048 * MIB  # MiB
+    assert (row.read_bytes, row.write_bytes) == (10 * MIB, 20 * MIB)  # MiB
+    assert row.rchar_bytes is None and row.wchar_bytes is None
+
+
+@pytest.mark.parametrize("null", ["NA", "-", ""])
+def test_benchmark_nulls(writer: Writer, settings: Settings, null: str) -> None:
+    wanted = Wanted()
+    smk_job(writer, settings, wanted)
+    fields = BENCH_ROW.rstrip("\n").split("\t")
+    for i in (3, 6, 7, 9):  # max_vms, io_in, io_out, cpu_time
+        fields[i] = null
+    bench_file(settings, BENCH_HEAD + "\t".join(fields) + "\n")
+    assert read_wanted(writer, settings, wanted)
+    [row] = rows(writer)
+    assert (row.source, row.realtime_s, row.peak_rss_bytes) == ("benchmark", 60.0, 1024 * MIB)
+    assert row.peak_vmem_bytes is None and row.read_bytes is None and row.write_bytes is None
+    assert row.cpu_percent is None and row.cpu_eff is None
+
+
+def test_an_all_na_benchmark_measures_nothing(writer: Writer, settings: Settings) -> None:
+    wanted = Wanted()
+    smk_job(writer, settings, wanted)
+    bench_file(settings, BENCH_HEAD + "\t".join(["NA"] * 10) + "\n")
+    read_wanted(writer, settings, wanted)
+    [row] = rows(writer)
+    assert row.source is None and row.realtime_s is None and row.cpus == 2
+
+
+def test_a_symlinked_benchmark_is_ignored(
+    writer: Writer, settings: Settings, tmp_path: Path
+) -> None:
+    wanted = Wanted()
+    smk_job(writer, settings, wanted)
+    elsewhere = tmp_path / "elsewhere.tsv"
+    elsewhere.write_text(BENCH_HEAD + BENCH_ROW)
+    bench_file(settings, "").unlink()
+    (make_run_dirs(settings.runs_root, RUN).launch_dir / BENCH).symlink_to(elsewhere)
+    assert not read_wanted(writer, settings, wanted)
+    assert rows(writer)[0].source is None
+
+
+def test_an_oversize_benchmark_is_ignored(writer: Writer, settings: Settings) -> None:
+    wanted = Wanted()
+    smk_job(writer, settings, wanted)
+    padding = "".join(BENCH_ROW for _ in range(failure.MAX_BENCHMARK_BYTES // len(BENCH_ROW)))
+    bench_file(settings, BENCH_HEAD + padding + BENCH_ROW)
+    assert not read_wanted(writer, settings, wanted)
+    assert rows(writer)[0].source is None
+
+
+def test_a_fifo_benchmark_is_ignored_at_once(writer: Writer, settings: Settings) -> None:
+    wanted = Wanted()
+    smk_job(writer, settings, wanted)
+    path = bench_file(settings, "")
+    path.unlink()
+    os.mkfifo(path, 0o600)  # nothing ever writes to it
+    began = time.monotonic()
+    assert not read_wanted(writer, settings, wanted)
+    assert time.monotonic() - began < 2.0
+    assert rows(writer)[0].source is None
+
+
+def wait_for(check: Any, timeout_s: float = 5.0) -> None:
+    deadline = time.monotonic() + timeout_s
+    while not check():
+        assert time.monotonic() < deadline, "timed out"
+        time.sleep(0.02)
+
+
+def test_a_blocked_benchmark_delays_no_event(
+    writer: Writer, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gate = threading.Event()
+
+    def blocked(*args: Any) -> Any:
+        gate.wait(10)  # a file system that does not answer
+        return read_benchmark(*args)
+
+    monkeypatch.setattr(metrics, "read_benchmark", blocked)
+    stop = threading.Event()
+    reader = benchmarks(writer, settings, timeout_s=30)
+    reader.start(stop)
+    try:
+        bench_file(settings, BENCH_HEAD + BENCH_ROW)
+        began = time.monotonic()
+        launch = smk_job(writer, settings, reader)  # job 1: its read blocks
+        smk_ingest(
+            writer,
+            settings,
+            launch,
+            reader,
+            job_info(settings, 3, 2),
+            smk_event(4, "job_finished", job_id=2),
+        )
+        assert time.monotonic() - began < 2.0  # the events went on
+        assert [r.state for r in rows(writer)] == ["succeeded", "succeeded"]
+        assert {r.source for r in rows(writer)} == {None}
+        gate.set()
+        wait_for(lambda: rows(writer)[0].source == "benchmark")
+    finally:
+        gate.set()
+        stop.set()
+
+
+def test_a_stalled_benchmark_keeps_one_route_slot_only(
+    writer: Writer, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3FU105B-01, SEC-P3FU105B-01: after a stall, no further read is submitted until the
+    stuck one ends, so the routes' file pool keeps its slots (dev-env §15.3 req. 13)."""
+    gate = threading.Event()
+    calls: list[str] = []
+
+    def blocked(*args: Any) -> Any:
+        calls.append(args[2])
+        gate.wait(10)  # a mount that does not answer
+        return None
+
+    monkeypatch.setattr(metrics, "read_benchmark", blocked)
+    pool = FilePool(2, 0)  # the routes' pool, small: two stuck benchmark reads would fill it
+    reader = metrics.Benchmarks(writer, settings.runs_root, pool, timeout_s=0.05)
+    stop = threading.Event()
+    reader.start(stop)
+    try:
+        for i in range(4):
+            reader.want(f"att_{i}", RUN, f"b{i}.tsv")
+        time.sleep(0.5)  # well past several timeouts
+        assert calls == ["b0.tsv"]  # one read in flight, the others wait
+        assert pool.run(lambda: "route", 1.0) == "route"  # a route read still has its slot
+        gate.set()
+        wait_for(lambda: len(calls) == 4)  # the stuck read ended: the queue goes on
+    finally:
+        gate.set()
+        stop.set()
+
+
+def test_a_tiny_benchmark_time_gives_no_huge_cpu_percent(
+    writer: Writer, settings: Settings
+) -> None:
+    """SEC-P3FU105B-02: CPU % is a ratio computed here, capped as §3.7's Ingest checks say."""
+    wanted = Wanted()
+    smk_job(writer, settings, wanted)
+    fields = BENCH_ROW.rstrip("\n").split("\t")
+    fields[0], fields[9] = "0.000000001", "1000"  # s, cpu_time: 1e14 %
+    bench_file(settings, BENCH_HEAD + "\t".join(fields) + "\n")
+    assert read_wanted(writer, settings, wanted)
+    [row] = rows(writer)
+    assert row.cpu_percent is None and row.cpu_eff is None
+
+
+def test_the_reader_drops_what_its_queue_cannot_hold(writer: Writer, settings: Settings) -> None:
+    reader = metrics.Benchmarks(writer, settings.runs_root, FilePool(), backlog=1)
+    began = time.monotonic()
+    for i in range(3):  # no thread drains it: never waits
+        reader.want(f"att_{i}", RUN, BENCH)
+    assert time.monotonic() - began < 1.0
+
+
+def test_snakemake_on_slurm_sacct_measures_first(writer: Writer, settings: Settings) -> None:
+    wanted = Wanted()
+    smk_job(writer, settings, wanted, local=False)
+    writer.submit(lambda c: c.execute(update(attempts).values(native_id="4242"))).result()
+    bench_file(settings, BENCH_HEAD + BENCH_ROW)
+    assert read_wanted(writer, settings, wanted)
+    writer.submit(
+        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(state="succeeded"))
+    ).result()
+    write_cache(settings, RUN, {"4242": SACCT_ROW})
+    assert fill(writer, settings) == 1
+    [row] = rows(writer)
+    assert row.source == "sacct"
+    assert (row.realtime_s, row.peak_rss_bytes) == (1000.0, 2**30)  # sacct's
+    assert row.peak_vmem_bytes == 2048 * MIB and row.read_bytes == 10 * MIB  # the benchmark's
+    # a benchmark read after the sweep keeps sacct's measures
+    assert benchmarks(writer, settings).read(row.attempt_id, RUN, BENCH)
+    after = rows(writer)[0]
+    assert (after.source, after.realtime_s, after.peak_rss_bytes) == ("sacct", 1000.0, 2**30)

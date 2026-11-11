@@ -28,6 +28,7 @@ from spectio.runner.types import (
     TerminalHead,
 )
 from spectio_server.files.pool import FilePool
+from spectio_server.metrics import Benchmarks
 from spectio_server.projector.ingest import apply_head_report, ingest, load_cursor
 from spectio_server.projector.runs import ENGINE_ENDED, TERMINAL
 from spectio_server.stages.freeze import StageSources
@@ -57,12 +58,13 @@ class StoreSink:
         overlays: Path | None = None,
         data_dir: Path | None = None,
         files: FilePool | None = None,
+        benchmarks: Benchmarks | None = None,  # a Snakemake job's benchmark (FU-P3-105b)
     ) -> None:
         self.writer = writer
         self.runs_root = runs_root
         self._roots = runs_roots(runs_root)  # once: `_ref` runs on the writer (SEC-P3T25-01)
         # stage sources (P1 Task 27), read in the file pool when there is one (SEC-P3T27-03)
-        self.sources = StageSources(overlays, runs_root, data_dir, files)
+        self.sources = StageSources(overlays, runs_root, data_dir, files, benchmarks)
 
     def _do(self, fn: Callable[[Connection], T]) -> T:
         return self.writer.submit(fn).result()
