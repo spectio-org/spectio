@@ -281,6 +281,9 @@ function Map_({ settings, decor, shown, onOpen, title, nextRef }: { settings: Gr
         draggable: false,
         selectable: false,
         focusable: false,
+        // React Flow sets `pointer-events: none` on a node that is neither selectable nor draggable
+        // and has no handler of its own, so its button never got a click (found with the demo)
+        style: { pointerEvents: "all" },
         data: {
           node: n,
           status: s,
