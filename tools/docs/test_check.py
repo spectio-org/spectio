@@ -67,6 +67,68 @@ class ProgressHookOutput(unittest.TestCase):
         self.assertEqual(check.built_page(pathlib.PurePosixPath("index.md")), "index.html")
 
 
+class PublicBuild(unittest.TestCase):
+    """The public site leaves the developer folders out (exclude_docs): their pages are not expected in it."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = pathlib.Path(self.tmp.name)
+        self.docs = root / "docs"
+        self.site = root / "site"
+        self.public = root / "mkdocs.yml"
+        self.public.write_text(
+            "site_name: X\nexclude_docs: |\n  fonts/*.ttf\n  # a comment\n  /intro.md\n  /progress/\n  /map.md\n"
+            "theme:\n  name: material\n")
+        self.dev = root / "mkdocs.dev.yml"
+        self.dev.write_text("INHERIT: mkdocs.yml\nexclude_docs: |\n  /intro.md\n")
+        self.inherit = root / "mkdocs.inherit.yml"
+        self.inherit.write_text("INHERIT: mkdocs.yml\nsite_name: Y\n")
+        for md, text in (("index.md", "# Home\n"), ("intro.md", "# Intro\n"), ("map.md", "# Map\n"),
+                         ("usage/progress/x.md", "# A usage page named progress\n"),
+                         ("progress/index.md", f"# Progress\n\n{TABLE}\n"),
+                         ("progress/W1/R1.md", "# R1\n")):
+            path = self.docs / md
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+        self.site.mkdir()
+        (self.site / "index.html").write_text("<h1>Home</h1>")
+        check.failures.clear()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+        check.failures.clear()
+
+    def run_hook_check(self, config):
+        with contextlib.redirect_stdout(io.StringIO()):
+            check.check_progress_hook(self.site, self.docs, check.excluded_docs(config, self.docs))
+        return check.failures
+
+    def test_public_config_excludes_the_developer_folders_and_pages(self):
+        self.assertEqual(check.excluded_docs(self.public, self.docs),
+                         {"intro.md", "map.md", "progress/index.md", "progress/W1/R1.md"})
+
+    def test_a_config_without_exclude_docs_follows_inherit(self):
+        self.assertEqual(check.excluded_docs(self.inherit, self.docs), check.excluded_docs(self.public, self.docs))
+
+    def test_dev_config_clears_the_developer_exclusions(self):
+        self.assertEqual(check.excluded_docs(self.dev, self.docs), {"intro.md"})
+
+    def test_progress_table_page_is_not_expected_in_the_public_site(self):
+        self.assertEqual(self.run_hook_check(self.public), [])
+
+    def test_progress_table_page_is_expected_in_the_dev_site(self):
+        self.assertTrue(any("progress/index.html not built" in f for f in self.run_hook_check(self.dev)))
+
+    def test_the_real_configs_keep_the_developer_pages_out_of_the_public_site_only(self):
+        public = check.excluded_docs(check.ROOT / "mkdocs.yml")
+        dev = check.excluded_docs(check.ROOT / "mkdocs.dev.yml")
+        self.assertIn("progress/index.md", public)
+        self.assertIn("specs/mvp-0.0.1.md", public)
+        self.assertNotIn("usage/index.md", public)
+        self.assertNotIn("progress/index.md", dev)
+        self.assertNotIn("specs/mvp-0.0.1.md", dev)
+
+
 class MediaBudget(unittest.TestCase):
     """A new file counts in full against the budget, a changed one only by how much it grew."""
 
