@@ -570,9 +570,16 @@
 }
 .sp-run-top {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-start;
   gap: 12px 18px;
+}
+/* The name wraps beside the tile; the actions keep their width at the right (ui-spec §12.5). */
+.sp-run-top > .sp-grow {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sp-run-top > .sp-run-actions {
+  flex-shrink: 0;
 }
 .sp-mark-tile {
   width: 48px;
@@ -601,6 +608,10 @@
 .sp-run-head > .sp-foldsec {
   padding-top: 12px;
   border-top: 1px solid var(--sp-line-divider);
+}
+/* Folded, the Facts title keeps its width: the summary beside it takes the ellipsis (UI-09). */
+.sp-run-head .sp-fold-title {
+  flex-shrink: 0;
 }
 .sp-facts {
   display: grid;
@@ -938,38 +949,32 @@
   .sp-run-head {
     padding: 18px 16px 14px;
   }
-  /* The mark tile stays beside the pipeline's name (MLiteRunDetail). */
-  .sp-run-top > .sp-grow {
-    flex: 1 1 0;
-    min-width: 0;
+  /* More actions stays beside the name; the primary sits in the bar pinned above the tab bar,
+     full width, opaque (UI-09; ui-spec §4.11, §12.5). The shell's bottom padding leaves it room. */
+  .sp-run-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--sp-tabbar-h);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--sp-surface-page);
+    border-top: 1px solid var(--sp-line-border);
   }
-  /* Cancel and Copy side by side, full width (MLiteRunDetail); Resume and its reason above them,
-     full width (MLiteRunFailed). */
-  .sp-run-top > .sp-run-actions {
-    width: 100%;
-    flex-wrap: wrap;
+  .sp-run-menu .mantine-Menu-item {
+    min-height: 44px;
   }
-  .sp-run-top > .sp-run-actions > * {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-  .sp-run-top > .sp-run-actions > .sp-resume,
-  .sp-run-top > .sp-run-actions > .sp-resume-why {
-    flex-basis: 100%;
-    order: -1;
-  }
-  /* Copy to a new launch takes the row, Copy its own width beside it (MLiteRunFailed). */
-  .sp-run-top > .sp-run-actions > .sp-copy-launch ~ .sp-copy,
-  .sp-run-top > .sp-run-actions > .sp-copy-launch ~ .sp-copy .mantine-Button-root {
-    flex: 0 0 auto;
-    width: auto;
-  }
-  .sp-run-actions .sp-copy {
-    width: 100%;
-  }
-  .sp-run-actions .mantine-Button-root {
-    width: 100%;
-    height: 44px;
+  /* The title in the top bar's title row (a run's name): two lines at most, then an ellipsis;
+     the state line under it stays in view (ui-spec §4.11). */
+  .sp-mtitle .sp-page-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
   }
   /* Logs (MLiteRunLogs): the sources share the width, the file path wraps above its Copy. */
   .sp-log-tools .sp-segments {
@@ -991,46 +996,19 @@
   }
 }
 
-/* P3-parC: the header's actions and Copy menu (LiteRunActions B). */
+/* P3-parC, UI-09: the header's actions: More actions, then the primary at the far right
+   (ui-spec §12.4). The Copy items' status shows under them. */
 .sp-run-actions {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
-.sp-copy {
-  position: relative;
-  display: inline-flex;
-  min-width: 0;
-}
-.sp-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 20;
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-  padding: 6px;
-  border-radius: 14px;
-  background: var(--sp-surface-raised);
-  box-shadow: 0 0 0 1px var(--sp-line-border), 0 16px 32px -16px rgba(15, 16, 32, 0.35);
-}
-.sp-menu button {
-  min-height: 38px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9px;
-  font: inherit;
-  font-size: 13.5px;
-  text-align: left;
-  color: var(--sp-text-primary);
-  background: none;
-  cursor: pointer;
-}
-.sp-menu button:hover,
-.sp-menu button:focus-visible {
-  background: var(--sp-surface-subtle);
+/* The menu's destructive item, last after a divider: its icon and text in the failed ink. */
+.sp-run-menu .sp-menu-danger {
+  color: var(--sp-state-failed-fg);
 }
 .sp-copy-status:empty {
   display: none;
@@ -1429,7 +1407,8 @@
   flex-shrink: 0;
   margin-top: 2px;
 }
-.sp-run-actions .mantine-Button-root[aria-disabled="true"] {
+.sp-run-actions .mantine-Button-root[aria-disabled="true"],
+.sp-run-bar .mantine-Button-root[aria-disabled="true"] {
   opacity: 0.55;
   cursor: not-allowed;
 }

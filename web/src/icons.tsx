@@ -18,7 +18,6 @@ export const ICONS = {
   bell: "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0",
   sun: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.2 4.2l1.4 1.4 M18.4 18.4l1.4 1.4 M1 12h2 M21 12h2 M4.2 19.8l1.4-1.4 M18.4 5.6l1.4-1.4",
   moon: "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z",
-  more: "M5 12h.01 M12 12h.01 M19 12h.01",
   person: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0",
   fold: "M4 5h16v14H4z M9 5v14 M16 10l-2 2 2 2",
   unfold: "M4 5h16v14H4z M9 5v14 M14 10l2 2-2 2",
@@ -65,6 +64,8 @@ export const ICONS = {
   braces: "M9 4c-2 0-2 2-2 4s-1 4-3 4c2 0 3 2 3 4s0 4 2 4 M15 4c2 0 2 2 2 4s1 4 3 4c-2 0-3 2-3 4s0 4-2 4",
   image: "M4 5h16v14H4z M4 16l5-5 4 4 3-3 4 4 M15.5 9h.01",
   pin: "M12 17v5 M9 4h6 M10 4v6l-3 4v3h10v-3l-3-4V4",
+  more: "M5 12h1 M11.5 12h1 M18 12h1",
+  trash: "M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v5 M14 11v5",
 } as const;
 
 export type IconName = keyof typeof ICONS;
