@@ -7,6 +7,8 @@ import { type SourceBlock, getSource } from "./types";
 export interface CodeSource {
   location: string;
   revision: string | null;
+  /** Read for a run: the pipeline's code today, which the run may not have used. */
+  fromRun?: boolean;
 }
 
 export function Code({ name, code, where }: { name: string; code?: string | null; where?: CodeSource | null }) {
@@ -31,6 +33,7 @@ export function Code({ name, code, where }: { name: string; code?: string | null
           {block.file}:{block.line}
         </span>
         {block.truncated && " (cut after 300 lines)"}
+        {where.fromRun && " · the pipeline's current code, which may differ from what this run used"}
       </p>
       <Lines text={block.code} first={block.line} label={`Code of ${name}`} />
     </>

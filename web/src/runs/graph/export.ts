@@ -64,7 +64,7 @@ export function toHtml(view: View, placed: Placed, title: string, engine: string
     .map((n) => {
       const after = view.edges.filter((e) => e.target === n.id).map((e) => byId.get(e.source)?.label ?? e.source);
       const counts = Object.entries(n.counts).map(([k, v]) => `${v} ${k}`).join(", ");
-      return `<tr><td>${escapeXml(n.step ? `${n.step} · ${n.label}` : n.label)}</td><td>${n.kind}</td><td>${escapeXml((n.status ?? "not run").replace(/_/g, " "))}</td><td>${escapeXml(counts || "—")}</td><td>${escapeXml((n.flags ?? []).join(", ") || "—")}</td><td>${escapeXml(after.join(", ") || "—")}</td></tr>`;
+      return `<tr><td>${escapeXml(n.step ? `${n.step} · ${n.label}` : n.label)}</td><td>${escapeXml(n.kind)}</td><td>${escapeXml((n.status ?? "not run").replace(/_/g, " "))}</td><td>${escapeXml(counts || "—")}</td><td>${escapeXml((n.flags ?? []).join(", ") || "—")}</td><td>${escapeXml(after.join(", ") || "—")}</td></tr>`;
     })
     .join("\n");
   const when = new Date().toISOString().replace("T", " ").slice(0, 16);

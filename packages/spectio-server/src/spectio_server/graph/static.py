@@ -164,7 +164,8 @@ _NAME = re.compile(r"[A-Za-z_]\w*")
 
 
 def _smk_block(lines: list[str], start: int) -> list[str]:
-    """A rule: its line, then every indented, blank or comment line after it."""
+    """A rule: its line, then every indented or blank line after it (a line at column 0, a
+    comment included, ends it)."""
     end = start + 1
     while end < len(lines) and (not lines[end].strip() or lines[end][:1].isspace()):
         end += 1
@@ -176,10 +177,11 @@ def _smk_block(lines: list[str], start: int) -> list[str]:
 def _nf_block(lines: list[str], start: int) -> list[str]:
     """A process: from its `process X {` line to the brace that closes it (strings and comments
     are not parsed: a brace in one can end it early or late, and MAX_CODE_LINES bounds it)."""
-    depth = 0
+    depth, opened = 0, False
     for i in range(start, len(lines)):
+        opened = opened or "{" in lines[i]
         depth += lines[i].count("{") - lines[i].count("}")
-        if depth <= 0 and i > start:
+        if opened and depth <= 0:
             return lines[start : i + 1]
     return lines[start:]
 
@@ -213,8 +215,10 @@ def definition(root: Path, engine: str, entry: str | None, name: str) -> dict[st
             text = read_confined(real_root, path, MAX_FILE_BYTES)
         except Unsafe:
             continue
-        m = pattern.search(text or "")
-        if not m or text is None:
+        if text is None:
+            continue
+        m = pattern.search(text)
+        if not m:
             continue
         lines = text.splitlines()
         start = text.count("\n", 0, m.start())

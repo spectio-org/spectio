@@ -202,14 +202,23 @@ function keyTokens(key: string | null | undefined): Set<string> | null {
 /** Two jobs of linked steps are linked when one step has a single job (a fan-in or a fan-out),
  * or when one job's key is part of the other's (same sample, or `sample=A` in
  * `sample=A, chrom=1`). Jobs with no key are linked only through a single job. */
+const tokensOf = new WeakMap<ViewNode, Set<string> | null>(); // built once per job, not per pair
+
 export function jobsLinked(a: ViewNode, b: ViewNode, sources: number, targets: number): boolean {
   if (sources === 1 || targets === 1) return true;
-  const x = keyTokens(a.key);
-  const y = keyTokens(b.key);
+  const tokens = (n: ViewNode) => {
+    if (!tokensOf.has(n)) tokensOf.set(n, keyTokens(n.key));
+    return tokensOf.get(n) ?? null;
+  };
+  const x = tokens(a);
+  const y = tokens(b);
   if (!x || !y) return false;
   const within = (p: Set<string>, q: Set<string>) => [...p].every((t) => q.has(t));
   return within(x, y) || within(y, x);
 }
+
+/** The fold list with `group` added, or removed when it is already there. */
+export const toggled = (fold: string[], group: string): string[] => (fold.includes(group) ? fold.filter((g) => g !== group) : [...fold, group]);
 
 /** The group a double-click on `n` folds at `level`, and the groups of the node's lane chain. */
 function groupOf(doc: GraphDocument, n: GraphNode, level: GraphLevel, outer: Map<string, string | null>): string | null {

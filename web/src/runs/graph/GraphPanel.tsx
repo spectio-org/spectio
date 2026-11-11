@@ -11,7 +11,7 @@ import type { Detail } from "../DetailSheet";
 import { isTerminal, runWord } from "../stateWord";
 import { Code } from "./Code";
 import { GraphView, Links, formatSeconds, kindWord, progress, statusTone, statusWord } from "./GraphView";
-import { type NodeDiff, type View, type ViewEdge, type ViewNode, collapse, diffGraphs, durationOf, lineage, timeSpan } from "./model";
+import { type NodeDiff, type View, type ViewEdge, type ViewNode, collapse, diffGraphs, durationOf, lineage, timeSpan, toggled } from "./model";
 import { type GraphSearch, type GraphSettings, searchOf, settingsOf } from "./settings";
 import { type GraphDocument, type GraphNode, type NodeOutput, getNodeOutputs, getRunGraph } from "./types";
 
@@ -19,17 +19,28 @@ import { type GraphDocument, type GraphNode, type NodeOutput, getNodeOutputs, ge
 export const MAX_JOBS = 2000;
 /** The tasks route's page size, the most jobs drawn for one step. */
 const JOBS_PER_STEP = 200;
+/** How many steps' jobs load at once. */
+const JOBS_FETCHES = 4;
+
+/** Runs `fn` on every item, at most `size` at a time. */
+async function inPool<T>(items: T[], size: number, fn: (item: T) => Promise<void>): Promise<void> {
+  const queue = [...items];
+  await Promise.all(Array.from({ length: Math.min(size, queue.length) }, async () => {
+    while (queue.length) await fn(queue.shift() as T);
+  }));
+}
 
 /** The steps the Jobs level loads the jobs of: all those with jobs, in pipeline order, while the
- * total stays under MAX_JOBS (a bigger step is left as one node). */
+ * total stays under MAX_JOBS. A step with more than JOBS_PER_STEP jobs, or past the total, stays
+ * one node, so no step is drawn with part of its jobs. */
 export function expandedSteps(doc: GraphDocument): GraphNode[] {
   const total = (n: GraphNode) => Object.values(n.counts ?? {}).reduce((a, b) => a + b, 0);
   const steps = doc.nodes.filter((n) => n.kind !== "gate" && total(n) > 0).sort((a, b) => (a.pipeline_order ?? 0) - (b.pipeline_order ?? 0));
   const out: GraphNode[] = [];
   let sum = 0;
   for (const n of steps) {
-    const t = Math.min(total(n), JOBS_PER_STEP);
-    if (sum + t > MAX_JOBS) continue;
+    const t = total(n);
+    if (t > JOBS_PER_STEP || sum + t > MAX_JOBS) continue;
     sum += t;
     out.push(n);
   }
@@ -110,6 +121,7 @@ interface SheetProps {
   onOpen: (detail: Detail) => void;
   onTasks: (process: string) => void;
   onToggle: (group: string) => void;
+  onEdge: (edge: ViewEdge) => void;
 }
 
 /** A job's key as name and value pairs: Snakemake's `k=v` wildcards, or Nextflow's tag. */
@@ -157,7 +169,7 @@ function JobFacts({ task }: { task: Task }) {
   );
 }
 
-function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks, onToggle }: SheetProps) {
+function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks, onToggle, onEdge }: SheetProps) {
   const phone = usePhone();
   const byId = new Map(doc.nodes.map((n) => [n.id, n]));
   const members = node ? node.members.map((m) => byId.get(m)).filter((m) => !!m) : [];
@@ -217,7 +229,7 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
             </button>
           </div>
           <h3 className="sp-sheet-h">Links</h3>
-          <Links view={view} id={node.kind === "job" ? node.members[0] : node.id} />
+          <Links view={view} id={node.id} onEdge={onEdge} />
           {task && (
             <>
               <JobFacts task={task} />
@@ -250,7 +262,7 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
           {(single || node.kind === "job") && (
             <details className="sp-gdetails">
               <summary>Code</summary>
-              <Code name={node.members[0]} code={byId.get(node.members[0])?.code} where={{ location: run.workflow.location, revision: null }} />
+              <Code name={node.members[0]} code={byId.get(node.members[0])?.code} where={{ location: run.workflow.location, revision: null, fromRun: true }} />
             </details>
           )}
           <h3 className="sp-sheet-h">Parameters</h3>
@@ -426,7 +438,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   const [edge, setEdge] = useState<ViewEdge | null>(null);
   const [trace, setTrace] = useState<{ id: string; direction: "up" | "down" } | null>(null);
   const live = !isTerminal(run.state);
-  const source = useMemo(() => ({ location: run.workflow.location, revision: null }), [run.workflow.location]);
+  const source = useMemo(() => ({ location: run.workflow.location, revision: null, fromRun: true }), [run.workflow.location]);
 
   const load = useCallback(() => {
     getRunGraph(run.id)
@@ -440,13 +452,25 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   const wantJobs = settings.level === "jobs" && doc !== null;
   const expanded = wantJobs ? expandedSteps(doc) : [];
   const jobsKey = expanded.map((n) => `${n.id}=${JSON.stringify(n.counts ?? {})}`).join("\n");
+  const fetched = useRef(new Map<string, string>()); // `${run}/${step}` → the counts its jobs were loaded at
   useEffect(() => {
-    if (!jobsKey) return setJobs({});
-    const ids = jobsKey.split("\n").map((line) => line.slice(0, line.lastIndexOf("=")));
+    if (!jobsKey) {
+      fetched.current.clear();
+      return setJobs({});
+    }
+    const want = new Map(jobsKey.split("\n").map((line) => [line.slice(0, line.lastIndexOf("=")), line.slice(line.lastIndexOf("=") + 1)] as const));
+    setJobs((prev) => Object.fromEntries(Object.entries(prev).filter(([p]) => want.has(p))));
+    const stale = [...want].filter(([p, counts]) => fetched.current.get(`${run.id}/${p}`) !== counts).map(([p]) => p);
     const controller = new AbortController();
-    Promise.all(ids.map((p) => listTasks(run.id, { process: p, limit: JOBS_PER_STEP }, controller.signal).then((page) => [p, page.items ?? []] as const)))
-      .then((pairs) => setJobs(Object.fromEntries(pairs)))
-      .catch(() => controller.signal.aborted || setJobs({}));
+    void inPool(stale, JOBS_FETCHES, (p) =>
+      listTasks(run.id, { process: p, limit: JOBS_PER_STEP }, controller.signal)
+        .then((page) => {
+          if (controller.signal.aborted) return;
+          fetched.current.set(`${run.id}/${p}`, want.get(p) ?? "");
+          setJobs((prev) => ({ ...prev, [p]: page.items ?? [] }));
+        })
+        .catch(() => undefined),
+    );
     return () => controller.abort();
   }, [jobsKey, run.id]);
 
@@ -500,7 +524,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
             {settings.level === "jobs" && (
               <p className="sp-gnote">
                 {`One box per job (${shownJobs}), named by its key: Nextflow's tag, or Snakemake's wildcards. Jobs of linked steps are linked when their keys match, or when one step has a single job.`}
-                {left > 0 && ` ${left} ${left === 1 ? "step is" : "steps are"} still one box (not started yet, or past ${MAX_JOBS} jobs); the Tasks tab lists every job.`}
+                {left > 0 && ` ${left} ${left === 1 ? "step is" : "steps are"} still one box (not started yet, more than ${JOBS_PER_STEP} jobs, or past ${MAX_JOBS} in all); the Tasks tab lists every job.`}
               </p>
             )}
             {removed.length > 0 && <p className="sp-gnote">Only in the compared run: {removed.join(", ")}.</p>}
@@ -531,7 +555,8 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
         }}
         onOpen={(d) => (set({ node: null }), onOpen(d))}
         onTasks={onTasks}
-        onToggle={(g) => set({ fold: settings.fold.includes(g) ? settings.fold.filter((x) => x !== g) : [...settings.fold, g], node: null })}
+        onToggle={(g) => set({ fold: toggled(settings.fold, g), node: null })}
+        onEdge={(e) => (set({ node: null }), setEdge(e))}
       />
     </>
   );

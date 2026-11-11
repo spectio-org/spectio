@@ -38,6 +38,7 @@ import {
   overlayValue,
   search,
   statusAt,
+  toggled,
   topoOrder,
 } from "./model";
 import { type GraphSettings, LAYOUTS, LEVELS, OVERLAYS } from "./settings";
@@ -108,7 +109,7 @@ function diffWord(d: NodeDiff | undefined): string | null {
 export const linkText = (label: string, conditions: string[]): string => (conditions.length ? `${label} (when ${conditions.join(" or ")})` : label);
 
 /** A node's links, both ways, with their conditions: the sheet's text for what the map draws. */
-export function Links({ view, id }: { view: View; id: string }) {
+export function Links({ view, id, onEdge }: { view: View; id: string; onEdge?: (edge: ViewEdge) => void }) {
   const byId = new Map(view.nodes.map((n) => [n.id, n]));
   const after = view.edges.filter((e) => e.target === id);
   const feeds = view.edges.filter((e) => e.source === id);
@@ -117,7 +118,23 @@ export function Links({ view, id }: { view: View; id: string }) {
     edges.length > 0 && (
       <>
         <dt>{what}</dt>
-        <dd>{edges.map((e) => linkText(byId.get(e[end])?.label ?? e[end], e.conditions)).join(", ")}</dd>
+        <dd>
+          {edges.map((e, i) => {
+            const text = linkText(byId.get(e[end])?.label ?? e[end], e.conditions);
+            return (
+              <span key={`${e.source}>${e.target}`}>
+                {i > 0 && ", "}
+                {onEdge ? (
+                  <button type="button" className="sp-link-button" onClick={() => onEdge(e)} aria-label={`What flows: ${byId.get(e.source)?.label ?? e.source} to ${byId.get(e.target)?.label ?? e.target}`}>
+                    {text}
+                  </button>
+                ) : (
+                  text
+                )}
+              </span>
+            );
+          })}
+        </dd>
       </>
     );
   return (
@@ -171,6 +188,7 @@ function handlesOf(w: number, h: number, horizontal: boolean): NodeHandle[] {
 function NodeBox({ data }: NodeProps<Node<NodeData>>) {
   const { node, horizontal } = data;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
   const style = data.heat !== null ? { ["--sp-heat" as string]: `${Math.round(10 + data.heat * 80)}%` } : undefined;
   return (
     <div
@@ -627,14 +645,15 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
   };
   const nextRef = useRef<(() => void) | null>(null);
   const onToggle = useCallback(
-    (group: string) => onSettings({ fold: settings.fold.includes(group) ? settings.fold.filter((g) => g !== group) : [...settings.fold, group] }),
+    (group: string) => onSettings({ fold: toggled(settings.fold, group) }),
     [onSettings, settings.fold],
   );
   const [pop, setPop] = useState<{ node: ViewNode; x: number; y: number } | null>(null);
   const onCode = useCallback((node: ViewNode, x: number, y: number) => setPop({ node, x, y }), []);
+  const closePop = useCallback(() => setPop(null), []);
   return (
     <div className="sp-graph">
-      {pop && <CodePop doc={doc} pop={pop} source={source ?? null} onClose={() => setPop(null)} />}
+      {pop && <CodePop doc={doc} pop={pop} source={source ?? null} onClose={closePop} />}
       <Toolbar
         settings={settings}
         onSettings={onSettings}
@@ -669,8 +688,13 @@ function CodePop({ doc, pop, source, onClose }: { doc: GraphDocument; pop: { nod
   const id = pop.node.members[0];
   const docNode = doc.nodes.find((n) => n.id === id);
   const single = pop.node.members.length === 1;
+  const nodeId = pop.node.id;
   useEffect(() => {
     ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    // back to the node's button when the card closes
+    return () => document.querySelector<HTMLElement>(`[data-gid="${CSS.escape(nodeId)}"]`)?.focus();
+  }, [nodeId]);
+  useEffect(() => {
     const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);

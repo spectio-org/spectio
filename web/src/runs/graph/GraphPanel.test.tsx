@@ -1,10 +1,11 @@
 // The Graph tab and the Launch map against the contract's routes (spikes/metroflow/graph-contract.md),
 // mocked: GET /features, /runs/{id}/graph, /runs/{id}/processes/{name}/outputs, /workflows:graph.
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, FakeEventSource, app, fetched, run, serve, stubStream, viewport } from "../../testing";
 import { resetFeatures } from "./features";
+import { keyPairs } from "./GraphPanel";
 import { DOC } from "./fixture";
 import type { GraphDocument } from "./types";
 
@@ -222,6 +223,61 @@ test("the Jobs level loads every started step, in pipeline order, under the job 
       { ...DOC.nodes[0], id: "D", pipeline_order: 4, counts: {} },
     ],
   };
-  // C is capped at one page (200), so it still fits
-  expect(expandedSteps(doc).map((n) => n.id)).toEqual(["B", "A", "C"]);
+  // C has more jobs than one page: it stays one node rather than show part of its jobs
+  expect(expandedSteps(doc).map((n) => n.id)).toEqual(["B", "A"]);
+});
+
+const bwaOnMap = () => screen.findByRole("button", { name: "BWA, process, Running, 2 of 4 jobs done", hidden: true });
+
+test("a click on a node opens its sheet after a moment; a double-click folds its subworkflow instead", async () => {
+  mocks();
+  const router = app(`/runs/${ID}?tab=graph`);
+  // click events only: d3-zoom's mousedown handler needs a window jsdom's user-event does not give
+  fireEvent.click(await bwaOnMap(), { detail: 1 });
+  expect(screen.queryByRole("dialog", { name: "BWA (process)" })).toBeNull(); // not yet: a double-click may follow
+  await userEvent.click(within(await screen.findByRole("dialog", { name: "BWA (process)" })).getByRole("button", { name: "Close" }));
+
+  const bwa = await bwaOnMap();
+  fireEvent.click(bwa, { detail: 1 });
+  fireEvent.click(bwa, { detail: 2 });
+  fireEvent.dblClick(bwa, { detail: 2 });
+  await waitFor(() => expect(String(router.state.location.search.fold)).toContain("sub:NFCORE_DEMO:DEMO:ALIGN"));
+  await new Promise((r) => setTimeout(r, 300));
+  expect(screen.queryByRole("dialog", { name: "BWA (process)" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "BWA, process, Running, 2 of 4 jobs done", hidden: true })).toBeNull();
+});
+
+test("a right-click shows the step's code by the node; Escape closes it and focus goes back to the node", async () => {
+  const mock = mocks(["graph_view"], {
+    "/api/v1/workflows:source": { file: "modules/bwa/main.nf", line: 3, code: "process BWA {\n  script: 'bwa mem'\n}", truncated: false },
+  });
+  app(`/runs/${ID}?tab=graph`);
+  const bwa = await bwaOnMap();
+  fireEvent.contextMenu(bwa);
+  const card = await screen.findByRole("dialog", { name: "Code of BWA" });
+  expect(await within(card).findByText(/script: 'bwa mem'/)).toBeInTheDocument();
+  expect(fetched(mock).some((u) => u.startsWith("/api/v1/workflows:source") && u.includes("name="))).toBe(true);
+  expect(within(card).getByRole("button", { name: "Close the code" })).toHaveFocus();
+  await userEvent.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog", { name: "Code of BWA" })).toBeNull();
+  expect(bwa).toHaveFocus();
+});
+
+test("each link in a step's sheet is a button that opens what flows along it", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&show=list`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
+  const sheet = await screen.findByRole("dialog", { name: "BWA (process)" });
+  await userEvent.click(within(sheet).getAllByRole("button", { name: /^What flows: .+ to BWA$/ })[0]);
+  const edge = await screen.findByRole("dialog", { name: /→ BWA$/ });
+  expect(within(edge).getByText(/Files emitted upstream/)).toBeInTheDocument();
+});
+
+test("keyPairs splits Snakemake wildcards and keeps a Nextflow tag whole", () => {
+  expect(keyPairs("region=chr1, sample=A")).toEqual([
+    ["region", "chr1"],
+    ["sample", "A"],
+  ]);
+  expect(keyPairs("S1 (lane 2)")).toEqual([["tag", "S1 (lane 2)"]]);
+  expect(keyPairs(null)).toEqual([]);
 });

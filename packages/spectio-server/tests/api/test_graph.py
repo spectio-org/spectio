@@ -383,3 +383,12 @@ def test_launch_walk_is_bounded(settings: Settings, writer: Writer, tmp_path: Pa
     doc = got(graph_client(settings, writer), f"/workflows:graph?location={pipeline}")
     assert time.monotonic() - started < 10
     assert "HIDDEN" not in {n["id"] for n in doc["nodes"]}
+
+
+def test_a_one_line_process_is_one_line() -> None:
+    """`process X { ... }` on one line ends on that line, not on the next (code-review CR-9)."""
+    from spectio_server.graph import static
+
+    lines = ["process A { script: 'echo' }", "process B {", "}"]
+    assert static._nf_block(lines, 0) == lines[:1]
+    assert static._nf_block(lines, 1) == lines[1:]
