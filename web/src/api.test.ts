@@ -203,7 +203,7 @@ const SAMPLES: Record<string, object> = {
   TaskSummary: run.summary.tasks,
   ServerVersion: { version: "", node: "", runs_root: "", account: "", executor: "" } satisfies ServerVersion,
   Me: me,
-  Notification: { id: "", kind: "run_failed", run_id: "", run_name: null, at: "", read: false } satisfies Notification,
+  Notification: { id: "", kind: "run_failed", run_id: "", run_name: null, engine: null, at: "", read: false } satisfies Notification,
   Notifications: { items: [], unread: 0, read_up_to: null } satisfies Notifications,
   Principal: me.principal,
   MeSession: me.session,

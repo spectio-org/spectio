@@ -1290,6 +1290,17 @@
             "title": "At",
             "type": "string"
           },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -1329,6 +1340,7 @@
           "kind",
           "run_id",
           "run_name",
+          "engine",
           "at",
           "read"
         ],

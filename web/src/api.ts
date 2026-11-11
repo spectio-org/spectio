@@ -806,6 +806,9 @@ export interface Notification {
   kind: NotificationKind;
   run_id: string;
   run_name: string | null;
+  /** The run's `workflow.engine`, as `WorkflowRef`. */
+  engine: string | null;
+  /** An ended run's `ended_at`, else `state_changed_at`; a waiting run's `state_changed_at`. */
   at: string;
   read: boolean;
 }
