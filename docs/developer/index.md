@@ -3,7 +3,7 @@ icon: material/code-tags
 ---
 # Developer documentation
 
-Everything technical lives here: the specifications, how the work is organised, and the evidence behind each decision.
+The specifications, where the work stands, and what was decided.
 
 <div class="grid cards" markdown>
 
@@ -17,31 +17,19 @@ Everything technical lives here: the specifications, how the work is organised, 
 
     ---
 
-    One page per pipeline step: what changed, why, the evidence.
+    Where the work stands, wave by wave.
 
--   :material-robot:{ .lg } **[Autopilot](../playbooks/autopilot.md)**
-
-    ---
-
-    How the design phase runs unattended, with a budget.
-
--   :material-magnify:{ .lg } **[Reviews](../reviews/README.md)**
+-   :material-book-open-variant:{ .lg } **[Specifications](../specs/synthesis.md)**
 
     ---
 
-    Review rounds and their findings, and the inbox for Thomas.
+    How Spectio is designed, one topic per spec.
 
 -   :material-scale-balance:{ .lg } **[Decisions](../decisions/log.md)**
 
     ---
 
     What was decided, when, and why.
-
--   :material-flask:{ .lg } **[Research](../research/adoption-and-positioning-2026-10-26.md)**
-
-    ---
-
-    Dated notes and spikes the specifications cite.
 
 </div>
 

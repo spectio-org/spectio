@@ -1377,3 +1377,9 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
 - **Changed.** [api §5.10](../specs/api-and-data-model.md#510-workflow-graph-002-flag-graph_view), [ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view), [dev environment §15.1](../specs/dev-environment-and-testing.md) (Visualisation row).
 - **Open.** Ask the MetroFlow authors about the renderer's licence. Measure BioFlow-Insight at nf-core scale (rnaseq). OME-NGFF badges on imaging nodes ([#246](https://github.com/spectio-org/spectio/issues/246)).
 
+
+## 2026-11-11 — A shorter Developer menu and Progress page (Thomas)
+
+- **Context:** Thomas found Developer > Progress still too long and too technical, with too much information, and asked to remove the inbox and similar pages from it.
+- **Decision:** the Developer menu keeps the documentation map, Progress, specifications and decisions. Playbooks, reviews (with the inbox) and research notes stay published and are reached from the [documentation map](../map.md) and the pages that cite them. The Progress index shows one short section per wave (steps done, then its pages, folded once the wave is done), in place of the table of every step and the list of steps outside the pipeline ([documentation system §1, §3.2](../specs/documentation-system.md#1-site-structure)).
+- **Consequence:** `hooks/progress.py` renders the new sections from the same data; `tools/docs/check.py` looks for their marker.

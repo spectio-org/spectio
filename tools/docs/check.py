@@ -38,7 +38,7 @@ FIGURE_LIGHT = re.compile(r"assets/diagrams/[\w.-]+_light\.png#only-light")
 FIGURE_DARK = re.compile(r"assets/diagrams/[\w.-]+_dark\.png#only-dark")
 # hooks/progress.py: each placeholder, and a marker its rendered output always contains.
 PROGRESS_HOOK = {"<!-- spectio:progress-strip -->": ("progress strip", 'class="sp-waves"'),
-                 "<!-- spectio:progress-table -->": ("progress table", "<th>Kind</th>")}
+                 "<!-- spectio:progress-table -->": ("progress table", 'class="sp-progress"')}
 # Progress pages finished before the sketch-per-step rule (documentation-system.md §3.4, 2026-10-27).
 # A page leaves this list when it gets its figure.
 FIGURE_EXEMPT = {"W0/F3", "W0/F4", "W0/F6", "W1/R1", "W1/R11", "W1/R2", "W1/R4", "W1/R5", "W1/R7", "W1/R8", "W1/R9", "W2/APPLY1", "W2/TRIAGE1"}

@@ -15,7 +15,7 @@ SPEC.loader.exec_module(check)
 STRIP = "<!-- spectio:progress-strip -->"
 TABLE = "<!-- spectio:progress-table -->"
 RENDERED_STRIP = '<div class="sp-waves"><a class="sp-wave" href="progress/#w0">W0</a></div>'
-RENDERED_TABLE = "<table><thead><tr><th>Step</th><th>Kind</th><th>Status</th><th>Page</th></tr></thead></table>"
+RENDERED_TABLE = '<h2 id="w0">W0</h2><p class="sp-progress">7 of 7 steps done</p>'
 
 
 class ProgressHookOutput(unittest.TestCase):

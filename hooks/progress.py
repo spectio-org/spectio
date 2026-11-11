@@ -2,7 +2,7 @@
 
 Placeholders replaced in page Markdown:
   <!-- spectio:progress-strip -->  compact per-wave strip (landing page)
-  <!-- spectio:progress-table -->  one row per step, linking its Progress page when it exists
+  <!-- spectio:progress-table -->  per wave, the steps done and the links to its Progress pages
 
 Spec: docs/specs/documentation-system.md §2 and §3.2.
 """
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 
 import yaml
 
@@ -51,16 +52,29 @@ def _strip(pipeline, steps, base: str = "") -> str:
     return '<div class="sp-waves" markdown>' + "".join(cells) + "</div>"
 
 
+def _title(page: pathlib.Path) -> str:
+    for line in page.read_text().splitlines():
+        if line.startswith("# "):
+            return line[2:].strip()
+    return page.stem
+
+
 def _table(pipeline, steps, page_dir: pathlib.Path) -> str:
+    """One short section per wave: how many steps are done, then its pages, folded once the wave is done."""
     out = []
     for wave in pipeline["waves"]:
-        out.append(f'\n## {wave["id"]} · {wave["title"]} {{ #{wave["id"].lower()} }}\n')
-        out.append("| Step | Kind | Status | Page |\n|---|---|---|---|")
-        for s in wave["steps"]:
-            sid, st = s["id"], _status(steps, s["id"])
-            page = page_dir / wave["id"] / f"{sid}.md"
-            link = f"[{sid}]({wave['id']}/{sid}.md)" if page.exists() else "—"
-            out.append(f"| {sid} | {s['kind']} | {ICON.get(st, st)} {st.replace('_', ' ')} | {link} |")
+        ids = [s["id"] for s in wave["steps"]]
+        done = sum(_status(steps, i) == "done" for i in ids)
+        title = re.sub(r"\s*\(.*?\)", "", wave["title"]).strip()
+        out.append(f'\n## {wave["id"]} · {title} {{ #{wave["id"].lower()} }}\n')
+        out.append(f'<p class="sp-progress">{done} of {len(ids)} steps done</p>\n')
+        order = {sid: n for n, sid in enumerate(ids)}
+        pages = sorted((page_dir / wave["id"]).glob("*.md"), key=lambda f: (order.get(f.stem, len(order)), f.stem))
+        if not pages:
+            continue
+        fold = "???" if done == len(ids) else "???+"
+        out.append(f'{fold} note "Pages ({len(pages)})"\n')
+        out += [f"    - [{_title(f)}]({wave['id']}/{f.name})" for f in pages]
     return "\n".join(out) + "\n"
 
 
@@ -76,40 +90,3 @@ def on_page_markdown(markdown: str, page, config, files):
         page_dir = pathlib.Path(config["docs_dir"]) / "progress"
         markdown = markdown.replace("<!-- spectio:progress-table -->", _table(pipeline, steps, page_dir))
     return markdown
-
-
-def on_nav(nav, config, files):
-    """Put every docs/progress/<wave>/<step>.md page under the Progress tab, one section per wave,
-    so step pages are in the navigation without editing mkdocs.yml for each new step."""
-    from mkdocs.structure.nav import Section, _add_parent_links, _add_previous_and_next_links, _get_by_type
-    from mkdocs.structure.pages import Page
-
-    def find(items):
-        for i in items:
-            if isinstance(i, Section):
-                if i.title == "Progress":
-                    return i
-                hit = find(i.children)
-                if hit:
-                    return hit
-        return None
-
-    progress = find(nav.items)
-    if progress is None:
-        return nav
-    pipeline, _ = _load()
-    titles = {w["id"]: w["title"] for w in pipeline["waves"]}
-    by_wave: dict[str, list] = {}
-    for f in files.documentation_pages():
-        parts = pathlib.PurePosixPath(f.src_uri).parts
-        if len(parts) == 3 and parts[0] == "progress":
-            page = f.page or Page(None, f, config)
-            by_wave.setdefault(parts[1], []).append(page)
-    order = [w["id"] for w in pipeline["waves"]]
-    for wave in sorted(by_wave, key=lambda w: order.index(w) if w in order else 99):
-        pages = sorted(by_wave[wave], key=lambda p: p.file.src_uri)
-        progress.children.append(Section(f"{wave} · {titles.get(wave, '')}".strip(" ·"), pages))
-    _add_parent_links(nav.items)
-    nav.pages = _get_by_type(nav.items, Page)
-    _add_previous_and_next_links(nav.pages)
-    return nav
