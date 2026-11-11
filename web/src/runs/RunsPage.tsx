@@ -407,7 +407,14 @@ export function RunsPage() {
     setTimeout(() => {
       const want = pinning.current;
       const button = want && document.querySelector<HTMLElement>(`.ag-row[row-id="${CSS.escape(want.id)}"] button.sp-pin`);
-      if (!want || !button || (button.getAttribute("aria-pressed") === "true") !== want.pinned) return;
+      if (!want) return;
+      // on the phone, or once the run left the filtered list, there is no button to wait for
+      // (CR-P3FU116-03): stop waiting, so a later update takes no focus
+      if (!button) {
+        pinning.current = null;
+        return;
+      }
+      if ((button.getAttribute("aria-pressed") === "true") !== want.pinned) return;
       pinning.current = null;
       button.focus();
     });
