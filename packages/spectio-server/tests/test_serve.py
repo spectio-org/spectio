@@ -725,3 +725,18 @@ def test_a_blocked_sacct_json_does_not_delay_boot(
     finally:
         release.set()
         booted.close()
+
+
+def test_the_runner_asks_the_benchmark_reader(settings: Settings) -> None:
+    """FU-P3-105b: the projector's sources carry the reader, stopped with the server."""
+    db_dir = settings.db_dir
+    assert db_dir is not None
+    booted = boot(settings, db_dir)
+    try:
+        sink = booted.loop.sink
+        assert isinstance(sink, StoreSink)
+        assert isinstance(sink.sources.benchmarks, metrics.Benchmarks)
+        assert sink.sources.benchmarks.files is booted.files  # the routes' pool, bounded
+    finally:
+        booted.close()
+    assert booted.fill_stop.is_set()

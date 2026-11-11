@@ -29,7 +29,7 @@ import stat
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
 import yaml
@@ -64,6 +64,9 @@ from spectio_server.store.schema import (
     workflows,
 )
 
+if TYPE_CHECKING:
+    from spectio_server.metrics import Benchmarks
+
 log = logging.getLogger(__name__)
 
 FROZEN = "spectio.stages.frozen"
@@ -83,12 +86,14 @@ FREEZE_WORKERS = 2
 class StageSources:
     """Where the server reads stage sources: the overlays directory (`~/.spectio/overlays`),
     the runs root, under which a launch's `.spectio/rules.txt` is, and the data directory, under
-    which a Git workflow's copy is (`api.workflows.fetch`)."""
+    which a Git workflow's copy is (`api.workflows.fetch`); and the reader the projector asks
+    for a Snakemake job's benchmark file (FU-P3-105b)."""
 
     overlays: Path | None
     runs_root: Path | None
     data_dir: Path | None = None
     pool: FilePool | None = None  # where the files are read; None: on the caller's thread
+    benchmarks: "Benchmarks | None" = None  # None: no benchmark is read (a test, a rebuild)
 
 
 class _NoAliasLoader(yaml.SafeLoader):

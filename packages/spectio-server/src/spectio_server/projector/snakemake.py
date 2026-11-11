@@ -32,6 +32,7 @@ from spectio_sdk.events import (
     SnakemakeSlurmSubmitted,
     SnakemakeWorkflowStarted,
 )
+from spectio_server import metrics
 from spectio_server.failure import (
     SchedulerInfo,
     parse_smk_slurm_message,
@@ -365,6 +366,12 @@ def _job_end(
     if said is not None:  # the SLURM executor plugin's state and reason, never its text
         values["scheduler"] = {"state": said.state, "reason": said.reason}
     p.conn.execute(update(attempts).where(attempts.c.id == last.id).values(state=state, **values))
+    # its performance row (FU-P3-105b, api §5.5); the benchmark is read off the writer
+    found = metrics.smk_values(last.resources, p.event_time or p.now)
+    metrics.write(p.conn, last.id, last.task_id, last.n, state, p.state, "snakemake", found)
+    bench = (last.resources or {}).get("benchmark")
+    if isinstance(bench, str) and p.sources is not None and p.sources.benchmarks is not None:
+        p.sources.benchmarks.want(last.id, p.dir_run_id, bench)
     if state == "failed":  # on Snakemake, the culprit is the launch's last failed job
         p.set_launch(culprit_attempt_id=last.id)
     p.sync_tasks([last.task_id])
@@ -372,7 +379,14 @@ def _job_end(
 
 def _last_attempt(p: Projection, task_id: str) -> Any:
     return p.conn.execute(
-        select(attempts.c.id, attempts.c.n, attempts.c.state, attempts.c.task_id, attempts.c.logs)
+        select(
+            attempts.c.id,
+            attempts.c.n,
+            attempts.c.state,
+            attempts.c.task_id,
+            attempts.c.logs,
+            attempts.c.resources,
+        )
         .where(attempts.c.task_id == task_id, attempts.c.launch_n == p.launch_n)
         .order_by(attempts.c.n.desc())
         .limit(1)
