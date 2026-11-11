@@ -3,45 +3,74 @@ icon: material/download
 ---
 # Installation
 
-!!! info "Nothing to install yet"
-    Spectio is in its design phase. The first release, `0.0.1`, will be a basic version, installed as the Python package. See [what ships in which version](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version) and the [roadmap](../roadmap/index.md).
+!!! info "0.0.1 is built and not released yet"
+    The first version, `0.0.1`, is finished on the development branch and waits for its release checks ([roadmap](../roadmap/index.md)). Nothing is published for it yet: the names on PyPI (`spectio`, `snakemake-logger-plugin-spectio`) and in the Nextflow plugin registry (`nf-spectio`) only hold empty `0.0.0` placeholders. Do not install those.
 
-There will be three ways to run Spectio, from the smallest to the largest. All of them run the same code.
+## What 0.0.1 is made of
 
-<div class="grid cards" markdown>
+0.0.1 is installed as Python packages, on a laptop, a machine of your own or a SLURM login node. There is no Docker Compose file and no Helm chart yet.
 
--   :material-language-python:{ .lg } **Python package**
+| Package | What it holds |
+|---|---|
+| `spectio` | the `spectio` command (`init`, `doctor`, `serve`, `login`, `open`), the runner, and both engine bridges |
+| `spectio-server` | the API, the store and the screens. It depends on `spectio`. There is no `spectio[server]` extra: the server is its own package |
+| `spectio-sdk` | the event schemas shared by the two above |
+| `snakemake-logger-plugin-spectio` | the Snakemake bridge, for runs you start by hand ([details](../usage/runs-from-a-terminal.md)) |
+| `nf-spectio` | the Nextflow bridge. `spectio init` unpacks it from the `spectio` wheel |
 
-    ---
+You also need Python 3.11 or later, [uv](https://docs.astral.sh/uv/), tmux 2.1 or later on the machine that runs the server, and Nextflow or Snakemake for the engine you use. Source: `requires-python` in `packages/*/pyproject.toml`; the tmux floor is the check of `spectio serve --detach`.
 
-    `pip install spectio` on a laptop or a login node. It has the CLI and the runner; add the server with `spectio[server]`. Data stays in SQLite. On an HPC login node, the server needs a node-local, non-purged data directory ([details](../specs/architecture-plugins-and-packaging.md#73-python-bundle)).
+0.0.1 targets the EMBL cluster first. Other sites are not checked.
 
--   :material-docker:{ .lg } **Docker Compose**
+## Try it from a checkout
 
-    ---
+Until the release, the way to run Spectio is from a checkout of the [repository](https://github.com/spectio-org/spectio). This is the path the project's own end-to-end tests use; it is **[to be validated]** as an install route for someone who is not a developer.
 
-    For a lab server: the server, a Postgres database and object storage, with optional profiles for depictio and a test identity provider.
+1. Build the screens once. They need Node:
 
--   :simple-kubernetes:{ .lg } **Kubernetes**
+    ```console
+    $ git clone https://github.com/spectio-org/spectio && cd spectio
+    $ npm --prefix web ci --ignore-scripts
+    $ npm --prefix web run build
+    ```
 
-    ---
+2. Install the packages and set Spectio up on one machine, with no scheduler:
 
-    For an institute: a Helm chart, with runners in the cluster or on the HPC login nodes.
+    ```console
+    $ uv sync --locked
+    $ mkdir -p ~/spectio-runs
+    $ uv run spectio init --local
+    $ uv run spectio doctor
+    ```
 
-</div>
+    `spectio doctor` prints one `ok`, `warn` or `fail` line per check: SQLite, the data and runs directories, the engines, tmux, `sbatch`. A missing engine is a `fail` until you install it.
 
-**With uv, use uv 0.13.7 or later.** Spectio refuses an SQLite without the WAL-reset fix ([api §7](../specs/api-and-data-model.md#7-database-schema)), and the Python a uv installs brings its own SQLite. On an EMBL login node, uv 0.9.29 only offered Pythons with SQLite 3.50.4, which Spectio refuses; uv 0.13.7 with Python 3.13.14 (SQLite 3.53.1) works ([login-node audit](../research/2026-11-08-embl-login-node-audit.md#8-spectio-serve) §8). If Spectio stops with `SQLite … lacks the WAL-reset fix`, the message names the Python it came from; then:
+3. Start the server. It prints a single-use link; open it in a browser on the same machine ([Signing in](../usage/sign-in.md)):
 
-1. upgrade uv: `uv self update`, or the [installer](https://docs.astral.sh/uv/getting-started/installation/) again (`uv self update` works only for a uv the installer put there **[to be validated]**);
-2. `uv python install 3.13`; if you already have a 3.13 and the refusal comes back, name the patch, `uv python install 3.13.14`, the one that worked in the audit (whether the plain `3.13` fetches a newer patch is **[to be validated]**);
-3. reinstall Spectio with that Python, for example `uv tool install --reinstall --python 3.13 'spectio[server]'`, or recreate its virtual environment with `--python 3.13` (these uv flags are **[to be validated]** against [uv's documentation](https://docs.astral.sh/uv/)).
+    ```console
+    $ uv run spectio serve
+    ```
 
-`spectio doctor` shows the uv on your path and warns when it is older than 0.13.7.
+On a SLURM login node, run `spectio init` without `--local` and give it your partition and account (`--partition`, `--account`). The server then listens on a Unix socket and you reach it through an SSH tunnel ([Opening from your laptop](../usage/open-from-your-laptop.md)). That path was not run on a real cluster yet.
 
-**Put the runs directory on a file system with room.** Each run's launch and work directories go under the runs directory, `~/spectio-runs` by default. On an EMBL login node that is `/home`, an NFS file system that was 97% full on 2026-11-08 ([login-node audit](../research/2026-11-08-embl-login-node-audit.md#6-shared-home) §6). `spectio doctor` prints a `runs_disk` line with the free space there, and warns when that file system is 90% used or has less than 10 GiB free; a launch then logs the same warning in the server's output, and still starts. To move it, point `SPECTIO_RUNS_ROOT`, `runs_root` in `~/.spectio/spectio.toml`, or `spectio init --runs-root` at a larger scratch or group file system that the compute nodes also see. A directory you choose must exist already, be yours, and not be writable by others.
+The script `tests/e2e/serve-local.sh` of the repository does steps 2 and 3 in a throwaway directory, for a quick look.
 
-**The runner on your cluster** is a small program on the login node or in the cluster. It only makes outgoing HTTPS calls to the server, so no port needs to be opened on the HPC side.
+## Which SQLite
 
-**Checking what you install.** Every published image and chart will carry a signature, an SBOM and a provenance attestation that `gh attestation verify` checks; see [versioning and releases](../specs/dev-environment-and-testing.md#12-versioning-and-releases). *(decided — Thomas, 2026-10-27, inbox #26)*
+Spectio refuses an SQLite older than 3.51.3: older ones lack a fix of the write-ahead log (WAL) reset. The Python that uv installs brings its own SQLite. If Spectio stops with `SQLite … lacks the WAL-reset fix`, the message names the Python it came from; then:
 
-Design details: [packaging](../specs/architecture-plugins-and-packaging.md#7-packaging-and-the-three-deployments) and [schedulers](../specs/schedulers-and-monitoring.md#6-running-the-runner-on-hpc).
+1. upgrade uv: `uv self update`, or run the [installer](https://docs.astral.sh/uv/getting-started/installation/) again (`uv self update` works only for a uv the installer put there **[to be validated]**);
+2. `uv python install 3.13`; if the refusal comes back, name the patch, `uv python install 3.13.14`, the one that worked on an EMBL login node on 2026-11-08 (whether plain `3.13` fetches a newer patch is **[to be validated]**);
+3. install Spectio again with that Python, for example `uv sync --python 3.13`.
+
+On that login node, uv 0.9.29 only offered Pythons with SQLite 3.50.4, which Spectio refuses; uv 0.13.7 with Python 3.13.14 (SQLite 3.53.1) worked. Use uv 0.13.7 or later. `spectio doctor` shows the uv on your path and warns when it is older.
+
+## Put the runs on a file system with room
+
+Each run's launch and work directories go under the runs directory, `~/spectio-runs` by default. On the EMBL login node that is `/home`, a shared file system that was 97% full on 2026-11-08. `spectio doctor` prints a `runs_disk` line with the free space and warns when the file system is 90% used or has less than 10 GiB free; a launch then logs the same warning and still starts.
+
+To move it, set `SPECTIO_RUNS_ROOT`, `runs_root` in `~/.spectio/spectio.toml`, or `spectio init --runs-root`. Point it at a larger scratch or group file system that the compute nodes also see. A directory you choose must exist already, be yours, and not be writable by others.
+
+## Later
+
+Docker Compose, a Helm chart for Kubernetes, remote runners and signed images are planned for later versions ([roadmap](../roadmap/index.md)).
