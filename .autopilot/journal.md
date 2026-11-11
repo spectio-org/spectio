@@ -890,3 +890,17 @@ FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and 
   - Minors: the short run ID shown in the UI ("D80950") gives no match in search; focus drops to the page after "Mark all as read"; /profile sets no document.title; after Pin, focus lands on another run's cell; the one-run Delete sheet says "these runs".
   - No Delete was confirmed on login1: the peer's auto mode blocked it as irreversible. Untested.
 - **Next run:** these items go first (sort icons as a fix, the minors folded into their modules), then the list of the run-end entry above.
+
+## 2026-11-11 — 256 to 266, batch P3-B15 (#267), the 0.0.1 line closed in integration
+
+- Merged into autopilot/integration: #256 FU-P3-108c, #257 FU-P3-110c (boards), #258 FU-P3-116 (sort icons, retest g minors), #259 FU-P3-118, #260 FU-P3-102h (Blosc, LZ4, zstd without `unsafe-eval`), #261 FU-P3-117, #264 FU-P3-119, #263 FU-P3-110d (resources and extra config file on Launch and Run detail), #265 FU-P3-120, #266 FU-P3-102i (OME-Zarr flat view, link states), then #267 batch P3-B15.
+- Orchestrator fixes of defect minors, each with a test seen failing first: CR-P3FU116-01 and -03; CR-P3FU110D-01 (only the file's own 503 shows its banner) and -03 / SEC-P3FU110D-02 (no ETag is not "Changed"); CR-P3FU120-01 / SEC-P3FU120-01 (a reader thread that cannot start gives back its pool slot and the environments write lock, which stayed held until a restart).
+- Integration with every merge of the morning: `tsc` clean, vitest 58 files and 768 tests pass; pytest 1710 passed in the batch gate.
+- #259 and #265: the strict docs build failed on a review record linking `(README.md)`; the lean task script now tells the doc step to write `(../README.md)`.
+- #267: the PR-body tool turns an embedded image into a plain link (as for #210 and #229), so the figure is linked and the PR carries `no-figure`.
+- Batch P3-B15 (89, 110a, 113, 115b, 110b, 108c, 110c, 116, 118, 102h, 117, 119, 110d, 120) closes the M9 work of 0.0.1: simplifier −9/+10 in three commits, a figure, 7 shot pairs, two guides (run resources; search and notifications), doc-reviewer approve 13/14. 102i is not in the batch (merged after its base): its Progress section goes to the next batch. The batch was first launched with a mistyped base sha and stopped before any commit.
+- Held, not merged: #262 FU-P3-105a (attempt metrics, migration 0015), because 0.0.2 work waits for Thomas while integration ships 0.0.1; 105b to 105f paused.
+- Open for Thomas: the CI step of the order fixtures (DW-P3B15-06, `.github/workflows/`); UX-P3FU110C-07 naming; whether to merge 0.0.2 work; the versioning proposals (resolved commit on every run, newer-version detection on Load) asked in the session, not yet in the inbox.
+- Open minors: CR-P3FU119-01 and -02 (bounded re-reads after sacct), CR-P3FU110D-02, -04, SEC-P3FU110D-01, CR-P3FU102I-01, -02, SEC-P3FU102I-02, CR-P3FU120-02, CR-P3FU118-01; LaunchResources tests near the 5 s timeout under parallel load.
+- **Costs** (subagent tokens): 110d ~420k, 119 ~266k, 102i ~476k, 120 ~305k, B15 ~650k; the earlier tasks of this run are in their workflow journals.
+- **Next:** promotion to main, then login1 retest h (sort icons, short-ID search, profile title, Pin focus, one-run Delete wording, resources form and config file, Blosc/LZ4/zstd images, Environments "1 CPU").
