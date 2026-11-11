@@ -2235,7 +2235,7 @@
   background: var(--sp-surface-subtle);
 }
 ol.sp-steps > li + li::before {
-  content: "→";
+  content: "→" / "";
   position: absolute;
   left: -20px;
   top: 50%;

@@ -284,7 +284,8 @@ export function LaunchPage({
             : null;
 
   const targeting = single;
-  const moduleName = targeting && kind === "module" && REGISTRY_NAME.test(location.trim());
+  const oneModule = targeting && kind === "module";
+  const moduleName = oneModule && REGISTRY_NAME.test(location.trim());
   const extras = { engine, profile, env: chosen };
   const res = readResources(resources, extras);
   // with a Snakemake extra file, only the keys set: the file's other keys stay (api §5.7)
@@ -513,7 +514,10 @@ export function LaunchPage({
     if (!chosen && !envsFailed) found.push({ text: "Choose where it runs", to: "environment" });
     if (engine && !ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f))) {
       const other = engineName(engine === "nextflow" ? "snakemake" : "nextflow");
-      found.push({ text: `No ${ENGINE_FILES[engine].join(" or ")} in this directory: press ${other} or check the path`, to: "engine" });
+      const files = ENGINE_FILES[engine].join(" or ");
+      // in One step the engine follows the kind of step, so there is no engine button to press
+      if (targeting) found.push({ text: `No ${files} in this directory: check the path`, to: "location" });
+      else found.push({ text: `No ${files} in this directory: press ${other} or check the path`, to: "engine" });
     }
     for (const [to, wrong] of Object.entries(res.errors)) {
       found.push({ text: `Fix ${RESOURCE_LABELS[to as keyof typeof RESOURCE_LABELS]}: ${wrong.brief}`, to });
@@ -551,7 +555,7 @@ export function LaunchPage({
       return;
     }
     const params = buildParams(fields, values, rows, leaves);
-    const path = targeting && kind === "module" ? "" : configFile.trim(); // none for a module (api §5.10)
+    const path = oneModule ? "" : configFile.trim(); // none for a module (api §5.10)
     const target: TargetIn | null = !targeting
       ? null
       : module
@@ -843,7 +847,7 @@ export function LaunchPage({
                 {loading ? (repo ? "Fetching…" : "Loading…") : "Load"}
               </Button>
             </Group>
-            {targeting && kind === "module" && (
+            {oneModule && (
               <div className="launch-try" role="group" aria-labelledby="launch-try-modules">
                 <span id="launch-try-modules" className="launch-try-label">
                   Try:
@@ -1046,7 +1050,7 @@ export function LaunchPage({
               reveal={goTo?.startsWith("resources") ? "link" : Object.keys(errors).some((k) => k.startsWith("resources"))}
             />
             {/* a module run takes no extra config file: its roots are a pipeline's (api §5.10) */}
-            {!(targeting && kind === "module") && (
+            {!(oneModule) && (
               <ConfigFileRow
                 path={configFile}
                 onChange={(p) => {
@@ -1135,7 +1139,7 @@ export function LaunchPage({
               Summary
             </h2>
             <dl className="facts">
-              <dt>{targeting && kind === "module" ? "Module" : "Pipeline"}</dt>
+              <dt>{oneModule ? "Module" : "Pipeline"}</dt>
               <dd>
                 {loaded
                   ? [`${loaded.name}${loaded.version ? ` ${loaded.version}` : ""}${fromEntry ? `, from the catalog entry ${fromEntry.name}` : ""}`, profile && `profile ${profile}`]
@@ -1161,7 +1165,7 @@ export function LaunchPage({
               <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
               <dt>Resources</dt>
               <dd>{summaryLine(res.sent, extras)}</dd>
-              {!(targeting && kind === "module") && (
+              {!(oneModule) && (
                 <>
                   <dt>Extra config</dt>
                   <dd className="sp-mono">{configFile.trim() || "none"}</dd>

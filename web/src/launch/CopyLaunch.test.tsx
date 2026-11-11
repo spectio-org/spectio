@@ -170,3 +170,41 @@ test("a copy of a Snakemake file-target run opens as a Snakemake step, not a Nex
   const inspect = mock.mock.calls.find(([u]) => String(u).endsWith("/targets:inspect"));
   expect(JSON.parse(String(inspect?.[1]?.body))).toMatchObject({ engine: "snakemake" });
 });
+
+test("a copy of a module run sends no extra config file, even when the template had one (api §5.10)", async () => {
+  const mock = serve({
+    "/api/v1/version": { ...VERSION, features: { single_target: true } },
+    [`${URL_}:launch-template`]: {
+      ...TEMPLATE,
+      workflow: { location: "nf-core/fastqc", revision: null, engine: "nextflow" },
+      profiles: [],
+      params: { meta: { id: "a" }, reads: "/data/a.fq.gz" },
+      non_default: ["meta", "reads"],
+      code_loading: [],
+      config_file: "/g/lab/tweaks.config",
+      target: { kind: "module", name: "nf-core/fastqc", version: "0.0.0-6d1763b", source: "registry" },
+    },
+    [URL_]: { ...DETAIL, ...run({ state: "succeeded", name: "fastqc" }) },
+    "/api/v1/targets:inspect": {
+      kind: "module",
+      source: "registry",
+      name: "nf-core/fastqc",
+      version: "0.0.0-6d1763b",
+      description: "Run FastQC",
+      inputs: [
+        { name: "meta", type: "map", description: "sample" },
+        { name: "reads", type: "file", description: "reads" },
+      ],
+    },
+    "/api/v1/runs?": { items: [], next: null },
+    "/api/v1/runs": (_url: URL, init?: RequestInit) => (init?.method === "POST" ? json(201, { id: "run_new", state: "queued" }) : json(200, { items: [], next: null })),
+  });
+  app(`/launch?from=${ID}`);
+  await screen.findByText("Runs module nf-core/fastqc 0.0.0-6d1763b, from the registry");
+  await userEvent.click(screen.getAllByRole("button", { name: "Launch module" }).at(-1)!);
+  await waitFor(() => expect(mock.mock.calls.some(([u, i]) => String(u).endsWith("/api/v1/runs") && i?.method === "POST")).toBe(true));
+  const [, init] = mock.mock.calls.find(([u, i]) => String(u).endsWith("/api/v1/runs") && i?.method === "POST")!;
+  const sent = JSON.parse(String(init?.body));
+  expect(sent).toMatchObject({ target: { kind: "module", version: "0.0.0-6d1763b" } });
+  expect(sent).not.toHaveProperty("config_file");
+});

@@ -214,8 +214,6 @@ function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
   );
 }
 
-/** The rules a target run does not need, folded into one row that opens to their names
- * (ui-spec §4.15). */
 /** A Snakemake target run as the chain Launch showed (ui-spec §4.15): the rules it runs in pipeline
  * order, each with its jobs done and its state's tone, the target last; then the rules it does not
  * need, dimmed. The process table below keeps the counts. */
@@ -274,7 +272,7 @@ function StagesOrProcesses({
   const engine = engineName(run.workflow.engine);
   const open = run.summary.open_checkpoints ?? [];
   const updates = run.summary.dag_updates ?? 0;
-  // a target run lists what it runs; the rules it does not need fold into one row (ui-spec §4.15)
+  // a target run lists what it runs; the rules it does not need are listed apart (ui-spec §4.15)
   const outside = run.target ? processes.filter((p) => p.status === "not_needed").map((p) => p.process) : [];
   const listed = outside.length ? processes.filter((p) => p.status !== "not_needed") : processes;
   const note = (

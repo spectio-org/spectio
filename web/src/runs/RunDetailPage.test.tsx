@@ -901,6 +901,17 @@ test("#161: a module run names its module and version, and says it publishes no 
   ).toBeInTheDocument();
 });
 
+test("#161: a local module run shows its directory as Module directory, with a Copy", async () => {
+  const local = { ...MODULE_TARGET, name: "spectio/hello", version: "1.0.0", source: "local", path: "/g/lab/modules/hello" };
+  detail({ target: local }, { [URL_]: { ...DETAIL, ...run({ target: local }), stages_note: "This run targets one module" } });
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).getByRole("group", { name: "Target: module spectio/hello 1.0.0 · local" })).toBeInTheDocument();
+  expect(within(header).getByText("Module directory")).toBeInTheDocument();
+  expect(within(header).queryByText("Pipeline directory")).toBeNull();
+  expect(within(header).getByRole("button", { name: /Copy the module directory/ })).toBeInTheDocument();
+});
+
 test("UX-P3FU115B-04: Delete… on Run detail returns to Runs with what the delete said, focused there", async () => {
   detail(
     { state: "succeeded", ended_at: "2026-10-31T09:00:00+00:00" },
