@@ -75,8 +75,8 @@ class Unreadable(ValueError):
 
 
 class TooLarge(Unreadable):
-    """A file past a size or token bound: an optional file such as `config/config.yaml` is
-    then left out rather than refused (CR-161S6-01, -02)."""
+    """A file past a size, token or depth bound: an optional file such as `config/config.yaml`
+    is then left out rather than refused (CR-161S6-01, -02, CR-161S7-01)."""
 
 
 SchemaSource = Literal["nextflow_schema.json", "config.schema.yaml", "inferred", "none"]
@@ -488,8 +488,8 @@ def schema_of(root: Path) -> tuple[dict[str, Any] | None, SchemaSource]:
         text = _read(root, *rel.split("/"), cap=MAX_YAML)
         if text is not None:
             return _object(load_yaml(text), rel), "config.schema.yaml"
-    # past MAX_YAML or MAX_TOKENS no form is inferred, as with no config: it only gives the
-    # form's defaults, so the pipeline still launches (CR-161S5-01, CR-161S6-01, -02)
+    # past MAX_YAML, MAX_TOKENS or MAX_SCHEMA_DEPTH no form is inferred, as with no config: it
+    # only gives the form's defaults, so the pipeline still launches (CR-161S6-01, CR-161S7-01)
     try:
         text = _read(root, "config", "config.yaml", cap=MAX_YAML)
         config = None if text is None else _object(load_yaml(text), "config/config.yaml")
@@ -507,7 +507,7 @@ def _object(value: Any, name: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise Unreadable(f"{name} is not a mapping")
     if depth(value) > MAX_SCHEMA_DEPTH:
-        raise Unreadable(f"{name} is nested deeper than {MAX_SCHEMA_DEPTH} levels")
+        raise TooLarge(f"{name} is nested deeper than {MAX_SCHEMA_DEPTH} levels")
     return value
 
 

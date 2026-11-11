@@ -133,13 +133,23 @@ Both asked for changes: code-reviewer 1 major, 5 minors; security-reviewer 2 maj
 
 | Id | Severity | Finding | Status |
 |---|---|---|---|
-| CR-161S6-01 / SEC-161S6-01 | major | a `config.yaml` over 1 MiB was still refused: `_read` capped it at 1 MiB before the 256 KiB test | fixed in `de66920`: `TooLarge` (a subclass of `Unreadable`) from `_read` at 256 KiB gives `schema_source: none`; the size is checked before decoding, so a large non-UTF-8 config gives `none` too (tested at 290 KiB and 1.2 MiB, and a launch gives `201`) |
+| CR-161S6-01 / SEC-161S6-01 | major | a `config.yaml` over 1 MiB was still refused: `_read` capped it at 1 MiB before the 256 KiB test | fixed in `de66920`: `TooLarge` (a subclass of `Unreadable`) from `_read` at 256 KiB gives `schema_source: none`; the size is checked before decoding, so a large non-UTF-8 config gives `none` too (tested at 290 KiB, 1.2 MiB and 300 KiB of non-UTF-8 bytes, each with a launch giving `201`, since CR-161S7-02) |
 | SEC-161S6-02 | major (before #161) | a schema or config nested 250 to 990 levels passed parsing and failed when the response was encoded, a 500 | fixed in `0fa93d8`: `_object` refuses past 64 levels (tested for `nextflow_schema.json`, `config.schema.yaml` and `config.yaml`; each fails without the fix) |
 | CR-161S6-02 | minor | the token budget could refuse a dense `config.yaml` under 256 KiB | fixed in `de66920`: the budget raises `TooLarge`, so the config gives `none` (tested) |
 | CR-161S6-03 | minor | the catch-all said "not YAML" for JSON | fixed in `de66920`: "not JSON or YAML this server reads" |
 | CR-161S6-04 | minor | the surrogate path of `module view` had no test | fixed in `de66920`: the same view gives `200`, with a lone surrogate `502` |
 | CR-161S6-05 | minor | the large-config test never launched | fixed in `de66920`: `POST /runs` gives `201` |
 | CR-161S6-06 | minor (simplify) | `_module_files` repeated `_read`'s cap | fixed in `de66920`: `_read(…, cap=MAX_MODULE_FILE)` |
-| SEC-161S6-03 | minor (before #161, outside the range) | the ingest YAML readers of `stages/freeze.py` take no bound, and a bad tag's traceback reaches the log | not changed here: req. 21 now says it covers the request paths and names this as open; left as a follow-up named in the PR body (move `_Loader` to a shared module and use it in `freeze.py`) |
+| SEC-161S6-03 | minor (before #161, outside the range) | the ingest YAML readers of `stages/freeze.py` take no bound, and a bad tag's traceback reaches the log | not changed here: req. 21 now says it covers the request paths and names this as open; left as follow-up **FU-161-01**, named in the PR body: move `_Loader` to a shared module and use it in `freeze.py`, catch its refusals there, and log the exception type only |
+
+### Round 7 (`1766e6c..0fa93d8`, fixes in the next commit)
+
+Both approved: code-reviewer with 3 minors, all fixed below; security-reviewer with none (0/0/0): `TooLarge` hides no refusal it should not, and no path on the range answers 500 or quotes a pipeline file (about 25 probes).
+
+| Id | Severity | Finding | Status |
+|---|---|---|---|
+| CR-161S7-01 | minor | the depth refusal also refused a `config.yaml` nested 65 to 250 levels, so its pipeline no longer launched | fixed: the depth bound raises `TooLarge`, so such a config infers no form and launches; a schema that deep is still a `422` (tested) |
+| CR-161S7-02 | minor | the record claimed launches at 290 KiB and 1.2 MiB and a non-UTF-8 case that the test did not have | fixed: each config case launches (`201`), and 300 KiB of non-UTF-8 bytes is a case |
+| CR-161S7-03 | minor | the `freeze.py` follow-up had no id | FU-161-01, in req. 21, this record and the PR body |
 
 Seen by the worker and not changed here: a resumed registry module run is named after `parent.workflow_name`; and `GET /runs/{id}` shows `nextflow run` as the command of a module run.

@@ -829,22 +829,25 @@ def test_inspect_refuses_a_lone_surrogate_in_a_json_schema(
 
 
 def test_large_config_gives_no_form_but_launches(authed_client: TestClient, tmp_path: Path) -> None:
-    """CR-161S5-01, CR-161S6-01, -02: a config.yaml over 256 KiB, over 1 MiB, or past the token
-    budget infers no form, as with no config, and the pipeline launches; a schema that large
-    is still refused."""
+    """CR-161S5-01, CR-161S6-01, -02, CR-161S7-01, -02: a config.yaml over 256 KiB, over 1 MiB,
+    not UTF-8 past 256 KiB, past the token budget or nested past 64 levels infers no form, as
+    with no config, and the pipeline launches; a schema that large is still refused."""
     root = tmp_path / "pipe"
     (root / "config").mkdir(parents=True)
     (root / "Snakefile").write_text("rule all:\n    input: []\n")
     config = root / "config" / "config.yaml"
-    for text in (
-        "".join(f"k{i}: {i}\n" for i in range(30000)),  # about 290 KiB
-        "# padding\n" * 120000,  # about 1.2 MiB
-        "samples: [" + "1," * 100000 + "1]\n",  # 200 KiB, past the token budget
+    deep = "".join("  " * i + f"k{i}:\n" for i in range(100)) + "  " * 100 + "1\n"
+    for raw in (
+        "".join(f"k{i}: {i}\n" for i in range(30000)).encode(),  # about 290 KiB
+        b"# padding\n" * 120000,  # about 1.2 MiB
+        b"\xff" * (300 * 1024),  # not UTF-8, checked for size first
+        ("samples: [" + "1," * 100000 + "1]\n").encode(),  # 200 KiB, past the token budget
+        deep.encode(),  # 100 levels
     ):
-        config.write_text(text)
+        config.write_bytes(raw)
         body = authed_client.get(INSPECT, params={"location": str(root)}).json()
         assert body["schema_source"] == "none" and body["engine"] == "snakemake"
-    assert launch(authed_client, str(root), "snakemake").status_code == 201
+        assert launch(authed_client, str(root), "snakemake").status_code == 201
     (root / "config.schema.yaml").write_text("# padding\n" * 30000)
     response = authed_client.get(INSPECT, params={"location": str(root)})
     assert response.status_code == 422
@@ -865,27 +868,19 @@ def test_token_budget_bounds_deep_bursts(authed_client: TestClient, tmp_path: Pa
 
 
 @pytest.mark.parametrize(
-    ("rel", "text"),
-    [
-        ("nextflow_schema.json", '{"a":' * 300 + "1" + "}" * 300),
-        (
-            "config.schema.yaml",
-            "".join("  " * i + f"k{i}:\n" for i in range(300)) + "  " * 300 + "1\n",
-        ),
-        (
-            "config/config.yaml",
-            "".join("  " * i + f"k{i}:\n" for i in range(300)) + "  " * 300 + "1\n",
-        ),
-    ],
+    "rel", ["nextflow_schema.json", "config.schema.yaml", "workflow/schemas/config.schema.yaml"]
 )
-def test_deep_schema_is_a_422(
-    authed_client: TestClient, tmp_path: Path, rel: str, text: str
-) -> None:
-    """SEC-161S6-02: a schema or config nested past 64 levels is refused; the response
-    encoder would fail on it, a 500."""
+def test_deep_schema_is_a_422(authed_client: TestClient, tmp_path: Path, rel: str) -> None:
+    """SEC-161S6-02: a schema nested past 64 levels is refused; the response encoder would
+    fail on it, a 500. A config that deep infers no form (above)."""
     root = tmp_path / "pipe"
-    (root / "config").mkdir(parents=True)
-    (root / ("main.nf" if rel.endswith(".json") else "Snakefile")).write_text("\n")
+    (root / "workflow" / "schemas").mkdir(parents=True)
+    if rel.endswith(".json"):
+        (root / "main.nf").write_text("\n")
+        text = '{"a":' * 300 + "1" + "}" * 300
+    else:
+        (root / "Snakefile").write_text("\n")
+        text = "".join("  " * i + f"k{i}:\n" for i in range(300)) + "  " * 300 + "1\n"
     (root / rel).write_text(text)
     response = authed_client.get(INSPECT, params={"location": str(root)})
     assert response.status_code == 422, response.text
