@@ -53,7 +53,7 @@ Identity = tuple[int, int, int, int, str]  # st_dev, st_ino, st_size, st_mtime_n
 E = TypeVar("E", bound=BaseModel)
 _AT = re.compile(r" ?\((at line \d+, column \d+|at end of document)\)\Z")  # tomllib's place
 _REFUSED = (errno.EACCES, errno.EPERM, errno.ELOOP, errno.ENOTDIR)  # else an open is unreachable
-_WRITE = threading.Lock()  # one write at a time in this process
+WRITE = threading.Lock()  # one write at a time in this process
 
 
 @dataclass(frozen=True)
@@ -321,12 +321,14 @@ def update_kind(
     path: Path,
     builtin_names: Collection[str],
     change: Callable[[File[E]], tuple[str | None, list[E]]],
+    locked: bool = False,
 ) -> File[E]:
     """Apply `change` (the current file → its new default and entries) and write the file
     whole. Raises Unusable, Changed, Stalled when an earlier write still holds the lock or the
     file is `unreachable`, OSError when the write fails, and whatever `change` raises (nothing
-    is written then). Returns the file as written."""
-    if not _WRITE.acquire(timeout=LOCK_TIMEOUT_S):
+    is written then). Returns the file as written. `locked`: the caller holds `WRITE` and
+    releases it."""
+    if not locked and not WRITE.acquire(timeout=LOCK_TIMEOUT_S):
         raise Stalled(f"another write of {kind.file} has not ended")
     try:
         try:
@@ -360,5 +362,6 @@ def update_kind(
         finally:
             os.close(dir_fd)
     finally:
-        _WRITE.release()
+        if not locked:
+            WRITE.release()
     return written

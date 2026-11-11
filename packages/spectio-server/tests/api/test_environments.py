@@ -6,6 +6,7 @@ reading of the payload's snapshot (SEC-P3FU86A-R3-02)."""
 
 import errno
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -634,3 +635,30 @@ def test_req18_snapshot_launch_template_file_unusable(
         "The environment mylab of this run cannot be read: the environments file is refused;"
         " local is chosen."
     )
+
+
+def test_req13_write_lock_waited_for_outside_the_file_pool(
+    authed_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3FU86BCD-02: a write waits for the one before it in its request thread, never in a
+    file-pool worker (dev-env §15.3 req. 13): while the lock is held, the write answers `503`
+    without entering the pool, and the lock is free again after the next write."""
+    entered: list[str] = []
+    update_kind = envfile.update_kind
+
+    def spy(*args: Any, **kwargs: Any) -> Any:
+        entered.append(threading.current_thread().name)
+        return update_kind(*args, **kwargs)
+
+    monkeypatch.setattr(envfile, "update_kind", spy)
+    monkeypatch.setattr(envfile, "LOCK_TIMEOUT_S", 0.2)
+    assert envfile.WRITE.acquire(blocking=False)
+    try:
+        problem(authed_client.post(ENVS, json=MYLAB), 503, "runner-offline")
+    finally:
+        envfile.WRITE.release()
+    assert entered == []
+    create(authed_client)
+    assert entered and entered[0].startswith("spectio-files-")
+    assert envfile.WRITE.acquire(blocking=False)
+    envfile.WRITE.release()
