@@ -1,6 +1,6 @@
 // Node positions for each layout of the workflow graph (issue #160). Pure: a View in, boxes out.
 import dagre from "@dagrejs/dagre";
-import { ranks, topoOrder, type View, type ViewNode } from "./model";
+import { topoOrder, type View, type ViewNode } from "./model";
 import type { GraphLayout } from "./types";
 
 export interface Box {
@@ -13,6 +13,9 @@ export interface Box {
 export interface Lane {
   id: string;
   label: string;
+  /** Left edge and width; absent: the band spans the whole map. */
+  x?: number;
+  w?: number;
   y: number;
   h: number;
 }
@@ -29,8 +32,8 @@ export const NODE_H = 52;
 export const JOB_W = 150;
 export const JOB_H = 44;
 const GAP = 12;
-const COL = NODE_W + 56;
-const WRAP = 6; // Compact: nodes per row of a lane
+const WRAP = 6; // Compact: the most nodes in one row of a lane
+const TITLE = 32; // room above a group area for its name (and the marks riding on its steps)
 
 /** A node's size: a job (Jobs level) is smaller than a step. */
 export function sizeOf(n: ViewNode): { w: number; h: number } {
@@ -63,60 +66,71 @@ function laneOrder(view: View): { id: string; label: string }[] {
   return [...seen].map(([id, label]) => ({ id, label }));
 }
 
-/** One band per lane (subworkflow or stage), x by rank: the metro map. Nodes of one lane and
- * one rank stack inside the band. */
+/** Metro: Layered left-right, with each subworkflow or stage drawn as an area around its steps
+ * (dagre compound nodes), so a group's steps stay together and only the space they need is used. */
 function metro(view: View): Placed {
-  const rank = ranks(view);
-  const lanes = laneOrder(view);
+  const g = new dagre.graphlib.Graph({ compound: true });
+  g.setGraph({ rankdir: "LR", nodesep: 22, ranksep: 64, marginx: 16, marginy: 16 + TITLE });
+  g.setDefaultEdgeLabel(() => ({}));
+  const lanes = laneOrder(view).filter((l) => l.id !== "");
+  for (const lane of lanes) g.setNode(`lane:${lane.id}`, { label: lane.label });
+  for (const n of view.nodes) {
+    const { w, h } = sizeOf(n);
+    // a step leaves room above it for its area's title
+    g.setNode(n.id, { width: w, height: h + (n.lane ? TITLE : 0) });
+    if (n.lane) g.setParent(n.id, `lane:${n.lane}`);
+  }
+  for (const e of view.edges) if (g.hasNode(e.source) && g.hasNode(e.target)) g.setEdge(e.source, e.target);
+  dagre.layout(g);
   const boxes = new Map<string, Box>();
+  for (const n of view.nodes) {
+    const p = g.node(n.id) as { x: number; y: number; width: number; height: number };
+    const { w, h } = sizeOf(n);
+    boxes.set(n.id, { x: p.x - w / 2, y: p.y - p.height / 2 + (n.lane ? TITLE : 0), w, h });
+  }
   const out: Lane[] = [];
-  let y = 0;
   for (const lane of lanes) {
-    const members = view.nodes.filter((n) => (n.lane ?? "") === lane.id);
-    const stack = new Map<number, number>();
-    let height = 0;
-    for (const n of members) {
-      const r = rank.get(n.id) ?? 0;
-      const { w, h } = sizeOf(n);
-      const off = stack.get(r) ?? 0;
-      boxes.set(n.id, { x: 120 + r * COL, y: y + 28 + off, w, h });
-      stack.set(r, off + h + GAP);
-      height = Math.max(height, off + h);
-    }
-    out.push({ id: lane.id, label: lane.label, y, h: height + 44 });
-    y += height + 60;
+    const kids = view.nodes.filter((n) => n.lane === lane.id).map((n) => boxes.get(n.id)!);
+    if (kids.length === 0) continue;
+    const x = Math.min(...kids.map((b) => b.x)) - 12;
+    const y = Math.min(...kids.map((b) => b.y)) - TITLE - 6;
+    out.push({ id: lane.id, label: lane.label, x, y, w: Math.max(...kids.map((b) => b.x + b.w)) + 12 - x, h: Math.max(...kids.map((b) => b.y + b.h)) + 12 - y });
   }
   return { boxes, lanes: out };
 }
 
-/** One band per lane, nodes side by side in topological order, wrapped every WRAP nodes. */
+/** Compact: each lane is a near-square grid in topological order, and the lanes are packed in
+ * rows (shelves) about as wide as they are tall, rather than one long band each. */
 function compact(view: View): Placed {
   const order = topoOrder(view);
   const at = new Map(order.map((id, i) => [id, i]));
-  const lanes = laneOrder(view);
+  const blocks = laneOrder(view).map((lane) => {
+    const members = view.nodes.filter((n) => (n.lane ?? "") === lane.id).sort((a, b) => at.get(a.id)! - at.get(b.id)!);
+    const cols = Math.max(1, Math.min(WRAP, Math.ceil(Math.sqrt(members.length * 1.6))));
+    const cell = members.some((n) => n.kind !== "job") ? { w: NODE_W, h: NODE_H } : { w: JOB_W, h: JOB_H };
+    const rows = Math.ceil(members.length / cols);
+    return { lane, members, cols, cell, w: cols * (cell.w + GAP * 2) - GAP * 2 + 24, h: rows * (cell.h + GAP) - GAP + TITLE + 18 };
+  });
+  const area = blocks.reduce((a, b) => a + b.w * b.h, 0);
+  const width = Math.max(Math.max(0, ...blocks.map((b) => b.w)), Math.sqrt(area) * 2);
   const boxes = new Map<string, Box>();
   const out: Lane[] = [];
+  let x = 0;
   let y = 0;
-  for (const lane of lanes) {
-    const members = view.nodes.filter((n) => (n.lane ?? "") === lane.id).sort((a, b) => at.get(a.id)! - at.get(b.id)!);
-    let x = 120;
-    let row = 0;
-    let rowH = 0;
-    let height = 0;
-    members.forEach((n, i) => {
-      if (i > 0 && i % WRAP === 0) {
-        x = 120;
-        row += rowH + GAP;
-        rowH = 0;
-      }
+  let shelf = 0;
+  for (const b of blocks) {
+    if (x > 0 && x + b.w > width) {
+      x = 0;
+      y += shelf + 24;
+      shelf = 0;
+    }
+    b.members.forEach((n, i) => {
       const { w, h } = sizeOf(n);
-      boxes.set(n.id, { x, y: y + 28 + row, w, h });
-      x += w + GAP * 2;
-      rowH = Math.max(rowH, h);
-      height = Math.max(height, row + h);
+      boxes.set(n.id, { x: x + 12 + (i % b.cols) * (b.cell.w + GAP * 2), y: y + TITLE + Math.floor(i / b.cols) * (b.cell.h + GAP), w, h });
     });
-    out.push({ id: lane.id, label: lane.label, y, h: height + 44 });
-    y += height + 60;
+    out.push({ id: b.lane.id, label: b.lane.label, x, w: b.w, y, h: b.h });
+    x += b.w + 24;
+    shelf = Math.max(shelf, b.h);
   }
   return { boxes, lanes: out };
 }

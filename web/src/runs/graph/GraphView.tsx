@@ -7,6 +7,7 @@ import {
   Background,
   Controls,
   Handle,
+  MarkerType,
   MiniMap,
   type Edge,
   type Node,
@@ -32,11 +33,14 @@ import {
   type View,
   type ViewEdge,
   type ViewNode,
+  autoFold,
+  bandOf,
   collapse,
   criticalPath,
   durationOf,
   heat,
   overlayValue,
+  restrict,
   search,
   statusAt,
   toggled,
@@ -80,8 +84,8 @@ export const GICONS = {
   conditional: "M6 3v12 M18 9a3 3 0 1 0 0-.01 M6 21a3 3 0 1 0 0-.01 M18 9c0 6-12 3-12 9",
   retried: ICONS.reload,
   cached: "M3 5h18v4H3z M5 9v11h14V9 M10 13h4",
-  fold: "M8 3v5H3 M16 3v5h5 M8 21v-5H3 M16 21v-5h5",
-  unfold: "M3 8V3h5 M21 8V3h-5 M3 16v5h5 M21 16v5h-5",
+  fold: "M6 12h12",
+  unfold: "M12 6v12 M6 12h12",
   up: "M12 19V5 M5 12l7-7 7 7",
   down: "M12 5v14 M19 12l-7 7-7-7",
   channel: "M3 9h18v6H3z M8 9v6 M13 9v6 M18 9v6",
@@ -89,6 +93,23 @@ export const GICONS = {
   code: ICONS.braces,
   close: ICONS.cross,
   link: "M5 12h14 M13 6l6 6-6 6",
+  peek: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  hide: "M3 3l18 18 M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9 M6.6 6.6C3.9 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 0 0 5.4-1.6 M9.9 9.9a3 3 0 0 0 4.2 4.2",
+  focus: "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  fullscreen: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5",
+  compact: "M4 7h16 M4 12h10 M4 17h6 M17 14l3 3-3 3",
+  legend: ICONS.info,
+  copy: ICONS.copy,
+  image: ICONS.image,
+  table: ICONS.table,
+  reads: ICONS.dna,
+  binary: "M6 3h9l4 4v14H6z M14 3v5h5 M9 12v4 M12.5 12h1.5v4 M9 18h.01",
+  cpu: "M7 7h10v10H7z M10 10h4v4h-4z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4",
+  memory: "M3 8h18v8H3z M7 8v8 M11 8v8 M15 8v8 M6 16v3 M18 16v3",
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2",
+  params: ICONS.sliders,
+  outputs: ICONS.download,
+  jobs: ICONS.list,
 } as const;
 
 export const kindIcon = (kind: string): string => GICONS[kind as keyof typeof GICONS] ?? GICONS.process;
@@ -102,11 +123,20 @@ export const FLAG_MARKS: Record<Flag, { mark: string; words: string }> = {
   cached: { mark: "cached", words: "some jobs reused from an earlier run" },
 };
 
-/** A mark as a chip: its icon and its short word. */
-export function FlagChip({ flag }: { flag: Flag }) {
+/** A mark: on the map a small round badge (its words are in the node's name), elsewhere a
+ * tinted chip with its word. */
+export function FlagChip({ flag, badge = false }: { flag: Flag; badge?: boolean }) {
+  if (badge)
+    return (
+      <span className="sp-gbadge" data-flag={flag}>
+        <Icon path={GICONS[flag]} size={10} stroke={2.2} />
+      </span>
+    );
   return (
     <span className="sp-gflag" data-flag={flag}>
-      <Icon path={GICONS[flag]} size={11} stroke={2} />
+      <span className="sp-gflag-dot">
+        <Icon path={GICONS[flag]} size={10} stroke={2.2} />
+      </span>
       {FLAG_MARKS[flag].mark}
     </span>
   );
@@ -203,7 +233,10 @@ interface NodeData extends Record<string, unknown> {
   dim: boolean;
   crit: boolean;
   matched: boolean;
-  selected: boolean;
+  /** The open step, or a step linked to the open step or link. */
+  ring: "selected" | "near" | null;
+  /** CPU and Memory: how well the request fits; Duration: the share of the run. */
+  bar: { pct: number; band: string | null } | null;
   badge: string | null;
   horizontal: boolean;
   onOpen: (n: ViewNode) => void;
@@ -238,8 +271,9 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
       data-dim={data.dim || undefined}
       data-crit={data.crit || undefined}
       data-match={data.matched || undefined}
-      data-selected={data.selected || undefined}
+      data-ring={data.ring ?? undefined}
       data-heat={data.heat !== null || undefined}
+      data-band={data.bar?.band ?? undefined}
       style={style}
       onDoubleClick={node.group ? () => data.onToggle(node.group!) : undefined}
       onContextMenu={(e) => {
@@ -248,28 +282,29 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
       }}
     >
       <Handle type="target" position={horizontal ? Position.Left : Position.Top} isConnectable={false} />
-      <button
-        type="button"
-        className="sp-gnode-btn"
-        data-gid={node.id}
-        aria-label={data.aria}
-        onClick={() => data.onOpen(node)}
-      >
+      <button type="button" className="sp-gnode-btn" data-gid={node.id} aria-label={data.aria} onClick={() => data.onOpen(node)}>
         {node.kind === "job" && node.step && <span className="sp-gnode-step">{node.step}</span>}
         <span className="sp-gnode-name">
-          <Icon path={kindIcon(node.kind)} size={13} stroke={1.8} />
+          <span className="sp-gnode-kind">
+            <Icon path={kindIcon(node.kind)} size={12} stroke={1.9} />
+          </span>
           {data.label}
         </span>
         <span className="sp-gnode-meta">{data.meta}</span>
-        {node.flags && node.flags.length > 0 && (
-          <span className="sp-gflags" aria-hidden="true">
-            {node.flags.map((f) => (
-              <FlagChip key={f} flag={f} />
-            ))}
+        {data.bar && (
+          <span className="sp-gnode-bar" aria-hidden="true">
+            <span style={{ width: `${Math.round(Math.min(1, data.bar.pct) * 100)}%` }} />
           </span>
         )}
-        {data.badge && <span className="sp-gnode-badge">{data.badge}</span>}
       </button>
+      {node.flags && node.flags.length > 0 && (
+        <span className="sp-gbadges" aria-hidden="true">
+          {node.flags.map((f) => (
+            <FlagChip key={f} flag={f} badge />
+          ))}
+        </span>
+      )}
+      {data.badge && <span className="sp-gnode-badge">{data.badge}</span>}
       {node.group && (
         <button
           type="button"
@@ -279,7 +314,7 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
           onClick={() => data.onToggle(node.group!)}
           aria-label={folded ? `Unfold ${data.groupName}: show its ${node.members.length} steps` : `Fold ${data.groupName} into one box`}
         >
-          <Icon path={folded ? GICONS.unfold : GICONS.fold} size={12} stroke={2} />
+          <Icon path={folded ? GICONS.unfold : GICONS.fold} size={12} stroke={2.2} />
           {folded && <span>{node.members.length}</span>}
         </button>
       )}
@@ -288,10 +323,13 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
   );
 }
 
-function LaneBox({ data }: NodeProps<Node<{ label: string }>>) {
+function LaneBox({ data }: NodeProps<Node<{ label: string; area: boolean }>>) {
   return (
-    <div className="sp-glane" aria-hidden="true">
-      <span>{data.label}</span>
+    <div className="sp-glane" data-area={data.area || undefined} aria-hidden="true">
+      <span>
+        <Icon path={GICONS.subworkflow} size={12} stroke={1.9} />
+        {data.label}
+      </span>
     </div>
   );
 }
@@ -329,8 +367,14 @@ interface Shown {
   heat: Map<string, number>;
 }
 
+/** The view the map, the list and the details panel show: the level, the folds, then the
+ * focused group and the hidden steps. */
+export function viewOf(doc: GraphDocument, settings: GraphSettings, jobs?: Record<string, Task[]>): View {
+  return restrict(doc, collapse(doc, settings.level, jobs, settings.fold), settings.focus, settings.hide);
+}
+
 function useShown(doc: GraphDocument, settings: GraphSettings, jobs: Record<string, Task[]> | undefined, decor: Decor, runtime: boolean): Shown {
-  const view = useMemo(() => collapse(doc, settings.level, jobs, settings.fold), [doc, settings.level, jobs, settings.fold]);
+  const view = useMemo(() => viewOf(doc, settings, jobs), [doc, settings.level, jobs, settings.fold, settings.focus, settings.hide]); // eslint-disable-line react-hooks/exhaustive-deps
   const matches = useMemo(() => search(doc, view, settings.q), [doc, view, settings.q]);
   const overlay = runtime ? settings.overlay : "state";
   const crit = useMemo(() => (overlay === "critical" ? criticalPath(view) : null), [view, overlay]);
@@ -366,8 +410,25 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
     const nodes: Node[] = [];
     const width = Math.max(0, ...[...placed.boxes.values()].map((b) => b.x + b.w)) + 40;
     for (const lane of placed.lanes) {
-      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: 0, y: lane.y }, data: { label: lane.label }, width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1 });
+      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: lane.x ?? 0, y: lane.y }, data: { label: lane.label, area: lane.x !== undefined }, width: lane.w ?? width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1 });
     }
+    // what the open step or link lights up: itself, its links and the steps at their other end
+    const lit = new Set<string>();
+    const litEdges = new Set<string>();
+    const openEdge = decor.edge ? view.edges.find((e) => e.id === decor.edge) : undefined;
+    if (openEdge) {
+      lit.add(openEdge.source).add(openEdge.target);
+      litEdges.add(openEdge.id);
+    } else if (decor.selected) {
+      lit.add(decor.selected);
+      for (const e of view.edges)
+        if (e.source === decor.selected || e.target === decor.selected) {
+          lit.add(e.source).add(e.target);
+          litEdges.add(e.id);
+        }
+    }
+    const spotlight = lit.size > 0 && !decor.lineage && !searching;
+    const longest = Math.max(0, ...view.nodes.map((n) => durationOf(n)));
     const make = (n: ViewNode): Node<NodeData> => {
       const box = placed.boxes.get(n.id)!;
       const s = status.get(n.id) ?? null;
@@ -380,9 +441,13 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
       if (matched && searching) extra.push("matches the search");
       if (inCrit) extra.push("on the critical path");
       if (badge) extra.push(badge);
-      const h = heated.get(n.id);
+      const v = overlayValue(n, settings.overlay);
+      const bar = barOf(settings.overlay, v, longest);
+      const semantic = settings.overlay === "cpu" || settings.overlay === "memory";
+      const h = semantic ? undefined : heated.get(n.id);
       const value = overlayText(n, settings.overlay);
       const metric = value ? ` · ${value}` : "";
+      const ring = decor.selected === n.id || (openEdge && lit.has(n.id)) ? "selected" : spotlight && lit.has(n.id) ? "near" : null;
       return {
         id: n.id,
         type: "sp",
@@ -398,6 +463,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
         // Handles given rather than measured: React Flow drops the measured ones whenever a node
         // object changes, and at the Jobs level they were not measured again, so no edge was drawn
         handles: handlesOf(box.w, box.h, horizontal),
+        zIndex: ring ? 2 : 0,
         data: {
           node: n,
           status: s,
@@ -406,10 +472,11 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
           aria: ariaOf(n, s, extra),
           tone: n.kind === "gate" && !s ? "review" : statusTone(s),
           heat: h ?? null,
-          dim: (searching && !matched) || lineageOut,
+          dim: (searching && !matched) || lineageOut || (spotlight && !lit.has(n.id)),
           crit: inCrit,
           matched: matched && searching,
-          selected: decor.selected === n.id,
+          ring,
+          bar,
           badge,
           horizontal,
           onOpen,
@@ -420,12 +487,14 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
       };
     };
     for (const n of view.nodes) nodes.push(make(n));
+    const word = engine === "snakemake" ? "files" : "channel";
     const edges: Edge[] = view.edges.map((e) => {
       const onCrit = crit?.edges.has(e.id) ?? false;
-      const dim = (searching && !(matches.has(e.source) && matches.has(e.target))) || (decor.lineage ? !(decor.lineage.has(e.source) && decor.lineage.has(e.target)) : false);
-      const near = decor.selected === e.source || decor.selected === e.target || decor.edge === e.id;
+      const near = litEdges.has(e.id);
+      const dim = (searching && !(matches.has(e.source) && matches.has(e.target))) || (decor.lineage ? !(decor.lineage.has(e.source) && decor.lineage.has(e.target)) : false) || (spotlight && !near);
+      const cond = e.conditions.length > 0;
       return {
-        label: near ? (engine === "snakemake" ? "files" : "channel") : undefined,
+        label: near ? (cond ? `${word} · if` : word) : cond ? "if" : undefined,
         labelBgPadding: [4, 2] as [number, number],
         labelBgBorderRadius: 4,
         id: e.id,
@@ -433,8 +502,10 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
         target: e.target,
         type: layout === "metro" || layout === "compact" ? "smoothstep" : "default",
         focusable: false,
-        className: [onCrit && "sp-gedge-crit", dim && "sp-gedge-dim", near && "sp-gedge-near"].filter(Boolean).join(" ") || undefined,
-        animated: status.get(e.target) === "running" && !dim,
+        className: [onCrit && "sp-gedge-crit", dim && "sp-gedge-dim", near && "sp-gedge-near", cond && "sp-gedge-if"].filter(Boolean).join(" ") || undefined,
+        markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: near ? "var(--sp-accent)" : onCrit ? "var(--sp-state-review)" : "var(--sp-text-faint)" },
+        animated: !near && status.get(e.target) === "running" && !dim,
+        zIndex: near ? 1 : 0,
         interactionWidth: 14,
         data: { edge: e },
       };
@@ -456,6 +527,15 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
     }, 400);
     return () => clearTimeout(timer);
   }, [selected]); // on a new selection only, not on every layout
+
+  // a new level, layout, fold, focus or hidden set: fit the new drawing (React Flow fits only once)
+  const shape = `${settings.level}|${layout}|${settings.fold.join()}|${settings.focus}|${settings.hide.join()}`;
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) return void (first.current = false);
+    const timer = setTimeout(() => void flow.fitView({ duration: 200 }), 60);
+    return () => clearTimeout(timer);
+  }, [shape]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enter in the search box: the next match, centred and focused
   const order = useMemo(() => topoOrder(view).filter((id) => matches.has(id)), [view, matches]);
@@ -583,66 +663,137 @@ export function overlayText(n: ViewNode, overlay: GraphSettings["overlay"]): str
   return null;
 }
 
+/** The small bar under a step: CPU and Memory efficiency against its band, Duration against the
+ * longest step. */
+function barOf(overlay: GraphSettings["overlay"], v: number | null, longest: number): NodeData["bar"] {
+  if (v === null) return null;
+  if (overlay === "cpu" || overlay === "memory") return { pct: v, band: bandOf(v) };
+  if (overlay === "duration" && longest > 0) return { pct: v / longest, band: null };
+  return null;
+}
+
+/** What each efficiency band means, for the legend and the details panel. */
+export const BAND_WORDS: Record<string, string> = {
+  low: "under 30 %: far more asked than used",
+  fair: "30 to 70 %",
+  good: "70 to 105 %: well sized",
+  over: "over 105 %: more used than asked",
+};
+
+/** The legend: one line always shown (the colour key), the rest behind a toggle so it does not
+ * push the map down. */
 function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: View }) {
-  const help = <span className="sp-glegend-help">{OVERLAY_HELP[overlay]}</span>;
-  if (overlay === "state")
-    return (
-      <div className="sp-glegend" role="note" aria-label="Legend">
-        <ul className="sp-gkey">
-          {STATE_KEY.map(([t, label]) => (
-            <li key={t}>
-              <span className="sp-gswatch" data-tone={t} aria-hidden="true" /> {label}
-            </li>
-          ))}
-        </ul>
-        <ul className="sp-gkey" aria-label="Marks">
-          {(Object.keys(FLAG_MARKS) as Flag[]).map((f) => (
-            <li key={f}>
-              <FlagChip flag={f} /> {FLAG_MARKS[f].words}
-            </li>
-          ))}
-          <li>
-            <span className="sp-gflag">
-              <Icon path={GICONS.fold} size={11} stroke={2} />
-            </span>{" "}
-            fold a subworkflow or stage into one box (or double-click a step)
-          </li>
-        </ul>
-        {help}
-      </div>
-    );
-  if (overlay === "critical")
-    return (
-      <div className="sp-glegend" role="note" aria-label="Legend">
-        {help} Thick outline: on the path.
-      </div>
-    );
+  const [open, setOpen] = useState(false);
+  const semantic = overlay === "cpu" || overlay === "memory";
   const texts = view.nodes.map((n) => [overlayValue(n, overlay), overlayText(n, overlay)] as const).filter(([v]) => v !== null) as [number, string][];
   const low = texts.length ? texts.reduce((a, b) => (b[0] < a[0] ? b : a)) : null;
   const high = texts.length ? texts.reduce((a, b) => (b[0] > a[0] ? b : a)) : null;
+  const key =
+    overlay === "state" || overlay === "critical" ? (
+      <ul className="sp-gkey">
+        {STATE_KEY.map(([t, label]) => (
+          <li key={t}>
+            <span className="sp-gswatch" data-tone={t} aria-hidden="true" /> {label}
+          </li>
+        ))}
+        {overlay === "critical" && (
+          <li>
+            <span className="sp-gswatch" data-crit aria-hidden="true" /> On the critical path
+          </li>
+        )}
+      </ul>
+    ) : semantic ? (
+      <ul className="sp-gkey" aria-label="Efficiency bands">
+        {(["low", "fair", "good", "over"] as const).map((b) => (
+          <li key={b}>
+            <span className="sp-gswatch" data-band={b} aria-hidden="true" /> {BAND_WORDS[b]}
+          </li>
+        ))}
+      </ul>
+    ) : high ? (
+      <span className="sp-gkey">
+        {low![1]} <span className="sp-gramp" aria-hidden="true" /> {high[1]}
+      </span>
+    ) : (
+      <span className="sp-gkey">No step has a value yet: steps keep their state colour.</span>
+    );
   return (
     <div className="sp-glegend" role="note" aria-label="Legend">
-      {help}{" "}
-      {high ? (
-        <>
-          Lightest {low![1]} <span className="sp-gramp" aria-hidden="true" /> darkest {high[1]}; the value is written on each step. Steps with no value keep their state colour.
-        </>
-      ) : (
-        "No step has a value yet (jobs still running, cached, or not measured): steps keep their state colour."
+      <div className="sp-glegend-row">
+        <button type="button" className="sp-glegend-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <Icon path={GICONS.legend} size={14} stroke={1.9} />
+          Legend
+          <Icon path={open ? ICONS.chevronDown : ICONS.chevronRight} size={12} stroke={2} />
+        </button>
+        {key}
+      </div>
+      {open && (
+        <div className="sp-glegend-more">
+          <p className="sp-glegend-help">{OVERLAY_HELP[overlay]}</p>
+          <ul className="sp-gkey sp-gkey-grid" aria-label="Marks">
+            {(Object.keys(FLAG_MARKS) as Flag[]).map((f) => (
+              <li key={f}>
+                <FlagChip flag={f} /> {FLAG_MARKS[f].words}
+              </li>
+            ))}
+          </ul>
+          <ul className="sp-gkey sp-gkey-grid" aria-label="Links and boxes">
+            <li>
+              <svg width="34" height="10" aria-hidden="true">
+                <path d="M2 5h26" className="sp-gkey-edge" />
+                <path d="M26 1l6 4-6 4z" className="sp-gkey-arrow" />
+              </svg>
+              a link: what the upstream step writes, the downstream step reads
+            </li>
+            <li>
+              <svg width="34" height="10" aria-hidden="true">
+                <path d="M2 5h26" className="sp-gkey-edge" strokeDasharray="4 3" />
+                <path d="M26 1l6 4-6 4z" className="sp-gkey-arrow" />
+              </svg>
+              a link under a condition (“if”)
+            </li>
+            <li>
+              <span className="sp-gfold sp-gfold-key" aria-hidden="true">
+                <Icon path={GICONS.fold} size={12} stroke={2.2} />
+              </span>
+              fold a group into one box;{" "}
+              <span className="sp-gfold sp-gfold-key" data-folded aria-hidden="true">
+                <Icon path={GICONS.unfold} size={12} stroke={2.2} />
+                <span>4</span>
+              </span>{" "}
+              unfold it (or double-click)
+            </li>
+            <li>
+              <span className="sp-gswatch" data-ring aria-hidden="true" /> the open step and the steps it is linked to
+            </li>
+          </ul>
+        </div>
       )}
     </div>
   );
 }
 
-function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onExport, extra }: {
+/** What each layout does, under the toolbar, so Metro and Compact are not a guess. */
+export const LAYOUT_HELP: Record<GraphSettings["layout"], string> = {
+  "layered-tb": "Steps in layers, top to bottom: each step below the steps it reads from.",
+  "layered-lr": "Steps in layers, left to right: each step right of the steps it reads from.",
+  metro: "Left to right, each subworkflow or stage drawn as an area around its steps, so a group's steps stay together.",
+  compact: "Each subworkflow or stage as a small grid in pipeline order, the groups packed side by side: the most steps on one screen, links drawn without layers.",
+  upstream: "Positions BioFlow-Insight computed from the code (Launch only).",
+};
+
+function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onExport, extra, onCompact, onFullscreen, full }: {
   settings: GraphSettings;
   onSettings: (p: Partial<GraphSettings>) => void;
   runtime: boolean;
   upstream: boolean;
   onNext: () => void;
   matches: number;
-  onExport: (kind: "svg" | "png" | "html") => void;
+  onExport: (kind: "svg" | "png" | "html" | "copy") => void;
   extra?: ReactNode;
+  onCompact: (() => void) | null;
+  onFullscreen: () => void;
+  full: boolean;
 }) {
   const levels = runtime ? LEVELS : LEVELS.filter((l) => l.value !== "jobs");
   return (
@@ -669,9 +820,12 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
           if (e.key === "Enter") {
             e.preventDefault();
             onNext();
+          } else if (e.key === "Escape" && settings.q) {
+            e.preventDefault();
+            onSettings({ q: "" });
           }
         }}
-        description={settings.q.trim() ? `${matches} ${matches === 1 ? "match" : "matches"}${matches > 0 && settings.show === "map" ? ", Enter for the next" : ""}` : undefined}
+        description={settings.q.trim() ? `${matches} ${matches === 1 ? "match" : "matches"}${matches > 0 && settings.show === "map" ? ", Enter for the next, Escape to clear" : ""}` : undefined}
         inputWrapperOrder={["label", "input", "description"]}
         leftSection={<Icon path={ICONS.search} size={13} />}
         className="sp-gsearch"
@@ -682,6 +836,14 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
             {v === "map" ? "Map" : "List"}
           </button>
         ))}
+      </div>
+      <div className="sp-gview" role="group" aria-label="Fold">
+        <button type="button" className="sp-gbtn" onClick={onCompact ?? undefined} disabled={!onCompact}>
+          <Icon path={GICONS.compact} size={13} stroke={2} /> Auto-fold
+        </button>
+        <button type="button" className="sp-gbtn" onClick={() => onSettings({ fold: [] })} disabled={settings.fold.length === 0}>
+          <Icon path={GICONS.unfold} size={13} stroke={2} /> {settings.level === "subworkflow" || settings.level === "stage" ? "Fold all" : "Unfold all"}
+        </button>
       </div>
       {extra}
       <div className="sp-gview" role="group" aria-label="Export">
@@ -694,23 +856,41 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
         <button type="button" className="sp-gbtn" onClick={() => onExport("html")}>
           <Icon path={ICONS.download} size={13} /> HTML
         </button>
+        <button type="button" className="sp-gbtn" onClick={() => onExport("copy")}>
+          <Icon path={GICONS.copy} size={13} /> Copy PNG
+        </button>
       </div>
+      <button type="button" className="sp-gbtn sp-gbtn-line" aria-pressed={full} onClick={onFullscreen}>
+        <Icon path={GICONS.fullscreen} size={13} stroke={2} /> {full ? "Exit full screen" : "Full screen"}
+      </button>
     </div>
   );
 }
+
+/** At most this many boxes after Auto-fold. */
+const AUTO_FOLD_MAX = 24;
 
 function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor = {}, onOpen, onEdge, source, extra, notes, side }: Props) {
   const groupNames = useMemo(() => new Map(doc.groups.map((g) => [g.id, g.name])), [doc.groups]);
   const shown = useShown(doc, settings, jobs, decor, runtime);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [said, setSaid] = useState<string | null>(null);
   const layout = settings.layout === "upstream" && !hasUpstream(shown.view) ? "layered-tb" : settings.layout;
-  const onExport = (kind: "svg" | "png" | "html") => {
+  const onExport = (kind: "svg" | "png" | "html" | "copy") => {
     const placed = place(shown.view, layout);
     const svg = toSvg(shown.view, placed, title);
     const name = `${title.replace(/[^\w.-]+/g, "_")}-graph.${kind}`;
     setExportError(null);
+    setSaid(null);
     if (kind === "svg") download(name, new Blob([svg], { type: "image/svg+xml" }));
     else if (kind === "html") download(name, new Blob([toHtml(shown.view, placed, title, doc.engine)], { type: "text/html" }));
+    else if (kind === "copy")
+      svgToPng(svg)
+        .then((b) => navigator.clipboard.write([new ClipboardItem({ "image/png": b })]))
+        .then(
+          () => setSaid("The map is copied as a PNG."),
+          () => setExportError("The PNG could not be copied: this browser refused the clipboard. Use the PNG button instead."),
+        );
     else svgToPng(svg).then((b) => download(name, b), (e: Error) => setExportError(`The PNG could not be made: ${e.message}`));
   };
   const nextRef = useRef<(() => void) | null>(null);
@@ -721,8 +901,33 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
   const [pop, setPop] = useState<{ node: ViewNode; x: number; y: number } | null>(null);
   const onCode = useCallback((node: ViewNode, x: number, y: number) => setPop({ node, x, y }), []);
   const closePop = useCallback(() => setPop(null), []);
+  const root = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    const on = () => setFull(document.fullscreenElement === root.current && root.current !== null);
+    document.addEventListener("fullscreenchange", on);
+    return () => document.removeEventListener("fullscreenchange", on);
+  }, []);
+  const onFullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else root.current?.requestFullscreen?.().catch(() => setExportError("Full screen was refused by the browser."));
+  };
+  const foldable = settings.level === "process" || settings.level === "jobs";
+  // about half as many boxes, and at most AUTO_FOLD_MAX
+  const auto = foldable ? autoFold(shown.view, Math.min(AUTO_FOLD_MAX, Math.ceil(shown.view.nodes.length / 2))) : [];
+  // Escape leaves the focused group, unless something on top (a card, the panel) took it
+  const focus = settings.focus;
+  useEffect(() => {
+    if (!focus) return;
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || document.querySelector(".sp-ginspect")) return;
+      onSettings({ focus: null });
+    };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [focus, onSettings]);
   return (
-    <div className="sp-graph">
+    <div className="sp-graph" ref={root} data-full={full || undefined}>
       {pop && <CodePop doc={doc} pop={pop} source={source ?? null} onClose={closePop} />}
       <Toolbar
         settings={settings}
@@ -733,11 +938,38 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
         matches={shown.matches.size}
         onExport={onExport}
         extra={extra}
+        onCompact={auto.length ? () => onSettings({ fold: [...settings.fold, ...auto] }) : null}
+        onFullscreen={onFullscreen}
+        full={full}
       />
       {exportError && <p role="alert">{exportError}</p>}
+      <p role="status" className="sp-gnote">
+        {said}
+      </p>
+      {settings.show === "map" && <p className="sp-gnote sp-glayout-help">{LAYOUT_HELP[layout]}</p>}
       {isEstimate(doc) && (
         <p className="sp-gbanner" role="note">
           Static estimate from the code: links may be approximate, and loops in the code are drawn with one link set aside.
+        </p>
+      )}
+      {settings.focus && (
+        <p className="sp-gbanner sp-gbanner-focus" role="note">
+          <Icon path={GICONS.focus} size={14} stroke={2} /> Only {groupNames.get(settings.focus) ?? settings.focus.replace(/^(stage|sub):/, "")} is shown.{" "}
+          <button type="button" className="sp-link-button" onClick={() => onSettings({ focus: null })}>
+            Show everything (Escape)
+          </button>
+        </p>
+      )}
+      {settings.hide.length > 0 && (
+        <p className="sp-gbanner sp-gbanner-focus" role="note">
+          <Icon path={GICONS.hide} size={14} stroke={2} /> {settings.hide.length} {settings.hide.length === 1 ? "step is" : "steps are"} hidden ({settings.hide.map((h) => doc.nodes.find((n) => n.id === h)?.name ?? h).join(", ")}); the links through {settings.hide.length === 1 ? "it" : "them"} are kept.{" "}
+          <button type="button" className="sp-link-button" onClick={() => onSettings({ hide: settings.hide.slice(0, -1) })}>
+            Undo the last
+          </button>
+          {" · "}
+          <button type="button" className="sp-link-button" onClick={() => onSettings({ hide: [] })}>
+            Show all
+          </button>
         </p>
       )}
       {notes}
@@ -807,7 +1039,7 @@ export function GraphView(props: Props) {
 
 /** The details of a step or a link: docked beside the map, so the map stays in view and usable
  * (Escape or × closes it, and focus goes back to where it was); a sheet on a phone. */
-export function Panel({ id, opened, title, icon, onClose, children }: { id: string | null; opened: boolean; title: string; icon: string; onClose: () => void; children: ReactNode }) {
+export function Panel({ id, opened, title, icon, onClose, children, tone, kind }: { id: string | null; opened: boolean; title: string; icon: string; onClose: () => void; children: ReactNode; tone?: string; kind?: string }) {
   const phone = usePhone();
   const ref = useRef<HTMLElement>(null);
   const close = useRef(onClose);
@@ -835,11 +1067,14 @@ export function Panel({ id, opened, title, icon, onClose, children }: { id: stri
     );
   if (!opened) return null;
   return (
-    <aside className="sp-ginspect" aria-label={title} ref={ref}>
+    <aside className="sp-ginspect" aria-label={kind ? `${title} (${kind})` : title} ref={ref}>
       <header>
-        <h2 tabIndex={-1}>
+        <span className="sp-ginspect-icon" data-tone={tone} aria-hidden="true">
           <Icon path={icon} size={16} stroke={1.8} />
+        </span>
+        <h2 tabIndex={-1}>
           {title}
+          {kind && <small>{kind}</small>}
         </h2>
         <button type="button" className="sp-gicon" onClick={onClose} aria-label="Close">
           <Icon path={GICONS.close} size={16} stroke={2} />

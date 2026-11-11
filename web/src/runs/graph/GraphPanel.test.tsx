@@ -22,6 +22,7 @@ function mocks(features: string[] = ["graph_view"], more: Record<string, unknown
   return serve({
     "/api/v1/features": { features },
     [`${URL_}/processes`]: PROCESSES,
+    [`${URL_}/processes/`]: { items: [] }, // any other step's outputs
     [`${URL_}/stages`]: { items: [] },
     [`${URL_}/tasks`]: { items: [], next: null },
     [`${URL_}/graph`]: DOC,
@@ -89,14 +90,14 @@ test("a step's sheet shows this run's parameter values, its links, and its outpu
   app(`/runs/${ID}?tab=graph&show=list`);
   await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
   const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
-  expect(within(sheet).getByRole("heading", { name: "BWA (process)" })).toHaveFocus();
+  expect(within(sheet).getByRole("heading", { name: /^BWA/ })).toHaveFocus();
   expect(within(sheet).getByText("genome")).toBeInTheDocument();
   expect(within(sheet).getByText("GRCh38")).toBeInTheDocument();
-  expect(within(sheet).getByRole("list", { name: "What BWA receives" })).toBeInTheDocument();
-  expect(await within(sheet).findByText("align/S1.bam")).toBeInTheDocument();
-  expect(within(sheet).getByText("Removed (temporary)")).toBeInTheDocument();
-  expect(within(sheet).getByRole("link", { name: "Preview align/S1.bam" })).toHaveAttribute("href", expect.stringContaining("path=align"));
-  expect(within(sheet).queryByRole("link", { name: "Preview align/S1.tmp.sam" })).toBeNull();
+  expect(within(sheet).getByRole("list", { name: "What BWA reads from" })).toBeInTheDocument();
+  expect(await within(sheet).findByText("S1.bam")).toBeInTheDocument();
+  expect(within(sheet).getAllByText(/removed \(temporary\)/).length).toBeGreaterThan(0);
+  expect(within(sheet).getByRole("link", { name: "Open S1.bam" })).toHaveAttribute("href", expect.stringContaining("path=align"));
+  expect(within(sheet).queryByRole("link", { name: "Open S1.tmp.sam" })).toBeNull();
 
   const before = fetched(mock).filter((u) => u.endsWith("/outputs")).length;
   FakeEventSource.last!.frame({ run_id: ID });
@@ -275,7 +276,7 @@ test("each link in a step's sheet is a button that opens what flows along it", a
   await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
   const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
   await userEvent.click(within(sheet).getAllByRole("button", { name: /^Channel from .+: what flows$/ })[0]);
-  const edge = await screen.findByRole("complementary", { name: /→ BWA$/ });
+  const edge = await screen.findByRole("complementary", { name: /→ BWA \(channel\)$/ });
   expect(within(edge).getByText(/Files emitted upstream/)).toBeInTheDocument();
 });
 
@@ -294,8 +295,52 @@ test("Escape closes a step's details and focus goes back to what opened them", a
   const opener = within(await listView()).getByRole("button", { name: "Open process BWA" });
   await userEvent.click(opener);
   const panel = await screen.findByRole("complementary", { name: "BWA (process)" });
-  expect(within(panel).getByRole("heading", { name: "BWA (process)" })).toHaveFocus();
+  expect(within(panel).getByRole("heading", { name: /^BWA/ })).toHaveFocus();
   await userEvent.keyboard("{Escape}");
   await waitFor(() => expect(screen.queryByRole("complementary", { name: "BWA (process)" })).toBeNull());
   expect(within(await listView()).getByRole("button", { name: "Open process BWA" })).toHaveFocus();
+});
+
+test("an output's first lines open in place; a BAM has no first lines but opens in the preview page", async () => {
+  const bwa = `${URL_}/processes/${encodeURIComponent(`${P}ALIGN:BWA`)}/outputs`;
+  mocks(["graph_view"], {
+    [bwa]: { items: [{ path: "trim/S1.fq.gz", task_id: "tsk_1", attempt_n: 1, state: "present", temp: false, root: "results", size: 2048 }, { path: "align/S1.bam", task_id: "tsk_1", attempt_n: 1, state: "present", temp: false, root: "results", size: 3 * 2 ** 30 }] },
+    [`${bwa}:head`]: { text: "@r1\nACGT\n+\nIIII", more: true, gzip: true },
+  });
+  app(`/runs/${ID}?tab=graph&show=list`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
+  expect(await within(sheet).findByText(/3 GiB/)).toBeInTheDocument();
+  expect(within(sheet).queryByRole("button", { name: "First lines of S1.bam" })).toBeNull();
+  expect(within(sheet).getByRole("link", { name: "Open S1.bam" })).toBeInTheDocument();
+  const peek = within(sheet).getByRole("button", { name: "First lines of S1.fq.gz" });
+  await userEvent.click(peek);
+  expect(peek).toHaveAttribute("aria-expanded", "true");
+  expect(await within(sheet).findByText(/ACGT/)).toBeInTheDocument();
+});
+
+test("Hide leaves a step out, says so, and Show all brings it back; Focus shows one group", async () => {
+  mocks();
+  const router = app(`/runs/${ID}?tab=graph&show=list`);
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process TRIM" }));
+  const sheet = await screen.findByRole("complementary", { name: "TRIM (process)" });
+  await userEvent.click(within(sheet).getByRole("button", { name: "Hide TRIM from the map" }));
+  await waitFor(() => expect(router.state.location.search).toMatchObject({ hide: `${P}ALIGN:TRIM` }));
+  expect(within(await listView()).queryByRole("button", { name: "Open process TRIM" })).toBeNull();
+  expect(screen.getByText(/1 step is hidden/)).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Show all" }));
+  expect(await within(await listView()).findByRole("button", { name: "Open process TRIM" })).toBeInTheDocument();
+  await userEvent.click(within(await listView()).getByRole("button", { name: "Open process BWA" }));
+  await userEvent.click(within(await screen.findByRole("complementary", { name: "BWA (process)" })).getByRole("button", { name: "Show only ALIGN" }));
+  await waitFor(() => expect(within(screen.getByRole("table", { name: "Graph as a list" })).getAllByRole("button").map((b) => b.textContent).sort()).toEqual(["BWA", "TRIM"]));
+  expect(screen.getByText(/Only ALIGN is shown/)).toBeInTheDocument();
+});
+
+test("Escape in the search box clears it", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&show=list`);
+  const box = await screen.findByRole("textbox", { name: "Search" });
+  await userEvent.type(box, "bwa");
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(box).toHaveValue(""));
 });

@@ -564,3 +564,68 @@ export function heat(view: View, overlay: GraphOverlay): Map<string, number> {
   for (const [id, v] of vals) if (v !== null && max > 0) out.set(id, v / max);
   return out;
 }
+
+// ---- focus, hide, auto-fold -----------------------------------------------------------------
+
+/** The view with only `focus`'s steps (a subworkflow, nested ones included, or a stage), and
+ * without the `hide` steps. A hidden step's links are bridged, so what ran before it still
+ * leads to what ran after it. */
+export function restrict(doc: GraphDocument, view: View, focus: string | null, hide: string[]): View {
+  if (!focus && hide.length === 0) return view;
+  const parent = new Map(doc.groups.map((g) => [g.id, g.parent ?? null]));
+  const byId = new Map(doc.nodes.map((n) => [n.id, n]));
+  const within = (m: string) => {
+    const n = byId.get(m);
+    if (!n) return false;
+    if (n.stage_id && `stage:${n.stage_id}` === focus) return true;
+    for (let at = n.subworkflow ?? null; at; at = parent.get(at) ?? null) if (at === focus) return true;
+    return false;
+  };
+  const hidden = new Set(hide);
+  const gone = (n: ViewNode) => hidden.has(n.id) || (n.members.length === 1 && hidden.has(n.members[0])) || (n.step !== undefined && hidden.has(n.step));
+  const keep = new Set(view.nodes.filter((n) => (!focus || n.id === focus || n.members.some(within)) && !gone(n)).map((n) => n.id));
+  const out = new Map<string, string[]>();
+  for (const e of view.edges) out.set(e.source, [...(out.get(e.source) ?? []), e.target]);
+  const hiddenIds = new Set(view.nodes.filter(gone).map((n) => n.id));
+  const edges: ViewEdge[] = view.edges.filter((e) => keep.has(e.source) && keep.has(e.target));
+  const have = new Set(edges.map((e) => `${e.source}>${e.target}`));
+  for (const e of view.edges) {
+    if (!keep.has(e.source) || !hiddenIds.has(e.target)) continue;
+    // walk through hidden steps only, to the kept steps they lead to
+    const seen = new Set<string>();
+    const stack = [e.target];
+    while (stack.length) {
+      const at = stack.pop()!;
+      if (seen.has(at)) continue;
+      seen.add(at);
+      for (const t of out.get(at) ?? []) {
+        if (hiddenIds.has(t)) stack.push(t);
+        else if (keep.has(t) && !have.has(`${e.source}>${t}`)) {
+          have.add(`${e.source}>${t}`);
+          edges.push({ id: `${e.source}->${t}`, source: e.source, target: t, conditions: [], pairs: [] });
+        }
+      }
+    }
+  }
+  return { nodes: view.nodes.filter((n) => keep.has(n.id)), edges };
+}
+
+/** The groups to fold so the view has at most `max` boxes: the biggest groups first. */
+export function autoFold(view: View, max: number): string[] {
+  const sizes = new Map<string, number>();
+  for (const n of view.nodes) if (n.group && n.kind !== "stage" && n.kind !== "subworkflow") sizes.set(n.group, (sizes.get(n.group) ?? 0) + 1);
+  let count = view.nodes.length;
+  const out: string[] = [];
+  for (const [g, size] of [...sizes].sort((a, b) => b[1] - a[1])) {
+    if (count <= max || size < 2) break;
+    out.push(g);
+    count -= size - 1;
+  }
+  return out;
+}
+
+/** How well a step's request fits its use, from an efficiency ratio (used over asked):
+ * `low` under 30 % (much more asked than used), `fair` under 70 %, `good` up to 105 %, `over`
+ * above (more used than asked: memory near its limit, or more CPUs used than asked). */
+export type Band = "low" | "fair" | "good" | "over";
+export const bandOf = (ratio: number): Band => (ratio < 0.3 ? "low" : ratio < 0.7 ? "fair" : ratio <= 1.05 ? "good" : "over");

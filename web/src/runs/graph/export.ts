@@ -1,7 +1,7 @@
 // Export of the shown graph as a standalone SVG (and PNG through a canvas), drawn from the
 // layout rather than copied from the DOM, so it has no app styles or scripts in it. Names come
 // from the pipeline: escaped, never markup.
-import type { Placed } from "./layout";
+import type { Box, Placed } from "./layout";
 import type { View } from "./model";
 
 const FILL: Record<string, string> = {
@@ -21,6 +21,15 @@ export function escapeXml(text: string): string {
   return text.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]!);
 }
 
+/** Where the line from box `a`'s centre to box `b`'s centre leaves `a`. */
+function border(a: Box, b: Box): [number, number] {
+  const [cx, cy] = [a.x + a.w / 2, a.y + a.h / 2];
+  const [dx, dy] = [b.x + b.w / 2 - cx, b.y + b.h / 2 - cy];
+  if (dx === 0 && dy === 0) return [cx, cy];
+  const t = Math.min(dx ? a.w / 2 / Math.abs(dx) : Infinity, dy ? a.h / 2 / Math.abs(dy) : Infinity);
+  return [cx + dx * t, cy + dy * t];
+}
+
 export function toSvg(view: View, placed: Placed, title: string): string {
   const all = view.nodes.map((n) => placed.boxes.get(n.id)).filter((b) => !!b);
   const width = Math.max(200, ...all.map((b) => b.x + b.w)) + 32;
@@ -28,19 +37,19 @@ export function toSvg(view: View, placed: Placed, title: string): string {
   const parts: string[] = [];
   parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="-16 -16 ${width} ${height}" font-family="sans-serif" font-size="12">`);
   parts.push(`<title>${escapeXml(title)}</title><rect x="-16" y="-16" width="${width}" height="${height}" fill="#ffffff"/>`);
+  parts.push(`<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#868e96"/></marker></defs>`);
   for (const lane of placed.lanes) {
-    parts.push(`<rect x="0" y="${lane.y}" width="${width - 32}" height="${lane.h}" rx="8" fill="#f8f9fa" stroke="#dee2e6"/>`);
-    parts.push(`<text x="8" y="${lane.y + 18}" fill="#495057" font-weight="600">${escapeXml(lane.label)}</text>`);
+    parts.push(`<rect x="${lane.x ?? 0}" y="${lane.y}" width="${lane.w ?? width - 32}" height="${lane.h}" rx="8" fill="#f8f9fa" stroke="#dee2e6"/>`);
+    parts.push(`<text x="${(lane.x ?? 0) + 8}" y="${lane.y + 18}" fill="#495057" font-weight="600">${escapeXml(lane.label)}</text>`);
   }
-  const center = (id: string) => {
-    const b = placed.boxes.get(id)!;
-    return [b.x + b.w / 2, b.y + b.h / 2];
-  };
   for (const e of view.edges) {
-    if (!placed.boxes.has(e.source) || !placed.boxes.has(e.target)) continue;
-    const [x1, y1] = center(e.source);
-    const [x2, y2] = center(e.target);
-    parts.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#868e96" stroke-width="1.5"/>`);
+    const a = placed.boxes.get(e.source);
+    const b = placed.boxes.get(e.target);
+    if (!a || !b) continue;
+    const [x1, y1] = border(a, b);
+    const [x2, y2] = border(b, a);
+    const dash = e.conditions.length ? ` stroke-dasharray="5 4"` : "";
+    parts.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#868e96" stroke-width="1.5"${dash} marker-end="url(#arrow)"><title>${escapeXml(e.conditions.length ? `if ${e.conditions.join(" or ")}` : "link")}</title></line>`);
   }
   for (const n of view.nodes) {
     const b = placed.boxes.get(n.id);

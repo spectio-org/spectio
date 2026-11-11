@@ -27,13 +27,27 @@ test("layered top-down puts a target below its source; left-right puts it to the
   expect(lr.get(`${P}ALIGN:BWA`)!.x).toBeGreaterThan(lr.get(`${P}ALIGN:TRIM`)!.x);
 });
 
-test("metro gives one lane per subworkflow, x by rank", () => {
+test("metro draws each subworkflow as an area around its steps, left to right", () => {
   const { boxes, lanes } = place(collapse(DOC, "process"), "metro");
-  expect(lanes.map((l) => l.label)).toEqual(["QC", "ALIGN", "DEMO"]);
+  expect(lanes.map((l) => l.label).sort()).toEqual(["ALIGN", "DEMO", "QC"]);
   expect(boxes.get(`${P}REPORT`)!.x).toBeGreaterThan(boxes.get(`${P}ALIGN:BWA`)!.x);
-  const qc = lanes[0];
-  expect(boxes.get(`${P}QC:FASTQC`)!.y).toBeGreaterThanOrEqual(qc.y);
-  expect(boxes.get(`${P}QC:FASTQC`)!.y).toBeLessThan(qc.y + qc.h);
+  const qc = lanes.find((l) => l.label === "QC")!;
+  const b = boxes.get(`${P}QC:FASTQC`)!;
+  expect(b.x).toBeGreaterThanOrEqual(qc.x!);
+  expect(b.x + b.w).toBeLessThanOrEqual(qc.x! + qc.w!);
+  expect(b.y).toBeGreaterThan(qc.y);
+  expect(b.y + b.h).toBeLessThanOrEqual(qc.y + qc.h);
+});
+
+test("compact packs small groups side by side, into a near-square map", () => {
+  const groups = Array.from({ length: 8 }, (_, g) => ({ id: `sub:G${g}`, kind: "subworkflow" as const, name: `G${g}`, parent: null, condition: null }));
+  const nodes = groups.flatMap((g, i) => [0, 1].map((j) => ({ ...DOC.nodes[0], id: `G${i}:S${j}`, name: `S${j}`, stage_id: null, subworkflow: g.id })));
+  const { boxes, lanes } = place(collapse({ ...DOC, groups, nodes, edges: [] }, "process"), "compact");
+  expect(new Set(lanes.map((l) => l.y)).size).toBeLessThan(lanes.length);
+  const w = Math.max(...[...boxes.values()].map((b) => b.x + b.w));
+  const h = Math.max(...[...boxes.values()].map((b) => b.y + b.h));
+  expect(w / h).toBeLessThan(4);
+  noOverlaps(boxes, [...boxes.keys()]);
 });
 
 test("upstream uses BioFlow-Insight positions when present", () => {

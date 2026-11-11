@@ -79,6 +79,22 @@ export interface NodeOutput {
   temp: boolean;
   /** What `path` is relative to: the launch directory, the results directory, or none. */
   root: "launch" | "results" | "absolute";
+  /** Bytes, when present. */
+  size?: number | null;
+  /** Nextflow: the copy in the attempt's work directory, relative to it. */
+  work_path?: string | null;
+}
+
+/** `GET …/outputs:head`: the first lines of one output, gunzipped when it is gzip. */
+export interface OutputHead {
+  text: string;
+  more: boolean;
+  gzip: boolean;
+}
+
+export function getOutputHead(id: string, process: string, path: string, task: string, signal?: AbortSignal): Promise<OutputHead> {
+  const q = new URLSearchParams({ path, task_id: task });
+  return call(`${run(id)}/processes/${encodeURIComponent(process)}/outputs:head?${q}`, signal);
 }
 
 const API = "/api/v1";

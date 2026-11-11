@@ -101,6 +101,7 @@ function tasksOf(id: string, process: string | null, wanted: string | null) {
       stage_id: t.step.stage,
       attempt_n: t.attempt || null,
       resources: t.state === "succeeded" ? resources(t.id, t.step.seconds, Math.round(t.step.cpu * 12)) : NO_RESOURCES,
+      efficiency: t.state === "succeeded" ? efficiencyOf(t.id, t.step.seconds) : undefined,
       slurm: null,
     }));
 }
@@ -113,14 +114,10 @@ function outputsOf(id: string, process: string) {
   return sim.tasks
     .filter((t) => t.step.id === process && t.state === "succeeded")
     .flatMap((t) =>
-      step.outputs.map((o) => ({
-        path: o.replace("{s}", t.sample ?? ""),
-        task_id: t.id,
-        attempt_n: t.attempt,
-        state: "present",
-        temp: false,
-        root: "results",
-      })),
+      step.outputs.map((o) => {
+        const path = o.replace("{s}", t.sample ?? "");
+        return { path, task_id: t.id, attempt_n: t.attempt, state: "present", temp: false, root: "results", size: sizeOf(path) };
+      }),
     );
 }
 
@@ -177,6 +174,22 @@ export function answer(url: URL, method = "GET"): Response {
   }
   const out = /^\/processes\/(.+)\/outputs$/.exec(rest);
   if (out) return json(200, { items: outputsOf(id, out[1]) });
+  const head = /^\/processes\/(.+)\/outputs:head$/.exec(rest);
+  if (head) {
+    const p = q.get("path") ?? "";
+    if (!outputsOf(id, head[1]).some((o) => o.path === p)) return missing("This file");
+    const text = contentOf(p);
+    return text === null ? json(422, { type: "/problems/not-text", title: "Not text", detail: "a binary file has no head to show" }) : json(200, { text: text.split("\n").slice(0, 40).join("\n"), more: true, gzip: /\.gz$/.test(p) });
+  }
+  const res = /^\/results\/(stat|text|raw)\/(.+)$/.exec(rest);
+  if (res) {
+    const [, how, p] = res;
+    const name = p.split("/").pop()!;
+    if (how === "stat") return json(200, { root: "/scratch/demo/results", path: p, name, type: "file", size: sizeOf(p), mtime: "2026-11-10T10:30:00Z" });
+    const text = contentOf(p);
+    if (text === null) return missing("This file's content");
+    return new Response(text, { status: 200, headers: { "content-type": how === "raw" && p.endsWith(".svg") ? "image/svg+xml" : "text/plain; charset=utf-8" } });
+  }
   return missing(path);
 }
 
@@ -343,13 +356,14 @@ function smkTasks(process: string | null, wanted: string | null) {
       stage_id: j.rule.file.replace("rules/", "").replace(".smk", ""),
       attempt_n: j.state === "not_scheduled" ? null : 1,
       resources: j.state === "not_scheduled" ? NO_RESOURCES : resources(j.id, j.rule.seconds, 4),
+      efficiency: j.state === "succeeded" ? efficiencyOf(j.id, j.rule.seconds) : undefined,
       slurm: null,
     }));
 }
 
 function smkOutputs(process: string) {
   return SMK_JOBS.filter((j) => j.rule.id === process && j.state === "succeeded").flatMap((j) =>
-    j.rule.outputs(j.key).map((path) => ({ path, task_id: j.id, attempt_n: 1, state: j.rule.temp ? "removed" : "present", temp: !!j.rule.temp, root: "launch" })),
+    j.rule.outputs(j.key).map((path) => ({ path, task_id: j.id, attempt_n: 1, state: j.rule.temp ? "removed" : "present", temp: !!j.rule.temp, root: "launch", size: j.rule.temp ? null : sizeOf(path) })),
   );
 }
 
@@ -428,3 +442,35 @@ const SMK_RUN = {
   task_counts: { succeeded: SMK_JOBS.filter((j) => j.state === "succeeded").length, failed: 1, not_scheduled: 2 },
   summary: { tasks: { done: SMK_JOBS.filter((j) => j.state === "succeeded").length, total: SMK_JOBS.length, failed: 1, cached: 0 }, last_failure: null, stage_mode: "quarters" },
 };
+
+/** A demo file's size, stable for its path: reads and alignments are large, reports small. */
+function sizeOf(path: string): number {
+  let h = 0;
+  for (const c of path) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const base = /\.(bam|cram)$/.test(path) ? 2.1e9 : /\.(fq|fastq)\.gz$/.test(path) ? 8.4e8 : /\.vcf\.gz$/.test(path) ? 3.2e6 : /\.(svg|html)$/.test(path) ? 1.8e5 : 4.2e4;
+  return Math.round(base * (0.6 + (h % 80) / 100));
+}
+
+/** Made-up content for the first lines and the preview, by kind; null for binary files. */
+function contentOf(path: string): string | null {
+  const sample = /([A-Z]+\d+|S\d+)/.exec(path.split("/").pop() ?? "")?.[1] ?? "S1";
+  if (/\.(fq|fastq)(\.gz)?$/.test(path))
+    return Array.from({ length: 12 }, (_, i) => `@${sample}.${i + 1} 1:N:0:ACGTAC\nGATTACAGATTACACCGTAGGCTAACGGTTACAGGATTACCA\n+\nIIIIIIIIIHHHHHGGGGGFFFFEEEEDDDCCCBBBAAA@@\n`).join("").trimEnd();
+  if (/\.vcf(\.gz)?$/.test(path))
+    return ["##fileformat=VCFv4.2", "##source=bcftools", `#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t${sample}`, ...Array.from({ length: 20 }, (_, i) => `chr1\t${10234 + i * 917}\t.\tA\tG\t${(40 + i * 3.1).toFixed(1)}\tPASS\tDP=${30 + i}\tGT\t0/1`)].join("\n");
+  if (/\.(bed)$/.test(path)) return Array.from({ length: 20 }, (_, i) => `chr${1 + (i % 3)}\t${i * 10000}\t${i * 10000 + 5000}\tgene_${i}`).join("\n");
+  if (/\.(tsv|tab|sf)$/.test(path) || /quant/.test(path)) return ["Name\tLength\tTPM\tNumReads", ...Array.from({ length: 20 }, (_, i) => `ENST0000${4000 + i}\t${1200 + i * 37}\t${(i * 1.7).toFixed(2)}\t${i * 113}`)].join("\n");
+  if (/\.json$/.test(path)) return JSON.stringify({ sample, reads: 1204331, passed: 1180022, gc: 0.48 }, null, 2);
+  if (/\.svg$/.test(path))
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="160" viewBox="0 0 320 160"><rect width="320" height="160" fill="#f8f9fa"/>${Array.from({ length: 16 }, (_, i) => `<rect x="${12 + i * 19}" y="${150 - (20 + ((i * 37) % 110))}" width="14" height="${20 + ((i * 37) % 110)}" fill="#4c6ef5"/>`).join("")}</svg>`;
+  if (/\.(fa|fasta|txt|log)$/.test(path)) return `>chr1\n${"ACGT".repeat(30)}\n${"GGCA".repeat(30)}`;
+  return null;
+}
+
+/** Made-up efficiency for a demo job, stable for its id (peak memory over the 8 GiB asked). */
+function efficiencyOf(id: string, seconds: number) {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const peak = (2 + (h % 50) / 10) * 2 ** 30;
+  return { cpu: (60 + (h % 35)) / 100 / 1.2, mem: peak / (8 * 2 ** 30), elapsed_s: seconds, peak_rss_bytes: peak, state: "available", source: "trace", reason: null };
+}

@@ -4,6 +4,8 @@ import { DOC } from "./fixture";
 import {
   acyclic,
   aggregateStatus,
+  autoFold,
+  bandOf,
   collapse,
   collapsedSubworkflow,
   criticalPath,
@@ -11,6 +13,7 @@ import {
   heat,
   lineage,
   ranks,
+  restrict,
   search,
   statusAt,
   timeSpan,
@@ -195,4 +198,28 @@ test("edge conditions are kept per collapsed edge", () => {
   const v = collapse(CYCLIC, "process");
   expect(v.edges.find((e) => e.id === "A->B")?.conditions).toEqual(["params.ftp"]);
   expect(v.edges.find((e) => e.id === "B->C")?.conditions).toEqual([]);
+});
+
+test("restrict: a focused group keeps its steps only; a hidden step's links are bridged", () => {
+  const view = collapse(DOC, "process");
+  const qc = restrict(DOC, view, `sub:${P}QC`, []);
+  expect(qc.nodes.map((n) => n.label).sort()).toEqual(["FASTQC", "MULTIQC", "QC gate"]);
+  expect(qc.edges).toHaveLength(2);
+  expect(restrict(DOC, view, "stage:align", []).nodes.map((n) => n.label).sort()).toEqual(["BWA", "TRIM"]);
+  const hidden = restrict(DOC, view, null, [`${P}QC:MULTIQC`, `${P}QC:gate`]);
+  expect(hidden.nodes.map((n) => n.label)).not.toContain("MULTIQC");
+  expect(hidden.edges.some((e) => e.source === `${P}QC:FASTQC` && e.target === `${P}REPORT`)).toBe(true);
+  expect(restrict(DOC, view, null, [])).toBe(view);
+});
+
+test("autoFold folds the biggest groups first, until the view fits", () => {
+  const view = collapse(DOC, "process");
+  expect(autoFold(view, 100)).toEqual([]);
+  const fold = autoFold(view, 4);
+  expect(fold[0]).toBe(`sub:${P}QC`);
+  expect(collapse(DOC, "process", {}, fold).nodes.length).toBeLessThanOrEqual(4);
+});
+
+test("efficiency bands", () => {
+  expect([0.1, 0.5, 0.9, 1.3].map(bandOf)).toEqual(["low", "fair", "good", "over"]);
 });

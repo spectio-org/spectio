@@ -3,18 +3,19 @@
 // (status, parameters with this run's values, outputs read live, jobs).
 import { NativeSelect } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ApiError, type Json, type Run, type RunDetail, type Task, listRuns, listTasks } from "../../api";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ApiError, type Json, type Run, type RunDetail, type Task, listRuns, listTasks, resultUrl } from "../../api";
 import { useFrames } from "../../live";
 import { usePhone } from "../../shell/layout";
 import type { Detail } from "../DetailSheet";
 import { isTerminal, runWord } from "../stateWord";
 import { Icon } from "../../icons";
 import { Code } from "./Code";
-import { FlagChip, GICONS, GraphView, Panel, formatSeconds, kindIcon, kindWord, progress, statusTone, statusWord } from "./GraphView";
-import { type NodeDiff, type View, type ViewEdge, type ViewNode, collapse, diffGraphs, durationOf, lineage, timeSpan, toggled } from "./model";
+import { fileKind, size as sizeText } from "../preview";
+import { BAND_WORDS, FlagChip, GICONS, GraphView, Panel, formatSeconds, kindIcon, kindWord, progress, statusTone, statusWord, viewOf } from "./GraphView";
+import { type NodeDiff, type View, type ViewEdge, type ViewNode, bandOf, diffGraphs, durationOf, lineage, timeSpan, toggled } from "./model";
 import { type GraphSearch, type GraphSettings, searchOf, settingsOf } from "./settings";
-import { type GraphDocument, type GraphNode, type NodeOutput, getNodeOutputs, getRunGraph } from "./types";
+import { type GraphDocument, type GraphNode, type NodeOutput, getNodeOutputs, getOutputHead, getRunGraph } from "./types";
 
 /** The Jobs level draws one node per job: every step's jobs, in pipeline order, until this many. */
 export const MAX_JOBS = 2000;
@@ -75,9 +76,102 @@ function value(params: Record<string, Json>, key: string): string {
   return typeof at === "string" ? at : JSON.stringify(at);
 }
 
+/** A file's look: the icon and word of its kind, and whether its first lines are worth showing
+ * (text, and gzip of text: FASTQ, VCF, tables) or an image a thumbnail. */
+const GZ_TEXT = /\.(fq|fastq|fa|fasta|fna|vcf|sam|bed|gtf|gff3?|txt|tsv|csv|tab|log|json)\.b?gz$/i;
+export function fileLook(path: string): { icon: string; word: string; peek: boolean; image: boolean } {
+  const name = path.split("/").pop() ?? path;
+  if (/\.(fq|fastq)(\.b?gz)?$/i.test(name)) return { icon: GICONS.reads, word: "reads", peek: true, image: false };
+  if (GZ_TEXT.test(name)) return { icon: GICONS.file, word: "gzip text", peek: true, image: false };
+  if (/\.(bam|cram|bai|crai|csi|tbi|bcf)$/i.test(name)) return { icon: GICONS.binary, word: "alignments (binary)", peek: false, image: false };
+  const kind = fileKind(name);
+  if (kind === "image") return { icon: GICONS.image, word: "image", peek: false, image: true };
+  if (kind === "table") return { icon: GICONS.table, word: "table", peek: true, image: false };
+  if (kind === "text" || kind === "json") return { icon: GICONS.file, word: kind === "json" ? "JSON" : "text", peek: true, image: false };
+  if (kind === "html") return { icon: GICONS.code, word: "report", peek: false, image: false };
+  return { icon: GICONS.binary, word: kind === "binary" ? "binary" : "file", peek: false, image: false };
+}
+
+const THUMB_MAX = 2 << 20;
+
+/** One output as a card: kind, name, folder, size, state; its first lines on demand, a thumbnail
+ * for a small image, and Open when the preview page can read it. */
+function FileCard({ run, process, item }: { run: RunDetail; process: string; item: NodeOutput }) {
+  const [head, setHead] = useState<{ text: string; more: boolean } | string | null>(null);
+  const [open, setOpen] = useState(false);
+  const look = fileLook(item.path);
+  const name = item.path.split("/").pop() ?? item.path;
+  const dir = item.path.slice(0, item.path.length - name.length).replace(/\/$/, "");
+  const present = item.state === "present";
+  const work = item.work_path ? { task: item.task_id, attempt: item.attempt_n } : undefined;
+  const page = present && item.root === "results" ? { to: "/runs/$id/results/file" as const, search: { path: item.path } } : present && work ? { to: "/runs/$id/workdir/file" as const, search: { path: item.work_path!, ...work } } : null;
+  const thumb = look.image && present && (item.size ?? Infinity) <= THUMB_MAX && (item.root === "results" || work) ? resultUrl(run.id, work ? item.work_path! : item.path, { as: "image" }, work) : null;
+  const toggle = () => {
+    setOpen(!open);
+    if (head || open) return;
+    getOutputHead(run.id, process, item.path, item.task_id).then(
+      (h) => setHead({ text: h.text, more: h.more }),
+      (e: ApiError) => setHead(e.slug === "not-text" ? "A binary file: no lines to show." : `Could not read it: ${e.message}`),
+    );
+  };
+  const stateWord = present ? "present" : item.state === "removed" ? "removed (temporary)" : item.state === "missing" ? "missing" : "not checked";
+  return (
+    <li className="sp-gfile" data-state={item.state}>
+      <span className="sp-gfile-icon" aria-hidden="true">
+        {thumb ? <img src={thumb} alt="" loading="lazy" /> : <Icon path={look.icon} size={16} stroke={1.7} />}
+      </span>
+      <span className="sp-gfile-text">
+        <span className="sp-gfile-name sp-mono" title={item.path}>
+          {name}
+        </span>
+        <span className="sp-gfile-sub">
+          <span className="sp-gdot" data-state={item.state} aria-hidden="true" />
+          <span className="sp-gsr">{stateWord}, </span>
+          {item.state !== "present" && <span>{stateWord} · </span>}
+          {look.word}
+          {item.size != null && ` · ${sizeText(item.size)}`}
+          {dir && <span className="sp-gfile-dir sp-mono"> · {dir}</span>}
+        </span>
+      </span>
+      <span className="sp-gfile-acts">
+        {look.peek && present && (
+          <button type="button" className="sp-gicon" aria-expanded={open} aria-label={`First lines of ${name}`} onClick={toggle}>
+            <Icon path={GICONS.peek} size={15} stroke={1.8} />
+          </button>
+        )}
+        {page && (
+          <Link className="sp-gicon" to={page.to} params={{ id: run.id }} search={page.search} aria-label={`Open ${name}`}>
+            <Icon path={ICONS_OPEN} size={15} stroke={1.8} />
+          </Link>
+        )}
+      </span>
+      {open && (
+        <div className="sp-gfile-head">
+          {head === null ? (
+            <p className="sp-muted">Reading…</p>
+          ) : typeof head === "string" ? (
+            <p className="sp-muted">{head}</p>
+          ) : (
+            <>
+              <pre className="sp-gcode" tabIndex={0} aria-label={`First lines of ${name}`}>
+                {head.text}
+              </pre>
+              {head.more && <p className="sp-muted">First lines only.</p>}
+            </>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+const ICONS_OPEN = "M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6";
+const FILES_SHOWN = 12;
+
 function Outputs({ run, process, task }: { run: RunDetail; process: string; task?: string }) {
   const [items, setItems] = useState<NodeOutput[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [all, setAll] = useState(false);
   const load = useCallback(() => {
     getNodeOutputs(run.id, process)
       .then((r) => (setItems(r.items ?? []), setError(null)))
@@ -89,53 +183,97 @@ function Outputs({ run, process, task }: { run: RunDetail; process: string; task
   if (!items) return <p className="sp-muted">Reading the outputs…</p>;
   const mine = task ? items.filter((o) => o.task_id === task) : items;
   if (mine.length === 0) return <p className="sp-muted">No output recorded yet.</p>;
+  const shown = all ? mine : mine.slice(0, FILES_SHOWN);
   return (
-    <ul className="sp-gsheet-list" aria-label={`Outputs of ${process}`}>
-      {mine.map((o) => (
-        <li key={`${o.task_id}:${o.path}`}>
-          <span className="sp-mono">{o.path}</span>
-          <span className="sp-state" data-tone={o.state === "present" ? "succeeded" : o.state === "removed" ? "cached" : "queued"}>
-            {o.state === "present" ? "Present" : o.state === "removed" ? "Removed (temporary)" : o.state === "missing" ? "Missing" : "Not checked"}
-          </span>
-          {o.temp && o.state !== "removed" && <span className="sp-gtag">temporary</span>}
-          {o.state === "present" && o.root === "results" && (
-            <Link className="sp-text-link" to="/runs/$id/results/file" params={{ id: run.id }} search={{ path: o.path }} aria-label={`Preview ${o.path}`}>
-              Preview
-            </Link>
-          )}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="sp-gfiles" aria-label={`Outputs of ${process}`}>
+        {shown.map((o) => (
+          <FileCard key={`${o.task_id}:${o.path}`} run={run} process={process} item={o} />
+        ))}
+      </ul>
+      {mine.length > shown.length && (
+        <button type="button" className="sp-link-button" onClick={() => setAll(true)}>
+          Show the {mine.length - shown.length} others
+        </button>
+      )}
+    </>
   );
 }
 
-/** A node's links one way, each a button that opens what flows along it: files for Snakemake,
- * a channel for Nextflow. */
-function Flows({ view, node, engine, way, onEdge }: { view: View; node: ViewNode; engine: string; way: "in" | "out"; onEdge: (e: ViewEdge) => void }) {
+/** A node's links as a small diagram: what it reads from above, itself, what it feeds below.
+ * Each other step is a button that opens the link (files for Snakemake, a channel for Nextflow). */
+function Wiring({ view, node, engine, onEdge }: { view: View; node: ViewNode; engine: string; onEdge: (e: ViewEdge) => void }) {
   const byId = new Map(view.nodes.map((n) => [n.id, n]));
-  const edges = view.edges.filter((e) => (way === "in" ? e.target : e.source) === node.id);
+  const ins = view.edges.filter((e) => e.target === node.id);
+  const outs = view.edges.filter((e) => e.source === node.id);
   const smk = engine === "snakemake";
-  if (edges.length === 0) return <p className="sp-muted">{way === "in" ? "Nothing known: it starts from the pipeline's inputs." : "Nothing known downstream."}</p>;
-  return (
-    <ul className="sp-gflows" aria-label={way === "in" ? `What ${node.label} receives` : `What ${node.label} sends`}>
+  const what = smk ? "Files" : "Channel";
+  const chips = (edges: ViewEdge[], way: "in" | "out") => (
+    <ul className="sp-gwire-row" aria-label={way === "in" ? `What ${node.label} reads from` : `What ${node.label} feeds`}>
       {edges.map((e) => {
         const other = byId.get(way === "in" ? e.source : e.target);
-        const name = other?.label ?? (way === "in" ? e.source : e.target);
+        const name = other ? (other.kind === "job" && other.step ? `${other.step} ${other.label}` : other.label) : way === "in" ? e.source : e.target;
         return (
           <li key={e.id}>
-            <button type="button" className="sp-gflow" onClick={() => onEdge(e)} aria-label={`${smk ? "Files" : "Channel"} ${way === "in" ? "from" : "to"} ${name}${e.conditions.length ? `, if ${e.conditions.join(" or ")}` : ""}: what flows`}>
-              <Icon path={smk ? GICONS.file : GICONS.channel} size={14} stroke={1.8} />
-              <span className="sp-gflow-what">{smk ? "files" : "channel"}</span>
-              <span>{way === "in" ? "from" : "to"}</span>
-              <Icon path={kindIcon(other?.kind ?? "process")} size={13} stroke={1.8} />
-              <strong>{name}</strong>
-              {e.conditions.length > 0 && <span className="sp-gtag">if {e.conditions.join(" or ")}</span>}
-              <Icon path={GICONS.link} size={13} stroke={1.8} />
+            <button type="button" className="sp-gwire-chip" data-tone={statusTone(other?.status ?? null)} onClick={() => onEdge(e)} aria-label={`${what} ${way === "in" ? "from" : "to"} ${name}${e.conditions.length ? `, if ${e.conditions.join(" or ")}` : ""}: what flows`}>
+              <Icon path={kindIcon(other?.kind ?? "process")} size={12} stroke={1.9} />
+              <span>{name}</span>
+              {e.conditions.length > 0 && <span className="sp-gwire-if">if</span>}
             </button>
           </li>
         );
       })}
     </ul>
+  );
+  return (
+    <div className="sp-gwire">
+      {ins.length ? chips(ins, "in") : <p className="sp-gwire-none">Pipeline inputs</p>}
+      <div className="sp-gwire-link" aria-hidden="true">
+        <Icon path={smk ? GICONS.file : GICONS.channel} size={12} stroke={1.9} /> {smk ? "files" : "channels"}
+      </div>
+      <div className="sp-gwire-me" data-tone={statusTone(node.status)}>
+        <Icon path={kindIcon(node.kind)} size={13} stroke={1.9} />
+        {node.label}
+      </div>
+      <div className="sp-gwire-link" aria-hidden="true">
+        <Icon path={smk ? GICONS.file : GICONS.channel} size={12} stroke={1.9} /> {smk ? "files" : "channels"}
+      </div>
+      {outs.length ? chips(outs, "out") : <p className="sp-gwire-none">End of the pipeline</p>}
+    </div>
+  );
+}
+
+/** A ratio as a bar with its band (CPU, memory) or as a share (duration). */
+function Gauge({ icon, label, ratio, text, band, hint }: { icon: string; label: string; ratio: number; text: string; band: string | null; hint: string }) {
+  return (
+    <div className="sp-ggauge" data-band={band ?? undefined}>
+      <span className="sp-ggauge-label">
+        <Icon path={icon} size={13} stroke={1.9} />
+        {label}
+      </span>
+      <strong>{text}</strong>
+      <span className="sp-ggauge-bar" role="img" aria-label={`${label}: ${text}, ${hint}`}>
+        <span style={{ width: `${Math.round(Math.min(1, ratio) * 100)}%` }} />
+        {band && <span className="sp-ggauge-tick" aria-hidden="true" />}
+      </span>
+      <span className="sp-ggauge-hint">{hint}</span>
+    </div>
+  );
+}
+
+function Efficiency({ cpu, mem, seconds, span, words }: { cpu: number | null | undefined; mem: number | null | undefined; seconds: number; span: number; words: { cpu: string; mem: string } }) {
+  if (cpu == null && mem == null && !(seconds > 0 && span > 0)) return null;
+  return (
+    <>
+      <h3 className="sp-sheet-h">
+        <Icon path={GICONS.cpu} size={14} stroke={1.8} /> Efficiency
+      </h3>
+      <div className="sp-ggauges">
+        {cpu != null && <Gauge icon={GICONS.cpu} label="CPU" ratio={cpu} text={`${Math.round(cpu * 100)} %`} band={bandOf(cpu)} hint={`${words.cpu}; ${BAND_WORDS[bandOf(cpu)]}`} />}
+        {mem != null && <Gauge icon={GICONS.memory} label="Memory" ratio={mem} text={`${Math.round(mem * 100)} %`} band={bandOf(mem)} hint={`${words.mem}; ${BAND_WORDS[bandOf(mem)]}`} />}
+        {seconds > 0 && span > 0 && <Gauge icon={GICONS.clock} label="Time" ratio={Math.min(1, seconds / span)} text={`${Math.round(Math.min(1, seconds / span) * 100)} %`} band={null} hint={`busy ${formatSeconds(seconds)} of the run's ${formatSeconds(span)}, first job's start to last job's end`} />}
+      </div>
+    </>
   );
 }
 
@@ -152,6 +290,8 @@ interface SheetProps {
   onOpen: (detail: Detail) => void;
   onTasks: (process: string) => void;
   onToggle: (group: string) => void;
+  onFocus: (group: string) => void;
+  onHide: (id: string) => void;
   onEdge: (edge: ViewEdge) => void;
   trace: "up" | "down" | null;
 }
@@ -165,12 +305,21 @@ export function keyPairs(key: string | null): [string, string][] {
 
 const bytes = (b: number | null) => (b === null ? "—" : b >= 1 << 30 ? `${(b / (1 << 30)).toFixed(1)} GiB` : `${Math.round(b / (1 << 20))} MiB`);
 
+/** A section title with its light icon. */
+function H({ icon, children }: { icon: string; children: ReactNode }) {
+  return (
+    <h3 className="sp-sheet-h">
+      <Icon path={icon} size={14} stroke={1.8} /> {children}
+    </h3>
+  );
+}
+
 function JobFacts({ task }: { task: Task }) {
   const r = task.resources;
   return (
     <>
-      <h3 className="sp-sheet-h">Key</h3>
-      <dl className="facts" aria-label="Key of this job">
+      <H icon={GICONS.job}>Key</H>
+      <dl className="sp-gfacts" aria-label="Key of this job">
         {keyPairs(task.tag).map(([k, v]) => (
           <div key={k} style={{ display: "contents" }}>
             <dt className="sp-mono">{k}</dt>
@@ -184,16 +333,16 @@ function JobFacts({ task }: { task: Task }) {
           </>
         )}
       </dl>
-      <h3 className="sp-sheet-h">Resources</h3>
-      <dl className="facts" aria-label="Resources of this job">
+      <H icon={GICONS.memory}>Asked and used</H>
+      <dl className="sp-gfacts" aria-label="Resources of this job">
         <dt>Attempt</dt>
         <dd>{task.attempt_n ?? "—"}</dd>
         <dt>CPUs</dt>
         <dd>{r.cpus ?? "—"}</dd>
-        <dt>Memory asked</dt>
-        <dd>{bytes(r.memory_bytes)}</dd>
-        <dt>Peak memory</dt>
-        <dd>{bytes(r.peak_rss_bytes)}</dd>
+        <dt>Memory</dt>
+        <dd>
+          {bytes(r.peak_rss_bytes)} used of {bytes(r.memory_bytes)} asked
+        </dd>
         <dt>Wall time</dt>
         <dd>{r.realtime_s !== null ? formatSeconds(r.realtime_s) : "—"}</dd>
       </dl>
@@ -201,83 +350,120 @@ function JobFacts({ task }: { task: Task }) {
   );
 }
 
-function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks, onToggle, onEdge, trace }: SheetProps) {
+function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks, onToggle, onFocus, onHide, onEdge, trace }: SheetProps) {
   const byId = new Map(doc.nodes.map((n) => [n.id, n]));
   const members = node ? node.members.map((m) => byId.get(m)).filter((m) => !!m) : [];
   const single = node && members.length === 1 && node.id === members[0].id ? members[0] : null;
   const params = [...new Set(members.flatMap((m) => m.params))].sort();
   const { done, total } = node ? progress(node.counts) : { done: 0, total: 0 };
   const folded = node?.kind === "stage" || node?.kind === "subworkflow";
+  const group = node?.group ?? null;
+  // wall-clock times: the run's from its first start to its last end (now while it runs), the
+  // step's from its first job's start to its last job's end
+  const now = isTerminal(run.state) ? null : Date.now();
+  const t = timeSpan(doc);
+  const span = t ? Math.max(0, ((now ?? t.to) - t.from) / 1000) : 0;
+  const wall = node?.first_start ? Math.max(0, ((node.last_end ? Date.parse(node.last_end) : now ?? Date.parse(node.first_start)) - Date.parse(node.first_start)) / 1000) : 0;
+  const tone = statusTone(node?.status ?? null);
   return (
-    <Panel id={node?.id ?? null} opened={node !== null} onClose={onClose} title={node ? `${node.label} (${kindWord(node.kind)})` : ""} icon={kindIcon(node?.kind ?? "process")}>
+    <Panel id={node?.id ?? null} opened={node !== null} onClose={onClose} title={node ? node.label : ""} icon={kindIcon(node?.kind ?? "process")} tone={tone} kind={node ? kindWord(node.kind) : ""}>
       {node && (
         <section className="sp-sheet" aria-label={node.label}>
-          <p>
-            <span className="sp-state" data-tone={statusTone(node.status)}>
+          <div className="sp-ghero">
+            <span className="sp-state" data-tone={tone}>
               {statusWord(node.status)}
             </span>
-            {total > 0 && ` ${done} of ${total} jobs done`}
-            {durationOf(node) > 0 && ` · ${formatSeconds(durationOf(node))}`}
-          </p>
+            {total > 0 && node.kind !== "job" && (
+              <span className="sp-ghero-jobs">
+                <span className="sp-ghero-bar" role="img" aria-label={`${done} of ${total} jobs done`}>
+                  <span style={{ width: `${Math.round((done / total) * 100)}%` }} />
+                </span>
+                {done}/{total} jobs
+              </span>
+            )}
+            {durationOf(node) > 0 && (
+              <span className="sp-ghero-time">
+                <Icon path={GICONS.clock} size={12} stroke={1.9} />
+                {formatSeconds(durationOf(node))}
+              </span>
+            )}
+          </div>
           {diff && diff.change === "added" && <p className="sp-gnote">New in this run: the compared run did not have it.</p>}
-          {single?.id && <p className="sp-mono sp-sheet-name">{single.id}</p>}
           {node.flags && node.flags.length > 0 && (
-            <p className="sp-gflags">
+            <p className="sp-gflags-row">
               {node.flags.map((f) => (
                 <FlagChip key={f} flag={f} />
               ))}
             </p>
           )}
           <div className="sp-gactions" role="group" aria-label={`Actions on ${node.label}`}>
-            {node.group && (
-              <button type="button" className="sp-gaction" onClick={() => onToggle(node.group!)}>
+            {group && (
+              <button type="button" className="sp-gaction" onClick={() => onToggle(group)} aria-label={folded ? `Unfold ${node.label}` : `Fold ${groupLabel(doc, group)}`}>
                 <Icon path={folded ? GICONS.unfold : GICONS.fold} size={14} stroke={2} />
-                {folded ? `Unfold ${node.label}` : `Fold ${groupLabel(doc, node.group)}`}
+                {folded ? "Unfold" : "Fold"}
               </button>
             )}
-            <button type="button" className="sp-gaction" aria-pressed={trace === "up"} onClick={() => onTrace(trace === "up" ? null : "up")}>
+            <button type="button" className="sp-gaction" aria-pressed={trace === "up"} onClick={() => onTrace(trace === "up" ? null : "up")} aria-label="What leads here">
               <Icon path={GICONS.up} size={14} stroke={2} />
-              What leads here
+              Before
             </button>
-            <button type="button" className="sp-gaction" aria-pressed={trace === "down"} onClick={() => onTrace(trace === "down" ? null : "down")}>
+            <button type="button" className="sp-gaction" aria-pressed={trace === "down"} onClick={() => onTrace(trace === "down" ? null : "down")} aria-label="What follows">
               <Icon path={GICONS.down} size={14} stroke={2} />
-              What follows
+              After
             </button>
+            {group && (
+              <button type="button" className="sp-gaction" onClick={() => onFocus(group)} aria-label={`Show only ${groupLabel(doc, group)}`}>
+                <Icon path={GICONS.focus} size={14} stroke={2} />
+                Focus
+              </button>
+            )}
+            {node.kind !== "stage" && node.kind !== "subworkflow" && (
+              <button type="button" className="sp-gaction" onClick={() => onHide(node.kind === "job" ? node.step ?? node.id : node.id)} aria-label={`Hide ${node.kind === "job" ? node.step : node.label} from the map`}>
+                <Icon path={GICONS.hide} size={14} stroke={2} />
+                Hide
+              </button>
+            )}
           </div>
-          <dl className="sp-gfacts">
-            {node.kind === "job" && (
-              <>
-                <dt>Step</dt>
-                <dd>{node.step}</dd>
-              </>
-            )}
-            {single?.source && (
-              <>
-                <dt>
-                  <Icon path={GICONS.file} size={13} stroke={1.8} /> Defined in
-                </dt>
-                <dd className="sp-mono">
-                  {single.source.file}
-                  {single.source.line ? `:${single.source.line}` : ""}
-                </dd>
-              </>
-            )}
-            {single?.condition && (
-              <>
-                <dt>
-                  <Icon path={GICONS.conditional} size={13} stroke={1.8} /> Runs when
-                </dt>
-                <dd>
-                  <code>{single.condition}</code>
-                </dd>
-              </>
-            )}
-          </dl>
-          <h3 className="sp-sheet-h">Receives</h3>
-          <p className="sp-muted sp-ghelp">{doc.engine === "snakemake" ? "Files its input names, written by these rules." : "Items (files, often with a sample id) these processes emit into its input channels."}</p>
-          <Flows view={view} node={node} engine={doc.engine} way="in" onEdge={onEdge} />
-          <h3 className="sp-sheet-h">Sends</h3>
-          <Flows view={view} node={node} engine={doc.engine} way="out" onEdge={onEdge} />
+          {(single?.source || single?.condition || node.kind === "job") && (
+            <dl className="sp-gfacts">
+              {node.kind === "job" && (
+                <>
+                  <dt>
+                    <Icon path={GICONS.process} size={13} stroke={1.8} /> Step
+                  </dt>
+                  <dd>{node.step}</dd>
+                </>
+              )}
+              {single?.source && (
+                <>
+                  <dt>
+                    <Icon path={GICONS.rule} size={13} stroke={1.8} /> Code
+                  </dt>
+                  <dd className="sp-mono">
+                    {single.source.file}
+                    {single.source.line ? `:${single.source.line}` : ""}
+                  </dd>
+                </>
+              )}
+              {single?.condition && (
+                <>
+                  <dt>
+                    <Icon path={GICONS.conditional} size={13} stroke={1.8} /> Runs if
+                  </dt>
+                  <dd>
+                    <code>{single.condition}</code>
+                  </dd>
+                </>
+              )}
+            </dl>
+          )}
+          <H icon={doc.engine === "snakemake" ? GICONS.file : GICONS.channel}>Links</H>
+          <Wiring view={view} node={node} engine={doc.engine} onEdge={onEdge} />
+          {task ? (
+            <Efficiency cpu={task.efficiency?.cpu} mem={task.efficiency?.mem} seconds={task.resources.realtime_s ?? 0} span={span} words={{ cpu: "CPU time over CPUs asked", mem: "peak memory over memory asked" }} />
+          ) : (
+            <Efficiency cpu={node.metrics.cpu_mean} mem={node.metrics.mem_max} seconds={wall} span={span} words={{ cpu: "mean over its jobs", mem: "its highest job" }} />
+          )}
           {task && (
             <>
               <JobFacts task={task} />
@@ -286,52 +472,30 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
                   Open this job: script, logs, files
                 </button>
               </p>
-              <h3 className="sp-sheet-h">Outputs</h3>
+              <H icon={GICONS.outputs}>Outputs</H>
               <Outputs run={run} process={node.members[0]} task={task.id} />
             </>
           )}
           {members.length > 1 && (
             <>
-              <h3 className="sp-sheet-h">Steps ({members.length})</h3>
-              <ul className="sp-gsheet-list" aria-label={`Steps of ${node.label}`}>
+              <H icon={GICONS.jobs}>Steps ({members.length})</H>
+              <ul className="sp-gsteps" aria-label={`Steps of ${node.label}`}>
                 {members.map((m) => (
                   <li key={m.id}>
-                    <button type="button" className="sp-link-button" aria-label={`Show ${m.name} on the graph`} onClick={() => onMember(m.id)}>
-                      {m.name}
+                    <button type="button" className="sp-gwire-chip" data-tone={statusTone(m.status ?? null)} aria-label={`Show ${m.name} on the graph, ${statusWord(m.status ?? null)}`} onClick={() => onMember(m.id)}>
+                      <Icon path={kindIcon(m.kind)} size={12} stroke={1.9} />
+                      <span>{m.name}</span>
                     </button>
-                    <span className="sp-state" data-tone={statusTone(m.status ?? null)}>
-                      {statusWord(m.status ?? null)}
-                    </span>
                   </li>
                 ))}
               </ul>
             </>
           )}
-          {(single || node.kind === "job") && (
-            <details className="sp-gdetails">
-              <summary>Code</summary>
-              <Code name={node.members[0]} code={byId.get(node.members[0])?.code} where={{ location: run.workflow.location, revision: null, fromRun: true }} />
-            </details>
-          )}
-          <h3 className="sp-sheet-h">Parameters</h3>
-          {params.length === 0 ? (
-            <p className="sp-muted">No parameter is known to be read by {members.length > 1 ? "these steps" : "this step"}.</p>
-          ) : (
-            <dl className="facts" aria-label={`Parameters of ${node.label}`}>
-              {params.map((p) => (
-                <div key={p} style={{ display: "contents" }}>
-                  <dt className="sp-mono">{p}</dt>
-                  <dd>{value(run.params, p)}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
           {single && single.kind !== "gate" && (
             <>
-              <h3 className="sp-sheet-h">Outputs</h3>
+              <H icon={GICONS.outputs}>Outputs</H>
               <Outputs run={run} process={single.id} />
-              <h3 className="sp-sheet-h">Jobs</h3>
-              <p>
+              <p className="sp-gjobs-links">
                 <button type="button" className="sp-link-button" onClick={() => onOpen({ kind: "process", name: single.id })}>
                   Open its jobs
                 </button>
@@ -342,6 +506,27 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
               </p>
             </>
           )}
+          <H icon={GICONS.params}>Parameters</H>
+          {params.length === 0 ? (
+            <p className="sp-muted">No parameter is known to be read by {members.length > 1 ? "these steps" : "this step"}.</p>
+          ) : (
+            <dl className="sp-gfacts" aria-label={`Parameters of ${node.label}`}>
+              {params.map((p) => (
+                <div key={p} style={{ display: "contents" }}>
+                  <dt className="sp-mono">{p}</dt>
+                  <dd>{value(run.params, p)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {(single || node.kind === "job") && (
+            <details className="sp-gdetails">
+              <summary>
+                <Icon path={GICONS.code} size={14} stroke={1.8} /> Code
+              </summary>
+              <Code name={node.members[0]} code={byId.get(node.members[0])?.code} where={{ location: run.workflow.location, revision: null, fromRun: true }} />
+            </details>
+          )}
         </section>
       )}
     </Panel>
@@ -349,8 +534,9 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
 }
 
 /** What flows along a link: Snakemake links steps through files, Nextflow through channels whose
- * items are the files the upstream step emitted. Shown: the upstream side's recorded outputs. */
-function EdgeSheet({ run, doc, view, edge, onClose }: { run: RunDetail; doc: GraphDocument; view: View; edge: ViewEdge | null; onClose: () => void }) {
+ * items are the files the upstream step emitted. Shown: the two steps, the link between them, and
+ * the upstream side's recorded outputs as file cards. */
+function EdgeSheet({ run, doc, view, edge, onClose, onNode }: { run: RunDetail; doc: GraphDocument; view: View; edge: ViewEdge | null; onClose: () => void; onNode: (id: string) => void }) {
   const byId = new Map(view.nodes.map((n) => [n.id, n]));
   const names = new Map(doc.nodes.map((n) => [n.id, n.name]));
   const from = edge ? byId.get(edge.source) : undefined;
@@ -358,38 +544,38 @@ function EdgeSheet({ run, doc, view, edge, onClose }: { run: RunDetail; doc: Gra
   const sources = edge ? [...new Set(edge.pairs.map(([a]) => a))] : [];
   const job = from?.kind === "job" ? from.id.slice("job:".length) : undefined;
   const smk = doc.engine === "snakemake";
+  const end = (n: ViewNode | undefined, id: string) => (
+    <button type="button" className="sp-gflow-end" data-tone={statusTone(n?.status ?? null)} onClick={() => onNode(id)} aria-label={`Open ${n?.label ?? id}`}>
+      <Icon path={kindIcon(n?.kind ?? "process")} size={14} stroke={1.9} />
+      <span>{n?.label ?? id}</span>
+    </button>
+  );
   return (
-    <Panel id={edge?.id ?? null} opened={edge !== null} onClose={onClose} title={edge ? `${from?.label ?? edge.source} → ${to?.label ?? edge.target}` : ""} icon={smk ? GICONS.file : GICONS.channel}>
+    <Panel id={edge?.id ?? null} opened={edge !== null} onClose={onClose} title={edge ? `${from?.label ?? edge.source} → ${to?.label ?? edge.target}` : ""} icon={smk ? GICONS.file : GICONS.channel} kind={smk ? "files" : "channel"}>
       {edge && (
         <section className="sp-sheet" aria-label="Link">
-          <div className="sp-gpipe" aria-hidden="true">
-            <span className="sp-gpipe-end">
-              <Icon path={kindIcon(from?.kind ?? "process")} size={14} stroke={1.8} />
-              {from?.label ?? edge.source}
-            </span>
-            <span className="sp-gpipe-mid">
-              <Icon path={smk ? GICONS.file : GICONS.channel} size={14} stroke={1.8} />
-              {smk ? "files" : "channel"}
-              <Icon path={GICONS.link} size={14} stroke={1.8} />
-            </span>
-            <span className="sp-gpipe-end">
-              <Icon path={kindIcon(to?.kind ?? "process")} size={14} stroke={1.8} />
-              {to?.label ?? edge.target}
-            </span>
+          <div className="sp-gflow-diagram">
+            {end(from, edge.source)}
+            <div className="sp-gflow-pipe">
+              <span className="sp-gflow-carrier">
+                <Icon path={smk ? GICONS.file : GICONS.channel} size={13} stroke={1.9} />
+                {smk ? "files" : "channel"}
+              </span>
+              {edge.conditions.length > 0 && (
+                <span className="sp-gflow-if">
+                  <Icon path={GICONS.conditional} size={12} stroke={1.9} /> if <code>{edge.conditions.join(" or ")}</code>
+                </span>
+              )}
+            </div>
+            {end(to, edge.target)}
           </div>
-          <p>
-            {smk
-              ? "Snakemake links two rules through files: the downstream rule's input is a file the upstream rule writes."
-              : "Nextflow links two processes through a channel: each item the upstream process emits (usually files, with values such as a sample id) is read by the downstream one."}
+          <p className="sp-ghelp">
+            <Icon path={GICONS.legend} size={13} stroke={1.8} />{" "}
+            {smk ? "The downstream rule reads files the upstream rule writes." : "Each item the upstream process emits (files, often with a sample id) goes to the downstream process."}
           </p>
-          {edge.conditions.length > 0 && (
-            <p>
-              Only when <code>{edge.conditions.join(" or ")}</code>
-            </p>
-          )}
           {edge.pairs.length > 1 && (
             <>
-              <h3 className="sp-sheet-h">Links it stands for</h3>
+              <H icon={GICONS.link}>Links it stands for ({edge.pairs.length})</H>
               <ul className="sp-gsheet-list">
                 {edge.pairs.map(([a, b]) => (
                   <li key={`${a}->${b}`} className="sp-mono">
@@ -399,13 +585,10 @@ function EdgeSheet({ run, doc, view, edge, onClose }: { run: RunDetail; doc: Gra
               </ul>
             </>
           )}
-          <h3 className="sp-sheet-h">{smk ? "Files written upstream" : "Files emitted upstream"}</h3>
-          <p className="sp-muted">
-            {smk ? "The downstream rule reads those its input names." : "The channel carries them, alone or with values, to the downstream process."}
-          </p>
+          <H icon={GICONS.outputs}>{smk ? "Files written upstream" : "Files emitted upstream"}</H>
           {sources.map((p) => (
             <div key={p}>
-              {sources.length > 1 && <p className="sp-mono">{names.get(p) ?? p}</p>}
+              {sources.length > 1 && <p className="sp-gfrom sp-mono">{names.get(p) ?? p}</p>}
               <Outputs run={run} process={p} task={job} />
             </div>
           ))}
@@ -535,7 +718,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   }, [compareId]);
 
   const set = (patch: Partial<GraphSettings>) => onSearch(searchOf({ ...settings, ...patch }, phone));
-  const view = useMemo(() => (doc ? collapse(doc, settings.level, settings.level === "jobs" ? jobs : undefined, settings.fold) : null), [doc, settings.level, jobs, settings.fold]);
+  const view = useMemo(() => (doc ? viewOf(doc, settings, settings.level === "jobs" ? jobs : undefined) : null), [doc, settings.level, jobs, settings.fold, settings.focus, settings.hide]); // eslint-disable-line react-hooks/exhaustive-deps
   const diff = useMemo(() => (doc && other ? diffGraphs(doc, other) : null), [doc, other]);
   const traced = useMemo(() => (view && trace && view.nodes.some((n) => n.id === trace.id) ? lineage(view, trace.id, trace.direction) : null), [view, trace]);
   const span = doc ? timeSpan(doc) : null;
@@ -566,7 +749,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
         source={source}
         side={
           <>
-            <EdgeSheet run={run} doc={doc} view={view} edge={edge} onClose={() => setEdge(null)} />
+            <EdgeSheet run={run} doc={doc} view={view} edge={edge} onClose={() => setEdge(null)} onNode={(id) => (setEdge(null), set({ node: id }))} />
             <NodeSheet
               run={run}
               doc={doc}
@@ -583,6 +766,8 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
               onOpen={(d) => (set({ node: null }), onOpen(d))}
               onTasks={onTasks}
               onToggle={(g) => set({ fold: toggled(settings.fold, g), node: null })}
+              onFocus={(g) => set({ focus: g, fold: settings.fold.filter((f) => f !== g) })}
+              onHide={(id) => set({ hide: [...settings.hide, id], node: null })}
               onEdge={(e) => (set({ node: null }), setEdge(e))}
             />
           </>
