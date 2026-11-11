@@ -468,7 +468,7 @@ export function RunsPage() {
       <PageHead
         section="runs"
         title="Runs"
-        phoneBar="title-and-sub"
+        phonePrimary="none"
         sub={
           <>
             <span>
@@ -479,7 +479,7 @@ export function RunsPage() {
             <LiveStatus />
           </>
         }
-        action={
+        primary={
           <Button component={Link} to="/launch">
             Launch a workflow
           </Button>

@@ -812,3 +812,138 @@ body {
   font-weight: 600;
   color: var(--sp-text-primary);
 }
+
+/* Shared primitives of ui-spec §12 (UI-03): page head v2, toolbar, card head and the states.
+   Sizes are the theme's (--mantine-*), except the fixed sizes §12 lists (36, 44, 28 px). */
+.sp-head-text {
+  min-width: 0;
+}
+.sp-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  margin-left: auto;
+}
+.sp-menu-danger,
+.sp-menu-danger .mantine-Menu-itemSection {
+  color: var(--sp-state-failed-fg);
+}
+/* The phone: the primary in the bar pinned above the tab bar (§4.11); the shell's main already
+   leaves room under the content for it. */
+.sp-head-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--sp-tabbar-h);
+  z-index: 2;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  border-top: 1px solid var(--sp-line-border);
+  background: var(--sp-surface-page);
+}
+.sp-head-bar > * {
+  width: 100%;
+}
+
+.sp-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  min-height: 36px;
+}
+.sp-toolbar-search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sp-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  margin-left: auto;
+}
+.sp-toolbar-caption {
+  font-size: var(--mantine-font-size-sm);
+  color: var(--sp-text-secondary);
+}
+@media (max-width: 767.98px) {
+  .sp-toolbar {
+    flex-wrap: wrap;
+  }
+  .sp-toolbar-search {
+    flex-basis: 100%;
+  }
+}
+
+.sp-cardhead {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  min-height: 44px;
+}
+.sp-cardhead-tile {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-subtle);
+}
+.sp-cardhead-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sp-cardhead-title {
+  margin: 0;
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
+}
+.sp-cardhead-meta {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mantine-font-size-sm);
+  color: var(--sp-text-secondary);
+}
+.sp-cardhead-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+}
+.sp-cardhead-fold svg {
+  transition: transform 0.15s;
+}
+.sp-cardhead[data-open="true"] .sp-cardhead-fold svg {
+  transform: rotate(180deg);
+}
+
+.sp-emptystate,
+.sp-errorpanel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-md);
+}
+.sp-emptystate-icon {
+  display: flex;
+  color: var(--sp-text-secondary);
+}
+.sp-emptystate-text,
+.sp-errorpanel-text,
+.sp-errorpanel-id {
+  margin: 0;
+  font-size: var(--mantine-font-size-sm);
+}
+.sp-emptystate-text,
+.sp-errorpanel-id {
+  color: var(--sp-text-secondary);
+}
+.sp-skelrows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+}

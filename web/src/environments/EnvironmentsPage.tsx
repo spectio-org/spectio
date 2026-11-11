@@ -58,7 +58,7 @@ const focusHeading = (name: string | null, opener?: string) =>
 
 /** A link or, while the file is not usable, a button described by why it waits (§4.6 pattern). */
 function Waiting({ why, to, children, primary, ...rest }: { why: string | null; to: string; children: string; primary?: boolean; "aria-label"?: string }) {
-  const look = { variant: primary ? "filled" : "default", size: primary ? "md" : "sm" };
+  const look = { variant: primary ? "filled" : "default" };
   if (!why) return <Button component={Link} to={to} {...look} {...rest}>{children}</Button>;
   return <Button {...look} aria-disabled data-disabled aria-describedby="env-waits" {...rest}>{children}</Button>;
 }
@@ -169,7 +169,7 @@ export function EnvironmentsPage() {
         section="environments"
         title="Environments"
         sub={data && `Where the tasks of a run go: the executor and its defaults · ${items.length} environments · the default is ${data.default}`}
-        action={<Waiting why={why} to="/environments/new" primary>New environment</Waiting>}
+        primary={<Waiting why={why} to="/environments/new" primary>New environment</Waiting>}
       />
       <div className="sp-segments sp-env-views" role="group" aria-label="Show environments as">
         <button type="button" aria-pressed={view.view !== "table"} onClick={() => show(false)}>Cards</button>

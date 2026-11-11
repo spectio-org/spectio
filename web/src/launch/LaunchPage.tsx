@@ -599,8 +599,9 @@ export function LaunchPage({
         section="launch"
         title="Launch a workflow"
         sub="A directory or a Git repository: Spectio guesses the engine and builds the form from its schema."
-        phoneBar="title"
-        action={
+        phoneTitle="title"
+        phonePrimary="none"
+        primary={
           <span className="launch-head">
             {/* a visual copy of the first reason of "Before Launch", which describes both buttons */}
             {why && (
