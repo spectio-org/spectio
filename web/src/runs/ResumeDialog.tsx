@@ -79,6 +79,7 @@ function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) 
   const where = server && !run.parent_run_id ? `${server.runs_root}/${run.id}/launch` : null;
   const head = run.head;
   const runsOn = whereWords(run, server);
+  const extras = extrasWords(run);
   return (
     <>
       <p>
@@ -88,7 +89,7 @@ function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) 
       </p>
       {where && <code className="sp-resume-path">{where}</code>}
       {runsOn && <p>{runsOn}</p>}
-      {extrasWords(run) && <p>{extrasWords(run)}</p>}
+      {extras && <p>{extras}</p>}
       {head && !head.alive && (
         <p className="sp-note">The head of this run has ended on {head.node} (checked): Spectio unlocks the directory first.</p>
       )}
