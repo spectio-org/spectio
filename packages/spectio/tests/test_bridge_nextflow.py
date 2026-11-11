@@ -708,37 +708,49 @@ import java.nio.file.Paths
 def at = { String cmd, String file -> groovy.json.JsonOutput.toJson(
     spectio.SpectioObserver.moduleTarget(cmd, file ? Paths.get(file) : null, 'abc123')) }
 println at('nextflow run main.nf -profile test', null)
-def p = args[0] + '/main.nf'
-println at('nextflow module run nf-core/fastqc -version 1.2 -params-file p.json', p)
-println at('nextflow -c x.config module run nf-core/fastqc', p)
-println at('nextflow module run ' + args[1], args[1] + '/main.nf')
+def pinned = 'nextflow module run nf-core/fastqc -version 1.2 -params-file p.json'
+println at(pinned, args[0] + '/main.nf')
+println at('nextflow -c x.config module run nf-core/fastqc', args[1] + '/main.nf')
+println at('nextflow module run ' + args[2], args[2] + '/main.nf')
 println at('nextflow run x --tool module run', null)
+println at('nextflow module run my/mod', args[3] + '/main.nf')
 """
 
 
 def test_module_target_from_the_command_line(nextflow: str, tmp_path: Path) -> None:
-    installed = tmp_path / "modules" / "nf-core" / "fastqc"
-    installed.mkdir(parents=True)
+    """architecture §13.8: `registry` only with a 64-hex checksum in `.module-info` (with the
+    command line's name), else `local`; `version` from `meta.yml`, else `-version`."""
     checksum = "b" * 64
-    (installed / ".module-info").write_text(f"#date\nchecksum={checksum}\nregistryUrl=x\n")
+    pinned_dir, meta_dir, empty_dir = (tmp_path / d / "fastqc" for d in ("a", "b", "c"))
+    for where in (pinned_dir, meta_dir, empty_dir):
+        where.mkdir(parents=True)
+        (where / ".module-info").write_text(f"#date\nchecksum={checksum}\nregistryUrl=x\n")
+    (meta_dir / "meta.yml").write_text('name: fastqc\nversion: "1.3"  # the release\n')
+    (empty_dir / ".module-info").write_text("")
     jar = build(nextflow, "--classpath")
     build(nextflow, str(tmp_path / "plugin"))
     classes = tmp_path / "plugin" / "nf-spectio-0.0.1" / "classes"
     out = subprocess.run(
         ["java", "-cp", f"{jar}:{classes}", "groovy.ui.GroovyMain", "-e", TARGET_SCRIPT,  # noqa: S607
-         str(installed), str(MODULE)],
+         str(pinned_dir), str(meta_dir), str(MODULE), str(empty_dir)],
         check=True, capture_output=True, text=True,
     ).stdout  # fmt: skip
-    pipeline, pinned, unpinned, local, param = (json.loads(x) for x in out.splitlines()[-5:])
+    pipeline, pinned, unpinned, local, param, empty = (json.loads(x) for x in out.splitlines()[-6:])
     assert pipeline is None and param is None
     assert pinned == {
         "kind": "module", "name": "nf-core/fastqc", "version": "1.2", "source": "registry",
         "hash": checksum,
     }  # fmt: skip
-    assert unpinned["version"] is None and unpinned["hash"] == checksum
+    assert (unpinned["name"], unpinned["version"], unpinned["hash"]) == (
+        "nf-core/fastqc", "1.3", checksum
+    )  # fmt: skip
     assert local == {
         "kind": "module", "name": "synth_stats", "version": "1.0.0", "source": "local",
         "path": str(MODULE), "hash": "abc123",
+    }  # fmt: skip
+    assert empty == {
+        "kind": "module", "name": "fastqc", "version": None, "source": "local",
+        "path": str(empty_dir), "hash": "abc123",
     }  # fmt: skip
 
 

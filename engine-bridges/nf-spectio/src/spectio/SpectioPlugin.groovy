@@ -506,52 +506,75 @@ class SpectioObserver implements TraceObserverV2 {
 
     static final int MAX_TARGET_FILE = 65536
     static final List<String> GLOBAL_WITH_VALUE = ['-c', '-C', '-config', '-log', '-syslog', '-trace']
-    static final java.util.regex.Pattern REGISTRY_NAME = ~/[a-z0-9][a-z0-9_-]{0,63}\/[a-z0-9][a-z0-9_.-]{0,127}/
     static final java.util.regex.Pattern HEX = ~/[0-9a-f]{64}/
 
     /** `nextflow module run` (Nextflow >= 26.04): the module this run targets, or null for a
-     *  pipeline run (api §5.10, architecture §13.8). The command line is parsed here and never sent;
-     *  a registry module's checksum is its `.module-info`'s, a local one's hash is the script ID. */
+     *  pipeline run (api §5.10, architecture §13.8). The command line is parsed here and never sent.
+     *  `source: registry` and the checksum only when `.module-info` beside the script holds a
+     *  64-hex `checksum=`, with the command line's name; else `source: local`, the script ID and
+     *  the directory. `version` is `meta.yml`'s, else `-version`'s. Any failure: no target. */
     static Map moduleTarget(String commandLine, Object scriptFile, String scriptId) {
-        final words = (commandLine ?: '').take(MAX_MESSAGE_CHARS).trim().split(/\s+/) as List<String>
-        int at = 1  // the first word is the launcher; then its own options, then the command
-        while (at < words.size() && words[at].startsWith('-'))
-            at += words[at] in GLOBAL_WITH_VALUE ? 2 : 1
-        if (at + 2 >= words.size() || words[at] != 'module' || words[at + 1] != 'run' || words[at + 2].startsWith('-'))
-            return null
-        final ref = words[at + 2]
-        final v = words.indexOf('-version')
-        final version = v > at && v + 1 < words.size() ? words[v + 1].take(64) : null
-        final Path dir = scriptFile instanceof Path ? ((Path) scriptFile).parent : null
-        if (REGISTRY_NAME.matcher(ref).matches() && !ref.startsWith('/') && !ref.startsWith('.')) {
+        try {
+            final words = (commandLine ?: '').take(MAX_MESSAGE_CHARS).trim().split(/\s+/) as List<String>
+            int at = 1  // the first word is the launcher; then its own options, then the command
+            while (at < words.size() && words[at].startsWith('-'))
+                at += words[at] in GLOBAL_WITH_VALUE ? 2 : 1
+            if (at + 2 >= words.size() || words[at] != 'module' || words[at + 1] != 'run' || words[at + 2].startsWith('-'))
+                return null
+            final ref = words[at + 2]
+            final v = words.indexOf('-version')
+            final given = v > at && v + 1 < words.size() ? words[v + 1] : null
+            final Path dir = scriptFile instanceof Path ? ((Path) scriptFile).parent : null
+            final meta = dir == null ? null : smallText(dir.resolve('meta.yml'))
+            final version = (yamlScalar(meta, 'version') ?: given)?.take(64)
             final info = dir == null ? null : smallText(dir.resolve('.module-info'))
             final checksum = info?.readLines()?.find { it.startsWith('checksum=') }?.substring(9)?.trim()
-            return [kind: 'module', name: ref, version: version, source: 'registry',
-                    hash: checksum && HEX.matcher(checksum).matches() ? checksum : null]
+            if (checksum && HEX.matcher(checksum).matches())
+                return [kind: 'module', name: ref.take(MAX_MESSAGE_CHARS), version: version, source: 'registry', hash: checksum]
+            final name = yamlScalar(meta, 'name') ?: dir?.fileName?.toString() ?: ref
+            return [kind: 'module', name: name.take(MAX_MESSAGE_CHARS), version: version, source: 'local',
+                    path: dir?.toString()?.take(MAX_MESSAGE_CHARS), hash: scriptId]
+        } catch (Exception ignored) {
+            return null  // only `target` is lost, never the event (§13.3)
         }
-        final meta = dir == null ? null : smallText(dir.resolve('meta.yml'))
-        final name = yamlScalar(meta, 'name') ?: dir?.fileName?.toString() ?: ref
-        return [kind: 'module', name: name.take(MAX_MESSAGE_CHARS), version: yamlScalar(meta, 'version')?.take(64),
-                source: 'local', path: dir?.toString(), hash: scriptId]
     }
 
-    /** A small regular file's text, never through a symlink; null otherwise. */
+    /** A regular file's text, at most MAX_TARGET_FILE bytes, never through a symlink; null otherwise. */
     static String smallText(Path file) {
         try {
-            if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS) || Files.size(file) > MAX_TARGET_FILE)
+            if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS))
                 return null
-            return new String(Files.readAllBytes(file), StandardCharsets.UTF_8)
+            final channel = Files.newByteChannel(file, LinkOption.NOFOLLOW_LINKS)
+            try {
+                final buf = ByteBuffer.allocate(MAX_TARGET_FILE + 1)
+                while (buf.hasRemaining()) {
+                    if (channel.read(buf) < 0)
+                        break
+                }
+                if (buf.position() > MAX_TARGET_FILE)
+                    return null
+                return new String(buf.array(), 0, buf.position(), StandardCharsets.UTF_8)
+            } finally {
+                channel.close()
+            }
         } catch (Exception ignored) {
             return null
         }
     }
 
-    /** A top-level `key: value` of a YAML file, quotes removed: enough for `meta.yml`'s name and version. */
+    /** A top-level `key: value` of a YAML file: the first line that starts with `key:`, cut at the
+     *  first `#`, trimmed, one pair of matching quotes removed, at most 4096 characters. Enough
+     *  for `meta.yml`'s name and version, with no regular expression to backtrack (SEC-161S-11). */
     static String yamlScalar(String text, String key) {
-        if (text == null)
+        final line = text?.readLines()?.find { it.startsWith(key + ':') }
+        if (line == null)
             return null
-        final m = text =~ /(?m)^${key}:[ \t]*["']?([^"'\r\n#]*?)["']?[ \t]*(#.*)?$/
-        return m.find() && m.group(1) ? m.group(1) : null
+        String value = line.substring(key.length() + 1)
+        final hash = value.indexOf('#')
+        value = (hash >= 0 ? value.substring(0, hash) : value).trim()
+        if (value.length() >= 2 && (value[0] == '"' || value[0] == "'") && value[-1] == value[0])
+            value = value.substring(1, value.length() - 1)
+        return value ? value.take(MAX_MESSAGE_CHARS) : null
     }
 
     @Override void onFlowBegin() { emit('onFlowBegin') { [:] } }
