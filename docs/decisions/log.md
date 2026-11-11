@@ -1360,3 +1360,16 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Why.** The smallest change that keeps today's runs unchanged: one nullable column, one optional body field, one inspect route, and the head script's existing generators.
 - **Changed.** [api](../specs/api-and-data-model.md) new §5.10, a `runs.target` row in §7, a slug in §4.1, a note in §14.1; [ui-spec](../specs/ui-spec.md) new §4.15, a note in §6; [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal); [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) (one row); [research note](../research/spike-module-run-2026-11-10.md).
 - **[to be validated].** `module run` on Nextflow 25.x (expected absent); a workflow-kind module; what `module run` with no version downloads; whether the registry serves a checksum before install; registry reachability from HPC nodes; the engine log of a terminal module run (`.module.log`).
+
+## 2026-11-11 — Single-target runs: clearer screens (Thomas, #161)
+
+- **Context.** Thomas found the first screens of single-target runs ([2026-11-10](#2026-11-10-runs-that-target-one-module-or-one-rule-002-behind-a-flag-161)) "pas assez intuitif et joli", and asked for distinctions in the runs list. Mockups were shown in this session and approved on 2026-11-11 ("Me parait bon, continue").
+- **Decided (Thomas; details assumed under the standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):**
+    - One scope colour code: grey pipeline, accent module, sky rule or file, always with the word.
+    - Runs list: a Scope column and Scope segmented buttons replace the target line and the `<select>`; a "checksum changed" chip.
+    - Run header: the target as one badge; a changed checksum is a titled warning.
+    - Rule run: the steps to the target and the rules not needed replace the "Outside the target" fold. Module run: the processes table stays, with no ring.
+    - Launch: the same page, with "What to run" cards, a kind choice, a rule grid and a "What will run" strip.
+    - A module run takes no extra config file.
+    - A newer registry version is shown later, not in 0.0.2.
+- **Changed.** [ui-spec §4.15](../specs/ui-spec.md#415-runs-that-target-one-module-or-one-rule-002); [api §5.10](../specs/api-and-data-model.md#510-run-target-one-module-or-one-rule-002) (no `config_file` for a module, the template's fields, newer version later).
