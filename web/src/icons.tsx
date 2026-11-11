@@ -12,6 +12,7 @@ export const ICONS = {
   chevronLeft: "M15 6l-6 6 6 6",
   arrowRight: "M5 12h14 M13 6l6 6-6 6",
   check: "M5 12l5 5 9-10",
+  checkCheck: "M18 6L7 17l-5-5 M22 10l-7.5 7.5L13 16",
   cross: "M6 6l12 12 M18 6L6 18",
   search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4",
   bell: "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0",
