@@ -1,12 +1,21 @@
 site_name: Spectio
-site_description: Launch, monitor and steer Nextflow and Snakemake runs, with QC gates, a headless API and depictio integration.
+site_description: Launch, monitor and steer Nextflow and Snakemake runs, with QC gates, a headless API and Depictio integration.
 site_url: https://spectio.pages.dev/
 repo_url: https://github.com/spectio-org/spectio
 edit_uri: edit/main/docs/
 docs_dir: docs
 strict: true
-# A local Excalifont.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site.
 exclude_docs: |
+  # internal design records: kept in the repository, not published (hooks/internal.py links to them on GitHub)
+  /specs/
+  /decisions/
+  /reviews/
+  /research/
+  /playbooks/
+  /plans/
+  /progress/W*/
+  /map.md
+  # a local Excalifont.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site
   fonts/*.ttf
   # read by the Snakemake plugin catalogue from the root of main, not part of the site
   /intro.md
@@ -57,6 +66,7 @@ extra_javascript:
 hooks:
   - hooks/progress.py
   - hooks/lists.py
+  - hooks/internal.py
 
 markdown_extensions:
   - tables
@@ -103,12 +113,12 @@ nav:
       - Runners: features/runners.md
       - QC gates (optional): features/gates.md
       - Administration: features/administration.md
-      - depictio: features/depictio.md
+      - Depictio: features/depictio.md
+      - LabID: features/labid.md
+      - AI agents: features/ai-agents.md
   - API: api/index.md
   - Developer:
       - developer/index.md
       - Progress: progress/index.md
-      - Specifications: map.md
-      - Decisions: decisions/log.md
   - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md

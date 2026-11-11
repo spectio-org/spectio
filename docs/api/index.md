@@ -11,7 +11,7 @@ Everything the web interface does can be done from a script, a LIMS such as LabI
 
 - **REST API** under `/api/v1`, described by an OpenAPI file. Errors follow one format, and writes are safe to retry.
 - **Events** as they happen: live in the browser, by webhooks, or to message systems (MQTT, AMQP, Kafka).
-- **The `spectio` command line,** with the same models as depictio's CLI.
+- **The `spectio` command line,** with the same models as Depictio's CLI.
 - **Tokens** for people, robots and services, each limited to what it needs.
 
 ```bash

@@ -43,7 +43,7 @@ def _strip(pipeline, steps, base: str = "") -> str:
         done = sum(_status(steps, i) == "done" for i in ids)
         pct = round(100 * done / len(ids)) if ids else 0
         cells.append(
-            f'<a class="sp-wave" href="{base}progress/#{wave["id"].lower()}">'
+            f'<a class="sp-wave" href="{base}progress/">'
             f'<span class="sp-wave__id">{wave["id"]}</span>'
             f'<span class="sp-wave__bar"><span style="width:{pct}%"></span></span>'
             f'<span class="sp-wave__count">{done}/{len(ids)}</span>'
