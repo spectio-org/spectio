@@ -904,3 +904,12 @@ FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and 
 - Open minors: CR-P3FU119-01 and -02 (bounded re-reads after sacct), CR-P3FU110D-02, -04, SEC-P3FU110D-01, CR-P3FU102I-01, -02, SEC-P3FU102I-02, CR-P3FU120-02, CR-P3FU118-01; LaunchResources tests near the 5 s timeout under parallel load.
 - **Costs** (subagent tokens): 110d ~420k, 119 ~266k, 102i ~476k, 120 ~305k, B15 ~650k; the earlier tasks of this run are in their workflow journals.
 - **Next:** promotion to main, then login1 retest h (sort icons, short-ID search, profile title, Pin focus, one-run Delete wording, resources form and config file, Blosc/LZ4/zstd images, Environments "1 CPU").
+
+## 2026-11-11 — promotion P3-B15 (#269) and login1 retest h
+
+- #268 (journal) merged into integration (036574f6); promotion #269 merged into main (498e8c0f), CI green. #262 (FU-P3-105a, 0.0.2) stays out.
+- **Retest h** (login1, main 498e8c0f, Unix socket only, 0 SLURM jobs, 0 sacct calls, 0 CSP violations): 6 PASS, 1 UNTESTED.
+  - PASS: sort icons are arrows and a third press clears `?sort=`; search by the short ID "D80950"; the /profile tab title, and Pin keeps focus on its own button; Launch Resources and Extra config file, a run with 1 CPU succeeded and Run detail shows "1 CPU per task · Set at Launch" and the kept file (0600 on disk, View opens it); Blosc(lz4), LZ4 and zstd OME-Zarrs render; the Environments card reads "at most 1 CPU and 8 GiB".
+  - UNTESTED: the one-run Delete sheet now reads in the singular, but no Delete was confirmed (the peer's auto mode blocks it as irreversible), as in retest g.
+  - Minors for the follow-up list: Before Launch says "Nothing is missing", then Launch refuses a group-writable (664) config file; the pre-check could say it first. A pointer click on the aside Launch button sent no POST (Enter and a DOM click did), as in retest e (FU-P3-108). The luma.gl `instancePickingColors` warning (FU-P3-108).
+- **Next:** Thomas's decisions (0.0.2 work and #262, the CI step of the order fixtures, UX-P3FU110C-07, the versioning proposals); the minors above with the open list of the 2026-11-11 entry; a confirmed Delete on login1 by Thomas.
