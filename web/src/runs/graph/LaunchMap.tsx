@@ -5,6 +5,7 @@ import { Drawer } from "@mantine/core";
 import { useEffect, useState } from "react";
 import type { ApiError } from "../../api";
 import { usePhone } from "../../shell/layout";
+import { Code } from "./Code";
 import { GraphView, Links, kindWord } from "./GraphView";
 import { type ViewNode, collapse } from "./model";
 import { type GraphSettings, settingsOf } from "./settings";
@@ -38,6 +39,7 @@ export function LaunchMap({ location, revision, name }: { location: string; revi
         settings={settings}
         onSettings={(p) => setSettings((s) => ({ ...s, ...p }))}
         onOpen={setOpen}
+        source={{ location, revision }}
         notes={
           doc.producer === "stages-only" ? (
             <p className="sp-gnote">The links between steps are not known before the run: steps are grouped by stage, without arrows.</p>
@@ -58,7 +60,7 @@ export function LaunchMap({ location, revision, name }: { location: string; revi
       >
         {open && (
           <section className="sp-sheet" aria-label={open.label}>
-            <Links view={collapse(doc, settings.level)} id={open.id} />
+            <Links view={collapse(doc, settings.level, undefined, settings.fold)} id={open.id} />
             <ul className="sp-gsheet-list" aria-label={`Steps of ${open.label}`}>
               {members.map((m) => (
                 <li key={m.id}>
@@ -73,6 +75,12 @@ export function LaunchMap({ location, revision, name }: { location: string; revi
                 </li>
               ))}
             </ul>
+            {members.length === 1 && (
+              <>
+                <h3 className="sp-sheet-h">Code</h3>
+                <Code name={members[0].id} code={members[0].code} where={{ location, revision }} />
+              </>
+            )}
           </section>
         )}
       </Drawer>

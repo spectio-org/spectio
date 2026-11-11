@@ -21,8 +21,27 @@ export interface ViewNode {
   laneLabel: string | null;
   /** BioFlow-Insight's position, when the document has one. */
   hint: { x: number; y: number } | null;
-  /** The jobs level: the process's jobs, drawn inside it. */
-  jobs?: ViewNode[];
+  /** The group a double-click folds or unfolds (a subworkflow or `stage:<id>`), if any. */
+  group?: string | null;
+  /** A job: its key (Nextflow's tag, Snakemake's wildcards) and its step's name. */
+  key?: string | null;
+  step?: string;
+  /** What sets the step apart, drawn as marks: see FLAG_WORDS. */
+  flags?: Flag[];
+}
+
+export type Flag = "checkpoint" | "temp" | "conditional" | "retried" | "cached";
+
+/** A step's marks: a checkpoint (the DAG grows after it), temporary outputs, a condition in the
+ * code, retried jobs, jobs reused from an earlier run. */
+export function flagsOf(nodes: GraphNode[]): Flag[] {
+  const out: Flag[] = [];
+  if (nodes.some((n) => n.kind === "checkpoint")) out.push("checkpoint");
+  if (nodes.some((n) => n.temp)) out.push("temp");
+  if (nodes.some((n) => n.condition)) out.push("conditional");
+  if (nodes.some((n) => (n.retries ?? 0) > 0)) out.push("retried");
+  if (nodes.some((n) => (n.counts?.cached ?? 0) + (n.counts?.stored ?? 0) > 0)) out.push("cached");
+  return out;
 }
 
 export interface ViewEdge {
@@ -31,6 +50,8 @@ export interface ViewEdge {
   target: string;
   /** The conditions of the links it stands for, when known. */
   conditions: string[];
+  /** The document links it stands for, as [source, target] node ids. */
+  pairs: [string, string][];
 }
 
 export interface View {
@@ -98,6 +119,7 @@ function processNode(doc: GraphDocument, n: GraphNode): ViewNode {
     lane,
     laneLabel: groupName(doc, lane),
     hint: n.layout ?? null,
+    flags: flagsOf([n]),
   };
 }
 
@@ -109,8 +131,9 @@ function collapseEdges(doc: GraphDocument, to: (id: string) => string | undefine
     const target = to(e.target);
     if (!source || !target || source === target) continue;
     const id = `${source}->${target}`;
-    const edge = seen.get(id) ?? { id, source, target, conditions: [] };
+    const edge = seen.get(id) ?? { id, source, target, conditions: [], pairs: [] };
     if (e.condition && !edge.conditions.includes(e.condition)) edge.conditions.push(e.condition);
+    edge.pairs.push([e.source, e.target]);
     seen.set(id, edge);
   }
   return [...seen.values()];
@@ -130,6 +153,7 @@ function merged(doc: GraphDocument, id: string, label: string, kind: ViewKind, m
     lane,
     laneLabel: groupName(doc, lane),
     hint: null,
+    flags: flagsOf(members),
   };
 }
 
@@ -168,61 +192,123 @@ const jobStatus: Record<string, ProcessStatus> = {
   not_scheduled: "not_needed",
 };
 
-/** The document at a level. `jobs`: the loaded jobs of each expanded process (Jobs level). */
-export function collapse(doc: GraphDocument, level: GraphLevel, jobs: Record<string, Task[]> = {}): View {
-  if (level === "process" || level === "jobs") {
-    const nodes = doc.nodes.map((n) => processNode(doc, n));
-    if (level === "jobs") {
-      for (const node of nodes) {
-        const loaded = jobs[node.id];
-        if (!loaded) continue;
-        node.jobs = loaded.map((t) => ({
-          id: `job:${t.id}`,
-          label: t.tag ?? t.name ?? t.id,
-          kind: "job",
-          members: [node.id],
-          status: jobStatus[t.state] ?? null,
-          counts: { [t.state]: 1 },
-          metrics: {},
-          first_start: null,
-          last_end: null,
-          lane: node.id,
-          laneLabel: node.label,
-          hint: null,
-        }));
-      }
-    }
-    const ids = new Set(nodes.map((n) => n.id));
-    return { nodes, edges: collapseEdges(doc, (id) => (ids.has(id) ? id : undefined)) };
-  }
+/** A job's key as a set of tokens: Snakemake's `k=v` pairs, or the words of a Nextflow tag. */
+function keyTokens(key: string | null | undefined): Set<string> | null {
+  if (!key) return null;
+  const tokens = key.split(/[\s,;|]+/).filter(Boolean);
+  return tokens.length ? new Set(tokens) : null;
+}
+
+/** Two jobs of linked steps are linked when one step has a single job (a fan-in or a fan-out),
+ * or when one job's key is part of the other's (same sample, or `sample=A` in
+ * `sample=A, chrom=1`). Jobs with no key are linked only through a single job. */
+export function jobsLinked(a: ViewNode, b: ViewNode, sources: number, targets: number): boolean {
+  if (sources === 1 || targets === 1) return true;
+  const x = keyTokens(a.key);
+  const y = keyTokens(b.key);
+  if (!x || !y) return false;
+  const within = (p: Set<string>, q: Set<string>) => [...p].every((t) => q.has(t));
+  return within(x, y) || within(y, x);
+}
+
+/** The group a double-click on `n` folds at `level`, and the groups of the node's lane chain. */
+function groupOf(doc: GraphDocument, n: GraphNode, level: GraphLevel, outer: Map<string, string | null>): string | null {
+  if (level === "stage") return n.stage_id ? `stage:${n.stage_id}` : null;
+  if (level === "subworkflow") return outer.get(n.id) ?? null;
+  return n.subworkflow && doc.groups.some((g) => g.id === n.subworkflow) ? n.subworkflow : n.stage_id ? `stage:${n.stage_id}` : null;
+}
+
+function jobOf(t: Task, step: ViewNode): ViewNode {
+  return {
+    id: `job:${t.id}`,
+    label: t.tag ?? t.name ?? t.id,
+    kind: "job",
+    members: [step.id],
+    status: jobStatus[t.state] ?? null,
+    counts: { [t.state]: 1 },
+    metrics: {},
+    first_start: null,
+    last_end: null,
+    lane: step.id,
+    laneLabel: step.label,
+    hint: null,
+    group: step.group,
+    key: t.tag,
+    step: step.label,
+  };
+}
+
+/** The document at a level. `jobs`: the loaded jobs of each step (Jobs level: every step with
+ * jobs is replaced by one node per job, linked job to job). `toggle`: the groups folded or
+ * unfolded by hand: at the Process and Jobs levels a listed group is folded into one node; at the
+ * Subworkflow and Stage levels a listed group is unfolded into its steps. */
+export function collapse(doc: GraphDocument, level: GraphLevel, jobs: Record<string, Task[]> = {}, toggle: string[] = []): View {
+  const flip = new Set(toggle);
+  const subs = new Map(doc.groups.filter((g) => g.kind === "subworkflow").map((g) => [g.id, g.parent]));
+  const outer = collapsedSubworkflow(doc);
+  const hasSubs = subs.size > 0;
   const key = new Map<string, string>();
-  const buckets = new Map<string, { label: string; kind: ViewKind; members: GraphNode[]; lane: string | null }>();
-  const put = (n: GraphNode, id: string, label: string, kind: ViewKind, lane: string | null) => {
+  const buckets = new Map<string, { label: string; kind: ViewKind; members: GraphNode[]; lane: string | null; group: string | null }>();
+  const put = (n: GraphNode, id: string, label: string, kind: ViewKind, lane: string | null, group: string | null) => {
     key.set(n.id, id);
-    const bucket = buckets.get(id) ?? { label, kind, members: [], lane };
+    const bucket = buckets.get(id) ?? { label, kind, members: [], lane, group };
     bucket.members.push(n);
     buckets.set(id, bucket);
   };
-  if (level === "stage") {
-    for (const n of doc.nodes) {
+  const own = (n: GraphNode, group: string | null) => put(n, n.id, n.name, n.kind, laneOf(n), group);
+  for (const n of doc.nodes) {
+    if (level === "stage") {
       const id = `stage:${n.stage_id ?? "-"}`;
-      put(n, id, n.stage_id ? groupName(doc, id) ?? n.stage_id : "No stage", "stage", null);
-    }
-  } else {
-    const subOf = collapsedSubworkflow(doc);
-    const hasSubs = doc.groups.some((g) => g.kind === "subworkflow");
-    for (const n of doc.nodes) {
-      const sub = hasSubs ? subOf.get(n.id) ?? null : null;
-      if (sub) put(n, sub, groupName(doc, sub) ?? sub, "subworkflow", sub);
-      else put(n, n.id, n.name, n.kind, laneOf(n));
+      if (n.stage_id && flip.has(id)) own(n, id);
+      else put(n, id, n.stage_id ? groupName(doc, id) ?? n.stage_id : "No stage", "stage", null, n.stage_id ? id : null);
+    } else if (level === "subworkflow") {
+      const sub = hasSubs ? outer.get(n.id) ?? null : null;
+      if (sub && !flip.has(sub)) put(n, sub, groupName(doc, sub) ?? sub, "subworkflow", sub, sub);
+      else own(n, sub);
+    } else {
+      // the outermost folded group holding the node wins: its subworkflows, then its stage
+      let folded: string | null = null;
+      for (let at = n.subworkflow; at; at = subs.get(at) ?? null) if (flip.has(at)) folded = at;
+      const stage = n.stage_id ? `stage:${n.stage_id}` : null;
+      if (!folded && stage && flip.has(stage)) folded = stage;
+      if (folded) put(n, folded, groupName(doc, folded) ?? folded, folded.startsWith("stage:") ? "stage" : "subworkflow", folded.startsWith("stage:") ? null : folded, folded);
+      else own(n, groupOf(doc, n, level, outer));
     }
   }
   const nodes: ViewNode[] = [];
   for (const [id, b] of buckets) {
-    if (b.members.length === 1 && b.kind !== "stage" && b.kind !== "subworkflow") nodes.push(processNode(doc, b.members[0]));
-    else nodes.push(merged(doc, id, b.label, b.kind, b.members, b.lane));
+    const single = b.members.length === 1 && b.kind !== "stage" && b.kind !== "subworkflow";
+    nodes.push({ ...(single ? processNode(doc, b.members[0]) : merged(doc, id, b.label, b.kind, b.members, b.lane)), group: b.group });
   }
-  return { nodes, edges: collapseEdges(doc, (id) => key.get(id)) };
+  const view = { nodes, edges: collapseEdges(doc, (id) => key.get(id)) };
+  return level === "jobs" ? explode(view, jobs) : view;
+}
+
+/** The Jobs level: each step with loaded jobs becomes its jobs, and each link between steps
+ * becomes links between their jobs (`jobsLinked`). */
+function explode(view: View, jobs: Record<string, Task[]>): View {
+  const of = new Map<string, ViewNode[]>();
+  const nodes: ViewNode[] = [];
+  for (const n of view.nodes) {
+    const loaded = n.members.length === 1 && n.id === n.members[0] ? jobs[n.id] : undefined;
+    if (!loaded?.length) {
+      nodes.push(n);
+      of.set(n.id, [n]);
+      continue;
+    }
+    const mine = loaded.map((t) => jobOf(t, n));
+    nodes.push(...mine);
+    of.set(n.id, mine);
+  }
+  const edges: ViewEdge[] = [];
+  for (const e of view.edges) {
+    const from = of.get(e.source) ?? [];
+    const to = of.get(e.target) ?? [];
+    for (const a of from)
+      for (const b of to)
+        if (jobsLinked(a, b, from.length, to.length)) edges.push({ id: `${a.id}->${b.id}`, source: a.id, target: b.id, conditions: e.conditions, pairs: e.pairs });
+  }
+  return { nodes, edges };
 }
 
 // ---- search ---------------------------------------------------------------------------------

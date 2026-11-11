@@ -765,15 +765,21 @@ A separate, simpler layout below 768 px (depictio's phone model), not a squeezed
 - **Stage**: one node per stage, with edges merged.
 - **Subworkflow**: Nextflow subworkflows, or Snakemake rule files.
 - **Process**: one node per process or rule. This is the default.
-- **Jobs**: the nodes the user expands, each showing its tasks, loaded from `/tasks?process=` when expanded and refreshed when its counts change.
+- **Jobs**: the exploded view. Every step with jobs becomes one node per job, named by its key: Nextflow's `tag`, or Snakemake's wildcards (`region=chr1, sample=A`), so the sample, cell or field of view reads on the box. Jobs of linked steps are linked when one step has a single job, or when one job's key tokens are a subset of the other's. Jobs are loaded from `/tasks?process=` in pipeline order, at most 200 per step and 2000 in all; a step past the cap stays one node.
 
-A compound node can be collapsed or expanded in place.
+**Fold and unfold.** Double-clicking a node of a subworkflow or stage folds the group into one box; double-clicking that box unfolds it again, at any level. A single click opens the node sheet (after 250 ms, so a double-click does not open it; Enter and Space open it at once). The sheet has the same action as a button, so nothing needs a double-click. The folded groups are kept in the URL (`?fold=a|b`) and cleared when the level changes.
+
+**Marks.** Each node shows chips for what it is or did: `checkpoint` (the graph grows once it ends), `temp` (writes temporary files, removed once read, `temp` of api §5.10), `if` (runs only under a condition), retried and cached. A legend under the toolbar names the state colours and the marks, says what the active overlay measures (for example "CPU = mean CPU used ÷ CPU requested, over the step's jobs") and gives its lightest and darkest values.
+
+**Links.** Clicking an edge opens a sheet that says what it carries, by engine. Snakemake links are files: a rule needs a file another rule writes, and the sheet lists the upstream step's outputs. Nextflow links are channels: values flow from one process to the next, and the sheet lists the upstream outputs published so far. It also gives the link's condition and, folded, the step-to-step links the edge stands for.
+
+**Code.** Right-clicking a node opens a code card next to it (`role="dialog"`, Escape closes it), and the node sheet has a "Code" section with the same content: the definition from `/workflows:source` (api §5.10), with line numbers, or the `code` a BioFlow-Insight document carries.
 
 **Layouts**, switchable at any time; the choice is kept in the URL:
 - **Layered**, top-down or left-right;
 - **Metro**: one lane per stage or subworkflow, with x the topological rank;
 - **Compact**: a grid per stage;
-- **Upstream**: BioFlow-Insight's own positions, offered only when that producer drew the graph.
+- **BioFlow-Insight (positions from the code)**: that producer's own positions, offered only when it drew the graph (a Nextflow Launch map); run graphs never come from it.
 
 **Search.** Search by name, kind (`kind:`), state (`state:`), parameter (`param:`) or source file (`file:`). Matches are highlighted and the other nodes dimmed. Enter goes to the next match and Escape clears the search. The query is kept in the URL.
 
@@ -787,9 +793,9 @@ A compound node can be collapsed or expanded in place.
 - **Lineage**: the ancestors and descendants of a node (Trace upstream / Trace downstream in its sheet). Starting from an output file is later.
 - **Replay**: a time scrubber from the first task start to the last task end that colours each node by its state at that time.
 - **Minimap**.
-- **Export** as SVG or PNG.
+- **Export** as SVG, PNG or HTML. The HTML file is standalone, with no script: the SVG (each node with a `<title>`) and a table of the steps, their state, jobs, marks and next steps.
 
-**Node sheet.** Opening a node shows:
+**Node sheet.** Opening a node shows (for a job: the step it belongs to, its key, attempt, CPUs, memory asked, peak memory, wall time and a link to the task sheet):
 - its status and counts;
 - the parameters it reads, with this run's values;
 - its outputs, live from `/processes/{name}/outputs`, where a removed temporary file is shown as removed;
@@ -800,7 +806,7 @@ The sheet is `aria-modal`, and focus returns to the node when it closes.
 
 **Live.** The graph refetches on the run's frames (`useFrames`). The layout is computed again from the document, so a node added after a checkpoint can move the others; keeping positions stable is later. A notice says the graph can still grow while `complete` is false (§5.2).
 
-**Estimates.** When `estimate` is true, a notice says the edges are a static estimate from the code and may be wrong. When `producer` is `stages-only`, it says the links between steps are not known and the steps are grouped by stage. With no edges, every layout but Upstream is the wrapped grid per stage.
+**Estimates.** When `estimate` is true, a notice says the edges are a static estimate from the code and may be wrong. When `producer` is `stages-only`, it says the links between steps are not known and the steps are grouped by stage. With no edges, every layout but BioFlow-Insight is the wrapped grid per stage.
 
 **Accessibility and phone.**
 - Every node is a native `<button>` whose accessible name gives its name, kind and state, for example "ALIGN, process, running, 3 of 10 done".

@@ -21,6 +21,9 @@ def subworkflows(name: str) -> list[str]:
     return ["sub:" + ":".join(parts[: n + 1]) for n in range(len(parts))]
 
 
+MAX_CODE_CHARS = 64 * 1024  # one process's code, from BioFlow-Insight's map
+
+
 def params_read(code: str | None) -> list[str]:
     """The `params.<name>` a node's code reads, each once, in order."""
     return list(dict.fromkeys(_PARAM.findall(code or "")))
@@ -80,11 +83,13 @@ def from_metro(metro: dict[str, Any]) -> dict[str, Any]:
             except (KeyError, TypeError, ValueError):
                 layout = None
         condition = node.get("condition")
+        code = node.get("code") if isinstance(node.get("code"), str) else None
         nodes[name] = {
             "source": {"file": source, "line": None} if source else None,
             "condition": condition if isinstance(condition, str) else None,
-            "params": params_read(node.get("code") if isinstance(node.get("code"), str) else None),
+            "params": params_read(code),
             "layout": layout,
+            "code": code[:MAX_CODE_CHARS] if code else None,
         }
     # Static edges, not a DAG: a channel reassigned after `.mix()` links the mixed processes
     # both ways (nf-core/fetchngs, spike #160); each edge keeps its `condition`.

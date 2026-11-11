@@ -1121,6 +1121,17 @@
       },
       "GraphNode": {
         "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
           "condition": {
             "anyOf": [
               {
@@ -1288,6 +1299,17 @@
               }
             ],
             "title": "Subworkflow"
+          },
+          "temp": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temp"
           }
         },
         "required": [
@@ -3754,6 +3776,34 @@
           }
         },
         "title": "SlurmValues",
+        "type": "object"
+      },
+      "SourceBlock": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "file": {
+            "title": "File",
+            "type": "string"
+          },
+          "line": {
+            "title": "Line",
+            "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "file",
+          "line",
+          "code",
+          "truncated"
+        ],
+        "title": "SourceBlock",
         "type": "object"
       },
       "Stage": {
@@ -6661,6 +6711,70 @@
           }
         },
         "summary": "Inspect"
+      }
+    },
+    "/api/v1/workflows:source": {
+      "get": {
+        "operationId": "workflow_source_api_v1_workflows_source_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "location",
+            "required": true,
+            "schema": {
+              "title": "Location",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Revision"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceBlock"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Workflow Source"
       }
     }
   }

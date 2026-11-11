@@ -43,6 +43,10 @@ export interface GraphNode {
   metrics?: GraphMetrics;
   first_start?: string | null;
   last_end?: string | null;
+  /** Snakemake: a `temp()` output of the rule was removed. */
+  temp?: boolean | null;
+  /** BioFlow-Insight (Launch): the process's or subworkflow's code. */
+  code?: string | null;
 }
 
 export interface GraphEdge {
@@ -118,3 +122,17 @@ export function getNodeOutputs(id: string, process: string, signal?: AbortSignal
 
 /** The graph, or some of its links, is read from the code rather than seen at run time. */
 export const isEstimate = (doc: GraphDocument): boolean => !!doc.estimate || doc.edges.some((e) => e.static);
+
+/** `GET /workflows:source`: the code of one process or rule, found by its name. */
+export interface SourceBlock {
+  file: string;
+  line: number;
+  code: string;
+  truncated: boolean;
+}
+
+export function getSource(location: string, revision: string | null, name: string, signal?: AbortSignal): Promise<SourceBlock> {
+  const query = new URLSearchParams({ location, name });
+  if (revision) query.set("revision", revision);
+  return call(`/workflows:source?${query}`, signal);
+}

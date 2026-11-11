@@ -18,20 +18,24 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { type MutableRefObject, type ReactNode, useMemo, useRef, useState } from "react";
+import { type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ProcessStatus, Task } from "../../api";
 import { ICONS, Icon } from "../../icons";
 import { tone } from "../stateWord";
-import { download, svgToPng, toSvg } from "./export";
+import { Code, type CodeSource } from "./Code";
+import { download, svgToPng, toHtml, toSvg } from "./export";
 import { hasUpstream, place } from "./layout";
 import {
+  type Flag,
   type NodeDiff,
   type View,
+  type ViewEdge,
   type ViewNode,
   collapse,
   criticalPath,
   durationOf,
   heat,
+  overlayValue,
   search,
   statusAt,
   topoOrder,
@@ -59,6 +63,15 @@ const KIND_WORDS: Record<string, string> = {
   stage: "stage",
   subworkflow: "subworkflow",
   job: "job",
+};
+
+/** The marks of a step: a short visible mark, and the words its accessible name gets. */
+export const FLAG_MARKS: Record<Flag, { mark: string; words: string }> = {
+  checkpoint: { mark: "◆ checkpoint", words: "checkpoint: the graph grows once it ends" },
+  temp: { mark: "temp", words: "writes temporary files, removed once read" },
+  conditional: { mark: "if", words: "runs only under a condition" },
+  retried: { mark: "↻", words: "some jobs were retried" },
+  cached: { mark: "cached", words: "some jobs reused from an earlier run" },
 };
 
 export const statusWord = (s: ProcessStatus | null): string => (s ? STATUS_WORDS[s] ?? s : "Not run yet");
@@ -138,6 +151,8 @@ interface NodeData extends Record<string, unknown> {
   badge: string | null;
   horizontal: boolean;
   onOpen: (n: ViewNode) => void;
+  onToggle: (group: string) => void;
+  onCode: (n: ViewNode, x: number, y: number) => void;
 }
 
 /** A step's two handles, where `NodeBox` draws them: in at the top (left), out at the bottom (right). */
@@ -155,6 +170,7 @@ function handlesOf(w: number, h: number, horizontal: boolean): NodeHandle[] {
 
 function NodeBox({ data }: NodeProps<Node<NodeData>>) {
   const { node, horizontal } = data;
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const style = data.heat !== null ? { ["--sp-heat" as string]: `${Math.round(10 + data.heat * 80)}%` } : undefined;
   return (
     <div
@@ -166,33 +182,50 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
       data-match={data.matched || undefined}
       data-selected={data.selected || undefined}
       data-heat={data.heat !== null || undefined}
-      data-jobs={node.jobs?.length ? true : undefined}
       style={style}
+      onDoubleClick={
+        node.group
+          ? () => {
+              if (timer.current) clearTimeout(timer.current);
+              data.onToggle(node.group!);
+            }
+          : undefined
+      }
+      onContextMenu={(e) => {
+        e.preventDefault();
+        data.onCode(node, e.clientX, e.clientY);
+      }}
     >
       <Handle type="target" position={horizontal ? Position.Left : Position.Top} isConnectable={false} />
-      <button type="button" className="sp-gnode-btn" data-gid={node.id} aria-label={data.aria} onClick={() => data.onOpen(node)}>
+      <button
+        type="button"
+        className="sp-gnode-btn"
+        data-gid={node.id}
+        aria-label={data.aria}
+        // a box with a group waits a moment before opening its sheet, so a double-click folds
+        // the group without the sheet opening over the map first
+        onClick={(e) => {
+          if (timer.current) clearTimeout(timer.current);
+          if (!node.group || e.detail === 0) return data.onOpen(node); // Enter or Space: at once
+          if (e.detail === 1) timer.current = setTimeout(() => data.onOpen(node), 250);
+        }}
+      >
+        {node.kind === "job" && node.step && <span className="sp-gnode-step">{node.step}</span>}
         <span className="sp-gnode-name">{data.label}</span>
         <span className="sp-gnode-meta">{data.meta}</span>
+        {node.flags && node.flags.length > 0 && (
+          <span className="sp-gflags" aria-hidden="true">
+            {node.flags.map((f) => (
+              <span key={f} className="sp-gflag" data-flag={f}>
+                {FLAG_MARKS[f].mark}
+              </span>
+            ))}
+          </span>
+        )}
         {data.badge && <span className="sp-gnode-badge">{data.badge}</span>}
       </button>
       <Handle type="source" position={horizontal ? Position.Right : Position.Bottom} isConnectable={false} />
     </div>
-  );
-}
-
-function JobBox({ data }: NodeProps<Node<NodeData>>) {
-  return (
-    <button
-      type="button"
-      className="sp-gjob"
-      data-tone={data.tone}
-      data-dim={data.dim || undefined}
-      data-gid={data.node.id}
-      aria-label={data.aria}
-      onClick={() => data.onOpen(data.node)}
-    >
-      {data.label}
-    </button>
   );
 }
 
@@ -204,7 +237,7 @@ function LaneBox({ data }: NodeProps<Node<{ label: string }>>) {
   );
 }
 
-const NODE_TYPES = { sp: NodeBox, spjob: JobBox, lane: LaneBox };
+const NODE_TYPES = { sp: NodeBox, lane: LaneBox };
 
 interface Props {
   doc: GraphDocument;
@@ -219,6 +252,10 @@ interface Props {
   onOpen: (node: ViewNode) => void;
   /** More controls for the toolbar (Compare, Replay). */
   extra?: ReactNode;
+  /** Where the pipeline's code is read (right-click on a step, and the sheets). */
+  source?: CodeSource | null;
+  /** A link was clicked on the map: what flows along it. */
+  onEdge?: (edge: ViewEdge) => void;
   /** Shown above the map (notes on the producer, the jobs shown). */
   notes?: ReactNode;
 }
@@ -232,15 +269,14 @@ interface Shown {
 }
 
 function useShown(doc: GraphDocument, settings: GraphSettings, jobs: Record<string, Task[]> | undefined, decor: Decor, runtime: boolean): Shown {
-  const view = useMemo(() => collapse(doc, settings.level, jobs), [doc, settings.level, jobs]);
+  const view = useMemo(() => collapse(doc, settings.level, jobs, settings.fold), [doc, settings.level, jobs, settings.fold]);
   const matches = useMemo(() => search(doc, view, settings.q), [doc, view, settings.q]);
   const overlay = runtime ? settings.overlay : "state";
   const crit = useMemo(() => (overlay === "critical" ? criticalPath(view) : null), [view, overlay]);
   const heated = useMemo(() => (overlay === "state" || overlay === "critical" ? new Map<string, number>() : heat(view, overlay)), [view, overlay]);
   const status = useMemo(() => {
     const out = new Map<string, ProcessStatus | null>();
-    const all = view.nodes.flatMap((n) => [n, ...(n.jobs ?? [])]);
-    for (const n of all) out.set(n.id, decor.replayAt != null && n.kind !== "job" ? statusAt(n, decor.replayAt) : n.status);
+    for (const n of view.nodes) out.set(n.id, decor.replayAt != null && n.kind !== "job" ? statusAt(n, decor.replayAt) : n.status);
     return out;
   }, [view, decor.replayAt]);
   return { view, status, matches, crit, heat: heated };
@@ -250,10 +286,11 @@ function ariaOf(n: ViewNode, status: ProcessStatus | null, extra: string[]): str
   const { done, total } = progress(n.counts);
   const parts = [n.label, kindWord(n.kind), statusWord(status)];
   if (n.kind !== "job" && total > 0) parts.push(`${done} of ${total} jobs done`);
+  for (const f of n.flags ?? []) parts.push(FLAG_MARKS[f].words);
   return [...parts, ...extra].join(", ");
 }
 
-function Map_({ settings, decor, shown, onOpen, title, nextRef }: { settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
+function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title, nextRef }: { settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
   const dark = useComputedColorScheme("light") === "dark";
   const { view, status, matches, crit, heat: heated } = shown;
   const layout = settings.layout === "upstream" && !hasUpstream(view) ? "layered-tb" : settings.layout;
@@ -270,12 +307,12 @@ function Map_({ settings, decor, shown, onOpen, title, nextRef }: { settings: Gr
     for (const lane of placed.lanes) {
       nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: 0, y: lane.y }, data: { label: lane.label }, width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1 });
     }
-    const make = (n: ViewNode, parent?: string): Node<NodeData> => {
+    const make = (n: ViewNode): Node<NodeData> => {
       const box = placed.boxes.get(n.id)!;
       const s = status.get(n.id) ?? null;
-      const matched = matches.has(n.id) || (!!parent && matches.has(parent));
+      const matched = matches.has(n.id);
       const inCrit = crit?.nodes.has(n.id) ?? false;
-      const lineageOut = decor.lineage ? !decor.lineage.has(parent ?? n.id) : false;
+      const lineageOut = decor.lineage ? !decor.lineage.has(n.id) : false;
       const badge = diffWord(decor.diff?.get(n.id));
       const { done, total } = progress(n.counts);
       const extra: string[] = [];
@@ -283,15 +320,14 @@ function Map_({ settings, decor, shown, onOpen, title, nextRef }: { settings: Gr
       if (inCrit) extra.push("on the critical path");
       if (badge) extra.push(badge);
       const h = heated.get(n.id);
-      const metric = settings.overlay === "duration" && durationOf(n) ? ` · ${formatSeconds(durationOf(n))}` : "";
+      const value = overlayText(n, settings.overlay);
+      const metric = value ? ` · ${value}` : "";
       return {
         id: n.id,
-        type: n.kind === "job" ? "spjob" : "sp",
+        type: "sp",
         position: { x: box.x, y: box.y },
         width: box.w,
         height: box.h,
-        parentId: parent,
-        extent: parent ? "parent" : undefined,
         draggable: false,
         selectable: false,
         focusable: false,
@@ -300,7 +336,7 @@ function Map_({ settings, decor, shown, onOpen, title, nextRef }: { settings: Gr
         style: { pointerEvents: "all" },
         // Handles given rather than measured: React Flow drops the measured ones whenever a node
         // object changes, and at the Jobs level they were not measured again, so no edge was drawn
-        handles: n.kind === "job" ? undefined : handlesOf(box.w, box.h, horizontal),
+        handles: handlesOf(box.w, box.h, horizontal),
         data: {
           node: n,
           status: s,
@@ -316,13 +352,12 @@ function Map_({ settings, decor, shown, onOpen, title, nextRef }: { settings: Gr
           badge,
           horizontal,
           onOpen,
+          onToggle,
+          onCode,
         },
       };
     };
-    for (const n of view.nodes) {
-      nodes.push(make(n));
-      for (const j of n.jobs ?? []) nodes.push(make(j, n.id));
-    }
+    for (const n of view.nodes) nodes.push(make(n));
     const edges: Edge[] = view.edges.map((e) => {
       const onCrit = crit?.edges.has(e.id) ?? false;
       const dim = (searching && !(matches.has(e.source) && matches.has(e.target))) || (decor.lineage ? !(decor.lineage.has(e.source) && decor.lineage.has(e.target)) : false);
@@ -334,10 +369,12 @@ function Map_({ settings, decor, shown, onOpen, title, nextRef }: { settings: Gr
         focusable: false,
         className: [onCrit && "sp-gedge-crit", dim && "sp-gedge-dim"].filter(Boolean).join(" ") || undefined,
         animated: status.get(e.target) === "running" && !dim,
+        interactionWidth: 14,
+        data: { edge: e },
       };
     });
     return { nodes, edges };
-  }, [view, placed, status, matches, crit, heated, decor, searching, horizontal, layout, onOpen, settings.overlay]);
+  }, [view, placed, status, matches, crit, heated, decor, searching, horizontal, layout, onOpen, onToggle, onCode, settings.overlay]);
 
   // Enter in the search box: the next match, centred and focused
   const order = useMemo(() => topoOrder(view).filter((id) => matches.has(id)), [view, matches]);
@@ -365,6 +402,8 @@ function Map_({ settings, decor, shown, onOpen, title, nextRef }: { settings: Gr
         nodesFocusable={false}
         edgesFocusable={false}
         elementsSelectable={false}
+        zoomOnDoubleClick={false}
+        onEdgeClick={onEdge ? (_, edge) => onEdge((edge.data as { edge: ViewEdge }).edge) : undefined}
         onlyRenderVisibleElements={view.nodes.length > 300}
       >
         <Background gap={24} size={1} />
@@ -434,15 +473,77 @@ function List({ shown, settings, onOpen, decor }: { shown: Shown; settings: Grap
   );
 }
 
-function Legend({ overlay }: { overlay: GraphSettings["overlay"] }) {
-  if (overlay === "state") return null;
+/** What each colour mode measures and where the value comes from (shown under the toolbar). */
+export const OVERLAY_HELP: Record<GraphSettings["overlay"], string> = {
+  state: "Colour = the step's state, from its jobs: failed wins, then running; all jobs done is done.",
+  duration: "Duration = wall time of the step, from its first job's start to its last job's end (summed for a folded group).",
+  cpu: "CPU = CPU efficiency: CPU time used over the CPUs asked for, averaged over the step's jobs (from sacct, else the engine's trace).",
+  memory: "Memory = memory efficiency: peak memory over the memory asked for, of the step's highest job.",
+  failures: "Failures = failed attempts of the step's jobs, retried ones included.",
+  critical: "Critical path = the chain of linked steps with the longest total duration: it sets the run's shortest possible time.",
+};
+
+const STATE_KEY: [string, string][] = [
+  ["succeeded", "Done"],
+  ["running", "Running"],
+  ["failed", "Failed"],
+  ["queued", "Pending"],
+  ["cached", "Cached or up to date"],
+  ["review", "Waiting for a checkpoint or gate"],
+];
+
+/** A node's value in a colour mode, as text ("12 min 3 s", "84 %", "2 failed"). */
+export function overlayText(n: ViewNode, overlay: GraphSettings["overlay"]): string | null {
+  const v = overlayValue(n, overlay);
+  if (v === null) return null;
+  if (overlay === "duration") return formatSeconds(v);
+  if (overlay === "cpu" || overlay === "memory") return `${Math.round(v * 100)} %`;
+  if (overlay === "failures") return `${v} failed`;
+  return null;
+}
+
+function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: View }) {
+  const help = <span className="sp-glegend-help">{OVERLAY_HELP[overlay]}</span>;
+  if (overlay === "state")
+    return (
+      <div className="sp-glegend" role="note" aria-label="Legend">
+        <ul className="sp-gkey">
+          {STATE_KEY.map(([t, label]) => (
+            <li key={t}>
+              <span className="sp-gswatch" data-tone={t} aria-hidden="true" /> {label}
+            </li>
+          ))}
+        </ul>
+        <ul className="sp-gkey" aria-label="Marks">
+          {Object.values(FLAG_MARKS).map((f) => (
+            <li key={f.mark}>
+              <span className="sp-gflag">{f.mark}</span> {f.words}
+            </li>
+          ))}
+        </ul>
+        {help}
+      </div>
+    );
   if (overlay === "critical")
-    return <p className="sp-glegend">Thick outline: the chain of steps with the longest total duration. It sets the run's shortest possible time.</p>;
-  const what = OVERLAYS.find((o) => o.value === overlay)?.label.toLowerCase();
+    return (
+      <div className="sp-glegend" role="note" aria-label="Legend">
+        {help} Thick outline: on the path.
+      </div>
+    );
+  const texts = view.nodes.map((n) => [overlayValue(n, overlay), overlayText(n, overlay)] as const).filter(([v]) => v !== null) as [number, string][];
+  const low = texts.length ? texts.reduce((a, b) => (b[0] < a[0] ? b : a)) : null;
+  const high = texts.length ? texts.reduce((a, b) => (b[0] > a[0] ? b : a)) : null;
   return (
-    <p className="sp-glegend">
-      <span className="sp-gramp" aria-hidden="true" /> Darker: more {what} (against the highest in this view). Steps with no value keep their state colour.
-    </p>
+    <div className="sp-glegend" role="note" aria-label="Legend">
+      {help}{" "}
+      {high ? (
+        <>
+          Lightest {low![1]} <span className="sp-gramp" aria-hidden="true" /> darkest {high[1]}; the value is written on each step. Steps with no value keep their state colour.
+        </>
+      ) : (
+        "No step has a value yet (jobs still running, cached, or not measured): steps keep their state colour."
+      )}
+    </div>
   );
 }
 
@@ -453,13 +554,13 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
   upstream: boolean;
   onNext: () => void;
   matches: number;
-  onExport: (kind: "svg" | "png") => void;
+  onExport: (kind: "svg" | "png" | "html") => void;
   extra?: ReactNode;
 }) {
   const levels = runtime ? LEVELS : LEVELS.filter((l) => l.value !== "jobs");
   return (
     <div className="sp-gtoolbar" role="toolbar" aria-label="Graph view">
-      <NativeSelect size="xs" label="Show" value={settings.level} onChange={(e) => onSettings({ level: e.currentTarget.value as GraphSettings["level"] })} data={levels} />
+      <NativeSelect size="xs" label="Show" value={settings.level} onChange={(e) => onSettings({ level: e.currentTarget.value as GraphSettings["level"], fold: [] })} data={levels} />
       <NativeSelect
         size="xs"
         label="Layout"
@@ -503,25 +604,37 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
         <button type="button" className="sp-gbtn" onClick={() => onExport("png")}>
           <Icon path={ICONS.download} size={13} /> PNG
         </button>
+        <button type="button" className="sp-gbtn" onClick={() => onExport("html")}>
+          <Icon path={ICONS.download} size={13} /> HTML
+        </button>
       </div>
     </div>
   );
 }
 
-function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor = {}, onOpen, extra, notes }: Props) {
+function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor = {}, onOpen, onEdge, source, extra, notes }: Props) {
   const shown = useShown(doc, settings, jobs, decor, runtime);
   const [exportError, setExportError] = useState<string | null>(null);
   const layout = settings.layout === "upstream" && !hasUpstream(shown.view) ? "layered-tb" : settings.layout;
-  const onExport = (kind: "svg" | "png") => {
-    const svg = toSvg(shown.view, place(shown.view, layout), title);
+  const onExport = (kind: "svg" | "png" | "html") => {
+    const placed = place(shown.view, layout);
+    const svg = toSvg(shown.view, placed, title);
     const name = `${title.replace(/[^\w.-]+/g, "_")}-graph.${kind}`;
     setExportError(null);
     if (kind === "svg") download(name, new Blob([svg], { type: "image/svg+xml" }));
+    else if (kind === "html") download(name, new Blob([toHtml(shown.view, placed, title, doc.engine)], { type: "text/html" }));
     else svgToPng(svg).then((b) => download(name, b), (e: Error) => setExportError(`The PNG could not be made: ${e.message}`));
   };
   const nextRef = useRef<(() => void) | null>(null);
+  const onToggle = useCallback(
+    (group: string) => onSettings({ fold: settings.fold.includes(group) ? settings.fold.filter((g) => g !== group) : [...settings.fold, group] }),
+    [onSettings, settings.fold],
+  );
+  const [pop, setPop] = useState<{ node: ViewNode; x: number; y: number } | null>(null);
+  const onCode = useCallback((node: ViewNode, x: number, y: number) => setPop({ node, x, y }), []);
   return (
     <div className="sp-graph">
+      {pop && <CodePop doc={doc} pop={pop} source={source ?? null} onClose={() => setPop(null)} />}
       <Toolbar
         settings={settings}
         onSettings={onSettings}
@@ -539,12 +652,45 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
         </p>
       )}
       {notes}
-      {runtime && settings.show === "map" && <Legend overlay={settings.overlay} />}
+      {runtime && settings.show === "map" && <Legend overlay={settings.overlay} view={shown.view} />}
       {settings.show === "map" ? (
-        <Map_ nextRef={nextRef} settings={settings} decor={decor} shown={shown} onOpen={onOpen} title={title} />
+        <Map_ nextRef={nextRef} settings={settings} decor={decor} shown={shown} onOpen={onOpen} onToggle={onToggle} onCode={onCode} onEdge={onEdge} title={title} />
       ) : (
         <List shown={shown} settings={settings} onOpen={onOpen} decor={decor} />
       )}
+    </div>
+  );
+}
+
+/** The right-click card: a step's code by the cursor (MetroFlow's code tooltip). Escape or the
+ * close button ends it, and focus moves into it so the keyboard can scroll the code. */
+function CodePop({ doc, pop, source, onClose }: { doc: GraphDocument; pop: { node: ViewNode; x: number; y: number }; source: CodeSource | null; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const id = pop.node.members[0];
+  const docNode = doc.nodes.find((n) => n.id === id);
+  const single = pop.node.members.length === 1;
+  useEffect(() => {
+    ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [onClose]);
+  const left = Math.max(12, Math.min(pop.x, window.innerWidth - 572));
+  const top = Math.max(12, Math.min(pop.y, window.innerHeight - 320));
+  return (
+    <div ref={ref} className="sp-gcodepop" role="dialog" aria-label={`Code of ${pop.node.step ?? pop.node.label}`} style={{ left, top }}>
+      <header>
+        <span>{pop.node.step ?? pop.node.label}</span>
+        <button type="button" className="sp-gbtn" onClick={onClose} aria-label="Close the code">
+          ×
+        </button>
+      </header>
+      {docNode?.condition && (
+        <p>
+          Runs when <code>{docNode.condition}</code>
+        </p>
+      )}
+      {single ? <Code name={id} code={docNode?.code} where={source} /> : <p className="sp-muted">A group of {pop.node.members.length} steps: open it to see each step, or right-click one of them.</p>}
     </div>
   );
 }

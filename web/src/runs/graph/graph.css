@@ -45,8 +45,7 @@
   box-shadow: var(--sp-shadow);
 }
 .sp-gbtn:focus-visible,
-.sp-gnode-btn:focus-visible,
-.sp-gjob:focus-visible {
+.sp-gnode-btn:focus-visible {
   outline: 2px solid var(--sp-line-focus);
   outline-offset: 2px;
 }
@@ -90,9 +89,6 @@
 .sp-gnode[data-kind="subworkflow"] {
   border-width: 2.5px;
 }
-.sp-gnode[data-jobs] {
-  background: color-mix(in srgb, var(--tone-bg) 50%, transparent);
-}
 .sp-gnode[data-crit] {
   box-shadow: 0 0 0 3px var(--sp-state-review);
 }
@@ -102,8 +98,7 @@
 .sp-gnode[data-selected] {
   box-shadow: 0 0 0 3px var(--sp-text-primary);
 }
-.sp-gnode[data-dim],
-.sp-gjob[data-dim] {
+.sp-gnode[data-dim] {
   opacity: 0.3;
 }
 .sp-gnode-btn {
@@ -120,16 +115,6 @@
   text-align: left;
   background: none;
   cursor: pointer;
-}
-.sp-gnode[data-jobs] .sp-gnode-btn {
-  /* one line in the 40 px header (layout.ts HEADER): two lines did not fit and cut the name */
-  height: 40px;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-.sp-gnode[data-jobs] .sp-gnode-meta {
-  flex-shrink: 0;
 }
 .sp-gnode-name {
   max-width: 100%;
@@ -155,21 +140,6 @@
   color: var(--sp-text-primary);
   background: var(--sp-surface-raised);
   box-shadow: inset 0 0 0 1px var(--sp-line-border);
-}
-.sp-gjob {
-  width: 100%;
-  height: 100%;
-  padding: 0 6px;
-  border: 1px solid var(--tone);
-  border-radius: 5px;
-  font: inherit;
-  font-size: 11px;
-  color: var(--tone-fg);
-  background: var(--tone-bg);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
 }
 .sp-glane {
   width: 100%;
@@ -256,4 +226,112 @@
   font-size: 13px;
   color: var(--sp-state-review-fg);
   background: var(--sp-state-review-bg);
+}
+.sp-glegend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+.sp-gkey {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gswatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  vertical-align: -2px;
+  border: 1.5px solid var(--tone);
+  background: var(--tone-bg);
+}
+/* Jobs level: the step's name above the job's key */
+.sp-gnode-step {
+  font-size: 10px;
+  color: var(--sp-text-tertiary, var(--sp-text-secondary));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-gnode[data-kind="job"] .sp-gnode-btn {
+  padding: 4px 8px;
+  gap: 0;
+}
+.sp-gnode[data-kind="job"] .sp-gnode-meta {
+  display: none;
+}
+.react-flow__edge {
+  cursor: pointer;
+}
+.sp-gflags {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  display: flex;
+  gap: 3px;
+}
+.sp-gflag {
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 14px;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-raised);
+  box-shadow: inset 0 0 0 1px var(--sp-line-border);
+  white-space: nowrap;
+}
+.sp-gflag[data-flag="checkpoint"] {
+  color: var(--sp-state-review-fg, var(--sp-text-primary));
+}
+.sp-gflag[data-flag="temp"] {
+  border-style: dashed;
+}
+.sp-gcode {
+  max-height: 60vh;
+  margin: 0;
+  padding: 8px 0;
+  overflow: auto;
+  border-radius: 6px;
+  font: 12px/1.45 var(--sp-font-mono, ui-monospace, monospace);
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-sunken);
+  white-space: pre;
+}
+.sp-gcode-n {
+  display: inline-block;
+  width: 3.5em;
+  padding-right: 10px;
+  text-align: right;
+  color: var(--sp-text-faint);
+  user-select: none;
+}
+.sp-gcodepop {
+  position: fixed;
+  z-index: 300;
+  width: min(560px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sp-surface-raised);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.22), inset 0 0 0 1px var(--sp-line-border);
+}
+.sp-gcodepop header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.sp-gcodepop .sp-gcode {
+  max-height: 50vh;
+}
+.sp-gdetails summary {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  cursor: pointer;
 }

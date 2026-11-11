@@ -9,21 +9,32 @@ import { useFrames } from "../../live";
 import { usePhone } from "../../shell/layout";
 import type { Detail } from "../DetailSheet";
 import { isTerminal, runWord } from "../stateWord";
+import { Code } from "./Code";
 import { GraphView, Links, formatSeconds, kindWord, progress, statusTone, statusWord } from "./GraphView";
-import { type NodeDiff, type View, type ViewNode, collapse, diffGraphs, durationOf, lineage, timeSpan } from "./model";
+import { type NodeDiff, type View, type ViewEdge, type ViewNode, collapse, diffGraphs, durationOf, lineage, timeSpan } from "./model";
 import { type GraphSearch, type GraphSettings, searchOf, settingsOf } from "./settings";
 import { type GraphDocument, type GraphNode, type NodeOutput, getNodeOutputs, getRunGraph } from "./types";
 
-const MAX_JOB_PROCESSES = 40;
+/** The Jobs level draws one node per job: every step's jobs, in pipeline order, until this many. */
+export const MAX_JOBS = 2000;
+/** The tasks route's page size, the most jobs drawn for one step. */
+const JOBS_PER_STEP = 200;
 
-/** The steps the Jobs level expands: those running or failed, then those the user opened. */
-export function expandedSteps(doc: GraphDocument, opened: string[]): GraphNode[] {
-  const busy = (n: GraphNode) => (n.counts?.running ?? 0) + (n.counts?.failed ?? 0) > 0;
-  const steps = doc.nodes.filter((n) => n.kind !== "gate");
-  const picked = [...steps.filter(busy), ...steps.filter((n) => opened.includes(n.id) && !busy(n))];
-  return picked.slice(0, MAX_JOB_PROCESSES);
+/** The steps the Jobs level loads the jobs of: all those with jobs, in pipeline order, while the
+ * total stays under MAX_JOBS (a bigger step is left as one node). */
+export function expandedSteps(doc: GraphDocument): GraphNode[] {
+  const total = (n: GraphNode) => Object.values(n.counts ?? {}).reduce((a, b) => a + b, 0);
+  const steps = doc.nodes.filter((n) => n.kind !== "gate" && total(n) > 0).sort((a, b) => (a.pipeline_order ?? 0) - (b.pipeline_order ?? 0));
+  const out: GraphNode[] = [];
+  let sum = 0;
+  for (const n of steps) {
+    const t = Math.min(total(n), JOBS_PER_STEP);
+    if (sum + t > MAX_JOBS) continue;
+    sum += t;
+    out.push(n);
+  }
+  return out;
 }
-const JOBS_PER_PROCESS = 100;
 
 const PRODUCER_NOTES: Record<GraphDocument["producer"], string | null> = {
   "smk-rulegraph": null,
@@ -52,7 +63,7 @@ function value(params: Record<string, Json>, key: string): string {
   return typeof at === "string" ? at : JSON.stringify(at);
 }
 
-function Outputs({ run, process }: { run: RunDetail; process: string }) {
+function Outputs({ run, process, task }: { run: RunDetail; process: string; task?: string }) {
   const [items, setItems] = useState<NodeOutput[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(() => {
@@ -64,10 +75,11 @@ function Outputs({ run, process }: { run: RunDetail; process: string }) {
   useFrames(load, run.id, !isTerminal(run.state));
   if (error) return <p role="alert">The outputs could not be read: {error}</p>;
   if (!items) return <p className="sp-muted">Reading the outputs…</p>;
-  if (items.length === 0) return <p className="sp-muted">No output recorded yet.</p>;
+  const mine = task ? items.filter((o) => o.task_id === task) : items;
+  if (mine.length === 0) return <p className="sp-muted">No output recorded yet.</p>;
   return (
     <ul className="sp-gsheet-list" aria-label={`Outputs of ${process}`}>
-      {items.map((o) => (
+      {mine.map((o) => (
         <li key={`${o.task_id}:${o.path}`}>
           <span className="sp-mono">{o.path}</span>
           <span className="sp-state" data-tone={o.state === "present" ? "succeeded" : o.state === "removed" ? "cached" : "queued"}>
@@ -97,9 +109,55 @@ interface SheetProps {
   onTrace: (direction: "up" | "down" | null) => void;
   onOpen: (detail: Detail) => void;
   onTasks: (process: string) => void;
+  onToggle: (group: string) => void;
 }
 
-function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks }: SheetProps) {
+/** A job's key as name and value pairs: Snakemake's `k=v` wildcards, or Nextflow's tag. */
+export function keyPairs(key: string | null): [string, string][] {
+  if (!key) return [];
+  const parts = key.split(/,\s*/);
+  return parts.every((p) => p.includes("=")) ? parts.map((p) => [p.slice(0, p.indexOf("=")), p.slice(p.indexOf("=") + 1)]) : [["tag", key]];
+}
+
+const bytes = (b: number | null) => (b === null ? "—" : b >= 1 << 30 ? `${(b / (1 << 30)).toFixed(1)} GiB` : `${Math.round(b / (1 << 20))} MiB`);
+
+function JobFacts({ task }: { task: Task }) {
+  const r = task.resources;
+  return (
+    <>
+      <h3 className="sp-sheet-h">Key</h3>
+      <dl className="facts" aria-label="Key of this job">
+        {keyPairs(task.tag).map(([k, v]) => (
+          <div key={k} style={{ display: "contents" }}>
+            <dt className="sp-mono">{k}</dt>
+            <dd className="sp-mono">{v}</dd>
+          </div>
+        ))}
+        {!task.tag && (
+          <>
+            <dt>name</dt>
+            <dd className="sp-mono">{task.name ?? task.id}</dd>
+          </>
+        )}
+      </dl>
+      <h3 className="sp-sheet-h">Resources</h3>
+      <dl className="facts" aria-label="Resources of this job">
+        <dt>Attempt</dt>
+        <dd>{task.attempt_n ?? "—"}</dd>
+        <dt>CPUs</dt>
+        <dd>{r.cpus ?? "—"}</dd>
+        <dt>Memory asked</dt>
+        <dd>{bytes(r.memory_bytes)}</dd>
+        <dt>Peak memory</dt>
+        <dd>{bytes(r.peak_rss_bytes)}</dd>
+        <dt>Wall time</dt>
+        <dd>{r.realtime_s !== null ? formatSeconds(r.realtime_s) : "—"}</dd>
+      </dl>
+    </>
+  );
+}
+
+function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks, onToggle }: SheetProps) {
   const phone = usePhone();
   const byId = new Map(doc.nodes.map((n) => [n.id, n]));
   const members = node ? node.members.map((m) => byId.get(m)).filter((m) => !!m) : [];
@@ -128,6 +186,15 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
           </p>
           {diff && diff.change === "added" && <p className="sp-gnote">New in this run: the compared run did not have it.</p>}
           {single?.id && <p className="sp-mono sp-sheet-name">{single.id}</p>}
+          {node.kind === "job" && <p className="sp-muted">A job of {node.step}.</p>}
+          {node.group && (
+            <p>
+              <button type="button" className="sp-gbtn" onClick={() => onToggle(node.group!)}>
+                {node.kind === "stage" || node.kind === "subworkflow" ? `Show the steps of ${node.label}` : `Fold ${groupLabel(doc, node.group)} into one box`}
+              </button>{" "}
+              <span className="sp-muted">(or double-click it on the map)</span>
+            </p>
+          )}
           {single?.condition && (
             <p>
               Runs when <code>{single.condition}</code>
@@ -152,11 +219,16 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
           <h3 className="sp-sheet-h">Links</h3>
           <Links view={view} id={node.kind === "job" ? node.members[0] : node.id} />
           {task && (
-            <p>
-              <button type="button" className="sp-link-button" onClick={() => onOpen({ kind: "task", task })}>
-                Open this job
-              </button>
-            </p>
+            <>
+              <JobFacts task={task} />
+              <p>
+                <button type="button" className="sp-link-button" onClick={() => onOpen({ kind: "task", task })}>
+                  Open this job: script, logs, files
+                </button>
+              </p>
+              <h3 className="sp-sheet-h">Outputs</h3>
+              <Outputs run={run} process={node.members[0]} task={task.id} />
+            </>
           )}
           {members.length > 1 && (
             <>
@@ -174,6 +246,12 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
                 ))}
               </ul>
             </>
+          )}
+          {(single || node.kind === "job") && (
+            <details className="sp-gdetails">
+              <summary>Code</summary>
+              <Code name={node.members[0]} code={byId.get(node.members[0])?.code} where={{ location: run.workflow.location, revision: null }} />
+            </details>
           )}
           <h3 className="sp-sheet-h">Parameters</h3>
           {params.length === 0 ? (
@@ -209,6 +287,70 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
     </Drawer>
   );
 }
+
+/** What flows along a link: Snakemake links steps through files, Nextflow through channels whose
+ * items are the files the upstream step emitted. Shown: the upstream side's recorded outputs. */
+function EdgeSheet({ run, doc, view, edge, onClose }: { run: RunDetail; doc: GraphDocument; view: View; edge: ViewEdge | null; onClose: () => void }) {
+  const phone = usePhone();
+  const byId = new Map(view.nodes.map((n) => [n.id, n]));
+  const names = new Map(doc.nodes.map((n) => [n.id, n.name]));
+  const from = edge ? byId.get(edge.source) : undefined;
+  const to = edge ? byId.get(edge.target) : undefined;
+  const sources = edge ? [...new Set(edge.pairs.map(([a]) => a))] : [];
+  const job = from?.kind === "job" ? from.id.slice("job:".length) : undefined;
+  const smk = doc.engine === "snakemake";
+  return (
+    <Drawer
+      opened={edge !== null}
+      onClose={onClose}
+      position="right"
+      size={phone ? "100%" : 480}
+      title={edge ? `${from?.label ?? edge.source} → ${to?.label ?? edge.target}` : ""}
+      returnFocus
+      closeButtonProps={{ "aria-label": "Close" }}
+      classNames={{ title: "sp-sheet-title" }}
+    >
+      {edge && (
+        <section className="sp-sheet" aria-label="Link">
+          <p>
+            {smk
+              ? "Snakemake links two rules through files: the downstream rule's input is a file the upstream rule writes."
+              : "Nextflow links two processes through a channel: each item the upstream process emits (usually files, with values such as a sample id) is read by the downstream one."}
+          </p>
+          {edge.conditions.length > 0 && (
+            <p>
+              Only when <code>{edge.conditions.join(" or ")}</code>
+            </p>
+          )}
+          {edge.pairs.length > 1 && (
+            <>
+              <h3 className="sp-sheet-h">Links it stands for</h3>
+              <ul className="sp-gsheet-list">
+                {edge.pairs.map(([a, b]) => (
+                  <li key={`${a}->${b}`} className="sp-mono">
+                    {names.get(a) ?? a} → {names.get(b) ?? b}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <h3 className="sp-sheet-h">{smk ? "Files written upstream" : "Files emitted upstream"}</h3>
+          <p className="sp-muted">
+            {smk ? "The downstream rule reads those its input names." : "The channel carries them, alone or with values, to the downstream process."}
+          </p>
+          {sources.map((p) => (
+            <div key={p}>
+              {sources.length > 1 && <p className="sp-mono">{names.get(p) ?? p}</p>}
+              <Outputs run={run} process={p} task={job} />
+            </div>
+          ))}
+        </section>
+      )}
+    </Drawer>
+  );
+}
+
+const groupLabel = (doc: GraphDocument, id: string): string => doc.groups.find((g) => g.id === id)?.name ?? id.replace(/^(stage|sub):/, "");
 
 function Compare({ run, value, onChange }: { run: Run; value: string; onChange: (id: string) => void }) {
   const [others, setOthers] = useState<Run[]>([]);
@@ -281,8 +423,10 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   const [compareId, setCompareId] = useState("");
   const [other, setOther] = useState<GraphDocument | null>(null);
   const [replayAt, setReplayAt] = useState<number | null>(null);
+  const [edge, setEdge] = useState<ViewEdge | null>(null);
   const [trace, setTrace] = useState<{ id: string; direction: "up" | "down" } | null>(null);
   const live = !isTerminal(run.state);
+  const source = useMemo(() => ({ location: run.workflow.location, revision: null }), [run.workflow.location]);
 
   const load = useCallback(() => {
     getRunGraph(run.id)
@@ -292,21 +436,15 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   useEffect(load, [load]);
   useFrames(load, run.id, live);
 
-  // the Jobs level (CR-2): the expanded steps only, the busy ones (running or failed) and those
-  // the user opened, at most MAX_JOB_PROCESSES; refetched only when their counts change
-  const [opened, setOpened] = useState<string[]>([]);
-  useEffect(() => {
-    const id = settings.node;
-    if (settings.level === "jobs" && id && !id.startsWith("job:")) setOpened((o) => (o.includes(id) ? o : [...o, id]));
-  }, [settings.level, settings.node]);
+  // the Jobs level: every step's jobs (expandedSteps), refetched only when their counts change
   const wantJobs = settings.level === "jobs" && doc !== null;
-  const expanded = doc ? expandedSteps(doc, opened) : [];
-  const jobsKey = wantJobs ? expanded.map((n) => `${n.id}=${JSON.stringify(n.counts ?? {})}`).join("\n") : "";
+  const expanded = wantJobs ? expandedSteps(doc) : [];
+  const jobsKey = expanded.map((n) => `${n.id}=${JSON.stringify(n.counts ?? {})}`).join("\n");
   useEffect(() => {
     if (!jobsKey) return setJobs({});
     const ids = jobsKey.split("\n").map((line) => line.slice(0, line.lastIndexOf("=")));
     const controller = new AbortController();
-    Promise.all(ids.map((p) => listTasks(run.id, { process: p, limit: JOBS_PER_PROCESS }, controller.signal).then((page) => [p, page.items ?? []] as const)))
+    Promise.all(ids.map((p) => listTasks(run.id, { process: p, limit: JOBS_PER_STEP }, controller.signal).then((page) => [p, page.items ?? []] as const)))
       .then((pairs) => setJobs(Object.fromEntries(pairs)))
       .catch(() => controller.signal.aborted || setJobs({}));
     return () => controller.abort();
@@ -320,7 +458,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   }, [compareId]);
 
   const set = (patch: Partial<GraphSettings>) => onSearch(searchOf({ ...settings, ...patch }, phone));
-  const view = useMemo(() => (doc ? collapse(doc, settings.level, settings.level === "jobs" ? jobs : undefined) : null), [doc, settings.level, jobs]);
+  const view = useMemo(() => (doc ? collapse(doc, settings.level, settings.level === "jobs" ? jobs : undefined, settings.fold) : null), [doc, settings.level, jobs, settings.fold]);
   const diff = useMemo(() => (doc && other ? diffGraphs(doc, other) : null), [doc, other]);
   const traced = useMemo(() => (view && trace && view.nodes.some((n) => n.id === trace.id) ? lineage(view, trace.id, trace.direction) : null), [view, trace]);
   const span = doc ? timeSpan(doc) : null;
@@ -329,12 +467,12 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   if (!doc || !view) return <p className="sp-muted">Drawing the graph…</p>;
   if (doc.nodes.length === 0) return <p className="sp-empty">No step is known for this run yet.</p>;
 
-  const all = view.nodes.flatMap((n) => [n, ...(n.jobs ?? [])]);
-  const selected = settings.node ? all.find((n) => n.id === settings.node) ?? null : null;
+  const selected = settings.node ? view.nodes.find((n) => n.id === settings.node) ?? null : null;
   const task = selected?.kind === "job" ? Object.values(jobs).flat().find((t) => `job:${t.id}` === selected.id) ?? null : null;
   const removed = diff ? [...diff].filter(([, d]) => d.change === "removed").map(([id]) => other?.nodes.find((n) => n.id === id)?.name ?? id) : [];
   const note = PRODUCER_NOTES[doc.producer];
-  const capped = settings.level === "jobs";
+  const shownJobs = expanded.reduce((n, s) => n + (jobs[s.id]?.length ?? 0), 0);
+  const left = doc.nodes.filter((n) => Object.values(n.counts ?? {}).some((c) => c > 0) && !jobs[n.id]?.length).length;
 
   return (
     <>
@@ -347,6 +485,8 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
         jobs={settings.level === "jobs" ? jobs : undefined}
         decor={{ selected: settings.node, lineage: traced, diff, replayAt }}
         onOpen={(n) => set({ node: n.id })}
+        onEdge={setEdge}
+        source={source}
         extra={
           <>
             <Compare run={run} value={compareId} onChange={setCompareId} />
@@ -357,7 +497,12 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
           <>
             {note && <p className="sp-gnote">{note}</p>}
             {!doc.complete && doc.producer !== "stages-only" && <p className="sp-gnote">The graph can still grow: steps after an open checkpoint join it once the checkpoint ends.</p>}
-            {capped && <p className="sp-gnote">{`Jobs are shown for the steps running or failed and those you open (at most ${MAX_JOB_PROCESSES} steps, ${JOBS_PER_PROCESS} jobs each); the Tasks tab lists them all.`}</p>}
+            {settings.level === "jobs" && (
+              <p className="sp-gnote">
+                {`One box per job (${shownJobs}), named by its key: Nextflow's tag, or Snakemake's wildcards. Jobs of linked steps are linked when their keys match, or when one step has a single job.`}
+                {left > 0 && ` ${left} ${left === 1 ? "step is" : "steps are"} still one box (not started yet, or past ${MAX_JOBS} jobs); the Tasks tab lists every job.`}
+              </p>
+            )}
             {removed.length > 0 && <p className="sp-gnote">Only in the compared run: {removed.join(", ")}.</p>}
             {traced && trace && (
               <p className="sp-gnote">
@@ -370,6 +515,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
           </>
         }
       />
+      <EdgeSheet run={run} doc={doc} view={view} edge={edge} onClose={() => setEdge(null)} />
       <NodeSheet
         run={run}
         doc={doc}
@@ -385,6 +531,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
         }}
         onOpen={(d) => (set({ node: null }), onOpen(d))}
         onTasks={onTasks}
+        onToggle={(g) => set({ fold: settings.fold.includes(g) ? settings.fold.filter((x) => x !== g) : [...settings.fold, g], node: null })}
       />
     </>
   );

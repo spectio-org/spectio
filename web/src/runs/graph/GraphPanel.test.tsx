@@ -211,17 +211,17 @@ test("a disabled graph on the server says so", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("The graph is turned off on this server.");
 });
 
-test("the Jobs level expands the busy and the opened steps only (CR-2)", async () => {
-  const { expandedSteps } = await import("./GraphPanel");
+test("the Jobs level loads every started step, in pipeline order, under the job cap", async () => {
+  const { expandedSteps, MAX_JOBS } = await import("./GraphPanel");
   const doc: GraphDocument = {
     ...DOC,
     nodes: [
-      { ...DOC.nodes[0], id: "A", counts: { succeeded: 3 } },
-      { ...DOC.nodes[0], id: "B", counts: { running: 1 } },
-      { ...DOC.nodes[0], id: "C", counts: { failed: 1 } },
-      { ...DOC.nodes[0], id: "D", counts: {} },
+      { ...DOC.nodes[0], id: "A", pipeline_order: 2, counts: { succeeded: 3 } },
+      { ...DOC.nodes[0], id: "B", pipeline_order: 1, counts: { running: 1 } },
+      { ...DOC.nodes[0], id: "C", pipeline_order: 3, counts: { succeeded: MAX_JOBS } },
+      { ...DOC.nodes[0], id: "D", pipeline_order: 4, counts: {} },
     ],
   };
-  expect(expandedSteps(doc, []).map((n) => n.id)).toEqual(["B", "C"]);
-  expect(expandedSteps(doc, ["D", "B"]).map((n) => n.id)).toEqual(["B", "C", "D"]);
+  // C is capped at one page (200), so it still fits
+  expect(expandedSteps(doc).map((n) => n.id)).toEqual(["B", "A", "C"]);
 });

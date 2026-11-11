@@ -57,13 +57,13 @@ function DemoBar() {
       <details>
         <summary>Things to try</summary>
         <ul>
-          <li>Level: Stage, Subworkflow, Process, Jobs (one box per task).</li>
-          <li>Layout: Layered, Left to right, Metro, Compact.</li>
-          <li>Search: <code>state:running</code>, <code>param:genome</code>, <code>kind:process</code>, <code>STAR</code>.</li>
-          <li>Overlay: Duration, CPU, Memory, Failures, Critical path.</li>
-          <li>Click a step: parameters, live outputs, its jobs, upstream and downstream.</li>
-          <li>Compare with the previous run (it skipped RSeQC).</li>
-          <li>Replay and the List view, the keyboard-friendly table.</li>
+          <li>Show: Stages, Subworkflows, Processes, Jobs (one box per job, named by its sample or wildcards).</li>
+          <li>Double-click a box to fold its subworkflow or stage, or to unfold a group.</li>
+          <li>Right-click a step to read its code; click a link to see the files it carries.</li>
+          <li>Colour by: the legend says what each colour measures.</li>
+          <li>Search: <code>state:running</code>, <code>param:genome</code>, <code>kind:checkpoint</code>, <code>STAR</code>.</li>
+          <li>The Snakemake run: branches, a checkpoint, temporary files, one failed job.</li>
+          <li>Compare with the previous run (it skipped RSeQC); Replay; export as HTML.</li>
         </ul>
       </details>
     </section>

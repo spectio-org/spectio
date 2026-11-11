@@ -86,6 +86,7 @@ function detailOf(id: string): Record<string, unknown> | null {
 }
 
 function tasksOf(id: string, process: string | null, wanted: string | null) {
+  if (id === SMK) return smkTasks(process, wanted);
   const sim = sims()[id];
   if (!sim) return [];
   return sim.tasks
@@ -99,12 +100,13 @@ function tasksOf(id: string, process: string | null, wanted: string | null) {
       state: t.state,
       stage_id: t.step.stage,
       attempt_n: t.attempt || null,
-      resources: NO_RESOURCES,
+      resources: t.state === "succeeded" ? resources(t.id, t.step.seconds, Math.round(t.step.cpu * 12)) : NO_RESOURCES,
       slurm: null,
     }));
 }
 
 function outputsOf(id: string, process: string) {
+  if (id === SMK) return smkOutputs(process);
   const sim = sims()[id];
   const step = STEPS.find((s) => s.id === process);
   if (!sim || !step) return [];
@@ -144,6 +146,10 @@ export function answer(url: URL, method = "GET"): Response {
   if (path === "/features") return json(200, { features: ["graph_view"] });
   if (path === "/catalog") return json(200, { items: [], file: { path: "~/.spectio/catalog.toml", state: "missing", detail: null } });
   if (path === "/me/notifications") return json(200, { items: [], unread: 0, read_up_to: null });
+  if (path === "/workflows:source") {
+    const block = sourceOf(q.get("name") ?? "");
+    return block ? json(200, block) : missing("This step's code");
+  }
   if (path === "/runs:summary") {
     const groups: Record<string, number> = {};
     for (const r of [LIVE, DONE, SMK].map(runOf)) groups[String(r!.state)] = (groups[String(r!.state)] ?? 0) + 1;
@@ -225,51 +231,187 @@ export function install(): void {
   setInterval(tick, 1000);
 }
 
-// --- The Snakemake run: a finished rule graph with one failed rule ---------------------------
+// --- The Snakemake run: a finished rule graph, a checkpoint, temporary files, one failed job ---
 
-const rule = (id: string, file: string, status: "done" | "failed" | "not_needed", counts: Record<string, number>, duration: number) => ({
-  id,
-  name: id,
-  kind: "rule" as const,
-  stage_id: file.replace("rules/", "").replace(".smk", ""),
-  subworkflow: null,
-  source: { file: `workflow/${file}`, line: null },
-  condition: null,
-  params: [],
-  status,
-  counts,
-  retries: 0,
-  metrics: { duration_s: duration, failed: counts.failed ?? 0 },
-});
+const SMK_SAMPLES = ["A", "B", "C", "D"];
+const REGIONS = ["chr1", "chr2"];
+interface Rule {
+  id: string;
+  file: string;
+  /** The jobs' wildcards, sorted by name as the server keys them. */
+  jobs: string[];
+  seconds: number;
+  kind?: "checkpoint";
+  temp?: boolean;
+  outputs: (key: string) => string[];
+  input: string;
+  shell: string;
+}
+const perSample = SMK_SAMPLES.map((x) => `sample=${x}`);
+const val = (key: string, name: string) => new RegExp(`(?:^|, )${name}=([^,]+)`).exec(key)?.[1] ?? "";
+const RULES: Rule[] = [
+  { id: "fastp", file: "rules/qc.smk", jobs: perSample, seconds: 120, outputs: (k) => [`trimmed/${val(k, "sample")}.R1.fq.gz`], input: 'expand("reads/{sample}.R{r}.fq.gz", r=[1, 2])', shell: "fastp -i {input[0]} -I {input[1]} -o {output} --json {log}" },
+  { id: "fastqc", file: "rules/qc.smk", jobs: perSample, seconds: 60, outputs: (k) => [`qc/fastqc/${val(k, "sample")}_fastqc.html`], input: '"reads/{sample}.R1.fq.gz"', shell: "fastqc {input} -o qc/fastqc" },
+  { id: "bwa_map", file: "rules/mapping.smk", jobs: perSample, seconds: 600, temp: true, outputs: (k) => [`mapped/${val(k, "sample")}.bam`], input: '"trimmed/{sample}.R1.fq.gz"', shell: "bwa mem -t {threads} {params.ref} {input} | samtools view -b - > {output}" },
+  { id: "samtools_sort", file: "rules/mapping.smk", jobs: perSample, seconds: 180, outputs: (k) => [`sorted/${val(k, "sample")}.bam`], input: '"mapped/{sample}.bam"', shell: "samtools sort -o {output} {input}" },
+  { id: "samtools_index", file: "rules/mapping.smk", jobs: perSample, seconds: 40, outputs: (k) => [`sorted/${val(k, "sample")}.bam.bai`], input: '"sorted/{sample}.bam"', shell: "samtools index {input}" },
+  { id: "split_regions", file: "rules/calling.smk", jobs: [""], seconds: 30, kind: "checkpoint", outputs: () => ["regions/"], input: "config[\"ref\"] + \".fai\"", shell: "split_regions.py {input} {output}" },
+  { id: "call_variants", file: "rules/calling.smk", jobs: perSample.flatMap((sm) => REGIONS.map((r) => `region=${r}, ${sm}`)), seconds: 420, outputs: (k) => [`calls/${val(k, "sample")}.${val(k, "region")}.vcf.gz`], input: 'bam="sorted/{sample}.bam", region="regions/{region}.bed"', shell: "bcftools mpileup -R {input.region} {input.bam} | bcftools call -mv -Oz -o {output}" },
+  { id: "merge_vcfs", file: "rules/calling.smk", jobs: [""], seconds: 90, outputs: () => ["calls/all.vcf.gz"], input: "aggregate_calls", shell: "bcftools concat -Oz -o {output} {input}" },
+  { id: "plot_quals", file: "rules/calling.smk", jobs: [""], seconds: 20, outputs: () => ["plots/quals.svg"], input: '"calls/all.vcf.gz"', shell: "plot-quals.py {input} {output}" },
+  { id: "multiqc", file: "rules/qc.smk", jobs: [""], seconds: 50, outputs: () => ["qc/multiqc_report.html"], input: 'expand("qc/fastqc/{sample}_fastqc.html", sample=SAMPLES)', shell: "multiqc qc -o qc" },
+];
+const FAILED_JOB = "region=chr2, sample=C";
+/** Rules after the failed job never ran. */
+const BLOCKED = new Set(["merge_vcfs", "plot_quals"]);
+
+interface SmkJob {
+  id: string;
+  rule: Rule;
+  key: string;
+  state: "succeeded" | "failed" | "not_scheduled";
+}
+let n = 0;
+const SMK_JOBS: SmkJob[] = RULES.flatMap((r) =>
+  r.jobs.map((key) => ({
+    id: `tsk_s${String(++n).padStart(3, "0")}`,
+    rule: r,
+    key,
+    state: BLOCKED.has(r.id) ? ("not_scheduled" as const) : r.id === "call_variants" && key === FAILED_JOB ? ("failed" as const) : ("succeeded" as const),
+  })),
+);
+
+const SMK_STAGES: Record<string, string> = { qc: "rules/qc.smk", mapping: "rules/mapping.smk", calling: "rules/calling.smk" };
+
+function smkNode(r: Rule, i: number) {
+  const jobs = SMK_JOBS.filter((j) => j.rule === r);
+  const counts: Record<string, number> = {};
+  for (const j of jobs) counts[j.state] = (counts[j.state] ?? 0) + 1;
+  const failed = counts.failed ?? 0;
+  const status = BLOCKED.has(r.id) ? "not_needed" : failed ? "failed" : "done";
+  return {
+    id: r.id,
+    name: r.id,
+    kind: r.kind ?? ("rule" as const),
+    stage_id: r.file.replace("rules/", "").replace(".smk", ""),
+    subworkflow: null,
+    source: { file: `workflow/${r.file}`, line: null },
+    condition: null,
+    params: r.id === "bwa_map" || r.id === "call_variants" ? ["ref"] : r.id === "fastp" ? ["samples"] : [],
+    status: status as "done" | "failed" | "not_needed",
+    counts: BLOCKED.has(r.id) ? {} : counts,
+    retries: 0,
+    pipeline_order: i,
+    temp: r.temp ?? false,
+    metrics: BLOCKED.has(r.id) ? {} : { duration_s: r.seconds * (r.jobs.length > 4 ? 2 : 1), cpu_mean: 0.4 + (r.seconds % 7) / 12, mem_max: 0.3 + (r.seconds % 5) / 8, failed },
+  };
+}
 
 const SMK_GRAPH: GraphDocument = {
   version: 1,
   engine: "snakemake",
   producer: "smk-rulegraph",
   complete: true,
-  groups: [
-    { id: "stage:qc", kind: "stage", name: "rules/qc.smk", parent: null, condition: null },
-    { id: "stage:mapping", kind: "stage", name: "rules/mapping.smk", parent: null, condition: null },
-    { id: "stage:calling", kind: "stage", name: "rules/calling.smk", parent: null, condition: null },
-  ],
-  nodes: [
-    rule("fastp", "rules/qc.smk", "done", { succeeded: 4 }, 120),
-    rule("bwa_map", "rules/mapping.smk", "done", { succeeded: 4 }, 600),
-    rule("samtools_sort", "rules/mapping.smk", "done", { succeeded: 4 }, 180),
-    rule("samtools_index", "rules/mapping.smk", "done", { succeeded: 4 }, 40),
-    rule("call_variants", "rules/calling.smk", "failed", { succeeded: 3, failed: 1 }, 420),
-    rule("plot_quals", "rules/calling.smk", "not_needed", {}, 0),
-    { ...rule("all", "Snakefile", "not_needed", {}, 0), stage_id: null },
-  ],
+  groups: Object.entries(SMK_STAGES).map(([id, name]) => ({ id: `stage:${id}`, kind: "stage" as const, name, parent: null, condition: null })),
+  nodes: [...RULES.map(smkNode), { ...smkNode({ ...RULES[8], id: "all", file: "Snakefile", jobs: [""] }, RULES.length), stage_id: null, counts: {}, metrics: {} }],
   edges: [
-    { source: "fastp", target: "bwa_map" },
-    { source: "bwa_map", target: "samtools_sort" },
-    { source: "samtools_sort", target: "samtools_index" },
-    { source: "samtools_index", target: "call_variants" },
-    { source: "call_variants", target: "plot_quals" },
-    { source: "plot_quals", target: "all" },
-  ],
+    ["fastp", "bwa_map"],
+    ["fastp", "multiqc"],
+    ["fastqc", "multiqc"],
+    ["bwa_map", "samtools_sort"],
+    ["samtools_sort", "samtools_index"],
+    ["samtools_sort", "multiqc"],
+    ["samtools_index", "call_variants"],
+    ["split_regions", "call_variants"],
+    ["call_variants", "merge_vcfs"],
+    ["merge_vcfs", "plot_quals"],
+    ["merge_vcfs", "all"],
+    ["plot_quals", "all"],
+    ["multiqc", "all"],
+  ].map(([source, target]) => ({ source, target })),
 };
+
+function smkTasks(process: string | null, wanted: string | null) {
+  return SMK_JOBS.filter((j) => !process || j.rule.id === process)
+    .filter((j) => !wanted || wanted.split(",").includes(j.state))
+    .map((j) => ({
+      id: j.id,
+      process: j.rule.id,
+      tag: j.key || null,
+      name: j.key ? `${j.rule.id} (${j.key})` : j.rule.id,
+      state: j.state,
+      stage_id: j.rule.file.replace("rules/", "").replace(".smk", ""),
+      attempt_n: j.state === "not_scheduled" ? null : 1,
+      resources: j.state === "not_scheduled" ? NO_RESOURCES : resources(j.id, j.rule.seconds, 4),
+      slurm: null,
+    }));
+}
+
+function smkOutputs(process: string) {
+  return SMK_JOBS.filter((j) => j.rule.id === process && j.state === "succeeded").flatMap((j) =>
+    j.rule.outputs(j.key).map((path) => ({ path, task_id: j.id, attempt_n: 1, state: j.rule.temp ? "removed" : "present", temp: !!j.rule.temp, root: "launch" })),
+  );
+}
+
+/** Made-up resources for a demo job, stable for its id. */
+function resources(id: string, seconds: number, cpus: number) {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return { cpus, memory_bytes: 8 * 2 ** 30, time_s: null, realtime_s: Math.round(seconds * (0.8 + (h % 40) / 100)), cpu_percent: 60 + (h % 35), peak_rss_bytes: (2 + (h % 50) / 10) * 2 ** 30, source: "trace" as const };
+}
+
+/** `GET /workflows:source`: made-up code for a demo step, in the engine's syntax. */
+function sourceOf(name: string) {
+  const r = RULES.find((x) => x.id === name);
+  if (r) {
+    const code = [
+      `${r.kind ?? "rule"} ${r.id}:`,
+      `    input:`,
+      `        ${r.input}`,
+      `    output:`,
+      `        ${r.temp ? `temp("${r.outputs("sample={sample}")[0].replace("{sample}", "{sample}")}")` : `"${r.outputs("sample={sample}, region={region}")[0]}"`}`,
+      `    log:`,
+      `        "logs/${r.id}/{sample}.log"`,
+      `    threads: 4`,
+      `    conda:`,
+      `        "../envs/${r.id.split("_")[0]}.yaml"`,
+      `    shell:`,
+      `        "${r.shell}"`,
+    ].join("\n");
+    return { file: `workflow/${r.file}`, line: 3 + RULES.filter((x) => x.file === r.file).indexOf(r) * 14, code, truncated: false };
+  }
+  const step = STEPS.find((x) => x.id.split(":").at(-1) === name.split(":").at(-1));
+  if (!step) return null;
+  const proc = step.id.split(":").at(-1)!;
+  const tool = proc.split("_")[0].toLowerCase();
+  const code = [
+    `process ${proc} {`,
+    `    tag "$meta.id"`,
+    `    label 'process_${step.cpu > 0.8 ? "high" : "medium"}'`,
+    ``,
+    `    conda "\${moduleDir}/environment.yml"`,
+    `    container "community.wave.seqera.io/library/${tool}:latest"`,
+    ``,
+    `    input:`,
+    step.perSample ? `    tuple val(meta), path(reads)` : `    path(inputs)`,
+    ``,
+    `    output:`,
+    ...step.outputs.map((o) => `    path "${o.split("/").at(-1)!.replace("{s}", "${meta.id}")}", emit: ${o.split(".").at(-1)}`),
+    `    path "versions.yml", emit: versions`,
+    ``,
+    ...(step.params.length ? [`    when:`, `    ${step.params.find((p) => p.startsWith("skip_")) ? `!params.${step.params.find((p) => p.startsWith("skip_"))}` : "task.ext.when == null || task.ext.when"}`, ``] : []),
+    `    script:`,
+    `    def args = task.ext.args ?: ''`,
+    `    """`,
+    `    ${tool} \\`,
+    `        $args \\`,
+    ...step.params.filter((p) => !p.startsWith("skip_")).map((p) => `        --${p.replace(/_/g, "-")} \${params.${p}} \\`),
+    `        --threads $task.cpus`,
+    `    """`,
+    `}`,
+  ].join("\n");
+  return { file: step.file, line: 1, code, truncated: false };
+}
 
 const SMK_RUN = {
   id: SMK,
@@ -281,8 +423,8 @@ const SMK_RUN = {
   ended_at: "2026-11-10T14:23:10Z",
   workflow: { engine: "snakemake", engine_version: "9.27.1", location: "/g/demo-lab/pipelines/variant-calling", name: "variant-calling", version: null },
   profiles: [],
-  failure: { kind: "task", detail: "Rule call_variants failed for sample S3 (exit 1)." },
+  failure: { kind: "task", detail: "Rule call_variants failed for sample C, region chr2 (exit 1)." },
   head: { session: null, node: "login1", alive: false, exit_code: 1, checked: true },
-  task_counts: { succeeded: 19, failed: 1 },
-  summary: { tasks: { done: 19, total: 20, failed: 1, cached: 0 }, last_failure: null, stage_mode: "quarters" },
+  task_counts: { succeeded: SMK_JOBS.filter((j) => j.state === "succeeded").length, failed: 1, not_scheduled: 2 },
+  summary: { tasks: { done: SMK_JOBS.filter((j) => j.state === "succeeded").length, total: SMK_JOBS.length, failed: 1, cached: 0 }, last_failure: null, stage_mode: "quarters" },
 };

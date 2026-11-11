@@ -681,6 +681,15 @@ class GraphNode(BaseModel):
     metrics: GraphMetrics | None = None
     first_start: str | None = None
     last_end: str | None = None
+    temp: bool | None = None  # Snakemake: a `temp()` output of the rule was removed
+    code: str | None = None  # BioFlow-Insight (Launch): the process's code, as text
+
+
+class SourceBlock(BaseModel):
+    file: str  # relative to the pipeline directory
+    line: int  # 1-based, where the definition starts
+    code: str
+    truncated: bool  # longer than static.MAX_CODE_LINES lines
 
 
 class GraphEdge(BaseModel):

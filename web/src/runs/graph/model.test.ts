@@ -60,11 +60,40 @@ test("stage level: one node per stage, a bucket for nodes without one", () => {
   expect(v.edges).toHaveLength(2);
 });
 
-test("jobs level puts the loaded jobs inside their process", () => {
-  const task = { id: "tsk_1", process: `${P}ALIGN:BWA`, tag: "S1", name: null, state: "running" } as unknown as Task;
-  const v = collapse(DOC, "jobs", { [`${P}ALIGN:BWA`]: [task] });
-  const bwa = v.nodes.find((n) => n.id === `${P}ALIGN:BWA`)!;
-  expect(bwa.jobs?.map((j) => [j.id, j.label, j.status])).toEqual([["job:tsk_1", "S1", "running"]]);
+const job = (id: string, process: string, tag: string | null, state = "succeeded") => ({ id, process, tag, name: null, state }) as unknown as Task;
+
+test("jobs level: one node per job, linked by matching keys, a single job links to all", () => {
+  const TRIM = `${P}ALIGN:TRIM`;
+  const BWA = `${P}ALIGN:BWA`;
+  const v = collapse(DOC, "jobs", {
+    [TRIM]: [job("t1", TRIM, "S1"), job("t2", TRIM, "S2")],
+    [BWA]: [job("b1", BWA, "sample=S1", "running"), job("b2", BWA, "sample=S2"), job("b3", BWA, "S3")],
+  });
+  expect(v.nodes.some((n) => n.id === BWA)).toBe(false);
+  const b1 = v.nodes.find((n) => n.id === "job:b1")!;
+  expect([b1.kind, b1.label, b1.status, b1.step, b1.lane]).toEqual(["job", "sample=S1", "running", "BWA", BWA]);
+  const links = v.edges.filter((e) => e.source.startsWith("job:t")).map((e) => `${e.source}->${e.target}`);
+  // "S1" is not part of "sample=S1": keys are compared as tokens, so these do not link
+  expect(links).toEqual([]);
+  const tagged = collapse(DOC, "jobs", { [TRIM]: [job("t1", TRIM, "S1"), job("t2", TRIM, "S2")], [BWA]: [job("b1", BWA, "S1"), job("b2", BWA, "S2 lane1")] });
+  expect(tagged.edges.filter((e) => e.source.startsWith("job:t")).map((e) => `${e.source}->${e.target}`)).toEqual(["job:t1->job:b1", "job:t2->job:b2"]);
+  // REPORT has no jobs: every BWA job links to it
+  expect(tagged.edges.filter((e) => e.target === `${P}REPORT` && e.source.startsWith("job:")).map((e) => e.source)).toEqual(["job:b1", "job:b2"]);
+});
+
+test("a folded group is one node at the Process level, an unfolded one shows its steps", () => {
+  const ALIGN = "sub:NFCORE_DEMO:DEMO:ALIGN";
+  const v = collapse(DOC, "process", {}, [ALIGN]);
+  const align = v.nodes.find((n) => n.id === ALIGN)!;
+  expect([align.kind, align.members.length, align.group]).toEqual(["subworkflow", 2, ALIGN]);
+  expect(v.nodes.find((n) => n.id === `${P}QC:FASTQC`)!.group).toBe("sub:NFCORE_DEMO:DEMO:QC");
+  expect(v.edges.map((e) => e.id)).toContain(`${ALIGN}->${P}REPORT`);
+  const sub = collapse(DOC, "subworkflow", {}, [ALIGN]);
+  expect(sub.nodes.some((n) => n.id === `${P}ALIGN:BWA`)).toBe(true);
+  expect(sub.nodes.some((n) => n.id === "sub:NFCORE_DEMO:DEMO:QC")).toBe(true);
+  const stage = collapse(DOC, "stage", {}, ["stage:qc"]);
+  expect(stage.nodes.map((n) => n.id)).toContain(`${P}QC:FASTQC`);
+  expect(stage.nodes.map((n) => n.id)).toContain("stage:align");
 });
 
 test("search matches names and the kind:, state:, param: and file: fields, ANDed", () => {
@@ -83,7 +112,7 @@ test("topological order and ranks", () => {
   const order = topoOrder(v);
   expect(order.indexOf(`${P}ALIGN:TRIM`)).toBeLessThan(order.indexOf(`${P}ALIGN:BWA`));
   expect(ranks(v).get(`${P}REPORT`)).toBe(3);
-  const cyclic = { nodes: v.nodes.slice(0, 2), edges: [{ id: "a", source: v.nodes[0].id, target: v.nodes[1].id, conditions: [] }, { id: "b", source: v.nodes[1].id, target: v.nodes[0].id, conditions: [] }] };
+  const cyclic = { nodes: v.nodes.slice(0, 2), edges: [{ id: "a", source: v.nodes[0].id, target: v.nodes[1].id, conditions: [], pairs: [] }, { id: "b", source: v.nodes[1].id, target: v.nodes[0].id, conditions: [], pairs: [] }] };
   expect(topoOrder(cyclic)).toHaveLength(2);
 });
 

@@ -46,18 +46,41 @@ export function toSvg(view: View, placed: Placed, title: string): string {
     const b = placed.boxes.get(n.id);
     if (!b) continue;
     const status = n.status ?? "pending";
+    parts.push(`<g><title>${escapeXml(`${n.step ? `${n.step} · ` : ""}${n.label} · ${n.kind} · ${status.replace(/_/g, " ")}`)}</title>`);
     parts.push(`<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="${n.kind === "gate" ? 18 : 6}" fill="${FILL[status] ?? "#ffffff"}" stroke="${STROKE[status] ?? "#adb5bd"}"/>`);
     parts.push(`<text x="${b.x + 10}" y="${b.y + 20}" fill="#212529" font-weight="600">${escapeXml(n.label)}</text>`);
-    parts.push(`<text x="${b.x + 10}" y="${b.y + 38}" fill="#495057">${escapeXml(status.replace(/_/g, " "))}</text>`);
-    for (const j of n.jobs ?? []) {
-      const jb = placed.boxes.get(j.id);
-      if (!jb) continue;
-      parts.push(`<rect x="${b.x + jb.x}" y="${b.y + jb.y}" width="${jb.w}" height="${jb.h}" rx="4" fill="${FILL[j.status ?? "pending"] ?? "#fff"}" stroke="#adb5bd"/>`);
-      parts.push(`<text x="${b.x + jb.x + 6}" y="${b.y + jb.y + 19}" fill="#212529">${escapeXml(j.label)}</text>`);
-    }
+    const sub = n.kind === "job" ? `${n.step ?? ""} · ${status.replace(/_/g, " ")}` : status.replace(/_/g, " ");
+    parts.push(`<text x="${b.x + 10}" y="${b.y + 38}" fill="#495057">${escapeXml(sub)}</text></g>`);
   }
   parts.push("</svg>");
   return parts.join("");
+}
+
+/** A standalone HTML page: the drawing, then the steps as a table with their links, for a
+ * report or an e-mail. No script; every pipeline name is escaped. */
+export function toHtml(view: View, placed: Placed, title: string, engine: string): string {
+  const byId = new Map(view.nodes.map((n) => [n.id, n]));
+  const rows = view.nodes
+    .map((n) => {
+      const after = view.edges.filter((e) => e.target === n.id).map((e) => byId.get(e.source)?.label ?? e.source);
+      const counts = Object.entries(n.counts).map(([k, v]) => `${v} ${k}`).join(", ");
+      return `<tr><td>${escapeXml(n.step ? `${n.step} · ${n.label}` : n.label)}</td><td>${n.kind}</td><td>${escapeXml((n.status ?? "not run").replace(/_/g, " "))}</td><td>${escapeXml(counts || "—")}</td><td>${escapeXml((n.flags ?? []).join(", ") || "—")}</td><td>${escapeXml(after.join(", ") || "—")}</td></tr>`;
+    })
+    .join("\n");
+  const when = new Date().toISOString().replace("T", " ").slice(0, 16);
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeXml(title)} · workflow graph</title>
+<style>body{margin:24px;font:14px/1.45 system-ui,sans-serif;color:#212529;background:#fff}.map{overflow:auto;border:1px solid #dee2e6;border-radius:8px}table{border-collapse:collapse;margin-top:16px;width:100%}th,td{border-bottom:1px solid #e9ecef;padding:4px 8px;text-align:left;vertical-align:top}th{background:#f8f9fa}small{color:#868e96}</style>
+</head><body>
+<h1>${escapeXml(title)}</h1>
+<p><small>Workflow graph exported from Spectio on ${when} UTC · ${escapeXml(engine)} · ${view.nodes.length} boxes, ${view.edges.length} links. Hover a box for its state.</small></p>
+<div class="map">${toSvg(view, placed, title)}</div>
+<table><thead><tr><th>Step</th><th>Kind</th><th>State</th><th>Jobs</th><th>Marks</th><th>Runs after</th></tr></thead><tbody>
+${rows}
+</tbody></table>
+</body></html>
+`;
 }
 
 /** Saves a file the browser downloads. */

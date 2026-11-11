@@ -11,6 +11,8 @@ graph). With `graph_view` off, every graph route is `404 feature-disabled`.
   `onFilePublish` published from its tasks' work directories (matched by task hash).
 - `GET /workflows:graph`: the static graph for the Launch form (`graph.static`), the location
   checked as `/workflows:inspect` checks it.
+- `GET /workflows:source`: the code of one process or rule (`graph.static.definition`), found by
+  its name in the pipeline's files; the client names no path.
 """
 
 import os
@@ -147,7 +149,9 @@ def run_graph(request: Request, run_id: str) -> dict[str, Any]:
                 if isinstance(g, dict)
             ]
             dag = None
+            temp = _temp_rules(conn, run_id)
         else:
+            temp = set()
             graphs, dag = [], document.nf_dag(_flow_begin(conn, run_id))
     nodes = []
     for item in items:
@@ -165,6 +169,7 @@ def run_graph(request: Request, run_id: str) -> dict[str, Any]:
                 "metrics": _metrics(item, span),
                 "first_start": _iso(span[0]) if span else None,
                 "last_end": _iso(span[1]) if span else None,
+                "temp": item["process"] in temp,
             }
         )
     known = {n["id"] for n in nodes}
@@ -191,6 +196,29 @@ def run_graph(request: Request, run_id: str) -> dict[str, Any]:
         edges=edges,
         stages=[{"id": s.stage_id, "name": s.name} for s in stages],
     )
+
+
+def _temp_rules(conn: Connection, run_id: str) -> set[str]:
+    """The Snakemake rules a `temp_removed` named an output of: they write temporary files."""
+    removed = set(
+        conn.execute(
+            select(run_output_events.c.path).where(
+                run_output_events.c.run_id == run_id, run_output_events.c.kind == "temp_removed"
+            )
+        ).scalars()
+    )
+    if not removed:
+        return set()
+    rows = conn.execute(
+        select(tasks.c.process_or_rule, attempts.c.outputs)
+        .join(attempts, attempts.c.task_id == tasks.c.id)
+        .where(tasks.c.run_id == run_id, attempts.c.outputs.is_not(None))
+    ).all()
+    return {
+        r.process_or_rule
+        for r in rows
+        if any(p in removed for p in r.outputs or [] if isinstance(p, str))
+    }
 
 
 def _idle_node(name: str, status: str, order: int) -> dict[str, Any]:
@@ -376,3 +404,24 @@ def workflow_graph(request: Request, location: str, revision: str | None = None)
         "no single engine found in the pipeline",
         errors=[{"field": "location", "message": "neither or both of main.nf and a Snakefile"}],
     )
+
+
+@router.get("/workflows:source", response_model=models.SourceBlock)
+def workflow_source(
+    request: Request, location: str, name: str, revision: str | None = None
+) -> dict[str, Any]:
+    require_graph(request)
+    settings: Settings = request.app.state.settings
+    if len(name) > 512:
+        raise not_found("no such process or rule in the pipeline's code")
+    resolved = resolve(settings.data_dir, location, revision)
+    found = inspect_dir(resolved.directory, resolved.default_name)
+    root = resolved.directory
+    engine = found.engine
+    if engine not in ("snakemake", "nextflow"):
+        raise not_found("no single engine found in the pipeline")
+    entry = next((f for f in found.engine_files if "Snakefile" in f), None)
+    block = _in_pool(request, lambda: static.definition(root, engine, entry, name) or {})
+    if not block:
+        raise not_found("no such process or rule in the pipeline's code")
+    return block

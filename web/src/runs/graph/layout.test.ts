@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import type { Task } from "../../api";
 import { DOC } from "./fixture";
-import { NODE_H, NODE_W, hasUpstream, place, sizeOf } from "./layout";
+import { NODE_W, hasUpstream, place, sizeOf } from "./layout";
 import { collapse } from "./model";
 
 const P = "NFCORE_DEMO:DEMO:";
@@ -45,18 +45,14 @@ test("upstream uses BioFlow-Insight positions when present", () => {
   expect(hasUpstream(collapse(DOC, "process"))).toBe(false);
 });
 
-test("a process with jobs grows and lays its jobs out inside", () => {
+test("the Jobs level lays out one box per job, without overlaps", () => {
   const tasks = Array.from({ length: 6 }, (_, i) => ({ id: `t${i}`, tag: `S${i}`, name: null, state: "succeeded" }) as unknown as Task);
   const view = collapse(DOC, "jobs", { [`${P}ALIGN:BWA`]: tasks });
-  const bwa = view.nodes.find((n) => n.id === `${P}ALIGN:BWA`)!;
-  const size = sizeOf(bwa);
-  expect(size.w).toBeGreaterThan(NODE_W);
-  expect(size.h).toBeGreaterThan(NODE_H);
-  const { boxes } = place(view, "layered-tb");
-  const jobs = tasks.map((t) => boxes.get(`job:${t.id}`)!);
-  for (const j of jobs) expect(j.x + j.w).toBeLessThanOrEqual(size.w);
-  for (const j of jobs) expect(j.y + j.h).toBeLessThanOrEqual(size.h);
-  noOverlaps(boxes, tasks.map((t) => `job:${t.id}`));
+  for (const layout of ["layered-tb", "layered-lr", "metro", "compact"] as const) {
+    const { boxes } = place(view, layout);
+    noOverlaps(boxes, view.nodes.map((n) => n.id));
+    expect(boxes.get("job:t0")!.w).toBe(sizeOf(view.nodes.find((n) => n.id === "job:t0")!).w);
+  }
 });
 
 test("a cyclic static graph lays out in every layout", () => {

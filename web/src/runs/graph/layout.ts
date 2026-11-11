@@ -18,7 +18,7 @@ export interface Lane {
 }
 
 export interface Placed {
-  /** Top-left boxes of the view's nodes; a job's box is relative to its process. */
+  /** Top-left boxes of the view's nodes. */
   boxes: Map<string, Box>;
   /** Metro and Compact: one horizontal band per lane. */
   lanes: Lane[];
@@ -26,27 +26,15 @@ export interface Placed {
 
 export const NODE_W = 184;
 export const NODE_H = 52;
-const JOB_W = 112;
-const JOB_H = 30;
-const JOB_COLS = 4;
+export const JOB_W = 150;
+export const JOB_H = 44;
 const GAP = 12;
-const HEADER = 40;
 const COL = NODE_W + 56;
 const WRAP = 6; // Compact: nodes per row of a lane
 
-/** A node's size: a process holding its jobs grows to fit them in a grid. */
+/** A node's size: a job (Jobs level) is smaller than a step. */
 export function sizeOf(n: ViewNode): { w: number; h: number } {
-  const jobs = n.jobs?.length ?? 0;
-  if (!jobs) return { w: NODE_W, h: NODE_H };
-  const cols = Math.min(JOB_COLS, jobs);
-  const rows = Math.ceil(jobs / JOB_COLS);
-  return { w: Math.max(NODE_W, cols * (JOB_W + GAP) + GAP), h: HEADER + rows * (JOB_H + GAP) + GAP / 2 };
-}
-
-function placeJobs(n: ViewNode, boxes: Map<string, Box>) {
-  n.jobs?.forEach((j, i) => {
-    boxes.set(j.id, { x: GAP + (i % JOB_COLS) * (JOB_W + GAP), y: HEADER + Math.floor(i / JOB_COLS) * (JOB_H + GAP), w: JOB_W, h: JOB_H });
-  });
+  return n.kind === "job" ? { w: JOB_W, h: JOB_H } : { w: NODE_W, h: NODE_H };
 }
 
 function layered(view: View, rankdir: "TB" | "LR"): Map<string, Box> {
@@ -170,6 +158,5 @@ export function place(view: View, layout: GraphLayout): Placed {
   else if (layout === "compact") placed = compact(view);
   else if (layout === "upstream") placed = upstream(view);
   else placed = { boxes: layered(view, layout === "layered-lr" ? "LR" : "TB"), lanes: [] };
-  for (const n of view.nodes) placeJobs(n, placed.boxes);
   return placed;
 }

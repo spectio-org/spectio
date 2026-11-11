@@ -53,6 +53,7 @@ def test_features_off_by_default(settings: Settings, writer: Writer) -> None:
         f"/runs/{RUN}/graph",
         f"/runs/{RUN}/processes/A/outputs",
         "/workflows:graph?location=/x",
+        "/workflows:source?location=/x&name=A",
     ):
         found = client.get(f"{API}{path}")
         assert found.status_code == 404
@@ -123,6 +124,9 @@ def test_snakemake_outputs(settings: Settings, writer: Writer, tmp_path: Path) -
     }
     assert all(i["task_id"] for i in items)
     assert client.get(f"{API}/runs/{RUN}/processes/nope/outputs").status_code == 404
+    # the graph flags the rule as writing temporary files
+    nodes = {n["id"]: n for n in got(client, f"/runs/{RUN}/graph")["nodes"]}
+    assert nodes["make_reads"]["temp"] is True
 
 
 # --- The run graph: Nextflow -----------------------------------------------------------------
@@ -270,6 +274,39 @@ def test_launch_nextflow_with_bioflow(
     node = next(n for n in doc["nodes"] if n["name"] == "SRA_FASTQ_FTP")
     assert node["subworkflow"] == "sub:NFCORE_FETCHNGS:FETCHNGS"
     assert node["condition"] == "!skip_fastq_download" and node["layout"]
+    assert "process SRA_FASTQ_FTP" in node["code"]
+
+
+def test_source_of_a_rule_and_a_process(
+    settings: Settings, writer: Writer, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The code of a rule or a process, found by its name (a Nextflow name by its last part):
+    the file, the 1-based line and the block; an unknown or odd name is 404, never a path."""
+    monkeypatch.setattr(bioflow, "available", lambda: None)
+    client = graph_client(settings, writer)
+    smk = tmp_path / "smk"
+    shutil.copytree(SYNTHETIC / "snakemake", smk)
+    block = got(client, f"/workflows:source?location={smk}&name=make_reads")
+    assert block["file"] == "workflow/Snakefile" and block["line"] >= 1 and not block["truncated"]
+    assert block["code"].startswith("rule make_reads:")
+    assert "rule " not in block["code"].splitlines()[-1]  # the next rule is not part of it
+    nf = tmp_path / "nf"
+    shutil.copytree(SYNTHETIC / "nextflow", nf)
+    block = got(client, f"/workflows:source?location={nf}&name=PIPE:ALIGN")
+    assert block["file"] == "main.nf" and block["code"].lstrip().startswith("process ALIGN")
+    assert block["code"].rstrip().endswith("}")
+    for name in ("nope", "../etc/passwd", "ALIGN;x", "a" * 600):
+        found = client.get(f"{API}/workflows:source", params={"location": str(nf), "name": name})
+        assert found.status_code == 404, name
+
+
+def test_source_search_is_linear(tmp_path: Path) -> None:
+    """A `.nf` file of 1 MiB of newlines: the process search ends at once (SEC-SRC-01; `^\\s*`
+    crossed newlines and went quadratic)."""
+    (tmp_path / "main.nf").write_text("\n" * ((1 << 20) - 1))
+    began = time.monotonic()
+    assert static.definition(tmp_path, "nextflow", None, "ALIGN") is None
+    assert time.monotonic() - began < 2
 
 
 def test_launch_location_checked(settings: Settings, writer: Writer) -> None:
