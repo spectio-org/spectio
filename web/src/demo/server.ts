@@ -100,8 +100,8 @@ function tasksOf(id: string, process: string | null, wanted: string | null) {
       state: t.state,
       stage_id: t.step.stage,
       attempt_n: t.attempt || null,
-      resources: t.state === "succeeded" ? resources(t.id, t.step.seconds, Math.round(t.step.cpu * 12)) : NO_RESOURCES,
-      efficiency: t.state === "succeeded" ? efficiencyOf(t.id, t.step.seconds) : undefined,
+      resources: t.state === "succeeded" ? resources(t.id, t.step.seconds * slow(t.sample), Math.round(t.step.cpu * 12)) : NO_RESOURCES,
+      efficiency: t.state === "succeeded" ? efficiencyOf(t.id, t.step.seconds * slow(t.sample)) : undefined,
       slurm: null,
     }));
 }
@@ -365,8 +365,8 @@ function smkTasks(process: string | null, wanted: string | null) {
       state: j.state,
       stage_id: j.rule.file.replace("rules/", "").replace(".smk", ""),
       attempt_n: j.state === "not_scheduled" ? null : 1,
-      resources: j.state === "not_scheduled" ? NO_RESOURCES : resources(j.id, j.rule.seconds, 4),
-      efficiency: j.state === "succeeded" ? efficiencyOf(j.id, j.rule.seconds) : undefined,
+      resources: j.state === "not_scheduled" ? NO_RESOURCES : resources(j.id, j.rule.seconds * slow(j.key), 4),
+      efficiency: j.state === "succeeded" ? efficiencyOf(j.id, j.rule.seconds * slow(j.key)) : undefined,
       slurm: null,
     }));
 }
@@ -376,6 +376,9 @@ function smkOutputs(process: string) {
     j.rule.outputs(j.key).map((path) => ({ path, task_id: j.id, attempt_n: 1, state: j.rule.temp ? "removed" : "present", temp: !!j.rule.temp, root: "launch", size: j.rule.temp ? null : sizeOf(path) })),
   );
 }
+
+/** One sample per run takes three times as long, so the Jobs level shows an outlier. */
+const slow = (key: string | null | undefined) => (key && /\b(WT_REP2|sample=C)\b/.test(key) ? 3 : 1);
 
 /** Made-up resources for a demo job, stable for its id. */
 function resources(id: string, seconds: number, cpus: number) {
@@ -482,5 +485,5 @@ function efficiencyOf(id: string, seconds: number) {
   let h = 0;
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const peak = (2 + (h % 50) / 10) * 2 ** 30;
-  return { cpu: (60 + (h % 35)) / 100 / 1.2, mem: peak / (8 * 2 ** 30), elapsed_s: seconds, peak_rss_bytes: peak, state: "available", source: "trace", reason: null };
+  return { cpu: (60 + (h % 35)) / 100 / 1.2, mem: peak / (8 * 2 ** 30), elapsed_s: Math.round(seconds * (0.8 + (h % 40) / 100)), peak_rss_bytes: peak, state: "available", source: "trace", reason: null };
 }

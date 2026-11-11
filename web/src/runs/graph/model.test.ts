@@ -1,25 +1,7 @@
 import { expect, test } from "vitest";
 import type { Task } from "../../api";
 import { DOC } from "./fixture";
-import {
-  declarations,
-  acyclic,
-  aggregateStatus,
-  autoFold,
-  bandOf,
-  collapse,
-  collapsedSubworkflow,
-  criticalPath,
-  diffGraphs,
-  heat,
-  lineage,
-  ranks,
-  restrict,
-  search,
-  statusAt,
-  timeSpan,
-  topoOrder,
-} from "./model";
+import { declarations, acyclic, aggregateStatus, autoFold, bandOf, collapse, collapsedSubworkflow, criticalPath, diffGraphs, heat, lineage, ranks, restrict, search, statusAt, timeSpan, topoOrder, outliers } from "./model";
 
 const P = "NFCORE_DEMO:DEMO:";
 
@@ -284,4 +266,18 @@ test("declarations skip emit and topic names, stop at an unlabelled script, and 
     { kind: "expand", name: '"qc/{s}.html"' },
     { kind: "file", name: '"done.txt"' },
   ]);
+});
+
+test("jobs carry their own duration, CPU and memory, coloured against their step's jobs, and odd ones are flagged", () => {
+  const BWA = `${P}ALIGN:BWA`;
+  const run = (id: string, s: number, cpu: number) => ({ ...job(id, BWA, id), resources: { cpus: 4, memory_bytes: 8, realtime_s: s, cpu_percent: cpu * 400, peak_rss_bytes: 4 }, efficiency: undefined }) as unknown as Task;
+  const v = collapse(DOC, "jobs", { [BWA]: [run("a", 100, 0.5), run("b", 110, 0.5), run("c", 90, 0.5), run("d", 400, 0.5)] });
+  const d = v.nodes.find((n) => n.id === "job:d")!;
+  expect(d.metrics).toEqual({ duration_s: 400, cpu_mean: 0.5, mem_max: 0.5, failed: 0 });
+  expect(heat(v, "duration").get("job:d")).toBe(1);
+  expect(heat(v, "duration").get("job:a")).toBe(0.25);
+  const odd = outliers(v, "duration");
+  expect([...odd.keys()]).toEqual(["job:d"]);
+  expect(odd.get("job:d")).toBeCloseTo(400 / 105);
+  expect(outliers(v, "cpu").size).toBe(0);
 });

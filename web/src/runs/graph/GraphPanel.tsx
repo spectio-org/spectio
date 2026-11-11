@@ -67,14 +67,21 @@ interface Props {
   onTasks: (process: string) => void;
 }
 
-function value(params: Record<string, Json>, key: string): string {
+/** A parameter's value in this run, its kind and its text: `undefined` when the run did not set
+ * it (the pipeline's default applies). */
+export function paramOf(params: Record<string, Json>, key: string): { kind: string; text: string; set: boolean } {
   let at: Json | undefined = params[key];
   if (at === undefined && key.includes(".")) {
     at = params;
     for (const part of key.split(".")) at = at && typeof at === "object" && !Array.isArray(at) ? (at as Record<string, Json>)[part] : undefined;
   }
-  if (at === undefined) return "(not set: the pipeline's default)";
-  return typeof at === "string" ? at : JSON.stringify(at);
+  if (at === undefined) return { kind: "default", text: "not set: the pipeline's default", set: false };
+  if (at === null) return { kind: "null", text: "null", set: true };
+  if (typeof at === "boolean") return { kind: "yes/no", text: at ? "true" : "false", set: true };
+  if (typeof at === "number") return { kind: "number", text: String(at), set: true };
+  if (Array.isArray(at)) return { kind: `list of ${at.length}`, text: at.map((v) => (typeof v === "string" ? v : JSON.stringify(v))).join(", "), set: true };
+  if (typeof at === "object") return { kind: "map", text: JSON.stringify(at), set: true };
+  return { kind: /^(\/|\.{1,2}\/|~\/|[a-z][\w+.-]*:\/\/)|\.[a-z0-9]{1,6}$/i.test(at) && !/\s/.test(at) ? "path" : "text", text: at, set: true };
 }
 
 /** A file's look: the icon and word of its kind, and whether its first lines are worth showing
@@ -548,14 +555,37 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
           {params.length === 0 ? (
             <p className="sp-muted">No parameter is known to be read by {members.length > 1 ? "these steps" : "this step"}.</p>
           ) : (
-            <dl className="sp-gfacts" aria-label={`Parameters of ${node.label}`}>
-              {params.map((p) => (
-                <div key={p} style={{ display: "contents" }}>
-                  <dt className="sp-mono">{p}</dt>
-                  <dd>{value(run.params, p)}</dd>
-                </div>
-              ))}
-            </dl>
+            // a table: name, kind, value, aligned; the run's own values first, the defaults after
+            // (Thomas: easier to read)
+            <table className="sp-gdecl-table sp-gparams" aria-label={`Parameters of ${node.label}`}>
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Kind</th>
+                  <th scope="col">Value in this run</th>
+                </tr>
+              </thead>
+              <tbody>
+                {params
+                  .map((p) => [p, paramOf(run.params, p)] as const)
+                  .sort((a, b) => Number(b[1].set) - Number(a[1].set))
+                  .map(([p, v]) => (
+                    <tr key={p} data-set={v.set || undefined}>
+                      <th scope="row" className="sp-mono">
+                        {p}
+                      </th>
+                      <td>
+                        <span className="sp-gdecl-kind" data-kind={v.kind}>
+                          {v.kind}
+                        </span>
+                      </td>
+                      <td className={v.set ? "sp-mono" : "sp-muted"} data-bool={v.kind === "yes/no" ? v.text : undefined}>
+                        {v.text}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           )}
           {(single || node.kind === "job") && (
             <details className="sp-gdetails">

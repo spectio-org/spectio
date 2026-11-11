@@ -227,6 +227,20 @@ function groupOf(doc: GraphDocument, n: GraphNode, level: GraphLevel, outer: Map
   return n.subworkflow && doc.groups.some((g) => g.id === n.subworkflow) ? n.subworkflow : n.stage_id ? `stage:${n.stage_id}` : null;
 }
 
+/** A job's own numbers, so the colour modes work job by job (Thomas: find the samples out of the
+ * norm): wall time, CPU and memory used over asked, failed. */
+function jobMetrics(t: Task): GraphMetrics {
+  const r = t.resources;
+  const e = t.efficiency;
+  const ratio = (a: number | null | undefined, b: number | null | undefined) => (a != null && b ? a / b : null);
+  return {
+    duration_s: e?.elapsed_s ?? r?.realtime_s ?? null,
+    cpu_mean: e?.cpu ?? ratio(r?.cpu_percent != null ? r.cpu_percent / 100 : null, r?.cpus),
+    mem_max: e?.mem ?? ratio(r?.peak_rss_bytes, r?.memory_bytes),
+    failed: t.state === "failed" ? 1 : 0,
+  };
+}
+
 function jobOf(t: Task, step: ViewNode): ViewNode {
   return {
     id: `job:${t.id}`,
@@ -235,7 +249,7 @@ function jobOf(t: Task, step: ViewNode): ViewNode {
     members: [step.id],
     status: jobStatus[t.state] ?? null,
     counts: { [t.state]: 1 },
-    metrics: {},
+    metrics: jobMetrics(t),
     first_start: null,
     last_end: null,
     lane: step.id,
@@ -565,9 +579,38 @@ export function overlayValue(n: ViewNode, overlay: GraphOverlay): number | null 
 /** Each node's overlay value on 0..1 against the view's maximum. */
 export function heat(view: View, overlay: GraphOverlay): Map<string, number> {
   const out = new Map<string, number>();
-  const vals = view.nodes.map((n) => [n.id, overlayValue(n, overlay)] as const);
-  const max = Math.max(0, ...vals.map(([, v]) => v ?? 0));
-  for (const [id, v] of vals) if (v !== null && max > 0) out.set(id, v / max);
+  // a job against its step's other jobs, so an odd sample stands out; a step against the view
+  const scale = (n: ViewNode) => (n.kind === "job" ? `job:${n.lane}` : "");
+  const max = new Map<string, number>();
+  for (const n of view.nodes) max.set(scale(n), Math.max(max.get(scale(n)) ?? 0, overlayValue(n, overlay) ?? 0));
+  for (const n of view.nodes) {
+    const v = overlayValue(n, overlay);
+    const m = max.get(scale(n)) ?? 0;
+    if (v !== null && m > 0) out.set(n.id, v / m);
+  }
+  return out;
+}
+
+/** OUTLIER: how far a job's value may be from its step's median before it is flagged. */
+export const OUTLIER = 2;
+
+/** The jobs out of the norm under a colour mode: value over its step's median, for steps with at
+ * least 3 jobs that have one; kept when at least OUTLIER times higher or lower. */
+export function outliers(view: View, overlay: GraphOverlay): Map<string, number> {
+  const out = new Map<string, number>();
+  if (overlay !== "duration" && overlay !== "cpu" && overlay !== "memory") return out;
+  const steps = new Map<string, [string, number][]>();
+  for (const n of view.nodes) {
+    const v = n.kind === "job" ? overlayValue(n, overlay) : null;
+    if (v !== null && v > 0) steps.set(n.lane ?? "", [...(steps.get(n.lane ?? "") ?? []), [n.id, v]]);
+  }
+  for (const jobs of steps.values()) {
+    if (jobs.length < 3) continue;
+    const sorted = jobs.map(([, v]) => v).sort((a, b) => a - b);
+    const mid = sorted.length >> 1;
+    const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    for (const [id, v] of jobs) if (v >= median * OUTLIER || v <= median / OUTLIER) out.set(id, v / median);
+  }
   return out;
 }
 

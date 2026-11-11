@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, FakeEventSource, app, fetched, run, serve, stubStream, viewport } from "../../testing";
 import { resetFeatures } from "./features";
-import { groupsAround, keyPairs } from "./GraphPanel";
+import { groupsAround, keyPairs, paramOf } from "./GraphPanel";
 import { DOC } from "./fixture";
 import type { GraphDocument } from "./types";
 
@@ -468,4 +468,17 @@ test("a click on the empty map closes what is open and clears the lit steps", as
   fireEvent.click(document.querySelector(".react-flow__pane")!);
   await waitFor(() => expect(screen.queryByRole("complementary", { name: "BWA (process)" })).toBeNull());
   expect(router.state.location.search.node).toBeUndefined();
+});
+
+test("paramOf gives each parameter's kind and text, and says when the run left it to the default", () => {
+  const params = { genome: "GRCh38", input: "data/samples.csv", skip_qc: false, n: 3, xs: [1, 2], o: { a: 1 }, z: null };
+  expect(paramOf(params, "genome")).toEqual({ kind: "text", text: "GRCh38", set: true });
+  expect(paramOf(params, "input").kind).toBe("path");
+  expect(paramOf(params, "skip_qc")).toEqual({ kind: "yes/no", text: "false", set: true });
+  expect(paramOf(params, "n").kind).toBe("number");
+  expect(paramOf(params, "xs")).toEqual({ kind: "list of 2", text: "1, 2", set: true });
+  expect(paramOf(params, "o").kind).toBe("map");
+  expect(paramOf(params, "o.a").text).toBe("1");
+  expect(paramOf(params, "z").kind).toBe("null");
+  expect(paramOf(params, "missing").set).toBe(false);
 });

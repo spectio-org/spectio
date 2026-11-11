@@ -17,6 +17,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useStore,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -39,6 +40,8 @@ import {
   criticalPath,
   durationOf,
   heat,
+  OUTLIER,
+  outliers,
   overlayValue,
   restrict,
   search,
@@ -235,6 +238,10 @@ interface NodeData extends Record<string, unknown> {
   aria: string;
   tone: string;
   heat: number | null;
+  /** A job's value over its step's median, when out of the norm. */
+  odd: number | null;
+  /** The tooltip's facts, as name and value. */
+  tip: [string, string][];
   dim: boolean;
   crit: boolean;
   matched: boolean;
@@ -280,6 +287,7 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
       data-match={data.matched || undefined}
       data-ring={data.ring ?? undefined}
       data-heat={data.heat !== null || undefined}
+      data-odd={data.odd !== null || undefined}
       data-band={data.bar?.band ?? undefined}
       style={style}
       onDoubleClick={node.group ? () => data.onToggle(node.group!) : undefined}
@@ -312,6 +320,18 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
         </span>
       )}
       {data.badge && <span className="sp-gnode-badge">{data.badge}</span>}
+      {/* the node's facts on hover or keyboard focus; the button's accessible name says the same */}
+      <span className="sp-gtip" aria-hidden="true">
+        <dl>
+          {data.tip.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <span className="sp-gtip-hint">Click: details · right-click: code{node.group ? " · double-click: fold" : ""}</span>
+      </span>
       {node.group && (folded || !data.areaFold) && (
         <button
           type="button"
@@ -332,9 +352,13 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
 
 /** A group's band or area. Drawn as an area (Metro), its title is the group's fold button (Thomas:
  * folding belongs to the subworkflow or stage, not to each step). */
-function LaneBox({ data }: NodeProps<Node<{ label: string; area: boolean; fold: string | null; onToggle: (group: string) => void }>>) {
+function LaneBox({ data }: NodeProps<Node<{ label: string; area: boolean; fold: string | null; onToggle: (group: string) => void; tip: string }>>) {
   return (
     <div className="sp-glane" data-area={data.area || undefined}>
+      <span className="sp-gtip sp-glane-tip" aria-hidden="true">
+        {data.tip}
+        {data.fold && <span className="sp-gtip-hint">Click the name to fold it into one box</span>}
+      </span>
       {data.fold ? (
         <button type="button" className="sp-glane-fold nodrag nopan" onClick={() => data.onToggle(data.fold!)} onDoubleClick={(e) => e.stopPropagation()} aria-label={`Fold ${data.label} into one box`}>
           <span className="sp-glane-fold-icon" aria-hidden="true">
@@ -354,6 +378,31 @@ function LaneBox({ data }: NodeProps<Node<{ label: string; area: boolean; fold: 
 }
 
 const NODE_TYPES = { sp: NodeBox, lane: LaneBox };
+
+function EdgeTip({ over, view, engine }: { over: { edge: ViewEdge; x: number; y: number }; view: View; engine: string }) {
+  const label = (id: string) => view.nodes.find((n) => n.id === id)?.label ?? id;
+  const { edge } = over;
+  const rows: [string, string][] = [
+    ["From", label(edge.source)],
+    ["To", label(edge.target)],
+    ["Carries", engine === "snakemake" ? "files the downstream rule reads" : "a channel: values and files"],
+    ...(edge.conditions.length ? ([["Only if", edge.conditions.join(" or ")]] as [string, string][]) : []),
+    ...(edge.pairs.length > 1 ? ([["Stands for", `${edge.pairs.length} step-to-step links`]] as [string, string][]) : []),
+  ];
+  return (
+    <div className="sp-gtip sp-gedge-tip" aria-hidden="true" style={{ left: over.x + 14, top: over.y + 14 }}>
+      <dl>
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <span className="sp-gtip-hint">Click: its types and files</span>
+    </div>
+  );
+}
 
 interface Props {
   doc: GraphDocument;
@@ -386,6 +435,8 @@ interface Shown {
   matches: Set<string>;
   crit: { nodes: Set<string>; edges: Set<string> } | null;
   heat: Map<string, number>;
+  /** Jobs out of their step's norm under the colour mode: value over the step's median. */
+  odd: Map<string, number>;
 }
 
 /** The view the map, the list and the details panel show: the level, the folds, then the
@@ -408,7 +459,8 @@ function useShown(doc: GraphDocument, settings: GraphSettings, jobs: Record<stri
     for (const n of view.nodes) out.set(n.id, decor.replayAt != null && n.kind !== "job" ? statusAt(n, decor.replayAt) : n.status);
     return out;
   }, [view, decor.replayAt]);
-  return { view, status, matches, crit, heat: heated };
+  const odd = useMemo(() => outliers(view, overlay), [view, overlay]);
+  return { view, status, matches, crit, heat: heated, odd };
 }
 
 function ariaOf(n: ViewNode, status: ProcessStatus | null, extra: string[]): string {
@@ -422,7 +474,7 @@ function ariaOf(n: ViewNode, status: ProcessStatus | null, extra: string[]): str
 
 function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane, title, nextRef, engine, groupNames }: { onPane?: () => void; engine: string; groupNames: Map<string, string>; settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
   const dark = useComputedColorScheme("light") === "dark";
-  const { view, status, matches, crit, heat: heated } = shown;
+  const { view, status, matches, crit, heat: heated, odd } = shown;
   const layout = settings.layout === "upstream" && !hasUpstream(view) ? "layered-tb" : settings.layout;
   const placed = useMemo(() => place(view, layout), [view, layout]);
   const horizontal = layout !== "layered-tb" && layout !== "upstream";
@@ -430,6 +482,14 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
   const flow = useReactFlow();
   const wrap = useRef<HTMLDivElement>(null);
   const [cursor, setCursor] = useState(0);
+  const zoom = useStore((st) => st.transform[2]);
+  // the link under the mouse: a small card by the cursor (the same facts are in each step's panel,
+  // whose links are buttons, so the keyboard reaches them too)
+  const [over, setOver] = useState<{ edge: ViewEdge; x: number; y: number } | null>(null);
+  const hover = (ev: { clientX: number; clientY: number }, e: Edge | null) => {
+    const r = wrap.current?.getBoundingClientRect();
+    setOver(e && r ? { edge: (e.data as { edge: ViewEdge }).edge, x: ev.clientX - r.left, y: ev.clientY - r.top } : null);
+  };
 
   const { nodes, edges } = useMemo(() => {
     const nodes: Node[] = [];
@@ -440,7 +500,10 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
     for (const lane of placed.lanes) {
       const fold = lane.x !== undefined && foldable.has(lane.id) ? lane.id : null;
       if (fold) areaFolds.add(fold);
-      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: lane.x ?? 0, y: lane.y }, data: { label: lane.label, area: lane.x !== undefined, fold, onToggle }, width: lane.w ?? width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1 });
+      const kids = view.nodes.filter((n) => n.lane === lane.id);
+      const states = [...new Set(kids.map((n) => statusWord(status.get(n.id) ?? null)))];
+      const tip = `${lane.id.startsWith("stage:") ? "Stage" : lane.id.startsWith("file:") ? "Rule file" : kids[0]?.kind === "job" ? "Step" : "Subworkflow"} ${lane.label}: ${kids.length} ${kids.length === 1 ? "box" : "boxes"} (${states.join(", ")})`;
+      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: lane.x ?? 0, y: lane.y }, data: { label: lane.label, area: lane.x !== undefined, fold, onToggle, tip }, width: lane.w ?? width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1 });
     }
     // what the open step or link lights up: itself, its links and the steps at their other end
     const lit = new Set<string>();
@@ -473,11 +536,14 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
       if (inCrit) extra.push("on the critical path");
       if (badge) extra.push(badge);
       const v = overlayValue(n, settings.overlay);
-      const bar = barOf(settings.overlay, v, longest);
+      // a job's duration bar is against its step's longest job, like its colour
+      const bar = n.kind === "job" && settings.overlay === "duration" && heated.has(n.id) ? { pct: heated.get(n.id)!, band: null } : barOf(settings.overlay, v, longest);
+      const off = odd.get(n.id) ?? null;
+      if (off !== null) extra.push(`${times(off)} its step's median: out of the norm`);
       const semantic = settings.overlay === "cpu" || settings.overlay === "memory";
       const h = semantic ? undefined : heated.get(n.id);
       const value = overlayText(n, settings.overlay);
-      const metric = value ? ` · ${value}` : "";
+      const metric = value ? ` · ${value}${off !== null ? ` · ${times(off)} median` : ""}` : "";
       const ring = decor.selected === n.id || (openEdge && lit.has(n.id)) ? "selected" : spotlight && lit.has(n.id) ? "near" : null;
       return {
         id: n.id,
@@ -503,6 +569,18 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
           aria: ariaOf(n, s, extra),
           tone: n.kind === "gate" && !s ? "review" : statusTone(s),
           heat: h ?? null,
+          odd: off,
+          tip: [
+            ["Name", n.kind === "job" ? `${n.step ?? ""} · ${n.label}` : n.id.replace(/^(stage|sub|file):/, "")],
+            ["Kind", kindWord(n.kind)],
+            ["State", statusWord(s)],
+            ...(total > 0 && n.kind !== "job" ? ([["Jobs", `${done} of ${total} done`]] as [string, string][]) : []),
+            ...(durationOf(n) ? ([["Duration", formatSeconds(durationOf(n))]] as [string, string][]) : []),
+            ...(value && settings.overlay !== "duration" ? ([[OVERLAY_NAME[settings.overlay] ?? "Value", value]] as [string, string][]) : []),
+            ...(off !== null ? ([["Out of the norm", `${times(off)} its step's median`]] as [string, string][]) : []),
+            ...(n.group && n.kind !== "stage" && n.kind !== "subworkflow" ? ([["In", groupNames.get(n.group) ?? n.group.replace(/^(stage|sub|file):/, "")]] as [string, string][]) : []),
+            ...((n.flags ?? []).length ? ([["Marks", (n.flags ?? []).map((f) => FLAG_MARKS[f].mark).join(", ")]] as [string, string][]) : []),
+          ],
           dim: (searching && !matched) || lineageOut || (spotlight && !lit.has(n.id)),
           crit: inCrit,
           matched: matched && searching,
@@ -543,7 +621,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
       };
     });
     return { nodes, edges };
-  }, [view, placed, status, matches, crit, heated, decor, searching, horizontal, layout, onOpen, onToggle, onCode, settings.overlay, engine, groupNames]);
+  }, [view, placed, status, matches, crit, heated, odd, decor, searching, horizontal, layout, onOpen, onToggle, onCode, settings.overlay, engine, groupNames]);
 
   // the opened step stays in view when the details panel narrows the map: checked once the
   // map has its new width and a double-click is over, and moved only when it is out of view
@@ -600,7 +678,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
   nextRef.current = next;
 
   return (
-    <div className="sp-graph-map" ref={wrap} data-searching={searching || undefined} aria-label={`Map of ${title}`} role="group">
+    <div className="sp-graph-map" ref={wrap} data-searching={searching || undefined} aria-label={`Map of ${title}`} role="group" style={{ ["--sp-zoom" as string]: zoom }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -616,11 +694,15 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
         zoomOnDoubleClick={false}
         onEdgeClick={onEdge ? (_, edge) => onEdge((edge.data as { edge: ViewEdge }).edge) : undefined}
         onPaneClick={onPane}
+        onEdgeMouseEnter={(ev, e) => hover(ev, e)}
+        onEdgeMouseMove={(ev, e) => hover(ev, e)}
+        onEdgeMouseLeave={() => setOver(null)}
         // the empty inside of a group's area is the map too
         onNodeClick={onPane ? (e, n) => n.type === "lane" && !(e.target as Element).closest("button") && onPane() : undefined}
         onlyRenderVisibleElements={view.nodes.length > 300}
       >
         <Background gap={24} size={1} />
+        {over && <EdgeTip over={over} view={view} engine={engine} />}
         <Controls showInteractive={false} aria-label="Zoom" />
         <MiniMap
           pannable
@@ -716,6 +798,11 @@ export function overlayText(n: ViewNode, overlay: GraphSettings["overlay"]): str
   return null;
 }
 
+const OVERLAY_NAME: Partial<Record<GraphSettings["overlay"], string>> = { cpu: "CPU used / asked", memory: "Memory used / asked", failures: "Failures" };
+
+/** A ratio to a median, as people say it: "3.1×", "0.4×". */
+const times = (r: number) => `${r >= 10 ? Math.round(r) : r.toFixed(1)}×`;
+
 /** The small bar under a step: CPU and Memory efficiency against its band, Duration against the
  * longest step. */
 function barOf(overlay: GraphSettings["overlay"], v: number | null, longest: number): NodeData["bar"] {
@@ -737,6 +824,7 @@ export const BAND_WORDS: Record<string, string> = {
  * push the map down. */
 function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: View }) {
   const [open, setOpen] = useState(false);
+  const jobs = view.nodes.some((n) => n.kind === "job");
   const semantic = overlay === "cpu" || overlay === "memory";
   const texts = view.nodes.map((n) => [overlayValue(n, overlay), overlayText(n, overlay)] as const).filter(([v]) => v !== null) as [number, string][];
   const low = texts.length ? texts.reduce((a, b) => (b[0] < a[0] ? b : a)) : null;
@@ -779,6 +867,11 @@ function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: Vi
           <Icon path={open ? ICONS.chevronDown : ICONS.chevronRight} size={12} stroke={2} />
         </button>
         {key}
+        {jobs && (overlay === "duration" || overlay === "cpu" || overlay === "memory") && (
+          <span className="sp-gkey">
+            <span className="sp-gswatch" data-odd aria-hidden="true" /> each job against its step's jobs; dashed: {OUTLIER}× above or below its step's median
+          </span>
+        )}
       </div>
       {open && (
         <div className="sp-glegend-more">
