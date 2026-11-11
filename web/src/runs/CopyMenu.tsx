@@ -1,11 +1,8 @@
 import { Button } from "@mantine/core";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Icon } from "../icons";
+import { useEffect, useState } from "react";
 
-// The run header's Copy menu (LiteRunActions B; ui-spec §4.4 run tools): native buttons in a
-// role="menu", arrow keys move, Escape closes and returns focus to Copy, and a polite status says
-// what was copied, for 4 s. The board's "Command" item waits for the API to serve the engine's
-// command line (P1 Task 32).
+// What the run header's More actions menu can copy (LiteRunActions B; ui-spec §4.4 run tools,
+// §12.4 Copy): each item copies its text, and a polite status says what was copied, for 4 s.
 
 export interface CopyItem {
   label: string;
@@ -18,84 +15,19 @@ export interface CopyItem {
 export const copyText = (text: string): Promise<void> =>
   navigator.clipboard?.writeText(text) ?? Promise.reject(new Error("no clipboard"));
 
-export function CopyMenu({ items, fullWidth = false }: { items: CopyItem[]; fullWidth?: boolean }) {
-  const [open, setOpen] = useState(false);
+/** The status line of the Copy items and the copy that sets it: "Copied the run ID", or why not. */
+export function useCopyStatus(): [string | null, (item: CopyItem) => void] {
   const [said, setSaid] = useState<string | null>(null);
-  const button = useRef<HTMLButtonElement>(null);
-  const menu = useRef<HTMLDivElement>(null);
-
-  const entries = () => [...(menu.current?.querySelectorAll<HTMLButtonElement>("[role=menuitem]") ?? [])];
-  useEffect(() => {
-    if (open) entries()[0]?.focus();
-  }, [open]);
   useEffect(() => {
     if (!said) return;
     const timer = setTimeout(() => setSaid(null), 4000);
     return () => clearTimeout(timer);
   }, [said]);
-
-  const close = () => {
-    setOpen(false);
-    button.current?.focus();
-  };
-  const pick = (item: CopyItem) => {
-    close();
+  const copy = (item: CopyItem) =>
     copyText(item.text)
       .then(() => setSaid(`Copied ${item.what}`))
       .catch(() => setSaid(`Could not copy ${item.what}: the browser gave no clipboard`));
-  };
-  const onKey = (event: KeyboardEvent) => {
-    const all = entries();
-    const at = all.indexOf(document.activeElement as HTMLButtonElement);
-    const move = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: all.length - 1 }[event.key];
-    if (move !== undefined) {
-      event.preventDefault();
-      all[(move + all.length) % all.length]?.focus();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      close();
-    } else if (event.key === "Tab") {
-      setOpen(false);
-    }
-  };
-
-  return (
-    <span className="sp-copy" data-full={fullWidth || undefined}>
-      <Button
-        ref={button}
-        variant="default"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? "copy-menu" : undefined}
-        id="copy-button"
-        rightSection={<Icon name="chevronDown" size="button" />}
-        onClick={() => setOpen(!open)}
-        fullWidth={fullWidth}
-      >
-        Copy
-      </Button>
-      {open && (
-        <div
-          id="copy-menu"
-          ref={menu}
-          role="menu"
-          aria-labelledby="copy-button"
-          className="sp-menu"
-          onKeyDown={onKey}
-          onBlur={(e) => menu.current?.contains(e.relatedTarget as Node) || e.relatedTarget === button.current || setOpen(false)}
-        >
-          {items.map((item) => (
-            <button key={item.label} type="button" role="menuitem" tabIndex={-1} onClick={() => pick(item)}>
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
-      <span role="status" className="sp-copy-status">
-        {said}
-      </span>
-    </span>
-  );
+  return [said, copy];
 }
 
 /** One Copy button for `text`; a status line beside it says it was copied, or why not. */
