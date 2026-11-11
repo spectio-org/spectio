@@ -95,7 +95,7 @@ def on_nav(nav, config, files):
         return None
 
     progress = find(nav.items)
-    if progress is None:
+    if progress is None:  # the public build (mkdocs.yml) has no Progress section: nothing to add
         return nav
     pipeline, _ = _load()
     titles = {w["id"]: w["title"] for w in pipeline["waves"]}

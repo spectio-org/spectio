@@ -5,13 +5,14 @@
   python3 tools/docs/check.py --skip build,mermaid # e.g. when CI runs those as separate steps
   python3 tools/docs/check.py --only pr-body --pr-title "feat(x): y" --pr-body body.md --changed changed.txt
 
-Checks: build (with the hooks/progress.py output), mermaid, diagrams (freshness), media (manifest, sizes),
+Checks: build (the public site, mkdocs.yml, and the developer site, mkdocs.dev.yml, each with the hooks/progress.py output), mermaid, diagrams (freshness), media (manifest, sizes),
 progress (front matter), pr-body.
 Exit 1 if any check fails; every failure is printed as a GitHub annotation.
 """
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import hashlib
 import json
 import pathlib
@@ -57,14 +58,57 @@ def fail(check: str, msg: str, file: str | None = None) -> None:
     print(f"::error{loc}::[{check}] {_escape(msg)}")
 
 
+# The MkDocs configurations the build check runs: the public site (product pages) and the full developer site.
+BUILD_CONFIGS = ["mkdocs.yml", "mkdocs.dev.yml"]
+
+
 def check_build() -> None:
-    with tempfile.TemporaryDirectory() as site:
-        r = subprocess.run(["uvx", "--with", "mkdocs-material", "mkdocs", "build", "--strict", "-q", "-d", site],
-                           cwd=ROOT, capture_output=True, text=True)
-        if r.returncode:
-            fail("build", "mkdocs build --strict failed:\n" + (r.stderr or r.stdout)[-3000:])
-        else:
-            check_progress_hook(pathlib.Path(site))
+    for config in BUILD_CONFIGS:
+        with tempfile.TemporaryDirectory() as site:
+            r = subprocess.run(["uvx", "--with", "mkdocs-material", "mkdocs", "build", "--strict", "-q", "-f", config, "-d", site],
+                               cwd=ROOT, capture_output=True, text=True)
+            if r.returncode:
+                fail("build", f"mkdocs build --strict -f {config} failed:\n" + (r.stderr or r.stdout)[-3000:])
+            else:
+                check_progress_hook(pathlib.Path(site), DOCS, excluded_docs(ROOT / config, DOCS))
+
+
+def exclude_patterns(config: pathlib.Path) -> list[str]:
+    """The `exclude_docs` lines of a MkDocs config, following `INHERIT:` when the file sets none.
+    Read as text: the config holds `!ENV` and `!!python/name` tags that a plain YAML load refuses."""
+    lines = config.read_text().splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("exclude_docs:"):
+            out = []
+            for body in lines[i + 1:]:
+                if body.strip() and not body.startswith((" ", "\t")):
+                    break
+                body = body.strip()
+                if body and not body.startswith("#"):
+                    out.append(body)
+            return out
+    for line in lines:
+        if line.startswith("INHERIT:"):
+            return exclude_patterns(config.parent / line.split(":", 1)[1].strip())
+    return []
+
+
+def excluded_docs(config: pathlib.Path, docs: pathlib.Path = DOCS) -> set[str]:
+    """The Markdown pages (paths relative to the docs folder) that `exclude_docs` keeps out of the build.
+    Supports what the configs use: `/name` anchored to the docs root, `dir/` for a folder, `*` in a name."""
+    patterns = exclude_patterns(config)
+    hits = set()
+    for md in docs.rglob("*.md"):
+        rel = md.relative_to(docs).as_posix()
+        for pat in patterns:
+            anchored = pat.startswith("/")
+            pat = pat.lstrip("/")
+            if pat.endswith("/"):
+                if rel.startswith(pat) or (not anchored and f"/{pat}" in f"/{rel}"):
+                    hits.add(rel)
+            elif fnmatch.fnmatch(rel, pat) or (not anchored and fnmatch.fnmatch(rel.rsplit("/", 1)[-1], pat)):
+                hits.add(rel)
+    return hits
 
 
 def built_page(src: pathlib.PurePosixPath) -> str:
@@ -74,8 +118,9 @@ def built_page(src: pathlib.PurePosixPath) -> str:
     return str(src.with_suffix("") / "index.html")
 
 
-def check_progress_hook(site: pathlib.Path, docs: pathlib.Path = DOCS) -> None:
+def check_progress_hook(site: pathlib.Path, docs: pathlib.Path = DOCS, excluded: set[str] = frozenset()) -> None:
     """hooks/progress.py ran: no built page keeps a placeholder, and each page that had one shows its output.
+    A page in `excluded` (the config's `exclude_docs`) is not built, so it is not expected in the site.
 
     Write a full placeholder comment only where it should render: the hook replaces it in any page, code spans included.
     Elsewhere, quote it without the comment delimiters (spectio:progress-strip).
@@ -89,8 +134,10 @@ def check_progress_hook(site: pathlib.Path, docs: pathlib.Path = DOCS) -> None:
         wanted = [(name, marker) for ph, (name, marker) in PROGRESS_HOOK.items() if ph in text]
         if not wanted:
             continue
-        pages += 1
         src = md.relative_to(docs).as_posix()
+        if src in excluded:
+            continue
+        pages += 1
         out = built_page(pathlib.PurePosixPath(src))
         html = site / out
         if not html.exists():

@@ -1,9 +1,9 @@
 # Changelog
 
-One block per version, newest first. Each line says what you can now do, and links to its docs page, its pull request and its commit. The format and how blocks are written are in the [documentation system §6](../specs/documentation-system.md#6-changelog). The raw, generated list of commits for each version is in each [GitHub release](https://github.com/weber8thomas/spectio/releases).
+One block per version, newest first. Each line says what you can now do, and links to its docs page, its pull request and its commit. The raw, generated list of commits for each version is in each [GitHub release](https://github.com/weber8thomas/spectio/releases).
 
 !!! note "No release yet"
-    Spectio is in its design phase. The first block will be `v0.0.1`, a basic MVP ([what it contains](../specs/mvp-0.0.1.md)). Until then, see [Progress](../progress/index.md).
+    The first block will be `v0.0.1`. It is built and waits for its release checks: see the [roadmap](../roadmap/index.md) for what it contains and what is left.
 
 <!--
 Template for a new block (kept in a comment so it is not rendered):
