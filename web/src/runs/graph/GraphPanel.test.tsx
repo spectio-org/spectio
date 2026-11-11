@@ -552,3 +552,44 @@ test("a job's chart has one button per job of its step, says which is this one a
   expect(onNode).toHaveBeenCalledWith("job:d");
   expect(screen.getByText(/This job: 1 min 40 s, 1.0× the median/)).toBeInTheDocument();
 });
+
+test("a job's chart of many jobs has one tab stop, and the arrow keys move along the bars", async () => {
+  const t = (id: string, s: number) => ({ id, process: "BWA", tag: id, name: null, state: "succeeded", attempt_n: 1, resources: { cpus: 4, memory_bytes: null, realtime_s: s, cpu_percent: null, peak_rss_bytes: null }, stage_id: null }) as unknown as Task;
+  const jobs = Array.from({ length: 120 }, (_, i) => t(`j${i}`, 100 + i));
+  render(
+    <MantineProvider>
+      <JobChart task={jobs[5]} siblings={jobs} onNode={vi.fn()} />
+    </MantineProvider>,
+  );
+  const bars = within(screen.getByRole("group", { name: "Duration of each job of BWA" })).getAllByRole("button");
+  expect(bars.filter((b) => b.tabIndex === 0)).toEqual([bars[5]]);
+  bars[5].focus();
+  fireEvent.keyDown(bars[5], { key: "ArrowRight" });
+  expect(bars[6]).toHaveFocus();
+  fireEvent.keyDown(bars[6], { key: "Home" });
+  expect(bars[0]).toHaveFocus();
+});
+
+test("a step on the map shows its card on hover, with its name and state; the fit button is there", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph`);
+  const bwa = await bwaOnMap();
+  fireEvent.mouseEnter(bwa.closest(".sp-gnode")!);
+  const card = await waitFor(() => document.querySelector(".sp-gtip")!);
+  expect(card).toHaveTextContent("BWA");
+  expect(card).toHaveTextContent("Running");
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  await waitFor(() => expect(document.querySelector(".sp-gtip")).toBeNull());
+  expect(screen.getByRole("button", { name: "Fit the whole map in view", hidden: true })).toBeInTheDocument();
+});
+
+test("Escape in the Export menu closes the menu only, not the details panel", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&node=${encodeURIComponent(`${P}ALIGN:BWA`)}`);
+  await screen.findByRole("complementary", { name: "BWA (process)" });
+  await userEvent.click(screen.getByRole("button", { name: "Export" }));
+  const item = await screen.findByRole("menuitem", { name: "SVG" });
+  fireEvent.keyDown(item, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("menuitem", { name: "SVG" })).toBeNull());
+  expect(screen.getByRole("complementary", { name: "BWA (process)" })).toBeInTheDocument();
+});

@@ -362,18 +362,30 @@ function H({ icon, children }: { icon: string; children: ReactNode }) {
   );
 }
 
-/** A job's key as coloured chips: Snakemake's wildcards, or Nextflow's tag. */
+/** A job's key as coloured chips (Snakemake's wildcards, or Nextflow's tag), then what it asked
+ * for, shown whether or not its use is known yet (CR-2). */
 function JobKey({ task }: { task: Task }) {
   const pairs = keyPairs(task.tag);
-  return (
-    <ul className="sp-gkeychips" aria-label="Key of this job">
-      {(pairs.length ? pairs : [["name", task.name ?? task.id] as [string, string]]).map(([k, v]) => (
+  const r = task.resources;
+  const asked: [string, string][] = [
+    ...(r?.cpus != null ? ([["CPUs asked", String(r.cpus)]] as [string, string][]) : []),
+    ...(r?.memory_bytes != null ? ([["memory asked", bytes(r.memory_bytes)]] as [string, string][]) : []),
+  ];
+  const chips = (items: [string, string][], label: string) => (
+    <ul className="sp-gkeychips" aria-label={label}>
+      {items.map(([k, v]) => (
         <li key={k} className="sp-gkeychip">
           <span>{k}</span>
           <strong className="sp-mono">{v}</strong>
         </li>
       ))}
     </ul>
+  );
+  return (
+    <>
+      {chips(pairs.length ? pairs : [["name", task.name ?? task.id]], "Key of this job")}
+      {asked.length > 0 && chips(asked, "What this job asked for")}
+    </>
   );
 }
 
@@ -409,11 +421,25 @@ export function JobChart({ task, siblings, onNode }: { task: Task; siblings: Tas
           ))}
         </div>
       )}
-      <div className="sp-gchart" role="group" aria-label={`${metric.word} of each job of ${task.process}`}>
-        {values.map(([t, v]) => (
+      {/* one tab stop: this job's bar; the arrow keys move along the others (CR-1) */}
+      <div
+        className="sp-gchart"
+        role="group"
+        aria-label={`${metric.word} of each job of ${task.process}`}
+        onKeyDown={(e) => {
+          const bars = [...e.currentTarget.querySelectorAll<HTMLButtonElement>(".sp-gchart-bar")];
+          const at = bars.indexOf(document.activeElement as HTMLButtonElement);
+          const to = { ArrowLeft: at - 1, ArrowRight: at + 1, Home: 0, End: bars.length - 1 }[e.key];
+          if (at < 0 || to === undefined) return;
+          e.preventDefault();
+          bars[Math.max(0, Math.min(bars.length - 1, to))]?.focus();
+        }}
+      >
+        {values.map(([t, v], i) => (
           <button
             key={t.id}
             type="button"
+            tabIndex={t.id === task.id || (mine === null && i === 0) ? 0 : -1}
             className="sp-gchart-bar"
             data-me={t.id === task.id || undefined}
             data-odd={odd(v) || undefined}
@@ -427,7 +453,7 @@ export function JobChart({ task, siblings, onNode }: { task: Task; siblings: Tas
       </div>
       <p className="sp-ghelp">
         {mine === null ? `This job has no ${metric.word.toLowerCase()} yet. ` : `This job: ${metric.text(mine)}, ${times(median > 0 ? mine / median : 1)} the median (${metric.text(median)}). `}
-        Dashed line: the median; outlined: {OUTLIER}× above or below it.
+        Dashed line: the median; outlined: {OUTLIER}× above or below it. The arrow keys move along the bars.
       </p>
     </>
   );
@@ -883,6 +909,12 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   const view = useMemo(() => (doc ? viewOf(doc, settings, settings.level === "jobs" ? jobs : undefined) : null), [doc, settings.level, jobs, settings.fold, settings.focus, settings.hide]); // eslint-disable-line react-hooks/exhaustive-deps
   const diff = useMemo(() => (doc && other ? diffGraphs(doc, other) : null), [doc, other]);
   const traced = useMemo(() => (view && trace && view.nodes.some((n) => n.id === trace.id) ? lineage(view, trace.id, trace.direction) : null), [view, trace]);
+  // computed once per document and open group, not on every render (CR-8)
+  const groupView = useMemo(() => {
+    const id = settings.node;
+    if (!doc || !view || !id || view.nodes.some((n) => n.id === id)) return null;
+    return id.startsWith("stage:") || doc.groups.some((g) => g.id === id) ? groupViewOf(doc, id) : null;
+  }, [doc, view, settings.node]);
   const span = doc ? timeSpan(doc) : null;
 
   if (error) return <p role="alert">The graph could not be read: {error}</p>;
@@ -892,8 +924,6 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   // a group opened from its name on the map is not a box of the view: its details are those of the
   // group folded into one box (Thomas: a panel for the subworkflow too)
   const drawn = settings.node ? view.nodes.find((n) => n.id === settings.node) ?? null : null;
-  const isGroupId = (id: string) => id.startsWith("stage:") || doc.groups.some((g) => g.id === id);
-  const groupView = !drawn && settings.node && isGroupId(settings.node) ? groupViewOf(doc, settings.node) : null;
   const selected = drawn ?? groupView?.nodes.find((n) => n.id === settings.node) ?? null;
   const task = selected?.kind === "job" ? Object.values(jobs).flat().find((t) => `job:${t.id}` === selected.id) ?? null : null;
   const removed = diff ? [...diff].filter(([, d]) => d.change === "removed").map(([id]) => other?.nodes.find((n) => n.id === id)?.name ?? id) : [];

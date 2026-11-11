@@ -245,7 +245,7 @@ interface NodeData extends Record<string, unknown> {
   /** A job's value over its step's median, when out of the norm. */
   odd: number | null;
   /** Hover or keyboard focus: the map shows the node's card above everything (null: hide it). */
-  onTip: (id: string | null, at?: Element) => void;
+  onTip: (id: string | null, at?: Element, now?: boolean) => void;
   dim: boolean;
   crit: boolean;
   matched: boolean;
@@ -309,7 +309,7 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
         data-gid={node.id}
         aria-label={data.aria}
         onClick={() => data.onOpen(node)}
-        onFocus={(e) => e.currentTarget.matches(":focus-visible") && data.onTip(node.id, e.currentTarget.parentElement ?? e.currentTarget)}
+        onFocus={(e) => e.currentTarget.matches(":focus-visible") && data.onTip(node.id, e.currentTarget.parentElement ?? e.currentTarget, true)}
         onBlur={() => data.onTip(null)}
       >
         {node.kind === "job" && node.step && <span className="sp-gnode-step">{node.step}</span>}
@@ -361,14 +361,14 @@ interface LaneData extends Record<string, unknown> {
   /** Its title opens the group's details, when the screen has them. */
   onGroup?: (group: string) => void;
   onToggle: (group: string) => void;
-  onTip: (id: string | null, at?: Element) => void;
+  onTip: (id: string | null, at?: Element, now?: boolean) => void;
   selected: boolean;
 }
 
 /** A group's band or area. Drawn as an area, its round button folds it (Thomas: folding belongs
  * to the subworkflow or stage, not to each step) and its name opens its details. */
 function LaneBox({ data }: NodeProps<Node<LaneData>>) {
-  const tipOn = (e: { currentTarget: Element }) => data.onTip(`lane:${data.id}`, e.currentTarget);
+  const tipOn = (e: { currentTarget: Element }, now?: boolean) => data.onTip(`lane:${data.id}`, e.currentTarget, now);
   const tipOff = () => data.onTip(null);
   const name = (
     <>
@@ -385,7 +385,7 @@ function LaneBox({ data }: NodeProps<Node<LaneData>>) {
           </button>
         )}
         {data.onGroup && data.fold ? (
-          <button type="button" className="sp-glane-fold nodrag nopan" onClick={() => data.onGroup!(data.fold!)} onDoubleClick={(e) => e.stopPropagation()} onMouseEnter={tipOn} onMouseLeave={tipOff} onFocus={(e) => e.currentTarget.matches(":focus-visible") && tipOn(e)} onBlur={tipOff} aria-label={`Details of ${data.label}`}>
+          <button type="button" className="sp-glane-fold nodrag nopan" onClick={() => data.onGroup!(data.fold!)} onDoubleClick={(e) => e.stopPropagation()} onMouseEnter={tipOn} onMouseLeave={tipOff} onFocus={(e) => e.currentTarget.matches(":focus-visible") && tipOn(e, true)} onBlur={tipOff} aria-label={`Details of ${data.label}`}>
             {name}
           </button>
         ) : (
@@ -418,9 +418,9 @@ export interface TipInfo {
   hint: string;
 }
 
-function TipCard({ info, x, y, above }: { info: TipInfo; x: number; y: number; above: boolean }) {
+function TipCard({ info, x, y, above, now }: { info: TipInfo; x: number; y: number; above: boolean; now?: boolean }) {
   return (
-    <div className="sp-gtip" data-tone={info.tone ?? undefined} data-above={above || undefined} aria-hidden="true" style={{ left: x, top: y }}>
+    <div className="sp-gtip" data-tone={info.tone ?? undefined} data-above={above || undefined} data-now={now || undefined} aria-hidden="true" style={{ left: x, top: y }}>
       <div className="sp-gtip-head">
         <span className="sp-gtip-icon">
           <Icon path={info.icon} size={14} stroke={1.9} />
@@ -578,21 +578,31 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
   // the card of the step, group or link under the mouse (or the focused step), drawn over the whole
   // map so no step covers it (Thomas: the cards went under the steps). A link's facts are also in
   // each step's panel, whose links are buttons, so the keyboard reaches them too.
-  const [tip, setTip] = useState<{ id: string; x: number; y: number; above: boolean; edge?: ViewEdge } | null>(null);
-  const onTip = useCallback((id: string | null, at?: Element) => {
+  const [tip, setTip] = useState<{ id: string; x: number; y: number; above: boolean; now?: boolean } | null>(null);
+  const onTip = useCallback((id: string | null, at?: Element, now?: boolean) => {
     const w = wrap.current?.getBoundingClientRect();
     if (!id || !at || !w) return setTip(null);
     const r = at.getBoundingClientRect();
     const above = r.bottom - w.top + 230 > w.height && r.top - w.top > 230;
-    setTip({ id, x: Math.max(8, Math.min(r.left - w.left, w.width - 316)), y: above ? r.top - w.top - 8 : r.bottom - w.top + 8, above });
+    setTip({ id, x: Math.max(8, Math.min(r.left - w.left, w.width - 316)), y: above ? r.top - w.top - 8 : r.bottom - w.top + 8, above, now });
   }, []);
+  // a card never outlives what it is about (a step hidden or folded under the mouse), and Escape
+  // closes it (WCAG 1.4.13)
+  // keyed on text: `fold` and `hide` are new arrays on every render
+  useEffect(() => setTip(null), [settings.level, settings.fold.join(), settings.focus, settings.hide.join(), layout]);
+  useEffect(() => {
+    if (!tip) return;
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setTip(null);
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [tip]);
   const hover = (ev: { clientX: number; clientY: number }, e: Edge) => {
     const w = wrap.current?.getBoundingClientRect();
     if (!w) return;
     const x = ev.clientX - w.left;
     const y = ev.clientY - w.top;
     const above = y + 230 > w.height;
-    setTip({ id: `edge:${e.id}`, edge: (e.data as { edge: ViewEdge }).edge, x: Math.max(8, Math.min(x + 14, w.width - 316)), y: above ? y - 14 : y + 14, above });
+    setTip({ id: `edge:${e.id}`, x: Math.max(8, Math.min(x + 14, w.width - 316)), y: above ? y - 14 : y + 14, above });
   };
 
   const { nodes, edges, tips } = useMemo(() => {
@@ -745,10 +755,10 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
       };
     });
     // a link's card: its two ends, what it carries, its condition
-    const label = (id: string) => view.nodes.find((n) => n.id === id);
+    const byId = new Map(view.nodes.map((n) => [n.id, n]));
     for (const e of view.edges) {
-      const a = label(e.source);
-      const b = label(e.target);
+      const a = byId.get(e.source);
+      const b = byId.get(e.target);
       tips.set(`edge:${e.id}`, {
         icon: engine === "snakemake" ? GICONS.file : GICONS.channel,
         tone: null,
@@ -845,7 +855,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
         onlyRenderVisibleElements={view.nodes.length > 300}
       >
         <Background gap={24} size={1} />
-        {tip && tips.get(tip.id) && <TipCard info={tips.get(tip.id)!} x={tip.x} y={tip.y} above={tip.above} />}
+        {tip && tips.get(tip.id) && <TipCard info={tips.get(tip.id)!} x={tip.x} y={tip.y} above={tip.above} now={tip.now} />}
         <Controls showInteractive={false} showFitView={false} aria-label="Zoom" className="sp-gcontrols">
           {/* our own fit button: React Flow's drew a pale icon that read as disabled (Thomas); no
               animation, which a zoom still settling could cut short and leave the map unmoved */}
@@ -1372,8 +1382,6 @@ export function GraphView(props: Props) {
   );
 }
 
-/** The details of a step or a link: docked beside the map, so the map stays in view and usable
- * (Escape or × closes it, and focus goes back to where it was); a sheet on a phone. */
 /** The details panel's width: dragged or set with the arrow keys, kept in this browser. */
 const SIDE_KEY = "spectio.graph.side";
 const SIDE_MIN = 300;
@@ -1409,9 +1417,11 @@ function Resizer({ panel }: { panel: MutableRefObject<HTMLElement | null> }) {
     const up = () => {
       el.removeEventListener("pointermove", move);
       el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
     };
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
   };
   return (
     <button
@@ -1435,6 +1445,8 @@ function Resizer({ panel }: { panel: MutableRefObject<HTMLElement | null> }) {
   );
 }
 
+/** The details of a step or a link: docked beside the map, so the map stays in view and usable
+ * (Escape or × closes it, and focus goes back to where it was); a sheet on a phone. */
 export function Panel({ id, opened, title, icon, onClose, children, tone, kind }: { id: string | null; opened: boolean; title: string; icon: string; onClose: () => void; children: ReactNode; tone?: string; kind?: string }) {
   const phone = usePhone();
   const ref = useRef<HTMLElement>(null);

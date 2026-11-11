@@ -392,23 +392,6 @@
   outline: 2px solid var(--sp-line-focus);
   outline-offset: 1px;
 }
-.sp-gfacts {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 4px 12px;
-  margin: 0 0 6px;
-  font-size: 12.5px;
-}
-.sp-gfacts dt {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--sp-text-secondary);
-}
-.sp-gfacts dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
 .sp-ghelp {
   margin: 0 0 6px;
   font-size: 12px;
@@ -591,12 +574,6 @@
   color: var(--flag);
   background: color-mix(in srgb, var(--flag) 12%, transparent);
 }
-.sp-gflags-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 6px 0;
-}
 /* fold and unfold: a round accent button on the box's corner */
 .sp-gfold {
   position: absolute;
@@ -765,8 +742,6 @@
   border-radius: 14px;
   background: color-mix(in srgb, var(--sp-surface-raised) 92%, transparent);
   box-shadow: var(--sp-shadow);
-}
-.sp-glegend-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1268,10 +1243,6 @@
   align-items: center;
   gap: 6px;
 }
-.sp-gjobs-links {
-  margin: 4px 0 0;
-  font-size: 12.5px;
-}
 
 /* a link's declared channel type or files: the upstream's output, the downstream's input */
 .sp-gdecls {
@@ -1430,6 +1401,10 @@
   box-shadow: 0 10px 28px rgb(0 0 0 / 0.16);
   pointer-events: none;
   animation: sp-gtip-in 0s 0.3s both;
+}
+/* opened by keyboard focus: at once */
+.sp-gtip[data-now] {
+  animation: none;
 }
 .sp-gtip[data-above] {
   transform: translateY(-100%);
@@ -1659,6 +1634,7 @@
 }
 .sp-gchart {
   position: relative;
+  overflow-x: auto;
   display: flex;
   align-items: flex-end;
   gap: 2px;
@@ -1667,7 +1643,7 @@
   border-bottom: 1px solid var(--sp-line-border);
 }
 .sp-gchart-bar {
-  flex: 1 1 0;
+  flex: 1 0 3px;
   min-width: 3px;
   max-width: 36px;
   padding: 0;
