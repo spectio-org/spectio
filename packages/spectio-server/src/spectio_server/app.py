@@ -47,6 +47,7 @@ from spectio_server.api import (
     me,
     notifications,
     performance,
+    performance_across,
     problems,
     relaunch,
     results,
@@ -184,6 +185,7 @@ def create_app(
     if reason is None:
         app.state.stream = stream.Stream(writer.engine)
         app.state.performance = performance.Cache()  # the answers of ended runs (api §5.5)
+        app.state.performance_gate = performance_across.Gate()  # the across-runs `429` limits
 
         def committed(changes: Changes) -> None:  # the writer thread, after each commit
             app.state.performance.changed(changes)  # first: it never raises (SEC-P3FU105D-02)
@@ -204,6 +206,7 @@ def create_app(
             relaunch,
             runs_read,
             performance,
+            performance_across,
             logs,
             taskfiles,
             results,

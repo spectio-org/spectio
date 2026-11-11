@@ -511,4 +511,6 @@ attempt_metrics = Table(
     ),
     Index("ix_attempt_metrics_project_partition", "project_id", "partition", "ended_at"),
     Index("ix_attempt_metrics_run", "run_id"),
+    # `pipeline=` with no `process=` (FU-P3-105e, migration 0016)
+    Index("ix_attempt_metrics_project_pipeline_ended", "project_id", "pipeline", "ended_at"),
 )
