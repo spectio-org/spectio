@@ -2067,7 +2067,8 @@
             "enum": [
               "launch",
               "results",
-              "absolute"
+              "absolute",
+              "work"
             ],
             "title": "Root",
             "type": "string"
@@ -5610,6 +5611,7 @@
     },
     "/api/v1/runs/{run_id}/processes/{name}/outputs:head": {
       "get": {
+        "description": "The first lines of one of the process's outputs (api \u00a75.10), read only through the trees\nof the Results and workdir routes, so their rules apply (dev-env \u00a715.3 req. 13 and 14): a\nlisted output of the launch or results directory, or a file at the top of the work\ndirectory of one of the process's tasks, never a name that starts with `.`.",
         "operationId": "output_head_api_v1_runs__run_id__processes__name__outputs_head_get",
         "parameters": [
           {

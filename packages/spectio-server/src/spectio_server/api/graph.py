@@ -17,13 +17,13 @@ graph). With `graph_view` off, every graph route is `404 feature-disabled`.
   its name in the pipeline's files; the client names no path.
 """
 
-import os
 import zlib
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Request
+from fastapi.responses import Response
 from sqlalchemy import Connection, Row, select
 
 from spectio.config import Settings
@@ -38,17 +38,18 @@ from spectio_server.api.runs_read import (
     results_of,
     run_row,
 )
+from spectio_server.api.taskfiles import HEADERS, in_pool, load_attempt
 from spectio_server.api.workflows import inspect_dir, resolve
 from spectio_server.failure import dir_run_id
 from spectio_server.files.confine import (
     NotAllowed,
     NotFound,
-    open_confined,
-    open_root,
-    safe_rel,
-    stat_confined,
+    entry_confined,
 )
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
+from spectio_server.files.redact import strip_escapes
+from spectio_server.files.results import Tree, Where, check_rel, list_results, open_raw
+from spectio_server.files.taskfiles import AttemptFiles, TaskDir, check_work_rel
 from spectio_server.graph import bioflow, document, static
 from spectio_server.store.schema import attempts, events, run_output_events, run_stages, tasks
 
@@ -58,6 +59,7 @@ FEATURE = "graph_view"
 FLOW_BEGIN = "spectio.engine.nextflow.onFlowBegin"
 FILE_PUBLISH = "spectio.engine.nextflow.onFilePublish"
 MAX_OUTPUTS = 500
+WORK_TASKS = 40  # Nextflow: the most tasks whose work directory an output listing reads
 OPEN = ("pending", "submitted", "running")
 TERMINAL = ("succeeded", "failed", "cancelled")
 
@@ -314,6 +316,13 @@ def _nf_outputs(conn: Connection, run: Row[Any], name: str) -> list[dict[str, An
         owner = next((v for d, v in dirs.items() if source.startswith(d)), None)
         if owner is None:
             continue
+        work_path: str | None = source[len(owner[2].rstrip("/")) + 1 :]
+        try:
+            check_work_rel(
+                work_path or ""
+            )  # never a dot name (`.command.env`), as the workdir routes
+        except NotAllowed:
+            work_path = None
         path, root = target, "absolute"
         if results and target.startswith(results.rstrip("/") + "/"):
             path, root = target[len(results.rstrip("/")) + 1 :], "results"
@@ -326,39 +335,89 @@ def _nf_outputs(conn: Connection, run: Row[Any], name: str) -> list[dict[str, An
                 "state": "unknown",
                 "temp": False,
                 # the copy in the attempt's work directory, previewed by the workdir routes
-                "work_path": source[len(owner[2].rstrip("/")) + 1 :],
-                "_work": owner[2],
+                "work_path": work_path,
             }
         )
     return found
 
 
-def _stat(items: list[dict[str, Any]], roots: dict[str, str]) -> None:
-    """`present` or `missing` for each item whose root is known, read confined to that root."""
-    for root_name, root_path in roots.items():
-        mine = [i for i in items if i["root"] == root_name and i["state"] == "unknown"]
+def _stat(items: list[dict[str, Any]], trees: dict[str, Where]) -> None:
+    """`present` or `missing`, and the size of a regular file, for each item whose root is
+    known: read through the Results routes' tree, so their root and alias checks apply, and a
+    publish link is followed into the work directory (its target's size, not the link's)."""
+    for name, tree in trees.items():
+        mine = [i for i in items if i["root"] == name and i["state"] == "unknown"]
         if not mine:
             continue
         try:
-            root = open_root(root_path)
+            with tree.roots() as (root, work):
+                if root is None:
+                    continue
+                for item in mine:
+                    try:
+                        rel = check_rel(item["path"])
+                        found = entry_confined(root, rel, work=work) if rel else None
+                    except (NotAllowed, NotFound, OSError, ValueError):
+                        continue
+                    item["state"] = "missing" if found is None else "present"
+                    item["size"] = found.size if found and found.type == "file" else None
         except (NotAllowed, NotFound, OSError):
             continue
+
+
+def _work_files(work: list[tuple[str, int, AttemptFiles]], items: list[dict[str, Any]]) -> None:
+    """Add the files at the top of each attempt's work directory that no publish event named:
+    what a channel carries between two processes is mostly never published. Read through
+    `TaskDir`, the root of the work-directory routes, so the same confinement applies."""
+    published = {(i["task_id"], i.get("work_path")) for i in items}
+    for task_id, n, attempt in work:
         try:
-            for item in mine:
-                try:
-                    found = stat_confined(root, safe_rel(item["path"]))
-                except (NotAllowed, NotFound, OSError, ValueError):
-                    continue
-                item["state"] = "missing" if found is None else "present"
-                item["size"] = None if found is None else found.st_size
-        finally:
-            os.close(root.fd)
+            _, entries, _ = list_results(TaskDir(attempt), None)
+        except (NotAllowed, NotFound, OSError):
+            continue
+        for e in entries:
+            if e.type != "file" or (task_id, e.name) in published:
+                continue
+            items.append(
+                {
+                    "path": e.name,
+                    "root": "work",
+                    "task_id": task_id,
+                    "attempt_n": n,
+                    "state": "present",
+                    "temp": False,
+                    "size": e.size,
+                    "work_path": e.name,
+                }
+            )
+
+
+def _latest_attempts(conn: Connection, run_id: str, name: str) -> list[tuple[str, int]]:
+    """(task id, attempt) of each task's last attempt with a work directory, at most WORK_TASKS."""
+    last: dict[str, int] = {}
+    for task_id, n in conn.execute(
+        select(tasks.c.id, attempts.c.n)
+        .join(attempts, attempts.c.task_id == tasks.c.id)
+        .where(
+            tasks.c.run_id == run_id,
+            tasks.c.process_or_rule == name,
+            attempts.c.work_dir.is_not(None),
+        )
+        .order_by(tasks.c.id, attempts.c.n)
+    ):
+        last[task_id] = n
+    return list(last.items())[:WORK_TASKS]
+
+
+Work = list[tuple[str, int, AttemptFiles]]  # Nextflow: (task id, attempt, its files)
 
 
 def _outputs(
-    request: Request, run_id: str, name: str
-) -> tuple[list[dict[str, Any]], dict[str, str]]:
-    """The process's listed outputs, stated, and the roots they are read under."""
+    request: Request, run_id: str, name: str, *, look: bool = True
+) -> tuple[list[dict[str, Any]], dict[str, Where], Work]:
+    """The process's listed outputs, the trees they are read under and its tasks' last attempts;
+    with `look`, each output stated and the work directories' files added (one pool job)."""
+    settings: Settings = request.app.state.settings
     with read(request) as conn:
         run = run_row(conn, run_id)
         exists = conn.execute(
@@ -368,31 +427,44 @@ def _outputs(
         ).first()
         if exists is None:
             raise not_found(f"no tasks of {name[:200]!r} in run {run_id}")
+        work: Work = []
         if run.engine == "snakemake":
             items = _smk_outputs(conn, run, name)
         else:
             items = _nf_outputs(conn, run, name)
+            for t, n in _latest_attempts(conn, run_id, name):
+                if (a := load_attempt(conn, t, n, settings.runs_root)) is not None:
+                    work.append((t, n, a))
     items = items[:MAX_OUTPUTS]  # a checkpoint's `<TBD>` stays `unknown`
-    roots: dict[str, str] = {}
-    settings: Settings = request.app.state.settings
+    trees: dict[str, Where] = {}
+    run_dir = dir_run_id(run)
     try:
-        roots["launch"] = str(run_paths(settings.runs_root, dir_run_id(run)).launch_dir)
+        trees["launch"] = Where(
+            settings.runs_root, run_dir, str(run_paths(settings.runs_root, run_dir).launch_dir)
+        )
     except ValueError:
         pass
     if results_of(run):
-        roots["results"] = str(results_of(run))
-    try:
-        request.app.state.files.run(lambda: _stat(items, roots), READ_TIMEOUT_S)
-    except Stalled:
-        pass  # the states stay `unknown`
-    return items, roots
+        trees["results"] = Where(settings.runs_root, run_dir, str(results_of(run)))
+
+    def stated() -> None:
+        _stat(items, trees)
+        _work_files(work, items)
+
+    if look:
+        try:
+            request.app.state.files.run(stated, READ_TIMEOUT_S)
+        except Stalled:
+            pass  # the states stay `unknown`
+    return items[:MAX_OUTPUTS], trees, work
 
 
 @router.get("/runs/{run_id}/processes/{name}/outputs", response_model=models.ProcessOutputs)
-def process_outputs(request: Request, run_id: str, name: str) -> dict[str, Any]:
+def process_outputs(request: Request, run_id: str, name: str) -> Response:
     require_graph(request)
-    items, _ = _outputs(request, run_id, name)
-    return {"items": [{k: v for k, v in i.items() if not k.startswith("_")} for i in items]}
+    items, _, _ = _outputs(request, run_id, name)
+    body = models.ProcessOutputs.model_validate({"items": items})
+    return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
 
 
 HEAD_RAW = 256 << 10  # the most bytes read from the file for a head
@@ -401,11 +473,11 @@ HEAD_LINES = 40
 GZIP = (".gz", ".bgz")
 
 
-def _head_of(raw: bytes, gz: bool) -> tuple[str, bool] | None:
+def _head_of(raw: bytes, gz: bool, cut: bool) -> tuple[str, bool] | None:
     """The first lines of `raw` as text and whether the file has more; None for binary. A gzip
     stream (several members for bgzip) is inflated up to HEAD_TEXT only, so a small file that
     inflates to gigabytes costs HEAD_TEXT bytes."""
-    cut = len(raw) >= HEAD_RAW  # the read stopped before the file's end
+    # `cut`: the read stopped before the file's end
     if gz:
         out, data = b"", raw
         try:
@@ -422,50 +494,58 @@ def _head_of(raw: bytes, gz: bool) -> tuple[str, bool] | None:
     cut = cut or len(raw) > HEAD_TEXT
     if b"\x00" in raw[:HEAD_TEXT]:
         return None
-    lines = raw[:HEAD_TEXT].decode("utf-8", "replace").split("\n")
-    if cut and len(lines) > 1:
-        lines.pop()  # never a line cut in the middle
-    more = cut or len([x for x in lines if x]) > HEAD_LINES
+    lines = strip_escapes(raw[:HEAD_TEXT].decode("utf-8", "replace")).split("\n")
+    if (cut and len(lines) > 1) or lines[-1] == "":
+        lines.pop()  # never a line cut in the middle, nor the empty one after the last newline
+    more = cut or len(lines) > HEAD_LINES
     return "\n".join(lines[:HEAD_LINES]).rstrip("\n"), more
 
 
 @router.get("/runs/{run_id}/processes/{name}/outputs:head", response_model=models.OutputHead)
-def output_head(
-    request: Request, run_id: str, name: str, path: str, task_id: str
-) -> dict[str, Any]:
+def output_head(request: Request, run_id: str, name: str, path: str, task_id: str) -> Response:
+    """The first lines of one of the process's outputs (api §5.10), read only through the trees
+    of the Results and workdir routes, so their rules apply (dev-env §15.3 req. 13 and 14): a
+    listed output of the launch or results directory, or a file at the top of the work
+    directory of one of the process's tasks, never a name that starts with `.`."""
     require_graph(request)
-    items, roots = _outputs(request, run_id, name)
+    items, trees, work = _outputs(request, run_id, name, look=False)
     item = next((i for i in items if i["path"] == path and i["task_id"] == task_id), None)
-    if item is None:
-        raise not_found("not an output of this process")
-    if item.get("_work") and item.get("work_path"):
-        base, rel = item["_work"], item["work_path"]
-    elif item["root"] in roots:
-        base, rel = roots[item["root"]], item["path"]
-    else:
-        raise Problem(422, "file-not-allowed", "File not allowed", "its folder is not known")
-    gz = rel.lower().endswith(GZIP)
-
-    def take() -> bytes:
-        root = open_root(base)
-        try:
-            with open_confined(root, safe_rel(rel)) as f:
-                return os.pread(f.fileno(), HEAD_RAW, 0)
-        finally:
-            os.close(root.fd)
-
+    latest = next((a for t, _, a in work if t == task_id), None)
+    tree: Tree
     try:
-        raw = request.app.state.files.run(take, READ_TIMEOUT_S)
-    except (NotFound, FileNotFoundError):
-        raise not_found("the file is not there now") from None
-    except (NotAllowed, OSError, ValueError):
-        raise Problem(422, "file-not-allowed", "File not allowed", "it cannot be read") from None
-    except Stalled as exc:
-        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
-    head = _head_of(raw, gz)
+        if item is not None and item.get("work_path") and item["attempt_n"] is not None:
+            with read(request) as conn:  # the attempt that published it
+                attempt = load_attempt(
+                    conn, task_id, item["attempt_n"], request.app.state.settings.runs_root
+                )
+            if attempt is None:
+                raise not_found("no such attempt")
+            tree, rel = TaskDir(attempt), check_work_rel(item["work_path"])
+        elif item is not None and item["root"] in trees:
+            tree, rel = trees[item["root"]], check_rel(item["path"])
+        elif item is None and latest is not None and "/" not in path:
+            # a file of the work-directory listing: one name, at the top
+            tree, rel = TaskDir(latest), check_work_rel(path)
+        elif item is None:
+            raise not_found("not an output of this process")
+        else:
+            raise NotAllowed("its folder is not known")
+        if rel is None:
+            raise NotAllowed("not a file")
+    except NotAllowed as exc:
+        raise Problem(422, "file-not-allowed", "File not allowed", str(exc)) from None
+    gz = rel.name.lower().endswith(GZIP)
+
+    def take() -> tuple[bytes, bool]:
+        raw = open_raw(tree, rel, None, HEAD_RAW if gz else HEAD_TEXT + 1)
+        return raw.first, raw.size > len(raw.first)
+
+    raw, cut = in_pool(request, take, missing="not-found")
+    head = _head_of(raw, gz, cut)
     if head is None:
         raise Problem(422, "not-text", "Not text", "a binary file has no head to show")
-    return {"text": head[0], "more": head[1], "gzip": gz}
+    body = models.OutputHead(text=head[0], more=head[1], gzip=gz)
+    return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
 
 
 # --- Before a run: the Launch form -----------------------------------------------------------

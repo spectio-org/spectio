@@ -21,7 +21,7 @@ from spectio_server.graph import bioflow, document, static
 from spectio_server.store.writer import Writer
 
 from ..test_process_status import job, smk_run
-from .conftest import FLAKY_RUN, SYNTHETIC, add_run, client_for, replay
+from .conftest import FIXTURES, FLAKY_RUN, SYNTHETIC, add_run, client_for, replay
 from .test_failure import API, RUN, Run
 
 DATA = Path(__file__).resolve().parents[1] / "data" / "graph"
@@ -140,11 +140,20 @@ def test_output_head(settings: Settings, writer: Writer, tmp_path: Path) -> None
     (reads / "a.fq.gz").write_bytes(gzip.compress(b"@r1\nACGT\n+\nIIII\n"))
     (reads / "bomb.gz").write_bytes(gzip.compress(b"A" * (64 << 20)))
     (reads / "b.bam").write_bytes(b"BAM\x01\x00\x00")
-    names = ["a.txt", "a.fq.gz", "bomb.gz", "b.bam"]
-    job(run, 1, "make_reads", output=[str(reads / n) for n in names])
+    (reads / "blank.txt").write_text("x\n\n" * 30)
+    (reads / "esc.txt").write_text("\x1b[31mred\u202e\n")
+    (reads / "link.txt").symlink_to(reads / "a.txt")
+    engine = run.paths.launch_dir / ".snakemake"
+    engine.mkdir()
+    (engine / "x.txt").write_text("x")
+    names = ["a.txt", "a.fq.gz", "bomb.gz", "b.bam", "blank.txt", "esc.txt", "link.txt"]
+    outs = [str(reads / n) for n in names] + [str(engine / "x.txt")]
+    job(run, 1, "make_reads", output=outs)
     client = graph_client(settings, writer)
     items = got(client, f"/runs/{RUN}/processes/make_reads/outputs")["items"]
-    assert {i["path"]: i["size"] for i in items}["reads/a.txt"] == 790
+    sizes = {i["path"]: i["size"] for i in items}
+    assert sizes["reads/a.txt"] == 790
+    assert sizes["reads/link.txt"] is None  # a link's own length is not the file's size
     task = items[0]["task_id"]
 
     def head(path: str) -> Any:
@@ -162,6 +171,15 @@ def test_output_head(settings: Settings, writer: Writer, tmp_path: Path) -> None
     assert head("reads/b.bam").status_code == 422
     assert head("../../etc/passwd").status_code == 404
     assert head("reads/nope.txt").status_code == 404
+    # req. 13 and 14: the text routes' headers, escapes dropped, engine folders refused
+    got_head = head("reads/esc.txt")
+    assert got_head.json()["text"] == "red"
+    assert got_head.headers["cache-control"] == "no-store"
+    assert got_head.headers["x-content-type-options"] == "nosniff"
+    assert got_head.headers["cross-origin-resource-policy"] == "same-origin"
+    assert head(".snakemake/x.txt").status_code == 422
+    blank = head("reads/blank.txt").json()
+    assert blank["more"] and blank["text"].count("x") == 20  # 40 lines, blank ones included
 
 
 # --- The run graph: Nextflow -----------------------------------------------------------------
@@ -226,6 +244,59 @@ def test_nextflow_outputs(settings: Settings, writer: Writer, tmp_path: Path) ->
     assert all(i["task_id"] and i["attempt_n"] for i in items)
     assert all(i["work_path"].endswith(".qc.json") and "_work" not in i for i in items)
     assert not got(client, f"/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs")["items"]
+
+    # what a channel carries is mostly never published: the files at the top of each task's
+    # work directory are listed too (root `work`), hidden job files left out, and previewed
+    spool = FIXTURES / "nextflow-26.10.4_plugin_flaky.spool.jsonl"
+    dirs = {
+        e["data"]["workDir"].replace("<launch>/work", str(paths.work_dir))
+        for e in map(json.loads, spool.read_text().splitlines())
+        if e["data"].get("process") == "MAKE_READS" and e["data"].get("workDir")
+    }
+    for d in dirs:
+        Path(d).mkdir(parents=True, exist_ok=True)
+        Path(d, "reads.fq.gz").write_bytes(gzip.compress(b"@r1\nACGT\n+\nIIII\n"))
+        Path(d, ".command.sh").write_text("echo")
+        Path(d, ".command.env").write_text("export SECRET=1")
+    for d in (paths.run_dir, paths.work_dir):
+        d.chmod(0o700)  # the runner's directories are private (req. 10)
+    items = got(client, f"/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs")["items"]
+    assert len(items) == len(dirs) and {i["root"] for i in items} == {"work"}
+    assert {(i["path"], i["work_path"], i["state"]) for i in items} == {
+        ("reads.fq.gz", "reads.fq.gz", "present")
+    }
+    head = client.get(
+        f"{API}/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs:head",
+        params={"path": "reads.fq.gz", "task_id": items[0]["task_id"]},
+    )
+    assert head.json() == {"text": "@r1\nACGT\n+\nIIII", "more": False, "gzip": True}
+
+
+def test_req13_head_refuses_dot_names(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """A work-directory name that starts with `.` is never offered nor read (dev-env §15.3
+    req. 13), even when a publish event names it as its source (SEC-160-04)."""
+    launch_id = add_run(writer, settings, FLAKY_RUN, "rnaseq-flaky")
+    paths = run_paths(settings.runs_root, FLAKY_RUN)
+    subs = {"<launch>/work": str(paths.work_dir), "<launch>": str(paths.launch_dir)}
+    replay(
+        writer,
+        tmp_path,
+        launch_id,
+        "nextflow-26.10.4_plugin_flaky.spool.jsonl",
+        FLAKY_RUN,
+        subs,
+        settings.runs_root,
+    )
+    client = graph_client(settings, writer)
+    task = got(client, f"/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs")
+    tasks_ = got(client, f"/runs/{FLAKY_RUN}/tasks?process=MAKE_READS")["items"]
+    for name in (".command.env", ".command.run", ".exitcode", "sub/.x", "../x"):
+        r = client.get(
+            f"{API}/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs:head",
+            params={"path": name, "task_id": tasks_[0]["id"]},
+        )
+        assert r.status_code in (404, 422), name
+    assert task["items"] == []
 
 
 # --- The pure document -----------------------------------------------------------------------

@@ -711,7 +711,7 @@ class GraphDocument(BaseModel):
 
 class ProcessOutput(BaseModel):
     path: str  # relative to `root`, else absolute
-    root: Literal["launch", "results", "absolute"]
+    root: Literal["launch", "results", "absolute", "work"]  # work: the attempt's work directory
     task_id: str | None
     attempt_n: int | None
     state: Literal["present", "missing", "removed", "unknown"]
