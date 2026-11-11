@@ -358,7 +358,7 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
 
         <section aria-labelledby="rs2-h" class="cat-pnl">
           <h3 id="rs2-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Out of bounds, before Launch</h3>
-          <span class="cat-note">Login node (at most 2 CPUs and 8 GiB). Each error sits under its input and in Before Launch, which links it; Launch waits.</span>
+          <span class="cat-note">Login node (at most 2 CPUs and 8 GiB). Each error sits under its input and in Before Launch, which links it; Launch waits. The CPU line is the server's words; the memory and time lines are the form's own.</span>
           <div class="res-f">
             <div class="fld">
               <label for="rs2-cpus">CPUs per task</label>
@@ -402,15 +402,15 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
           <span class="cat-note">Nothing was started. Focus moves to the input; the message is the server's reason, never the file's content.</span>
           <div class="fld">
             <label for="rs4-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
-            <input id="rs4-xcfg" value="/home/amartin/configs/lab-tweaks.config" spellcheck="false" aria-invalid="true" aria-describedby="rs4-e rs4-h" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <input id="rs4-xcfg" value="/home/amartin/configs/lab-tweaks.config" spellcheck="false" aria-invalid="true" aria-describedby="rs4-e rs4-o" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
             <span id="rs4-e" role="alert" class="ferr">The file is writable by group or others: fix its mode (chmod go-w), then Launch again.</span>
-            <span id="rs4-h" class="hint">Other reasons, as the server words them: Choose a file in your home directory or in the pipeline · a .config file · there is no such file · the file is reached through a symbolic link, which is not read · the directory is not owned by this user · the file is larger than 256 KiB · the file is not UTF-8 text.</span>
+            <span id="rs4-o" class="hint">Other reasons, as the server words them: Choose a file in your home directory or in the pipeline · a .config file · there is no such file · the file is reached through a symbolic link, which is not read · the directory is not owned by this user · the file is larger than 256 KiB · the file is not UTF-8 text.</span>
           </div>
         </section>
 
         <section aria-labelledby="rs5-h" class="cat-pnl">
-          <h3 id="rs5-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">The runner did not answer (503)</h3>
-          <div role="alert" style="display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; background: #FDF2F2; box-shadow: inset 0 0 0 1px #F5C2C2; padding: 10px 12px; font-size: 13px; color: #7A1F1F; line-height: 1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8v5 M12 16h.01"/></svg><span>The extra config file could not be read: the runner on login1 did not answer in time. Nothing was started and your values are kept.</span></div>
+          <h3 id="rs5-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">The file system did not answer (503)</h3>
+          <div role="alert" style="display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; background: #FDF2F2; box-shadow: inset 0 0 0 1px #F5C2C2; padding: 10px 12px; font-size: 13px; color: #7A1F1F; line-height: 1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8v5 M12 16h.01"/></svg><span>The extra config file could not be read: the file system did not answer in time. Nothing was started and your values are kept.</span></div>
           <button type="button" class="btn-go" style="align-self: flex-start;">Launch again</button>
         </section>
 
