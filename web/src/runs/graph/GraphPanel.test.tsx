@@ -251,7 +251,8 @@ test("a click opens the step's details beside the map; double-click or the fold 
   // the folded box has a visible unfold button
   fireEvent.click(await screen.findByRole("button", { name: /^Unfold ALIGN: show its 2 steps$/, hidden: true }));
   await waitFor(() => expect(String(router.state.location.search.fold ?? "")).not.toContain("ALIGN"));
-  expect(await screen.findAllByRole("button", { name: "Fold ALIGN into one box", hidden: true })).toHaveLength(2);
+  // the layered layout draws ALIGN as an area: one fold button, on its title, none on its steps
+  expect(await screen.findAllByRole("button", { name: "Fold ALIGN into one box", hidden: true })).toHaveLength(1);
 });
 
 test("a right-click shows the step's code by the node; Escape closes it and focus goes back to the node", async () => {
@@ -431,10 +432,11 @@ test("a link says the channel type each side declares in its code", async () => 
   const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
   await userEvent.click(within(sheet).getByRole("button", { name: /^Channel from TRIM: what flows$/ }));
   const edge = await screen.findByRole("complementary", { name: /^TRIM → BWA \(channel\)$/ });
-  const emits = within(edge).getByRole("list", { name: "TRIM emits" });
-  expect(emits.textContent).toContain("reads");
-  expect(emits.textContent).toContain("path");
-  expect(within(edge).getByRole("list", { name: "BWA takes" }).textContent).toContain("index");
+  // one row per part, aligned: the channel's name, its kind, its value
+  const emits = within(edge).getByRole("table", { name: "TRIM emits" });
+  const rows = within(emits).getAllByRole("row").map((r) => r.textContent);
+  expect(rows).toEqual(["EmitKindValue", "readstuplevalmeta", "path'*.fq.gz'"]);
+  expect(within(within(edge).getByRole("table", { name: "BWA takes" })).getByRole("cell", { name: "index" })).toBeInTheDocument();
 });
 
 test("a step whose jobs ran again lists them under Executions, each opening its attempts", async () => {
@@ -456,4 +458,14 @@ test("at the Subworkflow level, a step listed in a group's sheet opens that grou
   expect(await screen.findByRole("complementary", { name: "BWA (process)" })).toBeInTheDocument();
   expect(router.state.location.search).toMatchObject({ level: "subworkflow" });
   expect(String(router.state.location.search.fold)).toContain(`sub:${P}ALIGN`);
+});
+
+test("a click on the empty map closes what is open and clears the lit steps", async () => {
+  mocks();
+  const router = app(`/runs/${ID}?tab=graph`);
+  fireEvent.click(await bwaOnMap(), { detail: 1 });
+  await screen.findByRole("complementary", { name: "BWA (process)" });
+  fireEvent.click(document.querySelector(".react-flow__pane")!);
+  await waitFor(() => expect(screen.queryByRole("complementary", { name: "BWA (process)" })).toBeNull());
+  expect(router.state.location.search.node).toBeUndefined();
 });

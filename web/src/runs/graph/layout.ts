@@ -23,7 +23,7 @@ export interface Lane {
 export interface Placed {
   /** Top-left boxes of the view's nodes. */
   boxes: Map<string, Box>;
-  /** Metro and Compact: one horizontal band per lane. */
+  /** Metro, Compact and grouped Layered: one area (or band) per lane. */
   lanes: Lane[];
 }
 
@@ -66,11 +66,13 @@ function laneOrder(view: View): { id: string; label: string }[] {
   return [...seen].map(([id, label]) => ({ id, label }));
 }
 
-/** Metro: Layered left-right, with each subworkflow or stage drawn as an area around its steps
- * (dagre compound nodes), so a group's steps stay together and only the space they need is used. */
-function metro(view: View): Placed {
+/** Layered with each subworkflow or stage drawn as an area around its steps (dagre compound
+ * nodes), so a group's steps stay together and the area's title can fold it. Metro is the
+ * left-right one, tighter; Layered top-down and left-right use it too when there are groups
+ * (Thomas, 2026-11-11: subworkflows in every mode, easy to fold). */
+function grouped(view: View, rankdir: "TB" | "LR", tight: boolean): Placed {
   const g = new dagre.graphlib.Graph({ compound: true });
-  g.setGraph({ rankdir: "LR", nodesep: 22, ranksep: 64, marginx: 16, marginy: 16 + TITLE });
+  g.setGraph({ rankdir, nodesep: tight ? 22 : 32, ranksep: tight ? 64 : 56, marginx: 16, marginy: 16 + TITLE });
   g.setDefaultEdgeLabel(() => ({}));
   const lanes = laneOrder(view).filter((l) => l.id !== "");
   for (const lane of lanes) g.setNode(`lane:${lane.id}`, { label: lane.label });
@@ -169,9 +171,10 @@ export function place(view: View, layout: GraphLayout): Placed {
   // No edges (stages-only): ranks and layers mean nothing, so every layout but Upstream is the
   // wrapped grid per lane; otherwise dagre would set every node on one line.
   if (view.edges.length === 0 && layout !== "upstream") placed = compact(view);
-  else if (layout === "metro") placed = metro(view);
+  else if (layout === "metro") placed = grouped(view, "LR", true);
   else if (layout === "compact") placed = compact(view);
   else if (layout === "upstream") placed = upstream(view);
+  else if (view.nodes.some((n) => n.lane)) placed = grouped(view, layout === "layered-lr" ? "LR" : "TB", false);
   else placed = { boxes: layered(view, layout === "layered-lr" ? "LR" : "TB"), lanes: [] };
   return placed;
 }

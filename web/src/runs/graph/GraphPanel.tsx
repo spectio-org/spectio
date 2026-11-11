@@ -587,20 +587,38 @@ function Declares({ name, label, code, engine, section, where }: { name: string;
       ) : found.length === 0 ? (
         <p className="sp-muted">No {section} block found in its code.</p>
       ) : (
-        <ul className="sp-gdecl-list" aria-label={title}>
+        // a small table, one row per item part: the channel's (or file's) name, its kind, its
+        // value, aligned (Thomas: key and value, like a table)
+        <table className="sp-gdecl-table" aria-label={title}>
+          <thead>
+            <tr>
+              <th scope="col">{engine === "snakemake" ? "Name" : section === "output" ? "Emit" : "Input"}</th>
+              <th scope="col">Kind</th>
+              <th scope="col">{engine === "snakemake" ? "Pattern" : "Value"}</th>
+            </tr>
+          </thead>
           {found.map((d, i) => (
-            <li key={i} title={d.text}>
-              {d.label && <span className="sp-gdecl-label sp-mono">{d.label}</span>}
+            <tbody key={i} title={d.text}>
               {d.parts.map((p, j) => (
-                <span key={j} className="sp-gdecl-part" data-kind={p.kind}>
-                  <span className="sp-gdecl-kind">{p.kind}</span>
-                  {p.name && <span className="sp-mono">{p.name}</span>}
-                </span>
+                <tr key={j}>
+                  {j === 0 && (
+                    <th scope="rowgroup" rowSpan={d.parts.length} className="sp-mono">
+                      {d.label ?? (engine === "snakemake" ? `#${i + 1}` : section === "input" ? `#${i + 1}` : "—")}
+                      {d.optional && <span className="sp-gdecl-opt">optional</span>}
+                      {d.parts.length > 1 && <span className="sp-gdecl-opt">tuple</span>}
+                    </th>
+                  )}
+                  <td>
+                    <span className="sp-gdecl-kind" data-kind={p.kind}>
+                      {p.kind}
+                    </span>
+                  </td>
+                  <td className="sp-mono">{p.name || "—"}</td>
+                </tr>
               ))}
-              {d.optional && <span className="sp-muted">optional</span>}
-            </li>
+            </tbody>
           ))}
-        </ul>
+        </table>
       )}
     </div>
   );
@@ -837,6 +855,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
         decor={{ selected: settings.node, edge: edge?.id ?? null, lineage: traced, diff, replayAt }}
         onOpen={(n) => (setEdge(null), set({ node: n.id }))}
         onEdge={setEdge}
+        onReset={() => (setEdge(null), setTrace(null), set({ node: null }))}
         source={source}
         side={
           <>

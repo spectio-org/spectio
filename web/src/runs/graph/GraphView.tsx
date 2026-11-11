@@ -376,6 +376,8 @@ interface Props {
   notes?: ReactNode;
   /** Docked beside the map: the open step's or link's details (not on phones, which use sheets). */
   side?: ReactNode;
+  /** Back to the plain map: nothing open, nothing traced (Escape, or a click on the empty map). */
+  onReset?: () => void;
 }
 
 interface Shown {
@@ -418,7 +420,7 @@ function ariaOf(n: ViewNode, status: ProcessStatus | null, extra: string[]): str
 }
 
 
-function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title, nextRef, engine, groupNames }: { engine: string; groupNames: Map<string, string>; settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
+function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane, title, nextRef, engine, groupNames }: { onPane?: () => void; engine: string; groupNames: Map<string, string>; settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
   const dark = useComputedColorScheme("light") === "dark";
   const { view, status, matches, crit, heat: heated } = shown;
   const layout = settings.layout === "upstream" && !hasUpstream(view) ? "layered-tb" : settings.layout;
@@ -613,6 +615,9 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, title,
         elementsSelectable={false}
         zoomOnDoubleClick={false}
         onEdgeClick={onEdge ? (_, edge) => onEdge((edge.data as { edge: ViewEdge }).edge) : undefined}
+        onPaneClick={onPane}
+        // the empty inside of a group's area is the map too
+        onNodeClick={onPane ? (e, n) => n.type === "lane" && !(e.target as Element).closest("button") && onPane() : undefined}
         onlyRenderVisibleElements={view.nodes.length > 300}
       >
         <Background gap={24} size={1} />
@@ -823,8 +828,8 @@ function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: Vi
 
 /** What each layout does, under the toolbar, so Metro and Compact are not a guess. */
 export const LAYOUT_HELP: Record<GraphSettings["layout"], string> = {
-  "layered-tb": "Steps in layers, top to bottom: each step below the steps it reads from.",
-  "layered-lr": "Steps in layers, left to right: each step right of the steps it reads from.",
+  "layered-tb": "Steps in layers, top to bottom: each step below the steps it reads from, inside its subworkflow or stage, whose title folds it.",
+  "layered-lr": "Steps in layers, left to right: each step right of the steps it reads from, inside its subworkflow or stage, whose title folds it.",
   metro: "Left to right, each subworkflow or stage drawn as an area around its steps, so a group's steps stay together.",
   compact: "Each subworkflow or stage as a small grid in pipeline order, the groups packed side by side: the most steps on one screen, links drawn without layers.",
   upstream: "Positions BioFlow-Insight computed from the code (Launch only).",
@@ -918,7 +923,7 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
 /** At most this many boxes after Auto-fold. */
 const AUTO_FOLD_MAX = 24;
 
-function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor = {}, onOpen, onEdge, source, extra, notes, side }: Props) {
+function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor = {}, onOpen, onEdge, source, extra, notes, side, onReset }: Props) {
   const groupNames = useMemo(() => new Map(doc.groups.map((g) => [g.id, g.name])), [doc.groups]);
   const shown = useShown(doc, settings, jobs, decor, runtime);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -964,13 +969,16 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
   const foldable = settings.level === "process" || settings.level === "jobs";
   // about half as many boxes, and at most AUTO_FOLD_MAX
   const auto = foldable ? autoFold(shown.view, Math.min(AUTO_FOLD_MAX, Math.ceil(shown.view.nodes.length / 2))) : [];
-  // Escape leaves the focused group, unless something on top (a card, the panel) took it
+  // Escape, when nothing on top took it (a card, the panel): out of the focused group, else back
+  // to the plain map (what is open or traced is cleared; folds, search and layout stay)
   const focus = settings.focus;
+  const reset = useRef(onReset);
+  reset.current = onReset;
   useEffect(() => {
-    if (!focus) return;
     const key = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented || typing(e.target) || document.querySelector(".sp-ginspect")) return;
-      onSettings({ focus: null });
+      if (e.key !== "Escape" || e.defaultPrevented || typing(e.target) || document.querySelector(".sp-ginspect, .sp-gcodepop")) return;
+      if (focus) onSettings({ focus: null });
+      else reset.current?.();
     };
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
@@ -1025,7 +1033,7 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
       {runtime && settings.show === "map" && <Legend overlay={settings.overlay} view={shown.view} />}
       <div className="sp-gbody" data-side={side ? true : undefined}>
         {settings.show === "map" ? (
-          <Map_ nextRef={nextRef} settings={settings} decor={decor} shown={shown} onOpen={onOpen} onToggle={onToggle} onCode={onCode} onEdge={onEdge} title={title} engine={doc.engine} groupNames={groupNames} />
+          <Map_ nextRef={nextRef} settings={settings} decor={decor} shown={shown} onOpen={onOpen} onToggle={onToggle} onCode={onCode} onEdge={onEdge} onPane={onReset} title={title} engine={doc.engine} groupNames={groupNames} />
         ) : (
           <List shown={shown} settings={settings} onOpen={onOpen} decor={decor} />
         )}

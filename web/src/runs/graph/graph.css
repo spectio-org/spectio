@@ -1213,32 +1213,58 @@
   font-weight: 600;
   font-size: 12px;
 }
-.sp-gdecl-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-}
-.sp-gdecl-list li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
+.sp-gdecl-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 12px;
+  /* the same columns in every table of the panel, so the two sides line up */
+  table-layout: fixed;
 }
-.sp-gdecl-label {
+.sp-gdecl-table th:first-child {
+  width: 34%;
+}
+.sp-gdecl-table thead th:nth-child(2) {
+  width: 56px;
+}
+.sp-gdecl-table th,
+.sp-gdecl-table td {
+  padding: 3px 8px 3px 0;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.sp-gdecl-table thead th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sp-text-secondary);
+  border-bottom: 1px solid var(--sp-line-border);
+}
+.sp-gdecl-table tbody + tbody {
+  border-top: 1px solid color-mix(in srgb, var(--sp-line-border) 60%, transparent);
+}
+.sp-gdecl-table tbody th {
   font-weight: 600;
 }
-.sp-gdecl-part {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  padding: 1px 6px;
-  border: 1px solid var(--sp-border-default);
-  border-radius: 999px;
+.sp-gdecl-opt {
+  display: block;
+  font-family: var(--sp-font-sans, inherit);
+  font-weight: 400;
+  font-size: 10.5px;
+  color: var(--sp-text-secondary);
 }
 .sp-gdecl-kind {
-  color: var(--sp-text-secondary);
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--sp-line-border);
   font-size: 11px;
+  color: var(--sp-text-secondary);
+}
+.sp-gdecl-kind[data-kind="path"],
+.sp-gdecl-kind[data-kind="file"] {
+  color: var(--sp-accent);
+  border-color: color-mix(in srgb, var(--sp-accent) 40%, transparent);
+}
+.sp-gdecl-kind[data-kind="temp"] {
+  border-style: dashed;
 }
