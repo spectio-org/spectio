@@ -278,6 +278,46 @@ test("a file Launch would refuse is said before Launch, and checked again when t
   await waitFor(() => expect(posted).toHaveLength(1));
 });
 
+/** A file refused by the pre-check; `answer` replies to the later checks (null: the first answer again). */
+async function refused(answer: (url: URL) => Response | Promise<Response> | null = () => null) {
+  let first = true;
+  const posted = launchWith({
+    inspected: (url: URL) => {
+      const path = url.searchParams.get("config_file");
+      const again = path && !first ? answer(url) : null;
+      if (path) first = false;
+      return again ?? json(200, { ...INSPECTED, config_file: path ? { path, error: "the file is writable by group or others" } : null });
+    },
+  });
+  await load();
+  await userEvent.click(row(/^Extra config file/));
+  fill(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
+  const link = await within(missing()).findByRole("link", { name: /^Fix Extra config file/ });
+  return { posted, link };
+}
+
+test("chmod, then Launch at once: the click is not dropped, a fresh check runs and one POST goes (CR-P3FU121-01)", async () => {
+  const { posted } = await refused((url) => json(200, { ...INSPECTED, config_file: { path: url.searchParams.get("config_file"), error: null } }));
+  fireEvent.focus(window); // back from the terminal; the debounced check has not answered yet
+  await userEvent.click(launchButton());
+  await waitFor(() => expect(posted).toHaveLength(1));
+  expect(posted[0].config_file).toBe("/home/amartin/x.config");
+});
+
+test("a re-check that fails drops the old refusal: Launch's own read is the check (CR-P3FU121-02)", async () => {
+  const { posted, link } = await refused(() => json(500, { status: 500, title: "Server error", detail: "boom" }));
+  fireEvent.focus(window);
+  await waitFor(() => expect(link).not.toBeInTheDocument());
+  await userEvent.click(launchButton());
+  await waitFor(() => expect(posted).toHaveLength(1));
+});
+
+test("another engine drops the refusal checked for the first one at once (CR-P3FU121-02)", async () => {
+  const { link } = await refused(() => new Promise<Response>(() => {})); // the new check never answers
+  await userEvent.click(screen.getByRole("button", { name: /Snakemake/ }));
+  expect(link).not.toBeInTheDocument();
+});
+
 test("the file could not be read (503): a banner with the server's reason, the values kept, and Launch again", async () => {
   let answers = 0;
   const posted = launchWith({
