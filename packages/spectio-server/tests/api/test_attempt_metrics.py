@@ -395,13 +395,38 @@ def test_fill_adds_the_sacct_values_once(writer: Writer, settings: Settings) -> 
     [row] = rows(writer)
     assert (row.source, row.partition) == ("sacct", "long")
     assert (row.realtime_s, row.peak_rss_bytes) == (1000.0, 2**30)
-    assert (row.cpu_percent, row.cpu_eff, row.mem_eff, row.time_eff) == (150.0, 0.75, 0.5, 0.25)
     assert (row.cpus, row.mem_bytes, row.time_limit_s) == (2, 2**30, 3600.0)  # the engine's
+    # the ratios against the row's own requested columns
+    assert (row.cpu_percent, row.cpu_eff) == (150.0, 0.75)
+    assert row.mem_eff == row.peak_rss_bytes / row.mem_bytes == 1.0
+    assert row.time_eff == round(row.realtime_s / row.time_limit_s, 4)
     assert row.peak_vmem_bytes == 3 * 2**28 and row.wait_s == 30.0  # sacct gives neither yet
     assert marker(writer) is not None
     write_cache(settings, RUN, {"4242": {**SACCT_ROW, "elapsed_s": 5}})
     assert fill(writer, settings) == 0  # its marker: read once
     assert rows(writer)[0].realtime_s == 1000.0
+
+
+def test_fill_keeps_the_trace_values_sacct_lacks(writer: Writer, settings: Settings) -> None:
+    ended_run(writer, settings)
+    lacking = {**SACCT_ROW, "max_rss_bytes": None, "partition": None}  # jobacct_gather/none
+    write_cache(settings, RUN, {"4242": lacking})
+    assert fill(writer, settings) == 1
+    [row] = rows(writer)
+    assert (row.peak_rss_bytes, row.mem_eff, row.partition) == (2**29, 0.5, "short")
+    assert row.realtime_s == 1000.0 and row.source == "sacct"
+
+
+def test_fill_requested_values_from_sacct_where_the_engine_gave_none(
+    writer: Writer, settings: Settings
+) -> None:
+    launch = nf_run(writer, settings, RUN, complete(1, cpus=None, memory=None, time=None))
+    ingest_all(writer, launch, event(2, "onFlowComplete", success=True))
+    write_cache(settings, RUN, {"4242": SACCT_ROW})
+    assert fill(writer, settings) == 1
+    [row] = rows(writer)
+    assert (row.cpus, row.mem_bytes, row.time_limit_s) == (2, 2**31, 4000.0)
+    assert (row.cpu_eff, row.mem_eff, row.time_eff) == (0.75, 0.5, 0.25)
 
 
 def test_fill_skips_live_and_deleted_runs(writer: Writer, settings: Settings) -> None:
@@ -460,3 +485,29 @@ def test_a_stalled_read_is_left_for_the_next_boot(
     monkeypatch.setattr(metrics, "read_cache", slow)
     assert fill(writer, settings, timeout_s=0.05) == 0
     assert marker(writer) is None
+
+
+def test_the_fill_stops_at_the_first_stalled_read(
+    writer: Writer, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for run_id in (RUN, OTHER):
+        ended_run(writer, settings, run_id)
+        write_cache(settings, run_id, {"4242": SACCT_ROW})
+    asked: list[str] = []
+
+    def slow(root: Path, run_id: str) -> Any:
+        asked.append(run_id)
+        time.sleep(1)
+        return read_cache(root, run_id)
+
+    monkeypatch.setattr(metrics, "read_cache", slow)
+    assert fill(writer, settings, timeout_s=0.05) == 0
+    assert asked == [RUN]  # the second read is never submitted: the pool is the routes'
+    assert marker(writer, RUN) is None and marker(writer, OTHER) is None
+
+
+def test_an_observed_run_holds_no_launch_window(writer: Writer, settings: Settings) -> None:
+    launch = add_run(writer, settings, RUN, "cli", created_at=T0, origin="cli-observed")
+    ingest_all(writer, launch, complete(1, submit=str(MS0 - 3_600_000), start=str(MS0)))
+    [row] = rows(writer)
+    assert row.wait_s == 3600.0  # submitted an hour before the server saw the run

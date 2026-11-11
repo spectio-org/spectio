@@ -116,8 +116,11 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
     else:
         return  # a late event of a lower or equal rank: logged, no change
     if hook == "onTaskComplete":  # its performance row (FU-P3-105a, api §5.5)
-        launched = p.conn.execute(select(runs.c.created_at).where(runs.c.id == p.run_id))
-        found = metrics.trace_metrics(data.trace, launched.scalar_one(), p.event_time or p.now)
+        run = p.conn.execute(
+            select(runs.c.created_at, runs.c.origin).where(runs.c.id == p.run_id)
+        ).one()  # a run started from a terminal holds no launch window (schedulers §3.7)
+        launched = None if run.origin == "cli-observed" else run.created_at
+        found = metrics.trace_metrics(data.trace, launched, p.event_time or p.now)
         metrics.write(p.conn, attempt_id, task_id, n, state, p.state, "nextflow", found)
     if terminated:  # the first one: seq order
         p.conn.execute(

@@ -23,7 +23,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import Connection, func, insert, select, update
+from sqlalchemy import Connection, insert, select, update
 
 from spectio.runner.sacct import SacctRow
 from spectio_sdk.events import NextflowTrace
@@ -78,19 +78,21 @@ def _seconds(value: object) -> float | None:
 
 
 def trace_metrics(
-    trace: NextflowTrace | None, launched: datetime, seen: datetime
+    trace: NextflowTrace | None, launched: datetime | None, seen: datetime
 ) -> dict[str, Any]:
     """The §3.7 values of a trace record, each through `_number` (a NaN, a negative, an
-    infinite or a non-numeric value is null). `launched` is the run's launch and `seen` the
-    event's time: a wait whose submit or start falls outside them by more than WINDOW, or
-    that starts before its submit, is null."""
+    infinite or a non-numeric value is null). `launched` is the run's launch (None for a run
+    started from a terminal, which holds no launch window) and `seen` the event's time: a
+    wait whose submit or start falls outside them by more than WINDOW, or that starts before
+    its submit, is null."""
     t = trace or NextflowTrace()
     cpus, memory, time_s = _whole(t.cpus), _whole(t.memory), _seconds(t.time)
     cpu, peak, real = _number(t.pct_cpu), _whole(t.peak_rss), _seconds(t.realtime)
     submitted, started = _moment(t.submit), _moment(t.start)
     wait = None
-    if submitted and started and launched - WINDOW <= submitted <= started <= seen + WINDOW:
-        wait = (started - submitted).total_seconds()
+    if submitted and started and submitted <= started <= seen + WINDOW:
+        if launched is None or launched - WINDOW <= submitted:
+            wait = (started - submitted).total_seconds()
     measured = {
         "cpu_percent": cpu,
         "cpu_eff": ratio(cpu, None if cpus is None else 100 * cpus),
@@ -167,25 +169,37 @@ def write(
         conn.execute(insert(attempt_metrics).values(attempt_id=attempt_id, **row))
 
 
-def sacct_values(row: SacctRow) -> dict[str, Any]:
-    """What a `sacct` row gives (schedulers §3.7, SLURM column), §3.6's source order putting
-    it first; the requested values only where the engine gave none."""
+def _first(*values: Any) -> Any:
+    return next((v for v in values if v is not None), None)
+
+
+def sacct_values(row: SacctRow, stored: Any) -> dict[str, Any]:
+    """What a `sacct` row gives (schedulers §3.7, SLURM column) over the `stored` row: §3.6's
+    source order puts its measures first, the engine's requested values first. A value the
+    `sacct` row lacks keeps the stored one, and the ratios are taken against the requested
+    values the row keeps, as the trace's are."""
     elapsed = None if row.elapsed_s is None else float(row.elapsed_s)
-    measure = efficiency.sacct_measure(row)
     used = None if row.total_cpu_s is None else row.total_cpu_s * 100
-    c = attempt_metrics.c
+    cpu = efficiency.ratio(used, elapsed)  # % of one CPU
+    measured = (cpu, row.max_rss_bytes, elapsed)
+    cpus = _first(stored.cpus, row.ncpus)
+    memory = _first(stored.mem_bytes, row.req_mem_bytes)
+    limit = _first(stored.time_limit_s, row.time_limit_s)
+    cpu = _first(cpu, stored.cpu_percent)
+    peak = _first(row.max_rss_bytes, stored.peak_rss_bytes)
+    real = _first(elapsed, stored.realtime_s)
     return {
-        "source": "sacct",
-        "partition": func.coalesce(partition(row.partition), c.partition),
-        "cpus": func.coalesce(c.cpus, row.ncpus),
-        "mem_bytes": func.coalesce(c.mem_bytes, row.req_mem_bytes),
-        "time_limit_s": func.coalesce(c.time_limit_s, row.time_limit_s),
-        "cpu_percent": efficiency.ratio(used, elapsed),  # % of one CPU
-        "cpu_eff": capped(measure["cpu"]),
-        "peak_rss_bytes": row.max_rss_bytes,
-        "mem_eff": capped(measure["mem"]),
-        "realtime_s": elapsed,
-        "time_eff": ratio(elapsed, row.time_limit_s),
+        "source": "sacct" if any(v is not None for v in measured) else stored.source,
+        "partition": _first(partition(row.partition), stored.partition),
+        "cpus": cpus,
+        "mem_bytes": memory,
+        "time_limit_s": limit,
+        "cpu_percent": cpu,
+        "cpu_eff": ratio(cpu, None if cpus is None else 100 * cpus),
+        "peak_rss_bytes": peak,
+        "mem_eff": ratio(peak, memory),
+        "realtime_s": real,
+        "time_eff": ratio(real, limit),
     }
 
 
@@ -219,14 +233,14 @@ def _apply(conn: Connection, run_id: str, found: dict[str, SacctRow | None]) -> 
     if still is None:  # deleted meanwhile, or filled
         return
     jobs = conn.execute(
-        select(attempts.c.id, attempts.c.native_id)
+        select(attempts.c.native_id, attempt_metrics)
         .join(attempt_metrics, attempt_metrics.c.attempt_id == attempts.c.id)
         .where(attempt_metrics.c.run_id == run_id, attempts.c.native_id.is_not(None))
     ).all()
-    for attempt_id, job in jobs:
-        if (row := found.get(job)) is not None:
-            key = attempt_metrics.c.attempt_id == attempt_id
-            conn.execute(update(attempt_metrics).where(key).values(**sacct_values(row)))
+    for stored in jobs:
+        if (row := found.get(stored.native_id)) is not None:
+            key = attempt_metrics.c.attempt_id == stored.attempt_id
+            conn.execute(update(attempt_metrics).where(key).values(**sacct_values(row, stored)))
     marked = update(runs).where(runs.c.id == run_id).values(metrics_sacct_at=datetime.now(UTC))
     conn.execute(marked)
 
@@ -242,7 +256,8 @@ def fill_sacct(
     """Add the `sacct.json` values of every ended run not filled yet, run by run; the number of
     runs marked. A missing or refused file (a symlink, a FIFO, another owner, too large, not
     JSON) marks its run with nothing added; a read that does not answer within `timeout_s`
-    leaves the run for the next boot."""
+    stops the fill, this run and the rest left for the next boot: its stuck read keeps a slot
+    of the routes' file pool (dev-env §15.3 req. 13), so no further read is submitted."""
     done, after = 0, ""
     while not (stop is not None and stop.is_set()):
         todo = writer.submit(partial(_unfilled, after=after)).result()
@@ -256,8 +271,8 @@ def fill_sacct(
             try:
                 found = files.run(read, timeout_s)
             except Stalled as exc:
-                log.warning("sacct.json of %s not read: %s", run_id, exc)
-                continue
+                log.warning("sacct.json of %s not read, the fill stops: %s", run_id, exc)
+                return done
             except (OSError, ValueError, RecursionError) as exc:
                 log.warning("sacct.json of %s not read: %s", run_id, exc)
                 found = {}
