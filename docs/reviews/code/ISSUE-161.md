@@ -152,4 +152,12 @@ Both approved: code-reviewer with 3 minors, all fixed below; security-reviewer w
 | CR-161S7-02 | minor | the record claimed launches at 290 KiB and 1.2 MiB and a non-UTF-8 case that the test did not have | fixed: each config case launches (`201`), and 300 KiB of non-UTF-8 bytes is a case |
 | CR-161S7-03 | minor | the `freeze.py` follow-up had no id | FU-161-01, in req. 21, this record and the PR body |
 
+### Fix review (`2332f2d..d00353d`)
+
+security-reviewer approved with one minor; code-reviewer: see below.
+
+| Id | Severity | Finding | Status |
+|---|---|---|---|
+| SEC-161S8-01 | minor | the specs said any `config.yaml` past 64 levels infers no form; past about 250 block levels PyYAML's composer raises `RecursionError`, and past 64 flow brackets the scanner refuses, both a `422` that quotes nothing | spec reworded to the window (65 to about 250 block levels); the code fails closed |
+
 Seen by the worker and not changed here: a resumed registry module run is named after `parent.workflow_name`; and `GET /runs/{id}` shows `nextflow run` as the command of a module run.
