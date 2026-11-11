@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { ApiError, ResultReport, Results, RunDetail } from "../api";
 import { listResults } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { FoldSection } from "../shell/FoldSection";
 import { CopyButton } from "./CopyMenu";
 import { when } from "./stateWord";
@@ -123,7 +123,7 @@ function Contents({ run, results }: { run: RunDetail; results: Results }) {
         </>
       )}
       <Link to="/runs/$id/results" params={{ id: run.id }} className="sp-results-all">
-        Browse all results <Icon path={ICONS.arrowRight} size={13} />
+        Browse all results <Icon name="arrowRight" />
       </Link>
       <p className="sp-muted">
         Reports open in Spectio's sandboxed report viewer, where they cannot reach Spectio.
@@ -152,7 +152,7 @@ export function ResultsSection({ run }: { run: RunDetail }) {
 
   const from = run.workflow.engine === "snakemake" ? "Results directory: the launch directory." : "Results directory, from --outdir.";
   return (
-    <FoldSection id="results" screen="run" icon={ICONS.folder} title="Results and reports" card>
+    <FoldSection id="results" screen="run" icon="folder" title="Results and reports" card>
       {!root ? (
         <p className="sp-muted">
           No results directory to show: the run sets no outdir, or one Spectio does not show (one that holds the runs or your home

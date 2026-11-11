@@ -1,17 +1,15 @@
 import { ActionIcon, Menu } from "@mantine/core";
 import type { ReactElement, ReactNode } from "react";
-import { Icon } from "../icons";
+import { Icon, type IconName } from "../icons";
 import { PhoneTitle, usePhone } from "./layout";
 import { NAV } from "./Sidebar";
 
-// The ellipsis of "More actions" (ui-spec §12.4); it moves to icons.tsx with UI-02's <Icon name>.
-const MORE = "M5 12h.01 M12 12h.01 M19 12h.01";
 
 /** One entry of the "More actions" menu. A destructive one is drawn last, after a divider. */
 export interface MoreAction {
   label: string;
   onClick: () => void;
-  icon?: string;
+  icon?: IconName;
   destructive?: boolean;
 }
 
@@ -20,7 +18,7 @@ interface Props {
   title: ReactNode;
   sub?: ReactNode;
   /** The tile's icon when it is not the section's (Profile). */
-  icon?: string;
+  icon?: IconName;
   /** The one filled button of the view, at the far right (ui-spec §12.4): one element, never a list. */
   primary?: ReactElement;
   /** Default buttons before it, two at most; more go to `more`. */
@@ -45,7 +43,7 @@ function MoreMenu({ items }: { items: MoreAction[] }) {
       onClick={a.onClick}
       data-destructive={a.destructive || undefined}
       className={a.destructive ? "sp-menu-danger" : undefined}
-      leftSection={a.icon && <Icon path={a.icon} size={16} stroke={1.75} />}
+      leftSection={a.icon && <Icon name={a.icon} />}
     >
       {a.label}
     </Menu.Item>
@@ -54,7 +52,7 @@ function MoreMenu({ items }: { items: MoreAction[] }) {
     <Menu position="bottom-end" withinPortal>
       <Menu.Target>
         <ActionIcon variant="default" size="lg" aria-label="More actions">
-          <Icon path={MORE} size={16} stroke={1.75} />
+          <Icon name="more" />
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
@@ -96,7 +94,7 @@ export function PageHead({ section, title, sub, icon, primary, secondary, more, 
       <header className="sp-head">
         <div className="sp-head-main">
           <span className="sp-head-tile" data-section={section} aria-hidden="true">
-            <Icon path={icon ?? NAV.find((n) => n.section === section)!.icon} size={24} stroke={1.75} />
+            <Icon name={icon ?? NAV.find((n) => n.section === section)!.icon} size="tile" />
           </span>
           <div className="sp-head-text">
             <h1 className="sp-page-title" tabIndex={-1}>

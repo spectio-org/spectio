@@ -2,7 +2,7 @@ import { Button, Modal } from "@mantine/core";
 import { type ReactNode, useEffect, useState } from "react";
 import { ApiError, type RunConfigFile, type RunDetail, getConfigFile } from "../api";
 import { runEnvName } from "../environments/fields";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { memWords, resourceWords, timeWords } from "../launch/RunExtras";
 import { usePhone } from "../shell/layout";
 import { copyText } from "./CopyMenu";
@@ -106,7 +106,7 @@ function ConfigFileFact({ id, kept }: { id: string; kept: RunConfigFile }) {
 function IncludesWarning() {
   return (
     <span className="sp-extra-warn">
-      <Icon path={ICONS.alert} size={14} />
+      <Icon name="alert" />
       <span>It loads other files with includeConfig; those are not kept with the run.</span>
     </span>
   );

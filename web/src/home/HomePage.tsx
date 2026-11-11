@@ -3,7 +3,7 @@ import { Button } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Run, type RunState, type ServerVersion, type Summary, listRuns, runsSummary } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { failureText, Pipeline, RunLink, StateWord, runName, stateContext, tasksText } from "../runs/RunState";
 import { NoRuns, RunCard } from "../runs/RunsPage";
@@ -70,7 +70,7 @@ function WhereRunsGo({ server }: { server: ServerVersion }) {
   const local = server.executor === "local";
   const executor = executorLabel(server.executor);
   return (
-    <FoldSection id="home-where" screen="home" icon={ICONS.server} title="Where your runs go" summary={`${server.node} · ${executor}`} card>
+    <FoldSection id="home-where" screen="home" icon="server" title="Where your runs go" summary={`${server.node} · ${executor}`} card>
       <ul className="sp-where">
         <li>
           <strong>Server</strong> Spectio {server.version} on {server.node}, under your account {server.account}
@@ -184,9 +184,9 @@ export function HomePage() {
           </ul>
           <div className="sp-home-grid">
             <div className="sp-runs">
-              <FoldSection id="home-active" screen="home" icon={ICONS.pulse} title="Active runs" summary={`${active.length} active`}>
+              <FoldSection id="home-active" screen="home" icon="pulse" title="Active runs" summary={`${active.length} active`}>
                 <Link to="/runs" className="sp-link sp-link-end">
-                  All runs <Icon path={ICONS.arrowRight} size={14} />
+                  All runs <Icon name="arrowRight" />
                 </Link>
                 {active.length === 0 ? (
                   <p className="sp-muted">No run is active.</p>
@@ -217,7 +217,7 @@ export function HomePage() {
                   </ul>
                 )}
               </FoldSection>
-              <FoldSection id="home-ended" screen="home" icon={ICONS.history} title="Finished recently" summary={`${ended.length} runs`}>
+              <FoldSection id="home-ended" screen="home" icon="history" title="Finished recently" summary={`${ended.length} runs`}>
                 {ended.length === 0 ? (
                   <p className="sp-muted">No run has ended yet.</p>
                 ) : phone ? (
@@ -248,9 +248,9 @@ export function HomePage() {
               </FoldSection>
             </div>
             <div className="sp-runs">
-              <FoldSection id="home-pipelines" screen="home" icon={ICONS.route} title="Your pipelines" summary={`${pipelines.length} directories`} card>
+              <FoldSection id="home-pipelines" screen="home" icon="route" title="Your pipelines" summary={`${pipelines.length} directories`} card>
                 <Link to="/catalog" className="sp-link sp-link-end">
-                  Your catalog <Icon path={ICONS.arrowRight} size={14} />
+                  Your catalog <Icon name="arrowRight" />
                 </Link>
                 <p className="sp-muted">Pipeline directories of your recent runs: open one in Launch.</p>
                 <ul className="sp-quick">

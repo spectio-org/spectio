@@ -1,15 +1,15 @@
 import { Button, Skeleton } from "@mantine/core";
 import type { ReactNode } from "react";
-import { Icon } from "../icons";
+import { Icon, type IconName } from "../icons";
 
 // The shared states of ui-spec §11 and §12.12 (UI-03), for screens, cards and sheets alike.
 
 /** Nothing to show: a 24 px icon, one sentence that says why, and the next step. */
-export function EmptyState({ icon, children, action }: { icon: string; children: ReactNode; action?: ReactNode }) {
+export function EmptyState({ icon, children, action }: { icon: IconName; children: ReactNode; action?: ReactNode }) {
   return (
     <div className="sp-emptystate">
       <span className="sp-emptystate-icon" aria-hidden="true">
-        <Icon path={icon} size={24} stroke={1.75} />
+        <Icon name={icon} size="tile" />
       </span>
       <p className="sp-emptystate-text">{children}</p>
       {action}

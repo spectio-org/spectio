@@ -1667,7 +1667,8 @@
 }
 .sp-explorer-first svg {
   flex-shrink: 0;
-  margin-top: 1px;
+  /* centred on the name's first line, whatever its line height (UI-02) */
+  margin-top: calc(0.5lh - 8px);
   color: var(--sp-text-muted);
 }
 .sp-explorer-first [data-name] {

@@ -1,6 +1,6 @@
 import { TextInput } from "@mantine/core";
 import type { ReactNode } from "react";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 
 /** The toolbar of ui-spec §12.6 (UI-03): one 36 px row under the page head, the search taking the
  * free width at the left, then the filters, then the caption and the actions at the right. It
@@ -30,7 +30,7 @@ export function ToolbarSearch({ label, value, onChange, placeholder }: { label: 
       placeholder={placeholder ?? label}
       value={value}
       onChange={(e) => onChange(e.currentTarget.value)}
-      leftSection={<Icon path={ICONS.search} size={16} stroke={1.75} />}
+      leftSection={<Icon name="search" />}
     />
   );
 }

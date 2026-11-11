@@ -24,6 +24,13 @@ body {
 .sp-grow {
   flex: 1 1 auto;
 }
+/* A button's icon sits 8 px from its label, whatever the spacing scale (ui-audit D, UI-02). */
+.mantine-Button-section[data-position="left"] {
+  margin-inline-end: 8px;
+}
+.mantine-Button-section[data-position="right"] {
+  margin-inline-start: 8px;
+}
 
 /* Brand */
 .sp-home {

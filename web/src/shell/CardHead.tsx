@@ -1,11 +1,11 @@
 import { ActionIcon } from "@mantine/core";
 import type { ReactNode } from "react";
-import { ICONS, Icon } from "../icons";
+import { Icon, type IconName } from "../icons";
 
 interface Props {
   /** The card's id: the title is `<id>-title`, the body the toggle controls `<id>-body`. */
   id: string;
-  icon: string;
+  icon: IconName;
   title: string;
   /** A meta line or summary in sm muted text: "5 runs", "8 stages · 4 running". */
   meta?: ReactNode;
@@ -22,7 +22,7 @@ export function CardHead({ id, icon, title, meta, actions, open, onToggle }: Pro
   return (
     <div className="sp-cardhead" data-open={open}>
       <span className="sp-cardhead-tile" aria-hidden="true">
-        <Icon path={icon} size={16} stroke={1.75} />
+        <Icon name={icon} />
       </span>
       <div className="sp-cardhead-text">
         <h3 id={`${id}-title`} className="sp-cardhead-title">
@@ -32,7 +32,7 @@ export function CardHead({ id, icon, title, meta, actions, open, onToggle }: Pro
       </div>
       {actions && <div className="sp-cardhead-actions">{actions}</div>}
       <ActionIcon variant="subtle" size="lg" className="sp-cardhead-fold" aria-labelledby={`${id}-title`} aria-expanded={open} aria-controls={`${id}-body`} onClick={onToggle}>
-        <Icon path={ICONS.chevronDown} size={16} stroke={1.75} />
+        <Icon name="chevronDown" />
       </ActionIcon>
     </div>
   );

@@ -4,7 +4,7 @@ import { Button, Drawer, Modal, Skeleton } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, type EnvironmentItem, type EnvironmentList, deleteEnvironment, getEnvironment, listEnvironments, makeDefault } from "../api";
-import { ICONS, Icon } from "../icons";
+import { type IconName, Icon } from "../icons";
 import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
@@ -25,10 +25,10 @@ export const envListSearch = (search: Record<string, unknown>): { view?: "table"
 let shownView: { view?: "table" } = {};
 
 /** One icon per kind (ui-spec §4.8.1, FU-P3-111); decorative, the SLURM or Local badge says it. */
-const KIND_ICONS: Record<string, string> = { slurm: ICONS.server, local: ICONS.terminal };
+const KIND_ICONS: Record<string, IconName> = { slurm: "server", local: "terminal" };
 const KindIcon = ({ env }: { env: EnvironmentItem }) => (
   <span className="sp-env-kind" data-kind={env.executor}>
-    <Icon path={KIND_ICONS[env.executor] ?? ICONS.server} size={18} stroke={1.6} />
+    <Icon name={KIND_ICONS[env.executor] ?? "server"} size="nav" />
   </span>
 );
 const kindBadge = (env: EnvironmentItem) => <span className="sp-chip">{env.executor === "slurm" ? "SLURM" : "Local"}</span>;

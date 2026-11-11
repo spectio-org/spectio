@@ -91,7 +91,7 @@ test("UI-03: one primary at most and two secondaries at most, by the props' type
 });
 
 test("UI-03: a page may draw its own icon in the section's tile (Profile)", () => {
-  wrap(<PageHead section="home" icon={ICONS.info} title="Profile" />);
+  wrap(<PageHead section="home" icon="info" title="Profile" />);
   expect(document.querySelector(".sp-head-tile path")).toHaveAttribute("d", ICONS.info);
 });
 

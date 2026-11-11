@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
-import { ICONS } from "../icons";
 import { EmptyState, ErrorPanel, SkeletonRows } from "./States";
 import { providerProps } from "./theme";
 
@@ -12,7 +11,7 @@ import { providerProps } from "./theme";
 const wrap = (ui: ReactNode) => render(<MantineProvider {...providerProps}>{ui}</MantineProvider>);
 
 test("UI-03: EmptyState says why in one sentence beside a hidden 24 px icon, then the next step", () => {
-  wrap(<EmptyState icon={ICONS.runs} action={<Button>Launch a workflow</Button>}>No run yet.</EmptyState>);
+  wrap(<EmptyState icon="runs" action={<Button>Launch a workflow</Button>}>No run yet.</EmptyState>);
   const text = screen.getByText("No run yet.");
   const box = text.closest(".sp-emptystate")!;
   const svg = box.querySelector("svg")!;

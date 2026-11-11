@@ -1,6 +1,6 @@
 import { Button } from "@mantine/core";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 
 // The run header's Copy menu (LiteRunActions B; ui-spec §4.4 run tools): native buttons in a
 // role="menu", arrow keys move, Escape closes and returns focus to Copy, and a polite status says
@@ -68,7 +68,7 @@ export function CopyMenu({ items, fullWidth = false }: { items: CopyItem[]; full
         aria-expanded={open}
         aria-controls={open ? "copy-menu" : undefined}
         id="copy-button"
-        rightSection={<Icon path={ICONS.chevronDown} size={14} stroke={2} />}
+        rightSection={<Icon name="chevronDown" size="button" />}
         onClick={() => setOpen(!open)}
         fullWidth={fullWidth}
       >

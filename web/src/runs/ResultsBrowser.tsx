@@ -2,7 +2,7 @@ import { ActionIcon, Button } from "@mantine/core";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, type Ref, useEffect, useMemo, useRef, useState } from "react";
 import { type ApiError, type ResultEntry, type Results, type RunDetail, type WorkRoot, getRun, listResults, resultUrl } from "../api";
-import { ICONS, Icon } from "../icons";
+import { type IconName, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
@@ -57,27 +57,27 @@ export function resultsSearch(search: Record<string, unknown>): ResultsSearch {
 
 const LIVE_DELAY = 150; // ms after typing stops: the filter's count and its URL
 
-const KIND_ICONS: Record<EntryKind, string> = {
-  folder: ICONS.folder,
-  text: ICONS.file,
-  table: ICONS.table,
-  json: ICONS.braces,
-  image: ICONS.image,
-  tiff: ICONS.image,
-  ometiff: ICONS.image,
-  omezarr: ICONS.image,
-  html: ICONS.fileCode,
-  pdf: ICONS.file,
-  binary: ICONS.file,
-  file: ICONS.file,
-  link: ICONS.externalLink,
+const KIND_ICONS: Record<EntryKind, IconName> = {
+  folder: "folder",
+  text: "file",
+  table: "table",
+  json: "braces",
+  image: "image",
+  tiff: "image",
+  ometiff: "image",
+  omezarr: "image",
+  html: "fileCode",
+  pdf: "file",
+  binary: "file",
+  file: "file",
+  link: "externalLink",
 };
 
 /** The kind as a text badge with its icon: colour is never the only signal (board LiteKind). */
 export function KindBadge({ kind, work = false }: { kind: EntryKind; work?: boolean }) {
   return (
     <span className="sp-kind" data-kind={kind}>
-      <Icon path={KIND_ICONS[kind]} size={13} />
+      <Icon name={KIND_ICONS[kind]} />
       {kindWord(kind, work)}
     </span>
   );
@@ -190,7 +190,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
         const first = (
           <>
             <span className="sp-explorer-first">
-              <Icon path={entry.type === "dir" ? ICONS.folder : ICONS.file} size={18} />
+              <Icon name={entry.type === "dir" ? "folder" : "file"} />
               <span data-name="">{entry.name}</span>
             </span>
             <span className="sp-muted">{entry.type === "link_outside" ? `${facts(entry)} · not followed` : facts(entry)}</span>
@@ -237,7 +237,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
             <tr key={entry.name}>
               <th scope="row">
                 <span className="sp-result-name">
-                  <Icon path={entry.type === "dir" ? ICONS.folder : ICONS.file} size={15} />
+                  <Icon name={entry.type === "dir" ? "folder" : "file"} />
                   {entry.type === "link_outside" ? (
                     <span>
                       {entry.name} <span className="sp-muted">not followed</span>
@@ -257,7 +257,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
               <td className="sp-explorer-act">
                 {entry.type === "file" && (
                   <ActionIcon component="a" variant="default" size={32} href={resultUrl(id, join(folder, entry.name), { download: true }, work)} download aria-label={`Download ${entry.name}`}>
-                    <Icon path={ICONS.download} size={16} />
+                    <Icon name="download" />
                   </ActionIcon>
                 )}
               </td>
@@ -276,7 +276,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
             {work ? "Work directory" : "Results"} · {counts(entries)}
           </h2>
           <label className="sp-search-field">
-            <Icon path={ICONS.search} size={16} />
+            <Icon name="search" />
             <input ref={field} type="search" aria-label="Filter this folder" placeholder="Filter this folder" value={typed} onChange={(e) => setTyped(e.currentTarget.value)} />
           </label>
           {phone && (
@@ -332,11 +332,11 @@ export function BackToRun({ id, run, task, attempt }: { id: string; run: RunDeta
   const name = run ? runName(run) : "Run";
   return task && attempt ? (
     <Link className="sp-report-back" to="/runs/$id" params={{ id }} search={{ task, attempt }}>
-      <Icon path={ICONS.chevronLeft} size={14} /> {name} · {words(run?.workflow.engine ?? null).unit}, attempt {attempt}
+      <Icon name="chevronLeft" /> {name} · {words(run?.workflow.engine ?? null).unit}, attempt {attempt}
     </Link>
   ) : (
     <Link className="sp-report-back" to="/runs/$id" params={{ id }}>
-      <Icon path={ICONS.chevronLeft} size={14} /> {name} · Summary
+      <Icon name="chevronLeft" /> {name} · Summary
     </Link>
   );
 }
@@ -361,7 +361,7 @@ export function useTaskName(id: string, work?: WorkRoot): string | null {
 function BackToTask({ id, work, name }: { id: string; work: WorkRoot; name: string | null }) {
   return (
     <Link className="sp-report-back" to="/runs/$id" params={{ id }} search={{ task: work.task, attempt: work.attempt }}>
-      <Icon path={ICONS.chevronLeft} size={14} /> {name ?? "Task"} · attempt {work.attempt}
+      <Icon name="chevronLeft" /> {name ?? "Task"} · attempt {work.attempt}
     </Link>
   );
 }

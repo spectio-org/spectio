@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, type Ref, useState } from "react";
 import { type Process, type RunDetail, type ServerVersion, type Stage, setPinned } from "../api";
 import { runEnvName, summary as envSummary } from "../environments/fields";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { LiveStatus } from "../live";
 import { toYaml } from "../launch/schemaFields";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
@@ -284,7 +284,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
             </Button>
           )}
           <CopyMenu items={copyItems(run, server)} fullWidth={phone} />
-          <Button variant="default" onClick={pin} leftSection={<Icon path={ICONS.pin} size={15} />} fullWidth={phone}>
+          <Button variant="default" onClick={pin} leftSection={<Icon name="pin" size="button" />} fullWidth={phone}>
             {run.pinned ? "Unpin" : "Pin"}
           </Button>
           {ended && <DeleteRuns runs={[run]} why={null} onDeleted={(said) => navigate({ to: "/runs", state: { said } })} />}
@@ -292,7 +292,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
       </div>
       {cancelError && <p role="alert">Cancel failed: {cancelError}</p>}
       {pinError && <p role="alert">Pin failed: {pinError}</p>}
-      <FoldSection id="facts" screen="run" icon={ICONS.info} title="Facts" summary={summary} defaultOpen={!phone}>
+      <FoldSection id="facts" screen="run" icon="info" title="Facts" summary={summary} defaultOpen={!phone}>
         <Facts run={run} server={server} />
       </FoldSection>
       <div className="sp-chips-row">

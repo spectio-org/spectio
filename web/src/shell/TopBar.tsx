@@ -2,7 +2,7 @@ import { useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { ServerVersion } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import type { PageCrumb } from "./crumb";
 import { NotificationsBell } from "./NotificationsBell";
 import { SearchDialog } from "./SearchDialog";
@@ -60,7 +60,7 @@ function Breadcrumbs({ crumb }: { crumb: PageCrumb }) {
       <ol>
         {crumbs.map((crumb, i) => (
           <li key={i}>
-            {i > 0 && <Icon path={ICONS.chevronRight} size={14} />}
+            {i > 0 && <Icon name="chevronRight" />}
             {crumb.to ? (
               // exact: a section crumb above the page is never "current" (UX-PAR-06)
               <Link to={crumb.to} activeOptions={{ exact: true }}>
@@ -87,10 +87,6 @@ function Mark({ width }: { width: number }) {
   );
 }
 
-const SEARCH = ICONS.search;
-const MOON = "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z";
-const SUN = "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.2 4.2l1.4 1.4 M18.4 18.4l1.4 1.4 M1 12h2 M21 12h2 M4.2 19.8l1.4-1.4 M18.4 5.6l1.4-1.4";
-export const PERSON = "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0";
 
 /** A native switch: the label stays "Dark theme", `aria-checked` says whether it is on. */
 function ThemeSwitch({ className = "sp-key" }: { className?: string }) {
@@ -105,7 +101,7 @@ function ThemeSwitch({ className = "sp-key" }: { className?: string }) {
       aria-label="Dark theme"
       onClick={() => setColorScheme(dark ? "light" : "dark")}
     >
-      <Icon path={dark ? SUN : MOON} size={19} />
+      <Icon name={dark ? "sun" : "moon"} size="nav" />
     </button>
   );
 }
@@ -115,7 +111,7 @@ function Avatar() {
   return (
     <Link to="/profile" className="sp-key sp-avatar" aria-label="Profile">
       <span className="sp-key-face">
-        <Icon path={PERSON} size={19} />
+        <Icon name="person" size="nav" />
       </span>
     </Link>
   );
@@ -161,7 +157,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
           </span>
           <button type="button" className="sp-key" aria-label="Search runs, pipelines and pages" onClick={() => setSearching(true)}>
             <span className="sp-key-face">
-              <Icon path={SEARCH} size={19} />
+              <Icon name="search" size="nav" />
             </span>
           </button>
           <NotificationsBell phone />
@@ -184,7 +180,7 @@ export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
       <span className="sp-rule" aria-hidden="true" />
       <Breadcrumbs crumb={crumb} />
       <button type="button" className="sp-search" aria-label="Search runs, pipelines and pages" aria-keyshortcuts="Meta+K Control+K" onClick={() => setSearching(true)}>
-        <Icon path={SEARCH} size={16} />
+        <Icon name="search" />
         <span className="sp-search-text">Search</span>
         <kbd aria-hidden="true">⌘K</kbd>
       </button>

@@ -2,7 +2,7 @@ import { Button } from "@mantine/core";
 import { Link, Navigate } from "@tanstack/react-router";
 import { type ReactNode, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { type ApiError, type ResultStat, type RunDetail, type TextRead, type WorkRoot, getRun, readResultText, resultUrl, statResult } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
@@ -83,7 +83,7 @@ function Note({ title, body, actions }: { title: string; body?: string | null; a
 
 function DownloadLink({ href, name, label = "Download" }: { href: string; name: string; label?: string }) {
   return (
-    <Button component="a" variant="default" size="xs" href={href} download aria-label={`Download ${name}`} leftSection={<Icon path={ICONS.download} size={14} />}>
+    <Button component="a" variant="default" size="xs" href={href} download aria-label={`Download ${name}`} leftSection={<Icon name="download" size="button" />}>
       {label}
     </Button>
   );
@@ -697,13 +697,13 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
       <div className="sp-runs sp-file-page">
         {work ? (
           <Link className="sp-report-back" to="/runs/$id/workdir" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name, task, attempt }}>
-            <Icon path={ICONS.chevronLeft} size={14} /> {file ? folder.split("/").pop() || "work directory" : "Work directory"}
+            <Icon name="chevronLeft" /> {file ? folder.split("/").pop() || "work directory" : "Work directory"}
           </Link>
         ) : task && attempt ? (
           <BackToRun id={id} run={run} task={task} attempt={attempt} />
         ) : (
           <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name }}>
-            <Icon path={ICONS.chevronLeft} size={14} /> {file ? folder.split("/").pop() || "results" : "Results"}
+            <Icon name="chevronLeft" /> {file ? folder.split("/").pop() || "results" : "Results"}
           </Link>
         )}
         <h1 ref={title} tabIndex={-1} className="sp-page-title sp-file-name">
@@ -717,7 +717,7 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
                 .join(" · ")}
             </span>
             {!ended && (
-              <Button variant="default" size="xs" leftSection={<Icon path={ICONS.reload} size={14} />} onClick={retry}>
+              <Button variant="default" size="xs" leftSection={<Icon name="reload" size="button" />} onClick={retry}>
                 Reload
               </Button>
             )}

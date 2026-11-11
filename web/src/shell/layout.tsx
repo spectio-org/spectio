@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, type Ref, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 
 // The shell's layout for the pages (ui-spec §4.11): whether this is the phone, and there the top
 // bar's second row (MLiteTopbar `hasTitle`), where a page puts its title (UX-PAR-08).
@@ -34,7 +34,7 @@ export function PhoneTitle({ title, sub, back, titleRef }: Props) {
     <>
       {back && (
         <Link to={back.to} className="sp-key sp-back" aria-label={`Back to ${back.label}`}>
-          <Icon path={ICONS.chevronLeft} size={22} stroke={2} />
+          <Icon name="chevronLeft" size="nav" />
         </Link>
       )}
       <div className="sp-mtitle-text">

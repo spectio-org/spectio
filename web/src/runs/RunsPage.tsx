@@ -4,7 +4,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent, SortChangedEvent } from "ag-grid-community";
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { type Page, type Run, type RunsSort, type ServerVersion, type Summary, listRuns, runsSummary, setPinned } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { usePhone } from "../shell/layout";
@@ -114,7 +114,7 @@ function PinButton({ run }: { run: Run }) {
   const { pin } = useContext(Rows);
   return (
     <button type="button" className="sp-pin" aria-pressed={!!run.pinned} aria-label={`Pin run ${runName(run)}`} onClick={() => pin(run)}>
-      <Icon path={ICONS.pin} size={15} />
+      <Icon name="pin" />
     </button>
   );
 }
@@ -176,7 +176,7 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
       <span className="sp-run-card-line">
         {run.origin === "cli-observed" && (
           <span className="sp-chip">
-            <Icon path={ICONS.terminal} size={12} /> From a terminal
+            <Icon name="terminal" /> From a terminal
           </span>
         )}
         <span>{stateContext(run)}</span>
@@ -211,7 +211,7 @@ const COLUMNS: ColDef<Run>[] = [
         </span>
         {run.origin === "cli-observed" && (
           <span className="sp-chip">
-            <Icon path={ICONS.terminal} size={12} /> From a terminal
+            <Icon name="terminal" /> From a terminal
           </span>
         )}
         <span className="sp-id">{shortId(run.id)}</span>
@@ -488,7 +488,7 @@ export function RunsPage() {
 
       <div className="sp-filters">
         <label className="sp-search-field">
-          <Icon path={ICONS.search} size={16} />
+          <Icon name="search" />
           <input
             type="search"
             aria-label="Filter by run name"

@@ -2,7 +2,7 @@ import { NativeSelect, TextInput } from "@mantine/core";
 import { type ReactNode, useEffect, useState } from "react";
 import type { Engine, EnvironmentItem, LaunchTemplate } from "../api";
 import { label as envLabel } from "../environments/fields";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 
 // Resources and Extra config file, two folding rows of Launch's "Where it runs" (FU-P3-110d;
 // ui-spec §4.6 notes of 2026-11-10 and the drawn layout of FU-P3-110c; api §5.7 owns the fields
@@ -159,7 +159,7 @@ function SubRow({ id, title, closed, reveal, children }: { id: string; title: st
           {" "}
           <span className="launch-xrow-sum">{closed}</span>
           <span className="sp-fold-chev">
-            <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+            <Icon name="chevronDown" />
           </span>
         </button>
       </h3>
@@ -375,7 +375,7 @@ export function ConfigFileRow({
                 : `A .config file, passed with -c after the pipeline's own. It runs as you, like the pipeline's nextflow.config. Your withName and withLabel settings apply; the defaults above replace its general process settings. ${where}`}
             </span>
             <span className="launch-keep">
-              <Icon path={ICONS.shield} size={13} />
+              <Icon name="shield" />
               <span>
                 {snakemake
                   ? "Read once at Launch and kept with the run as extra.yaml (extra.json for a .json file), readable by you only (0600), with its SHA-256 · at most 256 KiB · a top-level map, no __use_yte__."

@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { expect, test } from "vitest";
-import { ICONS } from "../icons";
 import { CardHead } from "./CardHead";
 import { providerProps } from "./theme";
 
@@ -15,7 +14,7 @@ function Card() {
   return (
     <MantineProvider {...providerProps}>
       <section aria-labelledby="fin-title">
-        <CardHead id="fin" icon={ICONS.history} title="Finished recently" meta="5 runs" actions={<Button variant="subtle">All runs →</Button>} open={open} onToggle={() => setOpen(!open)} />
+        <CardHead id="fin" icon="history" title="Finished recently" meta="5 runs" actions={<Button variant="subtle">All runs →</Button>} open={open} onToggle={() => setOpen(!open)} />
         <div id="fin-body" hidden={!open}>
           <p>rnaseq-a</p>
         </div>
