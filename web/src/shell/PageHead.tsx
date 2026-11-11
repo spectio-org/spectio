@@ -4,7 +4,6 @@ import { Icon, type IconName } from "../icons";
 import { PhoneTitle, usePhone } from "./layout";
 import { NAV } from "./Sidebar";
 
-
 /** One entry of the "More actions" menu. A destructive one is drawn last, after a divider. */
 export interface MoreAction {
   label: string;
