@@ -10,7 +10,7 @@ hide: [navigation, toc]
 <span class="sp-wordmark">Spectio</span>
 </div>
 <p class="sp-hero2__tagline">Launch, monitor and relaunch your Nextflow and Snakemake runs, on your own cluster.</p>
-<p class="sp-hero2__sub">Open-source run manager for HPC and Kubernetes. Add quality checks between stages only where you want them. A project of its own, which will connect to depictio later.</p>
+<p class="sp-hero2__sub">Open-source run manager for HPC and Kubernetes. Add quality checks between stages only where you want them. A project of its own, which will connect to Depictio later.</p>
 <p class="sp-hero2__actions"><a class="md-button md-button--primary" href="usage/">How it works</a> <a class="md-button" href="roadmap/">Roadmap</a></p>
 </div>
 
@@ -44,7 +44,7 @@ hide: [navigation, toc]
 </div>
 <div class="sp-works__group" markdown>
 <p class="sp-works__label" markdown><span class="sp-ic sp-ic--sm sp-ic--amber">:material-chart-box:</span>Where results go</p>
-<a class="sp-work" href="https://github.com/depictio/depictio"><img src="assets/logos/logo-depictio.png" alt=""><span>depictio dashboards</span></a>
+<a class="sp-work" href="https://github.com/depictio/depictio"><img src="assets/logos/logo-depictio.png" alt=""><span>Depictio dashboards</span></a>
 <p class="sp-works__later">optional</p>
 </div>
 </div>
@@ -85,7 +85,7 @@ hide: [navigation, toc]
 <div class="sp-step__text">
 <span class="sp-step__num">4</span>
 <h3>Results and dashboards</h3>
-<p>Outputs, reports and logs stay attached to the run. Finished results can go to depictio as dashboards, with the same users and groups.</p>
+<p>Outputs, reports and logs stay attached to the run. Finished results can go to Depictio as dashboards, with the same users and groups.</p>
 </div>
 <img src="assets/shots/overview_light.webp" alt="The overview page with runs, gates and environments">
 </div>
@@ -106,7 +106,7 @@ hide: [navigation, toc]
 <a class="sp-card2" href="features/gates/" markdown><span class="sp-ic sp-ic--amber">:material-gate:</span><b>QC gates</b><span>Optional checks between stages.</span></a>
 <a class="sp-card2" href="api/" markdown><span class="sp-ic sp-ic--indigo">:material-api:</span><b>API and CLI</b><span>Everything scriptable.</span></a>
 <a class="sp-card2" href="features/administration/" markdown><span class="sp-ic sp-ic--coral">:material-shield-account:</span><b>Administration</b><span>Users, plugins, backups.</span></a>
-<a class="sp-card2" href="features/depictio/" markdown><span class="sp-ic sp-ic--green">:material-chart-box:</span><b>depictio</b><span>Results become dashboards.</span></a>
+<a class="sp-card2" href="features/depictio/" markdown><span class="sp-ic sp-ic--green">:material-chart-box:</span><b>Depictio</b><span>Results become dashboards.</span></a>
 </div>
 
 ## Where it stands { .sp-h2 }

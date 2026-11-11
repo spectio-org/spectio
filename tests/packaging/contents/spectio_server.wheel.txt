@@ -9,6 +9,7 @@ spectio_server/api/cancel.py
 spectio_server/api/catalog.py
 spectio_server/api/environments.py
 spectio_server/api/extras.py
+spectio_server/api/graph.py
 spectio_server/api/logs.py
 spectio_server/api/me.py
 spectio_server/api/models.py
@@ -42,6 +43,10 @@ spectio_server/files/pool.py
 spectio_server/files/redact.py
 spectio_server/files/results.py
 spectio_server/files/taskfiles.py
+spectio_server/graph/__init__.py
+spectio_server/graph/bioflow.py
+spectio_server/graph/document.py
+spectio_server/graph/static.py
 spectio_server/ids.py
 spectio_server/migrations/__init__.py
 spectio_server/migrations/env.py
@@ -83,6 +88,10 @@ spectio_server/store/runs.py
 spectio_server/store/schema.py
 spectio_server/store/writer.py
 spectio_server/web/THIRD_PARTY_NOTICES.txt
+spectio_server/web/assets/GraphPanel-*.js
+spectio_server/web/assets/GraphView-*.js
+spectio_server/web/assets/GraphView-*.css
+spectio_server/web/assets/LaunchMap-*.js
 spectio_server/web/assets/DataGrid-*.js
 spectio_server/web/assets/OmeView-*.js
 spectio_server/web/assets/blosc-*.js

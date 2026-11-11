@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bioflow-insight"
+authors = [
+  { name="George Marchment"},
+]
+description = "A software to extract and analyze the structure and associated metadata from a Nextflow workflow."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+#    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dynamic = ["version", "dependencies", "optional-dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+optional-dependencies = {dev = { file = ["requirements-dev.txt"] }}
+version = {attr = "src.__version__"}
+
+[project.scripts]
+bioflow-insight = "bioflow_insight_cli.main:cli_command"
+
+[project.urls]
+Homepage = "https://gitlab.liris.cnrs.fr/sharefair/bioflow-insight"
+Issues = "https://gitlab.liris.cnrs.fr/sharefair/bioflow-insight/-/issues"
+
+[tool.setuptools.packages.find]
+where = ["src", "."] 
+
+[tool.setuptools.package-data]
+src = ["language_server_source_code/*.jar"]
+
+[tool.setuptools]
+include-package-data = true
+
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true

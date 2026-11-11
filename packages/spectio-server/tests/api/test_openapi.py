@@ -63,6 +63,10 @@ MODELS = {
     ("/api/v1/runs/{run_id}/results/stat/{path}", "get", "200"): "ResultStat",
     ("/api/v1/tasks/{task_id}/attempts/{n}/workdir", "get", "200"): "WorkDir",
     ("/api/v1/tasks/{task_id}/attempts/{n}/workdir/stat/{path}", "get", "200"): "ResultStat",
+    ("/api/v1/features", "get", "200"): "Features",  # issue #160
+    ("/api/v1/runs/{run_id}/graph", "get", "200"): "GraphDocument",
+    ("/api/v1/runs/{run_id}/processes/{name}/outputs", "get", "200"): "ProcessOutputs",
+    ("/api/v1/workflows:graph", "get", "200"): "GraphDocument",
 }
 
 

@@ -31,11 +31,23 @@ Every feature below is **designed, not built yet**. Each page says what you will
 
     Users and groups, sign-in, plugins, backups, branding.
 
--   :material-chart-box:{ .lg .sp-c-green } **[depictio](depictio.md)**
+-   :material-chart-box:{ .lg .sp-c-green } **[Depictio](depictio.md)**
 
     ---
 
     Finished runs become dashboards, with the same accounts.
+
+-   :material-flask-outline:{ .lg .sp-c-sky } **[LabID](labid.md)**
+
+    ---
+
+    Launch from LabID samples, and send the results back with their provenance.
+
+-   :material-robot-outline:{ .lg .sp-c-violet } **[AI agents](ai-agents.md)**
+
+    ---
+
+    Optional: agents suggest at QC gates, with their own access and a full record.
 
 -   :material-compare-horizontal:{ .lg .sp-c-sky } **[Spectio and other tools](other-tools.md)**
 

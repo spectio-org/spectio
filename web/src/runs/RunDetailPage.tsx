@@ -1,6 +1,6 @@
 import { Button, Modal, Tabs } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { type KeyboardEvent, type Ref, useCallback, useEffect, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type Ref, Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   type LogSource,
@@ -20,6 +20,11 @@ import {
 } from "../api";
 import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
+import { GRAPH_VIEW, useFeatures } from "./graph/features";
+import { type GraphSearch, graphSearch } from "./graph/settings";
+
+// the graph, with React Flow and dagre: a lazy chunk, out of the main bundle (issue #160)
+const GraphPanel = lazy(() => import("./graph/GraphPanel").then((m) => ({ default: m.GraphPanel })));
 import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { FoldSection } from "../shell/FoldSection";
@@ -61,16 +66,17 @@ const LOGS: { source: LogSource; label: string }[] = [
   { source: "engine", label: "Engine log" },
 ];
 
-const TABS = ["summary", "tasks", "parameters", "logs"] as const;
+const TABS = ["summary", "tasks", "parameters", "logs", "graph"] as const;
 type Tab = (typeof TABS)[number];
 
-type RunSearch = { tab?: Exclude<Tab, "summary">; source?: LogSource; from?: "summary"; process?: string; task?: string; attempt?: number };
+type RunSearch = { tab?: Exclude<Tab, "summary">; source?: LogSource; from?: "summary"; process?: string; task?: string; attempt?: number } & GraphSearch;
 
 /** The run's URL keeps its tab, the log source on Logs (?tab=logs&source=engine, with &from=summary
  * when the Summary's last lines opened it: Logs then shows Back to Summary) and the process
  * on Tasks (?tab=tasks&process=ALIGN), so a view can be linked and reloaded; anything else falls
  * back to the Summary, the engine log and every process. `&task=<id>&attempt=<n>` reopens that
- * task's sheet on that attempt (ui-spec §4.4.1, Back to the task sheet). */
+ * task's sheet on that attempt (ui-spec §4.4.1, Back to the task sheet). The Graph tab keeps its view
+ * (?tab=graph&level=&layout=&overlay=&show=&q=&node=, graph/settings.ts). */
 export function runSearch(search: Record<string, unknown>): RunSearch {
   return { ...tabSearch(search), ...taskSearch(search) };
 }
@@ -78,6 +84,7 @@ export function runSearch(search: Record<string, unknown>): RunSearch {
 function tabSearch(search: Record<string, unknown>): RunSearch {
   const tab = TABS.find((t) => t !== "summary" && t === search.tab) as Exclude<Tab, "summary"> | undefined;
   if (tab === "tasks" && typeof search.process === "string" && search.process !== "") return { tab, process: search.process };
+  if (tab === "graph") return { tab, ...graphSearch(search) };
   if (tab !== "logs") return tab ? { tab } : {};
   const source = LOGS.find((l) => l.source === search.source)?.source ?? "engine";
   return search.from === "summary" ? { tab, source, from: "summary" } : { tab, source };
@@ -1049,7 +1056,8 @@ export function RunDetailPage({ id }: { id: string }) {
   // the root route passes unknown keys through, so the page reads the search through runSearch too
   const search = runSearch(useSearch({ from: "/runs/$id" }));
   const navigate = useNavigate({ from: "/runs/$id" });
-  const tab: Tab = search.tab ?? "summary";
+  const graphOn = useFeatures().includes(GRAPH_VIEW);
+  const tab: Tab = search.tab === "graph" && !graphOn ? "summary" : search.tab ?? "summary";
   const logSource = search.source ?? "engine";
   // the last log source shown, so Logs reopens on it after another tab (also after Back or Forward)
   const lastSource = useRef(logSource);
@@ -1201,6 +1209,7 @@ export function RunDetailPage({ id }: { id: string }) {
           <Tabs.Tab value="tasks">{w.Units}</Tabs.Tab>
           <Tabs.Tab value="parameters">Parameters</Tabs.Tab>
           <Tabs.Tab value="logs">Logs</Tabs.Tab>
+          {graphOn && <Tabs.Tab value="graph">Graph</Tabs.Tab>}
         </Tabs.List>
         <Tabs.Panel value="summary" pt="md">
           <div className="sp-detail-grid">
@@ -1260,6 +1269,19 @@ export function RunDetailPage({ id }: { id: string }) {
             onBack={search.from ? backToSummary : undefined}
           />
         </Tabs.Panel>
+        {graphOn && (
+          <Tabs.Panel value="graph" pt="md">
+            <Suspense fallback={<p className="sp-muted">Loading the graph…</p>}>
+              <GraphPanel
+                run={run}
+                search={graphSearch(search)}
+                onSearch={(graph) => navigate({ search: runSearch({ tab: "graph", ...graph }), resetScroll: false })}
+                onOpen={(view) => setViews([view])}
+                onTasks={showProcess}
+              />
+            </Suspense>
+          </Tabs.Panel>
+        )}
       </Tabs>
     </div>
   );

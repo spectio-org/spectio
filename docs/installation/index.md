@@ -20,7 +20,7 @@ There will be three ways to run Spectio, from the smallest to the largest. All o
 
     ---
 
-    For a lab server: the server, a Postgres database and object storage, with optional profiles for depictio and a test identity provider.
+    For a lab server: the server, a Postgres database and object storage, with optional profiles for Depictio and a test identity provider.
 
 -   :simple-kubernetes:{ .lg } **Kubernetes**
 

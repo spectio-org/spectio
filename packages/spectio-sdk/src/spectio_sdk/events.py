@@ -17,6 +17,8 @@ from pydantic import (
     Field,
     JsonValue,
     StrictInt,
+    ValidationError,
+    ValidatorFunctionWrapHandler,
     field_validator,
     model_validator,
 )
@@ -235,6 +237,35 @@ class NextflowFlowCreate(NextflowEvent):
     clusterOptionsSet: bool | None = None  # never the text (SEC-P3T1-11)
 
 
+_ProcessName = Annotated[str, Field(max_length=1024)]
+
+
+class NextflowDag(_Data):
+    """The process-level DAG `nf-spectio` sends on `onFlowBegin` (issue #160; api §5.10):
+    operators walked through, at most 2000 processes and within the event cap
+    (`MAX_EVENT_NODES`: processes + 3 x edges <= 4000), else only `truncated`."""
+
+    processes: Annotated[list[_ProcessName], Field(max_length=2000)] = []
+    edges: Annotated[
+        list[Annotated[list[_ProcessName], Field(min_length=2, max_length=2)]],
+        Field(max_length=MAX_EVENT_NODES // 3),
+    ] = []
+    truncated: bool | None = None
+
+
+class NextflowFlowBegin(NextflowEvent):
+    dag: NextflowDag | None = None
+
+    @field_validator("dag", mode="wrap")
+    @classmethod
+    def _drop_bad_dag(cls, value: Any, handler: ValidatorFunctionWrapHandler) -> NextflowDag | None:
+        """A malformed `dag` is dropped alone; the event carries the stage freeze."""
+        try:
+            return handler(value)  # type: ignore[no-any-return]
+        except ValidationError:
+            return None
+
+
 class NextflowFlowComplete(NextflowEvent):
     success: bool | None = None
     exitStatus: SignedInt64 | None = None
@@ -426,7 +457,7 @@ _TASK_HOOKS = ("onTaskPending", "onTaskSubmit", "onTaskStart", "onTaskComplete",
 
 DATA_MODELS: dict[str, type[_Data]] = {
     "nextflow.onFlowCreate": NextflowFlowCreate,
-    "nextflow.onFlowBegin": NextflowEvent,
+    "nextflow.onFlowBegin": NextflowFlowBegin,
     "nextflow.onFlowComplete": NextflowFlowComplete,
     "nextflow.onFlowError": NextflowTask,
     "nextflow.onProcessCreate": NextflowProcess,
