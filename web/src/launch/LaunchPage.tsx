@@ -490,7 +490,7 @@ export function LaunchPage({
         const target = template.target ?? null; // the copy keeps the target (§4.15)
         setLocation(at);
         setRevision(rev ?? "");
-        const want: Kind = target?.kind === "rule" ? "rule" : "module";
+        const want: Kind = target && target.kind !== "module" ? "rule" : "module";
         setSingle(!!target);
         setKind(want);
         setVersion(target?.version ?? "");
@@ -988,7 +988,7 @@ export function LaunchPage({
                 />
               )}
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                {!(targeting && kind === "module") && <NativeSelect
+                <NativeSelect
                   label="Profile"
                   inputWrapperOrder={["label", "input", "description", "error"]}
                   value={profile}
@@ -1006,7 +1006,7 @@ export function LaunchPage({
                     </>
                   }
                   error={errors.profile}
-                />}
+                />
                 <TextInput
                   label="Run name (optional)"
                   inputWrapperOrder={["label", "input", "description", "error"]}

@@ -3,7 +3,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { DETAIL, app, fetched, json, run, serve, stubStream } from "../testing";
+import { DETAIL, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -146,4 +146,27 @@ test("FU-P3-110d: the run's resources and extra config file are prefilled, the f
   await userEvent.click(screen.getAllByRole("button", { name: "Launch" }).at(-1)!);
   await waitFor(() => expect(posted).toHaveLength(1));
   expect(posted[0]).toMatchObject({ default_resources: { cpus: 4, mem_mib: 16384, time_min: 90 }, config_file: path });
+});
+
+test("a copy of a Snakemake file-target run opens as a Snakemake step, not a Nextflow module (SEC-161W-04)", async () => {
+  const mock = serve({
+    "/api/v1/version": { ...VERSION, features: { single_target: true } },
+    [`${URL_}:launch-template`]: {
+      ...TEMPLATE,
+      workflow: { location: "/g/demo-lab/pipelines/synth-qc", revision: null, engine: "snakemake" },
+      profiles: [],
+      params: {},
+      non_default: [],
+      code_loading: [],
+      target: { kind: "file", name: "results/x.txt" },
+    },
+    [URL_]: { ...DETAIL, ...run({ state: "succeeded", name: "synth" }) },
+    "/api/v1/workflows:inspect": { ...INSPECTED, location: "/g/demo-lab/pipelines/synth-qc", engine: "snakemake", engine_files: ["Snakefile"], schema: null, schema_source: "none", profiles: [] },
+    "/api/v1/targets:inspect": { kind: "rule", rules: ["all", "qc_report"], plan: null },
+    "/api/v1/runs?": { items: [], next: null },
+  });
+  app(`/launch?from=${ID}`);
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/targets:inspect"));
+  const inspect = mock.mock.calls.find(([u]) => String(u).endsWith("/targets:inspect"));
+  expect(JSON.parse(String(inspect?.[1]?.body))).toMatchObject({ engine: "snakemake" });
 });

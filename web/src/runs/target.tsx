@@ -13,7 +13,7 @@ export function targetText(t: RunTarget): string {
     return `module ${t.name} ${t.version ?? "(no version)"}${t.source === "local" ? " · local" : ""}`;
   }
   const more = t.more > 0 ? ` + ${plural(t.more, "more target", "more targets")}` : "";
-  return `${t.kind} ${t.name}${more}${FLAG[t.flag ?? "target"]}`;
+  return `${t.kind} ${t.name}${more}${FLAG[t.flag ?? "target"] ?? ` (${t.flag})`}`;
 }
 
 const SCOPES = {
@@ -28,7 +28,7 @@ const SCOPES = {
  * a single step. */
 export function Scope({ target }: { target: RunTarget | null | undefined }) {
   const kind = target?.kind ?? "pipeline";
-  const { label, cells } = SCOPES[kind];
+  const { label, cells } = SCOPES[kind] ?? { label: String(kind), cells: [] };
   return (
     <span className="sp-scope" data-scope={kind}>
       <span className="sp-scope-cells" aria-hidden="true">
@@ -65,7 +65,7 @@ export function TargetTail({ target }: { target: RunTarget | null | undefined })
  * module's checksum), then a changed checksum as a warning with what it means. */
 export function TargetLine({ target }: { target: RunTarget }) {
   const registry = target.kind === "module" && target.source === "registry";
-  const kind = target.kind === "module" ? "Module" : target.kind === "rule" ? "Rule" : "File";
+  const kind = SCOPES[target.kind]?.label ?? String(target.kind);
   return (
     <span className="sp-lines sp-target">
       <span className="sp-target-badge" aria-label={`Target: ${targetText(target)}`} role="group">
@@ -76,15 +76,15 @@ export function TargetLine({ target }: { target: RunTarget }) {
         {target.kind === "module" && <span className="sp-mono">{target.version ?? "no version"}</span>}
         {target.source === "local" && <span>local</span>}
         {target.more > 0 && <span>+ {plural(target.more, "more target", "more targets")}</span>}
-        {target.flag && target.flag !== "target" && <span className="sp-mono">{FLAG[target.flag].trim()}</span>}
+        {target.flag && target.flag !== "target" && <span className="sp-mono">{FLAG[target.flag]?.trim() ?? target.flag}</span>}
         {registry &&
-          (target.hash ? (
+          (target.hash && /^[0-9a-f]{64}$/.test(target.hash) ? (
             <span className="sp-copy-line">
               <span className="sp-mono sp-muted">checksum {target.hash.slice(0, 8)}…</span>
               <CopyButton text={target.hash} label="Copy" name="Copy the module checksum" />
             </span>
           ) : (
-            <span className="sp-muted">checksum: after install</span>
+            <span className="sp-muted">{target.hash ? "checksum: not valid" : "checksum: after install"}</span>
           ))}
       </span>
       {registry && target.checksum_changed && (

@@ -112,7 +112,7 @@ test("one step: the kind of step replaces the engine picker, the catalog and the
   expect(within(kind).getByRole("radio", { name: "Nextflow module" })).toBeChecked();
   expect(screen.queryByRole("group", { name: "Engine" })).toBeNull();
   expect(screen.queryByText("The catalog could not be read.")).toBeNull();
-  expect(screen.queryByRole("combobox", { name: /^Profile/ })).toBeNull();
+  expect(screen.getByRole("combobox", { name: /^Profile/ })).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: /^Run name/ })).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: /^Module/ })).toHaveAccessibleDescription(
     "A registry module such as nf-core/fastqc, or the absolute path of a module directory.",
@@ -146,6 +146,8 @@ test("a registry module: Load pins the registry's version, its inputs are the pa
   expect(screen.getByText("from the registry")).toBeInTheDocument();
   expect(screen.getByText("checksum: after install")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /Module inputs/ })).toBeInTheDocument();
+  // the profile the launch sends is on screen for a module too (ui-spec §4.15, SEC-161W-01)
+  expect(screen.getByRole("combobox", { name: /^Profile/ })).toBeInTheDocument();
   // a module run takes no extra config file (api §5.10): no row, no Summary line
   expect(screen.queryByText("Extra config file")).toBeNull();
   expect(screen.queryByText("Extra config")).toBeNull();

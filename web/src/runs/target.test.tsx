@@ -59,3 +59,16 @@ test("a rule or a local module has no checksum part", () => {
   show(target({ name: "qc_report", flag: "target" }));
   expect(screen.queryByText(/checksum/)).not.toBeInTheDocument();
 });
+
+test("a checksum that is not 64 hex is not shown or copied", () => {
+  show({ ...fastqc, hash: "abc\nrm -rf ~" });
+  expect(screen.getByText("checksum: not valid")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Copy the module checksum" })).toBeNull();
+});
+
+test("a kind or a flag this screen does not know is written as given, not a crash", () => {
+  const odd = target({ kind: "job" as RunTarget["kind"], name: "x", flag: "omit_from" as RunTarget["flag"] });
+  expect(targetText(odd)).toBe("job x (omit_from)");
+  show(odd);
+  expect(screen.getByRole("group", { name: "Target: job x (omit_from)" })).toHaveTextContent(/^jobxomit_from$/);
+});
