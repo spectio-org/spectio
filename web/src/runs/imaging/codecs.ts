@@ -3,7 +3,8 @@
 // CSP refuses (inbox #150), so these are ours, in JavaScript: Blosc 1 (c-blosc 1.21 `blosc.c`
 // `blosc_d` and `blosc_run_decompression_with_context`) with blosclz (`blosclz.c`
 // `blosclz_decompress`), LZ4, zlib and zstd inside, byte and bit shuffle; numcodecs' LZ4 (a 4-byte
-// little-endian size, then one LZ4 block); zstd through fzstd 0.1.1. Every output is held to the
+// little-endian size, then one LZ4 block); zstd through fzstd 0.1.1 (MIT, https://github.com/101arrowz/fzstd;
+// pinned and listed in dev-env §15.3 req. 19 and THIRD_PARTY_NOTICES.txt). Every output is held to the
 // level's decoded size, read from the header before decode; anything else is NotDecoded.
 import { Decompress } from "fzstd";
 import { type Fd, NotDecoded, answer, decodeTile, inflate } from "./decode";
@@ -199,7 +200,8 @@ function blosc(d: Uint8Array, bytes: number): Uint8Array {
   for (let b = 0; b < blocks; b++) {
     const size = Math.min(blocksize, nbytes - b * blocksize);
     const leftover = size < blocksize;
-    const splits = !(flags & DONT_SPLIT) && typesize <= 16 && size / typesize >= 128 && !leftover ? typesize : 1;
+    // c-blosc writes split blocks in multiples of typesize; any other is one stream (CR-P3FU102H-05)
+    const splits = !(flags & DONT_SPLIT) && typesize <= 16 && size / typesize >= 128 && size % typesize === 0 && !leftover ? typesize : 1;
     const block = new Uint8Array(size);
     let at = u32(d, 16 + 4 * b);
     for (let s = 0; s < splits; s++) {

@@ -7,10 +7,14 @@ import { loadOmeZarrFromStore } from "@hms-dbmi/viv";
 import { deflate } from "pako";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { BUDGET, Stopped } from "./client";
+import { type Chunk, decodeChunk } from "./codecs";
 import { imageState } from "./flat";
 import fixtures from "./fixtures/codecs.json";
 import { type Store, attrs, crafted, raw, valid } from "./fixtures/zarr";
 import { ZarrStore, openZarr } from "./zarr";
+
+// the page gives the decoder pool's workers; here the same decoders run in the test
+const inPage = async (chunk: Chunk, data: Uint8Array) => new Uint8Array(decodeChunk(chunk, data.slice().buffer));
 
 const ROOT = "/api/v1/runs/run_1/results/raw/img/cells.ome.zarr/";
 const urlOf = (key: string) => `${ROOT}${key}?as=zarr`;
@@ -38,16 +42,16 @@ function inFolder(s: ZarrStore) {
 
 async function stateOf(variant: string) {
   crafted[variant](store);
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   const err = await openZarr(s).then(() => null, (e: unknown) => e);
   inFolder(s);
   return err && imageState(err);
 }
 
 test("a valid OME-Zarr opens through Viv's loader fed by our store, reading keys below the folder only", async () => {
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   const meta = await openZarr(s);
-  expect(meta).toEqual({ labels: ["c", "y", "x"], names: ["DAPI", "GFP"], colours: [[0, 0, 255], [0, 255, 0]] });
+  expect(meta).toEqual({ labels: ["c", "y", "x"], names: ["DAPI", "GFP"], colours: [[0, 0, 255], [0, 255, 0]], levels: [{ path: "0", shape: [2, 10, 12] }, { path: "1", shape: [2, 5, 6] }] });
   const { data } = await loadOmeZarrFromStore(s as never);
   expect(data.map((d) => d.shape)).toEqual([[2, 10, 12], [2, 5, 6]]);
   const tile = await data[1].getRaster({ selection: { c: 1 } } as never);
@@ -82,7 +86,7 @@ test.each([
 test("__proto__ and constructor next to multiscales: the image opens, Viv gets only the checked attributes, Object.prototype is unchanged", async () => {
   const text = JSON.stringify(attrs()).slice(0, -1) + ', "__proto__": {"polluted": 1}, "constructor": {"prototype": {"polluted": 1}}}';
   store.set(".zattrs", new TextEncoder().encode(text));
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   await openZarr(s);
   const served = JSON.parse(new TextDecoder().decode(await s.get("/.zattrs")));
   expect(Object.keys(served)).toEqual(["multiscales"]);
@@ -93,7 +97,7 @@ test("__proto__ and constructor next to multiscales: the image opens, Viv gets o
 
 test("a raw chunk whose size is not its level's is refused before decode", async () => {
   store.set("1/0.0.0", raw(31));
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   await openZarr(s);
   await expect(s.get("/1/0.0.0")).rejects.toThrow("the chunk holds 62 bytes, not 60");
   expect(s.failure).not.toBeNull(); // the viewer says "Some tiles could not be read."
@@ -102,14 +106,14 @@ test("a raw chunk whose size is not its level's is refused before decode", async
 
 test("in a work directory, a 422 on .zattrs is the Zarr v2 state; elsewhere it stays the server's refusal", async () => {
   vi.stubGlobal("fetch", async (url: string) => (url.includes(".zattrs") ? new Response(JSON.stringify({ detail: "not allowed" }), { status: 422, headers: { "content-type": "application/problem+json" } }) : new Response(null, { status: 404 })));
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   s.work = true;
   expect(imageState(await openZarr(s).catch((e: unknown) => e))).toMatchObject({ title: "This OME-Zarr uses Zarr v2, which a work directory does not serve. Open it from the results once it is published." });
-  expect(imageState(await openZarr(new ZarrStore(urlOf)).catch((e: unknown) => e))).toMatchObject({ title: "Not an image Spectio can read: not allowed" });
+  expect(imageState(await openZarr(new ZarrStore(urlOf, inPage)).catch((e: unknown) => e))).toMatchObject({ title: "Not an image Spectio can read: not allowed" });
 });
 
 test("keys outside the checked levels are never asked; an absent chunk is the fill value; a server error is the read error", async () => {
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   await openZarr(s);
   for (const key of ["/.zmetadata", "/0/../../x/.zattrs", "/2/0.0.0", "/0/.zattrs"]) expect(await s.get(key)).toBeUndefined();
   store.delete("1/0.0.0");
@@ -117,7 +121,7 @@ test("keys outside the checked levels are never asked; an absent chunk is the fi
   expect(Array.from((await data[1].getRaster({ selection: { c: 0 } } as never)).data as Uint16Array)).toEqual(new Array(30).fill(0));
   inFolder(s);
   vi.stubGlobal("fetch", async () => new Response(null, { status: 500 }));
-  const err = await openZarr(new ZarrStore(urlOf)).catch((e: unknown) => e);
+  const err = await openZarr(new ZarrStore(urlOf, inPage)).catch((e: unknown) => e);
   expect(imageState(err)).toMatchObject({ problem: { status: 500 } });
 });
 
@@ -126,7 +130,7 @@ test("a zlib level is inflated by the store, capped at the chunk's size: one tha
   store.set("1/.zarray", new TextEncoder().encode(JSON.stringify(zarray)));
   store.set("1/0.0.0", deflate(new Uint8Array(30).map((_, i) => i)));
   store.set("1/1.0.0", deflate(new Uint8Array(64 * 1024 * 1024))); // 64 MiB of zeros in a few KiB
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   await openZarr(s);
   expect(JSON.parse(new TextDecoder().decode(await s.get("/1/.zarray"))).compressor).toBeNull(); // Viv gets raw bytes
   const { data } = await loadOmeZarrFromStore(s as never);
@@ -146,7 +150,7 @@ test.each([
   store.set("0/.zarray", zarrayOf(compressor));
   store.set("0/0.0.0", chunk(first));
   store.set("0/1.0.0", chunk(second));
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   await openZarr(s);
   expect(JSON.parse(new TextDecoder().decode(await s.get("/0/.zarray"))).compressor).toBeNull();
   const { data } = await loadOmeZarrFromStore(s as never);
@@ -157,7 +161,7 @@ test.each([
 });
 
 test("the byte budget is reserved only for reads in flight: 40 concurrent gets all succeed under the default budget", async () => {
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   await openZarr(s);
   const before = s.bytes;
   const keys = Array.from({ length: 40 }, (_, i) => ["/0/0.0.0", "/0/1.0.0", "/1/0.0.0", "/1/1.0.0"][i % 4]);
@@ -168,7 +172,7 @@ test("the byte budget is reserved only for reads in flight: 40 concurrent gets a
 });
 
 test("a view near the end of its byte budget stops before it reads past it", async () => {
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   await openZarr(s);
   store.set("0/0.0.0", new Uint8Array(2 * 1024 * 1024));
   s.bytes = BUDGET.bytes - 1024 * 1024; // 1 MiB left: the 2 MiB chunk is cut at 1 MiB
@@ -186,12 +190,12 @@ test("the multiscales version and the omero labels are capped", async () => {
   a.multiscales[0].version = "0.4".repeat(1000);
   a.omero.channels[0].label = "L".repeat(10000);
   store.set(".zattrs", new TextEncoder().encode(JSON.stringify(a)));
-  const s = new ZarrStore(urlOf);
+  const s = new ZarrStore(urlOf, inPage);
   const meta = await openZarr(s);
   expect(JSON.parse(new TextDecoder().decode(await s.get("/.zattrs"))).multiscales[0].version).toBe("0.4");
   expect(meta.names).toEqual(["L".repeat(64), "GFP"]);
   store.set(".zattrs", new TextEncoder().encode(JSON.stringify({ ...a, multiscales: [{ ...a.multiscales[0], version: { nested: [1, 2, 3] } }] })));
-  const t = new ZarrStore(urlOf);
+  const t = new ZarrStore(urlOf, inPage);
   await openZarr(t);
   expect(JSON.parse(new TextDecoder().decode(await t.get("/.zattrs"))).multiscales[0].version).toBe("0.4");
 });

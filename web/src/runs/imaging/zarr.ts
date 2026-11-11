@@ -5,12 +5,13 @@
 // metadata first (Zarr v2: `.zattrs`, `.zgroup`, each level's `.zarray`; at most 1 MiB each, the
 // JSON depth pre-scan, then JSON.parse); the store then serves only that checked metadata, rebuilt
 // from the fields Viv reads, and the chunk keys of the checked levels, each checked against its
-// decoded size by our decoders (codecs.ts, in the decoder worker in the page). `.zmetadata` and
-// any other key are never asked.
+// decoded size by our decoders (codecs.ts), in the decoder worker the caller gives (`inWorkers`;
+// no main-thread default, CR-P3FU102H-03). `.zmetadata` and any other key are never asked.
 import { MIB, tooDeep } from "../preview";
 import { Answered, BUDGET, IN_FLIGHT, Refused, Stopped, problem, readAtMost } from "./client";
-import { type Chunk, decodeChunk } from "./codecs";
+import type { Chunk } from "./codecs";
 import { Unsupported } from "./flat";
+import type { DecoderPool } from "./pool";
 import { IFDS_MAX, TooLarge, Unreadable } from "./walk";
 
 const META_MAX = MIB;
@@ -33,7 +34,11 @@ const VERSION = /^[0-9A-Za-z.-]{1,16}$/; // the multiscales version copied to Vi
 export class NotImage extends Unsupported {}
 
 type Level = { bytes: number; compressor: string | null; shape: number[] };
-export type ZarrMeta = { labels: string[]; names: string[]; colours: ([number, number, number] | null)[] };
+export type ZarrMeta = { labels: string[]; names: string[]; colours: ([number, number, number] | null)[]; levels: { path: string; shape: number[] }[] };
+export type Decode = (chunk: Chunk, data: Uint8Array) => Promise<Uint8Array>;
+
+/** A chunk decoded in the decoder pool's workers, which end a decode past 10 s. */
+export const inWorkers = (pool: DecoderPool): Decode => async (chunk, data) => new Uint8Array(await pool.decode(chunk as never, data.buffer as ArrayBuffer, "chunk"));
 
 const json = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
 const own = (o: unknown, k: string): unknown => (o && typeof o === "object" && Object.hasOwn(o, k) ? (o as Record<string, unknown>)[k] : undefined);
@@ -46,8 +51,6 @@ export class ZarrStore {
   failure: Error | null = null;
   work = false; // a work directory's store: it refuses every dot part, so a v2 `.zattrs` gets a 422
   onBusy?: (busy: boolean) => void;
-  /** A chunk's decoder: in the page, the decoder pool's worker (OmeView); here by default. */
-  decode = async (chunk: Chunk, data: Uint8Array) => new Uint8Array(decodeChunk(chunk, data.buffer as ArrayBuffer));
   private served = new Map<string, Uint8Array>(); // the checked metadata, by key
   private levels = new Map<string, Level>(); // the checked levels, by path
   private active = 0;
@@ -55,6 +58,7 @@ export class ZarrStore {
 
   constructor(
     private readonly urlOf: (key: string) => string,
+    private readonly decode: Decode,
     private readonly signal?: AbortSignal,
     private readonly budget = BUDGET,
   ) {}
@@ -199,5 +203,5 @@ export async function openZarr(store: ZarrStore): Promise<ZarrMeta> {
     const hex = meta(c, "color");
     return typeof hex === "string" && /^[0-9A-Fa-f]{6}$/.test(hex) ? ([0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number]) : null;
   });
-  return { labels: labels as string[], names, colours };
+  return { labels: labels as string[], names, colours, levels: [...levels].map(([path, { shape }]) => ({ path, shape })) };
 }

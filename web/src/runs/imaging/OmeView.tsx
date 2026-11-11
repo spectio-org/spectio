@@ -17,7 +17,7 @@ import { DecoderPool } from "./pool";
 import { ZOOM, parseView, writeView } from "./url-state";
 import { type Pixels, type Stats, type ViewState, Viewer, openPixels, openZarrPixels } from "./viv";
 import { guardParses } from "./walk";
-import { ZarrStore } from "./zarr";
+import { ZarrStore, inWorkers } from "./zarr";
 
 type Opened = { pixels: Pixels; client: { failure: Error | null } }; // the TIFF's pinned client or the Zarr store
 type Status = { title: string; action: "reload" | "retry" } | null;
@@ -73,9 +73,7 @@ export default function OmeView({ url, size, name, zarr, workdir = false, fallba
     let pool: DecoderPool | undefined; // the decoder workers: the TIFF's tiles, or the Zarr's chunks
     (async () => {
       if (zarr) {
-        const store = new ZarrStore(zarr, controller.signal);
-        const workers = (pool = new DecoderPool());
-        store.decode = async (chunk, data) => new Uint8Array(await workers.decode(chunk, data.buffer as ArrayBuffer, "chunk"));
+        const store = new ZarrStore(zarr, inWorkers((pool = new DecoderPool())), controller.signal);
         store.work = workdir;
         store.onBusy = (b) => controller.signal.aborted || setBusy(b);
         const pixels = await openZarrPixels(store);

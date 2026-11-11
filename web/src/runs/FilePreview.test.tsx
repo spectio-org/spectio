@@ -5,11 +5,13 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-libra
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
+import { valid } from "./imaging/fixtures/zarr";
 
-// jsdom has no Worker: the decodes run in the page, through the worker's own decodeTile
+// jsdom has no Worker: the decodes run in the page, through the worker's own decoders
 vi.mock("./imaging/pool", async () => {
   const { decodeTile } = await import("./imaging/decode");
-  return { DecoderPool: class { decode = decodeTile; destroy() {} } };
+  const { decodeChunk } = await import("./imaging/codecs");
+  return { DecoderPool: class { decode = (fd: never, buffer: ArrayBuffer, kind?: string) => (kind === "chunk" ? decodeChunk(fd, buffer) : decodeTile(fd, buffer)); destroy() {} } };
 });
 
 beforeEach(stubStream);
@@ -464,19 +466,57 @@ test("a folder's stat opens the folder page", async () => {
   expect(router.state.location.search).toEqual({ path: "fastqc" });
 });
 
-test("an *.ome.zarr folder stays on the preview page, which holds the viewer's place", async () => {
-  serve({
-    [`${RUN}/results/stat/cells.ome.zarr`]: stat("cells.ome.zarr", null, "dir"),
+/** The valid OME-Zarr of the store's tests (2 channels of 12 x 10 and 6 x 5), its keys served
+ * below `cells.ome.zarr` with as=zarr. */
+function zarrFolder(type = "dir") {
+  const store = valid();
+  const below = `${RUN}/results/raw/cells.ome.zarr/`;
+  return serve({
+    [`${RUN}/results/stat/cells.ome.zarr`]: stat("cells.ome.zarr", null, type),
     [`${RUN}/results`]: { root: ROOT, path: "cells.ome.zarr", exists: true, entries: [], truncated: false, reports: [] },
+    [below]: (url: URL) => {
+      const body = url.search === "?as=zarr" ? store.get(url.pathname.slice(below.length)) : undefined;
+      return body ? new Response(body as BodyInit, { status: 200 }) : new Response(null, { status: 404 });
+    },
     [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
   });
+}
+
+test("an *.ome.zarr folder stays on the preview page; without WebGL 2 it is drawn flat, channel 1 of level 0, with Browse folder", async () => {
+  const drawn = canvas();
+  zarrFolder();
   const router = open("cells.ome.zarr");
-  // jsdom has no WebGL 2: the viewer's WebGL-missing state, with Browse folder (a folder has no Download)
+  // jsdom has no WebGL 2: the WebGL-missing line, then the flat view read with zarrita alone (no Viv chunk)
   expect(await screen.findByText("This browser cannot open the image viewer: it needs WebGL 2, which is off or missing.")).toBeInTheDocument();
+  expect(await screen.findByText("12 × 10 px · Shown: channel 1, first plane · Contrast stretched for display")).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "cells.ome.zarr" }).tagName).toBe("CANVAS");
+  expect(drawn[0].filter((_, i) => i % 4 === 0).slice(0, 2)).toEqual([0, 2]);
+  expect(screen.queryByText(/Open on a larger screen/)).toBeNull();
   expect(router.state.location.pathname).toBe(`/runs/${ID}/results/file`);
-  await userEvent.click(screen.getByRole("link", { name: "Browse folder" }));
+  await userEvent.click(screen.getAllByRole("link", { name: "Browse folder" })[0]);
   await waitFor(() => expect(router.state.location.pathname).toBe(`/runs/${ID}/results`));
   expect(router.state.location.search).toMatchObject({ path: "cells.ome.zarr" });
+});
+
+test("on a phone an OME-Zarr shows the first plane flat, with Open on a larger screen and Copy link", async () => {
+  viewport(360);
+  canvas();
+  zarrFolder();
+  open("cells.ome.zarr");
+  expect(await screen.findByText("Shown: channel 1, first plane, 12 × 10 of 12 × 10 px · Contrast stretched for display")).toBeInTheDocument();
+  expect(screen.getByText("Open on a larger screen")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
+  expect(screen.queryByText(/needs WebGL 2, which is off/)).toBeNull();
+});
+
+test("an OME-Zarr published as a link: the results refuse its keys, so the link state with Copy path, and no key is asked", async () => {
+  const mock = zarrFolder("link_outside");
+  open("cells.ome.zarr");
+  expect(await screen.findByText("Spectio cannot open this OME-Zarr here (published as a link).")).toBeInTheDocument();
+  expect(screen.getByText("Spectio does not read below a link. A Zarr v2 store cannot be opened from a link in 0.0.1; a Zarr v3 store opens from the task's work directory once Spectio reads Zarr v3.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Copy path of cells.ome.zarr" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Browse folder" })).toBeNull();
+  expect(fetched(mock).some((u) => u.includes("/raw/"))).toBe(false);
 });
 
 /** A 4 x 2 TIFF of one 8-bit sample, one uncompressed strip (pixels 0, 40, ... 280 % 256). */
