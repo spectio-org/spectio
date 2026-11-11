@@ -94,4 +94,37 @@ code-reviewer approved with 5 minors; security-reviewer asked for changes (1 maj
 | CR-161S3-04 | minor | req. 21 caps `main.nf` at 64 KiB; the code capped `meta.yml` only | fixed in `85a60d7` |
 | CR-161S3-05 | minor (simplify) | `launch_template` repeated the module check | fixed in `85a60d7`: narrowed once |
 
+### Round 4 (`1863ee4..07402d8`, fixes `c00f7a8`)
+
+code-reviewer approved with 5 minors; security-reviewer asked for changes (1 major, 3 minors).
+
+| Id | Severity | Finding | Status |
+|---|---|---|---|
+| SEC-161S4-01 | major | YAML 1.1 sexagesimal integers (`1:59:59…`) convert in quadratic time: 1.9 s at 256 KiB, 29.9 s for a 1 MiB `config.yaml` through `inspect_dir` | fixed in `c00f7a8`: `_Loader` refuses a number over 128 characters before converting, `SafeLoader` unchanged (tested) |
+| SEC-161S4-02 | minor | a 600-byte sexagesimal float raised `OverflowError`, a 500 | fixed in `c00f7a8` by the 128-character cap; the `OverflowError` branch is defence in depth (CR-161S5-02) |
+| SEC-161S4-03 | minor | a Git fetch held an engine slot for up to about 900 s | fixed in `c00f7a8`: its own `FETCHES` slots (tested) |
+| SEC-161S4-04 | minor (before #161) | inspect parsed up to 1 MiB of YAML in the request thread, about 5 s | fixed in `c00f7a8`: 256 KiB; amended in round 5 (CR-161S5-01) |
+| CR-161S4-01 | minor | the Snakemake slot path had no test | fixed in `c00f7a8`; the test was vacuous in part (CR-161S5-03) |
+| CR-161S4-02 | minor | the `main.nf` cap had no test | fixed in `c00f7a8` |
+| CR-161S4-03 | minor | §5.10 Checksum paragraph did not name `target_version_differs` | fixed in `c00f7a8` |
+| CR-161S4-04 | minor (simplify) | `MAX_META_YML` also capped `main.nf` | renamed `MAX_MODULE_FILE` in `c00f7a8` |
+| CR-161S4-05 | minor | the `_Loader` docstring claimed every caller says "nested too deep" | reworded in `c00f7a8` |
+
+### Round 5 (`07402d8..c00f7a8`, fixes `1766e6c`)
+
+Both asked for changes: code-reviewer 1 major, 3 minors; security-reviewer 2 majors, 4 minors. Since a security major was open, a sixth round runs on `c00f7a8..1766e6c`.
+
+| Id | Severity | Finding | Status |
+|---|---|---|---|
+| CR-161S5-01 / SEC-161S5-06 | major | the 256 KiB cap refused a Snakemake pipeline whose `config.yaml` is larger, with no test, and api §5.4 and §5.6 still said 1 MiB | fixed in `1766e6c`: a larger `config.yaml` infers no form (`schema_source: none`) and the pipeline launches; a `config.schema.yaml` that large is still refused (tested); specs updated |
+| SEC-161S5-01 | major | an explicit tag that SafeConstructor cannot build (`!!bool foo`, `!!int ''`, `!!timestamp foo`) raised `KeyError`, `IndexError` or `AttributeError`, a 500 | fixed in `1766e6c`: `load_yaml` turns them into a refusal (tested per shape) |
+| SEC-161S5-02 | major | a lone surrogate (`"\ud800"`) passed parsing and failed when the response was encoded, a 500, through YAML, `nextflow_schema.json` or a `meta.yml` name | fixed in `1766e6c`: `_jsonable` refuses it; `nextflow_schema.json` and `module view` output go through it (tested) |
+| SEC-161S5-03 | minor | `inspect_dir` showed constructor messages, which quote the value (`invalid literal for int()… 'TOKEN-abc123'`) | fixed in `1766e6c`: only `Unreadable` (the server's own words), `RecursionError` and JSON positions are shown (tested) |
+| SEC-161S5-04 | minor | 63-deep flow bursts cost 3.5 to 4 s at 256 KiB | fixed in `1766e6c`: 131,072 tokens a file, about 1.8 s (tested under 4 s) |
+| SEC-161S5-05 | minor | integer keys that collide in Python's hash make a mapping quadratic, 0.84 s at 256 KiB | accepted residual, recorded in req. 21 and the `_Loader` docstring |
+| CR-161S5-02 | minor | the `OverflowError` branch is unreachable and its test wording said otherwise | `1766e6c`: kept as defence in depth with the tag errors; the test docstring says what it proves |
+| CR-161S5-03 | minor | the fetch-slot test's launch assertion proved nothing | fixed in `1766e6c`: the fake fetch asserts both inspection slots are free |
+| CR-161S5-04 | minor (simplify) | `_small_yaml` duplicated `_read`'s cap | fixed in `1766e6c`: `_read(…, cap=)` |
+| (no id) | note | other routes still fetch Git without a slot; req. 21 now says the fetch slots bound `targets:inspect` only | spec in `1766e6c` |
+
 Seen by the worker and not changed here: a resumed registry module run is named after `parent.workflow_name`; and `GET /runs/{id}` shows `nextflow run` as the command of a module run.
