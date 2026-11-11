@@ -2,9 +2,10 @@
 // or List, export), the map drawn with React Flow, and the List, its table equivalent. Shared by
 // the run's Graph tab and the Launch map. Every node is a native button whose name says its state;
 // pipeline text is rendered as text only.
-import { Drawer, NativeSelect, TextInput, useComputedColorScheme } from "@mantine/core";
+import { Drawer, Menu, NativeSelect, TextInput, useComputedColorScheme } from "@mantine/core";
 import {
   Background,
+  ControlButton,
   Controls,
   Handle,
   MarkerType,
@@ -19,7 +20,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type MutableRefObject, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ProcessStatus, Task } from "../../api";
 import { ICONS, Icon } from "../../icons";
 import { usePhone } from "../../shell/layout";
@@ -99,6 +100,10 @@ export const GICONS = {
   hide: "M3 3l18 18 M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9 M6.6 6.6C3.9 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 0 0 5.4-1.6 M9.9 9.9a3 3 0 0 0 4.2 4.2",
   focus: "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   fullscreen: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5",
+  fit: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5 M9 9h6v6H9z",
+  arrow: "M5 12h14 M13 6l6 6-6 6",
+  warn: "M12 9v4 M12 17h.01 M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
+  tasks: ICONS.table,
   compact: "M4 7h16 M4 12h10 M4 17h6 M17 14l3 3-3 3",
   legend: ICONS.info,
   copy: ICONS.copy,
@@ -239,8 +244,8 @@ interface NodeData extends Record<string, unknown> {
   heat: number | null;
   /** A job's value over its step's median, when out of the norm. */
   odd: number | null;
-  /** The tooltip's facts, as name and value. */
-  tip: [string, string][];
+  /** Hover or keyboard focus: the map shows the node's card above everything (null: hide it). */
+  onTip: (id: string | null, at?: Element) => void;
   dim: boolean;
   crit: boolean;
   matched: boolean;
@@ -289,6 +294,8 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
       data-odd={data.odd !== null || undefined}
       data-band={data.bar?.band ?? undefined}
       style={style}
+      onMouseEnter={(e) => data.onTip(node.id, e.currentTarget)}
+      onMouseLeave={() => data.onTip(null)}
       onDoubleClick={node.group ? () => data.onToggle(node.group!) : undefined}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -296,7 +303,15 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
       }}
     >
       <Handle type="target" position={horizontal ? Position.Left : Position.Top} isConnectable={false} />
-      <button type="button" className="sp-gnode-btn" data-gid={node.id} aria-label={data.aria} onClick={() => data.onOpen(node)}>
+      <button
+        type="button"
+        className="sp-gnode-btn"
+        data-gid={node.id}
+        aria-label={data.aria}
+        onClick={() => data.onOpen(node)}
+        onFocus={(e) => e.currentTarget.matches(":focus-visible") && data.onTip(node.id, e.currentTarget.parentElement ?? e.currentTarget)}
+        onBlur={() => data.onTip(null)}
+      >
         {node.kind === "job" && node.step && <span className="sp-gnode-step">{node.step}</span>}
         <span className="sp-gnode-name">
           <span className="sp-gnode-kind">
@@ -319,18 +334,6 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
         </span>
       )}
       {data.badge && <span className="sp-gnode-badge">{data.badge}</span>}
-      {/* the node's facts on hover or keyboard focus; the button's accessible name says the same */}
-      <span className="sp-gtip" aria-hidden="true">
-        <dl>
-          {data.tip.map(([k, v]) => (
-            <div key={k}>
-              <dt>{k}</dt>
-              <dd>{v}</dd>
-            </div>
-          ))}
-        </dl>
-        <span className="sp-gtip-hint">Click: details · right-click: code{node.group ? " · double-click: fold" : ""}</span>
-      </span>
       {node.group && (folded || !data.areaFold) && (
         <button
           type="button"
@@ -349,56 +352,143 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
   );
 }
 
-/** A group's band or area. Drawn as an area (Metro), its title is the group's fold button (Thomas:
- * folding belongs to the subworkflow or stage, not to each step). */
-function LaneBox({ data }: NodeProps<Node<{ label: string; area: boolean; fold: string | null; onToggle: (group: string) => void; tip: string }>>) {
+interface LaneData extends Record<string, unknown> {
+  id: string;
+  label: string;
+  area: boolean;
+  /** The group its fold button folds, when it is one. */
+  fold: string | null;
+  /** Its title opens the group's details, when the screen has them. */
+  onGroup?: (group: string) => void;
+  onToggle: (group: string) => void;
+  onTip: (id: string | null, at?: Element) => void;
+  selected: boolean;
+}
+
+/** A group's band or area. Drawn as an area, its round button folds it (Thomas: folding belongs
+ * to the subworkflow or stage, not to each step) and its name opens its details. */
+function LaneBox({ data }: NodeProps<Node<LaneData>>) {
+  const tipOn = (e: { currentTarget: Element }) => data.onTip(`lane:${data.id}`, e.currentTarget);
+  const tipOff = () => data.onTip(null);
+  const name = (
+    <>
+      <Icon path={data.id.startsWith("stage:") ? GICONS.stage : GICONS.subworkflow} size={12} stroke={1.9} />
+      {data.label}
+    </>
+  );
   return (
-    <div className="sp-glane" data-area={data.area || undefined}>
-      <span className="sp-gtip sp-glane-tip" aria-hidden="true">
-        {data.tip}
-        {data.fold && <span className="sp-gtip-hint">Click the name to fold it into one box</span>}
-      </span>
-      {data.fold ? (
-        <button type="button" className="sp-glane-fold nodrag nopan" onClick={() => data.onToggle(data.fold!)} onDoubleClick={(e) => e.stopPropagation()} aria-label={`Fold ${data.label} into one box`}>
-          <span className="sp-glane-fold-icon" aria-hidden="true">
+    <div className="sp-glane" data-area={data.area || undefined} data-selected={data.selected || undefined}>
+      <span className="sp-glane-title">
+        {data.fold && (
+          <button type="button" className="sp-glane-fold-icon nodrag nopan" onClick={() => data.onToggle(data.fold!)} onDoubleClick={(e) => e.stopPropagation()} aria-label={`Fold ${data.label} into one box`}>
             <Icon path={GICONS.fold} size={11} stroke={2.4} />
+          </button>
+        )}
+        {data.onGroup && data.fold ? (
+          <button type="button" className="sp-glane-fold nodrag nopan" onClick={() => data.onGroup!(data.fold!)} onDoubleClick={(e) => e.stopPropagation()} onMouseEnter={tipOn} onMouseLeave={tipOff} onFocus={(e) => e.currentTarget.matches(":focus-visible") && tipOn(e)} onBlur={tipOff} aria-label={`Details of ${data.label}`}>
+            {name}
+          </button>
+        ) : (
+          <span className="sp-glane-name" aria-hidden="true" onMouseEnter={tipOn} onMouseLeave={tipOff}>
+            {name}
           </span>
-          <Icon path={GICONS.subworkflow} size={12} stroke={1.9} />
-          {data.label}
-        </button>
-      ) : (
-        <span aria-hidden="true">
-          <Icon path={GICONS.subworkflow} size={12} stroke={1.9} />
-          {data.label}
-        </span>
-      )}
+        )}
+      </span>
     </div>
   );
 }
 
 const NODE_TYPES = { sp: NodeBox, lane: LaneBox };
 
-function EdgeTip({ over, view, engine }: { over: { edge: ViewEdge; x: number; y: number }; view: View; engine: string }) {
-  const label = (id: string) => view.nodes.find((n) => n.id === id)?.label ?? id;
-  const { edge } = over;
-  const rows: [string, string][] = [
-    ["From", label(edge.source)],
-    ["To", label(edge.target)],
-    ["Carries", engine === "snakemake" ? "files the downstream rule reads" : "a channel: values and files"],
-    ...(edge.conditions.length ? ([["Only if", edge.conditions.join(" or ")]] as [string, string][]) : []),
-    ...(edge.pairs.length > 1 ? ([["Stands for", `${edge.pairs.length} step-to-step links`]] as [string, string][]) : []),
-  ];
+/** What a card on the map shows: a step's, a group's or a link's facts, drawn (Thomas: coloured,
+ * more graphic). The same facts are in the step's accessible name and in its panel. */
+export interface TipInfo {
+  icon: string;
+  tone: string | null;
+  title: string;
+  sub: string;
+  state?: string;
+  /** A link's two ends. */
+  ends?: { label: string; tone: string; icon: string }[];
+  progress?: { done: number; total: number };
+  /** States of a group's boxes, as coloured counts. */
+  chips?: { tone: string; text: string }[];
+  rows: { icon: string; k: string; v: string; bar?: { pct: number; band: string | null } | null; warn?: boolean }[];
+  flags?: Flag[];
+  hint: string;
+}
+
+function TipCard({ info, x, y, above }: { info: TipInfo; x: number; y: number; above: boolean }) {
   return (
-    <div className="sp-gtip sp-gedge-tip" aria-hidden="true" style={{ left: over.x + 14, top: over.y + 14 }}>
-      <dl>
-        {rows.map(([k, v]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd>{v}</dd>
-          </div>
-        ))}
-      </dl>
-      <span className="sp-gtip-hint">Click: its types and files</span>
+    <div className="sp-gtip" data-tone={info.tone ?? undefined} data-above={above || undefined} aria-hidden="true" style={{ left: x, top: y }}>
+      <div className="sp-gtip-head">
+        <span className="sp-gtip-icon">
+          <Icon path={info.icon} size={14} stroke={1.9} />
+        </span>
+        <span className="sp-gtip-title">
+          <strong>{info.title}</strong>
+          <small>{info.sub}</small>
+        </span>
+        {info.state && <span className="sp-gtip-state">{info.state}</span>}
+      </div>
+      {info.ends && (
+        <div className="sp-gtip-ends">
+          {info.ends.map((e, i) => (
+            <span key={i} style={{ display: "contents" }}>
+              {i > 0 && <Icon path={GICONS.arrow} size={14} stroke={2} />}
+              <span className="sp-gtip-end" data-tone={e.tone}>
+                <Icon path={e.icon} size={11} stroke={2} />
+                {e.label}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+      {info.progress && info.progress.total > 0 && (
+        <div className="sp-gtip-prog">
+          <span className="sp-gtip-progbar">
+            <span style={{ width: `${Math.round((info.progress.done / info.progress.total) * 100)}%` }} />
+          </span>
+          {info.progress.done}/{info.progress.total} jobs
+        </div>
+      )}
+      {info.chips && info.chips.length > 0 && (
+        <div className="sp-gtip-chips">
+          {info.chips.map((c) => (
+            <span key={c.text} className="sp-gtip-chip" data-tone={c.tone}>
+              {c.text}
+            </span>
+          ))}
+        </div>
+      )}
+      {info.rows.length > 0 && (
+        <dl>
+          {info.rows.map((r) => (
+            <div key={r.k} data-warn={r.warn || undefined}>
+              <dt>
+                <Icon path={r.icon} size={12} stroke={1.9} />
+                {r.k}
+              </dt>
+              <dd>
+                {r.v}
+                {r.bar && (
+                  <span className="sp-gtip-bar" data-band={r.bar.band ?? undefined}>
+                    <span style={{ width: `${Math.round(Math.min(1, r.bar.pct) * 100)}%` }} />
+                  </span>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {info.flags && info.flags.length > 0 && (
+        <div className="sp-gtip-chips">
+          {info.flags.map((f) => (
+            <FlagChip key={f} flag={f} />
+          ))}
+        </div>
+      )}
+      <span className="sp-gtip-hint">{info.hint}</span>
     </div>
   );
 }
@@ -426,6 +516,10 @@ interface Props {
   side?: ReactNode;
   /** Back to the plain map: nothing open, nothing traced (Escape, or a click on the empty map). */
   onReset?: () => void;
+  /** A group's name on the map was clicked: its details (subworkflow or stage). */
+  onGroup?: (group: string) => void;
+  /** Shown above the map and kept in view: what narrows the map (a traced lineage). */
+  banner?: ReactNode;
 }
 
 interface Shown {
@@ -471,7 +565,7 @@ function ariaOf(n: ViewNode, status: ProcessStatus | null, extra: string[]): str
 }
 
 
-function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane, title, nextRef, engine, groupNames }: { onPane?: () => void; engine: string; groupNames: Map<string, string>; settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
+function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane, onGroup, title, nextRef, engine, groupNames }: { onPane?: () => void; onGroup?: (group: string) => void; engine: string; groupNames: Map<string, string>; settings: GraphSettings; decor: Decor; shown: Shown; onOpen: (n: ViewNode) => void; onToggle: (group: string) => void; onCode: (n: ViewNode, x: number, y: number) => void; onEdge?: (e: ViewEdge) => void; title: string; nextRef: MutableRefObject<(() => void) | null> }) {
   const dark = useComputedColorScheme("light") === "dark";
   const { view, status, matches, crit, heat: heated, odd } = shown;
   const layout = settings.layout === "upstream" && !hasUpstream(view) ? "layered-tb" : settings.layout;
@@ -481,16 +575,29 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
   const flow = useReactFlow();
   const wrap = useRef<HTMLDivElement>(null);
   const [cursor, setCursor] = useState(0);
-  // the link under the mouse: a small card by the cursor (the same facts are in each step's panel,
-  // whose links are buttons, so the keyboard reaches them too)
-  const [over, setOver] = useState<{ edge: ViewEdge; x: number; y: number } | null>(null);
-  const hover = (ev: { clientX: number; clientY: number }, e: Edge | null) => {
-    const r = wrap.current?.getBoundingClientRect();
-    setOver(e && r ? { edge: (e.data as { edge: ViewEdge }).edge, x: ev.clientX - r.left, y: ev.clientY - r.top } : null);
+  // the card of the step, group or link under the mouse (or the focused step), drawn over the whole
+  // map so no step covers it (Thomas: the cards went under the steps). A link's facts are also in
+  // each step's panel, whose links are buttons, so the keyboard reaches them too.
+  const [tip, setTip] = useState<{ id: string; x: number; y: number; above: boolean; edge?: ViewEdge } | null>(null);
+  const onTip = useCallback((id: string | null, at?: Element) => {
+    const w = wrap.current?.getBoundingClientRect();
+    if (!id || !at || !w) return setTip(null);
+    const r = at.getBoundingClientRect();
+    const above = r.bottom - w.top + 230 > w.height && r.top - w.top > 230;
+    setTip({ id, x: Math.max(8, Math.min(r.left - w.left, w.width - 316)), y: above ? r.top - w.top - 8 : r.bottom - w.top + 8, above });
+  }, []);
+  const hover = (ev: { clientX: number; clientY: number }, e: Edge) => {
+    const w = wrap.current?.getBoundingClientRect();
+    if (!w) return;
+    const x = ev.clientX - w.left;
+    const y = ev.clientY - w.top;
+    const above = y + 230 > w.height;
+    setTip({ id: `edge:${e.id}`, edge: (e.data as { edge: ViewEdge }).edge, x: Math.max(8, Math.min(x + 14, w.width - 316)), y: above ? y - 14 : y + 14, above });
   };
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes, edges, tips } = useMemo(() => {
     const nodes: Node[] = [];
+    const tips = new Map<string, TipInfo>();
     const width = Math.max(0, ...[...placed.boxes.values()].map((b) => b.x + b.w)) + 40;
     // an area that is a foldable group carries the fold button; its steps then need none
     const foldable = new Set(view.nodes.filter((n) => n.group).map((n) => n.group!));
@@ -499,9 +606,21 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
       const fold = lane.x !== undefined && foldable.has(lane.id) ? lane.id : null;
       if (fold) areaFolds.add(fold);
       const kids = view.nodes.filter((n) => n.lane === lane.id);
-      const states = [...new Set(kids.map((n) => statusWord(status.get(n.id) ?? null)))];
-      const tip = `${lane.id.startsWith("stage:") ? "Stage" : lane.id.startsWith("file:") ? "Rule file" : kids[0]?.kind === "job" ? "Step" : "Subworkflow"} ${lane.label}: ${kids.length} ${kids.length === 1 ? "box" : "boxes"} (${states.join(", ")})`;
-      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: lane.x ?? 0, y: lane.y }, data: { label: lane.label, area: lane.x !== undefined, fold, onToggle, tip }, width: lane.w ?? width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1, style: { pointerEvents: "all" } });
+      const byState = new Map<ProcessStatus | null, number>();
+      for (const n of kids) byState.set(status.get(n.id) ?? null, (byState.get(status.get(n.id) ?? null) ?? 0) + 1);
+      const sum = kids.reduce((a, n) => ({ done: a.done + progress(n.counts).done, total: a.total + progress(n.counts).total }), { done: 0, total: 0 });
+      const what = lane.id.startsWith("stage:") ? "stage" : lane.id.startsWith("file:") ? "rule file" : kids[0]?.kind === "job" ? "step" : "subworkflow";
+      tips.set(`lane:${lane.id}`, {
+        icon: lane.id.startsWith("stage:") ? GICONS.stage : GICONS.subworkflow,
+        tone: null,
+        title: lane.label,
+        sub: `${what} · ${kids.length} ${kids.length === 1 ? "box" : "boxes"}`,
+        progress: kids[0]?.kind === "job" ? undefined : sum,
+        chips: [...byState].map(([st, k]) => ({ tone: statusTone(st), text: `${k} ${statusWord(st).toLowerCase()}` })),
+        rows: [],
+        hint: fold ? `${onGroup ? "Click the name: details · " : ""}round − button: fold it into one box` : "",
+      });
+      nodes.push({ id: `lane:${lane.id}`, type: "lane", position: { x: lane.x ?? 0, y: lane.y }, data: { id: lane.id, label: lane.label, area: lane.x !== undefined, fold, onToggle, onGroup, onTip, selected: decor.selected === lane.id } satisfies LaneData, width: lane.w ?? width, height: lane.h, selectable: false, draggable: false, focusable: false, zIndex: -1, style: { pointerEvents: "all" } });
     }
     // what the open step or link lights up: itself, its links and the steps at their other end
     const lit = new Set<string>();
@@ -543,6 +662,23 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
       const value = overlayText(n, settings.overlay);
       const metric = value ? ` · ${value}${off !== null ? ` · ${times(off)} median` : ""}` : "";
       const ring = decor.selected === n.id || (openEdge && lit.has(n.id)) ? "selected" : spotlight && lit.has(n.id) ? "near" : null;
+      const tone = n.kind === "gate" && !s ? "review" : statusTone(s);
+      tips.set(n.id, {
+        icon: kindIcon(n.kind),
+        tone,
+        title: n.label,
+        sub: n.kind === "job" ? `job of ${n.step ?? ""}` : `${kindWord(n.kind)}${n.group && n.kind !== "stage" && n.kind !== "subworkflow" ? ` · in ${groupNames.get(n.group) ?? n.group.replace(/^(stage|sub|file):/, "")}` : ""}`,
+        state: statusWord(s),
+        progress: total > 0 && n.kind !== "job" ? { done, total } : undefined,
+        rows: [
+          ...(durationOf(n) ? [{ icon: GICONS.clock, k: "Duration", v: formatSeconds(durationOf(n)), bar: settings.overlay === "duration" ? bar : null }] : []),
+          ...(value && settings.overlay !== "duration" ? [{ icon: settings.overlay === "memory" ? GICONS.memory : settings.overlay === "cpu" ? GICONS.cpu : GICONS.warn, k: OVERLAY_NAME[settings.overlay] ?? "Value", v: value, bar }] : []),
+          ...(off !== null ? [{ icon: GICONS.warn, k: "Out of the norm", v: `${times(off)} its step's median`, warn: true }] : []),
+          ...(badge ? [{ icon: GICONS.link, k: "Compared", v: badge }] : []),
+        ],
+        flags: n.flags,
+        hint: `Click: details · right-click: code${n.group ? " · double-click: fold" : ""}`,
+      });
       return {
         id: n.id,
         type: "sp",
@@ -565,20 +701,10 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
           label: n.label,
           meta: `${statusWord(s)}${total > 0 && n.kind !== "job" ? ` · ${done}/${total}` : ""}${metric}`,
           aria: ariaOf(n, s, extra),
-          tone: n.kind === "gate" && !s ? "review" : statusTone(s),
+          tone,
           heat: h ?? null,
           odd: off,
-          tip: [
-            ["Name", n.kind === "job" ? `${n.step ?? ""} · ${n.label}` : n.id.replace(/^(stage|sub|file):/, "")],
-            ["Kind", kindWord(n.kind)],
-            ["State", statusWord(s)],
-            ...(total > 0 && n.kind !== "job" ? ([["Jobs", `${done} of ${total} done`]] as [string, string][]) : []),
-            ...(durationOf(n) ? ([["Duration", formatSeconds(durationOf(n))]] as [string, string][]) : []),
-            ...(value && settings.overlay !== "duration" ? ([[OVERLAY_NAME[settings.overlay] ?? "Value", value]] as [string, string][]) : []),
-            ...(off !== null ? ([["Out of the norm", `${times(off)} its step's median`]] as [string, string][]) : []),
-            ...(n.group && n.kind !== "stage" && n.kind !== "subworkflow" ? ([["In", groupNames.get(n.group) ?? n.group.replace(/^(stage|sub|file):/, "")]] as [string, string][]) : []),
-            ...((n.flags ?? []).length ? ([["Marks", (n.flags ?? []).map((f) => FLAG_MARKS[f].mark).join(", ")]] as [string, string][]) : []),
-          ],
+          onTip,
           dim: (searching && !matched) || lineageOut || (spotlight && !lit.has(n.id)),
           crit: inCrit,
           matched: matched && searching,
@@ -618,8 +744,26 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
         data: { edge: e },
       };
     });
-    return { nodes, edges };
-  }, [view, placed, status, matches, crit, heated, odd, decor, searching, horizontal, layout, onOpen, onToggle, onCode, settings.overlay, engine, groupNames]);
+    // a link's card: its two ends, what it carries, its condition
+    const label = (id: string) => view.nodes.find((n) => n.id === id);
+    for (const e of view.edges) {
+      const a = label(e.source);
+      const b = label(e.target);
+      tips.set(`edge:${e.id}`, {
+        icon: engine === "snakemake" ? GICONS.file : GICONS.channel,
+        tone: null,
+        title: engine === "snakemake" ? "Files" : "Channel",
+        sub: engine === "snakemake" ? "files the downstream rule reads" : "values and files, item by item",
+        ends: [a, b].map((x, i) => ({ label: x?.label ?? (i ? e.target : e.source), tone: statusTone(status.get(x?.id ?? "") ?? null), icon: kindIcon(x?.kind ?? "process") })),
+        rows: [
+          ...(e.conditions.length ? [{ icon: GICONS.conditional, k: "Only if", v: e.conditions.join(" or ") }] : []),
+          ...(e.pairs.length > 1 ? [{ icon: GICONS.link, k: "Stands for", v: `${e.pairs.length} step-to-step links` }] : []),
+        ],
+        hint: "Click: its types and files",
+      });
+    }
+    return { nodes, edges, tips };
+  }, [view, placed, status, matches, crit, heated, odd, decor, searching, horizontal, layout, onOpen, onToggle, onCode, onTip, onGroup, settings.overlay, engine, groupNames]);
 
   // the opened step stays in view when the details panel narrows the map: checked once the
   // map has its new width and a double-click is over, and moved only when it is out of view
@@ -655,7 +799,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
       void flow.setViewport({ x: x + (from.x - to.x) * zoom, y: y + (from.y - to.y) * zoom, zoom }, { duration: 200 });
       return;
     }
-    const timer = setTimeout(() => void flow.fitView({ duration: 200 }), 60);
+    const timer = setTimeout(() => void flow.fitView({ ...FIT, duration: 200 }), 60);
     return () => clearTimeout(timer);
   }, [shape, foldKey]); // eslint-disable-line react-hooks/exhaustive-deps
   // after the effect above: the drawing it compares the next change with
@@ -683,6 +827,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
         nodeTypes={NODE_TYPES}
         colorMode={dark ? "dark" : "light"}
         fitView
+        fitViewOptions={FIT}
         minZoom={0.1}
         nodesDraggable={false}
         nodesConnectable={false}
@@ -692,18 +837,22 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
         zoomOnDoubleClick={false}
         onEdgeClick={onEdge ? (_, edge) => onEdge((edge.data as { edge: ViewEdge }).edge) : undefined}
         onPaneClick={onPane}
-        // the cards on the map keep their size: the zoom as a CSS variable, set without a render
-        onMove={(_, vp) => wrap.current?.style.setProperty("--sp-zoom", String(vp.zoom))}
-        onInit={(rf) => wrap.current?.style.setProperty("--sp-zoom", String(rf.getZoom()))}
+        onMoveStart={() => setTip(null)}
         onEdgeMouseEnter={(ev, e) => hover(ev, e)}
-        onEdgeMouseLeave={() => setOver(null)}
+        onEdgeMouseLeave={() => setTip(null)}
         // the empty inside of a group's area is the map too
         onNodeClick={onPane ? (e, n) => n.type === "lane" && !(e.target as Element).closest("button") && onPane() : undefined}
         onlyRenderVisibleElements={view.nodes.length > 300}
       >
         <Background gap={24} size={1} />
-        {over && <EdgeTip over={over} view={view} engine={engine} />}
-        <Controls showInteractive={false} aria-label="Zoom" />
+        {tip && tips.get(tip.id) && <TipCard info={tips.get(tip.id)!} x={tip.x} y={tip.y} above={tip.above} />}
+        <Controls showInteractive={false} showFitView={false} aria-label="Zoom" className="sp-gcontrols">
+          {/* our own fit button: React Flow's drew a pale icon that read as disabled (Thomas); no
+              animation, which a zoom still settling could cut short and leave the map unmoved */}
+          <ControlButton onClick={() => void flow.fitView(FIT)} aria-label="Fit the whole map in view" title="Fit the whole map in view">
+            <Icon path={GICONS.fit} size={14} stroke={2} />
+          </ControlButton>
+        </Controls>
         <MiniMap
           pannable
           zoomable
@@ -801,7 +950,7 @@ export function overlayText(n: ViewNode, overlay: GraphSettings["overlay"]): str
 const OVERLAY_NAME: Partial<Record<GraphSettings["overlay"], string>> = { cpu: "CPU used / asked", memory: "Memory used / asked", failures: "Failures" };
 
 /** A ratio to a median, as people say it: "3.1×", "0.4×". */
-const times = (r: number) => `${r >= 10 ? Math.round(r) : r.toFixed(1)}×`;
+export const times = (r: number) => `${r >= 10 ? Math.round(r) : r.toFixed(1)}×`;
 
 /** The small bar under a step: CPU and Memory efficiency against its band, Duration against the
  * longest step. */
@@ -822,7 +971,7 @@ export const BAND_WORDS: Record<string, string> = {
 
 /** The legend: one line always shown (the colour key), the rest behind a toggle so it does not
  * push the map down. */
-function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: View }) {
+function Legend({ overlay, view, runtime, help, notes }: { overlay: GraphSettings["overlay"]; view: View; runtime: boolean; help: string; notes?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const jobs = view.nodes.some((n) => n.kind === "job");
   const semantic = overlay === "cpu" || overlay === "memory";
@@ -871,8 +1020,8 @@ function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: Vi
           Legend
           <Icon path={open ? ICONS.chevronDown : ICONS.chevronRight} size={12} stroke={2} />
         </button>
-        {key}
-        {jobs && (overlay === "duration" || overlay === "cpu" || overlay === "memory") && (
+        {runtime && key}
+        {runtime && jobs && (overlay === "duration" || overlay === "cpu" || overlay === "memory") && (
           <span className="sp-gkey">
             <span className="sp-gswatch" data-odd aria-hidden="true" /> each job against its step's jobs; dashed: {OUTLIER}× above or below its step's median
           </span>
@@ -880,7 +1029,9 @@ function Legend({ overlay, view }: { overlay: GraphSettings["overlay"]; view: Vi
       </div>
       {open && (
         <div className="sp-glegend-more">
-          <p className="sp-glegend-help">{OVERLAY_HELP[overlay]}</p>
+          <p className="sp-glegend-help">{help}</p>
+          {notes}
+          {runtime && <p className="sp-glegend-help">{OVERLAY_HELP[overlay]}</p>}
           <ul className="sp-gkey sp-gkey-grid" aria-label="Marks">
             {(Object.keys(FLAG_MARKS) as Flag[]).map((f) => (
               <li key={f}>
@@ -997,31 +1148,43 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
         </button>
       </div>
       {extra}
-      <div className="sp-gview" role="group" aria-label="Export">
-        <button type="button" className="sp-gbtn" onClick={() => onExport("svg")}>
-          <Icon path={ICONS.download} size={13} /> SVG
-        </button>
-        <button type="button" className="sp-gbtn" onClick={() => onExport("png")}>
-          <Icon path={ICONS.download} size={13} /> PNG
-        </button>
-        <button type="button" className="sp-gbtn" onClick={() => onExport("html")}>
-          <Icon path={ICONS.download} size={13} /> HTML
-        </button>
-        <button type="button" className="sp-gbtn" onClick={() => onExport("copy")}>
-          <Icon path={GICONS.copy} size={13} /> Copy PNG
-        </button>
-      </div>
-      <button type="button" className="sp-gbtn sp-gbtn-line" aria-pressed={full} onClick={onFullscreen}>
-        <Icon path={GICONS.fullscreen} size={13} stroke={2} /> {full ? "Exit full screen" : "Full screen"}
+      <Menu position="bottom-end" withinPortal={false} shadow="md">
+        <Menu.Target>
+          <button type="button" className="sp-gbtn sp-gbtn-line">
+            <Icon path={ICONS.download} size={13} /> Export
+            <Icon path={ICONS.chevronDown} size={12} stroke={2} />
+          </button>
+        </Menu.Target>
+        {/* Escape closes the menu only, not the details panel behind it */}
+        <Menu.Dropdown onKeyDown={(e) => e.key === "Escape" && e.nativeEvent.preventDefault()}>
+          <Menu.Item leftSection={<Icon path={ICONS.download} size={13} />} onClick={() => onExport("svg")}>
+            SVG
+          </Menu.Item>
+          <Menu.Item leftSection={<Icon path={ICONS.download} size={13} />} onClick={() => onExport("png")}>
+            PNG
+          </Menu.Item>
+          <Menu.Item leftSection={<Icon path={ICONS.download} size={13} />} onClick={() => onExport("html")}>
+            HTML
+          </Menu.Item>
+          <Menu.Item leftSection={<Icon path={GICONS.copy} size={13} />} onClick={() => onExport("copy")}>
+            Copy PNG
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+      <button type="button" className="sp-gbtn sp-gbtn-line" aria-pressed={full} onClick={onFullscreen} aria-label="Full screen">
+        <Icon path={GICONS.fullscreen} size={13} stroke={2} />
       </button>
     </div>
   );
 }
 
+/** Fitting the map leaves room at the top for the legend drawn over it. */
+const FIT = { padding: { top: "56px", right: "24px", bottom: "24px", left: "24px" } } as const;
+
 /** At most this many boxes after Auto-fold. */
 const AUTO_FOLD_MAX = 24;
 
-function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor = {}, onOpen, onEdge, source, extra, notes, side, onReset }: Props) {
+function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor = {}, onOpen, onEdge, source, extra, notes, side, onReset, onGroup, banner }: Props) {
   const groupNames = useMemo(() => new Map(doc.groups.map((g) => [g.id, g.name])), [doc.groups]);
   const shown = useShown(doc, settings, jobs, decor, runtime);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -1083,57 +1246,72 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
   }, [focus, onSettings]);
+  // the map fills the screen below the toolbar and banners (Thomas: less room for the header):
+  // their height, kept as a CSS variable the map's height is worked out from
+  const head = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = head.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => root.current?.style.setProperty("--sp-ghead", `${Math.round(el.getBoundingClientRect().height)}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
     <div className="sp-graph" ref={root} data-full={full || undefined}>
       {pop && <CodePop doc={doc} pop={pop} source={source ?? null} onClose={closePop} />}
-      <Toolbar
-        settings={settings}
-        onSettings={onSettings}
-        runtime={runtime}
-        upstream={hasUpstream(shown.view)}
-        onNext={() => nextRef.current?.()}
-        matches={shown.matches.size}
-        onExport={onExport}
-        extra={extra}
-        onCompact={auto.length ? () => onSettings({ fold: [...settings.fold, ...auto] }) : null}
-        onFullscreen={onFullscreen}
-        full={full}
-      />
-      {exportError && <p role="alert">{exportError}</p>}
-      <p role="status" className="sp-gnote">
-        {said}
-      </p>
-      {settings.show === "map" && <p className="sp-gnote sp-glayout-help">{LAYOUT_HELP[layout]}</p>}
-      {isEstimate(doc) && (
-        <p className="sp-gbanner" role="note">
-          Static estimate from the code: links may be approximate, and loops in the code are drawn with one link set aside.
+      <div className="sp-ghead" ref={head}>
+        <Toolbar
+          settings={settings}
+          onSettings={onSettings}
+          runtime={runtime}
+          upstream={hasUpstream(shown.view)}
+          onNext={() => nextRef.current?.()}
+          matches={shown.matches.size}
+          onExport={onExport}
+          extra={extra}
+          onCompact={auto.length ? () => onSettings({ fold: [...settings.fold, ...auto] }) : null}
+          onFullscreen={onFullscreen}
+          full={full}
+        />
+        {exportError && <p role="alert">{exportError}</p>}
+        <p role="status" className="sp-gnote">
+          {said}
         </p>
-      )}
-      {settings.focus && (
-        <p className="sp-gbanner sp-gbanner-focus" role="note">
-          <Icon path={GICONS.focus} size={14} stroke={2} /> Only {groupNames.get(settings.focus) ?? settings.focus.replace(/^(stage|sub):/, "")} is shown.{" "}
-          <button type="button" className="sp-link-button" onClick={() => onSettings({ focus: null })}>
-            Show everything (Escape)
-          </button>
-        </p>
-      )}
-      {settings.hide.length > 0 && (
-        <p className="sp-gbanner sp-gbanner-focus" role="note">
-          <Icon path={GICONS.hide} size={14} stroke={2} /> {settings.hide.length} {settings.hide.length === 1 ? "step is" : "steps are"} hidden ({settings.hide.map((h) => doc.nodes.find((n) => n.id === h)?.name ?? h).join(", ")}); the links through {settings.hide.length === 1 ? "it" : "them"} are kept.{" "}
-          <button type="button" className="sp-link-button" onClick={() => onSettings({ hide: settings.hide.slice(0, -1) })}>
-            Undo the last
-          </button>
-          {" · "}
-          <button type="button" className="sp-link-button" onClick={() => onSettings({ hide: [] })}>
-            Show all
-          </button>
-        </p>
-      )}
-      {notes}
-      {runtime && settings.show === "map" && <Legend overlay={settings.overlay} view={shown.view} />}
-      <div className="sp-gbody" data-side={side ? true : undefined}>
+        {isEstimate(doc) && (
+          <p className="sp-gbanner" role="note">
+            Static estimate from the code: links may be approximate, and loops in the code are drawn with one link set aside.
+          </p>
+        )}
+        {settings.focus && (
+          <p className="sp-gbanner sp-gbanner-focus" role="note">
+            <Icon path={GICONS.focus} size={14} stroke={2} /> Only {groupNames.get(settings.focus) ?? settings.focus.replace(/^(stage|sub):/, "")} is shown.{" "}
+            <button type="button" className="sp-link-button" onClick={() => onSettings({ focus: null })}>
+              Show everything (Escape)
+            </button>
+          </p>
+        )}
+        {settings.hide.length > 0 && (
+          <p className="sp-gbanner sp-gbanner-focus" role="note">
+            <Icon path={GICONS.hide} size={14} stroke={2} /> {settings.hide.length} {settings.hide.length === 1 ? "step is" : "steps are"} hidden ({settings.hide.map((h) => doc.nodes.find((n) => n.id === h)?.name ?? h).join(", ")}); the links through {settings.hide.length === 1 ? "it" : "them"} are kept.{" "}
+            <button type="button" className="sp-link-button" onClick={() => onSettings({ hide: settings.hide.slice(0, -1) })}>
+              Undo the last
+            </button>
+            {" · "}
+            <button type="button" className="sp-link-button" onClick={() => onSettings({ hide: [] })}>
+              Show all
+            </button>
+          </p>
+        )}
+        {banner}
+        {settings.show === "list" && notes}
+      </div>
+      <div className="sp-gbody" data-list={settings.show === "list" || undefined}>
         {settings.show === "map" ? (
-          <Map_ nextRef={nextRef} settings={settings} decor={decor} shown={shown} onOpen={onOpen} onToggle={onToggle} onCode={onCode} onEdge={onEdge} onPane={onReset} title={title} engine={doc.engine} groupNames={groupNames} />
+          <div className="sp-gmapcell">
+            <Map_ nextRef={nextRef} settings={settings} decor={decor} shown={shown} onOpen={onOpen} onToggle={onToggle} onCode={onCode} onEdge={onEdge} onPane={onReset} onGroup={onGroup} title={title} engine={doc.engine} groupNames={groupNames} />
+            {/* over the map's top left corner: the colour key, and behind its toggle the layout's help and the notes */}
+            <Legend overlay={settings.overlay} view={shown.view} runtime={runtime} help={LAYOUT_HELP[layout]} notes={notes} />
+          </div>
         ) : (
           <List shown={shown} settings={settings} onOpen={onOpen} decor={decor} />
         )}
@@ -1196,6 +1374,67 @@ export function GraphView(props: Props) {
 
 /** The details of a step or a link: docked beside the map, so the map stays in view and usable
  * (Escape or × closes it, and focus goes back to where it was); a sheet on a phone. */
+/** The details panel's width: dragged or set with the arrow keys, kept in this browser. */
+const SIDE_KEY = "spectio.graph.side";
+const SIDE_MIN = 300;
+const SIDE_MAX = 900;
+const readSide = (): number => {
+  try {
+    const v = Number(localStorage.getItem(SIDE_KEY));
+    return v >= SIDE_MIN && v <= SIDE_MAX ? v : 400;
+  } catch {
+    return 400;
+  }
+};
+
+/** The panel's left edge: drag it, or focus it and use the arrow keys (a window splitter). */
+function Resizer({ panel }: { panel: MutableRefObject<HTMLElement | null> }) {
+  const [width, setWidth] = useState(readSide);
+  useLayoutEffect(() => {
+    panel.current?.parentElement?.style.setProperty("--sp-side-w", `${width}px`);
+    try {
+      localStorage.setItem(SIDE_KEY, String(width));
+    } catch {
+      // private window: the width is not kept
+    }
+  }, [width, panel]);
+  // never so wide that the map is gone
+  const clamp = (w: number) => Math.round(Math.max(SIDE_MIN, Math.min(SIDE_MAX, (panel.current?.parentElement?.clientWidth || Infinity) - 320, w)));
+  const drag = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const x0 = e.clientX;
+    const w0 = width;
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    const move = (m: PointerEvent) => setWidth(clamp(w0 + x0 - m.clientX));
+    const up = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+  };
+  return (
+    <button
+      type="button"
+      className="sp-ginspect-resize"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize the details panel"
+      aria-valuenow={width}
+      aria-valuemin={SIDE_MIN}
+      aria-valuemax={SIDE_MAX}
+      onPointerDown={drag}
+      onKeyDown={(e) => {
+        const by = { ArrowLeft: 32, ArrowRight: -32 }[e.key];
+        const to = e.key === "Home" ? SIDE_MIN : e.key === "End" ? SIDE_MAX : by !== undefined ? width + by : null;
+        if (to === null) return;
+        e.preventDefault();
+        setWidth(clamp(to));
+      }}
+    />
+  );
+}
+
 export function Panel({ id, opened, title, icon, onClose, children, tone, kind }: { id: string | null; opened: boolean; title: string; icon: string; onClose: () => void; children: ReactNode; tone?: string; kind?: string }) {
   const phone = usePhone();
   const ref = useRef<HTMLElement>(null);
@@ -1224,6 +1463,7 @@ export function Panel({ id, opened, title, icon, onClose, children, tone, kind }
   if (!opened) return null;
   return (
     <aside className="sp-ginspect" aria-label={kind ? `${title} (${kind})` : title} ref={ref}>
+      <Resizer panel={ref} />
       <header>
         <span className="sp-ginspect-icon" data-tone={tone} aria-hidden="true">
           <Icon path={icon} size={16} stroke={1.8} />
@@ -1236,7 +1476,7 @@ export function Panel({ id, opened, title, icon, onClose, children, tone, kind }
           <Icon path={GICONS.close} size={16} stroke={2} />
         </button>
       </header>
-      {children}
+      <div className="sp-ginspect-body">{children}</div>
     </aside>
   );
 }

@@ -13,8 +13,8 @@ import { Icon } from "../../icons";
 import { Code, type CodeSource, useCode } from "./Code";
 import { isResultPath } from "../ReportViewer";
 import { fileKind, size as sizeText } from "../preview";
-import { BAND_WORDS, FlagChip, GICONS, GraphView, Panel, formatSeconds, kindIcon, kindWord, progress, statusTone, statusWord, viewOf } from "./GraphView";
-import { type Declared, declarations, jobStatus, type NodeDiff, type View, type ViewEdge, type ViewNode, bandOf, diffGraphs, durationOf, lineage, timeSpan, toggled } from "./model";
+import { BAND_WORDS, FlagChip, GICONS, GraphView, Panel, formatSeconds, kindIcon, kindWord, progress, statusTone, statusWord, times, viewOf } from "./GraphView";
+import { type Declared, collapse, declarations, jobMetrics, jobStatus, type NodeDiff, OUTLIER, type View, type ViewEdge, type ViewNode, bandOf, diffGraphs, durationOf, lineage, timeSpan, toggled } from "./model";
 import { type GraphSearch, type GraphSettings, searchOf, settingsOf } from "./settings";
 import { type GraphDocument, type GraphNode, type NodeOutput, getNodeOutputs, getOutputHead, getRunGraph } from "./types";
 
@@ -309,9 +309,7 @@ function Efficiency({ cpu, mem, seconds, span, words }: { cpu: number | null | u
   if (cpu == null && mem == null && !(seconds > 0 && span > 0)) return null;
   return (
     <>
-      <h3 className="sp-sheet-h">
-        <Icon path={GICONS.cpu} size={14} stroke={1.8} /> Efficiency
-      </h3>
+      <H icon={GICONS.cpu}>Efficiency</H>
       <div className="sp-ggauges">
         {cpu != null && <Gauge icon={GICONS.cpu} label="CPU" ratio={cpu} text={`${Math.round(cpu * 100)} %`} band={bandOf(cpu)} hint={`${words.cpu}; ${BAND_WORDS[bandOf(cpu)]}`} />}
         {mem != null && <Gauge icon={GICONS.memory} label="Memory" ratio={mem} text={`${Math.round(mem * 100)} %`} band={bandOf(mem)} hint={`${words.mem}; ${BAND_WORDS[bandOf(mem)]}`} />}
@@ -338,6 +336,12 @@ interface SheetProps {
   onHide: (id: string) => void;
   onEdge: (edge: ViewEdge) => void;
   trace: "up" | "down" | null;
+  /** A job's step's jobs, for the chart that places it among them. */
+  siblings: Task[];
+  /** Open another box of the map (a job of the chart). */
+  onNode: (id: string) => void;
+  /** A group drawn as an area, opened from its name: it folds, and has no lineage of its own. */
+  area: boolean;
 }
 
 /** A job's key as name and value pairs: Snakemake's `k=v` wildcards, or Nextflow's tag. */
@@ -358,49 +362,108 @@ function H({ icon, children }: { icon: string; children: ReactNode }) {
   );
 }
 
-function JobFacts({ task }: { task: Task }) {
-  const r = task.resources;
+/** A job's key as coloured chips: Snakemake's wildcards, or Nextflow's tag. */
+function JobKey({ task }: { task: Task }) {
+  const pairs = keyPairs(task.tag);
+  return (
+    <ul className="sp-gkeychips" aria-label="Key of this job">
+      {(pairs.length ? pairs : [["name", task.name ?? task.id] as [string, string]]).map(([k, v]) => (
+        <li key={k} className="sp-gkeychip">
+          <span>{k}</span>
+          <strong className="sp-mono">{v}</strong>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const JOB_METRICS = [
+  { key: "duration_s", word: "Duration", icon: GICONS.clock, text: (v: number) => formatSeconds(v) },
+  { key: "cpu_mean", word: "CPU", icon: GICONS.cpu, text: (v: number) => `${Math.round(v * 100)} %` },
+  { key: "mem_max", word: "Memory", icon: GICONS.memory, text: (v: number) => `${Math.round(v * 100)} %` },
+] as const;
+
+/** The job among its step's jobs: one bar per job, this one lit, the median dashed, the jobs
+ * {OUTLIER}× off it outlined (Thomas: a mini graph, to see the job out of the norm). Each bar is
+ * a button that opens its job. */
+export function JobChart({ task, siblings, onNode }: { task: Task; siblings: Task[]; onNode: (id: string) => void }) {
+  const usable = JOB_METRICS.filter((m) => siblings.filter((t) => jobMetrics(t)[m.key] != null).length >= 2);
+  const [pick, setPick] = useState<string>("duration_s");
+  const metric = usable.find((m) => m.key === pick) ?? usable[0];
+  if (!metric) return null;
+  const values = siblings.map((t) => [t, jobMetrics(t)[metric.key]] as const).filter((x): x is readonly [Task, number] => x[1] != null);
+  const sorted = values.map(([, v]) => v).sort((a, b) => a - b);
+  const median = sorted.length % 2 ? sorted[(sorted.length - 1) / 2] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+  const max = Math.max(...sorted, median) || 1;
+  const mine = values.find(([t]) => t.id === task.id)?.[1] ?? null;
+  const odd = (v: number) => median > 0 && (v >= OUTLIER * median || v <= median / OUTLIER);
   return (
     <>
-      <H icon={GICONS.job}>Key</H>
-      <dl className="sp-gfacts" aria-label="Key of this job">
-        {keyPairs(task.tag).map(([k, v]) => (
-          <div key={k} style={{ display: "contents" }}>
-            <dt className="sp-mono">{k}</dt>
-            <dd className="sp-mono">{v}</dd>
-          </div>
+      <H icon={GICONS.jobs}>Among its step's {values.length} jobs</H>
+      {usable.length > 1 && (
+        <div className="sp-gview sp-gchart-pick" role="group" aria-label="Compare by">
+          {usable.map((m) => (
+            <button key={m.key} type="button" className="sp-gbtn" aria-pressed={m.key === metric.key} onClick={() => setPick(m.key)}>
+              <Icon path={m.icon} size={12} stroke={1.9} /> {m.word}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="sp-gchart" role="group" aria-label={`${metric.word} of each job of ${task.process}`}>
+        {values.map(([t, v]) => (
+          <button
+            key={t.id}
+            type="button"
+            className="sp-gchart-bar"
+            data-me={t.id === task.id || undefined}
+            data-odd={odd(v) || undefined}
+            data-tone={statusTone(jobStatus[t.state] ?? null)}
+            style={{ height: `${Math.max(4, (v / max) * 100)}%` }}
+            aria-label={`${t.tag ?? t.name ?? t.id}: ${metric.text(v)}${t.id === task.id ? ", this job" : ""}${odd(v) ? ", out of the norm" : ""}`}
+            onClick={() => onNode(`job:${t.id}`)}
+          />
         ))}
-        {!task.tag && (
-          <>
-            <dt>name</dt>
-            <dd className="sp-mono">{task.name ?? task.id}</dd>
-          </>
-        )}
-      </dl>
-      <H icon={GICONS.memory}>Asked and used</H>
-      <dl className="sp-gfacts" aria-label="Resources of this job">
-        <dt>Attempt</dt>
-        <dd>{task.attempt_n ?? "—"}</dd>
-        <dt>CPUs</dt>
-        <dd>{r.cpus ?? "—"}</dd>
-        <dt>Memory</dt>
-        <dd>
-          {bytes(r.peak_rss_bytes)} used of {bytes(r.memory_bytes)} asked
-        </dd>
-        <dt>Wall time</dt>
-        <dd>{r.realtime_s !== null ? formatSeconds(r.realtime_s) : "—"}</dd>
-      </dl>
+        <span className="sp-gchart-median" style={{ bottom: `${(median / max) * 100}%` }} aria-hidden="true" />
+      </div>
+      <p className="sp-ghelp">
+        {mine === null ? `This job has no ${metric.word.toLowerCase()} yet. ` : `This job: ${metric.text(mine)}, ${times(median > 0 ? mine / median : 1)} the median (${metric.text(median)}). `}
+        Dashed line: the median; outlined: {OUTLIER}× above or below it.
+      </p>
     </>
   );
 }
 
-function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks, onToggle, onFocus, onHide, onEdge, trace }: SheetProps) {
+/** A step's parameters: one row each, the name on its own line so a long name is never broken,
+ * then its kind and this run's value (Thomas: the names went over several lines). The run's own
+ * values first, the defaults after. */
+function Params({ run, params, label }: { run: RunDetail; params: string[]; label: string }) {
+  const rows = params.map((p) => [p, paramOf(run.params, p)] as const).sort((a, b) => Number(b[1].set) - Number(a[1].set));
+  return (
+    <ul className="sp-gparams" aria-label={`Parameters of ${label}`}>
+      {rows.map(([p, v]) => (
+        <li key={p} data-set={v.set || undefined}>
+          <span className="sp-gparam-name sp-mono">{p}</span>
+          <span className="sp-gdecl-kind" data-kind={v.kind}>
+            {v.kind}
+          </span>
+          <span className={`sp-gparam-value ${v.set ? "sp-mono" : "sp-muted"}`} data-bool={v.kind === "yes/no" ? v.text : undefined}>
+            {v.text}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrace, onOpen, onTasks, onToggle, onFocus, onHide, onEdge, trace, siblings, onNode, area }: SheetProps) {
   const byId = new Map(doc.nodes.map((n) => [n.id, n]));
   const members = node ? node.members.map((m) => byId.get(m)).filter((m) => !!m) : [];
   const single = node && members.length === 1 && node.id === members[0].id ? members[0] : null;
   const params = [...new Set(members.flatMap((m) => m.params))].sort();
   const { done, total } = node ? progress(node.counts) : { done: 0, total: 0 };
-  const folded = node?.kind === "stage" || node?.kind === "subworkflow";
+  const isGroup = node?.kind === "stage" || node?.kind === "subworkflow";
+  // a group drawn as one box unfolds; one drawn as an area folds
+  const boxed = isGroup && !area;
   const group = node?.group ?? null;
   // wall-clock times: the run's from its first start to its last end (now while it runs), the
   // step's from its first job's start to its last job's end
@@ -409,8 +472,10 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
   const span = t ? Math.max(0, ((now ?? t.to) - t.from) / 1000) : 0;
   const wall = node?.first_start ? Math.max(0, ((node.last_end ? Date.parse(node.last_end) : now ?? Date.parse(node.first_start)) - Date.parse(node.first_start)) / 1000) : 0;
   const tone = statusTone(node?.status ?? null);
+  const codeOf = single ?? (node?.kind === "job" ? byId.get(node.members[0]) : undefined);
+  const r = task?.resources;
   return (
-    <Panel id={node?.id ?? null} opened={node !== null} onClose={onClose} title={node ? node.label : ""} icon={kindIcon(node?.kind ?? "process")} tone={tone} kind={node ? kindWord(node.kind) : ""}>
+    <Panel id={node?.id ?? null} opened={node !== null} onClose={onClose} title={node ? node.label : ""} icon={kindIcon(node?.kind ?? "process")} tone={tone} kind={node ? (node.kind === "job" ? `job of ${node.step}` : kindWord(node.kind)) : ""}>
       {node && (
         <section className="sp-sheet" aria-label={node.label}>
           <div className="sp-ghero">
@@ -431,95 +496,92 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
                 {formatSeconds(durationOf(node))}
               </span>
             )}
+            {task && (task.attempt_n ?? 1) > 1 && (
+              <span className="sp-ghero-time">
+                <Icon path={GICONS.retried} size={12} stroke={1.9} />
+                attempt {task.attempt_n}
+              </span>
+            )}
+            {(node.flags ?? []).map((f) => (
+              <FlagChip key={f} flag={f} />
+            ))}
           </div>
           {diff && diff.change === "added" && <p className="sp-gnote">New in this run: the compared run did not have it.</p>}
-          {node.flags && node.flags.length > 0 && (
-            <p className="sp-gflags-row">
-              {node.flags.map((f) => (
-                <FlagChip key={f} flag={f} />
-              ))}
-            </p>
-          )}
           <div className="sp-gactions" role="group" aria-label={`Actions on ${node.label}`}>
             {group && (
-              <button type="button" className="sp-gaction" onClick={() => onToggle(group)} aria-label={folded ? `Unfold ${node.label}` : `Fold ${groupLabel(doc, group)}`}>
-                <Icon path={folded ? GICONS.unfold : GICONS.fold} size={14} stroke={2} />
-                {folded ? "Unfold" : "Fold"}
+              <button type="button" className="sp-gaction" onClick={() => onToggle(group)} aria-label={boxed ? `Unfold ${node.label}` : `Fold ${groupLabel(doc, group)}`}>
+                <Icon path={boxed ? GICONS.unfold : GICONS.fold} size={14} stroke={2} />
+                {boxed ? "Unfold" : "Fold"}
               </button>
             )}
-            <button type="button" className="sp-gaction" aria-pressed={trace === "up"} onClick={() => onTrace(trace === "up" ? null : "up")} aria-label={`Before: what leads to ${node.label}`}>
-              <Icon path={GICONS.up} size={14} stroke={2} />
-              Before
-            </button>
-            <button type="button" className="sp-gaction" aria-pressed={trace === "down"} onClick={() => onTrace(trace === "down" ? null : "down")} aria-label={`After: what follows ${node.label}`}>
-              <Icon path={GICONS.down} size={14} stroke={2} />
-              After
-            </button>
+            {!area && (
+              <>
+                <button type="button" className="sp-gaction" aria-pressed={trace === "up"} onClick={() => onTrace(trace === "up" ? null : "up")} aria-label={`Before: what leads to ${node.label}`}>
+                  <Icon path={GICONS.up} size={14} stroke={2} />
+                  Before
+                </button>
+                <button type="button" className="sp-gaction" aria-pressed={trace === "down"} onClick={() => onTrace(trace === "down" ? null : "down")} aria-label={`After: what follows ${node.label}`}>
+                  <Icon path={GICONS.down} size={14} stroke={2} />
+                  After
+                </button>
+              </>
+            )}
             {group && (
               <button type="button" className="sp-gaction" onClick={() => onFocus(group)} aria-label={`Focus: show only ${groupLabel(doc, group)}`}>
                 <Icon path={GICONS.focus} size={14} stroke={2} />
                 Focus
               </button>
             )}
-            {node.kind !== "stage" && node.kind !== "subworkflow" && (
+            {!isGroup && (
               <button type="button" className="sp-gaction" onClick={() => onHide(node.kind === "job" ? node.members[0] : node.id)} aria-label={`Hide ${node.kind === "job" ? node.step : node.label} from the map`}>
                 <Icon path={GICONS.hide} size={14} stroke={2} />
                 Hide
               </button>
             )}
           </div>
-          {(single?.source || single?.condition || node.kind === "job") && (
-            <dl className="sp-gfacts">
-              {node.kind === "job" && (
+          {/* where to go from here, as the same light buttons (Thomas: consistent icons) */}
+          {(task || (single && single.kind !== "gate")) && (
+            <div className="sp-gactions sp-gactions-go" role="group" aria-label={`Open ${node.label} elsewhere`}>
+              {task ? (
+                <button type="button" className="sp-gaction" onClick={() => onOpen({ kind: "task", task })} aria-label="Open this job: script, logs, files">
+                  <Icon path={GICONS.open} size={14} stroke={2} />
+                  Script, logs, files
+                </button>
+              ) : (
                 <>
-                  <dt>
-                    <Icon path={GICONS.process} size={13} stroke={1.8} /> Step
-                  </dt>
-                  <dd>{node.step}</dd>
+                  <button type="button" className="sp-gaction" onClick={() => onOpen({ kind: "process", name: single!.id })} aria-label="Open its jobs">
+                    <Icon path={GICONS.jobs} size={14} stroke={2} />
+                    Its jobs
+                  </button>
+                  <button type="button" className="sp-gaction" onClick={() => onTasks(single!.id)} aria-label="Open in Tasks">
+                    <Icon path={GICONS.tasks} size={14} stroke={2} />
+                    Open in Tasks
+                  </button>
                 </>
               )}
-              {single?.source && (
-                <>
-                  <dt>
-                    <Icon path={GICONS.rule} size={13} stroke={1.8} /> Code
-                  </dt>
-                  <dd className="sp-mono">
-                    {single.source.file}
-                    {single.source.line ? `:${single.source.line}` : ""}
-                  </dd>
-                </>
-              )}
-              {single?.condition && (
-                <>
-                  <dt>
-                    <Icon path={GICONS.conditional} size={13} stroke={1.8} /> Runs if
-                  </dt>
-                  <dd>
-                    <code>{single.condition}</code>
-                  </dd>
-                </>
-              )}
-            </dl>
+            </div>
+          )}
+          {task && <JobKey task={task} />}
+          {single?.condition && (
+            <p className="sp-gcond">
+              <Icon path={GICONS.conditional} size={13} stroke={1.9} /> Runs only if <code>{single.condition}</code>
+            </p>
           )}
           <H icon={doc.engine === "snakemake" ? GICONS.file : GICONS.channel}>Links</H>
           <Wiring view={view} node={node} engine={doc.engine} onEdge={onEdge} />
           {task ? (
-            <Efficiency cpu={task.efficiency?.cpu} mem={task.efficiency?.mem} seconds={task.resources.realtime_s ?? 0} span={span} words={{ cpu: "CPU time over CPUs asked", mem: "peak memory over memory asked" }} />
+            <Efficiency
+              cpu={task.efficiency?.cpu}
+              mem={task.efficiency?.mem}
+              seconds={0}
+              span={span}
+              words={{ cpu: `CPU time over the ${r?.cpus ?? "?"} CPUs asked`, mem: `${bytes(r?.peak_rss_bytes ?? null)} used of ${bytes(r?.memory_bytes ?? null)} asked` }}
+            />
           ) : (
             <Efficiency cpu={node.metrics.cpu_mean} mem={node.metrics.mem_max} seconds={wall} span={span} words={{ cpu: "mean over its jobs", mem: "its highest job" }} />
           )}
-          {task && (
-            <>
-              <JobFacts task={task} />
-              <p>
-                <button type="button" className="sp-link-button" onClick={() => onOpen({ kind: "task", task })}>
-                  Open this job: script, logs, files
-                </button>
-              </p>
-              <H icon={GICONS.outputs}>Outputs</H>
-              <Outputs run={run} process={node.members[0]} task={task.id} />
-            </>
-          )}
+          {task && <JobChart task={task} siblings={siblings} onNode={onNode} />}
+          {single && single.kind !== "gate" && <Retries run={run} process={single.id} onOpen={onOpen} />}
           {members.length > 1 && (
             <>
               <H icon={GICONS.jobs}>Steps ({members.length})</H>
@@ -535,64 +597,21 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
               </ul>
             </>
           )}
-          {single && single.kind !== "gate" && (
+          {(task || (single && single.kind !== "gate")) && (
             <>
               <H icon={GICONS.outputs}>Outputs</H>
-              <Outputs run={run} process={single.id} />
-              <Retries run={run} process={single.id} onOpen={onOpen} />
-              <p className="sp-gjobs-links">
-                <button type="button" className="sp-link-button" onClick={() => onOpen({ kind: "process", name: single.id })}>
-                  Open its jobs
-                </button>
-                {" · "}
-                <button type="button" className="sp-link-button" onClick={() => onTasks(single.id)}>
-                  Open in Tasks
-                </button>
-              </p>
+              <Outputs run={run} process={node.members[0]} task={task?.id} />
             </>
           )}
           <H icon={GICONS.params}>Parameters</H>
-          {params.length === 0 ? (
-            <p className="sp-muted">No parameter is known to be read by {members.length > 1 ? "these steps" : "this step"}.</p>
-          ) : (
-            // a table: name, kind, value, aligned; the run's own values first, the defaults after
-            // (Thomas: easier to read)
-            <table className="sp-gdecl-table sp-gparams" aria-label={`Parameters of ${node.label}`}>
-              <thead>
-                <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Kind</th>
-                  <th scope="col">Value in this run</th>
-                </tr>
-              </thead>
-              <tbody>
-                {params
-                  .map((p) => [p, paramOf(run.params, p)] as const)
-                  .sort((a, b) => Number(b[1].set) - Number(a[1].set))
-                  .map(([p, v]) => (
-                    <tr key={p} data-set={v.set || undefined}>
-                      <th scope="row" className="sp-mono">
-                        {p}
-                      </th>
-                      <td>
-                        <span className="sp-gdecl-kind" data-kind={v.kind}>
-                          {v.kind}
-                        </span>
-                      </td>
-                      <td className={v.set ? "sp-mono" : "sp-muted"} data-bool={v.kind === "yes/no" ? v.text : undefined}>
-                        {v.text}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          )}
-          {(single || node.kind === "job") && (
-            <details className="sp-gdetails">
+          {params.length === 0 ? <p className="sp-muted">No parameter is known to be read by {members.length > 1 ? "these steps" : "this step"}.</p> : <Params run={run} params={params} label={node.label} />}
+          {codeOf && (
+            // open by default, and the only place the code is (Thomas: it was shown twice)
+            <details className="sp-gdetails" open>
               <summary>
                 <Icon path={GICONS.code} size={14} stroke={1.8} /> Code
               </summary>
-              <Code name={node.members[0]} code={byId.get(node.members[0])?.code} where={{ location: run.workflow.location, revision: null, fromRun: true }} />
+              <Code name={codeOf.id} code={codeOf.code} where={{ location: run.workflow.location, revision: null, fromRun: true }} />
             </details>
           )}
         </section>
@@ -737,6 +756,10 @@ export function groupsAround(doc: GraphDocument, id: string): string[] {
   return out;
 }
 
+/** The process-level view with one group folded into one box: the group's details (its steps,
+ * jobs, links) when it is drawn as an area. */
+export const groupViewOf = (doc: GraphDocument, group: string): View => collapse(doc, "process", undefined, [group]);
+
 const groupLabel = (doc: GraphDocument, id: string): string => doc.groups.find((g) => g.id === id)?.name ?? id.replace(/^(stage|sub):/, "");
 
 function Compare({ run, value, onChange }: { run: Run; value: string; onChange: (id: string) => void }) {
@@ -866,7 +889,12 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   if (!doc || !view) return <p className="sp-muted">Drawing the graph…</p>;
   if (doc.nodes.length === 0) return <p className="sp-empty">No step is known for this run yet.</p>;
 
-  const selected = settings.node ? view.nodes.find((n) => n.id === settings.node) ?? null : null;
+  // a group opened from its name on the map is not a box of the view: its details are those of the
+  // group folded into one box (Thomas: a panel for the subworkflow too)
+  const drawn = settings.node ? view.nodes.find((n) => n.id === settings.node) ?? null : null;
+  const isGroupId = (id: string) => id.startsWith("stage:") || doc.groups.some((g) => g.id === id);
+  const groupView = !drawn && settings.node && isGroupId(settings.node) ? groupViewOf(doc, settings.node) : null;
+  const selected = drawn ?? groupView?.nodes.find((n) => n.id === settings.node) ?? null;
   const task = selected?.kind === "job" ? Object.values(jobs).flat().find((t) => `job:${t.id}` === selected.id) ?? null : null;
   const removed = diff ? [...diff].filter(([, d]) => d.change === "removed").map(([id]) => other?.nodes.find((n) => n.id === id)?.name ?? id) : [];
   const note = PRODUCER_NOTES[doc.producer];
@@ -884,6 +912,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
         jobs={settings.level === "jobs" ? jobs : undefined}
         decor={{ selected: settings.node, edge: edge?.id ?? null, lineage: traced, diff, replayAt }}
         onOpen={(n) => (setEdge(null), set({ node: n.id }))}
+        onGroup={(g) => (setEdge(null), set({ node: g }))}
         onEdge={setEdge}
         // only when something is open: a navigation to the same URL would reload the route
         onReset={() => {
@@ -899,9 +928,12 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
             <NodeSheet
               run={run}
               doc={doc}
-              view={view}
+              view={drawn ? view : groupView ?? view}
               node={selected}
               task={task}
+              siblings={task ? jobs[task.process] ?? [] : []}
+              area={!drawn && groupView !== null}
+              onNode={(id) => set({ node: id })}
               diff={selected ? diff?.get(selected.id) ?? null : null}
               onClose={() => set({ node: null })}
               // a step listed in a group's panel: open its groups where we are, at the same
@@ -943,15 +975,19 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
               </p>
             )}
             {removed.length > 0 && <p className="sp-gnote">Only in the compared run: {removed.join(", ")}.</p>}
-            {traced && trace && (
-              <p className="sp-gnote">
-                {`Showing what ${trace.direction === "up" ? "leads to" : "follows from"} ${view.nodes.find((n) => n.id === trace.id)?.label ?? trace.id}. `}
-                <button type="button" className="sp-link-button" onClick={() => setTrace(null)}>
-                  Clear trace
-                </button>
-              </p>
-            )}
           </>
+        }
+        banner={
+          traced &&
+          trace && (
+            <p className="sp-gbanner sp-gbanner-focus" role="note">
+              <Icon path={trace.direction === "up" ? GICONS.up : GICONS.down} size={14} stroke={2} />
+              {` Showing what ${trace.direction === "up" ? "leads to" : "follows from"} ${view.nodes.find((n) => n.id === trace.id)?.label ?? trace.id}. `}
+              <button type="button" className="sp-link-button" onClick={() => setTrace(null)}>
+                Clear trace
+              </button>
+            </p>
+          )
         }
       />
     </>

@@ -285,27 +285,65 @@
 }
 
 /* Docked inspector (Thomas, 2026-11-11: no drawer over the map) */
+/* The map fills the screen under the toolbar (Thomas: less room for the header): the window's
+   height less the toolbar's (--sp-ghead, measured), never under 420 px. */
 .sp-gbody {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
+  height: max(420px, calc(var(--sp-gview-h, 100dvh) - var(--sp-ghead, 120px) - 28px));
+}
+.sp-gbody[data-list] {
+  height: auto;
 }
 .sp-gbody:has(> .sp-ginspect) {
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(0, 1fr) var(--sp-side-w, 400px);
+}
+.sp-gmapcell {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+}
+.sp-gmapcell > .sp-graph-map {
+  height: 100%;
+  min-height: 0;
 }
 .sp-ginspect {
-  height: min(70vh, 720px);
-  min-height: 420px;
-  overflow: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   border: 1px solid var(--sp-line-border);
   border-radius: 10px;
   background: var(--sp-surface-raised);
 }
-.sp-ginspect > header {
-  position: sticky;
+.sp-ginspect-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+/* the panel's left edge: drag it to resize (or focus it, then the arrow keys) */
+.sp-ginspect-resize {
+  position: absolute;
   top: 0;
-  z-index: 1;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  width: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+.sp-ginspect-resize:hover,
+.sp-ginspect-resize:focus-visible {
+  background: color-mix(in srgb, var(--sp-accent) 45%, transparent);
+  outline: none;
+}
+.sp-ginspect > header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -646,21 +684,30 @@
   border-color: color-mix(in srgb, var(--sp-accent) 25%, var(--sp-line-border));
   background: color-mix(in srgb, var(--sp-accent) 4%, var(--sp-surface-page));
 }
-.sp-glane > span:not(.sp-gtip) {
+.sp-glane-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 6px;
+}
+.sp-glane-name {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 10px;
+  padding: 1px 4px;
   font-size: 12px;
   font-weight: 650;
   color: var(--sp-text-secondary);
+}
+.sp-glane[data-selected] {
+  border-color: var(--sp-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sp-accent) 30%, transparent);
 }
 .sp-glane-fold {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 4px 6px;
-  padding: 3px 10px 3px 4px;
+  padding: 3px 10px;
   border: 1px solid color-mix(in srgb, var(--sp-accent) 35%, transparent);
   border-radius: 999px;
   background: var(--sp-surface-page);
@@ -679,19 +726,45 @@
 .sp-glane-fold-icon {
   display: inline-grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
   background: var(--sp-accent);
   color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.sp-glane-fold-icon:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
 }
 /* legend: one line, the rest on demand */
 .sp-glegend {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 6;
   display: grid;
   gap: 6px;
   margin: 0;
   font-size: 12px;
   color: var(--sp-text-secondary);
+  pointer-events: none;
+}
+.sp-glegend > * {
+  pointer-events: auto;
+}
+.sp-glegend-row {
+  justify-self: start;
+  max-width: 100%;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--sp-line-divider);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--sp-surface-raised) 92%, transparent);
+  box-shadow: var(--sp-shadow);
 }
 .sp-glegend-row {
   display: flex;
@@ -723,6 +796,10 @@
 .sp-glegend-more {
   display: grid;
   gap: 8px;
+  max-width: 760px;
+  max-height: 55vh;
+  overflow: auto;
+  box-shadow: var(--sp-shadow);
   padding: 10px 12px;
   border: 1px solid var(--sp-line-divider);
   border-radius: 10px;
@@ -762,9 +839,6 @@
   border: 3px solid var(--sp-state-review);
   background: transparent;
 }
-.sp-glayout-help {
-  font-size: 12px;
-}
 .sp-gbanner-focus {
   display: flex;
   flex-wrap: wrap;
@@ -785,9 +859,8 @@
   overflow: auto;
   background: var(--sp-surface-page);
 }
-.sp-graph[data-full] .sp-graph-map,
-.sp-graph[data-full] .sp-ginspect {
-  height: calc(100vh - 200px);
+.sp-graph[data-full] {
+  --sp-gview-h: calc(100vh - 24px);
 }
 /* details panel */
 .sp-ginspect-icon {
@@ -1280,64 +1353,86 @@
   background: transparent;
 }
 
-/* tooltips on steps, group names and links: name and value, aligned. A step's shows on hover
-   (after a short delay) and on keyboard focus; its button's accessible name says the same. */
+
+.sp-gdecl-kind[data-kind="default"] {
+  border-style: dashed;
+}
+
+/* the header: the toolbar's labels beside their fields, on one line where it fits (Thomas: less
+   room for the header) */
+.sp-ghead {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sp-ghead > p[role="status"]:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.sp-gtoolbar {
+  align-items: center;
+  gap: 8px 12px;
+}
+.sp-gtoolbar .mantine-NativeSelect-root,
+.sp-gtoolbar .mantine-TextInput-root {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+.sp-gtoolbar .mantine-NativeSelect-label,
+.sp-gtoolbar .mantine-TextInput-label {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+}
+.sp-gtoolbar .mantine-TextInput-wrapper {
+  flex: 1;
+}
+.sp-gtoolbar .mantine-TextInput-description {
+  flex-basis: 100%;
+}
+
+/* zoom buttons: dark enough to read as live (the fit icon looked disabled) */
+.sp-gcontrols .react-flow__controls-button {
+  color: var(--sp-text-primary);
+}
+.sp-gcontrols .react-flow__controls-button svg {
+  fill: none;
+  max-width: none;
+  max-height: none;
+}
+.sp-gcontrols .react-flow__controls-button:first-child svg,
+.sp-gcontrols .react-flow__controls-button:nth-child(2) svg {
+  fill: currentColor;
+  max-width: 12px;
+  max-height: 12px;
+}
+
+/* cards on steps, group names and links, drawn over the whole map: a light card, its colour the
+   state's (Thomas: coloured, more graphic). Shown after a short hover, at once on keyboard focus. */
 .sp-gtip {
-  display: none;
   position: absolute;
   z-index: 20;
-  min-width: 180px;
-  max-width: 300px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--sp-text-primary);
-  color: var(--sp-surface-page);
-  font-size: 11.5px;
-  font-weight: 400;
+  width: max-content;
+  min-width: 200px;
+  max-width: 308px;
+  padding: 0 0 8px;
+  border: 1px solid var(--sp-line-border);
+  border-top: 3px solid var(--tone, var(--sp-accent));
+  border-radius: 10px;
+  background: var(--sp-surface-raised);
+  color: var(--sp-text-primary);
+  font-size: 12px;
   line-height: 1.35;
-  text-align: left;
-  box-shadow: 0 6px 18px rgb(0 0 0 / 0.18);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.16);
   pointer-events: none;
-  white-space: normal;
+  animation: sp-gtip-in 0s 0.3s both;
 }
-.sp-gtip dl {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 2px 10px;
-  margin: 0;
-}
-.sp-gtip dl > div {
-  display: contents;
-}
-.sp-gtip dt {
-  opacity: 0.7;
-}
-.sp-gtip dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-.sp-gtip-hint {
-  display: block;
-  margin-top: 6px;
-  opacity: 0.65;
-  font-size: 10.5px;
-}
-/* the cards keep their size whatever the zoom (--sp-zoom is the map's) */
-.sp-gnode > .sp-gtip,
-.sp-glane-tip {
-  transform: scale(calc(1 / var(--sp-zoom, 1)));
-  transform-origin: top left;
-}
-.sp-gnode > .sp-gtip {
-  top: calc(100% + 8px);
-  left: 0;
-}
-.sp-gnode:hover > .sp-gtip {
-  display: block;
-  animation: sp-gtip-in 0s 0.45s both;
-}
-.sp-gnode:has(.sp-gnode-btn:focus-visible) > .sp-gtip {
-  display: block;
+.sp-gtip[data-above] {
+  transform: translateY(-100%);
 }
 @keyframes sp-gtip-in {
   from {
@@ -1347,37 +1442,306 @@
     visibility: visible;
   }
 }
-/* the hovered or focused step above its neighbours, so its card is not covered */
-.react-flow__node:hover,
-.react-flow__node:focus-within {
-  z-index: 1000 !important;
+.sp-gtip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 6px;
 }
-.react-flow__node-lane:hover,
-.react-flow__node-lane:focus-within {
-  z-index: -1 !important;
+.sp-gtip-icon {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  color: var(--tone, var(--sp-accent));
+  background: color-mix(in srgb, var(--tone, var(--sp-accent)) 15%, transparent);
 }
-.sp-glane-tip {
-  top: 36px;
-  left: 6px;
+.sp-gtip-title {
+  display: grid;
+  flex: 1;
+  min-width: 0;
 }
-.sp-glane:has(> button:hover, > span:not(.sp-gtip):hover, > button:focus-visible) > .sp-glane-tip {
-  display: block;
+.sp-gtip-title strong {
+  overflow-wrap: anywhere;
+  font-weight: 650;
 }
-.sp-gedge-tip {
-  display: block;
-}
-.sp-gparams thead th:nth-child(2) {
-  width: 64px;
-}
-.sp-gparams tbody tr + tr {
-  border-top: 1px solid color-mix(in srgb, var(--sp-line-border) 60%, transparent);
-}
-.sp-gparams td[data-bool="true"] {
-  color: var(--sp-state-succeeded, inherit);
-}
-.sp-gparams td[data-bool="false"] {
+.sp-gtip-title small {
+  font-size: 11px;
   color: var(--sp-text-secondary);
 }
-.sp-gdecl-kind[data-kind="default"] {
-  border-style: dashed;
+.sp-gtip-state {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tone-fg, var(--sp-text-primary));
+  background: var(--tone-bg, var(--sp-surface-sunken));
+}
+.sp-gtip-ends {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px 6px;
+  color: var(--sp-text-secondary);
+}
+.sp-gtip-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border: 1px solid var(--tone);
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  background: var(--tone-bg);
+}
+.sp-gtip-end svg {
+  color: var(--tone);
+}
+.sp-gtip-prog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 6px;
+  font-size: 11px;
+  color: var(--sp-text-secondary);
+}
+.sp-gtip-progbar,
+.sp-gtip-bar {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sp-surface-sunken);
+  overflow: hidden;
+}
+.sp-gtip-progbar > span,
+.sp-gtip-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--tone, var(--sp-accent));
+}
+.sp-gtip-bar {
+  display: block;
+  flex: none;
+  width: 100%;
+  margin-top: 3px;
+}
+.sp-gtip-bar[data-band] > span {
+  background: var(--band);
+}
+.sp-gtip-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 10px 6px;
+}
+.sp-gtip-chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tone-fg);
+  background: var(--tone-bg);
+}
+.sp-gtip dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 6px 10px 0;
+  border-top: 1px solid var(--sp-line-divider);
+}
+.sp-gtip dl > div {
+  display: contents;
+}
+.sp-gtip dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--sp-text-secondary);
+}
+.sp-gtip dt svg {
+  color: var(--sp-accent);
+}
+.sp-gtip dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sp-gtip [data-warn] dt,
+.sp-gtip [data-warn] dd,
+.sp-gtip [data-warn] dt svg {
+  color: var(--sp-state-review);
+}
+.sp-gtip-hint {
+  display: block;
+  margin: 6px 10px 0;
+  font-size: 10.5px;
+  color: var(--sp-text-faint, var(--sp-text-secondary));
+}
+.sp-gtip-hint:empty {
+  display: none;
+}
+
+/* details panel: each section set apart by a line (Thomas: keep separators) */
+.sp-ginspect .sp-sheet > .sp-sheet-h,
+.sp-ginspect .sp-sheet > .sp-gdetails {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--sp-line-divider);
+}
+/* the Code section's title reads as the other sections' titles */
+.sp-ginspect .sp-gdetails > summary {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--sp-text-secondary);
+}
+.sp-ginspect .sp-gdetails > summary svg {
+  color: var(--sp-accent);
+}
+/* one column no wider than the panel: a long line of code scrolls inside its block */
+.sp-ginspect .sp-sheet {
+  grid-template-columns: minmax(0, 1fr);
+}
+.sp-gactions-go {
+  margin-top: 6px;
+}
+.sp-gcond {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0 0;
+  font-size: 12.5px;
+}
+.sp-gcond svg {
+  color: var(--sp-accent);
+}
+
+/* a job's key as chips */
+.sp-gkeychips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gkeychip {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--sp-accent) 40%, transparent);
+  border-radius: 999px;
+  font-size: 12px;
+}
+.sp-gkeychip > span {
+  padding: 2px 8px;
+  color: var(--sp-text-secondary);
+  background: var(--sp-accent-subtle);
+}
+.sp-gkeychip > strong {
+  padding: 2px 8px;
+  font-weight: 600;
+}
+
+/* a job among its step's jobs: one bar each */
+.sp-gchart-pick {
+  margin-bottom: 8px;
+}
+.sp-gchart {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 84px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--sp-line-border);
+}
+.sp-gchart-bar {
+  flex: 1 1 0;
+  min-width: 3px;
+  max-width: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px 3px 0 0;
+  background: color-mix(in srgb, var(--tone) 35%, var(--sp-surface-sunken));
+  cursor: pointer;
+}
+.sp-gchart-bar[data-odd] {
+  outline: 1.5px dashed var(--sp-state-review);
+  outline-offset: 1px;
+}
+.sp-gchart-bar[data-me] {
+  background: var(--sp-accent);
+}
+.sp-gchart-bar:hover {
+  background: color-mix(in srgb, var(--sp-accent) 60%, var(--sp-surface-sunken));
+}
+.sp-gchart-bar:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 1px;
+}
+.sp-gchart-median {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1.5px dashed var(--sp-text-secondary);
+  pointer-events: none;
+}
+
+/* parameters: the name on its own line, then the kind and the value */
+.sp-gparams {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+.sp-gparams li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: baseline;
+  padding: 6px 0;
+}
+.sp-gparams li + li {
+  border-top: 1px solid color-mix(in srgb, var(--sp-line-border) 60%, transparent);
+}
+.sp-gparam-name {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sp-gparams li[data-set] .sp-gparam-name::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 6px 1px 0;
+  border-radius: 999px;
+  background: var(--sp-accent);
+}
+.sp-gparam-value {
+  overflow-wrap: anywhere;
+}
+.sp-gparam-value[data-bool="true"] {
+  color: var(--sp-state-succeeded, inherit);
+}
+.sp-gparam-value[data-bool="false"] {
+  color: var(--sp-text-secondary);
+}
+
+/* a hovered step above its neighbours, so its marks' words are not covered */
+.react-flow__node-sp:hover,
+.react-flow__node-sp:focus-within {
+  z-index: 1000 !important;
 }

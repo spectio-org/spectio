@@ -1,11 +1,13 @@
 // The Graph tab and the Launch map against the contract's routes (spikes/metroflow/graph-contract.md),
 // mocked: GET /features, /runs/{id}/graph, /runs/{id}/processes/{name}/outputs, /workflows:graph.
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, FakeEventSource, app, fetched, run, serve, stubStream, viewport } from "../../testing";
 import { resetFeatures } from "./features";
-import { groupsAround, keyPairs, paramOf } from "./GraphPanel";
+import { MantineProvider } from "@mantine/core";
+import type { Task } from "../../api";
+import { JobChart, groupsAround, keyPairs, paramOf } from "./GraphPanel";
 import { DOC } from "./fixture";
 import type { GraphDocument } from "./types";
 
@@ -495,4 +497,58 @@ test("Escape with nothing open leaves Focus first; an Escape from outside the gr
   outside.remove();
   fireEvent.keyDown(document.body, { key: "Escape" });
   await waitFor(() => expect(router.state.location.search.focus).toBeUndefined());
+});
+
+test("a group opened from its name has its own details: its steps, Fold and Focus, no lineage", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&show=list&node=${encodeURIComponent(`sub:${P}ALIGN`)}`);
+  const sheet = await screen.findByRole("complementary", { name: "ALIGN (subworkflow)" });
+  expect(within(sheet).getByRole("list", { name: "Steps of ALIGN" })).toBeInTheDocument();
+  expect(within(sheet).getByRole("button", { name: "Fold ALIGN" })).toBeInTheDocument();
+  expect(within(sheet).getByRole("button", { name: /^Focus/ })).toBeInTheDocument();
+  expect(within(sheet).queryByRole("button", { name: /^Before/ })).toBeNull();
+});
+
+test("a step's code shows once, open, and its parameters are a list with each name on its own line", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&show=list&node=${encodeURIComponent(`${P}ALIGN:BWA`)}`);
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
+  const code = within(sheet).getAllByText("Code");
+  expect(code).toHaveLength(1);
+  expect(code[0].closest("details")).toHaveAttribute("open");
+  const params = within(sheet).getByRole("list", { name: "Parameters of BWA" });
+  const genome = within(params).getByText("genome").closest("li")!;
+  expect(genome).toHaveTextContent("GRCh38");
+  expect(genome.querySelector(".sp-gparam-name")).toHaveTextContent(/^genome$/);
+  expect(within(sheet).getByRole("button", { name: "Open its jobs" })).toBeInTheDocument();
+});
+
+test("the details panel is resized from its edge with the arrow keys", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&show=list&node=${encodeURIComponent(`${P}ALIGN:BWA`)}`);
+  const sheet = await screen.findByRole("complementary", { name: "BWA (process)" });
+  const edge = within(sheet).getByRole("separator", { name: "Resize the details panel" });
+  const before = Number(edge.getAttribute("aria-valuenow"));
+  fireEvent.keyDown(edge, { key: "ArrowLeft" });
+  expect(Number(edge.getAttribute("aria-valuenow"))).toBe(before + 32);
+  fireEvent.keyDown(edge, { key: "Home" });
+  expect(edge).toHaveAttribute("aria-valuenow", "300");
+});
+
+test("a job's chart has one button per job of its step, says which is this one and which are out of the norm", async () => {
+  const t = (id: string, s: number) => ({ id, process: "BWA", tag: id, name: null, state: "succeeded", attempt_n: 1, resources: { cpus: 4, memory_bytes: null, realtime_s: s, cpu_percent: null, peak_rss_bytes: null }, stage_id: null }) as unknown as Task;
+  const jobs = [t("a", 100), t("b", 110), t("c", 90), t("d", 400)];
+  const onNode = vi.fn();
+  render(
+    <MantineProvider>
+      <JobChart task={jobs[0]} siblings={jobs} onNode={onNode} />
+    </MantineProvider>,
+  );
+  const chart = screen.getByRole("group", { name: "Duration of each job of BWA" });
+  expect(within(chart).getAllByRole("button")).toHaveLength(4);
+  expect(within(chart).getByRole("button", { name: /^a: .*this job/ })).toBeInTheDocument();
+  expect(within(chart).getByRole("button", { name: /^d: .*out of the norm/ })).toBeInTheDocument();
+  await userEvent.click(within(chart).getByRole("button", { name: /^d:/ }));
+  expect(onNode).toHaveBeenCalledWith("job:d");
+  expect(screen.getByText(/This job: 1 min 40 s, 1.0× the median/)).toBeInTheDocument();
 });

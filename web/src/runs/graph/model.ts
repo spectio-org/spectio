@@ -229,7 +229,7 @@ function groupOf(doc: GraphDocument, n: GraphNode, level: GraphLevel, outer: Map
 
 /** A job's own numbers, so the colour modes work job by job (Thomas: find the samples out of the
  * norm): wall time, CPU and memory used over asked, failed. */
-function jobMetrics(t: Task): GraphMetrics {
+export function jobMetrics(t: Task): GraphMetrics {
   const r = t.resources;
   const e = t.efficiency;
   const ratio = (a: number | null | undefined, b: number | null | undefined) => (a != null && b ? a / b : null);
