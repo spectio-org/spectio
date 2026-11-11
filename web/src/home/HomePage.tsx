@@ -144,7 +144,8 @@ export function HomePage() {
             <LiveStatus />
           </>
         }
-        action={
+        phoneTitle="page"
+        primary={
           <Button component={Link} to="/launch">
             Launch a workflow
           </Button>
