@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
@@ -22,8 +23,9 @@ from spectio.runner.loop import LaunchPayload
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import read_run_manifest, run_paths, write_run_manifest
 from spectio_sdk.targets import RunTarget
+from spectio_server.api import workflows as workflows_api
 from spectio_server.api.relaunch import _target_in
-from spectio_server.api.workflows import read_params
+from spectio_server.api.workflows import load_yaml, read_params
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.rebuild import rebuild_index
 from spectio_server.sink import StoreSink
@@ -41,7 +43,7 @@ from spectio_server.store.schema import (
     workflows,
 )
 from spectio_server.store.writer import Writer
-from spectio_server.targets import INSPECTIONS, MAX_META_BYTES, login_engine, plan_of
+from spectio_server.targets import FETCHES, INSPECTIONS, MAX_META_BYTES, login_engine, plan_of
 
 from ..test_serve import run_id
 from .conftest import client_for
@@ -745,3 +747,54 @@ def test_deep_params_file_says_nested_too_deep(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match=r"params\.yml is nested too deep to be read"):
         read_params(tmp_path, "params.yml")
     assert time.monotonic() - start < 1  # SEC-161S3-01
+
+
+def test_snakemake_git_fetch_has_its_own_slots(
+    on: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-161S3-03, SEC-161S4-03 (CR-161S4-01): a Git fetch takes a fetch slot, never an
+    engine's: with both fetch slots held, the inspection is 503 before any fetch, and a
+    registry module launch still starts."""
+    fetched: list[str] = []
+
+    def fetch(data_dir: Path, url: str, parts: tuple[str, ...], revision: str) -> Path:
+        fetched.append(url)
+        return synthetic / "snakemake"
+
+    monkeypatch.setattr(workflows_api, "fetch", fetch)
+    body = {"engine": "snakemake", "location": "https://example.org/lab/pipe.git", "revision": "v1"}
+    taken = [FETCHES.acquire(blocking=False) for _ in range(2)]
+    try:
+        assert all(taken)
+        assert on.post(INSPECT, json=body).status_code == 503 and fetched == []
+        assert module_launch(on, version=VERSION).status_code == 201
+    finally:
+        for _ in taken:
+            FETCHES.release()
+    found = on.post(INSPECT, json=body)
+    assert found.status_code == 200, found.text
+    assert len(fetched) == 1
+
+
+def test_main_nf_is_capped(on: TestClient, tmp_path: Path) -> None:
+    """Req. 21 (CR-161S4-02): `main.nf`, like `meta.yml`, is read up to 64 KiB."""
+    module = local(tmp_path, "name: big\n", "big")
+    (module / "main.nf").write_text("// padding\n" * 7000)
+    response = inspect_local(on, module)
+    assert fields(response) == ["workflow.location"]
+    assert "main.nf is larger than 65536 bytes" in response.text
+
+
+def test_long_numbers_are_refused_fast(on: TestClient, tmp_path: Path) -> None:
+    """SEC-161S4-01, -02: a `1:59:59…` integer converts in quadratic time, and as a float it
+    overflows: both are refused fast, with a 422, and SafeLoader itself is not changed."""
+    before = dict(yaml.SafeLoader.yaml_constructors)
+    (tmp_path / "params.yml").write_text("x: 1" + ":59" * 85000 + "\n")  # under 256 KiB
+    start = time.monotonic()
+    with pytest.raises(ValueError, match=r"params\.yml cannot be read"):
+        read_params(tmp_path, "params.yml")
+    assert time.monotonic() - start < 1
+    module = local(tmp_path, "name: m\nx: 1" + ":59" * 200 + ".5\n", "float")
+    assert fields(inspect_local(on, module)) == ["workflow.location"]
+    assert load_yaml("a: 1:30\nb: 1.5e+3\nc: 12\n") == {"a": 90, "b": 1500.0, "c": 12}
+    assert yaml.SafeLoader.yaml_constructors == before

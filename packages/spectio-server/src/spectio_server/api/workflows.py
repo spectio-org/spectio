@@ -63,6 +63,7 @@ MAX_FILE = 1048576  # a config or schema file read by inspect
 MAX_PARAMS_FILE = 256 * 1024  # a catalog entry's params file (api §5.6, SEC-PRE-FU87-07)
 MAX_DEPTH = 32  # of the params (FU-P3-17), sent or read from a params file
 NO_ALIASES = "YAML aliases are not read"
+MAX_NUMBER = 128  # characters of a YAML number (SEC-161S4-01)
 
 SchemaSource = Literal["nextflow_schema.json", "config.schema.yaml", "inferred", "none"]
 
@@ -328,8 +329,9 @@ class _Loader(yaml.SafeLoader):
     """Safe YAML with no alias, which would let a small file grow huge in the response, and no
     flow nesting past `2 * MAX_DEPTH`, refused by the scanner before PyYAML's parse time grows
     with the square of the depth (SEC-161S2-01). The scanner's own level: quoted brackets do
-    not hide it (SEC-161S3-01). Too deep is a `RecursionError`, which callers already report
-    as nested too deep (CR-161S3-02). One pass: aliases are refused as nodes are composed."""
+    not hide it (SEC-161S3-01). Too deep raises `RecursionError` (CR-161S3-02, CR-161S4-05).
+    One pass: aliases are refused as nodes are composed. Numbers are at most `MAX_NUMBER`
+    characters: a long `1:59:59…` takes quadratic time to convert (SEC-161S4-01)."""
 
     def fetch_flow_collection_start(self, TokenClass: Any) -> None:
         if self.flow_level >= 2 * MAX_DEPTH:
@@ -342,9 +344,26 @@ class _Loader(yaml.SafeLoader):
         return super().compose_node(parent, index)
 
 
+def _short_number(construct: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
+    def checked(loader: Any, node: Any) -> Any:
+        if len(node.value) > MAX_NUMBER:
+            raise ValueError(f"a number longer than {MAX_NUMBER} characters")
+        return construct(loader, node)
+
+    return checked
+
+
+# the subclass gets its own copy of the table: SafeLoader is not changed (tested)
+_Loader.add_constructor("tag:yaml.org,2002:int", _short_number(_Loader.construct_yaml_int))
+_Loader.add_constructor("tag:yaml.org,2002:float", _short_number(_Loader.construct_yaml_float))
+
+
 def load_yaml(text: str) -> Any:
     """`text` read by `_Loader`, as JSON values."""
-    return _jsonable(yaml.load(text, Loader=_Loader))  # noqa: S506 (a SafeLoader)
+    try:
+        return _jsonable(yaml.load(text, Loader=_Loader))  # noqa: S506 (a SafeLoader)
+    except OverflowError:  # a float out of range (SEC-161S4-02)
+        raise ValueError("a number out of range") from None
 
 
 # An unterminated string or comment runs to the end, so no position is scanned twice
@@ -435,13 +454,21 @@ def schema_of(root: Path) -> tuple[dict[str, Any] | None, SchemaSource]:
     for rel in SMK_SCHEMAS:
         text = _read(root, *rel.split("/"))
         if text is not None:
-            return _object(load_yaml(text), rel), "config.schema.yaml"
+            return _object(_small_yaml(text, rel), rel), "config.schema.yaml"
     text = _read(root, "config", "config.yaml")
     if text is not None:
-        config = _object(load_yaml(text), "config/config.yaml")
+        config = _object(_small_yaml(text, "config/config.yaml"), "config/config.yaml")
         props = {str(k): _type(v) for k, v in config.items()}
         return {"type": "object", "properties": props}, "inferred"
     return None, "none"
+
+
+def _small_yaml(text: str, name: str) -> Any:
+    """YAML read on the request's path at most `MAX_PARAMS_FILE` bytes: pure-Python PyYAML
+    takes about 5 s a MiB (SEC-161S4-04)."""
+    if len(text.encode()) > MAX_PARAMS_FILE:
+        raise ValueError(f"{name} is larger than {MAX_PARAMS_FILE} bytes")
+    return load_yaml(text)
 
 
 def _object(value: Any, name: str) -> dict[str, Any]:

@@ -32,9 +32,10 @@ from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 router = APIRouter()
 
 MAX_META_BYTES = 1_048_576  # an engine's answer
-MAX_META_YML = 64 * 1024  # a local module's `main.nf` and `meta.yml` (SEC-161S2-01)
+MAX_MODULE_FILE = 64 * 1024  # a local module's `main.nf` and `meta.yml` (SEC-161S2-01)
 MAX_RULES = 2000
 INSPECTIONS = threading.BoundedSemaphore(2)  # engine processes the targets checks may run at once
+FETCHES = threading.BoundedSemaphore(2)  # Git fetches of Snakemake inspections (SEC-161S4-03)
 
 T = TypeVar("T")
 
@@ -94,15 +95,15 @@ def login_engine(settings: Settings) -> Engine:
     return run
 
 
-def slot(fn: Callable[[], T]) -> T:
-    """`fn()` under `INSPECTIONS`, for `targets:inspect` and `POST /runs` alike (SEC-161S2-03):
-    `503` while both slots are held."""
-    if not INSPECTIONS.acquire(blocking=False):
+def slot(fn: Callable[[], T], slots: threading.BoundedSemaphore = INSPECTIONS) -> T:
+    """`fn()` under `slots`, for `targets:inspect` and `POST /runs` alike (SEC-161S2-03):
+    `503` while all are held."""
+    if not slots.acquire(blocking=False):
         raise Problem(503, "runner-offline", "Busy", "other inspections are running: try again")
     try:
         return fn()
     finally:
-        INSPECTIONS.release()
+        slots.release()
 
 
 def bounded(engine: Engine, name: str, argv: list[str]) -> tuple[int, str, str]:
@@ -181,8 +182,8 @@ def _module_files(location: str) -> tuple[Path, bytes, Any]:
     if main is None or meta is None:
         raise Invalid("workflow.location", "main.nf or meta.yml is missing or not a regular file")
     for name, text in (("main.nf", main), ("meta.yml", meta)):  # req. 21
-        if len(text.encode()) > MAX_META_YML:
-            raise Invalid("workflow.location", f"{name} is larger than {MAX_META_YML} bytes")
+        if len(text.encode()) > MAX_MODULE_FILE:
+            raise Invalid("workflow.location", f"{name} is larger than {MAX_MODULE_FILE} bytes")
     try:
         return directory, main.encode(), load_yaml(meta)
     except (ValueError, TypeError, RecursionError, yaml.YAMLError):
@@ -365,6 +366,7 @@ def inspect(body: InspectIn, request: Request) -> dict[str, Any]:
     def find() -> str:
         return str(snakefile_of(resolve(settings.data_dir, body.location, body.revision).directory))
 
-    # a local directory is checked in the file pool; a Git fetch takes a slot (SEC-161S3-03)
-    snakefile = pooled(files, find) if body.location.startswith("/") else slot(find)
+    # a local directory is checked in the file pool (SEC-161S3-03); a Git fetch, up to three
+    # 300 s commands, takes a slot of its own, never an engine's (SEC-161S4-03)
+    snakefile = pooled(files, find) if body.location.startswith("/") else slot(find, FETCHES)
     return inspect_rules(engine, snakefile, body.rule)
