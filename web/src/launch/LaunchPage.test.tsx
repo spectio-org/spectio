@@ -642,3 +642,14 @@ test("FU-P3-108b: the Engine head reads the same in Where it runs and in the sum
   const heads = [...document.querySelectorAll("dt")].filter((dt) => dt.textContent === "Engine head");
   expect(heads.map((dt) => dt.nextElementSibling?.textContent)).toEqual(["Not chosen yet", "Not chosen yet"]);
 });
+
+test("CR-P3UI13-03: on the desktop a launch error sits under Before Launch, and no pinned bar is drawn", async () => {
+  page();
+  await load();
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  fetchMock.mockResolvedValueOnce(json(500, { status: 500, title: "Server error" }));
+  await userEvent.click(launch());
+  const alert = await screen.findByText(/^Not launched: /);
+  expect(screen.getByRole("region", { name: "Summary" })).toContainElement(alert);
+  expect(document.querySelector(".launch-bar")).toBeNull();
+});

@@ -56,7 +56,7 @@ function Sheet({ opened, onClose, title, focusTitle, children }: { opened: boole
       <Modal.Overlay />
       <Modal.Content>
         <Modal.Header>
-          <Modal.Title {...heading}>{title}</Modal.Title>
+          <Modal.Title className="sp-sheet-title" {...heading}>{title}</Modal.Title>
           <Modal.CloseButton aria-label="Close" />
         </Modal.Header>
         <Modal.Body>{children}</Modal.Body>

@@ -564,6 +564,12 @@ export function LaunchPage({
       {sending ? "Launching…" : "Launch"}
     </Button>
   );
+  /** A refused launch: in the phone's pinned bar, under Before Launch on the desktop. */
+  const formError = errors.form && (
+    <Text size="sm" c="var(--sp-state-failed-fg)" role="alert" mt={4}>
+      {errors.form}
+    </Text>
+  );
   const local = server?.executor === "local";
   const headLine = server ? (local ? `a process on ${server.node}` : `a tmux session on ${server.node}`) : "…";
   const runDirectory = server ? `${server.runs_root}/<run ID>` : "…";
@@ -929,24 +935,23 @@ export function LaunchPage({
                 </ul>
               )}
             </div>
+            {!phone && formError}
           </section>
           {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} extra={leaves ? keptAs(engine, configFile) : null} />}
           {/* the phone's pinned bar: Launch, then the first reason (a visual copy) or what it sends */}
-          <div className="launch-bar">
-            <div className="launch-bar-row">
-              {phone && launchButton}
-              {phone && (why || summary) && (
-                <Text id={summary ? "launch-reason" : undefined} size="sm" c="dimmed" className="launch-reason" aria-hidden={why ? true : undefined}>
-                  {why ?? summary}
-                </Text>
-              )}
+          {phone && (
+            <div className="launch-bar">
+              <div className="launch-bar-row">
+                {launchButton}
+                {(why || summary) && (
+                  <Text id={summary ? "launch-reason" : undefined} size="sm" c="dimmed" className="launch-reason" aria-hidden={why ? true : undefined}>
+                    {why ?? summary}
+                  </Text>
+                )}
+              </div>
+              {formError}
             </div>
-            {errors.form && (
-              <Text size="sm" c="var(--sp-state-failed-fg)" role="alert" mt={4}>
-                {errors.form}
-              </Text>
-            )}
-          </div>
+          )}
         </Stack>
       </div>
     </Stack>
