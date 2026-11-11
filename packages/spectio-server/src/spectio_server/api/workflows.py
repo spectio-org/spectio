@@ -59,11 +59,19 @@ ENTRY_FILES: dict[str, tuple[str, ...]] = {
     "snakemake": ("Snakefile", "workflow/Snakefile"),
 }
 SMK_SCHEMAS = ("config.schema.yaml", "workflow/schemas/config.schema.yaml")
-MAX_FILE = 1048576  # a config or schema file read by inspect
+MAX_FILE = 1048576  # a file inspect reads: nextflow.config, nextflow_schema.json, config.yaml
 MAX_PARAMS_FILE = 256 * 1024  # a catalog entry's params file (api §5.6, SEC-PRE-FU87-07)
 MAX_DEPTH = 32  # of the params (FU-P3-17), sent or read from a params file
 NO_ALIASES = "YAML aliases are not read"
 MAX_NUMBER = 128  # characters of a YAML number (SEC-161S4-01)
+MAX_YAML = 256 * 1024  # a Snakemake schema or config file inspect parses (req. 21, SEC-161S4-04)
+MAX_TOKENS = 131_072  # YAML tokens in one file: about 2 s of pure-Python PyYAML (SEC-161S5-04)
+
+
+class Unreadable(ValueError):
+    """A refusal in the server's own words, which quote no file content: shown as it is
+    (SEC-161S5-03). Any other error of a parser or constructor may quote the file."""
+
 
 SchemaSource = Literal["nextflow_schema.json", "config.schema.yaml", "inferred", "none"]
 
@@ -242,8 +250,9 @@ def _regular(root: Path, rel: str) -> bool:
         os.close(fd)
 
 
-def _read(root: Path, *parts: str) -> str | None:
-    """`root/parts…` when it is a regular file inside `root` (see `_open`), else None."""
+def _read(root: Path, *parts: str, cap: int = MAX_FILE) -> str | None:
+    """`root/parts…` when it is a regular file inside `root` (see `_open`), of at most `cap`
+    bytes, else None."""
     try:
         fd = _open(root, *parts)
     except OSError:  # missing, a symlink (ELOOP), not a directory
@@ -252,11 +261,11 @@ def _read(root: Path, *parts: str) -> str | None:
         try:
             if not stat.S_ISREG(os.fstat(fd).st_mode):
                 return None
-            raw = f.read(MAX_FILE + 1)
+            raw = f.read(cap + 1)
         except OSError as exc:  # an I/O error after the open (FU-P3-17)
-            raise ValueError(f"{parts[-1]} cannot be read: {exc.strerror}") from None
-    if len(raw) > MAX_FILE:
-        raise ValueError(f"{parts[-1]} is larger than {MAX_FILE} bytes")
+            raise Unreadable(f"{parts[-1]} cannot be read: {exc.strerror}") from None
+    if len(raw) > cap:
+        raise Unreadable(f"{parts[-1]} is larger than {cap} bytes")
     return raw.decode()
 
 
@@ -321,8 +330,14 @@ def read_params(root: Path, rel: str) -> dict[str, Any]:
 def _jsonable(value: Any) -> Any:
     """YAML dates and the like as strings, so that the response can carry them. Raises
     ValueError on NaN or an infinity, which JSON cannot carry (CR-P3FU87B-01), and TypeError on
-    a key that is not a string, a number, a boolean or null."""
-    return json.loads(json.dumps(value, default=str, allow_nan=False))
+    a key that is not a string, a number, a boolean or null. A lone surrogate (`"\\ud800"`) is
+    refused: the response could not be encoded (SEC-161S5-02)."""
+    text = json.dumps(value, default=str, allow_nan=False, ensure_ascii=False)
+    try:
+        text.encode()
+    except UnicodeEncodeError:
+        raise Unreadable("a string escape that is not Unicode text") from None
+    return json.loads(text)
 
 
 class _Loader(yaml.SafeLoader):
@@ -331,7 +346,16 @@ class _Loader(yaml.SafeLoader):
     with the square of the depth (SEC-161S2-01). The scanner's own level: quoted brackets do
     not hide it (SEC-161S3-01). Too deep raises `RecursionError` (CR-161S3-02, CR-161S4-05).
     One pass: aliases are refused as nodes are composed. Numbers are at most `MAX_NUMBER`
-    characters: a long `1:59:59…` takes quadratic time to convert (SEC-161S4-01)."""
+    characters: a long `1:59:59…` takes quadratic time to convert (SEC-161S4-01). At most
+    `MAX_TOKENS` tokens: each costs more the deeper the flow (SEC-161S5-04).
+
+    Accepted residual (SEC-161S5-05): integer keys that collide in Python's hash make a
+    mapping quadratic in its keys, under 1 s at `MAX_YAML`; a larger cap would need a check."""
+
+    def fetch_more_tokens(self) -> None:
+        if self.tokens_taken > MAX_TOKENS:
+            raise Unreadable(f"more than {MAX_TOKENS} YAML tokens")
+        super().fetch_more_tokens()
 
     def fetch_flow_collection_start(self, TokenClass: Any) -> None:
         if self.flow_level >= 2 * MAX_DEPTH:
@@ -340,14 +364,14 @@ class _Loader(yaml.SafeLoader):
 
     def compose_node(self, parent: Any, index: Any) -> Any:
         if self.check_event(yaml.AliasEvent):
-            raise ValueError(NO_ALIASES)
+            raise Unreadable(NO_ALIASES)
         return super().compose_node(parent, index)
 
 
 def _short_number(construct: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
     def checked(loader: Any, node: Any) -> Any:
         if len(node.value) > MAX_NUMBER:
-            raise ValueError(f"a number longer than {MAX_NUMBER} characters")
+            raise Unreadable(f"a number longer than {MAX_NUMBER} characters")
         return construct(loader, node)
 
     return checked
@@ -362,8 +386,10 @@ def load_yaml(text: str) -> Any:
     """`text` read by `_Loader`, as JSON values."""
     try:
         return _jsonable(yaml.load(text, Loader=_Loader))  # noqa: S506 (a SafeLoader)
-    except OverflowError:  # a float out of range (SEC-161S4-02)
-        raise ValueError("a number out of range") from None
+    # SafeConstructor on a bad explicit tag (`!!bool foo`, `!!timestamp ''`, `!!int ''`), and
+    # defence in depth for a float out of range: a refusal, never a 500 (SEC-161S5-01)
+    except (LookupError, AttributeError, OverflowError):
+        raise Unreadable("a value this server does not read") from None
 
 
 # An unterminated string or comment runs to the end, so no position is scanned twice
@@ -450,30 +476,25 @@ def _type(value: Any) -> dict[str, Any]:
 def schema_of(root: Path) -> tuple[dict[str, Any] | None, SchemaSource]:
     text = _read(root, "nextflow_schema.json")
     if text is not None:
-        return _object(json.loads(text), "nextflow_schema.json"), "nextflow_schema.json"
+        schema = _jsonable(json.loads(text))  # no lone surrogate (SEC-161S5-02)
+        return _object(schema, "nextflow_schema.json"), "nextflow_schema.json"
     for rel in SMK_SCHEMAS:
-        text = _read(root, *rel.split("/"))
+        text = _read(root, *rel.split("/"), cap=MAX_YAML)
         if text is not None:
-            return _object(_small_yaml(text, rel), rel), "config.schema.yaml"
+            return _object(load_yaml(text), rel), "config.schema.yaml"
     text = _read(root, "config", "config.yaml")
-    if text is not None:
-        config = _object(_small_yaml(text, "config/config.yaml"), "config/config.yaml")
+    # past MAX_YAML no form is inferred, as with no config: it only gives the form's defaults,
+    # so the pipeline still launches (CR-161S5-01, SEC-161S5-06)
+    if text is not None and len(text.encode()) <= MAX_YAML:
+        config = _object(load_yaml(text), "config/config.yaml")
         props = {str(k): _type(v) for k, v in config.items()}
         return {"type": "object", "properties": props}, "inferred"
     return None, "none"
 
 
-def _small_yaml(text: str, name: str) -> Any:
-    """YAML read on the request's path at most `MAX_PARAMS_FILE` bytes: pure-Python PyYAML
-    takes about 5 s a MiB (SEC-161S4-04)."""
-    if len(text.encode()) > MAX_PARAMS_FILE:
-        raise ValueError(f"{name} is larger than {MAX_PARAMS_FILE} bytes")
-    return load_yaml(text)
-
-
 def _object(value: Any, name: str) -> dict[str, Any]:
     if not isinstance(value, dict):
-        raise ValueError(f"{name} is not a mapping")
+        raise Unreadable(f"{name} is not a mapping")
     return value
 
 
@@ -491,13 +512,14 @@ def inspect_dir(directory: Path, default_name: str) -> Found:
     try:
         name, version, nf_profiles = nextflow_config(directory)
         schema, source = schema_of(directory)
-    # PyYAML's and the decoder's messages quote the file: not shown (SEC-161S3-04)
+    # Only the server's own words are shown: the messages of PyYAML, its constructors and the
+    # decoder quote the file (SEC-161S3-04, SEC-161S5-03). JSONDecodeError: a position only.
     except UnicodeDecodeError:
         raise Invalid("location", "the pipeline's files cannot be read: not UTF-8 text") from None
-    except yaml.YAMLError:
-        raise Invalid("location", "the pipeline's files cannot be read: not YAML") from None
-    except (ValueError, TypeError, RecursionError) as exc:  # JSONDecodeError: a position only
+    except (Unreadable, RecursionError, json.JSONDecodeError) as exc:
         raise Invalid("location", f"the pipeline's files cannot be read: {exc}") from None
+    except (ValueError, TypeError, yaml.YAMLError):
+        raise Invalid("location", "the pipeline's files cannot be read: not YAML") from None
     profiles = {"nextflow": nf_profiles, "snakemake": snakemake_profiles(directory)}
     shown = [p for e in (engines if engine is None else [engine]) for p in profiles[e]]
     return Found(

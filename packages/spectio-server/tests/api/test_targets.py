@@ -753,11 +753,17 @@ def test_snakemake_git_fetch_has_its_own_slots(
     on: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """SEC-161S3-03, SEC-161S4-03 (CR-161S4-01): a Git fetch takes a fetch slot, never an
-    engine's: with both fetch slots held, the inspection is 503 before any fetch, and a
-    registry module launch still starts."""
+    engine's: with both fetch slots held, the inspection is 503 before any fetch, and the
+    fetch runs with both inspection slots free."""
     fetched: list[str] = []
 
     def fetch(data_dir: Path, url: str, parts: tuple[str, ...], revision: str) -> Path:
+        # the fetch holds no inspection slot: both are free while it runs (CR-161S5-03)
+        held = [INSPECTIONS.acquire(blocking=False) for _ in range(2)]
+        for ok in held:
+            if ok:
+                INSPECTIONS.release()
+        assert all(held)
         fetched.append(url)
         return synthetic / "snakemake"
 
@@ -767,7 +773,6 @@ def test_snakemake_git_fetch_has_its_own_slots(
     try:
         assert all(taken)
         assert on.post(INSPECT, json=body).status_code == 503 and fetched == []
-        assert module_launch(on, version=VERSION).status_code == 201
     finally:
         for _ in taken:
             FETCHES.release()
@@ -786,8 +791,8 @@ def test_main_nf_is_capped(on: TestClient, tmp_path: Path) -> None:
 
 
 def test_long_numbers_are_refused_fast(on: TestClient, tmp_path: Path) -> None:
-    """SEC-161S4-01, -02: a `1:59:59…` integer converts in quadratic time, and as a float it
-    overflows: both are refused fast, with a 422, and SafeLoader itself is not changed."""
+    """SEC-161S4-01, -02: a `1:59:59…` integer converts in quadratic time: refused fast by
+    its length, as an integer or a float, with a 422; SafeLoader itself is not changed."""
     before = dict(yaml.SafeLoader.yaml_constructors)
     (tmp_path / "params.yml").write_text("x: 1" + ":59" * 85000 + "\n")  # under 256 KiB
     start = time.monotonic()

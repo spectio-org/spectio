@@ -786,3 +786,68 @@ def test_inspect_error_quotes_no_file_content(authed_client: TestClient, tmp_pat
     response = authed_client.get(INSPECT, params={"location": str(root)})
     assert response.status_code == 422 and "not YAML" in response.text
     assert "hunter2" not in response.text
+
+
+@pytest.mark.parametrize(
+    ("text", "said"),
+    [
+        ("a: !!timestamp foo\n", "a value this server does not read"),
+        ("a: !!bool foo\n", "a value this server does not read"),
+        ("a: !!int ''\n", "a value this server does not read"),
+        ("a: !!float '_'\n", "a value this server does not read"),
+        ('a: "\\ud800"\n', "a string escape that is not Unicode text"),
+        ("a: !!int TOKEN-abc123\n", "not YAML"),  # int()'s message quotes the value
+    ],
+)
+def test_inspect_refuses_bad_values_with_a_422(
+    authed_client: TestClient, tmp_path: Path, text: str, said: str
+) -> None:
+    """SEC-161S5-01, -02, -03: a bad explicit tag or a lone surrogate is a 422, never a 500,
+    and a constructor's message, which quotes the file, is not shown."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config" / "config.yaml").write_text(text)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422 and said in response.text
+    assert "TOKEN" not in response.text
+
+
+def test_inspect_refuses_a_lone_surrogate_in_a_json_schema(
+    authed_client: TestClient, tmp_path: Path
+) -> None:
+    """SEC-161S5-02: through JSON too, the response could not be encoded: a 422."""
+    root = tmp_path / "pipe"
+    root.mkdir()
+    (root / "main.nf").write_text("workflow {}\n")
+    (root / "nextflow_schema.json").write_text('{"title": "\\ud800"}')
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422 and "not Unicode text" in response.text
+
+
+def test_large_config_gives_no_form_but_launches(authed_client: TestClient, tmp_path: Path) -> None:
+    """CR-161S5-01, SEC-161S5-06: a config.yaml over 256 KiB infers no form, as with no
+    config; a schema that large is still refused."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config" / "config.yaml").write_text("".join(f"k{i}: {i}\n" for i in range(30000)))
+    body = authed_client.get(INSPECT, params={"location": str(root)}).json()
+    assert body["schema_source"] == "none" and body["engine"] == "snakemake"
+    (root / "config.schema.yaml").write_text("# padding\n" * 30000)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422
+    assert "config.schema.yaml is larger than 262144 bytes" in response.text
+
+
+def test_token_budget_bounds_deep_bursts(authed_client: TestClient, tmp_path: Path) -> None:
+    """SEC-161S5-04: 63-deep flow bursts up to 256 KiB stop at the token budget, fast."""
+    burst = "[" * 63 + "1" + "]" * 63
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config" / "config.yaml").write_text(f"- {burst}\n" * 1900)
+    start = time.monotonic()
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert time.monotonic() - start < 4
+    assert response.status_code == 422 and "more than 131072 YAML tokens" in response.text

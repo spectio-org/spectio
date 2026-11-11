@@ -26,7 +26,7 @@ from spectio.config import Settings
 from spectio.loginshell import run_login
 from spectio_sdk.targets import REGISTRY_NAME, RULE, VERSION, RunTarget
 from spectio_server.api.problems import Invalid, Problem
-from spectio_server.api.workflows import _read, load_yaml, local_dir, refuse_control
+from spectio_server.api.workflows import _jsonable, _read, load_yaml, local_dir, refuse_control
 from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 
 router = APIRouter()
@@ -221,7 +221,7 @@ def module_view(engine: Engine, name: str, version: str | None) -> dict[str, Any
     if rc != 0:
         raise _engine_failed("nextflow module view", rc, err or out)
     try:  # a login profile may print first; what follows the JSON is not read
-        view = json.JSONDecoder().raw_decode(out, out.index("{"))[0]
+        view = _jsonable(json.JSONDecoder().raw_decode(out, out.index("{"))[0])  # SEC-161S5-02
     except (ValueError, RecursionError):
         view = None
     if not isinstance(view, dict):
