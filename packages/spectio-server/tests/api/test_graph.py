@@ -17,12 +17,13 @@ from fastapi.testclient import TestClient
 
 from spectio.config import ServerOpts, Settings
 from spectio.runner.rundir import run_paths
+from spectio_server.files import results as results_files
 from spectio_server.graph import bioflow, document, static
 from spectio_server.store.writer import Writer
 
 from ..test_process_status import job, smk_run
 from .conftest import FIXTURES, FLAKY_RUN, SYNTHETIC, add_run, client_for, replay
-from .test_failure import API, RUN, Run
+from .test_failure import API, RUN, Run, event, push
 
 DATA = Path(__file__).resolve().parents[1] / "data" / "graph"
 FETCHNGS = DATA / "bioflow-insight-2.1.1_fetchngs_metro_map.json"
@@ -223,7 +224,9 @@ def test_nextflow_dag_truncated(settings: Settings, writer: Writer) -> None:
     assert doc["producer"] == "stages-only"
 
 
-def test_nextflow_outputs(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+def test_nextflow_outputs(
+    settings: Settings, writer: Writer, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """QC_STATS's outputs: the files published from its attempts' work directories, matched by
     the stored `attempts.work_dir`, which names the task and the attempt (CR-1)."""
     launch_id = add_run(writer, settings, FLAKY_RUN, "rnaseq-flaky")
@@ -258,6 +261,7 @@ def test_nextflow_outputs(settings: Settings, writer: Writer, tmp_path: Path) ->
         Path(d, "reads.fq.gz").write_bytes(gzip.compress(b"@r1\nACGT\n+\nIIII\n"))
         Path(d, ".command.sh").write_text("echo")
         Path(d, ".command.env").write_text("export SECRET=1")
+        Path(d, "input.fq").symlink_to(Path(d, "reads.fq.gz"))  # a staged input: a link
     for d in (paths.run_dir, paths.work_dir):
         d.chmod(0o700)  # the runner's directories are private (req. 10)
     items = got(client, f"/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs")["items"]
@@ -271,32 +275,60 @@ def test_nextflow_outputs(settings: Settings, writer: Writer, tmp_path: Path) ->
     )
     assert head.json() == {"text": "@r1\nACGT\n+\nIIII", "more": False, "gzip": True}
 
+    # past its time budget, the listing stops reading work directories (SEC-160-12)
+    ticks = iter(range(0, 1000, 10))
+    monkeypatch.setattr(results_files, "clock", lambda: next(ticks))
+    assert got(client, f"/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs")["items"] == []
+
 
 def test_req13_head_refuses_dot_names(settings: Settings, writer: Writer, tmp_path: Path) -> None:
     """A work-directory name that starts with `.` is never offered nor read (dev-env §15.3
-    req. 13), even when a publish event names it as its source (SEC-160-04)."""
+    req. 13), even when a publish event names it as its source (SEC-160-04, SEC-160-13)."""
     launch_id = add_run(writer, settings, FLAKY_RUN, "rnaseq-flaky")
     paths = run_paths(settings.runs_root, FLAKY_RUN)
     subs = {"<launch>/work": str(paths.work_dir), "<launch>": str(paths.launch_dir)}
-    replay(
+    spool = "nextflow-26.10.4_plugin_flaky.spool.jsonl"
+    replay(writer, tmp_path, launch_id, spool, FLAKY_RUN, subs, settings.runs_root)
+    work = next(
+        e["data"]["workDir"].replace("<launch>/work", str(paths.work_dir))
+        for e in map(json.loads, (FIXTURES / spool).read_text().splitlines())
+        if e["data"].get("process") == "MAKE_READS" and e["data"].get("workDir")
+    )
+    Path(work).mkdir(parents=True, exist_ok=True)
+    Path(work, ".command.env").write_text("export SECRET=1")
+    for d in (paths.run_dir, paths.work_dir):
+        d.chmod(0o700)
+    target = paths.launch_dir / "results" / "env.txt"
+    push(
         writer,
-        tmp_path,
+        settings,
         launch_id,
-        "nextflow-26.10.4_plugin_flaky.spool.jsonl",
-        FLAKY_RUN,
-        subs,
-        settings.runs_root,
+        event(
+            10_000,
+            "nextflow.onFilePublish",
+            run=FLAKY_RUN,
+            source=f"{work}/.command.env",
+            target=str(target),
+        ),
     )
     client = graph_client(settings, writer)
-    task = got(client, f"/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs")
-    tasks_ = got(client, f"/runs/{FLAKY_RUN}/tasks?process=MAKE_READS")["items"]
-    for name in (".command.env", ".command.run", ".exitcode", "sub/.x", "../x"):
-        r = client.get(
+    items = got(client, f"/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs")["items"]
+    published = [i for i in items if i["path"].endswith("env.txt")]
+    assert published and all(i["work_path"] is None for i in published)
+    assert all(not i["path"].startswith(".") for i in items)
+    task = published[0]["task_id"]
+
+    def head(name: str) -> Any:
+        return client.get(
             f"{API}/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs:head",
-            params={"path": name, "task_id": tasks_[0]["id"]},
+            params={"path": name, "task_id": task},
         )
-        assert r.status_code in (404, 422), name
-    assert task["items"] == []
+
+    assert "SECRET" not in head(published[0]["path"]).text
+    for name in (".command.env", ".command.run", ".exitcode"):
+        assert head(name).status_code == 422, name
+    for name in ("sub/.x", "../x"):
+        assert head(name).status_code == 404, name
 
 
 # --- The pure document -----------------------------------------------------------------------

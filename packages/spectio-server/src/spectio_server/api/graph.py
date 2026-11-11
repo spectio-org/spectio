@@ -20,6 +20,7 @@ graph). With `graph_view` off, every graph route is `404 feature-disabled`.
 import zlib
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from pathlib import PurePosixPath
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -41,14 +42,16 @@ from spectio_server.api.runs_read import (
 from spectio_server.api.taskfiles import HEADERS, in_pool, load_attempt
 from spectio_server.api.workflows import inspect_dir, resolve
 from spectio_server.failure import dir_run_id
+from spectio_server.files import results as files_results
 from spectio_server.files.confine import (
     NotAllowed,
     NotFound,
     entry_confined,
+    list_confined,
 )
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.files.redact import strip_escapes
-from spectio_server.files.results import Tree, Where, check_rel, list_results, open_raw
+from spectio_server.files.results import Tree, Where, check_rel, open_raw
 from spectio_server.files.taskfiles import AttemptFiles, TaskDir, check_work_rel
 from spectio_server.graph import bioflow, document, static
 from spectio_server.store.schema import attempts, events, run_output_events, run_stages, tasks
@@ -59,6 +62,8 @@ FEATURE = "graph_view"
 FLOW_BEGIN = "spectio.engine.nextflow.onFlowBegin"
 FILE_PUBLISH = "spectio.engine.nextflow.onFilePublish"
 MAX_OUTPUTS = 500
+WORK_ENTRIES = 64  # the most entries read at the top of one work directory
+WORK_S = 2.0  # the most seconds the work directories of one listing are read for
 WORK_TASKS = 40  # Nextflow: the most tasks whose work directory an output listing reads
 OPEN = ("pending", "submitted", "running")
 TERMINAL = ("succeeded", "failed", "cancelled")
@@ -367,16 +372,24 @@ def _stat(items: list[dict[str, Any]], trees: dict[str, Where]) -> None:
 
 def _work_files(work: list[tuple[str, int, AttemptFiles]], items: list[dict[str, Any]]) -> None:
     """Add the files at the top of each attempt's work directory that no publish event named:
-    what a channel carries between two processes is mostly never published. Read through
-    `TaskDir`, the root of the work-directory routes, so the same confinement applies."""
+    what a channel carries between two processes is mostly never published. Read below
+    `TaskDir`'s root, so the workdir routes' confinement applies, with no link followed: the
+    task's staged inputs are links, and they are not its outputs. Bounded: WORK_ENTRIES read
+    per directory, MAX_OUTPUTS items, WORK_S seconds (SEC-160-12)."""
     published = {(i["task_id"], i.get("work_path")) for i in items}
+    start = files_results.clock()
     for task_id, n, attempt in work:
+        if len(items) >= MAX_OUTPUTS or files_results.clock() - start > WORK_S:
+            return
         try:
-            _, entries, _ = list_results(TaskDir(attempt), None)
+            with TaskDir(attempt).roots() as (root, _):
+                if root is None:
+                    continue
+                found = list_confined(root, PurePosixPath("."), WORK_ENTRIES)
         except (NotAllowed, NotFound, OSError):
             continue
-        for e in entries:
-            if e.type != "file" or (task_id, e.name) in published:
+        for e in found.entries:
+            if e.type != "file" or not TaskDir.shown(e) or (task_id, e.name) in published:
                 continue
             items.append(
                 {
