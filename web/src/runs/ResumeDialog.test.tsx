@@ -205,7 +205,7 @@ test("Copy's Command item copies the engine command, first of the Copy items", a
   expect(await within(await header()).findByText("Copied the command")).toBeInTheDocument();
 });
 
-test("on the phone, Resume asks in a bottom sheet, Resume above Cancel", async () => {
+test("on the phone, Resume asks in a bottom sheet, Cancel then Resume (ui-spec §12.4)", async () => {
   viewport(390);
   detail(failedRun({ workflow: { ...run().workflow, engine: "snakemake" } }));
   app(`/runs/${ID}`);
@@ -214,7 +214,8 @@ test("on the phone, Resume asks in a bottom sheet, Resume above Cancel", async (
   expect(sheet).toHaveAttribute("aria-modal", "true");
   expect(sheet).toHaveTextContent("Snakemake runs again with --rerun-incomplete and reuses the 143 jobs that finished.");
   const buttons = within(sheet).getAllByRole("button").map((b) => b.textContent);
-  expect(buttons.indexOf("Resume")).toBeLessThan(buttons.indexOf("Cancel"));
+  expect(buttons.indexOf("Cancel")).toBeLessThan(buttons.indexOf("Resume"));
+  expect(sheet.querySelector(".sp-dialog-foot[data-stack]")).not.toBeNull();
   await waitFor(() => expect(within(sheet).getByRole("button", { name: "Cancel" })).toHaveFocus());
 });
 

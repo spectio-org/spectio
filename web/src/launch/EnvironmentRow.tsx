@@ -72,7 +72,7 @@ function Choice({ list, failed, chosen, onChoose, onRetry, error, onAdd }: Props
     return (
       <div className="launch-env-state">
         <p className="sp-alert">Environments could not be read</p>
-        <Button variant="default" size="xs" onClick={onRetry}>Retry</Button>
+        <Button variant="default" onClick={onRetry}>Retry</Button>
         <p className="sp-muted">The server's default environment will be used</p>
       </div>
     );

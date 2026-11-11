@@ -1,4 +1,5 @@
 import {
+  Anchor,
   Button,
   Checkbox,
   Group,
@@ -38,6 +39,7 @@ import { useServer } from "../server";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PageHead } from "../shell/PageHead";
+import "./launch.css";
 import { usePhone } from "../shell/layout";
 import { CatalogPicker, SaveToCatalog } from "./CatalogPicker";
 import { EngineButtons } from "./EngineButtons";
@@ -547,8 +549,8 @@ export function LaunchPage({
           .filter(Boolean)
           .join(" · ")
       : null;
-  // One action in two places on a desktop (LiteLaunch: the page head and under the aside), both
-  // described by the "Before Launch" list; the phone has the pinned bar only.
+  // One Launch (ui-spec §12.4, UI-13): at the right of the page head on a desktop, in the pinned bar
+  // on the phone, described by the "Before Launch" list.
   const launchButton = (
     <Button
       type="button"
@@ -594,7 +596,7 @@ export function LaunchPage({
           : `Guessed from ${loaded.engine_files.join(", ")} · change it if the guess is wrong`;
 
   return (
-    <Stack className="launch-page" gap="md">
+    <Stack className="launch-page" gap="xl">
       <PageHead
         section="launch"
         title="Launch a workflow"
@@ -614,7 +616,7 @@ export function LaunchPage({
         }
       />
       {prefillError && (
-        <Text c="red" role="alert">
+        <Text c="var(--sp-state-failed-fg)" role="alert">
           Not prefilled: {prefillError}
         </Text>
       )}
@@ -623,13 +625,13 @@ export function LaunchPage({
         <div role="alert" className="launch-banner">
           <Icon name="alert" />
           <span className="sp-grow">{`The extra config file could not be read: ${configDown}. Nothing was started and your values are kept.`}</span>
-          <Button size="xs" onClick={submit}>
+          <Button variant="default" onClick={submit}>
             Launch again
           </Button>
         </div>
       )}
       <div className="launch-grid">
-        <Stack gap="md">
+        <Stack gap="lg">
           <FoldSection id="launch-pipeline" icon="route" title="Pipeline" card reveal={goTo === "location" || goTo === "engine"}>
             <CatalogPicker data={catalog} failed={catalogFailed} onRetry={loadCatalog} chosen={entry} onChoose={choose} onClear={clear}>
               {paramsFile && (
@@ -831,7 +833,7 @@ export function LaunchPage({
             </Text>
           </FoldSection>
           {loaded && (
-            <FoldSection id="launch-params" icon="sliders" title="Parameters" reveal={!!goTo?.startsWith("params.")}>
+            <FoldSection id="launch-params" icon="sliders" title="Parameters" card reveal={!!goTo?.startsWith("params.")}>
               {sections.length > 1 && (
                 <Text size="sm" c="dimmed" mb="sm">
                   {`One section per ${grouped ? "schema group" : "map of the config, its keys dotted"} · ${changed === 1 ? "1 value differs from its default" : `${changed} values differ from their defaults`}`}
@@ -871,11 +873,11 @@ export function LaunchPage({
             </FoldSection>
           )}
         </Stack>
-        <Stack className="launch-aside" gap="md" component="aside" aria-label="Launch">
+        <Stack className="launch-aside" gap="lg" component="aside" aria-label="Launch">
           <section className="sp-card launch-summary" aria-labelledby="launch-summary-title">
-            <h2 id="launch-summary-title" className="launch-summary-title">
+            <h3 id="launch-summary-title" className="launch-summary-title">
               Summary
-            </h2>
+            </h3>
             <dl className="facts">
               <dt>Pipeline</dt>
               <dd>
@@ -910,7 +912,7 @@ export function LaunchPage({
                   {[...missing, ...warnings].map((r) => (
                     <li key={r.text} data-warning={warnings.includes(r) || undefined}>
                       {r.to ? (
-                        <a
+                        <Anchor
                           href={`#${targetId(r.to)}`}
                           onClick={(e) => {
                             e.preventDefault();
@@ -918,7 +920,7 @@ export function LaunchPage({
                           }}
                         >
                           {r.text}
-                        </a>
+                        </Anchor>
                       ) : (
                         r.text
                       )}
@@ -929,10 +931,10 @@ export function LaunchPage({
             </div>
           </section>
           {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} extra={leaves ? keptAs(engine, configFile) : null} />}
+          {/* the phone's pinned bar: Launch, then the first reason (a visual copy) or what it sends */}
           <div className="launch-bar">
             <div className="launch-bar-row">
-              {launchButton}
-              {/* the phone's bar: the first reason (a visual copy), or what Launch sends */}
+              {phone && launchButton}
               {phone && (why || summary) && (
                 <Text id={summary ? "launch-reason" : undefined} size="sm" c="dimmed" className="launch-reason" aria-hidden={why ? true : undefined}>
                   {why ?? summary}
@@ -940,7 +942,7 @@ export function LaunchPage({
               )}
             </div>
             {errors.form && (
-              <Text size="sm" c="red" role="alert" mt={4}>
+              <Text size="sm" c="var(--sp-state-failed-fg)" role="alert" mt={4}>
                 {errors.form}
               </Text>
             )}
@@ -976,7 +978,7 @@ function PrefillBanner({ prefill, onClear }: { prefill: Prefill; onClear?: () =>
         </ul>
       )}
       {onClear && (
-        <Button variant="default" size="xs" onClick={onClear}>
+        <Button variant="default" onClick={onClear}>
           Clear and start empty
         </Button>
       )}

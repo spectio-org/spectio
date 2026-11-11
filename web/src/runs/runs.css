@@ -1121,9 +1121,21 @@
   outline: 2px solid var(--sp-line-focus);
   outline-offset: 4px;
 }
+/* Dialog and sheet titles, and their footer (ui-spec §12.4, UI-18): 16/600 in the display font;
+   Cancel then the confirm at the right, gap sm; stacked full width on the phone, confirm last. */
 .sp-sheet-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
+}
+.sp-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-lg);
+}
+.sp-dialog-foot[data-stack] {
+  flex-direction: column;
 }
 .sp-sheet-name {
   margin: 0;
