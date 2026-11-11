@@ -1,9 +1,10 @@
 """`GET /me/notifications` and `POST /me/notifications:mark-read` in 0.0.1 (FU-P3-113, api §5.9).
 
 No notification table: an item is derived from a run the store has, one that succeeded, failed,
-was cancelled or waits at a gate (`awaiting_review`). An ended run is at its `ended_at`, else its
-`state_changed_at` (an adopted run's `state_changed_at` is when Spectio adopted it); a waiting run
-is at its `state_changed_at` (amended 2026-11-11). Each item names the run's engine. Newest
+was cancelled or waits at a gate (`awaiting_review`). An ended run is at its `ended_at`, never
+later than its `state_changed_at` (the server's clock), else its `state_changed_at` (an adopted
+run's `state_changed_at` is when Spectio adopted it); a waiting run is at its
+`state_changed_at` (amended 2026-11-11). Each item names the run's engine. Newest
 first, at most 50. The one principal's `notifications_read_at` is the mark: an item newer than it
 is unread. Behind the session, as every route; `mark-read` is a write
 (Origin and JSON body, dev-env §15.3 req. 7).
@@ -36,13 +37,19 @@ KINDS = {
     "cancelled": "run_cancelled",
     "awaiting_review": "gate_waiting",
 }
+# `ended_at` is the producer's clock (the engine event's `time`): bound it by the server's
+# terminal transition, min(ended_at, state_changed_at), so a clock ahead cannot sort first or
+# move the read mark past later items (SEC-P3UI05A-01, api §8 Clocks).
+SERVER_BOUNDED_END = case(
+    (runs.c.ended_at > runs.c.state_changed_at, runs.c.state_changed_at), else_=runs.c.ended_at
+)
 AT = type_coerce(
     case(
         (
             runs.c.state == "awaiting_review",
             func.coalesce(runs.c.state_changed_at, runs.c.ended_at, runs.c.created_at),
         ),
-        else_=func.coalesce(runs.c.ended_at, runs.c.state_changed_at, runs.c.created_at),
+        else_=func.coalesce(SERVER_BOUNDED_END, runs.c.state_changed_at, runs.c.created_at),
     ),
     UTCDateTime(),
 )
