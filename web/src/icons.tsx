@@ -66,6 +66,9 @@ export const ICONS = {
   pin: "M12 17v5 M9 4h6 M10 4v6l-3 4v3h10v-3l-3-4V4",
   more: "M5 12h1 M11.5 12h1 M18 12h1",
   trash: "M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v5 M14 11v5",
+  // the log toolbar (UI-11): wrap lines, follow the end
+  wrap: "M4 6h16 M4 12h13a3 3 0 0 1 0 6h-4 M15 16l-2 2 2 2 M4 18h5",
+  follow: "M7 6l5 5 5-5 M7 13l5 5 5-5",
 } as const;
 
 export type IconName = keyof typeof ICONS;
