@@ -2,6 +2,7 @@
 flag, the run graph from Snakemake's rule graphs and Nextflow's `onFlowBegin` DAG, a process's
 outputs, and the Launch graph (rule files, BioFlow-Insight's metro map)."""
 
+import gzip
 import json
 import os
 import shutil
@@ -129,6 +130,40 @@ def test_snakemake_outputs(settings: Settings, writer: Writer, tmp_path: Path) -
     assert nodes["make_reads"]["temp"] is True
 
 
+def test_output_head(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """The first lines of a listed output: plain text as is, gzip inflated (capped, so a bomb
+    costs 16 KiB), binary refused, and a path the process did not write is not found."""
+    run = smk_run(settings, writer, tmp_path)
+    reads = run.paths.launch_dir / "reads"
+    reads.mkdir(parents=True)
+    (reads / "a.txt").write_text("".join(f"line {i}\n" for i in range(100)))
+    (reads / "a.fq.gz").write_bytes(gzip.compress(b"@r1\nACGT\n+\nIIII\n"))
+    (reads / "bomb.gz").write_bytes(gzip.compress(b"A" * (64 << 20)))
+    (reads / "b.bam").write_bytes(b"BAM\x01\x00\x00")
+    names = ["a.txt", "a.fq.gz", "bomb.gz", "b.bam"]
+    job(run, 1, "make_reads", output=[str(reads / n) for n in names])
+    client = graph_client(settings, writer)
+    items = got(client, f"/runs/{RUN}/processes/make_reads/outputs")["items"]
+    assert {i["path"]: i["size"] for i in items}["reads/a.txt"] == 790
+    task = items[0]["task_id"]
+
+    def head(path: str) -> Any:
+        return client.get(
+            f"{API}/runs/{RUN}/processes/make_reads/outputs:head",
+            params={"path": path, "task_id": task},
+        )
+
+    text = head("reads/a.txt").json()
+    assert text["more"] and not text["gzip"] and text["text"].splitlines()[-1] == "line 39"
+    fq = head("reads/a.fq.gz").json()
+    assert fq == {"text": "@r1\nACGT\n+\nIIII", "more": False, "gzip": True}
+    bomb = head("reads/bomb.gz").json()
+    assert bomb["more"] and len(bomb["text"]) <= 16 << 10
+    assert head("reads/b.bam").status_code == 422
+    assert head("../../etc/passwd").status_code == 404
+    assert head("reads/nope.txt").status_code == 404
+
+
 # --- The run graph: Nextflow -----------------------------------------------------------------
 
 
@@ -189,6 +224,7 @@ def test_nextflow_outputs(settings: Settings, writer: Writer, tmp_path: Path) ->
     items = got(client, f"/runs/{FLAKY_RUN}/processes/QC_STATS/outputs")["items"]
     assert items and all(i["path"].endswith(".qc.json") for i in items)
     assert all(i["task_id"] and i["attempt_n"] for i in items)
+    assert all(i["work_path"].endswith(".qc.json") and "_work" not in i for i in items)
     assert not got(client, f"/runs/{FLAKY_RUN}/processes/MAKE_READS/outputs")["items"]
 
 

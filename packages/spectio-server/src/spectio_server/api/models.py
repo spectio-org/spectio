@@ -716,7 +716,15 @@ class ProcessOutput(BaseModel):
     attempt_n: int | None
     state: Literal["present", "missing", "removed", "unknown"]
     temp: bool
+    size: int | None = None  # bytes, when `present`
+    work_path: str | None = None  # Nextflow: the copy in the attempt's work directory
 
 
 class ProcessOutputs(BaseModel):
     items: list[ProcessOutput]
+
+
+class OutputHead(BaseModel):
+    text: str  # the first lines, at most 40 and 16 KiB
+    more: bool
+    gzip: bool

@@ -1828,6 +1828,29 @@
         "title": "Notifications",
         "type": "object"
       },
+      "OutputHead": {
+        "properties": {
+          "gzip": {
+            "title": "Gzip",
+            "type": "boolean"
+          },
+          "more": {
+            "title": "More",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "more",
+          "gzip"
+        ],
+        "title": "OutputHead",
+        "type": "object"
+      },
       "PinIn": {
         "additionalProperties": false,
         "properties": {
@@ -2049,6 +2072,17 @@
             "title": "Root",
             "type": "string"
           },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
           "state": {
             "enum": [
               "present",
@@ -2073,6 +2107,17 @@
           "temp": {
             "title": "Temp",
             "type": "boolean"
+          },
+          "work_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Path"
           }
         },
         "required": [
@@ -5561,6 +5606,72 @@
           }
         },
         "summary": "Process Outputs"
+      }
+    },
+    "/api/v1/runs/{run_id}/processes/{name}/outputs:head": {
+      "get": {
+        "operationId": "output_head_api_v1_runs__run_id__processes__name__outputs_head_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutputHead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Output Head"
       }
     },
     "/api/v1/runs/{run_id}/results": {
