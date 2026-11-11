@@ -919,6 +919,13 @@ def test_a_rule_target_never_meets_a_stop_flag(home: Path, bridges: Path, stop: 
     assert engine_args(replace(spec, target=None))  # a whole-pipeline run keeps them
 
 
+@pytest.mark.parametrize("kept", ["--force", "--forceall", "--cores=2", "-n", "--rerun-incomplete"])
+def test_a_rule_target_keeps_the_other_flags(home: Path, bridges: Path, kept: str) -> None:
+    """`--force` is Snakemake's own option: argparse matches it exactly, not as `--forcerun`."""
+    spec = snakemake_spec(home, target=RunTarget(kind="rule", name="merge"), extra_args=[kept])
+    assert kept in engine_args(spec)
+
+
 def test_a_bad_rule_name_is_refused(home: Path, bridges: Path) -> None:
     spec = snakemake_spec(home, target=RunTarget(kind="rule", name="-n"))
     with pytest.raises(ValueError, match="rule name"):
