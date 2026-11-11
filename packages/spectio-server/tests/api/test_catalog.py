@@ -349,7 +349,7 @@ def _deep(n: int) -> str:
         ("conf/alias.yaml", lambda p: p.write_text("a: &x 1\nb: *x\n"), "alias"),
         ("conf/deep.json", lambda p: p.write_text(_deep(33)), "deeper than 32"),
         ("conf/nested.json", lambda p: p.write_text("[" * 10000), "too deep"),
-        ("conf/nested.yaml", lambda p: p.write_text("[" * 10000), "not YAML"),
+        ("conf/nested.yaml", lambda p: p.write_text("[" * 10000), "too deep"),  # CR-161S3-02
         ("conf/nan.json", lambda p: p.write_text('{"a": NaN}'), "not JSON"),
         ("conf/huge.json", lambda p: p.write_text('{"a": 1e999}'), "not JSON"),
         ("conf/inf.yaml", lambda p: p.write_text("a: .inf\n"), "not YAML"),

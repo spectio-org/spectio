@@ -368,14 +368,15 @@ def test_launched_module_run_keeps_its_own_target(on: TestClient, writer: Writer
 
 
 def test_launched_module_run_keeps_its_pinned_version(on: TestClient, writer: Writer) -> None:
-    """CR-161S2-03: the installed `meta.yml` may name the version otherwise than the pin: the
-    pin is kept and the checksum still added."""
+    """CR-161S2-03, SEC-161S3-02: the installed `meta.yml` may name the version otherwise than
+    the pin: the pin is kept, the difference counted, and its checksum is not the pin's."""
     run = module_launch(on, version=VERSION).json()["id"]
     (launch,) = table(writer, launches)
     create = event(1, "nextflow.onFlowCreate", run, target={**REPORTED, "version": "1.0"})
     push(writer, on.app.state.settings, launch.id, create)  # type: ignore[attr-defined]
     found = module_of(writer, run)
-    assert found.target["version"] == VERSION and found.target["hash"] == CHECKSUM
+    assert found.target["version"] == VERSION and "hash" not in found.target
+    assert found.key is None and drops_of(writer, launch.id) == {"target_version_differs": 1}
 
 
 def test_rule_target_has_no_stages(on: TestClient, writer: Writer, settings: Settings) -> None:
@@ -451,10 +452,16 @@ def test_meta_yml_aliases_and_nesting_refused(on: TestClient, tmp_path: Path) ->
 def test_meta_yml_deep_flow_is_refused_fast(on: TestClient, tmp_path: Path) -> None:
     """SEC-161S2-01: deep flow nesting is refused before PyYAML parses it (a quadratic parse),
     and a `meta.yml` past 64 KiB is not read."""
-    deep = local(tmp_path, "name: deep\nx: " + "[" * 60000 + "\n", "deep")
-    start = time.monotonic()
-    assert fields(inspect_local(on, deep)) == ["workflow.location"]
-    assert time.monotonic() - start < 1
+    shapes = {
+        "open": "[" * 60000,
+        "single": "[']'," * 10900 + "]" * 10900,  # quoted closers (SEC-161S3-01)
+        "double": '["]",' * 10900 + "]" * 10900,
+    }
+    for name, flow in shapes.items():
+        deep = local(tmp_path, f"name: deep\nx: {flow}\n", name)
+        start = time.monotonic()
+        assert fields(inspect_local(on, deep)) == ["workflow.location"]
+        assert time.monotonic() - start < 1, name
     big = local(tmp_path, "name: big\n" + "# padding\n" * 7000, "big")
     response = inspect_local(on, big)
     assert fields(response) == ["workflow.location"]
@@ -733,6 +740,8 @@ def test_unversioned_module_runs_are_not_compared(settings: Settings, writer: Wr
 
 def test_deep_params_file_says_nested_too_deep(tmp_path: Path) -> None:
     """CR-161S3-02: the bracket bound of `load_yaml` keeps the callers' own message."""
-    (tmp_path / "params.yml").write_text("x: " + "[" * 100 + "]" * 100 + "\n")
+    (tmp_path / "params.yml").write_text("x: " + "[']'," * 50000 + "\n")  # under 256 KiB
+    start = time.monotonic()
     with pytest.raises(ValueError, match=r"params\.yml is nested too deep to be read"):
         read_params(tmp_path, "params.yml")
+    assert time.monotonic() - start < 1  # SEC-161S3-01

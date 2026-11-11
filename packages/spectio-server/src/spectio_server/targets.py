@@ -94,15 +94,20 @@ def login_engine(settings: Settings) -> Engine:
     return run
 
 
-def bounded(engine: Engine, name: str, argv: list[str]) -> tuple[int, str, str]:
-    """One engine process, under `INSPECTIONS` for `targets:inspect` and `POST /runs` alike
-    (SEC-161S2-03): `503` while both slots are held."""
+def slot(fn: Callable[[], T]) -> T:
+    """`fn()` under `INSPECTIONS`, for `targets:inspect` and `POST /runs` alike (SEC-161S2-03):
+    `503` while both slots are held."""
     if not INSPECTIONS.acquire(blocking=False):
         raise Problem(503, "runner-offline", "Busy", "other inspections are running: try again")
     try:
-        return engine(name, argv)
+        return fn()
     finally:
         INSPECTIONS.release()
+
+
+def bounded(engine: Engine, name: str, argv: list[str]) -> tuple[int, str, str]:
+    """One engine process, under `INSPECTIONS`."""
+    return slot(lambda: engine(name, argv))
 
 
 def _engine_failed(engine: str, rc: int, err: str) -> Problem:
@@ -305,8 +310,7 @@ def snakefile_of(directory: Path) -> Path:
     return found if found.is_file() else directory / "Snakefile"
 
 
-def inspect_rules(engine: Engine, directory: Path, rule: str | None) -> dict[str, Any]:
-    snakefile = str(snakefile_of(directory))
+def inspect_rules(engine: Engine, snakefile: str, rule: str | None) -> dict[str, Any]:
     rc, out, err = bounded(engine, "snakemake", ["--snakefile", snakefile, "--list-rules"])
     if rc != 0:
         raise _engine_failed("snakemake --list-rules", rc, err or out)
@@ -356,5 +360,11 @@ def inspect(body: InspectIn, request: Request) -> dict[str, Any]:
             "description": module.description,
             "inputs": module.inputs,
         }
-    resolved = resolve(settings.data_dir, body.location, body.revision)
-    return inspect_rules(engine, resolved.directory, body.rule)
+    files: FilePool = request.app.state.files
+
+    def find() -> str:
+        return str(snakefile_of(resolve(settings.data_dir, body.location, body.revision).directory))
+
+    # a local directory is checked in the file pool; a Git fetch takes a slot (SEC-161S3-03)
+    snakefile = pooled(files, find) if body.location.startswith("/") else slot(find)
+    return inspect_rules(engine, snakefile, body.rule)

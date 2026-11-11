@@ -775,3 +775,14 @@ def test_a_failed_engine_check_is_kept_only_briefly(
     versions()  # stale: the refresh runs (inline here)
     assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"}
     assert len(checks) == 4
+
+
+def test_inspect_error_quotes_no_file_content(authed_client: TestClient, tmp_path: Path) -> None:
+    """SEC-161S3-04: PyYAML's message quotes the failing line; the 422 does not."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config" / "config.yaml").write_text('token: "hunter2\n')
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422 and "not YAML" in response.text
+    assert "hunter2" not in response.text

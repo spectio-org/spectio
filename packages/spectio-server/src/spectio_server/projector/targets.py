@@ -63,11 +63,16 @@ def capture(p: "Projection", reported: RunTarget | None, engine: str) -> None:
         stored = RunTarget.model_validate(row.target)
         if stored.kind != "module" or stored.hash is not None or reported.hash is None:
             return
-        # not the version: the bridge reads it from the installed `meta.yml`, which may name
-        # it otherwise than the pin the launch kept (CR-161S2-03)
         if (reported.name, reported.source) != (stored.name, stored.source):
             log.warning("run %s: the head reported another module; its target is kept", p.run_id)
             p.dropped["target_refused"] += 1
+            return
+        # the bridge reads the version from the installed `meta.yml`, which may name it otherwise
+        # than the pin (CR-161S2-03): the pin is kept, counted apart, and its checksum is not
+        # compared with those of the pinned version (SEC-161S3-02)
+        if reported.version != stored.version:
+            log.warning("run %s: the head reported version %r", p.run_id, reported.version)
+            p.dropped["target_version_differs"] += 1
             return
         target = stored.model_copy(update={"hash": reported.hash})
     elif row.origin == "cli-observed":

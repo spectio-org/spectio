@@ -324,23 +324,27 @@ def _jsonable(value: Any) -> Any:
     return json.loads(json.dumps(value, default=str, allow_nan=False))
 
 
-def load_yaml(text: str) -> Any:
-    """Safe YAML with no aliases, which would let a small file grow huge in the response, and
-    no flow nesting past `2 * MAX_DEPTH` brackets: PyYAML's parse time grows with the square of
-    that depth (SEC-161S2-01). Brackets inside quotes count too, so this only refuses more.
-    Raised as `RecursionError`, which callers already report as nested too deep (CR-161S3-02)."""
-    level = 0
-    for char in text:
-        if char in "[{":
-            level += 1
-            if level > 2 * MAX_DEPTH:
-                raise RecursionError(f"nested deeper than {2 * MAX_DEPTH} brackets")
-        elif char in "]}":
-            level = max(level - 1, 0)
-    for event in yaml.parse(text, Loader=yaml.SafeLoader):
-        if isinstance(event, yaml.AliasEvent):
+class _Loader(yaml.SafeLoader):
+    """Safe YAML with no alias, which would let a small file grow huge in the response, and no
+    flow nesting past `2 * MAX_DEPTH`, refused by the scanner before PyYAML's parse time grows
+    with the square of the depth (SEC-161S2-01). The scanner's own level: quoted brackets do
+    not hide it (SEC-161S3-01). Too deep is a `RecursionError`, which callers already report
+    as nested too deep (CR-161S3-02). One pass: aliases are refused as nodes are composed."""
+
+    def fetch_flow_collection_start(self, TokenClass: Any) -> None:
+        if self.flow_level >= 2 * MAX_DEPTH:
+            raise RecursionError(f"nested deeper than {2 * MAX_DEPTH} brackets")
+        super().fetch_flow_collection_start(TokenClass)
+
+    def compose_node(self, parent: Any, index: Any) -> Any:
+        if self.check_event(yaml.AliasEvent):
             raise ValueError(NO_ALIASES)
-    return _jsonable(yaml.safe_load(text))
+        return super().compose_node(parent, index)
+
+
+def load_yaml(text: str) -> Any:
+    """`text` read by `_Loader`, as JSON values."""
+    return _jsonable(yaml.load(text, Loader=_Loader))  # noqa: S506 (a SafeLoader)
 
 
 # An unterminated string or comment runs to the end, so no position is scanned twice
@@ -460,7 +464,12 @@ def inspect_dir(directory: Path, default_name: str) -> Found:
     try:
         name, version, nf_profiles = nextflow_config(directory)
         schema, source = schema_of(directory)
-    except (ValueError, TypeError, RecursionError, yaml.YAMLError) as exc:  # JSONDecodeError
+    # PyYAML's and the decoder's messages quote the file: not shown (SEC-161S3-04)
+    except UnicodeDecodeError:
+        raise Invalid("location", "the pipeline's files cannot be read: not UTF-8 text") from None
+    except yaml.YAMLError:
+        raise Invalid("location", "the pipeline's files cannot be read: not YAML") from None
+    except (ValueError, TypeError, RecursionError) as exc:  # JSONDecodeError: a position only
         raise Invalid("location", f"the pipeline's files cannot be read: {exc}") from None
     profiles = {"nextflow": nf_profiles, "snakemake": snakemake_profiles(directory)}
     shown = [p for e in (engines if engine is None else [engine]) for p in profiles[e]]
