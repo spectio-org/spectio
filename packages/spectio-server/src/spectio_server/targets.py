@@ -8,13 +8,15 @@ in an empty temporary directory, their arguments as "$@", never as shell words.
 """
 
 import hashlib
+import json
 import re
 import shlex
 import tempfile
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar
 
 import yaml
 from fastapi import APIRouter, Request
@@ -24,12 +26,16 @@ from spectio.config import Settings
 from spectio.loginshell import run_login
 from spectio_sdk.targets import REGISTRY_NAME, RULE, VERSION, RunTarget
 from spectio_server.api.problems import Invalid, Problem
-from spectio_server.api.workflows import refuse_control
+from spectio_server.api.workflows import _read, load_yaml, local_dir, refuse_control
+from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 
 router = APIRouter()
 
 MAX_META_BYTES = 1_048_576  # a `meta.yml`, and an engine's answer
 MAX_RULES = 2000
+INSPECTIONS = threading.BoundedSemaphore(2)  # engine processes `targets:inspect` may hold at once
+
+T = TypeVar("T")
 
 Engine = Callable[[str, list[str]], tuple[int, str, str]]  # (engine, argv) -> (rc, out, err)
 
@@ -81,7 +87,7 @@ def login_engine(settings: Settings) -> Engine:
         )
         cmd = given or shlex.quote(engine)
         with tempfile.TemporaryDirectory(prefix="spectio-inspect-") as tmp:
-            out = run_login(f'cd "$1" && shift && {cmd} "$@"', tmp, *argv)
+            out = run_login(f'cd "$1" && shift && {cmd} "$@"', tmp, *argv, max_bytes=MAX_META_BYTES)
         return out.returncode, out.stdout, out.stderr
 
     return run
@@ -133,41 +139,56 @@ def _inputs(raw: Any) -> list[dict[str, Any]]:
     return found
 
 
-def _read_small(path: Path) -> bytes:
-    if path.is_symlink() or not path.is_file():
-        raise Invalid("workflow.location", f"{path.name} is missing or not a regular file")
-    with path.open("rb") as f:
-        data = f.read(MAX_META_BYTES + 1)
-    if len(data) > MAX_META_BYTES:
-        raise Invalid("workflow.location", f"{path.name} is larger than 1 MiB")
-    return data
+def pooled(files: FilePool, fn: Callable[[], T]) -> T:
+    """`fn()` in the file pool, with its timeout: `503` when the file system does not answer."""
+    try:
+        return files.run(fn, READ_TIMEOUT_S)
+    except Stalled as exc:
+        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
 
 
-def local_module(location: str) -> tuple[Module, dict[str, Any]]:
+def _module_files(directory: Path) -> tuple[bytes, Any]:
+    """`main.nf`'s bytes and `meta.yml`'s value, each a regular file reached through no symlink,
+    read without blocking (`workflows._read`), YAML with no alias."""
+    try:
+        main, meta = _read(directory, "main.nf"), _read(directory, "meta.yml")
+    except (OSError, ValueError) as exc:
+        raise Invalid("workflow.location", str(exc)) from None
+    if main is None or meta is None:
+        raise Invalid("workflow.location", "main.nf or meta.yml is missing or not a regular file")
+    try:
+        return main.encode(), load_yaml(meta)
+    except (ValueError, TypeError, RecursionError, yaml.YAMLError):
+        raise Invalid("workflow.location", "meta.yml is not YAML this server reads") from None
+
+
+def local_module(files: FilePool, location: str) -> Module:
     """A module directory: `main.nf` and `meta.yml`, read here; its hash is `main.nf`'s SHA-256."""
     refuse_control("workflow.location", location)
-    directory = Path(location)
-    if not directory.is_absolute() or not directory.is_dir():
-        raise Invalid("workflow.location", f"{location} is not a directory this account can read")
-    main = _read_small(directory / "main.nf")
+    if not location.startswith("/"):
+        raise Invalid("workflow.location", "a local module is an absolute path")
     try:
-        meta = yaml.safe_load(_read_small(directory / "meta.yml"))
-    except yaml.YAMLError:
-        raise Invalid("workflow.location", "meta.yml is not YAML") from None
+        directory = local_dir(location)
+    except Invalid as exc:
+        raise exc.under("workflow") from None
+    main, meta = pooled(files, lambda: _module_files(directory))
     if not isinstance(meta, dict):
         raise Invalid("workflow.location", "meta.yml is not a mapping")
     name = str(meta.get("name") or directory.name)[:128]
     version = meta.get("version")
+    version = None if version is None else str(version)[:64]
+    for value in (name, version or ""):
+        refuse_control("workflow.location", value)
     target = RunTarget(
         kind="module",
         name=name,
-        version=None if version is None else str(version)[:64],
+        version=version,
         hash=hashlib.sha256(main).hexdigest(),
         source="local",
         path=str(directory),
     )
     about = str(meta.get("description") or "")[:2000]
-    return Module(target, str(directory), _inputs(meta.get("input")), about), meta
+    return Module(target, str(directory), _inputs(meta.get("input")), about)
 
 
 def module_view(engine: Engine, name: str, version: str | None) -> dict[str, Any]:
@@ -175,12 +196,9 @@ def module_view(engine: Engine, name: str, version: str | None) -> dict[str, Any
     rc, out, err = engine("nextflow", argv)
     if rc != 0:
         raise _engine_failed("nextflow module view", rc, err or out)
-    if len(out) > MAX_META_BYTES:
-        raise Problem(502, "engine-failed", "The engine failed", "module view: answer too large")
-    start = out.find("{")  # a login profile may print first
-    try:
-        view = yaml.safe_load(out[start:]) if start >= 0 else None  # JSON is YAML
-    except yaml.YAMLError:
+    try:  # a login profile may print first; what follows the JSON is not read
+        view = json.JSONDecoder().raw_decode(out, out.index("{"))[0]
+    except (ValueError, RecursionError):
         view = None
     if not isinstance(view, dict):
         raise Problem(502, "engine-failed", "The engine failed", "module view: no JSON answer")
@@ -188,10 +206,10 @@ def module_view(engine: Engine, name: str, version: str | None) -> dict[str, Any
 
 
 def inspect_module(
-    settings: Settings, engine: Engine, location: str, version: str | None
+    settings: Settings, engine: Engine, files: FilePool, location: str, version: str | None
 ) -> Module:
     if location.startswith("/"):
-        return local_module(location)[0]
+        return local_module(files, location)
     registry_module(settings, location, version)
     view = module_view(engine, location, version)
     found = str(view.get("version") or "")
@@ -208,19 +226,26 @@ def inspect_module(
 
 
 def launch_module(
-    settings: Settings, engine: Engine, location: str, given: TargetIn, params: dict[str, Any]
+    settings: Settings,
+    engine: Engine,
+    files: FilePool,
+    location: str,
+    given: TargetIn,
+    params: dict[str, Any],
 ) -> Module:
     """The target of a module launch, checked whole (§5.10): pinned, allowed, inputs by name."""
+    if given.name is not None:
+        raise Invalid("target.name", "a module's name is its location")
     if location.startswith("/"):
-        module = local_module(location)[0]
+        module = local_module(files, location)
         if given.version is not None and given.version != module.target.version:
             raise Invalid("target.version", "differs from the module's meta.yml")
     else:
         if given.version is None:
             raise Invalid("target.version", "a registry module runs at a pinned version")
-        module = inspect_module(settings, engine, location, given.version)
+        module = inspect_module(settings, engine, files, location, given.version)
     names = {i["name"] for i in module.inputs}
-    unknown = sorted(set(params) - names) if names else []
+    unknown = sorted(set(params) - names)
     if unknown:
         raise Invalid(f"params.{unknown[0]}", f"the module has no input {unknown[0]}")
     return module
@@ -294,13 +319,24 @@ def launch_rule(given: TargetIn) -> RunTarget:
 
 @router.post("/targets:inspect")
 def inspect(body: InspectIn, request: Request) -> dict[str, Any]:
-    from spectio_server.api.workflows import resolve  # the launch's own rules
-
     settings: Settings = request.app.state.settings
     require_flag(settings)
+    if not INSPECTIONS.acquire(blocking=False):
+        raise Problem(503, "runner-offline", "Busy", "other inspections are running: try again")
+    try:
+        return _inspect(body, request, settings)
+    finally:
+        INSPECTIONS.release()
+
+
+def _inspect(body: InspectIn, request: Request, settings: Settings) -> dict[str, Any]:
+    from spectio_server.api.workflows import resolve  # the launch's own rules
+
     engine: Engine = request.app.state.target_engine
     if body.engine == "nextflow":
-        module = inspect_module(settings, engine, body.location, body.version)
+        module = inspect_module(
+            settings, engine, request.app.state.files, body.location, body.version
+        )
         t = module.target
         return {
             "kind": "module",

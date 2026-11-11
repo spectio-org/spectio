@@ -5,15 +5,16 @@ in `onFlowCreate` / `workflow_started` (§14.1), and what `runs.target` holds (�
 """
 
 import re
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, TypeGuard
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, ValidationError
 
-# Launch grammars (§5.10): a registry module, its pinned version, and a Snakemake rule.
+# Launch grammars (§5.10): a registry module, its pinned version, and a Snakemake rule; and a
+# registry checksum (`.module-info` `checksum=`).
 REGISTRY_NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}/[a-z0-9][a-z0-9_.-]{0,127}")
 VERSION = re.compile(r"[0-9A-Za-z][0-9A-Za-z._+-]{0,63}")
 RULE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,127}")
-HASH = re.compile(r"[0-9a-f]{32,64}")
+HASH = re.compile(r"[0-9a-f]{64}")
 
 MAX_TARGET_CHARS = 4096
 
@@ -38,10 +39,11 @@ class RunTarget(BaseModel):
     more: Annotated[StrictInt, Field(ge=0, le=1_000_000)] = 0
     checksum_changed: StrictBool | None = None
 
-    @property
-    def label(self) -> str:
-        """`nf-core/fastqc@1.0` or `qc_report`: how the screens and notes name it."""
-        return f"{self.name}@{self.version}" if self.version else self.name
+
+def from_registry(target: RunTarget | None, engine: str) -> TypeGuard[RunTarget]:
+    """A Nextflow registry module's run, which runs from the module's name, not a path."""
+    found = None if target is None else (target.kind, target.source, engine)
+    return found == ("module", "registry", "nextflow")
 
 
 def reported(value: Any) -> RunTarget | None:

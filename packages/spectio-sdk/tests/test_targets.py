@@ -15,7 +15,6 @@ MODULE = {
 def test_flow_create_keeps_a_module_target() -> None:
     data = NextflowFlowCreate.model_validate({"runName": "x", "target": MODULE})
     assert data.target == RunTarget(**MODULE)  # type: ignore[arg-type]
-    assert data.target is not None and data.target.label == "nf-core/fastqc@0.0.0-6d1763b"
 
 
 def test_a_target_that_does_not_fit_is_dropped_not_the_event() -> None:

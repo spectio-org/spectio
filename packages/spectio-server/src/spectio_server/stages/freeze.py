@@ -317,8 +317,12 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
     row = _run_row(p)
     names = [] if row.engine == "snakemake" else _names(p)
     sources, run_id = p.sources, p.run_id
+    target = target_of(p.conn, p.run_id)
 
     def job() -> _Found:
+        if target is not None and target.kind == "module":  # no pipeline file to read
+            return names, [], None, None, []
+        # a rule target still reads its Snakefile: its rules and checkpoints
         return _sources(sources, run_id, row, names, snakefile_main)
 
     pool = None if sources is None else sources.pool
@@ -329,7 +333,6 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
         log.warning("run %s: stage sources not read: %s", p.run_id, exc)
         universe, stages, source, checkpoints = names, [], None, []
         note = "The stage sources were not read in time (the file system did not answer)."
-    target = target_of(p.conn, p.run_id)
     if target is not None:  # one module or one rule: no stages, no gates (api §5.10)
         stages, source, note = [], None, stages_note(target)
     for n, stage in enumerate(stages, 1):

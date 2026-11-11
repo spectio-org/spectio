@@ -58,6 +58,7 @@ from spectio_server.resume import check_dirs, launch_payload, row_refusal
 from spectio_server.store.runs import first, insert_run, module_source
 from spectio_server.store.schema import principals, run_inputs, runner_commands
 from spectio_server.store.writer import Writer
+from spectio_server.targets import local_module, registry_module, require_flag
 
 router = APIRouter()
 
@@ -181,7 +182,10 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
     except NotResumable as exc:
         raise _conflict(exc.reason, str(exc)) from None
     target = None if parent.target is None else RunTarget.model_validate(parent.target)
+    if target is not None:
+        require_flag(settings)
     if target is not None and target.kind == "module":  # no pipeline to fetch (api §5.10)
+        target = _module_again(request, parent.location, target)
         location, source = parent.location, module_source(target)
         default_name = target.name.rsplit("/", 1)[-1]
     else:
@@ -240,6 +244,19 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
     response.headers["Location"] = f"/api/v1/runs/{child_id}"
     with read(request) as conn:
         return run_detail(conn, child_id, ctx)
+
+
+def _module_again(request: Request, location: str, target: RunTarget) -> RunTarget:
+    """A module target under the launch's rules again (api §5.10, CR-161S-03): a registry one
+    still allowed, its checksum left for the child's head to report (and compare); a local one
+    read again, so the child keeps the hash and version of what it runs."""
+    if target.source == "registry":
+        registry_module(request.app.state.settings, target.name, target.version)
+        if target.name != location:
+            raise Invalid("workflow.location", "differs from the run's module")
+        return target.model_copy(update={"hash": None, "checksum_changed": None})
+    found = local_module(request.app.state.files, location).target
+    return target.model_copy(update={"hash": found.hash, "version": found.version})
 
 
 CHANGED = "The kept config file of the parent changed: use Copy to a new launch"
@@ -392,8 +409,17 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         "default_resources": _recorded(row.default_resources),
         "config_file": None,  # a module run has none (api §5.10)
     }
-    if module:
-        return {**template, "non_default": list(params), "code_loading": []}
+    if module:  # a local module's directory loads code as a pipeline's does (SEC-161S-02)
+        local = target is not None and target.source == "local"
+        extra = settings.engines.extra_args.get("nextflow", [])
+        try:
+            loading = request.app.state.files.run(
+                lambda: code_loading(row.location, local, params, "nextflow", extra),
+                READ_TIMEOUT_S,
+            )
+        except Stalled as exc:
+            raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+        return {**template, "non_default": list(params), "code_loading": loading}
     try:
         resolved = resolve(settings.data_dir, row.location, row.revision)
         found = inspect_dir(resolved.directory, resolved.default_name)
@@ -436,11 +462,15 @@ def _recorded(column: dict[str, Any] | None) -> dict[str, Any] | None:
     return {k: v for k, v in column.items() if k != "state"}
 
 
-def _target_in(target: RunTarget) -> dict[str, Any]:
-    """The `target` of a `POST /runs` body: what the launch takes, not what it derives."""
+def _target_in(target: RunTarget) -> dict[str, Any] | None:
+    """The `target` of a `POST /runs` body: what the launch takes, not what it derives. A file
+    target has no launch form: the Copy is of the whole pipeline (CR-161S-07); a rule reached
+    with `--until` or `--allowed-rules` is copied as a rule target, which the form shows."""
     if target.kind == "module":
         pinned = {"version": target.version} if target.source == "registry" else {}
         return {"kind": "module", **pinned}
+    if target.kind == "file":
+        return None
     return {"kind": "rule", "name": target.name}
 
 

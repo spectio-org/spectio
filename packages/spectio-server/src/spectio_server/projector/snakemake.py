@@ -73,7 +73,8 @@ def project(p: Projection, data: BaseModel, kind: str = "") -> None:
     if isinstance(data, SnakemakeWorkflowStarted):
         p.set_started()
         p.pin_engine_version(data.snakemake_version)
-        targets.capture(p, data.target)  # before the freeze: a target run has no stages
+        # before the freeze: a target run has no stages
+        targets.capture(p, data.target, "snakemake")
         freeze.freeze(p, data.snakefile_main)
     elif isinstance(data, SnakemakeRunInfo):
         freeze.plan_jobs(p, data.stats)

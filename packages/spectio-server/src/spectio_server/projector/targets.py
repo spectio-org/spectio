@@ -7,11 +7,14 @@ a module run moves from its launch directory's workflow to the module's, so that
 `name@version` stored another checksum, the run's target says `checksum_changed`.
 """
 
+import logging
+import os
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Connection, delete, func, insert, select, update
 
-from spectio_sdk.targets import RunTarget
+from spectio import locations
+from spectio_sdk.targets import HASH, REGISTRY_NAME, RunTarget
 from spectio_server.ids import new_id
 from spectio_server.store.runs import module_source
 from spectio_server.store.schema import runs, workflow_versions, workflows
@@ -19,9 +22,37 @@ from spectio_server.store.schema import runs, workflow_versions, workflows
 if TYPE_CHECKING:
     from spectio_server.projector.runs import Projection
 
+log = logging.getLogger(__name__)
 
-def capture(p: "Projection", reported: RunTarget | None) -> None:
+KINDS = {"nextflow": ("module",), "snakemake": ("rule", "file")}
+
+
+def fits(target: RunTarget, engine: str) -> bool:
+    """Whether a reported target may move the run (SEC-161S-07): its kind is its engine's, a
+    module's source is named, a registry one has the launch's name grammar and a 64-hex
+    checksum, a local one an absolute, normalised path; no control character anywhere."""
+    if target.kind not in KINDS[engine]:
+        return False
+    try:
+        for value in (target.name, target.version, target.path):
+            locations.refuse_control(value or "")
+    except ValueError:
+        return False
+    if target.kind != "module":
+        return True
+    if target.source == "registry":
+        return bool(REGISTRY_NAME.fullmatch(target.name)) and (
+            target.hash is None or bool(HASH.fullmatch(target.hash))
+        )
+    path = target.path or ""
+    return target.source == "local" and path.startswith("/") and os.path.normpath(path) == path
+
+
+def capture(p: "Projection", reported: RunTarget | None, engine: str) -> None:
     if reported is None:
+        return
+    if not fits(reported, engine):
+        p.dropped["target_refused"] += 1
         return
     row = p.conn.execute(
         select(runs.c.target, runs.c.origin, runs.c.workflow_version_id).where(
@@ -31,6 +62,11 @@ def capture(p: "Projection", reported: RunTarget | None) -> None:
     if row.target is not None:  # launched with one: the launch wins, the head adds its hash
         stored = RunTarget.model_validate(row.target)
         if stored.kind != "module" or stored.hash is not None or reported.hash is None:
+            return
+        same = (stored.name, stored.version, stored.source)
+        if (reported.name, reported.version, reported.source) != same:
+            log.warning("run %s: the head reported another module; its target is kept", p.run_id)
+            p.dropped["target_refused"] += 1
             return
         target = stored.model_copy(update={"hash": reported.hash})
     elif row.origin == "cli-observed":
@@ -104,12 +140,17 @@ def _move(conn: Connection, old_version: str, target: RunTarget) -> None:
 
 
 def _checksum_changed(conn: Connection, run_id: str, target: RunTarget) -> bool:
-    """Another run of this module and version stored another checksum."""
+    """Another run of this module and version, in the run's project, stored another
+    checksum. Without a version there is no release to compare."""
+    if target.version is None:
+        return False
+    project = select(runs.c.project_id).where(runs.c.id == run_id).scalar_subquery()
     keys = conn.execute(
         select(workflow_versions.c.key)
         .join(workflows, workflows.c.id == workflow_versions.c.workflow_id)
         .join(runs, runs.c.workflow_version_id == workflow_versions.c.id)
         .where(
+            workflows.c.project_id == project,
             workflows.c.source == module_source(target),
             workflows.c.location == _location(target),
             workflow_versions.c.revision == target.version,

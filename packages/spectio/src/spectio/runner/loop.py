@@ -64,7 +64,7 @@ from spectio.runner.types import (
     SpoolBatch,
     Stalled,
 )
-from spectio_sdk.targets import RunTarget
+from spectio_sdk.targets import RunTarget, from_registry
 
 log = logging.getLogger(__name__)
 
@@ -312,7 +312,7 @@ class RunnerLoop:
             return None
         try:
             payload = LaunchPayload.model_validate(command.payload)
-            registry = payload.target is not None and payload.target.source == "registry"
+            registry = from_registry(payload.target, ref.engine)  # api §5.10
             if not registry and not Path(payload.location).is_absolute():
                 raise ValueError(f"{payload.location!r} is not an absolute path")
             environment = payload.environment or as_snapshot(

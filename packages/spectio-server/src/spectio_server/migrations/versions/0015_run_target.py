@@ -1,4 +1,4 @@
-"""A run's target: one module or one rule (api §5.9, §7 `runs`; #161): `runs.target`, null for
+"""A run's target: one module or one rule (api §5.10, §7 `runs`; #161): `runs.target`, null for
 the whole pipeline, which every run held so far is; and two `workflows.source` values,
 `module-registry` and `module-local`, the identity of a module run's workflow.
 

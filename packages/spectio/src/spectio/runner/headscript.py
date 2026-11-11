@@ -301,12 +301,16 @@ def _module_run(spec: LaunchSpec, target: RunTarget) -> list[str]:
 
 
 # Snakemake options that stop or limit a run; gates own them, a target never meets them.
-STOP_FLAGS = ("--until", "--omit-from", "--allowed-rules", "--forcerun", "-R")
+STOP_FLAGS = ("--until", "--omit-from", "--allowed-rules", "--forcerun")
+STOP_SHORT = ("-U", "-O", "-R")  # also with the value attached: `-Umerge`
 
 
 def _stops(arg: str) -> bool:
+    """A stop flag, or what argparse reads as one: a short form, or a long one's prefix."""
+    if not arg.startswith("--"):
+        return arg.startswith(STOP_SHORT)
     name = arg.split("=", 1)[0]
-    return name in STOP_FLAGS or (arg.startswith("-R") and not arg.startswith("--"))
+    return len(name) > 2 and any(flag.startswith(name) for flag in STOP_FLAGS)
 
 
 def _snakemake_base(spec: LaunchSpec, target: RunTarget | None = None) -> list[str]:

@@ -3,6 +3,7 @@ inspection for the Launch form, the store and the rebuild."""
 
 import hashlib
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -11,37 +12,44 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import insert, select, update
 
 from spectio.config import FeatureOpts, Settings
+from spectio.runner import loop
+from spectio.runner.engines import EngineInfo
 from spectio.runner.loop import LaunchPayload
 from spectio.runner.observed import ObservedRun
-from spectio.runner.rundir import read_run_manifest, run_paths
+from spectio.runner.rundir import read_run_manifest, run_paths, write_run_manifest
+from spectio_sdk.targets import RunTarget
+from spectio_server.api.relaunch import _target_in
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.rebuild import rebuild_index
+from spectio_server.sink import StoreSink
 from spectio_server.store.db import open_db
 from spectio_server.store.runs import insert_observed_run
 from spectio_server.store.schema import (
     events,
     launches,
+    projects,
     run_stages,
     runner_commands,
     runs,
+    spool_drops,
     workflow_versions,
     workflows,
 )
 from spectio_server.store.writer import Writer
-from spectio_server.targets import plan_of
+from spectio_server.targets import INSPECTIONS, MAX_META_BYTES, login_engine, plan_of
 
 from ..test_serve import run_id
 from .conftest import client_for
 from .test_failure import event, push
-from .test_launch import RUNS, fields, table
+from .test_launch import RUNS, RecordingLauncher, fields, table
 from .test_relaunch import end, resume
 
 INSPECT = "/api/v1/targets:inspect"
 NONE = dict.fromkeys(("version", "hash", "source", "path", "flag", "checksum_changed"))
-SPIKE = Path(__file__).resolve().parents[4] / "spikes" / "module-run"
+SPIKE = Path(__file__).resolve().parents[4] / "tests" / "fixtures" / "module-run"
 VIEW = json.loads((SPIKE / "fastqc-view.json").read_text())
 VERSION = VIEW["version"]
 JOB_STATS = (SPIKE / "smk-merge-empty.txt").read_text().split("=== snakemake -n --until")[0]
@@ -338,11 +346,23 @@ def test_terminal_module_runs_share_one_workflow(settings: Settings, writer: Wri
 def test_launched_module_run_gets_its_checksum(on: TestClient, writer: Writer) -> None:
     run = module_launch(on, version=VERSION).json()["id"]
     (launch,) = table(writer, launches)
-    create = event(1, "nextflow.onFlowCreate", run, target={**REPORTED, "version": "other"})
+    create = event(1, "nextflow.onFlowCreate", run, target=REPORTED)
     push(writer, on.app.state.settings, launch.id, create)  # type: ignore[attr-defined]
     found = module_of(writer, run)
     assert found.target["hash"] == CHECKSUM and found.target["version"] == VERSION
     assert found.key == CHECKSUM
+
+
+def test_launched_module_run_keeps_its_own_target(on: TestClient, writer: Writer) -> None:
+    """SEC-161S-09: a head that reports another module or version adds nothing: the launch's
+    target is kept, its checksum unknown."""
+    run = module_launch(on, version=VERSION).json()["id"]
+    (launch,) = table(writer, launches)
+    create = event(1, "nextflow.onFlowCreate", run, target={**REPORTED, "version": "other"})
+    push(writer, on.app.state.settings, launch.id, create)  # type: ignore[attr-defined]
+    found = module_of(writer, run)
+    assert found.target["version"] == VERSION and "hash" not in found.target
+    assert found.key is None
 
 
 def test_rule_target_has_no_stages(on: TestClient, writer: Writer, settings: Settings) -> None:
@@ -390,3 +410,272 @@ def test_resume_keeps_the_target(on: TestClient, writer: Writer, settings: Setti
     payload = LaunchPayload.model_validate(command.payload)
     assert payload.location == "nf-core/fastqc" and payload.resume_of is not None
     assert payload.target is not None and payload.target.version == VERSION
+
+
+# --- Review fixes (SEC-161S, CR-161S) ---------------------------------------------------------
+
+
+def local(tmp_path: Path, meta: str, name: str = "hello") -> Path:
+    module = tmp_path / name
+    module.mkdir()
+    (module / "main.nf").write_text("process HELLO { }\n")
+    (module / "meta.yml").write_text(meta)
+    return module
+
+
+def inspect_local(client: TestClient, module: Path) -> Any:
+    return client.post(INSPECT, json={"engine": "nextflow", "location": str(module)})
+
+
+def test_meta_yml_aliases_and_nesting_refused(on: TestClient, tmp_path: Path) -> None:
+    """SEC-161S-01: no alias (a small file growing huge), no nesting deep enough to recurse."""
+    bomb = local(tmp_path, "a: &a [x, x]\nb: &b [*a, *a]\nname: hello\n", "bomb")
+    assert fields(inspect_local(on, bomb)) == ["workflow.location"]
+    deep = local(tmp_path, "name: deep\nx: " + "[" * 1000 + "]" * 1000 + "\n", "deep")
+    assert fields(inspect_local(on, deep)) == ["workflow.location"]
+
+
+def test_meta_yml_control_characters_refused(on: TestClient, tmp_path: Path) -> None:
+    """SEC-161S-12: a meta.yml name or version is refused as a location would be."""
+    named = local(tmp_path, 'name: "hello\\u001b[31m"\n', "named")
+    assert fields(inspect_local(on, named)) == ["workflow.location"]
+    versioned = local(tmp_path, 'name: hello\nversion: "1\\n2"\n', "versioned")
+    assert fields(inspect_local(on, versioned)) == ["workflow.location"]
+
+
+def test_local_module_reads_no_fifo(on: TestClient, tmp_path: Path) -> None:
+    """SEC-161S-05: `main.nf` read without blocking, as inspect reads a pipeline's files."""
+    module = local(tmp_path, "name: hello\n")
+    (module / "main.nf").unlink()
+    os.mkfifo(module / "main.nf")
+    assert fields(inspect_local(on, module)) == ["workflow.location"]
+
+
+def test_module_view_text_after_the_json(settings: Settings, writer: Writer) -> None:
+    """CR-161S-10: the answer is JSON, read up to its end; what follows does not matter."""
+
+    def view(engine: str, argv: list[str]) -> tuple[int, str, str]:
+        return 0, "profile noise\n" + json.dumps(VIEW) + "\nbye {", ""
+
+    settings.features = FeatureOpts(single_target=True)
+    client = client_for(settings, writer)
+    client.app.state.target_engine = view  # type: ignore[attr-defined]
+    response = client.post(INSPECT, json={"engine": "nextflow", "location": "nf-core/fastqc"})
+    assert response.status_code == 200, response.text
+
+
+def test_engine_answer_is_capped(settings: Settings) -> None:
+    """CR-161S-02, SEC-161S-06: an engine that prints without end is stopped past 1 MiB."""
+    settings.engines.nextflow_cmd = "yes"
+    rc, out, err = login_engine(settings)("nextflow", ["module", "view"])
+    assert rc != 0 and len(out) <= MAX_META_BYTES + 65536 and "larger than" in err
+
+
+def test_inspect_is_bounded(on: TestClient) -> None:
+    """At most two inspections at once: a third is 503, never a queue of engine processes."""
+    taken = [INSPECTIONS.acquire(blocking=False) for _ in range(2)]
+    try:
+        assert all(taken)
+        response = on.post(INSPECT, json={"engine": "nextflow", "location": "nf-core/fastqc"})
+        assert response.status_code == 503
+    finally:
+        for _ in taken:
+            INSPECTIONS.release()
+    response = on.post(INSPECT, json={"engine": "nextflow", "location": "nf-core/fastqc"})
+    assert response.status_code == 200
+
+
+def test_module_without_inputs_takes_no_params(on: TestClient, tmp_path: Path) -> None:
+    """CR-161S-04: a module that declares no input takes no parameter."""
+    module = local(tmp_path, "name: hello\n")
+    assert fields(module_launch(on, location=str(module), params={"x": 1})) == ["params.x"]
+
+
+def test_module_target_takes_no_name(on: TestClient) -> None:
+    """CR-161S-08: a module's name is its location."""
+    assert fields(module_launch(on, version=VERSION, name="other")) == ["target.name"]
+
+
+def test_module_config_file_refused_first(settings: Settings, writer: Writer) -> None:
+    """CR-161S-09: a config file is refused before the engine is asked anything."""
+    settings.features = FeatureOpts(single_target=True)
+    client = client_for(settings, writer)
+    failing = FakeEngine(rc=1)
+    client.app.state.target_engine = failing  # type: ignore[attr-defined]
+    body = {
+        "workflow": {"location": "nf-core/fastqc", "engine": "nextflow"},
+        "target": {"kind": "module", "version": VERSION},
+        "config_file": "/etc/x.config",
+    }
+    assert fields(client.post(RUNS, json=body)) == ["config_file"] and failing.calls == []
+
+
+def test_resume_checks_the_registry_module_again(
+    on: TestClient, writer: Writer, settings: Settings
+) -> None:
+    """CR-161S-03, SEC-161S-03: Resume runs the launch's rules again: the flag, the namespace."""
+    run = module_launch(on, version=VERSION).json()["id"]
+    end(writer, settings, run)
+    settings.features = FeatureOpts(single_target=True, module_namespaces=["other"])
+    assert fields(resume(on, run)) == ["workflow.location"]
+    settings.features = FeatureOpts(single_target=False)
+    response = resume(on, run)
+    assert response.status_code == 422 and response.json()["type"].endswith("not-in-this-version")
+
+
+def test_resume_of_a_registry_module_drops_its_checksum(
+    on: TestClient, writer: Writer, settings: Settings
+) -> None:
+    """SEC-161S-09: the child's head reports its own checksum, compared with the parent's."""
+    run = module_launch(on, version=VERSION).json()["id"]
+    launch = next(r for r in table(writer, launches) if r.run_id == run)
+    push(writer, settings, launch.id, event(1, "nextflow.onFlowCreate", run, target=REPORTED))
+    end(writer, settings, run)
+    response = resume(on, run)
+    assert response.status_code == 201, response.text
+    assert response.json()["target"]["hash"] is None
+
+
+def test_resume_of_a_local_module_reads_it_again(
+    on: TestClient, writer: Writer, settings: Settings, tmp_path: Path
+) -> None:
+    """CR-161S-03: a local module is read again: the child runs what is there now."""
+    module = local(tmp_path, "name: hello\nversion: '1'\n")
+    run = module_launch(on, location=str(module), params={}).json()["id"]
+    end(writer, settings, run)
+    (module / "main.nf").write_text("process HELLO2 { }\n")
+    (module / "meta.yml").write_text("name: hello\nversion: '2'\n")
+    response = resume(on, run)
+    assert response.status_code == 201, response.text
+    target = response.json()["target"]
+    assert target["hash"] == hashlib.sha256(b"process HELLO2 { }\n").hexdigest()
+    assert target["version"] == "2"
+
+
+def test_rebuild_refuses_a_bad_registry_manifest(
+    on: TestClient, settings: Settings, tmp_path: Path
+) -> None:
+    """CR-161S-03: a rebuilt registry module run meets the launch grammar, or is skipped."""
+    run_id = module_launch(on, version=VERSION).json()["id"]
+    run_dir = run_paths(settings.runs_root, run_id).run_dir
+    manifest = read_run_manifest(run_dir)
+    assert manifest.target is not None
+    bad = manifest.target.model_copy(update={"version": "1;rm -rf"})
+    write_run_manifest(run_dir, manifest.model_copy(update={"target": bad}))
+    db_dir = tmp_path / "rebuilt"
+    db_dir.mkdir(mode=0o700)
+    engine, _ = open_db(db_dir)
+    fresh = Writer(engine)
+    try:
+        fresh.submit(lambda c: ensure_tenancy(c, "me", "local", {}, "0.0.1")).result()
+        found = rebuild_index(fresh, settings.runs_root)
+    finally:
+        fresh.close()
+        engine.dispose()
+    assert (found.added, found.skipped) == (0, 1)
+
+
+def test_copy_of_a_local_module_flags_its_directory(on: TestClient, tmp_path: Path) -> None:
+    """SEC-161S-02: a module directory others may write is flagged, as a pipeline's is."""
+    module = local(tmp_path, "name: hello\n")
+    run = module_launch(on, location=str(module), params={}).json()["id"]
+    module.chmod(0o777)
+    found = on.get(f"/api/v1/runs/{run}:launch-template").json()["code_loading"]
+    assert found == [
+        {"field": "workflow.location", "value": str(module), "writable_by_others": True}
+    ]
+
+
+def test_runner_refuses_a_relative_location_unless_a_registry_module(
+    on: TestClient, synthetic: Path, writer: Writer, settings: Settings, monkeypatch: Any
+) -> None:
+    """SEC-161S-10: only a Nextflow registry module runs from a name, not a rule that says
+    `source: registry`."""
+    monkeypatch.setattr(loop, "check_engine", lambda e, c: EngineInfo("snakemake", "9.27.1"))
+    body = {
+        "workflow": {"location": str(synthetic / "snakemake"), "engine": "snakemake"},
+        "target": {"kind": "rule", "name": "qc_report"},
+    }
+    assert on.post(RUNS, json=body).status_code == 201
+    (cmd,) = table(writer, runner_commands)
+    target = {"kind": "rule", "name": "qc_report", "source": "registry"}
+    payload = {**cmd.payload, "location": "nf-core/fastqc", "target": target}
+    query = update(runner_commands).where(runner_commands.c.id == cmd.id).values(payload=payload)
+    writer.submit(lambda c: c.execute(query)).result()
+    launcher = RecordingLauncher()
+    loop.RunnerLoop(StoreSink(writer, settings.runs_root), launcher, settings).tick()
+    assert launcher.specs == []
+    (row,) = table(writer, runs)
+    assert row.state == "failed" and "absolute path" in row.failure["message"]
+
+
+def test_target_in_of_a_copy() -> None:
+    """CR-161S-07: a file target is copied as the whole pipeline; a rule keeps its name."""
+    assert _target_in(RunTarget(kind="file", name="out/a.txt", flag="target")) is None
+    until = RunTarget(kind="rule", name="qc_report", flag="until")
+    assert _target_in(until) == {"kind": "rule", "name": "qc_report"}
+
+
+def drops_of(writer: Writer, launch: str) -> dict[str, int]:
+    query = select(spool_drops.c.reason, spool_drops.c.count).where(
+        spool_drops.c.launch_id == launch
+    )
+    rows = writer.submit(lambda c: c.execute(query).all()).result()
+    return {reason: n for reason, n in rows}
+
+
+@pytest.mark.parametrize(
+    ("engine", "target"),
+    [
+        ("nextflow", {"kind": "rule", "name": "qc_report"}),
+        ("snakemake", {**REPORTED}),
+        ("nextflow", {**REPORTED, "name": "NF/../fastqc"}),
+        ("nextflow", {**REPORTED, "hash": "abc"}),
+        ("nextflow", {**REPORTED, "version": "1\x1b[31m"}),
+        ("nextflow", {"kind": "module", "name": "m", "source": "local", "path": "rel/m"}),
+        ("nextflow", {"kind": "module", "name": "m", "source": "local", "path": "/a/../m"}),
+        ("nextflow", {"kind": "module", "name": "m"}),
+    ],
+    ids=["rule-on-nf", "module-on-smk", "name", "hash", "control", "relative", "dotdot", "nosrc"],
+)
+def test_reported_target_that_does_not_fit_is_dropped(
+    settings: Settings, writer: Writer, engine: str, target: dict[str, Any]
+) -> None:
+    """SEC-161S-07: a reported target that does not fit its engine or the grammars moves
+    nothing: no target, no workflow moved; the refusal is counted."""
+    launch = observed(writer, 5, "/scratch/forged", engine=engine)
+    hook = "nextflow.onFlowCreate" if engine == "nextflow" else "snakemake.workflow_started"
+    push(writer, settings, launch, event(1, hook, run_id(5), target=target))
+    found = module_of(writer, run_id(5))
+    assert found.target is None and found.source == "local"
+    assert drops_of(writer, launch) == {"target_refused": 1}
+
+
+def test_checksum_changed_within_one_project(settings: Settings, writer: Writer) -> None:
+    """SEC-161S-08: another project's run of the module is not compared."""
+    launch = observed(writer, 6, "/scratch/a")
+    push(writer, settings, launch, event(1, "nextflow.onFlowCreate", run_id(6), target=REPORTED))
+
+    def elsewhere(conn: Any) -> None:
+        conn.execute(
+            insert(projects).values(
+                id="prj_other", created_at=datetime.now(UTC), owning_group_id="grp_x"
+            )
+        )
+        conn.execute(update(workflows).values(project_id="prj_other"))
+        conn.execute(update(runs).values(project_id="prj_other"))
+
+    writer.submit(elsewhere).result()
+    launch = observed(writer, 7, "/scratch/b")
+    other = {**REPORTED, "hash": "0" * 64}
+    push(writer, settings, launch, event(1, "nextflow.onFlowCreate", run_id(7), target=other))
+    assert "checksum_changed" not in module_of(writer, run_id(7)).target
+
+
+def test_unversioned_module_runs_are_not_compared(settings: Settings, writer: Writer) -> None:
+    """CR-161S-01: with no version, two checksums say nothing about one release."""
+    for n, hash_ in ((8, CHECKSUM), (9, "0" * 64)):
+        launch = observed(writer, n, f"/scratch/{n}")
+        target = {**REPORTED, "version": None, "hash": hash_}
+        push(writer, settings, launch, event(1, "nextflow.onFlowCreate", run_id(n), target=target))
+    assert "checksum_changed" not in module_of(writer, run_id(9)).target

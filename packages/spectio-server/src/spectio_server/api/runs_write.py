@@ -45,7 +45,7 @@ from spectio_server.api.workflows import (
 )
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
-from spectio_server.store.runs import EngineConflict, first, insert_run
+from spectio_server.store.runs import EngineConflict, first, insert_run, module_source
 from spectio_server.store.schema import principals, runner_commands
 from spectio_server.store.writer import Writer
 from spectio_server.targets import TargetIn, launch_module, launch_rule, require_flag
@@ -177,19 +177,19 @@ def _launch_module(
         raise Invalid("target.kind", "a Snakemake run targets a rule, not a module")
     if body.workflow.revision is not None:
         raise Invalid("workflow.revision", "a module has a version, not a revision")
-    settings = request.app.state.settings
+    if body.config_file is not None:  # its roots are a pipeline's (api §5.7, §5.10)
+        raise Invalid("config_file", "a module run takes no extra config file")
+    state = request.app.state
     module = launch_module(
-        settings, request.app.state.target_engine, body.workflow.location, given, body.params
+        state.settings, state.target_engine, state.files, body.workflow.location, given, body.params
     )
     t = module.target
     found = Found([], "nextflow", t.name, t.version, [], None, "none")
-    if body.config_file is not None:  # its roots are a pipeline's (api §5.7, §5.10)
-        raise Invalid("config_file", "a module run takes no extra config file")
     chosen = choose(request, body.environment)
     environment = snapshot(chosen)
     extras = (_resources(body, chosen), None, None)
     workflow = Workflow(location=module.location, revision=None, engine="nextflow")
-    source = "module-registry" if t.source == "registry" else "module-local"
+    source = module_source(t)
     return _create(
         body, request, response, workflow, module.location, source, found, environment, t, extras
     )

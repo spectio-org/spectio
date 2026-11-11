@@ -124,18 +124,24 @@ def resolve(data_dir: Path, location: str, revision: str | None) -> Resolved:
         raise Invalid("location", f"longer than {MAX_LOCATION} characters")
     refuse_control("location", location)
     if location.startswith("/"):
-        directory = Path(location)
-        try:
-            readable = directory.is_dir() and os.access(directory, os.R_OK | os.X_OK)
-        except OSError:  # a name too long, among others
-            readable = False
-        if not readable:
-            raise Invalid("location", f"{location} is not a directory this account can read")
+        directory = local_dir(location)
         return Resolved(str(directory), None, "local", directory, directory.name)
     url, parts = git_url(location)
     revision = check_revision(revision)
     directory = fetch(data_dir, url, parts, revision)
     return Resolved(url, revision, "git", directory, parts[-1])
+
+
+def local_dir(location: str) -> Path:
+    """An absolute location (field `location`) that is a directory this account can read."""
+    directory = Path(location)
+    try:
+        readable = directory.is_dir() and os.access(directory, os.R_OK | os.X_OK)
+    except OSError:  # a name too long, among others
+        readable = False
+    if not readable:
+        raise Invalid("location", f"{location} is not a directory this account can read")
+    return directory
 
 
 def run_git(argv: list[str]) -> subprocess.CompletedProcess[str]:
