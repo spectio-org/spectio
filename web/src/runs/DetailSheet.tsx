@@ -13,8 +13,9 @@ import { type Shown, isTerminal, lastSegment, neededFirst, processState, refresh
 
 // The detail of a stage, a process (a rule) or a task (a job), in a side sheet (LiteTaskFiles,
 // MLiteTaskFilesSheet; P3-parD, Thomas 2026-10-31: "steps & stages pas clickable, pas de détails"):
-// a right sheet on a desktop, full screen on the phone; Mantine's Drawer is aria-modal, traps focus,
-// closes on Escape and returns focus to its opener (ui-spec §4.11). A stage lists its processes, a
+// a 560 px right sheet on a desktop, a bottom sheet on the phone (UI-12); Mantine's Drawer is
+// aria-modal, traps focus, closes on Escape and returns focus to its opener (ui-spec §4.11). Its head
+// stays on top: the title, a task's state in icon and word, and Close. A stage lists its processes, a
 // process its tasks (GET /tasks?process=, paged), a task what 0.0.1 serves of it; each view opens the
 // next, and Back returns. A task shows its attempt, its resources and its files (TaskFiles, P1
 // Task 32 on Tasks 28 and 29's routes).
@@ -250,7 +251,6 @@ function TaskView({ run, stages, processes, task, attempt, onOpen }: { run: RunD
   const facts: [string, ReactNode][] = [
     ["ID", <span className="sp-mono">{task.id}</span>],
     ["Tag", task.tag ?? "—"],
-    ["State", <Word state={task.state} word={taskWord(task.state)} />],
     ["Last attempt", task.attempt_n ?? "—"],
     [
       w.Group,
@@ -300,27 +300,28 @@ export function DetailSheet({ run, stages, processes, views, onOpen, onBack, onC
     body = <TaskView run={run} stages={stages} processes={processes} task={view.task} attempt={view.attempt} onOpen={onOpen} />;
   }
   return (
-    <Drawer
-      opened={view !== null}
-      onClose={onClose}
-      position="right"
-      size={phone ? "100%" : 560}
-      // reopened from the URL, the focus trap starts on the title (data-autofocus), not on Close
-      title={view?.kind === "task" && view.attempt ? <span data-autofocus tabIndex={-1}>{name}</span> : name}
-      returnFocus
-      closeButtonProps={{ "aria-label": "Close" }}
-      classNames={{ title: "sp-sheet-title" }}
-    >
-      {view && (
-        <section key={views.length} ref={shown} className="sp-sheet" aria-label={name} tabIndex={-1}>
-          {previous && (
-            <button type="button" className="sp-link-button" onClick={onBack}>
-              <Icon name="chevronLeft" /> Back to {previous}
-            </button>
+    <Drawer.Root opened={view !== null} onClose={onClose} position={phone ? "bottom" : "right"} size={phone ? "90%" : 560} returnFocus>
+      <Drawer.Overlay />
+      <Drawer.Content className={phone ? "sp-sheet-bottom" : undefined}>
+        <Drawer.Header className="sp-sheet-head">
+          {/* reopened from the URL, the focus trap starts on the title (data-autofocus), not on Close */}
+          <Drawer.Title className="sp-sheet-title">{view?.kind === "task" && view.attempt ? <span data-autofocus tabIndex={-1}>{name}</span> : name}</Drawer.Title>
+          {view?.kind === "task" && <Word state={view.task.state} word={taskWord(view.task.state)} />}
+          <Drawer.CloseButton aria-label="Close" size={phone ? 44 : 36} icon={<Icon name="cross" />} />
+        </Drawer.Header>
+        <Drawer.Body>
+          {view && (
+            <section key={views.length} ref={shown} className="sp-sheet" aria-label={name} tabIndex={-1}>
+              {previous && (
+                <button type="button" className="sp-link-button" onClick={onBack}>
+                  <Icon name="chevronLeft" /> Back to {previous}
+                </button>
+              )}
+              {body ?? <p className="sp-muted">The server no longer reports it for this run.</p>}
+            </section>
           )}
-          {body ?? <p className="sp-muted">The server no longer reports it for this run.</p>}
-        </section>
-      )}
-    </Drawer>
+        </Drawer.Body>
+      </Drawer.Content>
+    </Drawer.Root>
   );
 }
