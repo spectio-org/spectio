@@ -184,3 +184,30 @@ test("UX-PAR-07: the Runs item counts the active runs, also for a screen reader"
   const sidebar = await screen.findByRole("navigation", { name: "Main" });
   expect(await within(sidebar).findByRole("link", { name: "Runs, 6 active runs" })).toBeInTheDocument();
 });
+
+test("UI-04: the top bar keys share one face and one 20 px icon", async () => {
+  app();
+  const bar = (await screen.findByRole("switch", { name: "Dark theme" })).closest("header")!;
+  const keys = [
+    within(bar).getByRole("button", { name: "Search runs, pipelines and pages" }),
+    within(bar).getByRole("button", { name: /notifications/i }),
+    within(bar).getByRole("switch", { name: "Dark theme" }),
+    within(bar).getByRole("link", { name: "Profile" }),
+  ];
+  for (const key of keys) {
+    const icons = key.querySelectorAll("svg");
+    expect(icons).toHaveLength(1);
+    expect(icons[0]).toHaveAttribute("width", "20");
+    expect(icons[0].parentElement).toHaveClass("sp-key-face");
+  }
+});
+
+test("UI-04: sidebar items, fold key and status share one icon size", async () => {
+  app();
+  const sidebar = await screen.findByRole("navigation", { name: "Main" });
+  const fold = within(sidebar).getByRole("button", { name: "Fold the sidebar" });
+  for (const node of [fold, ...within(sidebar).getAllByRole("link")]) {
+    expect(node.querySelector("svg")).toHaveAttribute("width", "20");
+  }
+  expect(sidebar.querySelector(".sp-status svg")).toHaveAttribute("width", "16");
+});
