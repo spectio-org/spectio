@@ -391,6 +391,7 @@ def started(
             on_socket=socket_path is not None,
         )
         api.state.engine_versions.warm()  # off the first inspect's path (CR-P3FU109-01)
+        stack.callback(api.state.accounting.close)  # its sweeps not made yet are dropped
         config = uvicorn.Config(
             api,
             host=LOOPBACK,

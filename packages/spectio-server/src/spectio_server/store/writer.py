@@ -3,7 +3,9 @@
 Each submitted function runs in its own `BEGIN IMMEDIATE` transaction, so a write never has to
 upgrade a read lock (the cause of SQLITE_BUSY), and writes run one at a time, in submit order.
 A job notes the runs and tasks it changed with `note_change`; once its transaction commits, the
-writer thread hands them to `on_commit` (the live stream of P1 Task 18), which must not block.
+writer thread hands them to `on_commit` (the live stream of P1 Task 18), which must not block;
+the runs a job ended (`note_ended`) go to `on_ended` the same way (the end-of-run sweep,
+FU-P3-105c).
 Readers open their own connections on `engine`.
 """
 
@@ -21,6 +23,7 @@ T = TypeVar("T")
 _Job = tuple[Callable[[Connection], Any], "Future[Any]"]
 Changes = dict[str, set[str]]  # run ID → the IDs of its tasks that changed
 _CHANGES = "spectio.changes"
+_ENDED = "spectio.ended"
 
 log = logging.getLogger(__name__)
 
@@ -30,10 +33,23 @@ def note_change(conn: Connection, run_id: str, task_ids: Iterable[str] = ()) -> 
     conn.info.setdefault(_CHANGES, {}).setdefault(run_id, set()).update(task_ids)
 
 
+def note_ended(conn: Connection, run_id: str) -> None:
+    """Record, in the current transaction, that this run reached a terminal state."""
+    conn.info.setdefault(_ENDED, set()).add(run_id)
+
+
+def _tell(listener: Callable[[T], None], found: T) -> None:
+    try:
+        listener(found)
+    except Exception:  # a listener never stops the writer
+        log.exception("a commit listener failed")
+
+
 class Writer:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
         self.on_commit: Callable[[Changes], None] | None = None
+        self.on_ended: Callable[[set[str]], None] | None = None
         self._jobs: queue.Queue[_Job | None] = queue.Queue()
         self._lock = threading.Lock()
         self._closed = False
@@ -60,12 +76,11 @@ class Writer:
             self._jobs.put(None)
         self._thread.join()
 
-    def _committed(self, changes: Changes | None) -> None:
+    def _committed(self, changes: Changes | None, ended: set[str] | None) -> None:
         if changes and self.on_commit is not None:
-            try:
-                self.on_commit(changes)
-            except Exception:  # a listener never stops the writer
-                log.exception("on_commit failed")
+            _tell(self.on_commit, changes)
+        if ended and self.on_ended is not None:
+            _tell(self.on_ended, ended)
 
     def _run(self, engine: Engine) -> None:
         try:
@@ -79,12 +94,13 @@ class Writer:
                             result = fn(conn)
                     except Exception as exc:
                         conn.info.pop(_CHANGES, None)
+                        conn.info.pop(_ENDED, None)
                         future.set_exception(exc)
                     except BaseException as exc:  # the thread dies: tell the caller first
                         future.set_exception(exc)
                         raise
                     else:
-                        self._committed(conn.info.pop(_CHANGES, None))
+                        self._committed(conn.info.pop(_CHANGES, None), conn.info.pop(_ENDED, None))
                         future.set_result(result)
         finally:
             # Whatever ended the thread, no caller waits forever on a job it will never run.

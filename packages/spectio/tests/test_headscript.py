@@ -820,6 +820,24 @@ def test_req18_snapshot_bare_double_dash_refused(home: Path, bridges: Path) -> N
 
 
 @pytest.mark.parametrize(
+    "arg",
+    [
+        "--slurm-efficiency-report",
+        "--slurm-efficiency-report-path=/tmp/x",
+        "--slurm-efficiency-report=1",
+        "--slurm-efficiency-rep",  # an abbreviation argparse would take [to be validated]
+    ],
+)
+def test_slurm_efficiency_report_refused(home: Path, arg: str) -> None:
+    """FU-P3-105c (schedulers §3.7, api §5.4 note 2026-11-09): the SLURM plugin's efficiency
+    report makes one more `sacct` per run, so `extra_args` refuses it."""
+    spec = snakemake_spec(home, extra_args=[arg], slurm=SlurmValues())
+    with pytest.raises(ValueError, match="slurm-efficiency-report"):
+        engine_args(spec)
+    engine_args(snakemake_spec(home, extra_args=["--slurm-efficiency-threshold=0.5"]))
+
+
+@pytest.mark.parametrize(
     "bad",
     [
         {"local": LocalValues.model_construct(cpus=True, mem_mib=None)},

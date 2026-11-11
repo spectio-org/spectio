@@ -9,7 +9,10 @@ One `attempt_metrics` row per ended attempt, with the run's identity copied in:
   by `fill_sacct`, a background thread, for the runs already ended. Each file is read by the
   strict reader (`failure.read_cache`: no link followed, a regular file of the user, capped,
   parsed strictly) in the file pool with its timeout, never on the writer; the writer then
-  updates the rows and sets the run's marker `runs.metrics_sacct_at`. No `sacct` call.
+  updates the rows and sets the run's marker `runs.metrics_sacct_at`. No `sacct` call;
+- the end-of-run sweep (FU-P3-105c, `failure.sweep_run`): each answer, as it comes, by
+  `apply_sweep` on the writer, whatever the marker says (a run filled before its file existed
+  gets its values too).
 
 The rows of old runs come from the migration (0015), from the database only.
 """
@@ -200,6 +203,7 @@ def sacct_values(row: SacctRow, stored: Any) -> dict[str, Any]:
         "mem_eff": ratio(peak, memory),
         "realtime_s": real,
         "time_eff": ratio(real, limit),
+        "wait_s": _first(row.wait_s, stored.wait_s),
     }
 
 
@@ -224,11 +228,18 @@ def _unfilled(conn: Connection, after: str) -> list[str]:
 
 
 def _apply(conn: Connection, run_id: str, found: dict[str, SacctRow | None]) -> None:
-    """Update the run's rows from its jobs' `sacct` rows, bound by job ID, then mark it."""
+    """Update the run's rows from its jobs' `sacct` rows, bound by job ID, then mark it; once."""
+    _update(conn, run_id, found, runs.c.metrics_sacct_at.is_(None))
+
+
+def apply_sweep(conn: Connection, run_id: str, found: dict[str, SacctRow | None]) -> None:
+    """The sweep's answers (FU-P3-105c): as `_apply`, marked or not."""
+    _update(conn, run_id, found)
+
+
+def _update(conn: Connection, run_id: str, found: dict[str, SacctRow | None], *when: Any) -> None:
     still = conn.execute(
-        select(runs.c.id).where(
-            runs.c.id == run_id, runs.c.deleted_at.is_(None), runs.c.metrics_sacct_at.is_(None)
-        )
+        select(runs.c.id).where(runs.c.id == run_id, runs.c.deleted_at.is_(None), *when)
     ).one_or_none()
     if still is None:  # deleted meanwhile, or filled
         return

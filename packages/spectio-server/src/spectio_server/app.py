@@ -18,9 +18,12 @@ The screens (`web/dist`, Task 19) follow the API's rule: served at `/` when the 
 else `/` stays this plain page and says why (`static`), behind the session too.
 """
 
+import logging
 import os
 import pwd
 import shutil
+from concurrent.futures import Future
+from functools import partial
 from importlib.metadata import version
 from pathlib import Path
 
@@ -32,7 +35,8 @@ from spectio.catalog import KIND as CATALOG
 from spectio.catalog import catalog_path
 from spectio.config import Settings
 from spectio.envfile import environments_path
-from spectio_server import static
+from spectio.runner.sacct import SacctRow
+from spectio_server import metrics, static
 from spectio_server.api import (
     browser,
     cancel,
@@ -55,9 +59,11 @@ from spectio_server.api import (
 )
 from spectio_server.auth import host, middleware, routes, writes
 from spectio_server.auth.secrets import ServerKey, SessionStore, TicketStore
-from spectio_server.failure import Accounting, Measures
-from spectio_server.files.pool import FilePool
+from spectio_server.failure import Accounting, Context, Measures, sweep_run
+from spectio_server.files.pool import READ_TIMEOUT_S, FilePool
 from spectio_server.store.writer import Writer
+
+log = logging.getLogger(__name__)
 
 PLACEHOLDER = "Spectio {version} is running.\n{why}\n"
 API = "/api/v1"
@@ -144,6 +150,7 @@ def create_app(
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
+    wire_sweep(app)
     app.state.engine_versions = workflows.EngineVersions(settings)
     app.state.server_key = server_key or ServerKey.new()
     app.state.tickets = TicketStore()
@@ -205,3 +212,36 @@ def create_app(
             return problems.problem(404, "not-found", "Not found", reason)
 
     return app
+
+
+def wire_sweep(app: FastAPI) -> None:
+    """The end-of-run sweep (FU-P3-105c, schedulers §3.7): a run the projector ends is handed
+    by the writer, after the commit and without waiting, to the app's accounting, which sweeps
+    it on its own thread; each answer goes to the run's `attempt_metrics` through the writer.
+    Called again when a test replaces the accounting."""
+    state = app.state
+    writer: Writer = state.writer
+    accounting: Accounting = state.accounting
+
+    def sweep(run_id: str) -> None:
+        settings: Settings = state.settings
+        ctx = Context(
+            settings.runs_root, state.files, accounting, READ_TIMEOUT_S, settings, state.measures
+        )
+        with writer.engine.connect() as conn:
+            sweep_run(conn, run_id, ctx)
+
+    def rows(run_id: str, found: dict[str, SacctRow | None]) -> None:
+        try:
+            done = writer.submit(partial(metrics.apply_sweep, run_id=run_id, found=found))
+        except RuntimeError:  # the writer closed: the server stops
+            return
+        done.add_done_callback(partial(_logged, run_id))
+
+    accounting.sweeper, accounting.on_rows = sweep, rows
+    writer.on_ended = accounting.ended
+
+
+def _logged(run_id: str, done: "Future[None]") -> None:
+    if (exc := done.exception()) is not None:
+        log.warning("performance: the sweep's values of %s not written: %s", run_id, exc)
