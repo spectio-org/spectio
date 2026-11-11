@@ -6,7 +6,9 @@ import "./decode"; // as in the page: our decoders are registered before Viv's c
 import { loadOmeZarrFromStore } from "@hms-dbmi/viv";
 import { deflate } from "pako";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { BUDGET, Stopped } from "./client";
 import { imageState } from "./flat";
+import fixtures from "./fixtures/codecs.json";
 import { type Store, attrs, crafted, raw, valid } from "./fixtures/zarr";
 import { ZarrStore, openZarr } from "./zarr";
 
@@ -61,9 +63,8 @@ test.each([
   ["a 1 MiB + 1 .zattrs", "This image is too large to show here (Zarr metadata over 1 MiB). Download it to open it."],
   ["a 1 MiB + 1 .zgroup", "This image is too large to show here (Zarr metadata over 1 MiB). Download it to open it."],
   ["a .zattrs with __proto__ and constructor keys only", "This folder has no OME-Zarr image metadata."],
-  ["a zstd compressor", "Spectio cannot decode zstd compression."],
-  ["a blosc compressor", "Spectio cannot decode blosc compression."], // numcodecs' Blosc and LZ4 need 'unsafe-eval' (inbox #135)
-  ["an lz4 compressor", "Spectio cannot decode lz4 compression."],
+  ["a bz2 compressor", "Spectio cannot decode bz2 compression."],
+  ["a blosc snappy compressor", "Spectio cannot decode blosc snappy compression."],
   ["an array shape of c = 10^9", "This image is too large to show here (over 10,000 planes). Download it to open it."],
   ["a side over 2^31 - 1", "This image is too large to show here (a side over 2,147,483,647 px). Download it to open it."],
   ["a level whose c differs from level 0", "Not an image Spectio can read: a level's shape does not follow level 0"],
@@ -132,4 +133,65 @@ test("a zlib level is inflated by the store, capped at the chunk's size: one tha
   expect(Array.from((await data[1].getRaster({ selection: { c: 0 } } as never)).data as Uint8Array).slice(0, 4)).toEqual([0, 1, 2, 3]);
   await expect(s.get("/1/1.0.0")).rejects.toThrow("decodes past");
   inFolder(s);
+});
+
+const chunk = (name: string) => Uint8Array.from(atob(fixtures.cases.find((c) => c.name === name)!.data), (c) => c.charCodeAt(0));
+const zarrayOf = (compressor: unknown) => new TextEncoder().encode(JSON.stringify({ zarr_format: 2, shape: [2, 50, 100], chunks: [1, 50, 100], dtype: "<u2", compressor, fill_value: 0, filters: null }));
+
+test.each([
+  ["blosc", { id: "blosc", cname: "lz4", clevel: 5, shuffle: 1, blocksize: 0 }, "blosc lz4 shuffle", "blosc zstd bitshuffle"],
+  ["lz4", { id: "lz4", acceleration: 1 }, "lz4", "lz4"],
+  ["zstd", { id: "zstd", level: 3 }, "zstd", "zstd"],
+])("a %s level is decoded by the store and served raw to Viv", async (_, compressor, first, second) => {
+  store.set("0/.zarray", zarrayOf(compressor));
+  store.set("0/0.0.0", chunk(first));
+  store.set("0/1.0.0", chunk(second));
+  const s = new ZarrStore(urlOf);
+  await openZarr(s);
+  expect(JSON.parse(new TextDecoder().decode(await s.get("/0/.zarray"))).compressor).toBeNull();
+  const { data } = await loadOmeZarrFromStore(s as never);
+  const plane = Array.from((await data[0].getRaster({ selection: { c: 1 } } as never)).data as Uint16Array);
+  expect(plane.slice(0, 3)).toEqual([0, 13, 26]);
+  expect(plane[4999]).toBe(((4999 % 64) * 13 + Math.floor(4999 / 64) * 5) % 1000);
+  inFolder(s);
+});
+
+test("the byte budget is reserved only for reads in flight: 40 concurrent gets all succeed under the default budget", async () => {
+  const s = new ZarrStore(urlOf);
+  await openZarr(s);
+  const before = s.bytes;
+  const keys = Array.from({ length: 40 }, (_, i) => ["/0/0.0.0", "/0/1.0.0", "/1/0.0.0", "/1/1.0.0"][i % 4]);
+  const read = await Promise.allSettled(keys.map((k) => s.get(k)));
+  expect(read.map((r) => r.status)).toEqual(keys.map(() => "fulfilled"));
+  expect(s.failure).toBeNull();
+  expect(s.bytes - before).toBe(keys.reduce((n, k) => n + store.get(k.slice(1))!.byteLength, 0)); // only what was read is counted
+});
+
+test("a view near the end of its byte budget stops before it reads past it", async () => {
+  const s = new ZarrStore(urlOf);
+  await openZarr(s);
+  store.set("0/0.0.0", new Uint8Array(2 * 1024 * 1024));
+  s.bytes = BUDGET.bytes - 1024 * 1024; // 1 MiB left: the 2 MiB chunk is cut at 1 MiB
+  await expect(s.get("/0/0.0.0")).rejects.toBeInstanceOf(Stopped);
+  expect(s.failure).toBeInstanceOf(Stopped);
+  expect(s.bytes).toBe(BUDGET.bytes - 1024 * 1024); // nothing past the budget was counted
+  s.bytes = BUDGET.bytes; // none left: no request at all
+  const n = asked.length;
+  await expect(s.get("/1/0.0.0")).rejects.toBeInstanceOf(Stopped);
+  expect(asked).toHaveLength(n);
+});
+
+test("the multiscales version and the omero labels are capped", async () => {
+  const a = attrs();
+  a.multiscales[0].version = "0.4".repeat(1000);
+  a.omero.channels[0].label = "L".repeat(10000);
+  store.set(".zattrs", new TextEncoder().encode(JSON.stringify(a)));
+  const s = new ZarrStore(urlOf);
+  const meta = await openZarr(s);
+  expect(JSON.parse(new TextDecoder().decode(await s.get("/.zattrs"))).multiscales[0].version).toBe("0.4");
+  expect(meta.names).toEqual(["L".repeat(64), "GFP"]);
+  store.set(".zattrs", new TextEncoder().encode(JSON.stringify({ ...a, multiscales: [{ ...a.multiscales[0], version: { nested: [1, 2, 3] } }] })));
+  const t = new ZarrStore(urlOf);
+  await openZarr(t);
+  expect(JSON.parse(new TextDecoder().decode(await t.get("/.zattrs"))).multiscales[0].version).toBe("0.4");
 });
