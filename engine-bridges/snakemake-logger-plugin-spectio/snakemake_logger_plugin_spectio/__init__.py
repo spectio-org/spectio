@@ -173,7 +173,7 @@ _MAX_TARGET = 4096
 
 
 def run_target(argv: list[str]) -> dict[str, Any] | None:
-    """The rule or file this run is limited to (api §5.9, architecture §13.8), from Snakemake's
+    """The rule or file this run is limited to (api §5.10, architecture §13.8), from Snakemake's
     own argument parser: the first target, else `--until`, else `--allowed-rules`; a lone `all`
     is the whole pipeline. A name that looks like a rule is a rule, anything else a file. The
     command line itself is never sent; None when it cannot be read."""

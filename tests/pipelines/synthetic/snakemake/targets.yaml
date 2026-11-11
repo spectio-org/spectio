@@ -1,4 +1,4 @@
-# Single-rule fixture (#161, api §5.9): a run of the synthetic Snakemake pipeline limited to one
+# Single-rule fixture (#161, api §5.10): a run of the synthetic Snakemake pipeline limited to one
 # rule, positional target (`snakemake ... qc_report`), from an empty launch directory. `jobs` is
 # the plan of the spike (docs/research/spike-module-run-2026-11-10.md, scale 1: 12 samples) and
 # what the logger's run must finish; every other rule is outside the target.

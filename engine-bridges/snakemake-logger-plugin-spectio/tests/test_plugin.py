@@ -798,7 +798,7 @@ def test_loose_spectio_home_no_pointer_snakemake(tmp_home: Path, tmp_path: Path,
     assert "no pointer written" in (run.launch / ".spectio" / "bridge.err").read_text()
 
 
-# --- Run targets: one rule (api §5.9, architecture §13.8; #161) -----------------------------
+# --- Run targets: one rule (api §5.10, architecture §13.8; #161) -----------------------------
 
 
 @pytest.mark.parametrize(

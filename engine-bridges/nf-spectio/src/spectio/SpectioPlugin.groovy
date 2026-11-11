@@ -510,7 +510,7 @@ class SpectioObserver implements TraceObserverV2 {
     static final java.util.regex.Pattern HEX = ~/[0-9a-f]{64}/
 
     /** `nextflow module run` (Nextflow >= 26.04): the module this run targets, or null for a
-     *  pipeline run (api §5.9, architecture §13.8). The command line is parsed here and never sent;
+     *  pipeline run (api §5.10, architecture §13.8). The command line is parsed here and never sent;
      *  a registry module's checksum is its `.module-info`'s, a local one's hash is the script ID. */
     static Map moduleTarget(String commandLine, Object scriptFile, String scriptId) {
         final words = (commandLine ?: '').take(MAX_MESSAGE_CHARS).trim().split(/\s+/) as List<String>
