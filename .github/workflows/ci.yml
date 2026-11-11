@@ -24,6 +24,7 @@ jobs:
     outputs:
       synthetic: ${{ steps.paths.outputs.synthetic }}
       real: ${{ steps.paths.outputs.real }}
+      code: ${{ steps.paths.outputs.code }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: {fetch-depth: 2, persist-credentials: false}
@@ -37,12 +38,15 @@ jobs:
             touched() { grep -qE "$1" "$RUNNER_TEMP/changed.txt" && echo true || echo false; }
             synthetic=$(touched '^(tests/pipelines/synthetic/|engine-bridges/|tests/fixtures/engine-events/logger-plugin/|packages/spectio/tests/test_bridge_nextflow\.py$|\.github/workflows/(pipelines-synthetic|ci)\.yml$)')
             real=$(touched '^(tests/pipelines/real/|\.github/workflows/(pipelines-real|ci)\.yml$)')
+            # Docs, boards and autopilot bookkeeping only: skip unit, product, web and e2e-local (autopilot.md §14).
+            # docs.yml still builds the site and checks the PR body on every PR.
+            code=$(grep -qvE '^(docs/|design/|\.autopilot/|mkdocs\.yml$|[^/]+\.md$)' "$RUNNER_TEMP/changed.txt" && echo true || echo false)
           else
             # Pushes to main: the synthetic scenarios always; the corpus runs nightly.
-            synthetic=true; real=false
+            synthetic=true; real=false; code=true
           fi
-          echo "synthetic=$synthetic real=$real"
-          { echo "synthetic=$synthetic"; echo "real=$real"; } >> "$GITHUB_OUTPUT"
+          echo "synthetic=$synthetic real=$real code=$code"
+          { echo "synthetic=$synthetic"; echo "real=$real"; echo "code=$code"; } >> "$GITHUB_OUTPUT"
 
   security:
     permissions:
@@ -51,6 +55,8 @@ jobs:
 
   unit:
     # Fast Python unit tests with no cluster: today the SLURM fixture guard (tests/slurm/test_fixture.py, SEC-T3-07).
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -62,6 +68,8 @@ jobs:
 
   product:
     # The uv workspace under packages/ (architecture §6): lint, types, import contracts, unit tests and the wheels.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -129,6 +137,8 @@ jobs:
 
   web:
     # The screens under web/ (P1 Task 19): Vitest, then the Vite build, on the Node of dev/versions.env.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -153,6 +163,8 @@ jobs:
     # The Playwright smoke of P1 Task 20 (tests/e2e/skeleton.spec.ts) against a real `spectio serve` in local
     # mode (tests/e2e/serve-local.sh), with Nextflow for the tests that launch, cancel and follow a run.
     # Not in ci-ok's needs until it has proven reliable on CI (inbox #90): a red run here does not block a PR.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:

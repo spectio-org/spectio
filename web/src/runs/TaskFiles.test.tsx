@@ -6,6 +6,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
+// The tasks table is a lazy chunk (AG Grid): under CI load it can take longer than findBy's 1 s default.
+const LAZY_GRID = { timeout: 5000 };
+
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
 
@@ -61,7 +64,7 @@ function detail(files: Record<string, unknown>, over: Record<string, unknown> = 
 /** The Tasks tab, then the row's Files button; returns the button and the sheet. */
 async function openFiles(name = "Files of SUBREAD_FEATURECOUNTS (S19), attempt 2") {
   app(`/runs/${ID}?tab=tasks`);
-  const button = await screen.findByRole("button", { name });
+  const button = await screen.findByRole("button", { name }, LAZY_GRID);
   await userEvent.click(button);
   const sheet = await screen.findByRole("dialog", { name: "SUBREAD_FEATURECOUNTS (S19)" });
   return { button, sheet };
@@ -250,7 +253,7 @@ test("Snakemake: the launch directory, the SLURM log first, and no job script", 
     { ...TASK, process: "bwa_mem", tag: "sample=WGS-07", name: null },
   );
   app(`/runs/${ID}?tab=tasks`);
-  await userEvent.click(await screen.findByRole("button", { name: "Files of bwa_mem (sample=WGS-07), attempt 2" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Files of bwa_mem (sample=WGS-07), attempt 2" }, LAZY_GRID));
   const sheet = await screen.findByRole("dialog", { name: "bwa_mem (sample=WGS-07)" });
   expect(within(sheet).getByText("Launch directory")).toBeInTheDocument();
   expect(within(sheet).getByRole("tab", { selected: true })).toHaveTextContent("SLURM log");

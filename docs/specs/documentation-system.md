@@ -204,16 +204,18 @@ Since 2026-10-27 every step leaves at least one sketch pair (light and dark, `to
 
 ### 3.5 Docs per batch of P3 tasks (Thomas, 2026-11-04)
 
-P3 tasks are documented in two passes, to stop paying a figure and a doc review for every small task ([decision log](../decisions/log.md#2026-11-04-p3-tasks-run-in-batches-docs-figure-doc-review-simplify-and-promotion-once-per-batch)). The batches themselves are defined in [autopilot §11](../playbooks/autopilot.md#11-batches-of-p3-tasks-thomas-2026-11-04).
+P3 tasks are documented in three passes (task, batch, milestone end), to stop paying a figure and a doc review for every small task ([decision log](../decisions/log.md#2026-11-04-p3-tasks-run-in-batches-docs-figure-doc-review-simplify-and-promotion-once-per-batch)). The batches themselves are defined in [autopilot §11](../playbooks/autopilot.md#11-batches-of-p3-tasks-thomas-2026-11-04).
 
-- **Per task** (`p3-task` workflow, `doc-writer` only):
-  - the review record `docs/reviews/code/<step>.md` with its `CODE` line;
-  - a short section in the milestone's Progress page: what changed, the `CODE` line, links;
-  - the owning spec where behaviour was decided, and inbox entries;
-  - the PR body, with no figure: the PR carries the `no-figure` label and says the figure comes in the batch docs PR.
+*Changed 2026-11-10* ([autopilot §14](../playbooks/autopilot.md#14-feature-sized-tasks-fewer-gates-per-credit-thomas-2026-11-10)): the Progress sections move to the batch, the figure and `doc-reviewer` to the milestone end.
 
-  The docs gate (§3.3) still runs on every task PR.
-- **Per batch** (`p3-batch` workflow): the full Progress page (Evidence, Figures and media, Findings and open questions), guide or reference pages, screenshots and casts for new screens and CLI flows, one figure for the batch's mechanisms (§3.4), then `doc-reviewer` with up to two revisions. The batch docs PR carries the figure.
+- **Per task** (`p3-lean` workflow, `doc-writer` at low effort):
+  - the review record `docs/reviews/code/<step>.md` with its `CODE` line and the task's assumptions;
+  - the owning spec where behaviour was decided; an inbox entry only for a question with no safe default;
+  - the PR body, with no figure: the PR carries the `no-figure` label.
+
+  No local site build: the docs gate (§3.3) runs in CI on every task PR.
+- **Per batch** (`p3-batch` workflow): one short section per task in the milestone's Progress page (what changed, the `CODE` line, links), Findings and open questions, guide or reference pages, screenshots for new screens. The batch PR carries the `no-figure` label unless it closes the milestone.
+- **Per milestone end** (`p3-batch` with `milestone: true`): the full Progress page (Evidence, Figures and media), one figure for the milestone's mechanisms (§3.4), then `doc-reviewer` with up to two revisions.
 - **What does not change:** a `done` Progress page still embeds a figure (§3.4); the milestone page stays `running` until its last batch is closed.
 
 ## 4. Writers and reviewers
