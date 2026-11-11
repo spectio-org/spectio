@@ -235,7 +235,8 @@ export const theme = createTheme({
     // The colour is --mantine-color-anchor, the link token (roles, above); app.css underlines on focus.
     Anchor: { defaultProps: { underline: "hover" } },
     Modal: sheet,
-    Drawer: sheet,
+    // A drawer sits on a viewport edge: square corners (bottom sheets round their top in runs.css).
+    Drawer: { defaultProps: { ...sheet.defaultProps, radius: 0 } },
     Popover: overlay,
     Menu: overlay,
     Tooltip: { defaultProps: { withArrow: false } },
