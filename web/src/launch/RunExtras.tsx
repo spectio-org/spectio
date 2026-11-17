@@ -170,7 +170,7 @@ function SubRow({ id, title, closed, reveal, children }: { id: string; title: st
   );
 }
 
-/** The Resources row: CPUs (not on Snakemake), memory with its unit, time as hours and minutes;
+/** The Run resources row: CPUs (not on Snakemake), memory with its unit, time as hours and minutes;
  * each empty by default, its placeholder the environment's value. `errors`: the server's, by form
  * key (`resources.cpus`, … and `resources` for the profile's refusal). */
 export function ResourcesRow({
