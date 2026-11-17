@@ -4,7 +4,7 @@
 .sp-runs {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--mantine-spacing-xl);
   min-width: 0;
 }
 [data-tone] {
@@ -51,7 +51,7 @@
 .sp-state {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--mantine-spacing-xs);
   font-weight: 600;
   color: var(--tone-fg);
 }
@@ -69,19 +69,19 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
 }
 .sp-head h1 {
   margin: 0;
   font-family: var(--sp-font-display);
-  font-size: 30px;
+  font-size: var(--mantine-h1-font-size);
   font-weight: 600;
   line-height: 1.2;
 }
 .sp-sub {
-  margin: 4px 0 0;
+  margin: var(--mantine-spacing-xs) 0 0;
   color: var(--sp-text-secondary);
-  font-size: 14px;
+  font-size: var(--mantine-font-size-md);
 }
 /* The run header's line of values: each value wraps whole, never "8" over "s", and the line
    breaks between values (CR-P3PARB-02 r2; the spans have no space between them to break at). */
@@ -106,41 +106,41 @@
 
 .sp-card {
   min-width: 0;
-  padding: 16px 18px;
-  border-radius: 14px;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
 .sp-card h2 {
-  margin: 0 0 10px;
+  margin: 0 0 var(--mantine-spacing-md);
   font-family: var(--sp-font-display);
-  font-size: 18px;
+  font-size: var(--mantine-font-size-xl);
   font-weight: 600;
 }
 
 .sp-table-wrap {
   min-width: 0;
   overflow-x: auto;
-  border-radius: 14px;
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
 .sp-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--mantine-font-size-md);
 }
 .sp-table th {
   text-align: left;
-  padding: 10px 14px;
-  font-size: 13px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  font-size: var(--mantine-font-size-sm);
   font-weight: 600;
   color: var(--sp-text-secondary);
   background: var(--sp-surface-subtle);
   border-bottom: 1px solid var(--sp-line-divider);
 }
 .sp-table td {
-  padding: 10px 14px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
   vertical-align: middle;
   border-bottom: 1px solid var(--sp-line-divider);
   overflow-wrap: break-word;
@@ -170,12 +170,12 @@
 .sp-id,
 .sp-mono {
   font-family: var(--sp-font-mono);
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   color: var(--sp-text-muted);
 }
 .sp-muted {
   display: block;
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-muted);
 }
 .sp-bad-inline {
@@ -183,10 +183,10 @@
 }
 .sp-chip {
   display: inline-block;
-  margin: 2px 6px 2px 0;
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 12px;
+  margin: var(--mantine-spacing-xs) var(--mantine-spacing-sm) var(--mantine-spacing-xs) 0;
+  padding: 1px var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-xl);
+  font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   color: var(--sp-text-secondary);
   background: var(--sp-surface-sunken);
@@ -203,16 +203,16 @@
 .sp-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
   align-items: center;
 }
 .sp-filters input[type="search"] {
   flex: 1 1 240px;
   min-width: 0;
   height: 40px;
-  padding: 0 12px;
+  padding: 0 var(--mantine-spacing-md);
   border: 1px solid var(--sp-line-input);
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   font: inherit;
   color: inherit;
   background: var(--sp-surface-raised);
@@ -220,18 +220,18 @@
 .sp-segments {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-sunken);
 }
 .sp-segments button {
   min-height: 36px;
-  padding: 0 12px;
+  padding: 0 var(--mantine-spacing-md);
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--mantine-radius-sm);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--mantine-font-size-md);
   color: var(--sp-text-secondary);
   background: none;
   cursor: pointer;
@@ -243,34 +243,34 @@
   box-shadow: var(--sp-shadow);
 }
 .sp-segments .sp-count {
-  margin-left: 6px;
+  margin-left: var(--mantine-spacing-sm);
   color: var(--sp-text-muted);
 }
 
 .sp-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .sp-cards li {
-  padding: 14px 16px;
-  border-radius: 14px;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
 .sp-cards strong {
   display: block;
   font-family: var(--sp-font-display);
-  font-size: 28px;
+  font-size: var(--mantine-h1-font-size);
   font-weight: 600;
 }
 .sp-home-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr); /* a long path never widens the page (FU-P3-109) */
-  gap: 20px;
+  gap: var(--mantine-spacing-xl);
 }
 @media (min-width: 1200px) {
   .sp-home-grid {
@@ -283,14 +283,14 @@
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-list li {
   display: flex;
   justify-content: space-between;
-  gap: 4px 12px;
-  padding: 10px 14px;
-  border-radius: 12px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
@@ -305,7 +305,7 @@
 }
 .sp-link {
   display: inline-block;
-  margin-top: 8px;
+  margin-top: var(--mantine-spacing-sm);
   font-weight: 600;
   color: var(--sp-text-link);
 }
@@ -322,23 +322,23 @@
 .sp-counts {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .sp-stage {
-  margin-bottom: 8px;
-  border-radius: 12px;
+  margin-bottom: var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
 .sp-stage > summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
   align-items: center;
-  padding: 12px 16px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
   cursor: pointer;
   list-style: none;
 }
@@ -355,7 +355,7 @@
   min-width: 0;
 }
 .sp-stage-name .sp-chip {
-  margin-left: 6px;
+  margin-left: var(--mantine-spacing-sm);
 }
 .sp-stage > summary > .sp-state {
   flex: 0 0 110px;
@@ -373,7 +373,7 @@
   transform: rotate(180deg);
 }
 .sp-stage > .sp-table-wrap {
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 var(--mantine-radius-md) var(--mantine-radius-md);
   box-shadow: inset 0 1px 0 var(--sp-line-divider);
 }
 /* one mono size in the log viewer, 12/18 (UI-11) */
@@ -392,17 +392,17 @@
 .sp-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-empty {
-  padding: 28px 20px;
-  border-radius: 14px;
+  padding: var(--mantine-spacing-xl) var(--mantine-spacing-xl);
+  border-radius: var(--mantine-radius-md);
   text-align: center;
   background: var(--sp-surface-subtle);
 }
 .sp-empty p {
-  margin: 0 0 12px;
-  font-size: 16px;
+  margin: 0 0 var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-lg);
   font-weight: 600;
 }
 
@@ -411,7 +411,7 @@
 .sp-pipeline {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   min-width: 0;
 }
 .sp-version {
@@ -422,11 +422,11 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   height: 40px;
-  padding: 0 12px;
+  padding: 0 var(--mantine-spacing-md);
   border: 1px solid var(--sp-line-input);
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   color: var(--sp-text-muted);
   background: var(--sp-surface-raised);
 }
@@ -449,28 +449,28 @@
 }
 .sp-foot-line {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
 }
 .sp-link-end {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
-  margin: 0 0 8px;
-  font-size: 13px;
+  gap: var(--mantine-spacing-xs);
+  margin: 0 0 var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-sm);
   text-decoration: none;
 }
 .sp-link-button {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 0;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-xs) 0;
   border: 0;
   font: inherit;
   font-weight: 600;
   color: var(--sp-text-link);
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   text-align: left;
   background: none;
   cursor: pointer;
@@ -485,8 +485,8 @@
 }
 .sp-cards li > a {
   display: block;
-  padding: 14px 16px 14px 20px;
-  border-radius: 14px;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-xl);
+  border-radius: var(--mantine-radius-md);
   color: inherit;
   text-decoration: none;
 }
@@ -494,7 +494,7 @@
   text-decoration: underline;
 }
 .sp-cards strong {
-  margin: 2px 0;
+  margin: var(--mantine-spacing-xs) 0;
 }
 .sp-row {
   align-items: center;
@@ -509,7 +509,7 @@
 }
 .sp-ended {
   gap: 0;
-  border-radius: 14px;
+  border-radius: var(--mantine-radius-md);
   overflow: hidden;
   box-shadow: var(--sp-shadow);
 }
@@ -523,18 +523,18 @@
 .sp-quick {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
-  margin: 10px 0 0;
+  gap: var(--mantine-spacing-sm);
+  margin: var(--mantine-spacing-md) 0 0;
   padding: 0;
   list-style: none;
 }
 .sp-quick li {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 12px;
-  font-size: 14px;
-  border-radius: 12px;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-md);
+  border-radius: var(--mantine-radius-md);
   box-shadow: 0 0 0 1px var(--sp-line-border);
 }
 /* a path or a name with no space wraps anywhere, shown whole: no ellipsis to hover (FU-P3-109) */
@@ -544,14 +544,14 @@
   overflow-wrap: anywhere;
 }
 .sp-quick .sp-mono {
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
 }
 .sp-where {
   display: grid;
-  gap: 10px;
-  margin: 4px 0 0;
-  padding: 0 0 0 18px;
-  font-size: 13.5px;
+  gap: var(--mantine-spacing-md);
+  margin: var(--mantine-spacing-xs) 0 0;
+  padding: 0 0 0 var(--mantine-spacing-lg);
+  font-size: var(--mantine-font-size-md);
   line-height: 1.45;
   color: var(--sp-text-secondary);
 }
@@ -566,13 +566,13 @@
 .sp-run-head {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 22px 20px 16px;
+  gap: var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-xl) var(--mantine-spacing-xl) var(--mantine-spacing-lg);
 }
 .sp-run-top {
   display: flex;
   align-items: flex-start;
-  gap: 12px 18px;
+  gap: var(--mantine-spacing-md) var(--mantine-spacing-lg);
 }
 /* The name wraps beside the tile; the actions keep their width at the right (ui-spec §12.5). */
 .sp-run-top > .sp-grow {
@@ -589,7 +589,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-mark); /* the marks sit on white, in both schemes (ui-spec §4.3) */
   box-shadow: 0 0 0 1px var(--sp-line-border);
 }
@@ -597,17 +597,17 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 4px 10px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-md);
 }
 .sp-run-head h1 {
   margin: 0;
   font-family: var(--sp-font-display);
-  font-size: 30px;
+  font-size: var(--mantine-h1-font-size);
   font-weight: 600;
   line-height: 1.2;
 }
 .sp-run-head > .sp-foldsec {
-  padding-top: 12px;
+  padding-top: var(--mantine-spacing-md);
   border-top: 1px solid var(--sp-line-divider);
 }
 /* Folded, the Facts title keeps its width: the summary beside it takes the ellipsis (UI-09). */
@@ -617,35 +617,35 @@
 .sp-facts {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px 24px;
+  gap: var(--mantine-spacing-md) var(--mantine-spacing-xl);
   margin: 0;
 }
 .sp-facts dt {
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-muted);
 }
 .sp-facts dd {
-  margin: 2px 0 0;
-  font-size: 14px;
+  margin: var(--mantine-spacing-xs) 0 0;
+  font-size: var(--mantine-font-size-md);
   overflow-wrap: anywhere;
 }
 .sp-chips-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding-top: 12px;
+  gap: var(--mantine-spacing-sm);
+  padding-top: var(--mantine-spacing-md);
   border-top: 1px solid var(--sp-line-divider);
 }
 .sp-chips-label {
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
 }
 
 /* Summary: the main column and the aside, side by side from 1200 px (UX-PAR-23). */
 .sp-detail-grid {
   display: grid;
-  gap: 20px;
+  gap: var(--mantine-spacing-xl);
 }
 @media (min-width: 1200px) {
   .sp-detail-grid {
@@ -656,25 +656,25 @@
 .sp-aside {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--mantine-spacing-lg);
   min-width: 0;
 }
 .sp-intro,
 .sp-legend {
-  margin: 0 0 10px;
-  font-size: 13px;
+  margin: 0 0 var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-sm);
   line-height: 1.5;
   color: var(--sp-text-secondary);
 }
 .sp-legend {
-  margin: 8px 0 0;
+  margin: var(--mantine-spacing-sm) 0 0;
 }
 .sp-code {
-  margin: 8px 0;
-  padding: 10px 12px;
-  border-radius: 10px;
+  margin: var(--mantine-spacing-sm) 0;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -683,13 +683,13 @@
 }
 .sp-params {
   display: grid;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   margin: 0;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-params div {
   display: flex;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-params dd {
   margin: 0;
@@ -700,7 +700,7 @@
 .sp-done {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -709,14 +709,14 @@
   width: 72px;
   height: 6px;
   flex-shrink: 0;
-  border-radius: 3px;
+  border-radius: var(--mantine-radius-xs);
   overflow: hidden;
   background: var(--sp-surface-sunken);
 }
 .sp-bar > span {
   display: block;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--mantine-radius-xs);
   background: var(--sp-state-running);
 }
 .sp-bar[data-full="true"] > span {
@@ -729,8 +729,8 @@
 
 /* Why it failed (LiteRunFailed; UX-PAR-25). */
 .sp-why {
-  padding: 14px 16px 14px 20px;
-  border-radius: 14px;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-xl);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
 }
 .sp-card.sp-why,
@@ -741,12 +741,12 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-md);
   margin: 0;
 }
 .sp-why-message {
-  margin: 6px 0;
-  font-size: 13.5px;
+  margin: var(--mantine-spacing-sm) 0;
+  font-size: var(--mantine-font-size-md);
   color: var(--sp-text-secondary);
   overflow-wrap: anywhere;
 }
@@ -755,17 +755,17 @@
 .sp-select {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-md);
   color: var(--sp-text-secondary);
 }
 .sp-select select {
   height: 40px;
   min-width: 0;
   max-width: 360px;
-  padding: 0 10px;
+  padding: 0 var(--mantine-spacing-md);
   border: 1px solid var(--sp-line-input);
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   font: inherit;
   color: var(--sp-text-primary);
   background: var(--sp-surface-raised);
@@ -774,7 +774,7 @@
   font-weight: 600;
 }
 .sp-task strong .sp-mono {
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-primary);
 }
 .sp-log span[data-tone="failed"],
@@ -786,9 +786,9 @@
   color: var(--sp-code-review);
 }
 .sp-note {
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 13px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
   background: var(--sp-surface-subtle);
 }
@@ -797,14 +797,14 @@
    name, state, done and failed columns. */
 @media (max-width: 767.98px) {
   .sp-head h1 {
-    font-size: 24px;
+    font-size: var(--mantine-font-size-xl);
   }
   .sp-table [data-narrow] {
     display: none;
   }
   .sp-table th,
   .sp-table td {
-    padding: 8px 10px;
+    padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
   }
 }
 
@@ -828,7 +828,7 @@
 .sp-run-cards,
 .sp-cards-list {
   display: grid;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -837,12 +837,12 @@
 .sp-row-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--mantine-spacing-xs);
   min-width: 0;
-  padding: 12px 14px 12px 18px;
-  border-radius: 14px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg) var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
   overflow-wrap: anywhere;
 }
@@ -855,22 +855,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-run-card .sp-run-link {
   font-family: var(--sp-font-display);
-  font-size: 18px;
+  font-size: var(--mantine-font-size-xl);
   /* the name is the card's link: at least 44 px of hit area */
   display: flex;
   align-items: center;
   min-height: 44px;
-  margin: -8px 0;
+  margin: calc(-1 * var(--mantine-spacing-sm)) 0;
 }
 .sp-run-card-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px 6px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
 }
 .sp-run-card-line .sp-chip {
   margin: 0;
@@ -880,7 +880,7 @@
 }
 .sp-run-pipeline {
   display: block;
-  font-size: 15px;
+  font-size: var(--mantine-font-size-lg);
 }
 
 @media (max-width: 767.98px) {
@@ -914,7 +914,7 @@
     justify-content: center;
     min-width: 44px;
     min-height: 44px;
-    margin: -12px 0 -12px -14px;
+    margin: calc(-1 * var(--mantine-spacing-md)) 0 calc(-1 * var(--mantine-spacing-md)) calc(-1 * var(--mantine-spacing-lg));
   }
   .sp-bulk .mantine-Button-root {
     min-height: 44px;
@@ -925,12 +925,12 @@
     justify-content: center;
     min-width: 44px;
     min-height: 44px;
-    margin: -8px -14px -8px auto;
+    margin: calc(-1 * var(--mantine-spacing-sm)) calc(-1 * var(--mantine-spacing-lg)) calc(-1 * var(--mantine-spacing-sm)) auto;
   }
   /* Home: count cards two by two. */
   .sp-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: var(--mantine-spacing-md);
   }
   /* The run header: facts as label and value rows, Cancel full width. */
   .sp-facts {
@@ -940,15 +940,15 @@
   .sp-facts > div {
     display: grid;
     grid-template-columns: 40% minmax(0, 1fr);
-    gap: 8px;
-    padding: 7px 0;
+    gap: var(--mantine-spacing-sm);
+    padding: var(--mantine-spacing-sm) 0;
     border-bottom: 1px solid var(--sp-line-divider);
   }
   .sp-facts dd {
     margin: 0;
   }
   .sp-run-head {
-    padding: 18px 16px 14px;
+    padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-lg);
   }
   /* More actions stays beside the name; the primary sits in the bar pinned above the tab bar,
      full width, opaque (UI-09; ui-spec §4.11, §12.5). The shell's bottom padding leaves it room. */
@@ -960,8 +960,8 @@
     z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 8px 16px;
+    gap: var(--mantine-spacing-sm);
+    padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
     background: var(--sp-surface-page);
     border-top: 1px solid var(--sp-line-border);
   }
@@ -999,7 +999,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 /* The menu's destructive item, last after a divider: its icon and text in the failed ink. */
 .sp-run-menu .sp-menu-danger {
@@ -1014,9 +1014,9 @@
   right: 0;
   z-index: 19;
   white-space: nowrap;
-  padding: 6px 10px;
-  border-radius: 9px;
-  font-size: 12.5px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-sm);
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-code-text);
   background: var(--sp-surface-code);
 }
