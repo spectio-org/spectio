@@ -1337,6 +1337,14 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Build.** FU-P3-110a to -110d, one P3 batch after FU-P3-87, server first, security review on a and b.
 - **[to be validated].** That the later file of Nextflow's `-c` list wins; the `sbatch` options Nextflow writes for `cpus`, `memory` and `time`; that Nextflow's local executor and Snakemake refuse a task above the caps; that Snakemake's local execution does not enforce `runtime`; that a `-c` `process.*` replaces nf-core's `base.config` defaults but not its labels (nf-core/rnaseq).
 
+## 2026-11-10 — Feature-sized tasks and fewer gates per credit (Thomas)
+
+- **Context.** Thomas: the autopilot ships too few features for the credits spent. An outside audit (journal, `costs.jsonl`, git history from 10-29 to 11-10) measured 155 PRs for 82 code PRs, 41 promotions, 237 of 450 commits for journal, cost and state, features split into 6 to 12 PRs each (FU-P3-86, -102), and a median cost of $18 per lean task with a fixed loop of review, docs and bookkeeping. CI (about 5 minutes) was not the bottleneck. Thomas's answers, 2026-11-10: more features per session and per week; runs follow his credits, not around the clock; gates are Claude's call by good sense; cut test, CI and docs time; no pause between waves.
+- **Decided (Thomas, gates chosen by Claude on his delegation):** [autopilot §14](../playbooks/autopilot.md#14-feature-sized-tasks-fewer-gates-per-credit-thomas-2026-11-10): a task is a feature slice of up to about 800 lines; up to 4 tasks in flight; a fix round only for blockers and majors, a verify check after a blocker or any security finding; per task only the review record and PR body; Progress sections per batch; figure and `doc-reviewer` per milestone; promotion once per run or at a milestone end; bookkeeping once per batch; inbox only for real questions; minors folded into the next task on the same module; waves chain; `ci.yml` skips the code jobs on docs-only PRs.
+- **Kept:** `code-reviewer` on every task; `security-reviewer` on sensitive paths; test-first builds; the full CI on code PRs and on `main`; the human gates of `pipeline.yaml`.
+- **Changed.** [autopilot.md](../playbooks/autopilot.md) new §14 and notes in §11 and §13; [documentation-system §3.5](../specs/documentation-system.md#35-docs-per-batch-of-p3-tasks-thomas-2026-11-04); `.claude/skills/autopilot/SKILL.md` §4b; `tools/autopilot/lean/p3-lean.js`, `p3-batch.js` and README; `.github/workflows/ci.yml`; `CLAUDE.md`.
+- **To check after two runs.** Features merged per run and cost per feature (`costs.jsonl`, by kind), against the 11-10 run.
+
 ## 2026-11-11 — 0.0.2 work on its own branch, and pipeline version detection (assumed)
 
 - **Context.** Thomas, 2026-11-11, asked how pipeline and module versions are handled and updated, and for a long plan of steps; 0.0.1 is not released, FU-P3-105 is 0.0.2. A Git revision is fetched once and never again (`api/workflows.py:177-194`); nothing detects a newer version.
