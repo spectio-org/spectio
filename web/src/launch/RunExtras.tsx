@@ -103,7 +103,7 @@ function envWords(env: EnvironmentItem | null): string {
   return [s?.time_min && timeWords(s.time_min), s?.mem_mib && memWords(s.mem_mib)].filter(Boolean).join(" · ");
 }
 
-/** The Resources row's closed line (ui-spec §4.6). */
+/** The Run resources row's closed line (ui-spec §4.6). */
 function closedLine(sent: Sent, c: Context): string {
   if (fromProfile(c)) return `From the profile ${c.profile}`;
   if (Object.keys(sent).length) return `Defaults: ${resourceWords(sent)} per task`;
@@ -111,7 +111,7 @@ function closedLine(sent: Sent, c: Context): string {
   return env ? `From the environment: ${env} per task` : "The pipeline's defaults";
 }
 
-/** The Summary's Resources line. */
+/** The Summary's Run resources line. */
 export function summaryLine(sent: Sent, c: Context): string {
   if (fromProfile(c)) return `from the profile ${c.profile}`;
   if (!Object.keys(sent).length) return "from the environment";
@@ -220,7 +220,7 @@ export function ResourcesRow({
     />
   );
   return (
-    <SubRow id="launch-resources" title="Resources" closed={closedLine(sent, c)} reveal={reveal}>
+    <SubRow id="launch-resources" title="Run resources" closed={closedLine(sent, c)} reveal={reveal}>
       {fromProfile(c) ? (
         <p className="launch-keep">
           {`The profile ${c.profile} sets the resources, so none are set here. Without a profile: memory and time per task. Values typed before a Snakemake profile was picked are kept in the form but not sent.`}

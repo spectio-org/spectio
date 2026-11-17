@@ -897,7 +897,7 @@ export function LaunchPage({
               <dd>{engine ? `${engineName(engine)} ${loaded?.engine_versions[engine] ?? "(version not found)"}` : "Not chosen yet"}</dd>
               <dt>Environment</dt>
               <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
-              <dt>Resources</dt>
+              <dt>Run resources</dt>
               <dd>{summaryLine(res.sent, extras)}</dd>
               <dt>Extra config</dt>
               <dd className="sp-mono">{configFile.trim() || "none"}</dd>

@@ -136,9 +136,9 @@ test("FU-P3-110d: the run's resources and extra config file are prefilled, the f
   const item = await screen.findByText("Extra config file: loads code or configuration");
   expect(item.closest("li")).toHaveTextContent(path);
   const where = screen.getByRole("region", { name: "Where it runs" });
-  expect(within(where).getByRole("button", { name: /^Resources/ })).toHaveTextContent("Defaults: 4 CPUs · 16 GiB · 1 h 30 min per task");
+  expect(within(where).getByRole("button", { name: /^Run resources/ })).toHaveTextContent("Defaults: 4 CPUs · 16 GiB · 1 h 30 min per task");
   expect(within(where).getByRole("button", { name: /^Extra config file/ })).toHaveTextContent("lab-tweaks.config");
-  await userEvent.click(within(where).getByRole("button", { name: /^Resources/ }));
+  await userEvent.click(within(where).getByRole("button", { name: /^Run resources/ }));
   expect(screen.getByRole("textbox", { name: "CPUs per task" })).toHaveValue("4");
   expect(screen.getByRole("textbox", { name: "Memory per task" })).toHaveValue("16");
   expect(screen.getByRole("textbox", { name: "Time per task, hours" })).toHaveValue("1");

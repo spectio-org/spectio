@@ -172,7 +172,7 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
             </fieldset>
             <!-- ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): Resources and Extra config file, two folding rows after Environment, drawn open; Nextflow on Login node (caps 2 CPUs and 8 GiB). Bounds and messages: api §5.7, spectio.environments.DefaultResources. -->
             <div class="xrow">
-              <h3 id="xr-res-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="xr-res" style="min-height: 40px;"><span>Resources</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Defaults: 2 CPUs · 6 GiB · 2 h per task</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
+              <h3 id="xr-res-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="xr-res" style="min-height: 40px;"><span>Run resources</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Defaults: 2 CPUs · 6 GiB · 2 h per task</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
               <div id="xr-res" class="xrow-b">
                 <span id="res-hint" class="hint">Used by every process that does not set its own. A process that sets its own CPUs, memory or time keeps them. Replaces the pipeline's own default for all processes. Each is optional.</span>
                 <div class="res-f">
@@ -298,7 +298,7 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
               <div><dt>Pipeline</dt><dd>nf-core/rnaseq 3.27.0 · profile singularity</dd></div>
               <div><dt>Engine</dt><dd><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="14" height="14" alt="" style="display: inline-block; vertical-align: -2px; margin-right: 5px;">Nextflow 25.10.4</dd></div>
               <div><dt>Environment</dt><dd>Login node · Local</dd></div>
-              <div><dt>Resources</dt><dd>2 CPUs · 6 GiB · 2 h per task; processes that set their own keep them</dd></div>
+              <div><dt>Run resources</dt><dd>2 CPUs · 6 GiB · 2 h per task; processes that set their own keep them</dd></div>
               <div><dt>Extra config</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 400;">/home/amartin/configs/lab-tweaks.config</dd></div>
               <div><dt>Engine head</dt><dd>tmux session on login1</dd></div>
               <div><dt>Tasks</dt><dd>run on login1 by Nextflow · at most 2 CPUs</dd></div>
@@ -353,7 +353,7 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
               <span id="rs1-time-h" class="hint">Empty: 48 h, from Long jobs, mylab</span>
             </fieldset>
           </div>
-          <p class="cat-line">Folded: <b style="font-weight: 600;">Resources</b> · From the environment: 48 h · 32 GiB per task</p>
+          <p class="cat-line">Folded: <b style="font-weight: 600;">Run resources</b> · From the environment: 48 h · 32 GiB per task</p>
         </section>
 
         <section aria-labelledby="rs2-h" class="cat-pnl">
@@ -418,7 +418,7 @@ select[aria-invalid="true"]{border-color:#DC3B3B}
         <section aria-labelledby="rs6-h" class="cat-pnl">
           <h3 id="rs6-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Both rows folded (the default)</h3>
           <div class="xrow">
-            <h4 style="margin: 0; font-size: 14px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="false" aria-controls="rs6-res" style="min-height: 40px;"><span>Resources</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Defaults: 2 CPUs · 6 GiB · 2 h per task</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h4>
+            <h4 style="margin: 0; font-size: 14px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="false" aria-controls="rs6-res" style="min-height: 40px;"><span>Run resources</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Defaults: 2 CPUs · 6 GiB · 2 h per task</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h4>
             <div id="rs6-res" hidden></div>
           </div>
           <div class="xrow">
