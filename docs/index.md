@@ -99,6 +99,6 @@ hide: [navigation, toc]
 
 ## Later { .sp-h2 }
 
-Optional QC gates between stages, Kubernetes, the hand-off to depictio, accounts and administration are planned and not in 0.0.1. See the [roadmap](roadmap/index.md).
+Optional QC gates between stages, Kubernetes, the hand-off to Depictio, accounts and administration are planned and not in 0.0.1. See the [roadmap](roadmap/index.md).
 
 <p class="sp-more"><a href="roadmap/">Roadmap</a> · <a href="installation/">Installation</a> · <a href="changelog/">Changelog</a></p>

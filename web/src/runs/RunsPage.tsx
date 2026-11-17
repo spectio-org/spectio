@@ -7,6 +7,7 @@ import { type Page, type Run, type RunsSort, type ServerVersion, type Summary, l
 import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
+import { Scope, TargetTail } from "./target";
 import { usePhone } from "../shell/layout";
 import { ago } from "../shell/NotificationsBell";
 import { PageHead } from "../shell/PageHead";
@@ -51,13 +52,25 @@ const SORTS: Partial<Record<RunsSort, string>> = {
   "-duration": "longest first",
 };
 
-/** The `/runs` search params: a known filter key, or none, the name filter and the sort when set. */
-export function runsSearch(search: Record<string, unknown>): { state?: string; q?: string; sort?: RunsSort } {
-  const { state, q, sort } = search;
+/** The Scope buttons (ui-spec §4.15): every run, the runs that target one module or rule, or the
+ * whole-pipeline runs; `key` is the `?target=` of the URL and of `GET /runs` (api §5.10). */
+const TARGETS: { key?: "any" | "none"; label: string }[] = [
+  { label: "Any scope" },
+  { key: "none", label: "Pipelines" },
+  { key: "any", label: "Single steps" },
+];
+
+type RunsSearch = { state?: string; q?: string; sort?: RunsSort; target?: "any" | "none" };
+
+/** The `/runs` search params: a known filter key, or none, the name filter and the sort when set,
+ * and the target filter when not all runs. */
+export function runsSearch(search: Record<string, unknown>): RunsSearch {
+  const { state, q, sort, target } = search;
   return {
     ...(typeof state === "string" && FILTERS.some((f) => f.key === state && f.key !== "all") ? { state } : {}),
     ...(typeof q === "string" && q !== "" ? { q } : {}),
     ...(typeof sort === "string" && Object.hasOwn(SORTS, sort) ? { sort: sort as RunsSort } : {}),
+    ...(target === "any" || target === "none" ? { target } : {}),
   };
 }
 
@@ -183,6 +196,7 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
       <span className="sp-run-card-top">
         {select}
         <StateWord state={run.state} />
+        {run.target && <Scope target={run.target} />}
         <span>{duration(run.started_at, run.ended_at)}</span>
       </span>
       {pin ? (
@@ -195,6 +209,7 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
       )}
       <span className="sp-run-card-line">
         <Pipeline run={run} size={16} />
+        <TargetTail target={run.target} />
         <span>
           {" · "}
           {tasksText(run)} {units}
@@ -257,7 +272,18 @@ const COLUMNS: ColDef<Run>[] = [
       </>
     ),
   },
-  { headerName: "Workflow", flex: 1.4, cellRenderer: ({ data: run }: { data: Run }) => <Pipeline run={run} /> },
+  { headerName: "Scope", colId: "scope", flex: 0.8, minWidth: 140, cellRenderer: ({ data: run }: { data: Run }) => <Scope target={run.target} /> },
+  {
+    headerName: "Workflow",
+    colId: "workflow",
+    flex: 1.4,
+    cellRenderer: ({ data: run }: { data: Run }) => (
+      <span className="sp-what-ran">
+        <Pipeline run={run} />
+        <TargetTail target={run.target} />
+      </span>
+    ),
+  },
   { headerName: "Tasks", cellRenderer: ({ data: run }: { data: Run }) => <TasksCell run={run} /> },
   { headerName: "Started", colId: "started_at", cellRenderer: ({ data: run }: { data: Run }) => <Started run={run} /> },
   { headerName: "Duration", colId: "duration", valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : "") },
@@ -326,8 +352,9 @@ export function RunsPage() {
   const filter = Math.max(0, FILTERS.findIndex((f) => f.key === search.state));
   const q = search.q ?? "";
   const sort = search.sort;
+  const target = search.target;
   // Each change keeps the other param: the name filter lands 250 ms after typing, a click may come between.
-  const setSearch = (change: { state?: string; q?: string; sort?: string }) =>
+  const setSearch = (change: RunsSearch) =>
     navigate({ search: (prev) => runsSearch({ ...prev, ...change }), replace: true });
   const setFilter = (i: number) => {
     setSaid([]);
@@ -387,7 +414,7 @@ export function RunsPage() {
       const { signal } = query.current;
       const mine = ++loads.current;
       const stale = () => signal.aborted || mine !== loads.current;
-      Promise.all([listRuns({ state: states, q, sort, limit: PAGE }, signal), runsSummary(signal)])
+      Promise.all([listRuns({ state: states, q, sort, target, limit: PAGE }, signal), runsSummary(signal)])
         .then(([page, sum]) => {
           if (stale()) return;
           setList((shown) => (merge ? refresh(shown, page, !sort) : { rows: page.items ?? [], next: page.next ?? null }));
@@ -396,7 +423,7 @@ export function RunsPage() {
         })
         .catch((e: Error) => stale() || setError(e.message));
     },
-    [states, q, sort],
+    [states, q, sort, target],
   );
   useEffect(() => {
     const controller = new AbortController();
@@ -410,7 +437,7 @@ export function RunsPage() {
   const next = list?.next ?? null;
   const more = () => {
     const { signal } = query.current;
-    listRuns({ state: states, q, sort, limit: PAGE, cursor: next }, signal)
+    listRuns({ state: states, q, sort, target, limit: PAGE, cursor: next }, signal)
       .then((page) => {
         if (signal.aborted) return;
         const items = page.items ?? [];
@@ -482,9 +509,12 @@ export function RunsPage() {
     if (e.source !== "uiColumnSorted") return;
     setSaid([]);
     const col = e.columns?.find((c) => c.getSort());
-    setSearch({ sort: col ? `${col.getSort() === "desc" ? "-" : ""}${col.getColId()}` : undefined });
+    setSearch({ sort: col ? `${col.getSort() === "desc" ? "-" : ""}${col.getColId()}`  as RunsSort : undefined });
   };
-  const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started")).map(
+  // The Scope column and buttons once single targets can exist here: the flag, or a run that has one
+  // (a terminal run is captured whatever the flag says; api §5.10).
+  const scoped = !!server?.features?.single_target || target !== undefined || !!list?.rows.some((r) => r.target);
+  const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started") && (scoped || c.colId !== "scope")).map(
     (c): ColDef<Run> =>
       c.colId && SORTABLE.has(c.colId)
         ? { ...c, sortable: true, unSortIcon: true, comparator: keep, sortingOrder: ["asc", "desc", null], sort: sort === c.colId ? "asc" : sort === `-${c.colId}` ? "desc" : null }
@@ -492,9 +522,10 @@ export function RunsPage() {
   );
 
   const total = count(summary, null);
-  const filtered = filter !== 0 || q !== "";
-  // "of N" only while the filter's total is known from the summary (ui-spec §4.11).
-  const shownTotal = q === "" && summary ? count(summary, FILTERS[filter].states) : null;
+  const filtered = filter !== 0 || q !== "" || target !== undefined;
+  // "of N" only while the filter's total is known from the summary (ui-spec §4.11), which counts
+  // by state, not by target.
+  const shownTotal = q === "" && !target && summary ? count(summary, FILTERS[filter].states) : null;
   return (
     <div className="sp-runs">
       <PageHead
@@ -531,14 +562,25 @@ export function RunsPage() {
           />
         }
         filters={
-          <div className="sp-segments" role="group" aria-label="Show runs">
-            {FILTERS.map((f, i) => (
-              <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
-                {f.label}
-                <span className="sp-count">{count(summary, f.states)}</span>
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="sp-segments" role="group" aria-label="Show runs">
+              {FILTERS.map((f, i) => (
+                <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
+                  {f.label}
+                  <span className="sp-count">{count(summary, f.states)}</span>
+                </button>
+              ))}
+            </div>
+            {scoped && (
+              <div className="sp-segments" role="group" aria-label="Scope">
+                {TARGETS.map((t) => (
+                  <button key={t.label} type="button" aria-pressed={target === t.key} onClick={() => setSearch({ target: t.key })}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         }
       />
 

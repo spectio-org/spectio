@@ -1379,6 +1379,79 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **CI.** `tools/docs/check.py`, which the docs gate runs, now builds the public and the developer configuration, each with `--strict`. The plain `mkdocs build --strict` steps of `.github/workflows/docs.yml` and `previews.yml` build the public site only, so the previews show only the product pages. Building or deploying the developer site in CI needs a `.github/workflows` change, which waits for Thomas.
 - **[to be validated].** That a checkout (`uv sync`, the built screens, `spectio init`, `spectio serve`) is an install route for people who are not developers: the installation page gives the steps and says so. Screenshots that still show the older UI are retaken in a separate step.
 
+## 2026-11-11 — Workflow graph: exploded jobs, fold, marks, links and code (#160, Thomas)
+
+Thomas asked for parity with MetroFlow's viewer (2026-11-11). Decided: the Jobs level is one node per job, named by its key (Nextflow tag or Snakemake wildcards); double-click folds and unfolds a subworkflow or stage; nodes carry checkpoint, temp, condition, retried and cached marks; edges open a sheet that says what they carry (files for Snakemake, channels for Nextflow); a code card reads a process or rule definition through a new confined route, `GET /workflows:source`, which takes a name, never a path; the graph exports to standalone HTML. Spectio's renderer stays its own (React Flow + dagre); MetroFlow and BioFlow-Insight are MIT but none of their code is copied into the product. Owners: [ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view), [api §5.11](../specs/api-and-data-model.md#511-workflow-graph-002-flag-graph_view). What remains to choose: [gap analysis](../research/metroflow-gap-2026-11-11.md).
+
+Same day, after Thomas tried it: a step's or link's details are docked beside the map instead of a drawer over it; fold is a visible button on each node; kinds, marks and actions get line icons; a step's links read as "files from X" or "channel to Y"; folding no longer scrolls the page to the top.
+
+## 2026-11-11 — Workflow graph: second redesign, channel files and first lines (#160, Thomas)
+
+- **Context.** Thomas, 2026-11-11, after trying the graph: light icons in the panel; a better fold control; nicer badges; Metro unclear and Compact not compact enough; compact Fold / Before / After; a stronger highlight of what is open; visual inputs and outputs instead of words; previews that work (but none for BAM or large binaries); a collapsible legend; CPU and memory as efficiency ratios; the channel panel "à revoir"; then "why are files not listed when I click a channel?" and "test Snakemake too".
+- **Decided (Claude, on Thomas's request; ui-spec [§4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view)):** round −/+ fold button; round mark badges; a spotlight of the open step or link and its neighbours with arrows, `if` links dashed; Metro as dagre group areas; Compact as packed shelves; Auto-fold and Fold all; Focus (`?focus=`) and Hide (`?hide=`); full screen and Copy PNG; a collapsible legend; the panel with a header tile, a hero row, a segmented action bar, a links diagram, efficiency gauges and file cards with first lines.
+- **Decided (server; api [§5.11](../specs/api-and-data-model.md#511-workflow-graph-002-flag-graph_view)):** outputs carry `size` and `work_path`; Nextflow outputs also list the unpublished files at the top of each task's work directory (`root: work`), since a channel's content is mostly never published; a new `outputs:head` route returns the first lines (gzip inflated, capped), read only through the Results and workdir routes' trees (`Where`, `TaskDir`), so dev-env §15.3 req. 13 and 14 apply (SEC-160-04 to -06, -09, -10).
+- **Then (Thomas, 2026-11-11, third pass):** folding one group keeps the zoom and the group's place; in Metro the fold button is on the group's area, not on each step; badges explain themselves on hover and in words on focus; a link shows the channel type or files each side's code declares; a step listed in a group's panel opens in place; jobs keep their step's checkpoint, temp and `if` marks; "retried" is explained, and a step's retried jobs are listed under Executions, each opening its attempts.
+- **Then (Thomas, fourth pass):** Escape and a click on the empty map reset to the plain map; Layered top-down and left-right draw subworkflows and stages as foldable areas too; a link's declared channel types are a small aligned table (name, kind, value).
+- **Then (Thomas, fifth pass):** tooltips on steps, links and group names (also on keyboard focus for steps); parameters as an aligned table with their kind; the colour modes per job at the Jobs level, scaled within each step, with jobs at least 2× off their step's median outlined.
+- **Then (Thomas, sixth pass):** step, group and link cards drawn over the whole map (no step covers them), lighter and coloured; a compact toolbar (inline labels, an Export menu), the legend and notes over the map, the map filling the window; a fit button that reads as live and fits at once; a resizable details panel with separators, the code once and open, light icon buttons to a step's jobs and Tasks; a more visual job panel (key chips, gauges, a bar per job of its step with the median and outliers); a group's name opens its details; parameters one per row, the name on its own line.
+- **Not done yet:** a subworkflow card (R5), grouping by condition (R10), stable positions while live (I1), the Launch map from the last run (I3), evaluating conditions (I4), a static estimate for runs (I5), channel names (I7).
+
+## 2026-11-10 — Workflow graph in 0.0.2 behind a flag (#160, Thomas)
+
+- **Context.** Issue [#160](https://github.com/spectio-org/spectio/issues/160) asks for a MetroFlow-style explorable workflow map. Thomas, 2026-11-10, asked for: an interactive graph; views by subworkflow or Spectio stage, by process, and split into all jobs; dynamic layouts; search; parameters and outputs viewed live. His extras were the critical path and heatmap, a diff of runs on the graph, file lineage, and replay with a minimap. Also from him: fork MetroFlow first, then analyse, then implement; pick the renderer after the spike; build in 0.0.2 behind a flag.
+- **Spike** ([note](../research/spike-metroflow-2026-11-10.md)):
+  - BioFlow-Insight is MIT and has been vendored to `spikes/metroflow/upstream/`.
+  - The MetroFlow renderer is in a private repository.
+  - BioFlow-Insight reads Nextflow only. Its static edges can contain cycles (nf-core/fetchngs).
+- **Decided:**
+  - Spectio's own engine-neutral graph document ([api §5.11](../specs/api-and-data-model.md#511-workflow-graph-002-flag-graph_view)) and its own renderer, React Flow + dagre (both MIT) ([ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view)).
+  - Producers, from most to least trusted: the Nextflow runtime DAG from `nf-spectio` `onFlowBegin`, the Snakemake rule graph, BioFlow-Insight as an optional extra, and stages only.
+  - The flag is `graph_view` and is off by default.
+  - Code is never sent to the hosted BioFlow-Insight.
+- **Changed.** [api §5.11](../specs/api-and-data-model.md#511-workflow-graph-002-flag-graph_view), [ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view), [dev environment §15.1](../specs/dev-environment-and-testing.md) (Visualisation row).
+- **Open.** Ask the MetroFlow authors about the renderer's licence. Measure BioFlow-Insight at nf-core scale (rnaseq). OME-NGFF badges on imaging nodes ([#246](https://github.com/spectio-org/spectio/issues/246)).
+
+
+## 2026-11-11 — A shorter Developer menu and Progress page (Thomas)
+
+- **Context:** Thomas found Developer > Progress still too long and too technical, with too much information, and asked to remove the inbox and similar pages from it.
+- **Decision:** the Developer menu has four entries: an overview, Progress, Specifications (the [documentation map](../map.md)) and the decision log. Every spec, the glossary, playbooks, reviews (with the inbox) and research notes stay published and are reached from the documentation map and the pages that cite them. The Progress index shows one folded line per wave (short title and steps done, then its pages, with no step ids or names; the landing strip uses the same short titles), in place of the table of every step and the list of steps outside the pipeline ([documentation system §1, §3.2](../specs/documentation-system.md#1-site-structure)).
+- **Consequence:** `hooks/progress.py` renders the new sections from the same data; `tools/docs/check.py` looks for their marker.
+
+## 2026-11-11 — Design records leave the docs site; Depictio, LabID and AI agents pages
+
+- **Context:** the Developer section was still far too long: not everything belongs in the published docs. Depictio should be written with its capital and shown with its logo; LabID and AI agents had no page.
+- **Decision:** the site publishes the user pages, Progress (one page with the wave strip) and a short Developer overview. Specifications, the decision log, reviews with the inbox, research, playbooks, plans, the Progress step pages and the documentation map stay in the repository, out of the build; links to them from published pages go to GitHub (`hooks/internal.py`, [documentation system §1](../specs/documentation-system.md#1-site-structure)). Published pages write "Depictio"; the Depictio page shows its wordmark, taken from the Depictio repository (MIT, `depictio/api/static_assets/images/logos/logo.png` at `ad38945`), with a white-text copy for the dark scheme. New Features pages: LabID and AI agents, written from the owning specs.
+- **Consequence:** the footer links the roadmap instead of the documentation map, and the repository link points to `spectio-org/spectio`.
+## 2026-11-10 — Runs that target one module or one rule (0.0.2, behind a flag, #161)
+
+- **Context.** Issue [#161](https://github.com/spectio-org/spectio/issues/161): Nextflow 26.04 added `nextflow module run`, which runs one module with no wrapper pipeline, and Snakemake can run one rule target. Spectio assumed a run is a whole pipeline (identity, Summary, Launch). Decisions of Thomas, 2026-11-08 (in the issue): Snakemake "single module" is a rule target, not the `module:` directive; not in 0.0.1; launching from the UI is in scope. Thomas, 2026-11-10: in the 0.0.2 plan behind a feature flag, capture and launch both, built to code with tests.
+- **Spike.** [spike module-run](../research/spike-module-run-2026-11-10.md): `module run` loads nf-spectio from `NXF_PLUGINS_DEFAULT` and `-plugins`, fires the usual events, writes the trace, has a run name and session, and has no manifest or commit; a registry module installs into `./modules/` with a checksum in `.module-info`; `-params-file` carries the inputs. On Snakemake 9.27.1 a rule target and `--until` plan the same jobs, and `--allowed-rules` does not prune a DAG with a checkpoint.
+- **Decided (Thomas for scope; the design assumed — standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):**
+    - An optional run `target` (`kind` module, rule or file; `name`; `version`; `hash`; `source`; `path`; `flag`; `more`) on the run and in the API ([api §5.10](../specs/api-and-data-model.md#510-run-target-one-module-or-one-rule-002)); `null` is the whole pipeline.
+    - `[features] single_target` (default off) gates the launch side; targets the bridges report are always stored and shown.
+    - Registry modules: namespace allow-list `[features] module_namespaces` (default `nf-core`), version always given and never `latest`, the checksum captured after install, shown, and compared with earlier runs of the same version.
+    - Launch: `nextflow module run <name> -version <v>` (or an absolute local path) with the head's usual `-params-file`, `-c`, `-work-dir`, `-profile`; Snakemake, the rule as a positional target. A target run has no stages and no gates, and the head refuses stop flags in `extra_args` beside a target, so it never meets the gates' `--until`.
+    - Capture: `onFlowCreate.target` from nf-spectio, `workflow_started.target` from the Snakemake logger ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal), note 2026-11-10). A terminal module run is keyed by the module, the 0.0.2 form of Discovered workflows.
+    - Screens: the header line, a runs-list filter, the single-process Summary, the "Outside the target (n rules)" group and the Launch mode with `nextflow module view` inputs and the `--list-rules` and dry-run preview ([ui-spec §4.15](../specs/ui-spec.md#415-runs-that-target-one-module-or-one-rule-002)).
+    - Compatible with #160: one node for a module run, the target's sub-graph for a Snakemake target run.
+- **Why.** The smallest change that keeps today's runs unchanged: one nullable column, one optional body field, one inspect route, and the head script's existing generators.
+- **Changed.** [api](../specs/api-and-data-model.md) new §5.10, a `runs.target` row in §7, a slug in §4.1, a note in §14.1; [ui-spec](../specs/ui-spec.md) new §4.15, a note in §6; [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal); [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) (one row); [research note](../research/spike-module-run-2026-11-10.md).
+- **[to be validated].** `module run` on Nextflow 25.x (expected absent); a workflow-kind module; what `module run` with no version downloads; whether the registry serves a checksum before install; registry reachability from HPC nodes; the engine log of a terminal module run (`.module.log`).
+
+## 2026-11-11 — Single-target runs: clearer screens (Thomas, #161)
+
+- **Context.** Thomas found the first screens of single-target runs ([2026-11-10](#2026-11-10-runs-that-target-one-module-or-one-rule-002-behind-a-flag-161)) "pas assez intuitif et joli", and asked for distinctions in the runs list. Mockups were shown in this session and approved on 2026-11-11 ("Me parait bon, continue").
+- **Decided (Thomas; details assumed under the standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):**
+    - One scope colour code: grey pipeline, accent module, sky rule or file, always with the word.
+    - Runs list: a Scope column and Scope segmented buttons replace the target line and the `<select>`; a "checksum changed" chip.
+    - Run header: the target as one badge; a changed checksum is a titled warning.
+    - Rule run: the steps to the target and the rules not needed replace the "Outside the target" fold. Module run: the processes table stays, with no ring.
+    - Launch: the same page, with "What to run" cards, a kind choice, a rule grid and a "What will run" strip.
+    - A module run takes no extra config file.
+    - A newer registry version is shown later, not in 0.0.2.
+- **Changed.** [ui-spec §4.15](../specs/ui-spec.md#415-runs-that-target-one-module-or-one-rule-002); [api §5.10](../specs/api-and-data-model.md#510-run-target-one-module-or-one-rule-002) (no `config_file` for a module, the template's fields, newer version later).
+
 ## 2026-11-17 — picomatch advisory accepted for the web dev tooling
 
 - **Context.** On 2026-11-17 osv-scanner started reporting GHSA-fc5q-39xc-vjpf (CVSS 8.7) against `picomatch` 4.0.7 in `web/package-lock.json`, and no fixed version exists yet. The security audit is a dependency of `ci-ok`, so every PR was red.

@@ -9,6 +9,11 @@ exclude_docs: |
   # read by the Snakemake plugin catalogue from the root of main, not part of the site
   /intro.md
 
+# The developer pages are in this build: no link rewriting to GitHub (hooks/internal.py is public-only).
+hooks:
+  - hooks/progress.py
+  - hooks/lists.py
+
 nav:
   - Home: index.md
   - Installation: installation/index.md
@@ -31,7 +36,9 @@ nav:
       - Runners: features/runners.md
       - QC gates (optional): features/gates.md
       - Administration: features/administration.md
-      - depictio: features/depictio.md
+      - Depictio: features/depictio.md
+      - LabID: features/labid.md
+      - AI agents: features/ai-agents.md
   - API: api/index.md
   - Developer:
       - developer/index.md
@@ -108,5 +115,8 @@ nav:
           - "Spike: stage detection": research/spike-stage-detection-2026-10-28.md
           - "Checkpoints, temp outputs and SLURM efficiency": research/dag-temp-slurm-efficiency-2026-11-07.md
           - EMBL login node audit: research/2026-11-08-embl-login-node-audit.md
+          - "Spike: MetroFlow graph": research/spike-metroflow-2026-11-10.md
+          - MetroFlow gap: research/metroflow-gap-2026-11-11.md
+          - "Spike: module run": research/spike-module-run-2026-11-10.md
   - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md

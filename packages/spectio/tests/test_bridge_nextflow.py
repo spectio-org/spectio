@@ -7,6 +7,7 @@ or the PATH, Java with it. The default `pytest` run skips them; `-m engines` run
 
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -420,6 +421,68 @@ def test_writer_rotates_and_drops_long_lines(nextflow: str, tmp_path: Path) -> N
     assert batch.drops == Counter()
 
 
+# --- onFlowBegin's process-level DAG (#160) -------------------------------------------------
+
+
+def test_flow_begin_sends_the_process_dag(nf_run: Path) -> None:
+    """The synthetic pipeline's DAG from `Session.dag`, collapsed through its operators (SPLIT's
+    `flatMap`, MERGE's `groupTuple`...) to process pairs, in creation order."""
+    begins = [
+        SpoolEvent.model_validate_json(line)
+        for line in spool_lines(nf_run)
+        if '"nextflow.onFlowBegin"' in line
+    ]
+    assert len(begins) == 1
+    assert begins[0].data["dag"] == {
+        "processes": [
+            "MAKE_READS", "QC_STATS", "QC_REPORT", "SPLIT", "ALIGN", "MERGE", "COMPARE",
+            "FINAL_REPORT",
+        ],
+        "edges": [
+            ["MAKE_READS", "QC_STATS"],
+            ["MAKE_READS", "SPLIT"],
+            ["QC_STATS", "QC_REPORT"],
+            ["SPLIT", "ALIGN"],
+            ["ALIGN", "MERGE"],
+            ["MERGE", "COMPARE"],
+            ["COMPARE", "FINAL_REPORT"],
+        ],
+    }  # fmt: skip
+
+
+# Stand-ins for nextflow.dag.DAG's vertices and edges: processDag reads them by property only.
+DAG_SCRIPT = """
+import groovy.json.JsonOutput
+def v = { type, name -> new Expando(type: type, label: name, process: null) }
+def e = { a, b -> new Expando(from: a, to: b) }
+def dag = { vs, es -> new Expando(vertices: vs, edges: es) }
+def a = v('PROCESS', 'A'), op = v('OPERATOR', 'map'), b = v('PROCESS', 'B'), o = v('ORIGIN', null)
+def pd = spectio.SpectioObserver.&processDag
+def out = [:]
+out.chain = pd(dag([o, a, op, b], [e(o, a), e(a, op), e(op, b), e(b, null)]))
+def many = (1..1400).collect { v('PROCESS', "P$it") }
+out.values = pd(dag(many, (1..<1400).collect { e(many[it - 1], many[it]) }))
+def wide = (1..3).collect { v('PROCESS', 'W' * 20000 + it) }
+out.bytes = pd(dag(wide, []))
+out.notList = pd(dag(null, []))
+out.throws = pd(new Expando(getVertices: { throw new IllegalStateException('x') }))
+println JsonOutput.toJson(out)
+"""
+
+
+def test_process_dag_bounds_and_errors(nextflow: str, tmp_path: Path) -> None:
+    """Operators are walked through; over 4000 JSON values or 56 KiB the DAG is `truncated`
+    (the reader drops an event of more than MAX_EVENT_NODES values, and onFlowBegin must not be
+    dropped); on any error there is no DAG at all."""
+    done = run_writer(nextflow, tmp_path, tmp_path / "unused", script=DAG_SCRIPT)
+    out = json.loads(done.stdout.strip().splitlines()[-1])
+    assert out["chain"] == {"processes": ["A", "B"], "edges": [["A", "B"]]}
+    assert out["values"] == {"truncated": True}  # 1400 processes + 3 x 1399 edges > 4000
+    assert out["bytes"] == {"truncated": True}
+    assert out["notList"] is None
+    assert out["throws"] is None
+
+
 FULL_DISK_SCRIPT = """
 def w = new spectio.SpoolWriter(java.nio.file.Paths.get(args[0]), args[1], 1L, 1048576L)
 2000.times { w.write('nextflow.onFlowBegin', 1793172224454L, [runName: 'r' * 100]) }
@@ -697,3 +760,97 @@ def test_loose_spectio_home_no_pointer(
     assert done.returncode == 0, done.stdout + done.stderr
     assert list(where.iterdir()) == [] and terminal_files(launch_dir)
     assert "no pointer written" in (launch_dir / ".spectio" / "bridge.err").read_text()
+
+
+# --- Run targets: `nextflow module run` (api §5.10, architecture §13.8; #161) ----------------
+
+MODULE = REPO / "tests" / "pipelines" / "synthetic" / "modules" / "synth_stats"
+TARGET_SCRIPT = """
+import java.nio.file.Paths
+def at = { String cmd, String file -> groovy.json.JsonOutput.toJson(
+    spectio.SpectioObserver.moduleTarget(cmd, file ? Paths.get(file) : null, 'abc123')) }
+println at('nextflow run main.nf -profile test', null)
+def pinned = 'nextflow module run nf-core/fastqc -version 1.2 -params-file p.json'
+println at(pinned, args[0] + '/main.nf')
+println at('nextflow -c x.config module run nf-core/fastqc', args[1] + '/main.nf')
+println at('nextflow module run ' + args[2], args[2] + '/main.nf')
+println at('nextflow run x --tool module run', null)
+println at('nextflow module run my/mod', args[3] + '/main.nf')
+"""
+
+
+def test_module_target_from_the_command_line(nextflow: str, tmp_path: Path) -> None:
+    """architecture §13.8: `registry` only with a 64-hex checksum in `.module-info` (with the
+    command line's name), else `local`; `version` from `meta.yml`, else `-version`."""
+    checksum = "b" * 64
+    pinned_dir, meta_dir, empty_dir = (tmp_path / d / "fastqc" for d in ("a", "b", "c"))
+    for where in (pinned_dir, meta_dir, empty_dir):
+        where.mkdir(parents=True)
+        (where / ".module-info").write_text(f"#date\nchecksum={checksum}\nregistryUrl=x\n")
+    (meta_dir / "meta.yml").write_text('name: fastqc\nversion: "1.3"  # the release\n')
+    (empty_dir / ".module-info").write_text("")
+    jar = build(nextflow, "--classpath")
+    build(nextflow, str(tmp_path / "plugin"))
+    classes = tmp_path / "plugin" / "nf-spectio-0.0.1" / "classes"
+    out = subprocess.run(
+        ["java", "-cp", f"{jar}:{classes}", "groovy.ui.GroovyMain", "-e", TARGET_SCRIPT,  # noqa: S607
+         str(pinned_dir), str(meta_dir), str(MODULE), str(empty_dir)],
+        check=True, capture_output=True, text=True,
+    ).stdout  # fmt: skip
+    pipeline, pinned, unpinned, local, param, empty = (json.loads(x) for x in out.splitlines()[-6:])
+    assert pipeline is None and param is None
+    assert pinned == {
+        "kind": "module", "name": "nf-core/fastqc", "version": "1.2", "source": "registry",
+        "hash": checksum,
+    }  # fmt: skip
+    assert (unpinned["name"], unpinned["version"], unpinned["hash"]) == (
+        "nf-core/fastqc", "1.3", checksum
+    )  # fmt: skip
+    assert local == {
+        "kind": "module", "name": "synth_stats", "version": "1.0.0", "source": "local",
+        "path": str(MODULE), "hash": "abc123",
+    }  # fmt: skip
+    assert empty == {
+        "kind": "module", "name": "fastqc", "version": None, "source": "local",
+        "path": str(empty_dir), "hash": "abc123",
+    }  # fmt: skip
+
+
+def nextflow_version(nextflow: str) -> tuple[int, int]:
+    """(26, 10) from `nextflow -version`'s "version 26.10.4" line; (0, 0) when it says none."""
+    argv = [nextflow, "-version"]
+    out = subprocess.run(argv, capture_output=True, text=True, timeout=120, check=False).stdout
+    found = re.search(r"version (\d+)\.(\d+)\.", out)
+    return (int(found[1]), int(found[2])) if found else (0, 0)
+
+
+def test_local_module_run_reports_its_target(nextflow: str, tmp_path: Path) -> None:
+    """The single-module fixture, run alone, driven: `onFlowCreate` carries the target."""
+    if nextflow_version(nextflow) < (26, 4):
+        pytest.skip("`nextflow module run` needs Nextflow 26.04 or later (api §5.10)")
+    plugins = tmp_path / "plugins"
+    build(nextflow, str(plugins))
+    launch = tmp_path / "launch"
+    (launch / ".spectio").mkdir(mode=0o700, parents=True)
+    (launch / "S1.reads.txt").write_text("r1\nr2\n")
+    (launch / "params.json").write_text('{"meta": {"id": "S1"}, "reads": "S1.reads.txt"}')
+    env = {
+        **os.environ,
+        "NXF_PLUGINS_DIR": str(plugins),
+        "NXF_ANSI_LOG": "false",
+        "SPECTIO_RUN_ID": RUN_ID,
+        "SPECTIO_LAUNCH_N": "1",
+        "SPECTIO_SPOOL_DIR": str(launch / ".spectio" / "events"),
+    }
+    argv = [nextflow, "module", "run", str(MODULE), "-plugins", "nf-spectio@0.0.1"]
+    proc = subprocess.run(
+        [*argv, "-params-file", "params.json"],
+        cwd=launch, env=env, capture_output=True, text=True, timeout=600, check=False,
+    )  # fmt: skip
+    assert proc.returncode == 0, proc.stdout[-3000:] + proc.stderr[-3000:]
+    events = [SpoolEvent.model_validate_json(line) for line in spool_lines(launch)]
+    (create,) = [parse_data(e) for e in events if e.type == "nextflow.onFlowCreate"]
+    target = getattr(create, "target", None)
+    assert target is not None and (target.kind, target.source) == ("module", "local")
+    assert (target.name, target.version, target.path) == ("synth_stats", "1.0.0", str(MODULE))
+    assert target.hash and "commandLine" not in "".join(spool_lines(launch))

@@ -1,0 +1,52 @@
+=== snakemake -n merge
+Job stats:
+job           count
+----------  -------
+make_reads        1
+split             1
+align_done        1
+merge             1
+total             4
+=== snakemake -n --until merge
+Job stats:
+job           count
+----------  -------
+make_reads        1
+split             1
+align_done        1
+merge             1
+total             4
+=== snakemake -n --allowed-rules merge
+Nothing to be done (all requested files are present and up to date).
+=== snakemake -n merge --allowed-rules merge
+Job stats:
+job           count
+----------  -------
+make_reads        1
+split             1
+align_done        1
+merge             1
+total             4
+=== snakemake -n --until merge --allowed-rules merge
+Job stats:
+job           count
+----------  -------
+make_reads        1
+split             1
+align_done        1
+merge             1
+total             4
+=== snakemake -n --forcerun merge
+Job stats:
+job             count
+------------  -------
+make_reads         12
+qc_stats           12
+split               1
+align_done          1
+qc_report           1
+merge               1
+compare             2
+final_report        1
+all                 1
+total              32

@@ -53,6 +53,7 @@ from spectio.runner.rundir import (
     read_small,
     run_paths,
 )
+from spectio_sdk.targets import REGISTRY_NAME, VERSION, from_registry
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import check_revision, git_url
 from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
@@ -204,7 +205,15 @@ def _add(conn: Connection, runs_root: Path, found: _Found) -> None:
     m = found.manifest
     # local workflows are absolute paths (plan D2); a git one may have no revision
     source = "local" if m.workflow.location.startswith("/") else "git"
-    if source == "git":  # the import rule of the launch endpoint (SEC-P3T11-01 (r3))
+    t = m.target
+    if from_registry(t, m.workflow.engine):  # the launch grammar of a registry module (§5.10)
+        location, version = m.workflow.location, t.version or ""
+        if not (REGISTRY_NAME.fullmatch(location) and t.name == location):
+            raise ValueError("registry module location refused")
+        if version == "latest" or not VERSION.fullmatch(version):
+            raise ValueError("registry module version refused")
+    elif source == "git":
+        # the import rule of the launch endpoint (SEC-P3T11-01 (r3))
         try:
             git_url(m.workflow.location)
             if m.workflow.revision is not None:

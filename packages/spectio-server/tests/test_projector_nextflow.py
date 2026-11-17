@@ -709,3 +709,55 @@ def test_exited_at_is_set_once(engine: Engine, writer: Writer) -> None:
     first = exited_at()
     head(writer, report(state="exited", ended=True, exit_code=0))
     assert exited_at() == first
+
+
+# --- The process-level DAG of onFlowBegin (#160) -------------------------------------------
+
+SYNTHETIC = ["MAKE_READS", "QC_STATS", "QC_REPORT", "SPLIT", "ALIGN", "MERGE", "COMPARE"]
+
+
+@pytest.mark.parametrize(
+    ("fixture", "processes", "edges"),
+    [
+        (
+            "nf-spectio/nextflow-26.10.4_plugin_dag.spool.jsonl",
+            [*SYNTHETIC, "FINAL_REPORT"],
+            [
+                ["MAKE_READS", "QC_STATS"],
+                ["MAKE_READS", "SPLIT"],
+                ["QC_STATS", "QC_REPORT"],
+                ["SPLIT", "ALIGN"],
+                ["ALIGN", "MERGE"],
+                ["MERGE", "COMPARE"],
+                ["COMPARE", "FINAL_REPORT"],
+            ],
+        ),
+        (
+            "nf-spectio/nextflow-26.10.4_plugin_dag_subworkflow.spool.jsonl",
+            ["A", "INNER:B", "C"],
+            [["A", "INNER:B"], ["A", "C"], ["INNER:B", "C"]],
+        ),
+    ],
+)
+def test_flow_begin_keeps_the_dag(
+    tmp_path: Path,
+    engine: Engine,
+    writer: Writer,
+    fixture: str,
+    processes: list[str],
+    edges: list[list[str]],
+) -> None:
+    """Real nf-spectio spools (Nextflow 26.10.4): the logged onFlowBegin keeps the process-level
+    DAG as sent, its names the qualified ones the task events carry, and the run projects as
+    before (started, succeeded)."""
+    replay(tmp_path, writer, fixture)
+    with engine.connect() as conn:
+        payload = conn.execute(
+            select(events.c.payload).where(events.c.type == "spectio.engine.nextflow.onFlowBegin")
+        ).scalar_one()
+        named = set(conn.execute(select(tasks.c.process_or_rule)).scalars())
+    assert payload["dag"] == {"processes": processes, "edges": edges}
+    assert named == set(processes)
+    run = run_row(engine)
+    assert run.state == "succeeded"
+    assert run.started_at is not None

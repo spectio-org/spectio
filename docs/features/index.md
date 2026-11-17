@@ -37,11 +37,23 @@ What 0.0.1 does, and what comes later. Pages for features that are not built yet
 
     Users and groups, sign-in, plugins, backups.
 
--   :material-chart-box:{ .lg .sp-c-green } **[depictio](depictio.md)** *(later)*
+-   :material-chart-box:{ .lg .sp-c-green } **[Depictio](depictio.md)** *(later)*
 
     ---
 
     Finished runs become dashboards.
+
+-   :material-flask-outline:{ .lg .sp-c-sky } **[LabID](labid.md)** *(later)*
+
+    ---
+
+    Launch from LabID samples, and send the results back with their provenance.
+
+-   :material-robot-outline:{ .lg .sp-c-violet } **[AI agents](ai-agents.md)** *(later)*
+
+    ---
+
+    Optional: agents suggest at QC gates, with their own access and a full record.
 
 -   :material-compare-horizontal:{ .lg .sp-c-sky } **[Spectio and other tools](other-tools.md)**
 

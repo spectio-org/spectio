@@ -75,13 +75,36 @@ export const ICONS = {
   zoomIn: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4 M8 11h6 M11 8v6",
   zoomOut: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4 M8 11h6",
   fit: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5",
+  // Launch's "What to run" choice (#161)
+  pipeline: "M3 4h6v5H3z M15 4h6v5h-6z M9 15h6v5H9z M6 9v2.5h12V9 M12 11.5V15",
+  step: "M7 7h10v10H7z M10 12h4",
+  // the workflow graph (#160, 0.0.2 behind graph_view); `fit` above is its full-screen glyph
+  process: "M7 7h10v10H7z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4",
+  temp: "M7 3h10 M7 21h10 M8 3c0 5 8 5 8 9s-8 4-8 9 M16 3c0 5-8 5-8 9s8 4 8 9",
+  conditional: "M6 3v12 M18 9a3 3 0 1 0 0-.01 M6 21a3 3 0 1 0 0-.01 M18 9c0 6-12 3-12 9",
+  cached: "M3 5h18v4H3z M5 9v11h14V9 M10 13h4",
+  minus: "M6 12h12",
+  plus: "M12 6v12 M6 12h12",
+  arrowUp: "M12 19V5 M5 12l7-7 7 7",
+  arrowDown: "M12 5v14 M19 12l-7 7-7-7",
+  channel: "M3 9h18v6H3z M8 9v6 M13 9v6 M18 9v6",
+  eye: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  eyeOff: "M3 3l18 18 M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9 M6.6 6.6C3.9 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 0 0 5.4-1.6 M9.9 9.9a3 3 0 0 0 4.2 4.2",
+  focus: "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  fitBox: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5 M9 9h6v6H9z",
+  warn: "M12 9v4 M12 17h.01 M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
+  compact: "M4 7h16 M4 12h10 M4 17h6 M17 14l3 3-3 3",
+  binary: "M6 3h9l4 4v14H6z M14 3v5h5 M9 12v4 M12.5 12h1.5v4 M9 18h.01",
+  cpu: "M7 7h10v10H7z M10 10h4v4h-4z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4",
+  memory: "M3 8h18v8H3z M7 8v8 M11 8v8 M15 8v8 M6 16v3 M18 16v3",
 } as const;
 
 export type IconName = keyof typeof ICONS;
 
 /** The four icon sizes (ui-audit D): inline with text and in buttons and menus 16, top bar, sidebar
- * and tab bar 20, a page head's tile 24. */
-export const ICON_PX = { inline: 16, button: 16, nav: 20, sidebar: 25, tile: 24 } as const;
+ * and tab bar 20, a page head's tile 24; `mark` 12 only for the workflow graph's dense map badges
+ * and chips (#160). */
+export const ICON_PX = { mark: 12, inline: 16, button: 16, nav: 20, sidebar: 25, tile: 24 } as const;
 export type IconSize = keyof typeof ICON_PX;
 const STROKE = 1.75;
 

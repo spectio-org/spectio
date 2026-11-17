@@ -9,6 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, JsonValue
 
+from spectio_sdk.targets import RunTarget
+
 RunState = Literal[
     "queued",
     "running",
@@ -181,6 +183,7 @@ class Run(BaseModel):
     workflow: WorkflowRef
     profiles: list[str]
     environment: RunEnvironment | None  # null for a run started from a terminal
+    target: RunTarget | None  # one module or one rule; null: the whole pipeline (api §5.10)
     pinned: bool  # first in the runs list (FU-P3-115a)
     failure: dict[str, JsonValue] | None
     head: Head | None
@@ -306,6 +309,7 @@ class LaunchTemplate(BaseModel):
     code_loading: list[CodeLoading]
     environment: str  # the run's, preselected by name, or the default when it is gone (§5.4)
     environment_notice: str | None  # why the default is preselected instead
+    target: dict[str, JsonValue] | None  # the launch's `target` (api §5.10)
     default_resources: dict[str, int | None] | None  # as sent (api §5.7)
     config_file: str | None  # the original path, read again at the new launch
 
@@ -324,12 +328,17 @@ class Summary(BaseModel):
     groups: list[SummaryGroup]
 
 
+class Features(BaseModel):
+    single_target: bool  # runs of one module or one rule (api §5.10)
+
+
 class ServerVersion(BaseModel):
     version: str
     node: str
     runs_root: str
     account: str
     executor: str
+    features: Features
 
 
 class Principal(BaseModel):
@@ -631,3 +640,102 @@ class Results(BaseModel):
     entries: list[ResultEntry]
     truncated: bool
     reports: list[ResultReport]
+
+
+# --- The workflow graph (issue #160; api §5.11), behind the `graph_view` feature -------------
+
+
+class FeatureList(BaseModel):
+    features: list[str]
+
+
+class GraphGroup(BaseModel):
+    id: str  # `stage:<id>`, `sub:<A:B>` (Nextflow), `file:<path>` (Snakemake rule file)
+    kind: Literal["stage", "subworkflow"]
+    name: str
+    parent: str | None
+    condition: str | None
+
+
+class GraphSource(BaseModel):
+    file: str
+    line: int | None
+
+
+class GraphLayout(BaseModel):
+    x: float
+    y: float
+
+
+class GraphMetrics(BaseModel):
+    duration_s: float | None
+    cpu_mean: float | None
+    mem_max: float | None
+    failed: int
+
+
+class GraphNode(BaseModel):
+    id: str  # the stored process or rule name
+    name: str
+    kind: Literal["process", "rule", "checkpoint", "gate"]
+    stage_id: str | None
+    subworkflow: str | None
+    source: GraphSource | None
+    condition: str | None
+    params: list[str]
+    layout: GraphLayout | None = None  # BioFlow-Insight's position, when it produced the graph
+    # The runtime overlay: on `/runs/{id}/graph` only
+    status: ProcessStatus | None = None
+    counts: dict[str, int] | None = None
+    retries: int | None = None
+    pipeline_order: int | None = None
+    metrics: GraphMetrics | None = None
+    first_start: str | None = None
+    last_end: str | None = None
+    temp: bool | None = None  # Snakemake: a `temp()` output of the rule was removed
+    code: str | None = None  # BioFlow-Insight (Launch): the process's code, as text
+
+
+class SourceBlock(BaseModel):
+    file: str  # relative to the pipeline directory
+    line: int  # 1-based, where the definition starts
+    code: str
+    truncated: bool  # longer than static.MAX_CODE_LINES lines
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    condition: str | None  # BioFlow-Insight's `if` around the link, when it gave one
+
+
+class GraphDocument(BaseModel):
+    version: Literal[1]
+    engine: str
+    producer: Literal["smk-rulegraph", "nf-dag", "bioflow-insight", "stages-only"]
+    complete: bool
+    estimate: bool  # static edges (BioFlow-Insight): may hold cycles or miss runtime links
+    groups: list[GraphGroup]
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
+class ProcessOutput(BaseModel):
+    path: str  # relative to `root`, else absolute
+    root: Literal["launch", "results", "absolute", "work"]  # work: the attempt's work directory
+    task_id: str | None
+    attempt_n: int | None
+    state: Literal["present", "missing", "removed", "unknown"]
+    temp: bool
+    size: int | None = None  # bytes, when `present`
+    work_path: str | None = None  # Nextflow: the copy in the attempt's work directory
+
+
+class ProcessOutputs(BaseModel):
+    items: list[ProcessOutput]
+
+
+class OutputHead(BaseModel):
+    text: str  # the first lines, at most 40 and 16 KiB
+    more: bool
+    gzip: bool
