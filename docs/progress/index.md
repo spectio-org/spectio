@@ -8,6 +8,7 @@ This page is generated at build time from `docs/playbooks/pipeline.yaml` and `.a
 
 ## Steps outside the pipeline
 
+- [ISSUE-161 · Runs that target one Nextflow module or one Snakemake rule](W5/ISSUE-161.md): issue #161, PR #255, 0.0.2 behind `[features] single_target` (done).
 - [APPLY4 · Apply Thomas's 2026-10-28 answers on cluster access](W4/APPLY4.md): PR #47 and the fixes of its doc review (running).
 - [APPLY5 · Runs started from a terminal in 0.0.1](W4/APPLY5.md): monitor only, bridges published in the engines' catalogues (running).
 - [APPLY6 · Stages in 0.0.1, declared or detected](W4/APPLY6.md): stages above the processes or rules list, detected from nf-core subworkflows and Snakemake rule files, shown on four example pipelines (running).

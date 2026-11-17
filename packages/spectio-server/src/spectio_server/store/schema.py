@@ -129,7 +129,16 @@ STAGE_SOURCES = ("declared", "detected")
 STAGE_STATES = ("not_started", "running", "awaiting_review", "completed", "failed", "skipped")
 RUN_ORIGINS = ("ui", "api", "wes", "cli-observed", "cli-adopted")
 COMMAND_STATES = ("pending", "leased", "acked", "done", "failed")
-WORKFLOW_SOURCES = ("git", "nf-core", "catalog", "crate", "local")
+# `module-*`: the workflow of a run that targets one Nextflow module (api §5.10, #161)
+WORKFLOW_SOURCES = (
+    "git",
+    "nf-core",
+    "catalog",
+    "crate",
+    "local",
+    "module-registry",
+    "module-local",
+)
 RUN_INPUT_KINDS = ("params", "params_resolved", "samplesheet", "manifest", "resources")
 PRINCIPAL_KINDS = ("user", "service", "agent", "runner", "system")  # api §6
 ACTOR_KINDS = ("person", "agent", "service", "cli")
@@ -240,6 +249,8 @@ runs = Table(
     # The run's own environment, {name, label, executor, slurm, local, state} (FU-P3-86a, api
     # §5.4): the source of every per-run executor decision; null for a run from a terminal.
     Column("environment", Json),
+    # One module or one rule the run is limited to (api §5.10, #161); null: the whole pipeline.
+    Column("target", Json),
     # Pinned runs come first in the runs list (FU-P3-115a, api §5 note of 2026-11-10)
     Column("pinned", Boolean, nullable=False, server_default="0"),
     # The launch's `default_resources` and `config_file`, with a `state` (FU-P3-110a, api §5.7);

@@ -904,3 +904,4 @@ FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and 
 - Open minors: CR-P3FU119-01 and -02 (bounded re-reads after sacct), CR-P3FU110D-02, -04, SEC-P3FU110D-01, CR-P3FU102I-01, -02, SEC-P3FU102I-02, CR-P3FU120-02, CR-P3FU118-01; LaunchResources tests near the 5 s timeout under parallel load.
 - **Costs** (subagent tokens): 110d ~420k, 119 ~266k, 102i ~476k, 120 ~305k, B15 ~650k; the earlier tasks of this run are in their workflow journals.
 - **Next:** promotion to main, then login1 retest h (sort icons, short-ID search, profile title, Pin focus, one-run Delete wording, resources form and config file, Blosc/LZ4/zstd images, Environments "1 CPU").
+- 2026-11-11 ISSUE-161: doc-reviewer approve 12/14 (round 1 changes 10/14, required changes 1-6 applied)

@@ -42,6 +42,7 @@ from spectio.runner.rundir import (
     run_paths,
     write_run_manifest,
 )
+from spectio_sdk.targets import RunTarget
 from spectio_server.api import models
 from spectio_server.api.environments import view
 from spectio_server.api.extras import read_kept
@@ -54,9 +55,10 @@ from spectio_server.failure import dir_run_id
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
 from spectio_server.resume import check_dirs, launch_payload, row_refusal
-from spectio_server.store.runs import first, insert_run
+from spectio_server.store.runs import first, insert_run, module_source
 from spectio_server.store.schema import principals, run_inputs, runner_commands
 from spectio_server.store.writer import Writer
+from spectio_server.targets import local_module, pooled, registry_module, require_flag
 
 router = APIRouter()
 
@@ -179,10 +181,20 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         device, inode = check_dirs(ctx, parent)
     except NotResumable as exc:
         raise _conflict(exc.reason, str(exc)) from None
-    try:
-        resolved = resolve(settings.data_dir, parent.location, parent.revision)
-    except Invalid as exc:
-        raise exc.under("workflow") from None
+    target = None if parent.target is None else RunTarget.model_validate(parent.target)
+    if target is not None:
+        require_flag(settings)
+    if target is not None and target.kind == "module":  # no pipeline to fetch (api §5.10)
+        target = _module_again(request, parent.location, target)
+        location, source = parent.location, module_source(target)
+        default_name = target.name.rsplit("/", 1)[-1]
+    else:
+        try:
+            resolved = resolve(settings.data_dir, parent.location, parent.revision)
+        except Invalid as exc:
+            raise exc.under("workflow") from None
+        location, source = str(resolved.directory), resolved.source
+        default_name = resolved.default_name
 
     resources, config, config_bytes = _parent_extras(request, parent)
 
@@ -190,18 +202,19 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
     now = datetime.now(UTC)
     manifest = RunManifest(
         run_id=child_id,
-        name=f"{parent.workflow_name or resolved.default_name}-{child_id[-6:]}",
+        name=f"{parent.workflow_name or default_name}-{child_id[-6:]}",
         workflow=Workflow(location=parent.location, revision=parent.revision, engine=parent.engine),
         params=params,
         profiles=profiles,
         created_at=now,
         parent_run_id=run_id,
         environment=environment,
+        target=None if target is None else target.model_copy(update={"checksum_changed": None}),
         default_resources=resources,
         config_file=config,
     )
     payload = {
-        "location": str(resolved.directory),
+        "location": location,
         "profiles": profiles,
         "params": params,
         "resume_of": {
@@ -214,13 +227,15 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         "environment": environment,
         **extras_payload(resources, config_bytes),
     }
+    if manifest.target is not None:  # Resume keeps the target (api §5.10 Relaunch)
+        payload["target"] = manifest.target.model_dump(exclude_none=True)
     paths = run_paths(settings.runs_root, child_id)
     write_run_manifest(paths.run_dir, manifest)
     writer: Writer = request.app.state.writer
     try:
         writer.submit(
             lambda conn: _insert_child(
-                conn, run_id, manifest, resolved.source, payload, now, settings.runs_root
+                conn, run_id, manifest, source, payload, now, settings.runs_root
             )
         ).result()
     except BaseException:
@@ -229,6 +244,19 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
     response.headers["Location"] = f"/api/v1/runs/{child_id}"
     with read(request) as conn:
         return run_detail(conn, child_id, ctx)
+
+
+def _module_again(request: Request, location: str, target: RunTarget) -> RunTarget:
+    """A module target under the launch's rules again (api §5.10, CR-161S-03): a registry one
+    still allowed, its checksum left for the child's head to report (and compare); a local one
+    read again, so the child keeps the hash and version of what it runs."""
+    if target.source == "registry":
+        registry_module(request.app.state.settings, target.name, target.version)
+        if target.name != location:
+            raise Invalid("workflow.location", "differs from the run's module")
+        return target.model_copy(update={"hash": None, "checksum_changed": None})
+    found = local_module(request.app.state.files, location).target
+    return target.model_copy(update={"hash": found.hash, "version": found.version})
 
 
 CHANGED = "The kept config file of the parent changed: use Copy to a new launch"
@@ -363,6 +391,33 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         row = run_row(conn, run_id)
         params = _params(conn, run_id)
         payload = launch_payload(conn, run_id)
+    target = None if row.target is None else RunTarget.model_validate(row.target)
+    name, notice = _template_environment(request, row.environment)
+    # a Copy keeps a module's version (§5.10)
+    module = target if target is not None and target.kind == "module" else None
+    template: dict[str, Any] = {
+        # a module's version is the target's, not a revision
+        "workflow": {
+            "location": row.location,
+            "revision": None if module else row.revision,
+            "engine": row.engine,
+        },
+        "profiles": _profiles(settings.runs_root, run_id, payload) or [],
+        "params": params,
+        "environment": name,
+        "environment_notice": notice,
+        "target": None if target is None else _target_in(target),
+        "default_resources": _recorded(row.default_resources),
+        "config_file": None,  # a module run has none (api §5.10)
+    }
+    if module is not None:  # a local module's directory loads code as a pipeline's does
+        local = module.source == "local"  # (SEC-161S-02)
+        extra = settings.engines.extra_args.get("nextflow", [])
+        files = request.app.state.files
+        loading = pooled(
+            files, lambda: code_loading(row.location, local, params, "nextflow", extra)
+        )
+        return {**template, "non_default": list(params), "code_loading": loading}
     try:
         resolved = resolve(settings.data_dir, row.location, row.revision)
         found = inspect_dir(resolved.directory, resolved.default_name)
@@ -371,7 +426,7 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
     defaults = schema_defaults(found.schema if found.schema_source != "inferred" else None)
     extra = settings.engines.extra_args.get(row.engine, [])
     local = resolved.source == "local"
-    resources, config = _recorded(row.default_resources), _recorded(row.config_file)
+    config = _recorded(row.config_file)
     path = None if config is None else config["path"]
 
     def loads() -> list[dict[str, Any]]:
@@ -386,20 +441,11 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
             )
         return found
 
-    try:
-        loading = request.app.state.files.run(loads, READ_TIMEOUT_S)
-    except Stalled as exc:
-        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
-    name, notice = _template_environment(request, row.environment)
+    loading = pooled(request.app.state.files, loads)
     return {
-        "workflow": {"location": row.location, "revision": row.revision, "engine": row.engine},
-        "profiles": _profiles(settings.runs_root, run_id, payload) or [],
-        "params": params,
+        **template,
         "non_default": [k for k in params if k not in defaults or params[k] != defaults[k]],
         "code_loading": loading,
-        "environment": name,
-        "environment_notice": notice,
-        "default_resources": resources,
         "config_file": path,
     }
 
@@ -409,6 +455,18 @@ def _recorded(column: dict[str, Any] | None) -> dict[str, Any] | None:
     if column is None or column.get("state") != "recorded":
         return None
     return {k: v for k, v in column.items() if k != "state"}
+
+
+def _target_in(target: RunTarget) -> dict[str, Any] | None:
+    """The `target` of a `POST /runs` body: what the launch takes, not what it derives. A file
+    target has no launch form: the Copy is of the whole pipeline (CR-161S-07); a rule reached
+    with `--until` or `--allowed-rules` is copied as a rule target, which the form shows."""
+    if target.kind == "module":
+        pinned = {"version": target.version} if target.source == "registry" else {}
+        return {"kind": "module", **pinned}
+    if target.kind == "file":
+        return None
+    return {"kind": "rule", "name": target.name}
 
 
 def _template_environment(

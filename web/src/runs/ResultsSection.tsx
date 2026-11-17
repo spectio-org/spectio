@@ -153,7 +153,13 @@ export function ResultsSection({ run }: { run: RunDetail }) {
   const from = run.workflow.engine === "snakemake" ? "Results directory: the launch directory." : "Results directory, from --outdir.";
   return (
     <FoldSection id="results" screen="run" icon={ICONS.folder} title="Results and reports" card>
-      {!root ? (
+      {!root && run.target?.kind === "module" ? (
+        // a module run publishes nothing (spike-module-run-2026-11-10, finding 4; ui-spec §4.15)
+        <p className="sp-muted">
+          This module run publishes no results directory: its outputs are in the task's work directory (Tasks tab, then the
+          task's files).
+        </p>
+      ) : !root ? (
         <p className="sp-muted">
           No results directory to show: the run sets no outdir, or one Spectio does not show (one that holds the runs or your home
           directory, a hidden or engine folder, or a path with ..).

@@ -1,0 +1,48 @@
+=== snakemake -n qc_report
+Job stats:
+job           count
+----------  -------
+make_reads       12
+qc_stats         12
+qc_report         1
+total            25
+=== snakemake -n --until qc_report
+Job stats:
+job           count
+----------  -------
+make_reads       12
+qc_stats         12
+qc_report         1
+total            25
+=== snakemake -n --allowed-rules qc_report
+Nothing to be done (all requested files are present and up to date).
+=== snakemake -n qc_report --allowed-rules qc_report
+Job stats:
+job           count
+----------  -------
+make_reads       12
+qc_stats         12
+qc_report         1
+total            25
+=== snakemake -n --until qc_report --allowed-rules qc_report
+Job stats:
+job           count
+----------  -------
+make_reads       12
+qc_stats         12
+qc_report         1
+total            25
+=== snakemake -n --forcerun qc_report
+Job stats:
+job             count
+------------  -------
+make_reads         12
+qc_stats           12
+split               1
+align_done          1
+qc_report           1
+merge               1
+compare             2
+final_report        1
+all                 1
+total              32
