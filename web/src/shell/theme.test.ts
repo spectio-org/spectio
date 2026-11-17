@@ -110,8 +110,9 @@ const SWEPT = [
   "src/profile/profile.css",
   "src/launch/launch.css",
 ];
-// The fold's sub line is indented by the card's 26 px tile, a width, plus a token.
-const CLEARANCES = ["padding-bottom: 104px", "calc(var(--sp-tabbar-h) + 96px)", "calc(26px + "];
+// The fold's sub line is indented by the card's 26 px tile, a width, plus a token. The narrow-phone
+// tab label is 10 px below 340 px (ui-spec §4.8.1, UX-PRE-FU86-R1-09).
+const CLEARANCES = ["padding-bottom: 104px", "calc(var(--sp-tabbar-h) + 96px)", "calc(26px + ", "font-size: 10px"];
 
 test.each(SWEPT)("%s writes no raw px for spacing, radius or font size", (file) => {
   const declaration = /(?:^|[;{\s])((?:font-size|font|gap|row-gap|column-gap|padding[a-z-]*|margin[a-z-]*|border-radius)\s*:[^;}]*)/g;

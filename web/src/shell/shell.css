@@ -466,9 +466,10 @@ body {
   hyphens: auto;
   overflow-wrap: anywhere;
 }
+/* Below 340 px the label drops to 10 px, off the font-size scale on purpose (ui-spec §4.8.1, UX-PRE-FU86-R1-09). */
 @media (max-width: 339px) {
   .sp-tab {
-    font-size: var(--mantine-font-size-xs);
+    font-size: 10px;
   }
 }
 
