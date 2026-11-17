@@ -16,6 +16,7 @@ import { type ChannelState, Channels, initialChannels } from "./Channels";
 import { DecoderPool } from "./pool";
 import { ZOOM, parseView, writeView } from "./url-state";
 import { type Pixels, type Stats, type ViewState, Viewer, openPixels, openZarrPixels } from "./viv";
+import { ViewControl } from "../ViewControl";
 import { guardParses } from "./walk";
 import { ZarrStore, inWorkers } from "./zarr";
 
@@ -172,9 +173,9 @@ export default function OmeView({ url, size, name, zarr, workdir = false, fallba
         </section>
         <p className="sp-muted">Arrows pan · + or = zoom in · − zoom out · 0 fits</p>
         <div className="sp-actions">
-          <Button variant="default" size="xs" onClick={() => zoom(1)}>Zoom in</Button>
-          <Button variant="default" size="xs" onClick={() => zoom(-1)}>Zoom out</Button>
-          <Button variant="default" size="xs" onClick={fit}>Fit</Button>
+          <ViewControl label="Zoom in" icon="zoomIn" onClick={() => zoom(1)} />
+          <ViewControl label="Zoom out" icon="zoomOut" onClick={() => zoom(-1)} />
+          <ViewControl label="Fit" icon="fit" onClick={fit} />
           <span>{view ? `Zoom ${Math.round(2 ** view.zoom * 100)} %` : ""}</span>
         </div>
         {opened && (

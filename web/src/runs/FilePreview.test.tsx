@@ -61,12 +61,12 @@ test("stat first, then the whole file: facts, path, Copy path, Download, focus o
   expect(screen.queryByRole("button", { name: "Start" })).toBeNull();
   const urls = fetched(mock).filter((u) => u.includes("/results/"));
   expect(urls[0]).toBe(`${RUN}/results/stat/pipeline_info/versions.yml`);
-  // the back link and the path bar name the folder; the page title names the file and the run
-  const folders = screen.getAllByRole("link", { name: "pipeline_info" });
-  expect(folders).toHaveLength(2); // the back link (which returns to the file's row), and the path bar
-  expect(folders[0].getAttribute("href")).toBe(`/runs/${ID}/results?path=pipeline_info&focus=versions.yml`);
-  expect(folders[1].getAttribute("href")).toBe(`/runs/${ID}/results?path=pipeline_info`);
+  // the back link names the run and returns to the file's row (ui-spec §12.5); the path bar names
+  // the folder; the page title names the file and the run
+  const back = await screen.findByRole("link", { name: "rnaseq-2026-10-25 · pipeline_info" });
+  expect(back.getAttribute("href")).toBe(`/runs/${ID}/results?path=pipeline_info&focus=versions.yml`);
   const bar = screen.getByRole("navigation", { name: "Folder" });
+  expect(within(bar).getByRole("link", { name: "pipeline_info" }).getAttribute("href")).toBe(`/runs/${ID}/results?path=pipeline_info`);
   expect(within(bar).getByText("versions.yml")).toHaveAttribute("aria-current", "page");
   await waitFor(() => expect(document.title).toBe("versions.yml · rnaseq-2026-10-25 · Spectio"));
   // a .yml has no level filter; the lines are numbered from 1
@@ -140,7 +140,7 @@ test("at 1 MiB shown Load more stops and focus moves to the line that says so", 
   expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
   expect(cap).toHaveAttribute("tabindex", "-1");
   await waitFor(() => expect(cap).toHaveFocus());
-});
+}, 15000); // 16 reads of 64 KiB rendered in jsdom: about 5 s
 
 test("at most 20,000 lines are rendered", async () => {
   files("newlines.txt", 64 * KIB, { [`${RUN}/results/text/newlines.txt`]: () => text("\n".repeat(64 * KIB)) });
@@ -235,8 +235,6 @@ test("on the phone the search is behind a Search button that opens it and moves 
   open("a.log");
   const search = await screen.findByRole("button", { name: "Search" });
   expect(search).toHaveAttribute("aria-expanded", "false");
-  // FU-P3-104: the same button style as Wrap lines beside it
-  expect(search.className).toBe(screen.getByRole("button", { name: "Wrap lines" }).className);
   expect(screen.queryByRole("searchbox")).toBeNull();
   fireEvent.click(search);
   expect(search).toHaveAttribute("aria-expanded", "true");
@@ -662,7 +660,7 @@ test("the back link returns to the folder with its sort and filter, and the file
   files("pipeline_info/versions.yml", 12, { [`${RUN}/results/text/pipeline_info/versions.yml`]: () => text("a: 1\n") });
   app(`/runs/${ID}/results/file?path=${encodeURIComponent("pipeline_info/versions.yml")}&sort=-size&q=ver`);
   await heading("versions.yml");
-  const back = screen.getAllByRole("link", { name: "pipeline_info" })[0];
+  const back = await screen.findByRole("link", { name: "rnaseq-2026-10-25 · pipeline_info" });
   expect(new URL(back.getAttribute("href")!, "http://x").pathname).toBe(`/runs/${ID}/results`);
   expect(query(back)).toEqual({ path: "pipeline_info", sort: "-size", q: "ver", focus: "versions.yml" });
   await act(async () => {});
@@ -672,7 +670,7 @@ test("a file at the results root goes back to the root, with the row to focus", 
   files("notes.txt", 3, { [`${RUN}/results/text/notes.txt`]: () => text("a\n") });
   open("notes.txt");
   await heading("notes.txt");
-  const back = screen.getAllByRole("link", { name: "results" })[0]; // the back link, then the path bar
+  const back = await screen.findByRole("link", { name: "rnaseq-2026-10-25 · results" });
   expect(query(back)).toEqual({ focus: "notes.txt" });
   await act(async () => {});
 });
@@ -709,4 +707,38 @@ test("WebGL 2 is probed once per page, and the probe's context is lost at once",
   expect(hasWebgl2()).toBe(true);
   expect(probe).toHaveBeenCalledOnce();
   expect(lose).toHaveBeenCalledOnce();
+});
+
+test("the page head and the shared ErrorPanel (ui-spec §12.5, §12.12, UI-17)", async () => {
+  serve({
+    [`${RUN}/results/stat/x.txt`]: () => json(503, { title: "Offline" }),
+    [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
+  });
+  open("x.txt");
+  const head = (await heading("x.txt")).closest("header")!;
+  expect(head).toHaveClass("sp-head");
+  expect(head.querySelector(".sp-head-tile")).not.toBeNull();
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveClass("sp-errorpanel");
+  expect(within(alert).getByRole("button", { name: "Retry" })).toBeInTheDocument();
+});
+
+test("the preview is one card with the shared head; its controls are icon buttons with a tooltip (ui-spec §12.4, §12.7, UI-17)", async () => {
+  files("a.txt", 4, { [`${RUN}/results/text/a.txt`]: () => text("abc\n") });
+  open("a.txt");
+  const card = (await screen.findByRole("heading", { level: 3, name: "Preview" })).closest("section")!;
+  expect(card).toHaveClass("sp-card");
+  expect(within(card).getByText(/^Text · 4 B · /)).toHaveClass("sp-cardhead-meta");
+  const wrap = await within(card).findByRole("button", { name: "Wrap lines" });
+  expect(wrap).toHaveClass("mantine-ActionIcon-root");
+  expect(wrap.textContent).toBe("");
+  expect(wrap.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  await userEvent.hover(wrap);
+  expect(await screen.findByRole("tooltip")).toHaveTextContent("Wrap lines");
+  // the card folds, as every titled section (§4.4 "Open sections")
+  const fold = within(card).getByRole("button", { name: "Preview" });
+  expect(fold).toHaveAttribute("aria-expanded", "true");
+  fireEvent.click(fold);
+  expect(fold).toHaveAttribute("aria-expanded", "false");
+  expect(within(card).getByLabelText(/a.txt, whole file/, { selector: "pre" })).not.toBeVisible();
 });

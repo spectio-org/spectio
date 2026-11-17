@@ -54,7 +54,9 @@ function mockRun(over: object = {}) {
     params: {}, stages_note: null,
     // the fields of P1 Tasks 29 to 31 (schema RunDetail)
     failures: [], failures_total: 0, command: null, parent_run_id: null, resumed_as: [],
-    actions: { resume: { allowed: false, reason: 'running' } }, results_dir: null, ...over,
+    actions: { resume: { allowed: false, reason: 'running' } }, results_dir: null,
+    head_logs: ['head-out', 'head-err'], // FU-P3-124
+    ...over,
   };
 }
 
@@ -409,7 +411,7 @@ const SLURM_TASK = {
   efficiency: { cpu: 0.69, mem: 1.0, elapsed_s: 360, peak_rss_bytes: 8 * GIB, state: 'available', source: 'sacct', reason: null },
 };
 const PROC_EFFICIENCY = {
-  jobs: { done: 24, total: 25 }, measured: 24, cpu_mean: 0.34, cpu_max: 0.41, mem_mean: 0.03, mem_max: 0.05,
+  jobs: { done: 24, total: 25 }, measured: 24, pending_accounting: 0, cpu_mean: 0.34, cpu_max: 0.41, mem_mean: 0.03, mem_max: 0.05,
   requested: { cpus: 6, mem_bytes: 8 * GIB, time_limit_s: 8 * 3600, varies: false }, used: { peak_rss_bytes_max: 0.4 * GIB, elapsed_s_max: 360 },
 };
 
@@ -443,15 +445,20 @@ test('By process is a tab button; the waste line names the process', async ({ pa
   await expect(page.getByRole('tab', { name: 'Task list' })).toHaveAttribute('aria-selected', 'true');
 });
 
-test("the Copy menu is in the shared header on every tab and state, and announces 'Copied'", async ({ page, context }) => {
+test("the Copy items are in the shared header's More actions on every tab and state, and announce 'Copied'", async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await mockFailed(page);
   for (const tab of ['', '?tab=tasks', '?tab=parameters', '?tab=logs']) {
     await page.goto(`/runs/${RUN}${tab}`);
-    await expect(page.locator('header').getByRole('button', { name: 'Copy', exact: true })).toBeVisible();
+    await expect(page.locator('header').getByRole('button', { name: 'More actions', exact: true })).toBeVisible();
   }
-  await page.locator('header').getByRole('button', { name: 'Copy', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Run ID' }).click();
+  await page.locator('header').getByRole('button', { name: 'More actions', exact: true }).click();
+  // the menu stays in the viewport, on the phone too (UI-09)
+  const menu = page.getByRole('menu');
+  const box = (await menu.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  await menu.getByRole('menuitem', { name: 'Copy run ID' }).click();
   // The header holds the Copy status and, on the desktop, the Facts region's own status line.
   await expect(page.locator('header').getByRole('status').filter({ hasText: 'Copied' })).toHaveText('Copied the run ID');
 });
@@ -555,7 +562,9 @@ test('Copy to a new launch opens the form prefilled with the non-default values 
       custom_config_base: { type: 'string' } } },
   })));
   await page.goto(`/runs/${RUN}`);
-  await page.locator('header').getByRole('link', { name: 'Copy to a new launch' }).click();
+  // a failed run's primary is Resume: Copy to a new launch is in More actions (UI-09)
+  await page.locator('header').getByRole('button', { name: 'More actions', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Copy to a new launch' }).click();
   await expect(page).toHaveURL(new RegExp(`/launch\\?from=${RUN}$`));
   await expect(page.getByText(
     "Prefilled from rnaseq-mock (7T9V1W): 3 values differ from the pipeline's defaults: input, outdir, custom_config_base.",

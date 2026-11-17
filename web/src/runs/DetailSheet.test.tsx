@@ -192,7 +192,7 @@ test("Open in Tasks goes to the Tasks tab filtered on the process, kept in the U
   await userEvent.click(within(sheet).getByRole("button", { name: "Open ALIGN in Tasks" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(router.state.location.search).toEqual({ tab: "tasks", process: ALIGN });
-  expect(await screen.findByRole("combobox", { name: /Process/ })).toHaveValue(ALIGN);
+  expect(((await screen.findByRole("textbox", { name: "Process" })) as HTMLInputElement).value).toMatch(/^ALIGN \(/);
   await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Tasks" })).toHaveFocus());
   await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/tasks?process=${ALIGN}&limit=50`));
 });
@@ -200,9 +200,12 @@ test("Open in Tasks goes to the Tasks tab filtered on the process, kept in the U
 test("the URL ?tab=tasks&process= opens the Tasks tab on that process; changing it keeps the URL", async () => {
   detail();
   const router = app(`/runs/${ID}?tab=tasks&process=${encodeURIComponent(ALIGN)}`);
-  const select = await screen.findByRole("combobox", { name: /Process/ });
-  expect(select).toHaveValue(ALIGN);
-  await userEvent.selectOptions(select, "");
+  const select = await screen.findByRole("textbox", { name: "Process" });
+  expect((select as HTMLInputElement).value).toMatch(/^ALIGN \(/);
+  Element.prototype.scrollIntoView = () => {}; // jsdom has none; the Select scrolls to its option
+  await userEvent.click(select);
+  await userEvent.click(await screen.findByRole("option", { name: /^All processes/ }));
+  Reflect.deleteProperty(Element.prototype, "scrollIntoView");
   await waitFor(() => expect(router.state.location.search).toEqual({ tab: "tasks" }));
 });
 
@@ -217,7 +220,12 @@ test("a task row in the sheet opens the task detail: its facts and its files, no
   expect(facts).toHaveFocus();
   expect(within(taskSheet).getByText("tsk_2")).toBeInTheDocument();
   expect(within(taskSheet).getByText("S02")).toBeInTheDocument();
-  expect(within(taskSheet).getByText("Running")).toBeInTheDocument();
+  // UI-12: the sticky head holds the title, the state (icon and word) and Close; the facts do not repeat it
+  const head = within(taskSheet).getByRole("heading", { level: 2, name: "ALIGN (S02)" }).closest(".sp-sheet-head") as HTMLElement;
+  expect(within(head).getByText("Running")).toBeInTheDocument();
+  expect(within(head).getByRole("button", { name: "Close" })).toBeInTheDocument();
+  expect(within(taskSheet).getAllByText("Running")).toHaveLength(1);
+  expect(within(taskSheet).queryByText("State", { selector: "dt" })).toBeNull();
   expect(within(taskSheet).getByText("Stage 2 · Align")).toBeInTheDocument();
   expect(within(taskSheet).getByRole("heading", { name: "Files" })).toBeInTheDocument();
   expect(await within(taskSheet).findByText("This attempt has no file to show.")).toBeInTheDocument();
@@ -253,12 +261,17 @@ test("a task row in the Tasks tab opens the task detail; Snakemake words", async
   await waitFor(() => expect(open).toHaveFocus());
 });
 
-test("on the phone, a process card opens a full-screen sheet", async () => {
+test("on the phone, a process card opens a bottom sheet that traps focus and returns it", async () => {
   viewport(390);
   detail();
   app(`/runs/${ID}`);
   const cards = await screen.findByRole("list", { name: "Processes of Align" });
   await userEvent.click(within(cards).getByRole("button", { name: `Open process ${ALIGN}` }));
+  const open = within(cards).getByRole("button", { name: `Open process ${ALIGN}` });
   const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
   expect(sheet).toHaveAttribute("aria-modal", "true");
+  expect(sheet).toHaveClass("sp-sheet-bottom");
+  expect(sheet).toContainElement(document.activeElement as HTMLElement);
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(open).toHaveFocus());
 });

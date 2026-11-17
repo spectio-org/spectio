@@ -1,19 +1,35 @@
-import { Button } from "@mantine/core";
+import { Button, Tooltip } from "@mantine/core";
 import { Link, useNavigate, useRouterState, useSearch } from "@tanstack/react-router";
 import { useMediaQuery } from "@mantine/hooks";
 import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent, SortChangedEvent } from "ag-grid-community";
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { type Page, type Run, type RunsSort, type ServerVersion, type Summary, listRuns, runsSummary, setPinned } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { Scope, TargetTail } from "./target";
 import { usePhone } from "../shell/layout";
+import { ago } from "../shell/NotificationsBell";
 import { PageHead } from "../shell/PageHead";
+import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { DeleteRuns } from "./DeleteRuns";
 import { LazyGrid } from "./LazyGrid";
 import { Pipeline, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
-import { ACTIVE, duration, isTerminal, plural, shortId, tone, when, words } from "./stateWord";
+import { ACTIVE, duration, isTerminal, plural, shortId, tone, words } from "./stateWord";
+
+/** A run's start as ui-spec §12.8 dates it ("2 h ago", then "2026-10-28 07:01"); the exact
+ * time is in its `<time>` and its accessible name. */
+function Started({ run }: { run: Run }) {
+  const iso = run.started_at ?? run.created_at;
+  const text = ago(iso);
+  // ago() of a date a week back is that exact time already
+  const exact = ago(iso, new Date(new Date(iso).getTime() + 7 * 86400000));
+  return (
+    <time dateTime={iso} aria-label={text === exact ? text : `${text}, ${exact}`}>
+      {text}
+    </time>
+  );
+}
 
 /** The state filters; `key` is the `?state=` of the URL, so Home's cards link to one (UX-PAR-12). */
 export const FILTERS: { key: string; label: string; states: string[] | null }[] = [
@@ -127,7 +143,7 @@ function PinButton({ run }: { run: Run }) {
   const { pin } = useContext(Rows);
   return (
     <button type="button" className="sp-pin" aria-pressed={!!run.pinned} aria-label={`Pin run ${runName(run)}`} onClick={() => pin(run)}>
-      <Icon path={ICONS.pin} size={15} />
+      <Icon name="pin" />
     </button>
   );
 }
@@ -158,6 +174,18 @@ function TasksCell({ run }: { run: Run }) {
     </>
   );
 }
+/** The run's link, clamped to two lines (runs.css), its full name in a tooltip on hover and on
+ * focus (ui-spec §12.8). */
+function RunName({ run }: { run: Run }) {
+  return (
+    <Tooltip label={runName(run)} events={{ hover: true, focus: true, touch: false }} multiline maw={360}>
+      <span className="sp-run-name">
+        <RunLink run={run} />
+      </span>
+    </Tooltip>
+  );
+}
+
 /** A run as a card, for the phone (MLiteRuns, MLiteHome; UX-PAR-10): the state and duration,
  * the name, the pipeline with its mark and the tasks, then the context. The runs list gives
  * its box and its pin (UX-P3FU115B-06); Home gives neither. */
@@ -173,7 +201,7 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
       </span>
       {pin ? (
         <span className="sp-run-cell">
-          <RunLink run={run} />
+          <RunName run={run} />
           {pin}
         </span>
       ) : (
@@ -191,7 +219,7 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
       <span className="sp-run-card-line">
         {run.origin === "cli-observed" && (
           <span className="sp-chip">
-            <Icon path={ICONS.terminal} size={12} /> From a terminal
+            <Icon name="terminal" /> From a terminal
           </span>
         )}
         <span>{stateContext(run)}</span>
@@ -221,12 +249,12 @@ const COLUMNS: ColDef<Run>[] = [
     cellRenderer: ({ data: run }: { data: Run }) => (
       <>
         <span className="sp-run-cell">
-          <RunLink run={run} />
+          <RunName run={run} />
           <PinButton run={run} />
         </span>
         {run.origin === "cli-observed" && (
           <span className="sp-chip">
-            <Icon path={ICONS.terminal} size={12} /> From a terminal
+            <Icon name="terminal" /> From a terminal
           </span>
         )}
         <span className="sp-id">{shortId(run.id)}</span>
@@ -257,7 +285,7 @@ const COLUMNS: ColDef<Run>[] = [
     ),
   },
   { headerName: "Tasks", cellRenderer: ({ data: run }: { data: Run }) => <TasksCell run={run} /> },
-  { headerName: "Started", colId: "started_at", valueGetter: ({ data: run }) => (run ? when(run.started_at ?? run.created_at) : "") },
+  { headerName: "Started", colId: "started_at", cellRenderer: ({ data: run }: { data: Run }) => <Started run={run} /> },
   { headerName: "Duration", colId: "duration", valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : "") },
 ];
 
@@ -356,6 +384,10 @@ export function RunsPage() {
     if (arrived?.length) saidLine.current?.focus();
   }, [arrived]);
   useEffect(() => setSelected(new Set()), [states, q]);
+  // the chosen pill stays in view where the pills scroll sideways (the phone, ui-spec §12.6)
+  useEffect(() => {
+    document.querySelector('.sp-runs .sp-segments [aria-pressed="true"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [filter]);
 
   useEffect(() => {
     document.title = "Runs · Spectio";
@@ -499,7 +531,7 @@ export function RunsPage() {
       <PageHead
         section="runs"
         title="Runs"
-        phoneBar="title-and-sub"
+        phonePrimary="none"
         sub={
           <>
             <span>
@@ -510,45 +542,47 @@ export function RunsPage() {
             <LiveStatus />
           </>
         }
-        action={
+        primary={
           <Button component={Link} to="/launch">
             Launch a workflow
           </Button>
         }
       />
 
-      <div className="sp-filters">
-        <label className="sp-search-field">
-          <Icon path={ICONS.search} size={16} />
-          <input
-            type="search"
-            aria-label="Filter by run name"
-            placeholder="Filter by run name"
+      <Toolbar
+        label="Filter runs"
+        search={
+          <ToolbarSearch
+            label="Filter by run name"
             value={typed}
-            onChange={(e) => {
+            onChange={(value) => {
               setSaid([]);
-              setTyped(e.currentTarget.value);
+              setTyped(value);
             }}
           />
-        </label>
-        <div className="sp-segments" role="group" aria-label="Show runs">
-          {FILTERS.map((f, i) => (
-            <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
-              {f.label}
-              <span className="sp-count">{count(summary, f.states)}</span>
-            </button>
-          ))}
-        </div>
-        {scoped && (
-          <div className="sp-segments" role="group" aria-label="Scope">
-            {TARGETS.map((t) => (
-              <button key={t.label} type="button" aria-pressed={target === t.key} onClick={() => setSearch({ target: t.key })}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+        }
+        filters={
+          <>
+            <div className="sp-segments" role="group" aria-label="Show runs">
+              {FILTERS.map((f, i) => (
+                <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
+                  {f.label}
+                  <span className="sp-count">{count(summary, f.states)}</span>
+                </button>
+              ))}
+            </div>
+            {scoped && (
+              <div className="sp-segments" role="group" aria-label="Scope">
+                {TARGETS.map((t) => (
+                  <button key={t.label} type="button" aria-pressed={target === t.key} onClick={() => setSearch({ target: t.key })}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        }
+      />
 
       {error && (
         <div role="alert" className="sp-empty">

@@ -1,8 +1,8 @@
 # AI agents
 
-!!! note "Designed; not in 0.0.1, version not set yet"
+!!! note "Later: not in 0.0.1"
 
-    What ships in which version: [development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
+    AI agents are planned and not built. The date is not set; see the [roadmap](../roadmap/index.md).
 
 AI agents are optional. Spectio treats them like any other participant, with their own access and a full record of what they do.
 
@@ -11,7 +11,5 @@ AI agents are optional. Spectio treats them like any other participant, with the
 - **They have their own token.** An agent signs in with its own token and scopes, such as suggesting at gates without deciding.
 - **Every action is recorded.** Each decision keeps who made it: a person, a service or an agent, with the agent's model. The run's RO-Crate keeps that record too.
 - **They can drive Spectio.** Besides the API, Spectio offers an MCP server, so an assistant can list runs, follow them or look at a gate.
-
-Design details: [checking scenarios](../specs/checking-scenarios.md), [API and data model](../specs/api-and-data-model.md).
 
 Spectio itself is designed and built with AI coding agents, each step checked by independent reviewers; the record is in the repository.

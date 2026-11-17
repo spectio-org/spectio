@@ -14,7 +14,7 @@ import {
   themeQuartz,
 } from "ag-grid-community";
 import { AgGridReact, type AgGridReactProps } from "ag-grid-react";
-import { ICONS as LINE_ICONS } from "../icons";
+import { iconSvg } from "../icons";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule, TextFilterModule, RowAutoHeightModule, RowStyleModule, RenderApiModule]);
 
@@ -36,19 +36,17 @@ const theme = themeQuartz.withoutPart("iconSet").withParams({
   autoHeightMinBodyHeight: 0,
 });
 
-const svg = (d: string, box = 16, width = 1.5) =>
-  `<svg class="sp-grid-icon" viewBox="0 0 ${box} ${box}" width="14" height="14" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const filter = svg(LINE_ICONS.filter, 24, 2);
+const filter = iconSvg("filter", "inline", "sp-grid-icon");
 /** Every icon the tables show: the sort arrows, the unsorted pair (`unSortIcon`), the filtered
  * column's funnel and the filter box's clear cross. The absolute sorts (`aasc`, `adesc`, hidden in
  * every sortable header) and the header menu are never shown. */
 const ICONS = {
-  sortAscending: svg("M8 13V3M4 7l4-4 4 4"),
-  sortDescending: svg("M8 3v10M4 9l4 4 4-4"),
-  sortUnSort: svg("M5 6l3-3 3 3M5 10l3 3 3-3"),
+  sortAscending: iconSvg("sortUp", "inline", "sp-grid-icon"),
+  sortDescending: iconSvg("sortDown", "inline", "sp-grid-icon"),
+  sortUnSort: iconSvg("sortBoth", "inline", "sp-grid-icon"),
   filter,
   filterActive: filter,
-  cancel: svg(LINE_ICONS.cross, 24, 2),
+  cancel: iconSvg("cross", "inline", "sp-grid-icon"),
 };
 
 /** What a table passes; the theme, icons and `onGridReady` are the grid's own (SEC-P3FU101A-01). */

@@ -54,6 +54,7 @@ def test_derived_from_ended_and_waiting_runs_newest_first(
         "kind": "gate_waiting",
         "run_id": _id(4),
         "run_name": "run-4",
+        "engine": "nextflow",
         "at": (T0 + timedelta(minutes=4)).isoformat(),
         "read": False,
     }
@@ -91,6 +92,77 @@ def test_mark_read_moves_the_mark_forward_only(
     assert older["read_up_to"] == up_to  # never backwards
     _ended(writer, settings, 9, "succeeded", 10)
     assert authed_client.get(LIST).json()["unread"] == 2
+
+
+def test_an_ended_run_is_at_its_end_and_names_its_engine(
+    authed_client: TestClient, settings: Settings, writer: Writer
+) -> None:
+    """Amended 2026-11-11 (api §5.9): an ended run is at `ended_at`, else `state_changed_at`, so
+    runs adopted together keep their own times; `gate_waiting` keeps `state_changed_at`."""
+    adopted = T0 + timedelta(hours=1)  # when Spectio adopted the runs below
+    for n, minutes in ((1, 5), (2, 20)):
+        add_run(
+            writer,
+            settings,
+            _id(n),
+            f"run-{n}",
+            "succeeded",
+            engine="snakemake",
+            created_at=T0,
+            state_changed_at=adopted,
+            ended_at=T0 + timedelta(minutes=minutes),
+        )
+    _ended(writer, settings, 3, "failed", 10)  # no ended_at: its state_changed_at
+    add_run(
+        writer,
+        settings,
+        _id(4),
+        "run-4",
+        "awaiting_review",
+        created_at=T0,
+        state_changed_at=T0 + timedelta(minutes=15),
+        ended_at=T0 + timedelta(minutes=30),
+    )
+    body = authed_client.get(LIST).json()
+    assert [(i["run_id"], i["engine"], i["at"]) for i in body["items"]] == [
+        (_id(2), "snakemake", (T0 + timedelta(minutes=20)).isoformat()),
+        (_id(4), "nextflow", (T0 + timedelta(minutes=15)).isoformat()),
+        (_id(3), "nextflow", (T0 + timedelta(minutes=10)).isoformat()),
+        (_id(1), "snakemake", (T0 + timedelta(minutes=5)).isoformat()),
+    ]
+    after = (T0 + timedelta(minutes=12)).isoformat()
+    assert [
+        i["run_id"] for i in authed_client.get(LIST, params={"after": after}).json()["items"]
+    ] == [_id(2), _id(4)]
+    # Side effect of the watermark: a run adopted after the mark that ended before it reads read.
+    marked = authed_client.post(MARK, json={"up_to": (T0 + timedelta(minutes=12)).isoformat()})
+    body = marked.json()
+    assert [i["read"] for i in body["items"]] == [False, False, True, True]
+    assert body["unread"] == 2
+
+
+def test_an_end_in_the_future_is_bounded_by_the_server_clock(
+    authed_client: TestClient, settings: Settings, writer: Writer
+) -> None:
+    """SEC-P3UI05A-01: `ended_at` is the producer's clock, so an ended run is at the earlier of
+    `ended_at` and `state_changed_at`; a clock ahead cannot hide later notifications."""
+    add_run(
+        writer,
+        settings,
+        _id(1),
+        "run-1",
+        "succeeded",
+        created_at=T0,
+        state_changed_at=T0 + timedelta(minutes=5),
+        ended_at=T0 + timedelta(days=365),
+    )
+    body = authed_client.get(LIST).json()
+    assert body["items"][0]["at"] == (T0 + timedelta(minutes=5)).isoformat()
+    marked = authed_client.post(MARK, json={"up_to": body["items"][0]["at"]}).json()
+    assert marked["unread"] == 0
+    _ended(writer, settings, 2, "failed", 10)
+    body = authed_client.get(LIST).json()
+    assert body["unread"] == 1 and body["items"][0]["run_id"] == _id(2)
 
 
 def test_mark_read_refuses_a_bad_body(authed_client: TestClient) -> None:

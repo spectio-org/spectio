@@ -2,7 +2,7 @@
 // server finds by name in the pipeline's files (GET /workflows:source). Shown as text only, with
 // line numbers, in the node sheet and in the map's right-click card.
 import { useEffect, useState } from "react";
-import { ICONS, Icon } from "../../icons";
+import { Icon } from "../../icons";
 import { copyText } from "../CopyMenu";
 import { type SourceBlock, getSource } from "./types";
 
@@ -59,7 +59,7 @@ function Lines({ text, first, label, name }: { text: string; first: number; labe
         aria-label={`Copy the code of ${name}`}
         onClick={() => copyText(text).then(() => setSaid("Copied"), () => setSaid("Could not copy: select the text instead"))}
       >
-        <Icon path={ICONS.copy} size={13} stroke={1.9} /> Copy
+        <Icon name="copy" /> Copy
       </button>
       <span role="status" className="sp-gcode-said">
         {said}

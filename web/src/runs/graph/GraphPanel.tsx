@@ -9,7 +9,7 @@ import { useFrames } from "../../live";
 import { usePhone } from "../../shell/layout";
 import type { Detail } from "../DetailSheet";
 import { isTerminal, runWord, taskWord } from "../stateWord";
-import { Icon } from "../../icons";
+import { Icon, type IconName } from "../../icons";
 import { Code, type CodeSource, useCode } from "./Code";
 import { isResultPath } from "../ReportViewer";
 import { fileKind, size as sizeText } from "../preview";
@@ -87,7 +87,7 @@ export function paramOf(params: Record<string, Json>, key: string): { kind: stri
 /** A file's look: the icon and word of its kind, and whether its first lines are worth showing
  * (text, and gzip of text: FASTQ, VCF, tables) or an image a thumbnail. */
 const GZ_TEXT = /\.(fq|fastq|fa|fasta|fna|vcf|sam|bed|gtf|gff3?|txt|tsv|csv|tab|log|json)\.b?gz$/i;
-export function fileLook(path: string): { icon: string; word: string; peek: boolean; image: boolean } {
+export function fileLook(path: string): { icon: IconName; word: string; peek: boolean; image: boolean } {
   const name = path.split("/").pop() ?? path;
   if (/\.(fq|fastq)(\.b?gz)?$/i.test(name)) return { icon: GICONS.reads, word: "reads", peek: true, image: false };
   if (GZ_TEXT.test(name)) return { icon: GICONS.file, word: "gzip text", peek: true, image: false };
@@ -127,7 +127,7 @@ function FileCard({ run, process, item }: { run: RunDetail; process: string; ite
   return (
     <li className="sp-gfile" data-state={item.state}>
       <span className="sp-gfile-icon" aria-hidden="true">
-        {thumb ? <img src={thumb} alt="" loading="lazy" /> : <Icon path={look.icon} size={16} stroke={1.7} />}
+        {thumb ? <img src={thumb} alt="" loading="lazy" /> : <Icon name={look.icon} />}
       </span>
       <span className="sp-gfile-text">
         <span className="sp-gfile-name sp-mono" title={item.path}>
@@ -145,12 +145,12 @@ function FileCard({ run, process, item }: { run: RunDetail; process: string; ite
       <span className="sp-gfile-acts">
         {look.peek && present && (
           <button type="button" className="sp-gicon" aria-expanded={open} aria-label={`First lines of ${item.path}`} onClick={toggle}>
-            <Icon path={GICONS.peek} size={15} stroke={1.8} />
+            <Icon name={GICONS.peek} />
           </button>
         )}
         {page && (
           <Link className="sp-gicon" to={page.to} params={{ id: run.id }} search={page.search} aria-label={`Open ${item.path}`}>
-            <Icon path={GICONS.open} size={15} stroke={1.8} />
+            <Icon name={GICONS.open} />
           </Link>
         )}
       </span>
@@ -260,7 +260,7 @@ function Wiring({ view, node, engine, onEdge }: { view: View; node: ViewNode; en
         return (
           <li key={e.id}>
             <button type="button" className="sp-gwire-chip" data-tone={statusTone(other?.status ?? null)} onClick={() => onEdge(e)} aria-label={`${what} ${way === "in" ? "from" : "to"} ${name}${e.conditions.length ? `, if ${e.conditions.join(" or ")}` : ""}: what flows`}>
-              <Icon path={kindIcon(other?.kind ?? "process")} size={12} stroke={1.9} />
+              <Icon name={kindIcon(other?.kind ?? "process")} size="mark" />
               <span>{name}</span>
               {e.conditions.length > 0 && <span className="sp-gwire-if">if</span>}
             </button>
@@ -273,14 +273,14 @@ function Wiring({ view, node, engine, onEdge }: { view: View; node: ViewNode; en
     <div className="sp-gwire">
       {ins.length ? chips(ins, "in") : <p className="sp-gwire-none">Pipeline inputs</p>}
       <div className="sp-gwire-link" aria-hidden="true">
-        <Icon path={smk ? GICONS.file : GICONS.channel} size={12} stroke={1.9} /> {smk ? "files" : "channels"}
+        <Icon name={smk ? GICONS.file : GICONS.channel} size="mark" /> {smk ? "files" : "channels"}
       </div>
       <div className="sp-gwire-me" data-tone={statusTone(node.status)}>
-        <Icon path={kindIcon(node.kind)} size={13} stroke={1.9} />
+        <Icon name={kindIcon(node.kind)} />
         {node.label}
       </div>
       <div className="sp-gwire-link" aria-hidden="true">
-        <Icon path={smk ? GICONS.file : GICONS.channel} size={12} stroke={1.9} /> {smk ? "files" : "channels"}
+        <Icon name={smk ? GICONS.file : GICONS.channel} size="mark" /> {smk ? "files" : "channels"}
       </div>
       {outs.length ? chips(outs, "out") : <p className="sp-gwire-none">End of the pipeline</p>}
     </div>
@@ -288,11 +288,11 @@ function Wiring({ view, node, engine, onEdge }: { view: View; node: ViewNode; en
 }
 
 /** A ratio as a bar with its band (CPU, memory) or as a share (duration). */
-function Gauge({ icon, label, ratio, text, band, hint }: { icon: string; label: string; ratio: number; text: string; band: string | null; hint: string }) {
+function Gauge({ icon, label, ratio, text, band, hint }: { icon: IconName; label: string; ratio: number; text: string; band: string | null; hint: string }) {
   return (
     <div className="sp-ggauge" data-band={band ?? undefined}>
       <span className="sp-ggauge-label">
-        <Icon path={icon} size={13} stroke={1.9} />
+        <Icon name={icon} />
         {label}
       </span>
       <strong>{text}</strong>
@@ -354,10 +354,10 @@ export function keyPairs(key: string | null): [string, string][] {
 const bytes = (b: number | null) => (b === null ? "—" : b >= 1 << 30 ? `${(b / (1 << 30)).toFixed(1)} GiB` : `${Math.round(b / (1 << 20))} MiB`);
 
 /** A section title with its light icon. */
-function H({ icon, children }: { icon: string; children: ReactNode }) {
+function H({ icon, children }: { icon: IconName; children: ReactNode }) {
   return (
     <h3 className="sp-sheet-h">
-      <Icon path={icon} size={14} stroke={1.8} /> {children}
+      <Icon name={icon} /> {children}
     </h3>
   );
 }
@@ -416,7 +416,7 @@ export function JobChart({ task, siblings, onNode }: { task: Task; siblings: Tas
         <div className="sp-gview sp-gchart-pick" role="group" aria-label="Compare by">
           {usable.map((m) => (
             <button key={m.key} type="button" className="sp-gbtn" aria-pressed={m.key === metric.key} onClick={() => setPick(m.key)}>
-              <Icon path={m.icon} size={12} stroke={1.9} /> {m.word}
+              <Icon name={m.icon} size="mark" /> {m.word}
             </button>
           ))}
         </div>
@@ -518,13 +518,13 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
             )}
             {durationOf(node) > 0 && (
               <span className="sp-ghero-time">
-                <Icon path={GICONS.clock} size={12} stroke={1.9} />
+                <Icon name={GICONS.clock} size="mark" />
                 {formatSeconds(durationOf(node))}
               </span>
             )}
             {task && (task.attempt_n ?? 1) > 1 && (
               <span className="sp-ghero-time">
-                <Icon path={GICONS.retried} size={12} stroke={1.9} />
+                <Icon name={GICONS.retried} size="mark" />
                 attempt {task.attempt_n}
               </span>
             )}
@@ -536,31 +536,31 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
           <div className="sp-gactions" role="group" aria-label={`Actions on ${node.label}`}>
             {group && (
               <button type="button" className="sp-gaction" onClick={() => onToggle(group)} aria-label={boxed ? `Unfold ${node.label}` : `Fold ${groupLabel(doc, group)}`}>
-                <Icon path={boxed ? GICONS.unfold : GICONS.fold} size={14} stroke={2} />
+                <Icon name={boxed ? GICONS.unfold : GICONS.fold} />
                 {boxed ? "Unfold" : "Fold"}
               </button>
             )}
             {!area && (
               <>
                 <button type="button" className="sp-gaction" aria-pressed={trace === "up"} onClick={() => onTrace(trace === "up" ? null : "up")} aria-label={`Before: what leads to ${node.label}`}>
-                  <Icon path={GICONS.up} size={14} stroke={2} />
+                  <Icon name={GICONS.up} />
                   Before
                 </button>
                 <button type="button" className="sp-gaction" aria-pressed={trace === "down"} onClick={() => onTrace(trace === "down" ? null : "down")} aria-label={`After: what follows ${node.label}`}>
-                  <Icon path={GICONS.down} size={14} stroke={2} />
+                  <Icon name={GICONS.down} />
                   After
                 </button>
               </>
             )}
             {group && (
               <button type="button" className="sp-gaction" onClick={() => onFocus(group)} aria-label={`Focus: show only ${groupLabel(doc, group)}`}>
-                <Icon path={GICONS.focus} size={14} stroke={2} />
+                <Icon name={GICONS.focus} />
                 Focus
               </button>
             )}
             {!isGroup && (
               <button type="button" className="sp-gaction" onClick={() => onHide(node.kind === "job" ? node.members[0] : node.id)} aria-label={`Hide ${node.kind === "job" ? node.step : node.label} from the map`}>
-                <Icon path={GICONS.hide} size={14} stroke={2} />
+                <Icon name={GICONS.hide} />
                 Hide
               </button>
             )}
@@ -570,17 +570,17 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
             <div className="sp-gactions sp-gactions-go" role="group" aria-label={`Open ${node.label} elsewhere`}>
               {task ? (
                 <button type="button" className="sp-gaction" onClick={() => onOpen({ kind: "task", task })} aria-label="Open this job: script, logs, files">
-                  <Icon path={GICONS.open} size={14} stroke={2} />
+                  <Icon name={GICONS.open} />
                   Script, logs, files
                 </button>
               ) : (
                 <>
                   <button type="button" className="sp-gaction" onClick={() => onOpen({ kind: "process", name: single!.id })} aria-label="Open its jobs">
-                    <Icon path={GICONS.jobs} size={14} stroke={2} />
+                    <Icon name={GICONS.jobs} />
                     Its jobs
                   </button>
                   <button type="button" className="sp-gaction" onClick={() => onTasks(single!.id)} aria-label="Open in Tasks">
-                    <Icon path={GICONS.tasks} size={14} stroke={2} />
+                    <Icon name={GICONS.tasks} />
                     Open in Tasks
                   </button>
                 </>
@@ -590,7 +590,7 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
           {task && <JobKey task={task} />}
           {single?.condition && (
             <p className="sp-gcond">
-              <Icon path={GICONS.conditional} size={13} stroke={1.9} /> Runs only if <code>{single.condition}</code>
+              <Icon name={GICONS.conditional} /> Runs only if <code>{single.condition}</code>
             </p>
           )}
           <H icon={doc.engine === "snakemake" ? GICONS.file : GICONS.channel}>Links</H>
@@ -615,7 +615,7 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
                 {members.map((m) => (
                   <li key={m.id}>
                     <button type="button" className="sp-gwire-chip" data-tone={statusTone(m.status ?? null)} aria-label={`Show ${m.name} on the graph, ${statusWord(m.status ?? null)}`} onClick={() => onMember(m.id)}>
-                      <Icon path={kindIcon(m.kind)} size={12} stroke={1.9} />
+                      <Icon name={kindIcon(m.kind)} size="mark" />
                       <span>{m.name}</span>
                     </button>
                   </li>
@@ -635,7 +635,7 @@ function NodeSheet({ run, doc, view, node, task, diff, onClose, onMember, onTrac
             // open by default, and the only place the code is (Thomas: it was shown twice)
             <details className="sp-gdetails" open>
               <summary>
-                <Icon path={GICONS.code} size={14} stroke={1.8} /> Code
+                <Icon name={GICONS.code} /> Code
               </summary>
               <Code name={codeOf.id} code={codeOf.code} where={{ location: run.workflow.location, revision: null, fromRun: true }} />
             </details>
@@ -655,7 +655,7 @@ function Declares({ name, label, code, engine, section, where }: { name: string;
   return (
     <div className="sp-gdecl">
       <p className="sp-gdecl-title">
-        <Icon path={section === "output" ? GICONS.outputs : GICONS.up} size={13} stroke={1.9} /> {title}
+        <Icon name={section === "output" ? GICONS.outputs : GICONS.up} /> {title}
       </p>
       {text === null ? (
         <p className="sp-muted">{error ? "Its code is not available." : "Reading its code…"}</p>
@@ -717,7 +717,7 @@ function EdgeSheet({ run, doc, view, edge, onClose, onNode }: { run: RunDetail; 
   const idle = !from?.status || from.status === "pending" || from.status === "not_needed" || from.status === "no_tasks";
   const end = (n: ViewNode | undefined, id: string) => (
     <button type="button" className="sp-gflow-end" data-tone={statusTone(n?.status ?? null)} onClick={() => onNode(id)} aria-label={`Open ${n?.label ?? id}`}>
-      <Icon path={kindIcon(n?.kind ?? "process")} size={14} stroke={1.9} />
+      <Icon name={kindIcon(n?.kind ?? "process")} />
       <span>{n?.label ?? id}</span>
     </button>
   );
@@ -729,12 +729,12 @@ function EdgeSheet({ run, doc, view, edge, onClose, onNode }: { run: RunDetail; 
             {end(from, edge.source)}
             <div className="sp-gflow-pipe">
               <span className="sp-gflow-carrier">
-                <Icon path={smk ? GICONS.file : GICONS.channel} size={13} stroke={1.9} />
+                <Icon name={smk ? GICONS.file : GICONS.channel} />
                 {smk ? "files" : "channel"}
               </span>
               {edge.conditions.length > 0 && (
                 <span className="sp-gflow-if">
-                  <Icon path={GICONS.conditional} size={12} stroke={1.9} /> if <code>{edge.conditions.join(" or ")}</code>
+                  <Icon name={GICONS.conditional} size="mark" /> if <code>{edge.conditions.join(" or ")}</code>
                 </span>
               )}
             </div>
@@ -1011,7 +1011,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
           traced &&
           trace && (
             <p className="sp-gbanner sp-gbanner-focus" role="note">
-              <Icon path={trace.direction === "up" ? GICONS.up : GICONS.down} size={14} stroke={2} />
+              <Icon name={trace.direction === "up" ? GICONS.up : GICONS.down} />
               {` Showing what ${trace.direction === "up" ? "leads to" : "follows from"} ${view.nodes.find((n) => n.id === trace.id)?.label ?? trace.id}. `}
               <button type="button" className="sp-link-button" onClick={() => setTrace(null)}>
                 Clear trace

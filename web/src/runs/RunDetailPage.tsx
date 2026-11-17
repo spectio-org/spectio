@@ -1,4 +1,4 @@
-import { Button, Modal, Tabs } from "@mantine/core";
+import { Button, Modal, SegmentedControl, Select, Tabs } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { type KeyboardEvent, type Ref, Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
@@ -18,7 +18,7 @@ import {
   listTasks,
   logUrl,
 } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { GRAPH_VIEW, useFeatures } from "./graph/features";
 import { type GraphSearch, graphSearch } from "./graph/settings";
@@ -28,13 +28,16 @@ const GraphPanel = lazy(() => import("./graph/GraphPanel").then((m) => ({ defaul
 import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { FoldSection } from "../shell/FoldSection";
+import { CardHead } from "../shell/CardHead";
 import { usePhone } from "../shell/layout";
+import { EmptyState, ErrorPanel } from "../shell/States";
+import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { useAccountingReads } from "./accounting";
-import { CopyButton } from "./CopyMenu";
+import { CopyButton, useCopyStatus } from "./CopyMenu";
 import { type Detail, DetailSheet } from "./DetailSheet";
 import { taskSearch } from "./explorer";
 import { FailureSummary } from "./FailureSummary";
-import { LogLines, LogViewer } from "./LogViewer";
+import { LogLines, LogViewer, ToolButton } from "./LogViewer";
 import { ByProcess } from "./ByProcess";
 import { bytes, isLow, isNear, nearLimit, percent, resourcesLine, seconds } from "./resources";
 import { ResultsSection } from "./ResultsSection";
@@ -65,6 +68,9 @@ const LOGS: { source: LogSource; label: string }[] = [
   { source: "head-err", label: "Head errors" },
   { source: "engine", label: "Engine log" },
 ];
+
+/** The run's log sources: Head errors only when its head wrote head.err (FU-P3-124). */
+const logsOf = (run: RunDetail) => LOGS.filter((l) => l.source !== "head-err" || run.head_logs.includes("head-err"));
 
 const TABS = ["summary", "tasks", "parameters", "logs", "graph"] as const;
 type Tab = (typeof TABS)[number];
@@ -322,7 +328,7 @@ function StagesOrProcesses({
   );
   if (!stages.length) {
     return (
-      <FoldSection id="processes" screen="run" icon={ICONS.list} title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
+      <FoldSection id="processes" screen="run" icon="list" title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
         {note}
         {!run.target && <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>}
         {run.target && run.target.kind !== "module" && listed.length > 0 && (
@@ -336,14 +342,14 @@ function StagesOrProcesses({
   const loose = processes.filter((p) => !stages.some((s) => s.id === p.stage_id));
   const running = stages.filter((s) => s.state === "running").length;
   return (
-    <FoldSection id="stages" screen="run" icon={ICONS.layers} title="Stages" summary={`${plural(stages.length, "stage", "stages")} · ${running} running`}>
+    <FoldSection id="stages" screen="run" icon="layers" title="Stages" summary={`${plural(stages.length, "stage", "stages")} · ${running} running`}>
       {note}
       <p className="sp-intro">
         {plural(stages.length, "stage", "stages")}, in order, each with its {w.groups} in the order {engine} first reported
         them. Open a stage to see its {w.groups}. A stage declared in <span className="sp-mono">spectio.yml</span> shows
         Declared; a detected one shows Detected and is for display only.{" "}
         <button type="button" className="sp-link-button" onClick={onTasks}>
-          All {w.units} <Icon path={ICONS.arrowRight} size={13} />
+          All {w.units} <Icon name="arrowRight" />
         </button>
       </p>
       {stages.map((stage) => {
@@ -366,12 +372,12 @@ function StagesOrProcesses({
                 {done} of {all} {w.units}
               </span>
               <span className="sp-chev">
-                <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+                <Icon name="chevronDown" />
               </span>
             </summary>
             <p className="sp-link-end">
               <button type="button" className="sp-link-button" aria-label={`Open stage ${stage.name ?? stage.id}`} onClick={() => onOpen({ kind: "stage", id: stage.id })}>
-                Stage details <Icon path={ICONS.arrowRight} size={13} />
+                Stage details <Icon name="arrowRight" />
               </button>
             </p>
             <ProcessTable processes={mine} ended={ended} open={open} label={`${w.Groups} of ${stage.name ?? stage.id}`} w={w} onOpen={onOpen} />
@@ -385,7 +391,7 @@ function StagesOrProcesses({
               <strong>Not in a stage</strong>
             </span>
             <span className="sp-chev">
-              <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+              <Icon name="chevronDown" />
             </span>
           </summary>
           <ProcessTable processes={loose} ended={ended} open={open} label={`${w.Groups} not in a stage`} w={w} onOpen={onOpen} />
@@ -429,11 +435,11 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
   const failed = run.summary.tasks.failed;
   const headline = failed > 0 ? `${plural(failed, unit, units)} failed, and the run stopped` : kind ? `The run stopped: ${classWord(kind)}` : "The run stopped";
   return (
-    <FoldSection id="why" screen="run" icon={ICONS.alert} title="Why it failed" summary={kind ? classWord(kind) : undefined}>
+    <FoldSection id="why" screen="run" icon="alert" title="Why it failed" summary={kind ? classWord(kind) : undefined}>
       {failed > 0 && (
         <p className="sp-link-end">
           <button type="button" className="sp-link-button" onClick={onTasks}>
-            {Units}, filtered to Failed <Icon path={ICONS.arrowRight} size={13} />
+            {Units}, filtered to Failed <Icon name="arrowRight" />
           </button>
         </p>
       )}
@@ -459,7 +465,7 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
                   aria-label={`Open ${w.group} ${culprit.process}`}
                   onClick={() => onOpen({ kind: "process", name: culprit.process })}
                 >
-                  {w.Group} {lastSegment(culprit.process)} <Icon path={ICONS.arrowRight} size={13} />
+                  {w.Group} {lastSegment(culprit.process)} <Icon name="arrowRight" />
                 </button>
               </>
             )}
@@ -488,7 +494,7 @@ function HeadByHand({ run, server }: { run: RunDetail; server: ServerVersion | n
   if (local ? pid === undefined : !HOST_NAME.test(head.node) || !SESSION_NAME.test(session)) return null;
   const commands = local ? `ps -o pid,etime,args --sid ${pid}` : `ssh -- '${head.node}'\ntmux attach -t '=${session}'`;
   return (
-    <FoldSection id="attach" screen="run" icon={ICONS.terminal} title="Open the head by hand" summary={local ? `process ${pid}` : `tmux on ${head.node}`} card>
+    <FoldSection id="attach" screen="run" icon="terminal" title="Open the head by hand" summary={local ? `process ${pid}` : `tmux on ${head.node}`} card>
       <p className="sp-muted">
         {local
           ? `The engine runs as process ${pid}, in its own session on ${head.node}, with no terminal to attach to. To see it and what it started:`
@@ -520,7 +526,7 @@ function LogTail({ id, source, ended, onAll, openerRef }: { id: string; source: 
         {text === null ? "Loading…" : <LogLines text={text} />}
       </pre>
       <button ref={openerRef} type="button" className="sp-link-button" onClick={() => onAll(source)}>
-        Open the full {label.toLowerCase()} <Icon path={ICONS.arrowRight} size={13} />
+        Open the full {label.toLowerCase()} <Icon name="arrowRight" />
       </button>
     </>
   );
@@ -545,25 +551,25 @@ function ParamsList({ params }: { params: RunDetail["params"] }) {
  * Results and reports come with P1 Task 31. */
 function SummaryAside({ run, server, onLogs, logOpener }: { run: RunDetail; server: ServerVersion | null; onLogs: (s: LogSource) => void; logOpener: Ref<HTMLButtonElement> }) {
   const head = run.head;
-  const failed = run.state === "failed";
+  const errs = run.state === "failed" && run.head_logs.includes("head-err"); // FU-P3-124
   const params = Object.keys(run.params).length;
   return (
     <aside className="sp-aside" aria-label="About this run">
       {head?.alive && head.session && run.origin !== "cli-observed" && <HeadByHand run={run} server={server} />}
       <FoldSection
-        id={failed ? "head-err" : "engine-log"}
+        id={errs ? "head-err" : "engine-log"}
         screen="run"
-        icon={ICONS.file}
-        title={failed ? "Head errors · last lines" : "Engine log · last lines"}
+        icon="file"
+        title={errs ? "Head errors · last lines" : "Engine log · last lines"}
         card
       >
-        <LogTail id={run.id} source={failed ? "head-err" : "engine"} ended={isTerminal(run.state)} onAll={onLogs} openerRef={logOpener} />
+        <LogTail id={run.id} source={errs ? "head-err" : "engine"} ended={isTerminal(run.state)} onAll={onLogs} openerRef={logOpener} />
       </FoldSection>
       {head && !head.alive && run.origin !== "cli-observed" && (
         <FoldSection
           id="head-ended"
           screen="run"
-          icon={ICONS.power}
+          icon="power"
           title="The head has ended"
           summary={head.exit_code != null ? `exit ${head.exit_code}` : undefined}
           defaultOpen={false}
@@ -576,7 +582,7 @@ function SummaryAside({ run, server, onLogs, logOpener }: { run: RunDetail; serv
         </FoldSection>
       )}
       {run.origin !== "cli-observed" && <ResultsSection run={run} />}
-      <FoldSection id="params" screen="run" icon={ICONS.sliders} title="Parameters" summary={`${params} set at launch`} defaultOpen={false} card>
+      <FoldSection id="params" screen="run" icon="sliders" title="Parameters" summary={`${params} set at launch`} defaultOpen={false} card>
         <ParamsList params={run.params} />
       </FoldSection>
     </aside>
@@ -661,7 +667,7 @@ function FilesButton({ task, onOpen, wide = false }: { task: Task; onOpen: (d: D
       size={wide ? "md" : "xs"}
       fullWidth={wide}
       className={wide ? "sp-files-button" : undefined}
-      leftSection={<Icon path={ICONS.file} size={14} />}
+      leftSection={<Icon name="file" size="button" />}
       aria-label={`Files of ${taskLabel(task)}${attempt}`}
       onClick={() => onOpen({ kind: "task", task })}
     >
@@ -730,11 +736,54 @@ function TasksPanel({
   const counts = process ? (processes.find((p) => p.process === process)?.counts ?? {}) : run.task_counts;
   const count = (states: string[] | null) => (states ? sum(counts, ...states) : total(counts));
   const tasks = shown?.rows ?? null;
-  const tabs = <ViewTabs view={view} setView={setView} w={w} />;
+  // one toolbar for both views (ui-spec §12.6), the view tabs first so they keep focus on a switch
+  const toolbar = (
+    <Toolbar
+      label={`${w.Units} tools`}
+      filters={
+        <>
+          <ViewTabs view={view} setView={setView} w={w} />
+          {view === "list" && (
+            <>
+              <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
+                {TASK_FILTERS.map((f, i) => (
+                  <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
+                    {f.label}
+                    <span className="sp-count">{count(f.states)}</span>
+                  </button>
+                ))}
+              </div>
+              <Select
+                size="sm"
+                className="sp-task-group"
+                aria-label={w.Group}
+                allowDeselect={false}
+                value={process}
+                onChange={(value) => setProcess(value ?? "")}
+                data={[
+                  { value: "", label: `All ${w.groups} (${processes.length})` },
+                  ...processes.map((p) => ({ value: p.process, label: `${lastSegment(p.process)} (${total(p.counts)})` })),
+                  ...(process && !processes.some((p) => p.process === process) ? [{ value: process, label: lastSegment(process) }] : []),
+                ]}
+              />
+            </>
+          )}
+        </>
+      }
+      caption={
+        view === "list" && (
+          <>
+            In the order {engineName(run.workflow.engine)} first reported them
+            {active && <LiveStatus />}
+          </>
+        )
+      }
+    />
+  );
   if (view === "process") {
     return (
       <section className="sp-runs" aria-label={w.Units}>
-        {tabs}
+        {toolbar}
         <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" hidden />
         <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process">
           <ByProcess
@@ -751,37 +800,9 @@ function TasksPanel({
   }
   return (
     <section className="sp-runs" aria-label={w.Units}>
-      {tabs}
+      {toolbar}
       <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process" hidden />
       <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" className="sp-runs">
-        <div className="sp-filters">
-          <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
-            {TASK_FILTERS.map((f, i) => (
-              <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
-                {f.label}
-                <span className="sp-count">{count(f.states)}</span>
-              </button>
-            ))}
-          </div>
-          <label className="sp-select">
-            {w.Group}{" "}
-            <select value={process} onChange={(e) => setProcess(e.currentTarget.value)}>
-              <option value="">
-                All {w.groups} ({processes.length})
-              </option>
-              {processes.map((p) => (
-                <option key={p.process} value={p.process}>
-                  {lastSegment(p.process)} ({total(p.counts)})
-                </option>
-              ))}
-              {process && !processes.some((p) => p.process === process) && <option value={process}>{lastSegment(process)}</option>}
-            </select>
-          </label>
-        </div>
-        <p className="sp-sub">
-          <span>In the order {engineName(run.workflow.engine)} first reported them</span>
-          {active && <LiveStatus />}
-        </p>
         {error && <p role="alert">The {w.units} could not be read: {error}</p>}
         {tasks === null && !error && <p className="sp-muted">Loading the {w.units}…</p>}
         {tasks?.length === 0 && <p className="sp-empty">No {w.unit} matches these filters.</p>}
@@ -917,7 +938,7 @@ function logFile(run: RunDetail, server: ServerVersion | null, source: LogSource
 function LogsPanel({
   run,
   server,
-  source,
+  source: asked,
   setSource,
   onTasks,
   onBack,
@@ -930,17 +951,24 @@ function LogsPanel({
   /** Back to Summary, when the Summary's last lines opened Logs (FU-P3-88a) */
   onBack?: () => void;
 }) {
+  const sources = logsOf(run);
+  const source = sources.some((l) => l.source === asked) ? asked : "engine";
   const [text, setText] = useState<string | null>(null);
+  // a read that did not give the text: "missing" (404, not written yet) or the error's message
+  const [failure, setFailure] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
+  const [said, copy] = useCopyStatus();
   const w = words(run.workflow.engine);
   useEffect(() => {
     const controller = new AbortController();
     setText(null);
+    setFailure(null);
     getLog(run.id, source, controller.signal)
       .then(setText)
-      .catch((e: ApiError) => controller.signal.aborted || setText(e.status === 404 ? "Not written yet." : `Could not read it: ${e.message}`));
+      .catch((e: ApiError) => controller.signal.aborted || setFailure(e.status === 404 ? "missing" : e.message));
     return () => controller.abort();
   }, [run.id, source, reloads]);
+  const reload = () => setReloads((n) => n + 1);
   const label = LOGS.find((l) => l.source === source)!.label;
   const file = logFile(run, server, source);
   const download = () => {
@@ -958,39 +986,9 @@ function LogsPanel({
     <section className="sp-runs sp-logs" aria-label="Logs">
       {onBack && (
         <button type="button" className="sp-link-button sp-logs-back" onClick={onBack}>
-          <Icon path={ICONS.chevronLeft} size={13} /> Back to Summary
+          <Icon name="chevronLeft" /> Back to Summary
         </button>
       )}
-      <div className="sp-filters sp-log-tools">
-        <div className="sp-segments" role="group" aria-label="Log">
-          {LOGS.map((l) => (
-            <button key={l.source} type="button" aria-pressed={source === l.source} onClick={() => setSource(l.source)}>
-              {l.label}
-            </button>
-          ))}
-        </div>
-        <span className="sp-muted sp-grow">
-          {DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it
-        </span>
-        <span className="sp-actions">
-          <Button variant="default" leftSection={<Icon path={ICONS.reload} size={15} />} onClick={() => setReloads((n) => n + 1)}>
-            Reload
-          </Button>
-          <Button variant="default" leftSection={<Icon path={ICONS.download} size={15} />} onClick={download} disabled={text === null}>
-            Download last 64 KiB
-          </Button>
-          <Button
-            component="a"
-            variant="default"
-            href={logUrl(run.id, source)}
-            target="_blank"
-            rel="noopener noreferrer"
-            leftSection={<Icon path={ICONS.externalLink} size={15} />}
-          >
-            Open raw<span className="sp-sr"> (opens in a new tab)</span>
-          </Button>
-        </span>
-      </div>
       {file && (
         <div className="sp-log-file">
           <span id="log-file-label" className="sp-muted">
@@ -1001,18 +999,87 @@ function LogsPanel({
           <CopyButton text={file.path} label="Copy" name={`Copy the ${label.toLowerCase()} path`} />
         </div>
       )}
-      <LogViewer text={text} label={label} />
+      <LogViewer
+        text={text}
+        label={label}
+        filters={<SegmentedControl size="sm" aria-label="Log" value={source} onChange={(value) => setSource(value as LogSource)} data={sources.map((l) => ({ value: l.source, label: l.label }))} />}
+        actions={
+          <>
+            <ToolButton label="Reload" icon="reload" onClick={reload} />
+            <ToolButton label={`Copy the ${label.toLowerCase()}`} icon="copy" disabled={text === null} onClick={() => copy({ label, what: `the ${label.toLowerCase()}`, text: text ?? "" })} />
+            <ToolButton label="Download last 64 KiB" icon="download" disabled={text === null} onClick={download} />
+            <ToolButton label="Open raw (opens in a new tab)" icon="externalLink" href={logUrl(run.id, source)} />
+          </>
+        }
+        placeholder={
+          failure === "missing" ? (
+            <EmptyState icon="file">This log is not written yet.</EmptyState>
+          ) : failure ? (
+            <ErrorPanel onRetry={reload}>
+              The {label.toLowerCase()} could not be read: {failure}
+            </ErrorPanel>
+          ) : undefined
+        }
+      />
+      <p className="sp-muted sp-log-caption">{DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it <span role="status">{said}</span>
+      </p>
       <p className="sp-log-note">
-        <Icon path={ICONS.file} size={15} stroke={1.6} />
+        <Icon name="file" />
         <span>
           {run.workflow.engine === "snakemake"
             ? "Each job's own log, as its rule declares it, is not in these logs:"
             : "Each task's own files (.command.log, .command.err, .command.sh …) stay in its work directory, not in these logs:"}{" "}
           <button type="button" className="sp-link-button" onClick={onTasks}>
-            open a {w.unit} in {w.Units} <Icon path={ICONS.arrowRight} size={13} />
+            open a {w.unit} in {w.Units} <Icon name="arrowRight" />
           </button>
         </span>
       </p>
+    </section>
+  );
+}
+
+/** The Parameters tab (ui-spec §12.6, §12.7; UI-10): a filter in the toolbar, then the parameters
+ * set at launch in a card, a table on desktop and a list on the phone. */
+function ParamsPanel({ params }: { params: RunDetail["params"] }) {
+  const phone = usePhone();
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(true);
+  const all = Object.entries(params);
+  if (all.length === 0) return <EmptyState icon="sliders">No parameters were set at launch.</EmptyState>;
+  const needle = query.trim().toLowerCase();
+  const shown = all.filter(([key, value]) => !needle || `${key} ${JSON.stringify(value)}`.toLowerCase().includes(needle));
+  return (
+    <section className="sp-runs" aria-label="Parameters">
+      <Toolbar label="Parameters tools" search={<ToolbarSearch label="Filter the parameters" value={query} onChange={setQuery} />} />
+      <div className="sp-card">
+        <CardHead id="run-params" icon="sliders" title="Parameters" meta={needle ? `${shown.length} of ${all.length}` : `${all.length} set at launch`} open={open} onToggle={() => setOpen(!open)} />
+        <div id="run-params-body" hidden={!open}>
+          {shown.length === 0 ? (
+            <EmptyState icon="search">No parameter matches this filter.</EmptyState>
+          ) : phone ? (
+            <ParamsList params={Object.fromEntries(shown)} />
+          ) : (
+            <div className="sp-table-wrap">
+              <table className="sp-table" aria-label="Parameters">
+                <thead>
+                  <tr>
+                    <th scope="col">Parameter</th>
+                    <th scope="col">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map(([key, value]) => (
+                    <tr key={key}>
+                      <td className="sp-mono">{key}</td>
+                      <td>{typeof value === "string" ? value : JSON.stringify(value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
@@ -1044,7 +1111,7 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
   const running = sum(run.task_counts, "running");
   const pending = sum(run.task_counts, "pending", "submitted");
   return (
-    <Modal opened={opened} onClose={onClose} title="Cancel this run?" returnFocus centered>
+    <Modal opened={opened} onClose={onClose} title="Cancel this run?" returnFocus centered classNames={{ title: "sp-sheet-title" }}>
       <p>
         {local
           ? "Spectio stops its head with signals, and the engine stops its tasks."
@@ -1060,11 +1127,11 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
           : "Ctrl-C to the engine in its tmux session, then SIGTERM and SIGKILL after 60 s each."}{" "}
         The run shows Cancelling, then Cancelled.
       </p>
-      <div className="sp-actions">
+      <div className="sp-dialog-foot">
         <Button variant="default" data-autofocus onClick={onClose}>
           Keep running
         </Button>
-        <Button color="red" onClick={onConfirm}>
+        <Button color="failed" onClick={onConfirm}>
           Cancel the run
         </Button>
       </div>
@@ -1094,7 +1161,6 @@ export async function findTask(runId: string, taskId: string, signal: AbortSigna
 export function RunDetailPage({ id }: { id: string }) {
   const valid = RUN_ID.test(id);
   const server = useServer();
-  const phone = usePhone();
   const [run, setRun] = useState<RunDetail | null>(null);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -1223,7 +1289,6 @@ export function RunDetailPage({ id }: { id: string }) {
     go("tasks", { process });
   };
   const w = words(run.workflow.engine);
-  const params = Object.keys(run.params).length;
 
   return (
     <div className="sp-runs">
@@ -1238,6 +1303,7 @@ export function RunDetailPage({ id }: { id: string }) {
         cancelError={cancelError}
         onChip={showTasks}
         onRun={setRun}
+        summaryTab={tab === "summary"}
       />
       {sheetLost && <p role="status">This job's sheet could not be reopened.</p>}
       <DetailSheet
@@ -1252,7 +1318,7 @@ export function RunDetailPage({ id }: { id: string }) {
       />
       <CancelDialog run={run} server={server} opened={asking} onClose={() => setAsking(false)} onConfirm={confirm} />
 
-      <Tabs value={tab} onChange={(t) => go(TABS.find((x) => x === t) ?? "summary")} keepMounted={false}>
+      <Tabs className="sp-run-tabs" value={tab} onChange={(t) => go(TABS.find((x) => x === t) ?? "summary")} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
           <Tabs.Tab value="tasks">{w.Units}</Tabs.Tab>
@@ -1281,32 +1347,7 @@ export function RunDetailPage({ id }: { id: string }) {
           />
         </Tabs.Panel>
         <Tabs.Panel value="parameters" pt="md">
-          {params === 0 ? (
-            <p className="sp-empty">No parameters were set at launch.</p>
-          ) : phone ? (
-            <div className="sp-card">
-              <ParamsList params={run.params} />
-            </div>
-          ) : (
-            <div className="sp-table-wrap">
-              <table className="sp-table" aria-label="Parameters">
-                <thead>
-                  <tr>
-                    <th scope="col">Parameter</th>
-                    <th scope="col">Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(run.params).map(([key, value]) => (
-                    <tr key={key}>
-                      <td className="sp-mono">{key}</td>
-                      <td>{typeof value === "string" ? value : JSON.stringify(value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <ParamsPanel params={run.params} />
         </Tabs.Panel>
         <Tabs.Panel value="logs" pt="md" ref={panels.logs} tabIndex={-1}>
           <LogsPanel

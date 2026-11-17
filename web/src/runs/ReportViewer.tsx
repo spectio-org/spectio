@@ -2,8 +2,10 @@ import { Button } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type ApiError, type RunDetail, getRun, resultUrl } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
+import { PageHead } from "../shell/PageHead";
+import { SkeletonRows } from "../shell/States";
 import type { Sort } from "./explorer";
 import { resultsSearch } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
@@ -71,7 +73,7 @@ export function ReportViewer({ id, path, from, sort, q }: { id: string } & Retur
   if (!run) {
     return (
       <div className="sp-runs">
-        {error ? <p role="alert">The run could not be read: {error}</p> : <p className="sp-muted">Loading the run…</p>}
+        {error ? <p role="alert">The run could not be read: {error}</p> : <SkeletonRows label="Loading the run…" />}
       </div>
     );
   }
@@ -80,26 +82,35 @@ export function ReportViewer({ id, path, from, sort, q }: { id: string } & Retur
   const folder = parts ? parts.slice(0, -1) : [];
   const back = parts ? (
     <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder.join("/") || undefined, sort, q, focus: parts[parts.length - 1] }}>
-      <Icon path={ICONS.chevronLeft} size={14} /> {folder[folder.length - 1] ?? "results"}
+      <Icon name="chevronLeft" /> {folder[folder.length - 1] ?? "results"}
     </Link>
   ) : (
     <Link className="sp-report-back" to="/runs/$id" params={{ id }}>
-      <Icon path={ICONS.chevronLeft} size={14} /> {name} · Summary
+      <Icon name="chevronLeft" /> {name} · Summary
     </Link>
   );
   if (!path || !isReport(path)) {
     return (
       <div className="sp-runs">
-        {back}
-        <h1 className="sp-page-title">{title}</h1>
+        <PageHead section="runs" icon="fileCode" title={title} sub={back} phoneTitle="title" />
         <p>Only an HTML file of the run's results opens here.</p>
       </div>
     );
   }
   return (
     <div className="sp-runs sp-report">
-      {back}
-      <h1 className="sp-page-title">{title}</h1>
+      <PageHead
+        section="runs"
+        icon="fileCode"
+        title={title}
+        sub={back}
+        phoneTitle="title"
+        secondary={[
+          <Button key="download" component="a" href={resultUrl(id, path, { download: true })} variant="default" leftSection={<Icon name="download" size="button" />}>
+            Download
+          </Button>,
+        ]}
+      />
       {parts && (
         <nav className="sp-pathbar" aria-label="Folder">
           <ol>
@@ -118,16 +129,13 @@ export function ReportViewer({ id, path, from, sort, q }: { id: string } & Retur
         </nav>
       )}
       <div className="sp-report-banner">
-        <Icon path={ICONS.shield} size={20} />
+        <Icon name="shield" />
         <div>
           <p>
             Untrusted report: <code>{path}</code>
           </p>
           <p className="sp-muted">Written by the pipeline. It runs in a sandbox and cannot reach Spectio. Spectio never asks you to paste a link.</p>
         </div>
-        <Button component="a" href={resultUrl(id, path, { download: true })} variant="default" leftSection={<Icon path={ICONS.download} size={16} />}>
-          Download
-        </Button>
       </div>
       <iframe
         className="sp-report-frame"

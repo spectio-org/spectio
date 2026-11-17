@@ -2,7 +2,7 @@
 # usage: prflow.sh <step> <title>   (run from the worktree)
 set -e
 S=${SCRATCH:?set SCRATCH to your scratchpad}
-B=$(git merge-base HEAD origin/autopilot/integration)
+B=$(git merge-base HEAD ${BASE:-origin/autopilot/integration})
 step=$1; title=$2; body=$S/${step#P3-}-pr-body.md
 [ -f docs-pr-body.md ] && mv docs-pr-body.md "$body"
 git log --format=%b $B..HEAD | grep -q b3Fft8 && { echo TYPO; exit 1; }

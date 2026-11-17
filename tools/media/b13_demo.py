@@ -66,6 +66,7 @@ SHOTS = (
     "app-runs-grid",
     "app-file-preview-grid",
     "app-file-preview-zarr",
+    "app-file-preview-zarr-phone",  # FU-P3-102i, taken in batch P3-B16
     "app-run-engine-log",
 )
 CATALOG = """\

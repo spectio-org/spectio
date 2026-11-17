@@ -1345,6 +1345,40 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Changed.** [autopilot.md](../playbooks/autopilot.md) new §14 and notes in §11 and §13; [documentation-system §3.5](../specs/documentation-system.md#35-docs-per-batch-of-p3-tasks-thomas-2026-11-04); `.claude/skills/autopilot/SKILL.md` §4b; `tools/autopilot/lean/p3-lean.js`, `p3-batch.js` and README; `.github/workflows/ci.yml`; `CLAUDE.md`.
 - **To check after two runs.** Features merged per run and cost per feature (`costs.jsonl`, by kind), against the 11-10 run.
 
+## 2026-11-11 — 0.0.2 work on its own branch, and pipeline version detection (assumed)
+
+- **Context.** Thomas, 2026-11-11, asked how pipeline and module versions are handled and updated, and for a long plan of steps; 0.0.1 is not released, FU-P3-105 is 0.0.2. A Git revision is fetched once and never again (`api/workflows.py:177-194`); nothing detects a newer version.
+- **Decided (assumed — pending Thomas, [inbox #152](../reviews/inbox.md#152-assumed-002-work-on-its-own-branch-and-pipeline-version-detection-2026-11-11)):** 0.0.2 is built on `autopilot/next-0.0.2`, merged into integration after the 0.0.1 release; 0.0.2 records the resolved commit of every Git revision and checks for a newer tag or a moved branch on Load with one `git ls-remote`; the module session (#161) is told the same.
+- **Why.** Keeps 0.0.1's promotion clean; makes a run's pipeline version reproducible and an update visible at the point of launch, with one bounded call.
+- **Changed.** [inbox #152](../reviews/inbox.md#152-assumed-002-work-on-its-own-branch-and-pipeline-version-detection-2026-11-11). Specs change at the build (api §5.3, ui-spec §4.6).
+- **[to be validated].** `git ls-remote` through the sites' proxies.
+
+## 2026-11-11 — UI design system and the notifications panel (assumed)
+
+- **Context.** Thomas, 2026-11-11: "There is real UI work to redo. Many inconsistencies, bad placements of icons, buttons, etc. For example the notification bar/column is not modern at all. […] I really want everything coherent and consistent." An audit of the built app ([review record](../reviews/ui-audit-2026-11-11.md), 44 findings, 20 major) traced most of it to tokens that cover colour only, with no spacing, radius, type or icon scale and no Mantine `components` defaults.
+- **Decided (assumed — pending Thomas, [inbox #153](../reviews/inbox.md#153-assumed-ui-design-system-and-the-notifications-panel-2026-11-11); standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):**
+    - Mantine 7 is kept and themed: a 4 px spacing scale, radii 4 / 8 / 12 / full, type xs 12 to xl 20 with h1 28 / h2 20 / h3 16, weights 400 / 500 / 600, and `failed` and `review` colours from the state tokens in place of Mantine's `red` ([ui-spec §12](../specs/ui-spec.md#12-design-system-2026-11-11)).
+    - The own icon set stays, at one stroke (1.75) and one size per context, every path in `web/src/icons.tsx`.
+    - One rule each for buttons (one filled primary per view at the right of the page head, overflow in `…`, destructive last), the page head, toolbar, card, tables and dates (relative within 7 days, then ISO), links, the focus ring and the shared states; where the audit disagreed with §2, §3.4, §4.4, §4.11 or §7, the existing spec wins (ui-spec §12.14).
+    - The notifications panel becomes a Popover under the bell on desktop and a bottom Drawer on the phone, with All / Unread, day groups and state-tiled rows; All / Unread and grouping are client-side, per-item read is Later, items gain `engine` and an adopted run's `at` is its end time ([api §5.9](../specs/api-and-data-model.md#59-notifications-001), amendment of 2026-11-11).
+    - Built in 0.0.1, on `autopilot/integration`, as six P3 batches of the audit's 20 tasks; Catalog joins the sidebar.
+- **Why.** The inconsistencies come from missing shared values, not from the library; one themed set fixes them at the source and is cheaper than a change of library or icon package.
+- **Changed.** [ui-spec](../specs/ui-spec.md) new §12; [api](../specs/api-and-data-model.md) §5.9 (one dated line); [UI audit record](../reviews/ui-audit-2026-11-11.md); [inbox #153](../reviews/inbox.md#153-assumed-ui-design-system-and-the-notifications-panel-2026-11-11).
+- **[to be validated].** Nothing rests on another tool's behaviour beyond Mantine 7.17.8's default sizes, read in its `styles.css` (2026-11-11).
+
+## 2026-11-11 — Public docs site: product pages only (Thomas)
+
+- **Context.** Thomas, 2026-11-11: "The docs look completely outdated — why? Review the roadmap. 'What ships in the first version', 'Developer' etc. are far too complex: keep them hidden or on a separate branch, not in the build. Review the whole doc. How far are we from 0.0.1?" The public pages were written in the design phase and not updated once code was built: they said "in design", described gates, Kubernetes and a depictio hand-off as the product, listed CLI commands that do not exist (`spectio run launch`, `gate decide`), named a `spectio[server]` extra that the packages do not define, and 167 links pointed into the specs, the progress pages, the reviews and the research notes. The usage pages opened with "built on the integration branch" banners full of step and batch IDs.
+- **Decided (Thomas).**
+    - The public site is the product pages only: Home, Installation, Usage, Features, API, Roadmap, Changelog. The developer material (`docs/developer/`, `map.md`, `glossary.md`, `progress/`, `specs/`, `playbooks/`, `plans/`, `reviews/`, `decisions/`, `research/`) stays in the repository and leaves the public build through `exclude_docs` in `mkdocs.yml`.
+    - `mkdocs.dev.yml` inherits `mkdocs.yml`, keeps only the original exclusions and carries the Developer navigation, so `mkdocs build --strict -f mkdocs.dev.yml` builds the full site locally.
+    - No public page links into a developer page, in Markdown or HTML, including the footer. The progress strip leaves the home page and the roadmap. The usage pages say what a feature does, not how it was built.
+    - The pages say what is true today: 0.0.1 is built on the integration branch and not released; SLURM (through a login node, on a Unix socket on shared hosts) and one machine; Nextflow and Snakemake; five CLI commands; a REST API under `/api/v1` with SSE. Gates, Kubernetes, the depictio hand-off, administration, webhooks and robot tokens are labelled "later". The roadmap is one short page without wave jargon.
+- **Why.** A visitor came to the site for the product and met the build process; a user page that cites inbox numbers and FU-P3 IDs, or promises a CLI that does not exist, costs trust. Keeping the developer pages out of the public build, not out of the repository, keeps the specs, the progress pages and their reviews as they are.
+- **Changed.** [documentation system §1 and §2](../specs/documentation-system.md#1-site-structure) (two builds, the landing page, the check); `mkdocs.yml`, new `mkdocs.dev.yml`; `overrides/main.html` (licence text, no map link); `hooks/progress.py` (a comment: no Progress section, no change); `tools/docs/check.py` and its tests (it builds both configurations and skips pages that `exclude_docs` leaves out); the public pages `docs/index.md`, `installation`, `usage`, `features`, `api`, `roadmap`, `changelog`.
+- **CI.** `tools/docs/check.py`, which the docs gate runs, now builds the public and the developer configuration, each with `--strict`. The plain `mkdocs build --strict` steps of `.github/workflows/docs.yml` and `previews.yml` build the public site only, so the previews show only the product pages. Building or deploying the developer site in CI needs a `.github/workflows` change, which waits for Thomas.
+- **[to be validated].** That a checkout (`uv sync`, the built screens, `spectio init`, `spectio serve`) is an install route for people who are not developers: the installation page gives the steps and says so. Screenshots that still show the older UI are retaken in a separate step.
+
 ## 2026-11-11 — Workflow graph: exploded jobs, fold, marks, links and code (#160, Thomas)
 
 Thomas asked for parity with MetroFlow's viewer (2026-11-11). Decided: the Jobs level is one node per job, named by its key (Nextflow tag or Snakemake wildcards); double-click folds and unfolds a subworkflow or stage; nodes carry checkpoint, temp, condition, retried and cached marks; edges open a sheet that says what they carry (files for Snakemake, channels for Nextflow); a code card reads a process or rule definition through a new confined route, `GET /workflows:source`, which takes a name, never a path; the graph exports to standalone HTML. Spectio's renderer stays its own (React Flow + dagre); MetroFlow and BioFlow-Insight are MIT but none of their code is copied into the product. Owners: [ui-spec §4.14](../specs/ui-spec.md#414-workflow-graph-002-flag-graph_view), [api §5.11](../specs/api-and-data-model.md#511-workflow-graph-002-flag-graph_view). What remains to choose: [gap analysis](../research/metroflow-gap-2026-11-11.md).
@@ -1417,3 +1451,11 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
     - A module run takes no extra config file.
     - A newer registry version is shown later, not in 0.0.2.
 - **Changed.** [ui-spec §4.15](../specs/ui-spec.md#415-runs-that-target-one-module-or-one-rule-002); [api §5.10](../specs/api-and-data-model.md#510-run-target-one-module-or-one-rule-002) (no `config_file` for a module, the template's fields, newer version later).
+
+## 2026-11-17 — picomatch advisory accepted for the web dev tooling
+
+- **Context.** On 2026-11-17 osv-scanner started reporting GHSA-fc5q-39xc-vjpf (CVSS 8.7) against `picomatch` 4.0.7 in `web/package-lock.json`, and no fixed version exists yet. The security audit is a dependency of `ci-ok`, so every PR was red.
+- **Decided (Thomas, 2026-11-17: "oui 1").** The advisory is ignored in a new `web/osv-scanner.toml`, with one entry that expires on 2027-02-17. It follows the pattern of `engine-bridges/nf-spectio/gradle/osv-scanner.toml`.
+- **Why.** `picomatch` is dev-only (`"dev": true` in the lockfile). Vite and Vitest use it to match globs from our own config, on the build machine and in CI, and it is not in the shipped web bundle.
+- **Revisit.** Remove the entry and update the lockfile as soon as a fixed `picomatch` is released, or earlier if it stops being dev-only.
+- **[to be validated].** The nature of the advisory was not read.

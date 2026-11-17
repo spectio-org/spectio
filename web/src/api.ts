@@ -27,6 +27,9 @@ export interface Inspected {
   /** Asked with `params_file` (api §5.6): every top-level key of the file, or `values: null` and
    * an `error` in words; what in it, or the file itself, loads code. */
   params_file: ParamsFile | null;
+  /** Asked with `config_file` and `engine` (FU-P3-121): what Launch would refuse of the extra
+   * config file, in its words, or `error: null`; never the file's bytes (api §5.7). */
+  config_file?: { path: string; error: string | null } | null;
 }
 
 export interface ParamsFile {
@@ -235,6 +238,8 @@ export interface RunDetail extends Run {
    * none (FU-P3-110a, api §5.7). */
   default_resources: RunDefaultResources | null;
   config_file: RunConfigFile | null;
+  /** The head logs the launch directory holds: a head under tmux writes no head.err (FU-P3-124). */
+  head_logs: ("head-out" | "head-err")[];
 }
 
 /** Schema `RunDefaultResources` (api §5.7): its fields are null unless `state` is `recorded`. */
@@ -391,6 +396,8 @@ export type ProcessStatus =
 export interface ProcessEfficiency {
   jobs: { done: number; total: number };
   measured: number;
+  /** The ended jobs sacct has not answered yet (CR-P3FU119-01). */
+  pending_accounting: number;
   cpu_mean: number | null;
   cpu_max: number | null;
   mem_mean: number | null;
@@ -568,10 +575,15 @@ export function inspect(
   revision: string | null,
   signal?: AbortSignal,
   paramsFile?: string | null,
+  configFile?: { path: string; engine: Engine },
 ): Promise<Inspected> {
   const query = new URLSearchParams({ location });
   if (revision) query.set("revision", revision);
   if (paramsFile) query.set("params_file", paramsFile);
+  if (configFile) {
+    query.set("config_file", configFile.path);
+    query.set("engine", configFile.engine);
+  }
   return call(`/workflows:inspect?${query}`, { signal });
 }
 
@@ -867,6 +879,9 @@ export interface Notification {
   kind: NotificationKind;
   run_id: string;
   run_name: string | null;
+  /** The run's `workflow.engine`, as `WorkflowRef`. */
+  engine: string | null;
+  /** An ended run's `ended_at`, else `state_changed_at`; a waiting run's `state_changed_at`. */
   at: string;
   read: boolean;
 }

@@ -376,15 +376,16 @@
   border-radius: 0 0 12px 12px;
   box-shadow: inset 0 1px 0 var(--sp-line-divider);
 }
+/* one mono size in the log viewer, 12/18 (UI-11) */
 .sp-log {
   max-height: min(60vh, 560px);
   overflow: auto;
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 14px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: var(--mantine-font-size-xs);
+  line-height: 18px;
   color: var(--sp-code-text);
   background: var(--sp-surface-code);
 }
@@ -570,9 +571,16 @@
 }
 .sp-run-top {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-start;
   gap: 12px 18px;
+}
+/* The name wraps beside the tile; the actions keep their width at the right (ui-spec §12.5). */
+.sp-run-top > .sp-grow {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sp-run-top > .sp-run-actions {
+  flex-shrink: 0;
 }
 .sp-mark-tile {
   width: 48px;
@@ -601,6 +609,10 @@
 .sp-run-head > .sp-foldsec {
   padding-top: 12px;
   border-top: 1px solid var(--sp-line-divider);
+}
+/* Folded, the Facts title keeps its width: the summary beside it takes the ellipsis (UI-09). */
+.sp-run-head .sp-fold-title {
+  flex-shrink: 0;
 }
 .sp-facts {
   display: grid;
@@ -781,14 +793,11 @@
   background: var(--sp-surface-subtle);
 }
 
-/* Phone (ui-spec §4.11): a smaller title, a full-width Cancel, and the process table keeps its
+/* Phone (ui-spec §4.11): a smaller title, and the process table keeps its
    name, state, done and failed columns. */
 @media (max-width: 767.98px) {
   .sp-head h1 {
     font-size: 24px;
-  }
-  .sp-head > .mantine-Button-root {
-    width: 100%;
   }
   .sp-table [data-narrow] {
     display: none;
@@ -941,46 +950,34 @@
   .sp-run-head {
     padding: 18px 16px 14px;
   }
-  /* The mark tile stays beside the pipeline's name (MLiteRunDetail). */
-  .sp-run-top > .sp-grow {
-    flex: 1 1 0;
-    min-width: 0;
+  /* More actions stays beside the name; the primary sits in the bar pinned above the tab bar,
+     full width, opaque (UI-09; ui-spec §4.11, §12.5). The shell's bottom padding leaves it room. */
+  .sp-run-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--sp-tabbar-h);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--sp-surface-page);
+    border-top: 1px solid var(--sp-line-border);
   }
-  /* Cancel and Copy side by side, full width (MLiteRunDetail); Resume and its reason above them,
-     full width (MLiteRunFailed). */
-  .sp-run-top > .sp-run-actions {
-    width: 100%;
-    flex-wrap: wrap;
+  .sp-run-menu .mantine-Menu-item {
+    min-height: 44px;
   }
-  .sp-run-top > .sp-run-actions > * {
-    flex: 1 1 0;
-    min-width: 0;
+  /* The title in the top bar's title row (a run's name): two lines at most, then an ellipsis;
+     the state line under it stays in view (ui-spec §4.11). */
+  .sp-mtitle .sp-page-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
   }
-  .sp-run-top > .sp-run-actions > .sp-resume,
-  .sp-run-top > .sp-run-actions > .sp-resume-why {
-    flex-basis: 100%;
-    order: -1;
-  }
-  /* Copy to a new launch takes the row, Copy its own width beside it (MLiteRunFailed). */
-  .sp-run-top > .sp-run-actions > .sp-copy-launch ~ .sp-copy,
-  .sp-run-top > .sp-run-actions > .sp-copy-launch ~ .sp-copy .mantine-Button-root {
-    flex: 0 0 auto;
-    width: auto;
-  }
-  .sp-run-actions .sp-copy {
-    width: 100%;
-  }
-  .sp-run-actions .mantine-Button-root {
-    width: 100%;
-    height: 44px;
-  }
-  /* Logs (MLiteRunLogs): the sources share the width, the file path wraps above its Copy. */
-  .sp-log-tools .sp-segments {
-    width: 100%;
-  }
-  .sp-log-tools .sp-segments button {
-    flex: 1 0 auto;
-  }
+  /* Logs (MLiteRunLogs): the file path wraps above its Copy. */
   .sp-log-file code {
     flex-basis: 100%;
     order: 1;
@@ -994,46 +991,19 @@
   }
 }
 
-/* P3-parC: the header's actions and Copy menu (LiteRunActions B). */
+/* P3-parC, UI-09: the header's actions: More actions, then the primary at the far right
+   (ui-spec §12.4). The Copy items' status shows under them. */
 .sp-run-actions {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
-.sp-copy {
-  position: relative;
-  display: inline-flex;
-  min-width: 0;
-}
-.sp-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 20;
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-  padding: 6px;
-  border-radius: 14px;
-  background: var(--sp-surface-raised);
-  box-shadow: 0 0 0 1px var(--sp-line-border), 0 16px 32px -16px rgba(15, 16, 32, 0.35);
-}
-.sp-menu button {
-  min-height: 38px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9px;
-  font: inherit;
-  font-size: 13.5px;
-  text-align: left;
-  color: var(--sp-text-primary);
-  background: none;
-  cursor: pointer;
-}
-.sp-menu button:hover,
-.sp-menu button:focus-visible {
-  background: var(--sp-surface-subtle);
+/* The menu's destructive item, last after a divider: its icon and text in the failed ink. */
+.sp-run-menu .sp-menu-danger {
+  color: var(--sp-state-failed-fg);
 }
 .sp-copy-status:empty {
   display: none;
@@ -1060,7 +1030,43 @@
   overflow-x: auto;
 }
 .sp-logs {
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
+}
+/* the run tabs (ui-spec §12.9): 36 px, accent from the theme */
+.sp-run-tabs .mantine-Tabs-tab {
+  height: 36px;
+}
+/* the frame of an empty, failed or loading log (ui-spec §12.12), the viewer's place */
+.sp-log-frame {
+  padding: var(--mantine-spacing-lg);
+  border: 1px solid var(--sp-line-border);
+  border-radius: var(--mantine-radius-md);
+}
+/* the log toolbar holds many tools: the search keeps a usable width, the levels one row */
+.sp-logs .sp-toolbar-search,
+.sp-file-page .sp-toolbar-search {
+  flex: 1 1 160px;
+  min-width: 160px;
+}
+/* the run tabs' toolbars (UI-10, UI-11): segments keep one row, the Process select a fixed width */
+.sp-runs .sp-toolbar .sp-segments {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+.sp-task-group {
+  width: 200px;
+}
+@media (max-width: 767.98px) {
+  /* on the phone the segments scroll sideways as pills (ui-spec §12.6) */
+  .sp-runs .sp-toolbar .sp-segments {
+    flex: 0 1 auto;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+.sp-log-caption {
+  margin: 0;
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-log-file {
   display: flex;
@@ -1137,18 +1143,47 @@
 }
 .sp-sheet {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-}
-.sp-sheet:focus {
-  outline: none;
+  padding-top: 16px;
 }
 .sp-sheet:focus-visible {
   outline: 2px solid var(--sp-line-focus);
   outline-offset: 4px;
 }
+/* UI-12: the sheet's head stays on top: title, a task's state, then Close at the right. */
+.sp-sheet-head {
+  gap: 12px;
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+/* Dialog and sheet titles, and their footer (ui-spec §12.4, UI-18): 16/600 in the display font;
+   Cancel then the confirm at the right, gap sm; stacked full width on the phone, confirm last. */
 .sp-sheet-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
+}
+.sp-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-lg);
+}
+.sp-dialog-foot[data-stack] {
+  flex-direction: column;
+}
+/* Only DetailSheet's title takes the free width and wraps (CR-P3UI12-01); its font is UI-18's. */
+.sp-sheet-head .sp-sheet-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sp-sheet-head .mantine-CloseButton-root {
+  flex-shrink: 0;
+}
+/* On the phone the sheet rises from the bottom, rounded on its free edge only. */
+.sp-sheet-bottom {
+  border-radius: 12px 12px 0 0;
 }
 .sp-sheet-name {
   margin: 0;
@@ -1160,8 +1195,10 @@
   margin: 0;
 }
 .sp-sheet-h {
-  margin: 8px 0 0;
-  font-size: 15px;
+  margin: 12px 0 0;
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
 }
 .sp-sheet-list {
   display: grid;
@@ -1212,17 +1249,28 @@
   font-weight: 600;
   color: var(--sp-text-secondary);
 }
-.sp-sheet-facts {
-  grid-template-columns: 1fr 1fr;
+/* Facts in a sheet: two columns on every screen, one label style (xs/600 muted). */
+.sp-facts.sp-sheet-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
 }
-.sp-log-search {
-  margin-bottom: 8px;
+.sp-sheet-facts > div {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+.sp-sheet-facts dt {
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  color: var(--sp-text-muted);
+}
+.sp-sheet-facts dd {
+  margin: 2px 0 0;
 }
 .sp-log-count {
-  min-width: 64px;
   font-variant-numeric: tabular-nums;
 }
-.sp-log-search .sp-segments button[data-tone] {
+.sp-log-levels button[data-tone] {
   color: var(--tone-fg);
 }
 /* the viewer is dark in both schemes: a match is dark text on the code palette's amber, the
@@ -1267,7 +1315,8 @@
 }
 .sp-files {
   display: grid;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
   min-width: 0;
 }
 .sp-file-tabs {
@@ -1277,26 +1326,31 @@
   gap: 4px 12px;
   border-bottom: 1px solid var(--sp-line-divider);
 }
+/* one row of file tabs, scrolled sideways when they do not fit (UI-12) */
 .sp-file-tabs [role="tablist"] {
   display: flex;
-  flex-wrap: wrap;
   gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 .sp-file-tabs [role="tab"] {
-  min-height: 36px;
-  padding: 0 10px;
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 12px;
+  white-space: nowrap;
   border: 0;
   border-bottom: 2px solid transparent;
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--sp-text-secondary);
   background: none;
   cursor: pointer;
 }
 .sp-file-tabs [role="tab"][aria-selected="true"] {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--sp-text-primary);
-  border-bottom-color: var(--sp-state-running);
+  border-bottom-color: var(--sp-accent);
 }
 .sp-file-tabs [role="tab"]:focus-visible {
   outline: 2px solid var(--sp-line-focus);
@@ -1432,7 +1486,8 @@
   flex-shrink: 0;
   margin-top: 2px;
 }
-.sp-run-actions .mantine-Button-root[aria-disabled="true"] {
+.sp-run-actions .mantine-Button-root[aria-disabled="true"],
+.sp-run-bar .mantine-Button-root[aria-disabled="true"] {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -1560,12 +1615,12 @@
 }
 .sp-result-name {
   display: inline-flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-result-name svg {
   flex-shrink: 0;
-  margin-top: 3px;
+  color: var(--sp-text-muted);
 }
 .sp-result-name {
   min-width: 0;
@@ -1578,32 +1633,36 @@
 .sp-explorer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
   padding: 0;
   overflow: hidden;
 }
-.sp-explorer > .sp-note,
-.sp-explorer > p {
-  margin: 0 16px 12px;
+.sp-explorer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+.sp-explorer > .sp-cardhead {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+.sp-explorer-body > .sp-note,
+.sp-explorer-body > .sp-emptystate,
+.sp-explorer .sp-toolbar {
+  margin: 0 var(--mantine-spacing-lg);
+}
+.sp-explorer-body > .sp-emptystate {
+  margin-bottom: var(--mantine-spacing-lg);
 }
 .sp-explorer .sp-note p {
   margin: 0 0 4px;
 }
-.sp-explorer-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--sp-line-divider);
-}
-.sp-card .sp-explorer-head h2 {
-  flex: 1 1 auto;
-  margin: 0;
-  font-size: 15px;
-}
-.sp-explorer-head .sp-search-field {
-  flex: 0 1 260px;
+/* one row height for files and folders, icon, name, size and date on one centre line (§12.8) */
+.sp-explorer-table tbody th,
+.sp-explorer-table tbody td {
+  height: 44px;
+  box-sizing: border-box;
+  vertical-align: middle;
 }
 .sp-explorer-table {
   border-radius: 0;
@@ -1670,7 +1729,8 @@
 }
 .sp-explorer-first svg {
   flex-shrink: 0;
-  margin-top: 1px;
+  /* centred on the name's first line, whatever its line height (UI-02) */
+  margin-top: calc(0.5lh - 8px);
   color: var(--sp-text-muted);
 }
 .sp-explorer-first [data-name] {
@@ -1803,21 +1863,30 @@
 }
 .sp-log-n {
   text-align: right;
+  font-variant-numeric: tabular-nums;
   color: var(--sp-text-faint);
   user-select: none;
 }
-.sp-file-name,
+.sp-file-page .sp-page-title,
 .sp-file-page .sp-pathbar [aria-current],
 .sp-file-page .sp-copy-line .sp-mono {
   overflow-wrap: anywhere;
   min-width: 0;
 }
-.sp-file-facts {
+.sp-file-pair {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  color: var(--sp-text-secondary);
+  gap: var(--mantine-spacing-xs);
+}
+.sp-file-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  min-width: 0;
+  margin-top: var(--mantine-spacing-md);
+}
+.sp-file-card-body[hidden],
+.sp-explorer-body[hidden] {
+  display: none;
 }
 .sp-file-viewer {
   display: flex;
@@ -1995,13 +2064,8 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .sp-file-pager .sp-file-more,
-  .sp-file-pager .sp-segments button {
+  .sp-file-pager .sp-file-more {
     min-height: 44px;
-  }
-  .sp-file-pager .sp-segments {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -2098,6 +2162,69 @@
   font-family: var(--sp-font-mono);
   font-size: 12px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* UI-08: the runs list (ui-spec §12.6, §12.8). The state filter sits in the toolbar row at the
+   search box's 36 px (2 + 32 + 2); on the phone its pills scroll sideways, 44 px high, with a fade
+   at the cut edge so a hidden pill reads as cut. */
+.sp-toolbar .sp-segments {
+  flex-wrap: nowrap;
+  padding: 2px;
+  border-radius: var(--mantine-radius-sm);
+}
+.sp-toolbar .sp-segments button {
+  min-height: 32px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+@media (max-width: 767.98px) {
+  .sp-toolbar .sp-segments {
+    flex: 1 1 100%;
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+  .sp-toolbar .sp-segments button {
+    min-height: 44px;
+  }
+}
+/* One padding and one top alignment for every cell; the header in sm/600, muted. */
+.sp-grid-runs .ag-header-cell,
+.sp-grid-runs .ag-cell {
+  padding-inline: var(--mantine-spacing-md);
+}
+.sp-grid-runs .ag-header-cell-text {
+  font-size: var(--mantine-font-size-sm);
+  color: var(--sp-text-muted);
+}
+.sp-grid-runs .sp-state {
+  line-height: 20px;
+}
+.sp-grid-runs .sp-state svg {
+  flex: none;
+}
+/* The name takes the free width and the pin a fixed slot at the column's right; a name wraps to
+   two lines at most, the full name in a tooltip on hover and focus. The workflow path is not
+   focusable, so it wraps in full, unclamped (CR-P3UI08-01). */
+.sp-grid-runs .sp-run-cell {
+  align-items: flex-start;
+}
+.sp-run-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sp-grid-runs .sp-pin {
+  flex: none;
+  margin-top: -2px;
+}
+.sp-grid-runs .sp-pipeline > span:last-child {
+  overflow-wrap: anywhere;
+}
+.sp-run-name .sp-run-link {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
 }
 

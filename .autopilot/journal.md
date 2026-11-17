@@ -905,3 +905,30 @@ FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and 
 - **Costs** (subagent tokens): 110d ~420k, 119 ~266k, 102i ~476k, 120 ~305k, B15 ~650k; the earlier tasks of this run are in their workflow journals.
 - **Next:** promotion to main, then login1 retest h (sort icons, short-ID search, profile title, Pin focus, one-run Delete wording, resources form and config file, Blosc/LZ4/zstd images, Environments "1 CPU").
 - 2026-11-11 ISSUE-161: doc-reviewer approve 12/14 (round 1 changes 10/14, required changes 1-6 applied)
+
+## 2026-11-11 — promotion P3-B15 (#269) and login1 retest h
+
+- #268 (journal) merged into integration (036574f6); promotion #269 merged into main (498e8c0f), CI green. #262 (FU-P3-105a, 0.0.2) stays out.
+- **Retest h** (login1, main 498e8c0f, Unix socket only, 0 SLURM jobs, 0 sacct calls, 0 CSP violations): 6 PASS, 1 UNTESTED.
+  - PASS: sort icons are arrows and a third press clears `?sort=`; search by the short ID "D80950"; the /profile tab title, and Pin keeps focus on its own button; Launch Resources and Extra config file, a run with 1 CPU succeeded and Run detail shows "1 CPU per task · Set at Launch" and the kept file (0600 on disk, View opens it); Blosc(lz4), LZ4 and zstd OME-Zarrs render; the Environments card reads "at most 1 CPU and 8 GiB".
+  - UNTESTED: the one-run Delete sheet now reads in the singular, but no Delete was confirmed (the peer's auto mode blocks it as irreversible), as in retest g.
+  - Minors for the follow-up list: Before Launch says "Nothing is missing", then Launch refuses a group-writable (664) config file; the pre-check could say it first. A pointer click on the aside Launch button sent no POST (Enter and a DOM click did), as in retest e (FU-P3-108). The luma.gl `instancePickingColors` warning (FU-P3-108).
+- **Next:** Thomas's decisions (0.0.2 work and #262, the CI step of the order fixtures, UX-P3FU110C-07, the versioning proposals); the minors above with the open list of the 2026-11-11 entry; a confirmed Delete on login1 by Thomas.
+
+## 2026-11-11 — design system UI-01 to UI-09, 0.0.2 on its own branch, batch P3-B16
+
+- Thomas (2026-11-11): "a real UI pass: many inconsistencies, icons and buttons badly placed; the notification column is not modern at all; I want everything coherent and consistent". Audit, then ui-spec §12 "Design system" and inbox #153 (#277).
+- Merged into autopilot/integration: #271 inbox #152, #272 FU-P3-122, #275 FU-P3-121 (title corrected: the pointer-click cause on login1 is not found, CR-P3FU121-05), #276 prflow.sh takes BASE, #278 UI-05a (notification items carry `engine`, `at` is the run's end time), #280 UI-03 (page head, toolbar, card head, empty and error states), #282 UI-01 (theme tokens, one global focus ring), #283 UI-02 (one `<Icon name size>` API, sizes 16/20/24, stroke 1.75), #284 UI-05b (notifications panel: popover, day groups, unread dots, roving keyboard), #285 UI-09 (run header: one primary, a "More actions" menu, pinned phone primary, Facts folded off the summary), #286 UI-04 (top bar and sidebar), #288 UI-06 (search dialog), #287 UI-07 (Home; FU-P3-109 e2e caught an ellipsis rule on the pipelines' paths, removed).
+- Merged into autopilot/next-0.0.2 (inbox #152, `Release-As: 0.0.2`): #262 FU-P3-105a, #273 105b, #274 105c, #279 105d, #281 105e (performance across runs).
+- Orchestrator fixes: SEC-P3FU105E-02 (an extreme `until` gave 500, now 422, test seen failing first); CR-P3UI01-01 (drawers keep square corners on the viewport edge); the parC figure re-drawn from the new icon paths (docs gate on #283); merge conflicts of UI-02 with UI-03, of UI-05b and UI-09 with UI-02 resolved to the new icon API, full vitest green each time (807, 824, 830, 837 tests).
+- The disk allowance filled during the first batch launch: `node_modules` and `.venv` of merged worktrees deleted, batch relaunched.
+- Batch P3-B16 (102i, 122, 121, UI-05a, UI-03, UI-01, UI-02, UI-05b), not a milestone end: simplify and Progress only. UI-09, UI-04, UI-06 and UI-07 merged after the batch base: their Progress sections go to the next batch.
+- Open minors: CR-P3FU105E-01 (DST fold with group_by=hour); CR-P3UI01-02 to -04; CR-P3UI02-01 to -05, SEC-P3UI02-01; CR-P3UI03-03 to -05; CR-P3UI05B-06 to -08; CR-P3UI09-01 to -04; and those of the morning entry (FU-121, 105b–d, UI-05a).
+- **Next:** UI-08 (Runs list), UI-10/11 (run tabs, LogViewer), UI-12 (DetailSheet), UI-13/18 (Launch, dialogs), UI-14/15/16 (Environments, Catalog, Profile), UI-17 (Results) are being built; then UI-19 (CSS sweep), then the back-end work Thomas named; still on Thomas: the CI step of the order fixtures, UX-P3FU110C-07, a confirmed Delete on login1.
+- **Costs** (subagent tokens): UI-01 ~253k, UI-02 ~300k, UI-05b ~396k, UI-09 ~330k.
+
+## 2026-11-11 — docs refresh (PR #298) and login1 check
+
+- **Docs split.** The public site (`mkdocs.yml`) is now home, installation, usage, features, API, roadmap and changelog. The developer material builds with `mkdocs.dev.yml`. The public pages were rewritten for what 0.0.1 contains, and 25 `app-*` screenshots were retaken on the design-system UI (`tools/media/b17_demo.py`).
+- **CI.** On #298, `preview` fails its `/progress/` smoke check: the fix is #299 (previews build the dev site), which touches `.github/workflows/` and waits for Thomas. `web` hit the lazy-grid timeout fixed in #297; I cherry-picked c7b8f606. `e2e-local` failed twice on a runner DNS outage (`azure.archive.ubuntu.com`), as did #297 and #299.
+- **login1 check** of #298 by the local session: the screens work on real SLURM runs. Findings are in inbox #155 (FU-P3-124 head.err 404, FU-P3-125 two "Resources" sections).

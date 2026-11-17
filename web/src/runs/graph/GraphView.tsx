@@ -22,7 +22,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { type MutableRefObject, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ProcessStatus, Task } from "../../api";
-import { ICONS, Icon } from "../../icons";
+import { Icon, type IconName } from "../../icons";
 import { usePhone } from "../../shell/layout";
 import { tone } from "../stateWord";
 import { Code, type CodeSource } from "./Code";
@@ -74,53 +74,53 @@ const KIND_WORDS: Record<string, string> = {
   job: "job",
 };
 
-/** The graph's light line icons (24 × 24 paths, as `ICONS`). */
+/** The graph's icons, by role: each names an `ICONS` glyph (icons.tsx, UI-02). */
 export const GICONS = {
-  process: "M7 7h10v10H7z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4",
-  rule: ICONS.fileCode,
-  job: ICONS.tag,
-  gate: ICONS.shield,
-  stage: ICONS.layers,
-  subworkflow: ICONS.folder,
-  checkpoint: "M5 21V4 M5 4h11l-2 4 2 4H5",
-  temp: "M7 3h10 M7 21h10 M8 3c0 5 8 5 8 9s-8 4-8 9 M16 3c0 5-8 5-8 9s8 4 8 9",
-  conditional: "M6 3v12 M18 9a3 3 0 1 0 0-.01 M6 21a3 3 0 1 0 0-.01 M18 9c0 6-12 3-12 9",
-  retried: ICONS.reload,
-  cached: "M3 5h18v4H3z M5 9v11h14V9 M10 13h4",
-  fold: "M6 12h12",
-  unfold: "M12 6v12 M6 12h12",
-  up: "M12 19V5 M5 12l7-7 7 7",
-  down: "M12 5v14 M19 12l-7 7-7-7",
-  channel: "M3 9h18v6H3z M8 9v6 M13 9v6 M18 9v6",
-  file: ICONS.file,
-  code: ICONS.braces,
-  close: ICONS.cross,
-  link: "M5 12h14 M13 6l6 6-6 6",
-  peek: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
-  hide: "M3 3l18 18 M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9 M6.6 6.6C3.9 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 0 0 5.4-1.6 M9.9 9.9a3 3 0 0 0 4.2 4.2",
-  focus: "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
-  fullscreen: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5",
-  fit: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5 M9 9h6v6H9z",
-  arrow: "M5 12h14 M13 6l6 6-6 6",
-  warn: "M12 9v4 M12 17h.01 M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
-  tasks: ICONS.table,
-  compact: "M4 7h16 M4 12h10 M4 17h6 M17 14l3 3-3 3",
-  legend: ICONS.info,
-  copy: ICONS.copy,
-  open: ICONS.externalLink,
-  image: ICONS.image,
-  table: ICONS.table,
-  reads: ICONS.dna,
-  binary: "M6 3h9l4 4v14H6z M14 3v5h5 M9 12v4 M12.5 12h1.5v4 M9 18h.01",
-  cpu: "M7 7h10v10H7z M10 10h4v4h-4z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4",
-  memory: "M3 8h18v8H3z M7 8v8 M11 8v8 M15 8v8 M6 16v3 M18 16v3",
-  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2",
-  params: ICONS.sliders,
-  outputs: ICONS.download,
-  jobs: ICONS.list,
-} as const;
+  process: "process",
+  rule: "fileCode",
+  job: "tag",
+  gate: "shield",
+  stage: "layers",
+  subworkflow: "folder",
+  checkpoint: "flag",
+  temp: "temp",
+  conditional: "conditional",
+  retried: "reload",
+  cached: "cached",
+  fold: "minus",
+  unfold: "plus",
+  up: "arrowUp",
+  down: "arrowDown",
+  channel: "channel",
+  file: "file",
+  code: "braces",
+  close: "cross",
+  link: "arrowRight",
+  peek: "eye",
+  hide: "eyeOff",
+  focus: "focus",
+  fullscreen: "fit",
+  fit: "fitBox",
+  arrow: "arrowRight",
+  warn: "warn",
+  tasks: "table",
+  compact: "compact",
+  legend: "info",
+  copy: "copy",
+  open: "externalLink",
+  image: "image",
+  table: "table",
+  reads: "dna",
+  binary: "binary",
+  cpu: "cpu",
+  memory: "memory",
+  clock: "clock",
+  params: "sliders",
+  outputs: "download",
+  jobs: "list",
+} as const satisfies Record<string, IconName>;
 
-export const kindIcon = (kind: string): string => GICONS[kind as keyof typeof GICONS] ?? GICONS.process;
+export const kindIcon = (kind: string): IconName => GICONS[kind as keyof typeof GICONS] ?? GICONS.process;
 
 /** The marks of a step: a short visible mark, and the words its accessible name gets. */
 export const FLAG_MARKS: Record<Flag, { mark: string; words: string }> = {
@@ -137,7 +137,7 @@ export function FlagChip({ flag, badge = false }: { flag: Flag; badge?: boolean 
   if (badge)
     return (
       <span className="sp-gbadge" data-flag={flag}>
-        <Icon path={GICONS[flag]} size={10} stroke={2.2} />
+        <Icon name={GICONS[flag]} size="mark" />
         <span className="sp-gbadge-word">{FLAG_MARKS[flag].mark}</span>
         <span className="sp-gbadge-tip" role="tooltip">
           {FLAG_MARKS[flag].words}
@@ -147,7 +147,7 @@ export function FlagChip({ flag, badge = false }: { flag: Flag; badge?: boolean 
   return (
     <span className="sp-gflag" data-flag={flag}>
       <span className="sp-gflag-dot">
-        <Icon path={GICONS[flag]} size={10} stroke={2.2} />
+        <Icon name={GICONS[flag]} size="mark" />
       </span>
       {FLAG_MARKS[flag].mark}
     </span>
@@ -315,7 +315,7 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
         {node.kind === "job" && node.step && <span className="sp-gnode-step">{node.step}</span>}
         <span className="sp-gnode-name">
           <span className="sp-gnode-kind">
-            <Icon path={kindIcon(node.kind)} size={12} stroke={1.9} />
+            <Icon name={kindIcon(node.kind)} size="mark" />
           </span>
           {data.label}
         </span>
@@ -343,7 +343,7 @@ function NodeBox({ data }: NodeProps<Node<NodeData>>) {
           onClick={() => data.onToggle(node.group!)}
           aria-label={folded ? `Unfold ${data.groupName}: show its ${node.members.length} steps` : `Fold ${data.groupName} into one box`}
         >
-          <Icon path={folded ? GICONS.unfold : GICONS.fold} size={12} stroke={2.2} />
+          <Icon name={folded ? GICONS.unfold : GICONS.fold} size="mark" />
           {folded && <span>{node.members.length}</span>}
         </button>
       )}
@@ -372,7 +372,7 @@ function LaneBox({ data }: NodeProps<Node<LaneData>>) {
   const tipOff = () => data.onTip(null);
   const name = (
     <>
-      <Icon path={data.id.startsWith("stage:") ? GICONS.stage : GICONS.subworkflow} size={12} stroke={1.9} />
+      <Icon name={data.id.startsWith("stage:") ? GICONS.stage : GICONS.subworkflow} size="mark" />
       {data.label}
     </>
   );
@@ -381,7 +381,7 @@ function LaneBox({ data }: NodeProps<Node<LaneData>>) {
       <span className="sp-glane-title">
         {data.fold && (
           <button type="button" className="sp-glane-fold-icon nodrag nopan" onClick={() => data.onToggle(data.fold!)} onDoubleClick={(e) => e.stopPropagation()} aria-label={`Fold ${data.label} into one box`}>
-            <Icon path={GICONS.fold} size={11} stroke={2.4} />
+            <Icon name={GICONS.fold} size="mark" />
           </button>
         )}
         {data.onGroup && data.fold ? (
@@ -403,17 +403,17 @@ const NODE_TYPES = { sp: NodeBox, lane: LaneBox };
 /** What a card on the map shows: a step's, a group's or a link's facts, drawn (Thomas: coloured,
  * more graphic). The same facts are in the step's accessible name and in its panel. */
 export interface TipInfo {
-  icon: string;
+  icon: IconName;
   tone: string | null;
   title: string;
   sub: string;
   state?: string;
   /** A link's two ends. */
-  ends?: { label: string; tone: string; icon: string }[];
+  ends?: { label: string; tone: string; icon: IconName }[];
   progress?: { done: number; total: number };
   /** States of a group's boxes, as coloured counts. */
   chips?: { tone: string; text: string }[];
-  rows: { icon: string; k: string; v: string; bar?: { pct: number; band: string | null } | null; warn?: boolean }[];
+  rows: { icon: IconName; k: string; v: string; bar?: { pct: number; band: string | null } | null; warn?: boolean }[];
   flags?: Flag[];
   hint: string;
 }
@@ -423,7 +423,7 @@ function TipCard({ info, x, y, above, now }: { info: TipInfo; x: number; y: numb
     <div className="sp-gtip" data-tone={info.tone ?? undefined} data-above={above || undefined} data-now={now || undefined} aria-hidden="true" style={{ left: x, top: y }}>
       <div className="sp-gtip-head">
         <span className="sp-gtip-icon">
-          <Icon path={info.icon} size={14} stroke={1.9} />
+          <Icon name={info.icon} />
         </span>
         <span className="sp-gtip-title">
           <strong>{info.title}</strong>
@@ -435,9 +435,9 @@ function TipCard({ info, x, y, above, now }: { info: TipInfo; x: number; y: numb
         <div className="sp-gtip-ends">
           {info.ends.map((e, i) => (
             <span key={i} style={{ display: "contents" }}>
-              {i > 0 && <Icon path={GICONS.arrow} size={14} stroke={2} />}
+              {i > 0 && <Icon name={GICONS.arrow} />}
               <span className="sp-gtip-end" data-tone={e.tone}>
-                <Icon path={e.icon} size={11} stroke={2} />
+                <Icon name={e.icon} size="mark" />
                 {e.label}
               </span>
             </span>
@@ -466,7 +466,7 @@ function TipCard({ info, x, y, above, now }: { info: TipInfo; x: number; y: numb
           {info.rows.map((r) => (
             <div key={r.k} data-warn={r.warn || undefined}>
               <dt>
-                <Icon path={r.icon} size={12} stroke={1.9} />
+                <Icon name={r.icon} size="mark" />
                 {r.k}
               </dt>
               <dd>
@@ -860,7 +860,7 @@ function Map_({ settings, decor, shown, onOpen, onToggle, onCode, onEdge, onPane
           {/* our own fit button: React Flow's drew a pale icon that read as disabled (Thomas); no
               animation, which a zoom still settling could cut short and leave the map unmoved */}
           <ControlButton onClick={() => void flow.fitView(FIT)} aria-label="Fit the whole map in view" title="Fit the whole map in view">
-            <Icon path={GICONS.fit} size={14} stroke={2} />
+            <Icon name={GICONS.fit} />
           </ControlButton>
         </Controls>
         <MiniMap
@@ -1026,9 +1026,9 @@ function Legend({ overlay, view, runtime, help, notes }: { overlay: GraphSetting
     <div className="sp-glegend" role="note" aria-label="Legend">
       <div className="sp-glegend-row">
         <button type="button" className="sp-glegend-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-          <Icon path={GICONS.legend} size={14} stroke={1.9} />
+          <Icon name={GICONS.legend} />
           Legend
-          <Icon path={open ? ICONS.chevronDown : ICONS.chevronRight} size={12} stroke={2} />
+          <Icon name={open ? "chevronDown" : "chevronRight"} size="mark" />
         </button>
         {runtime && key}
         {runtime && jobs && (overlay === "duration" || overlay === "cpu" || overlay === "memory") && (
@@ -1066,11 +1066,11 @@ function Legend({ overlay, view, runtime, help, notes }: { overlay: GraphSetting
             </li>
             <li>
               <span className="sp-gfold sp-gfold-key" aria-hidden="true">
-                <Icon path={GICONS.fold} size={12} stroke={2.2} />
+                <Icon name={GICONS.fold} size="mark" />
               </span>
               fold a group into one box;{" "}
               <span className="sp-gfold sp-gfold-key" data-folded aria-hidden="true">
-                <Icon path={GICONS.unfold} size={12} stroke={2.2} />
+                <Icon name={GICONS.unfold} size="mark" />
                 <span>4</span>
               </span>{" "}
               unfold it (or double-click)
@@ -1139,7 +1139,7 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
         }}
         description={settings.q.trim() ? `${matches} ${matches === 1 ? "match" : "matches"}${matches > 0 && settings.show === "map" ? ", Enter for the next, Escape to clear" : ""}` : undefined}
         inputWrapperOrder={["label", "input", "description"]}
-        leftSection={<Icon path={ICONS.search} size={13} />}
+        leftSection={<Icon name="search" />}
         className="sp-gsearch"
       />
       <div className="sp-gview" role="group" aria-label="View as">
@@ -1151,38 +1151,38 @@ function Toolbar({ settings, onSettings, runtime, upstream, onNext, matches, onE
       </div>
       <div className="sp-gview" role="group" aria-label="Fold">
         <button type="button" className="sp-gbtn" onClick={onCompact ?? undefined} disabled={!onCompact}>
-          <Icon path={GICONS.compact} size={13} stroke={2} /> Auto-fold
+          <Icon name={GICONS.compact} /> Auto-fold
         </button>
         <button type="button" className="sp-gbtn" onClick={() => onSettings({ fold: [] })} disabled={settings.fold.length === 0}>
-          <Icon path={GICONS.unfold} size={13} stroke={2} /> {settings.level === "subworkflow" || settings.level === "stage" ? "Fold all" : "Unfold all"}
+          <Icon name={GICONS.unfold} /> {settings.level === "subworkflow" || settings.level === "stage" ? "Fold all" : "Unfold all"}
         </button>
       </div>
       {extra}
       <Menu position="bottom-end" withinPortal={false} shadow="md">
         <Menu.Target>
           <button type="button" className="sp-gbtn sp-gbtn-line">
-            <Icon path={ICONS.download} size={13} /> Export
-            <Icon path={ICONS.chevronDown} size={12} stroke={2} />
+            <Icon name="download" /> Export
+            <Icon name="chevronDown" size="mark" />
           </button>
         </Menu.Target>
         {/* Escape closes the menu only, not the details panel behind it */}
         <Menu.Dropdown onKeyDown={(e) => e.key === "Escape" && e.nativeEvent.preventDefault()}>
-          <Menu.Item leftSection={<Icon path={ICONS.download} size={13} />} onClick={() => onExport("svg")}>
+          <Menu.Item leftSection={<Icon name="download" />} onClick={() => onExport("svg")}>
             SVG
           </Menu.Item>
-          <Menu.Item leftSection={<Icon path={ICONS.download} size={13} />} onClick={() => onExport("png")}>
+          <Menu.Item leftSection={<Icon name="download" />} onClick={() => onExport("png")}>
             PNG
           </Menu.Item>
-          <Menu.Item leftSection={<Icon path={ICONS.download} size={13} />} onClick={() => onExport("html")}>
+          <Menu.Item leftSection={<Icon name="download" />} onClick={() => onExport("html")}>
             HTML
           </Menu.Item>
-          <Menu.Item leftSection={<Icon path={GICONS.copy} size={13} />} onClick={() => onExport("copy")}>
+          <Menu.Item leftSection={<Icon name={GICONS.copy} />} onClick={() => onExport("copy")}>
             Copy PNG
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
       <button type="button" className="sp-gbtn sp-gbtn-line" aria-pressed={full} onClick={onFullscreen} aria-label="Full screen">
-        <Icon path={GICONS.fullscreen} size={13} stroke={2} />
+        <Icon name={GICONS.fullscreen} />
       </button>
     </div>
   );
@@ -1294,7 +1294,7 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
         )}
         {settings.focus && (
           <p className="sp-gbanner sp-gbanner-focus" role="note">
-            <Icon path={GICONS.focus} size={14} stroke={2} /> Only {groupNames.get(settings.focus) ?? settings.focus.replace(/^(stage|sub):/, "")} is shown.{" "}
+            <Icon name={GICONS.focus} /> Only {groupNames.get(settings.focus) ?? settings.focus.replace(/^(stage|sub):/, "")} is shown.{" "}
             <button type="button" className="sp-link-button" onClick={() => onSettings({ focus: null })}>
               Show everything (Escape)
             </button>
@@ -1302,7 +1302,7 @@ function Inner({ doc, title, settings, onSettings, runtime = false, jobs, decor 
         )}
         {settings.hide.length > 0 && (
           <p className="sp-gbanner sp-gbanner-focus" role="note">
-            <Icon path={GICONS.hide} size={14} stroke={2} /> {settings.hide.length} {settings.hide.length === 1 ? "step is" : "steps are"} hidden ({settings.hide.map((h) => doc.nodes.find((n) => n.id === h)?.name ?? h).join(", ")}); the links through {settings.hide.length === 1 ? "it" : "them"} are kept.{" "}
+            <Icon name={GICONS.hide} /> {settings.hide.length} {settings.hide.length === 1 ? "step is" : "steps are"} hidden ({settings.hide.map((h) => doc.nodes.find((n) => n.id === h)?.name ?? h).join(", ")}); the links through {settings.hide.length === 1 ? "it" : "them"} are kept.{" "}
             <button type="button" className="sp-link-button" onClick={() => onSettings({ hide: settings.hide.slice(0, -1) })}>
               Undo the last
             </button>
@@ -1447,7 +1447,7 @@ function Resizer({ panel }: { panel: MutableRefObject<HTMLElement | null> }) {
 
 /** The details of a step or a link: docked beside the map, so the map stays in view and usable
  * (Escape or × closes it, and focus goes back to where it was); a sheet on a phone. */
-export function Panel({ id, opened, title, icon, onClose, children, tone, kind }: { id: string | null; opened: boolean; title: string; icon: string; onClose: () => void; children: ReactNode; tone?: string; kind?: string }) {
+export function Panel({ id, opened, title, icon, onClose, children, tone, kind }: { id: string | null; opened: boolean; title: string; icon: IconName; onClose: () => void; children: ReactNode; tone?: string; kind?: string }) {
   const phone = usePhone();
   const ref = useRef<HTMLElement>(null);
   const close = useRef(onClose);
@@ -1478,14 +1478,14 @@ export function Panel({ id, opened, title, icon, onClose, children, tone, kind }
       <Resizer panel={ref} />
       <header>
         <span className="sp-ginspect-icon" data-tone={tone} aria-hidden="true">
-          <Icon path={icon} size={16} stroke={1.8} />
+          <Icon name={icon} />
         </span>
         <h2 tabIndex={-1}>
           {title}
           {kind && <small>{kind}</small>}
         </h2>
         <button type="button" className="sp-gicon" onClick={onClose} aria-label="Close">
-          <Icon path={GICONS.close} size={16} stroke={2} />
+          <Icon name={GICONS.close} />
         </button>
       </header>
       <div className="sp-ginspect-body">{children}</div>

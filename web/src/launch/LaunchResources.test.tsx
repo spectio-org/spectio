@@ -1,7 +1,7 @@
 // Resources and Extra config file, two rows of "Where it runs" (FU-P3-110d; ui-spec §4.6 notes of
 // 2026-11-10 and the drawn layout of FU-P3-110c; api §5.7; boards LiteLaunch, LiteLaunchSnakemake,
 // MLiteLaunch): what each state shows and what POST /runs receives.
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { VERSION, app, json, serve, stubStream, viewport } from "../testing";
@@ -66,8 +66,11 @@ function launchWith(over: { environments?: unknown; inspected?: unknown; answer?
   app("/launch");
   return posted;
 }
+/** A whole value at once: one change event, not a render per key and pointer event (FU-P3-121:
+ * these tests render the whole Launch page, and typing kept them near vitest's 5 s timeout). */
+const fill = (input: HTMLElement, text: string) => fireEvent.change(input, { target: { value: text } });
 async function load(at = "/data/rnaseq") {
-  await userEvent.type(await screen.findByRole("textbox", { name: /^Pipeline/ }), at);
+  fill(await screen.findByRole("textbox", { name: /^Pipeline/ }), at);
   await userEvent.click(screen.getByRole("button", { name: "Load" }));
   await screen.findByText(/· form (from|inferred)/);
 }
@@ -80,13 +83,13 @@ const missing = () => document.getElementById("launch-missing")!;
 test("both rows are folded by default, their closed lines say what is in force, and nothing extra is sent", async () => {
   const posted = launchWith();
   await load();
-  const resources = row(/^Resources/);
+  const resources = row(/^Run resources/);
   expect(resources).toHaveAttribute("aria-expanded", "false");
   expect(resources).toHaveTextContent("The pipeline's defaults");
   const config = row(/^Extra config file/);
   expect(config).toHaveAttribute("aria-expanded", "false");
   expect(config).toHaveTextContent("No extra config file");
-  expect(summaryValue("Resources")).toHaveTextContent("from the environment");
+  expect(summaryValue("Run resources")).toHaveTextContent("from the environment");
   expect(summaryValue("Extra config")).toHaveTextContent("none");
   await userEvent.click(launchButton());
   await waitFor(() => expect(posted).toHaveLength(1));
@@ -97,7 +100,7 @@ test("both rows are folded by default, their closed lines say what is in force, 
 test("Nextflow on Login node: three optional inputs with the caps in their hints; the values go in default_resources", async () => {
   const posted = launchWith();
   await load();
-  await userEvent.click(row(/^Resources/));
+  await userEvent.click(row(/^Run resources/));
   expect(within(where()).getByText(/Used by every process that does not set its own\. A process that sets its own CPUs, memory or time keeps them\. Replaces the pipeline's own default for all processes\./)).toBeInTheDocument();
   const cpus = screen.getByRole("textbox", { name: "CPUs per task" });
   expect(cpus).toHaveAttribute("inputmode", "numeric");
@@ -111,13 +114,13 @@ test("Nextflow on Login node: three optional inputs with the caps in their hints
   const hours = within(time).getByRole("textbox", { name: "Time per task, hours" });
   const minutes = within(time).getByRole("textbox", { name: "Time per task, minutes" });
   expect(hours).toHaveAccessibleDescription(expect.stringContaining("1 min to 720 h (30 days)"));
-  await userEvent.type(cpus, "2");
-  await userEvent.type(mem, "6");
-  await userEvent.type(hours, "2");
-  await userEvent.type(minutes, "0");
-  expect(summaryValue("Resources")).toHaveTextContent("2 CPUs · 6 GiB · 2 h per task; processes that set their own keep them");
-  await userEvent.click(row(/^Resources/));
-  expect(row(/^Resources/)).toHaveTextContent("Defaults: 2 CPUs · 6 GiB · 2 h per task");
+  fill(cpus, "2");
+  fill(mem, "6");
+  fill(hours, "2");
+  fill(minutes, "0");
+  expect(summaryValue("Run resources")).toHaveTextContent("2 CPUs · 6 GiB · 2 h per task; processes that set their own keep them");
+  await userEvent.click(row(/^Run resources/));
+  expect(row(/^Run resources/)).toHaveTextContent("Defaults: 2 CPUs · 6 GiB · 2 h per task");
   await userEvent.click(launchButton());
   await waitFor(() => expect(posted).toHaveLength(1));
   expect(posted[0].default_resources).toEqual({ cpus: 2, mem_mib: 6144, time_min: 120 });
@@ -126,13 +129,13 @@ test("Nextflow on Login node: three optional inputs with the caps in their hints
 test("out of bounds before Launch: each error under its input, listed in Before Launch with a link, and nothing is sent", async () => {
   const posted = launchWith();
   await load();
-  await userEvent.click(row(/^Resources/));
+  await userEvent.click(row(/^Run resources/));
   const cpus = screen.getByRole("textbox", { name: "CPUs per task" });
-  await userEvent.type(cpus, "4");
-  await userEvent.type(screen.getByRole("textbox", { name: "Memory per task" }), "12");
+  fill(cpus, "4");
+  fill(screen.getByRole("textbox", { name: "Memory per task" }), "12");
   const hours = screen.getByRole("textbox", { name: "Time per task, hours" });
-  await userEvent.type(hours, "0");
-  await userEvent.type(screen.getByRole("textbox", { name: "Time per task, minutes" }), "0");
+  fill(hours, "0");
+  fill(screen.getByRole("textbox", { name: "Time per task, minutes" }), "0");
   expect(cpus).toHaveAttribute("aria-invalid", "true");
   expect(cpus).toHaveAccessibleDescription(expect.stringContaining("At most 2 CPUs in Login node"));
   expect(screen.getByRole("textbox", { name: "Memory per task" })).toHaveAccessibleDescription(expect.stringContaining("At most 8 GiB in Login node"));
@@ -143,21 +146,21 @@ test("out of bounds before Launch: each error under its input, listed in Before 
   expect(list.getByRole("link", { name: "Fix CPUs per task: at most 2 on Login node" })).toBeInTheDocument();
   expect(list.getByRole("link", { name: "Fix Memory per task: at most 8 GiB on Login node" })).toBeInTheDocument();
   const timeLink = list.getByRole("link", { name: "Fix Time per task: at least 1 minute" });
-  await userEvent.click(row(/^Resources/)); // folded: the link opens it again
+  await userEvent.click(row(/^Run resources/)); // folded: the link opens it again
   await userEvent.click(timeLink);
   await waitFor(() => expect(screen.getByRole("textbox", { name: "Time per task, hours" })).toHaveFocus());
   await userEvent.click(launchButton());
   expect(posted).toHaveLength(0);
   await userEvent.clear(screen.getByRole("textbox", { name: "Time per task, hours" }));
-  await userEvent.type(screen.getByRole("textbox", { name: "Time per task, hours" }), "721");
+  fill(screen.getByRole("textbox", { name: "Time per task, hours" }), "721");
   expect(screen.getByRole("textbox", { name: "Time per task, hours" })).toHaveAccessibleDescription(expect.stringMatching(/^At most 720 hours \(30 days\)/));
 });
 
 test("a SLURM environment's values are the placeholders, said under the inputs and on the folded line", async () => {
   launchWith({ environments: envs([LONG], "mylab-long") });
   await load();
-  expect(row(/^Resources/)).toHaveTextContent("From the environment: 48 h · 32 GiB per task");
-  await userEvent.click(row(/^Resources/));
+  expect(row(/^Run resources/)).toHaveTextContent("From the environment: 48 h · 32 GiB per task");
+  await userEvent.click(row(/^Run resources/));
   const mem = screen.getByRole("textbox", { name: "Memory per task" });
   expect(mem).toHaveAttribute("placeholder", "32");
   expect(mem).toHaveAccessibleDescription(expect.stringContaining("Empty: 32 GiB, from Long jobs"));
@@ -178,12 +181,12 @@ test("the server's 422 on a resource lands on its input", async () => {
 test("Snakemake with no profile: memory and time only, CPUs from threads, time not enforced on this machine", async () => {
   const posted = launchWith({ inspected: SNAKEMAKE });
   await load("/data/smk");
-  await userEvent.click(row(/^Resources/));
+  await userEvent.click(row(/^Run resources/));
   expect(screen.queryByRole("textbox", { name: "CPUs per task" })).toBeNull();
   expect(within(where()).getByText("Snakemake takes CPUs from each rule's threads.")).toBeInTheDocument();
   expect(within(where()).getByText(/Used by every rule that does not set its own\. A rule that sets its own memory or time keeps them\./)).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: "Time per task, hours" })).toHaveAccessibleDescription(expect.stringContaining("not enforced on this machine"));
-  await userEvent.type(screen.getByRole("textbox", { name: "Memory per task" }), "4");
+  fill(screen.getByRole("textbox", { name: "Memory per task" }), "4");
   await userEvent.click(launchButton());
   await waitFor(() => expect(posted).toHaveLength(1));
   expect(posted[0].default_resources).toEqual({ mem_mib: 4096 });
@@ -192,12 +195,12 @@ test("Snakemake with no profile: memory and time only, CPUs from threads, time n
 test("Snakemake with a profile: the profile sets the resources, values typed before are kept but not sent", async () => {
   const posted = launchWith({ inspected: SNAKEMAKE });
   await load("/data/smk");
-  await userEvent.click(row(/^Resources/));
-  await userEvent.type(screen.getByRole("textbox", { name: "Memory per task" }), "4");
+  await userEvent.click(row(/^Run resources/));
+  fill(screen.getByRole("textbox", { name: "Memory per task" }), "4");
   await userEvent.selectOptions(screen.getByRole("combobox", { name: /^Profile/ }), "slurm");
   expect(within(where()).getByText(/The profile slurm sets the resources, so none are set here\./)).toBeInTheDocument();
   expect(screen.queryByRole("textbox", { name: "Memory per task" })).toBeNull();
-  expect(summaryValue("Resources")).toHaveTextContent("from the profile slurm");
+  expect(summaryValue("Run resources")).toHaveTextContent("from the profile slurm");
   // back to no profile: the value typed is still there
   await userEvent.selectOptions(screen.getByRole("combobox", { name: /^Profile/ }), "");
   expect(screen.getByRole("textbox", { name: "Memory per task" })).toHaveValue("4");
@@ -218,7 +221,7 @@ test("the extra config file: its hint and kept-as line, sent as config_file, and
   expect(input).toHaveAccessibleDescription(
     expect.stringContaining("Read once at Launch and kept with the run as extra.config, readable by you only (0600), with its SHA-256 · at most 256 KiB"),
   );
-  await userEvent.type(input, "/home/amartin/configs/lab-tweaks.config");
+  fill(input, "/home/amartin/configs/lab-tweaks.config");
   expect(summaryValue("Extra config")).toHaveTextContent("/home/amartin/configs/lab-tweaks.config");
   await userEvent.click(launchButton());
   expect(await screen.findByText("Reading lab-tweaks.config on login1: its owner, mode and size, then a copy for the run…")).toHaveAttribute("role", "status");
@@ -234,7 +237,7 @@ test("the server refuses the file (422): its reason exactly, the form's hint on 
   await load();
   await userEvent.click(row(/^Extra config file/));
   const input = screen.getByRole("textbox", { name: "Extra config file (optional)" });
-  await userEvent.type(input, "/home/amartin/configs/lab-tweaks.config");
+  fill(input, "/home/amartin/configs/lab-tweaks.config");
   await userEvent.click(row(/^Extra config file/)); // folded again: the error opens it
   await userEvent.click(launchButton());
   const alert = await screen.findByRole("alert");
@@ -243,6 +246,76 @@ test("the server refuses the file (422): its reason exactly, the form's hint on 
   const again = screen.getByRole("textbox", { name: "Extra config file (optional)" });
   expect(again).toHaveAttribute("aria-invalid", "true");
   await waitFor(() => expect(again).toHaveFocus());
+});
+
+test("a file Launch would refuse is said before Launch, and checked again when the window comes back (FU-P3-121)", async () => {
+  const checks: URLSearchParams[] = [];
+  let error: string | null = "the file is writable by group or others";
+  const posted = launchWith({
+    inspected: (url: URL) => {
+      const path = url.searchParams.get("config_file");
+      if (path) checks.push(url.searchParams);
+      return json(200, { ...INSPECTED, config_file: path ? { path, error } : null });
+    },
+  });
+  await load();
+  await userEvent.click(row(/^Extra config file/));
+  fill(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
+  const link = await within(missing()).findByRole("link", { name: "Fix Extra config file: the file is writable by group or others" });
+  expect(within(missing()).queryByText("Nothing is missing.")).toBeNull();
+  const input = screen.getByRole("textbox", { name: "Extra config file (optional)" });
+  expect(input).toHaveAttribute("aria-invalid", "true");
+  expect(input).toHaveAccessibleDescription(expect.stringContaining("Fix its mode (chmod go-w)"));
+  expect(Object.fromEntries(checks.at(-1)!)).toMatchObject({ location: "/data/rnaseq", config_file: "/home/amartin/x.config", engine: "nextflow" });
+  await userEvent.click(launchButton());
+  expect(posted).toHaveLength(0);
+  // chmod go-w in a terminal, then back to the browser
+  error = null;
+  fireEvent.focus(window);
+  await waitFor(() => expect(link).not.toBeInTheDocument());
+  expect(within(missing()).getByText("Nothing is missing.")).toBeInTheDocument();
+  await userEvent.click(launchButton());
+  await waitFor(() => expect(posted).toHaveLength(1));
+});
+
+/** A file refused by the pre-check; `answer` replies to the later checks (null: the first answer again). */
+async function refused(answer: (url: URL) => Response | Promise<Response> | null = () => null) {
+  let first = true;
+  const posted = launchWith({
+    inspected: (url: URL) => {
+      const path = url.searchParams.get("config_file");
+      const again = path && !first ? answer(url) : null;
+      if (path) first = false;
+      return again ?? json(200, { ...INSPECTED, config_file: path ? { path, error: "the file is writable by group or others" } : null });
+    },
+  });
+  await load();
+  await userEvent.click(row(/^Extra config file/));
+  fill(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
+  const link = await within(missing()).findByRole("link", { name: /^Fix Extra config file/ });
+  return { posted, link };
+}
+
+test("chmod, then Launch at once: the click is not dropped, a fresh check runs and one POST goes (CR-P3FU121-01)", async () => {
+  const { posted } = await refused((url) => json(200, { ...INSPECTED, config_file: { path: url.searchParams.get("config_file"), error: null } }));
+  fireEvent.focus(window); // back from the terminal; the debounced check has not answered yet
+  await userEvent.click(launchButton());
+  await waitFor(() => expect(posted).toHaveLength(1));
+  expect(posted[0].config_file).toBe("/home/amartin/x.config");
+});
+
+test("a re-check that fails drops the old refusal: Launch's own read is the check (CR-P3FU121-02)", async () => {
+  const { posted, link } = await refused(() => json(500, { status: 500, title: "Server error", detail: "boom" }));
+  fireEvent.focus(window);
+  await waitFor(() => expect(link).not.toBeInTheDocument());
+  await userEvent.click(launchButton());
+  await waitFor(() => expect(posted).toHaveLength(1));
+});
+
+test("another engine drops the refusal checked for the first one at once (CR-P3FU121-02)", async () => {
+  const { link } = await refused(() => new Promise<Response>(() => {})); // the new check never answers
+  await userEvent.click(screen.getByRole("button", { name: /Snakemake/ }));
+  expect(link).not.toBeInTheDocument();
 });
 
 test("the file could not be read (503): a banner with the server's reason, the values kept, and Launch again", async () => {
@@ -255,7 +328,7 @@ test("the file could not be read (503): a banner with the server's reason, the v
   });
   await load();
   await userEvent.click(row(/^Extra config file/));
-  await userEvent.type(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
+  fill(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
   await userEvent.click(launchButton());
   const banner = await screen.findByRole("alert");
   expect(banner).toHaveTextContent("The extra config file could not be read: Input/output error. Nothing was started and your values are kept.");
@@ -270,7 +343,7 @@ test("a runner's own 503 with a file path set is not the file's banner (CR-P3FU1
   });
   await load();
   await userEvent.click(row(/^Extra config file/));
-  await userEvent.type(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
+  fill(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
   await userEvent.click(launchButton());
   expect(await screen.findByText(/^Not launched: /)).toBeInTheDocument();
   expect(screen.queryByText(/The extra config file could not be read/)).toBeNull();
@@ -283,10 +356,10 @@ test("Snakemake with an extra file sends only the keys set, and the preview says
   const input = screen.getByRole("textbox", { name: "Extra config file (optional)" });
   expect(input).toHaveAccessibleDescription(expect.stringContaining("A .yaml or .json file of workflow config, merged key by key under the form's values"));
   expect(input).toHaveAccessibleDescription(expect.stringContaining("a top-level map, no __use_yte__"));
-  await userEvent.type(input, "/home/amartin/configs/kd-screen-extra.yaml");
+  fill(input, "/home/amartin/configs/kd-screen-extra.yaml");
   const ref = screen.getByRole("region", { name: /^ref/ });
   await userEvent.click(within(ref).getByRole("button", { name: /^ref/ }));
-  await userEvent.type(within(ref).getByRole("textbox", { name: "ref.release (optional)" }), "114");
+  fill(within(ref).getByRole("textbox", { name: "ref.release (optional)" }), "114");
   await userEvent.click(screen.getByRole("button", { name: /^Config preview, as YAML/ }));
   expect(screen.getByLabelText("Config preview, as YAML", { selector: "pre" }).textContent).toBe("ref:\n  release: 114\n");
   expect(screen.getByText(/Only the keys you set · .* other keys come from extra\.yaml, then the pipeline/)).toBeInTheDocument();
@@ -301,7 +374,7 @@ test("phone: the same rows in the main column, the 503 banner above the form", a
   launchWith({ answer: () => json(503, { status: 503, title: "File system not answering", detail: "the config file cannot be read: timed out" }) });
   await load();
   await userEvent.click(row(/^Extra config file/));
-  await userEvent.type(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
+  fill(screen.getByRole("textbox", { name: "Extra config file (optional)" }), "/home/amartin/x.config");
   await userEvent.click(launchButton());
   const banner = await screen.findByRole("alert");
   // before the form's first section, never in the pinned bar

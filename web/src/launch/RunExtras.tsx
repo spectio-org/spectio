@@ -2,7 +2,7 @@ import { NativeSelect, TextInput } from "@mantine/core";
 import { type ReactNode, useEffect, useState } from "react";
 import type { Engine, EnvironmentItem, LaunchTemplate } from "../api";
 import { label as envLabel } from "../environments/fields";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 
 // Resources and Extra config file, two folding rows of Launch's "Where it runs" (FU-P3-110d;
 // ui-spec §4.6 notes of 2026-11-10 and the drawn layout of FU-P3-110c; api §5.7 owns the fields
@@ -103,7 +103,7 @@ function envWords(env: EnvironmentItem | null): string {
   return [s?.time_min && timeWords(s.time_min), s?.mem_mib && memWords(s.mem_mib)].filter(Boolean).join(" · ");
 }
 
-/** The Resources row's closed line (ui-spec §4.6). */
+/** The Run resources row's closed line (ui-spec §4.6). */
 function closedLine(sent: Sent, c: Context): string {
   if (fromProfile(c)) return `From the profile ${c.profile}`;
   if (Object.keys(sent).length) return `Defaults: ${resourceWords(sent)} per task`;
@@ -111,7 +111,7 @@ function closedLine(sent: Sent, c: Context): string {
   return env ? `From the environment: ${env} per task` : "The pipeline's defaults";
 }
 
-/** The Summary's Resources line. */
+/** The Summary's Run resources line. */
 export function summaryLine(sent: Sent, c: Context): string {
   if (fromProfile(c)) return `from the profile ${c.profile}`;
   if (!Object.keys(sent).length) return "from the environment";
@@ -159,7 +159,7 @@ function SubRow({ id, title, closed, reveal, children }: { id: string; title: st
           {" "}
           <span className="launch-xrow-sum">{closed}</span>
           <span className="sp-fold-chev">
-            <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+            <Icon name="chevronDown" />
           </span>
         </button>
       </h3>
@@ -170,7 +170,7 @@ function SubRow({ id, title, closed, reveal, children }: { id: string; title: st
   );
 }
 
-/** The Resources row: CPUs (not on Snakemake), memory with its unit, time as hours and minutes;
+/** The Run resources row: CPUs (not on Snakemake), memory with its unit, time as hours and minutes;
  * each empty by default, its placeholder the environment's value. `errors`: the server's, by form
  * key (`resources.cpus`, … and `resources` for the profile's refusal). */
 export function ResourcesRow({
@@ -220,7 +220,7 @@ export function ResourcesRow({
     />
   );
   return (
-    <SubRow id="launch-resources" title="Resources" closed={closedLine(sent, c)} reveal={reveal}>
+    <SubRow id="launch-resources" title="Run resources" closed={closedLine(sent, c)} reveal={reveal}>
       {fromProfile(c) ? (
         <p className="launch-keep">
           {`The profile ${c.profile} sets the resources, so none are set here. Without a profile: memory and time per task. Values typed before a Snakemake profile was picked are kept in the form but not sent.`}
@@ -375,7 +375,7 @@ export function ConfigFileRow({
                 : `A .config file, passed with -c after the pipeline's own. It runs as you, like the pipeline's nextflow.config. Your withName and withLabel settings apply; the defaults above replace its general process settings. ${where}`}
             </span>
             <span className="launch-keep">
-              <Icon path={ICONS.shield} size={13} />
+              <Icon name="shield" />
               <span>
                 {snakemake
                   ? "Read once at Launch and kept with the run as extra.yaml (extra.json for a .json file), readable by you only (0600), with its SHA-256 · at most 256 KiB · a top-level map, no __use_yte__."

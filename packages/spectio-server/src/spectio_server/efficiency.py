@@ -120,6 +120,8 @@ def aggregate(jobs: list[dict[str, Any]], planned: int | None) -> dict[str, Any]
             "total": max(len(jobs), planned or 0),
         },
         "measured": len(measured),
+        # The jobs sacct has not answered yet: what a reader waits on (CR-P3FU119-01).
+        "pending_accounting": sum(j["efficiency"]["state"] == "pending_accounting" for j in jobs),
         "cpu_mean": _mean(cpu),
         "cpu_max": max(cpu, default=None),
         "mem_mean": _mean(mem),

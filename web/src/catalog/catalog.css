@@ -2,10 +2,6 @@
 .sp-cat-location {
   overflow-wrap: anywhere; /* an ssh URL never overflows at 320 px */
 }
-.sp-cat-back {
-  align-self: flex-start;
-  font-size: 14px;
-}
 .sp-cat-open {
   font: inherit;
   padding: 0;

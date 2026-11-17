@@ -69,6 +69,9 @@ test("Cancel asks first in a modal dialog, returns focus, then posts :cancel", a
   expect(
     within(dialog).getByText("Spectio stops its head with signals, and the engine stops its tasks."),
   ).toBeInTheDocument();
+  // ui-spec §12.4 (UI-18): Keep running then the confirm, in the theme's failed colour
+  expect(within(dialog.querySelector(".sp-dialog-foot") as HTMLElement).getAllByRole("button").map((b) => b.textContent)).toEqual(["Keep running", "Cancel the run"]);
+  expect(within(dialog).getByRole("button", { name: "Cancel the run" }).getAttribute("style")).toContain("--mantine-color-failed");
   await userEvent.click(within(dialog).getByRole("button", { name: "Keep running" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   await waitFor(() => expect(cancel).toHaveFocus());
@@ -170,7 +173,7 @@ test("on a failed run the tasks filter starts at failed", async () => {
   expect(screen.getByRole("button", { name: /^Failed/ })).toHaveAttribute("aria-pressed", "true");
   await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/tasks?state=failed&limit=50`));
   expect(await screen.findByText(/\(S01\)/)).toBeInTheDocument();
-  expect(screen.getByRole("combobox", { name: "Process" })).toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: "Process" })).toBeInTheDocument();
 });
 
 test("the parameters table, and a log loaded on click", async () => {
@@ -179,7 +182,7 @@ test("the parameters table, and a log loaded on click", async () => {
   await userEvent.click(await screen.findByRole("tab", { name: "Parameters" }));
   expect(screen.getByRole("table", { name: "Parameters" })).toHaveTextContent("outdir");
   await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
-  await userEvent.click(screen.getByRole("button", { name: "Head output" }));
+  await userEvent.click(screen.getByRole("radio", { name: "Head output" }));
   expect(await screen.findByText(/head says hello/)).toBeInTheDocument();
 });
 
@@ -260,8 +263,11 @@ test("UX-PAR-20/21/22: a Snakemake run reads jobs and rules; facts sit in the he
   // CR-P3PARA-03: the engine's mark beside the Pipeline fact.
   const pipeline = within(header).getByText("wgs-germline (no version declared)").closest("dd")!;
   expect(within(pipeline).getByRole("img", { name: "Snakemake" })).toBeInTheDocument();
-  // The facts stay on every tab.
+  // The facts stay on every tab, folded on the tabs other than Summary (UI-09, ui-spec §12.7).
   await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
+  const facts = within(within(await runHeader()).getByRole("region", { name: "Facts" })).getByRole("button", { name: /^Facts/ });
+  expect(facts).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(facts);
   expect(within(await runHeader()).getByText("Snakemake 9.27.1 · test")).toBeInTheDocument();
   // CR-P3PARA-07: the Jobs tab names its filters and table in the engine's words.
   await userEvent.click(screen.getByRole("tab", { name: "Jobs" }));
@@ -393,8 +399,8 @@ test("UX-PAR-27: the Logs tab opens on the engine log, with Reload and Download"
   const mock = detail();
   app(`/runs/${ID}`);
   await userEvent.click(await screen.findByRole("tab", { name: "Logs" }));
-  const logs = screen.getByRole("group", { name: "Log" });
-  expect(within(logs).getByRole("button", { name: "Engine log" })).toHaveAttribute("aria-pressed", "true");
+  const logs = screen.getByRole("radiogroup", { name: "Log" });
+  expect(within(logs).getByRole("radio", { name: "Engine log" })).toBeChecked();
   expect(await screen.findByLabelText("Engine log", { selector: "pre" })).toHaveTextContent("N E X T F L O W");
   const before = fetched(mock).filter((u) => u.endsWith("logs?source=engine")).length;
   await userEvent.click(screen.getByRole("button", { name: "Reload" }));
@@ -432,34 +438,35 @@ test("P3-parC: an nf-core/ pipeline shows the nf-core mark in the header tile an
   expect(engine.querySelector("img")).toHaveAttribute("src", expect.stringContaining("logo-nextflow"));
 });
 
-test("P3-parC: Copy is a menu of native buttons: config, run directory and run ID; arrows move, Escape returns", async () => {
+test("P3-parC: Copy's items in More actions: config, run directory and run ID; arrows move, Escape returns", async () => {
   detail();
   app(`/runs/${ID}`);
-  const copy = await screen.findByRole("button", { name: "Copy" });
-  expect(copy).toHaveAttribute("aria-haspopup", "menu");
-  expect(copy).toHaveAttribute("aria-expanded", "false");
-  await userEvent.click(copy);
-  expect(copy).toHaveAttribute("aria-expanded", "true");
-  const menu = screen.getByRole("menu", { name: "Copy" });
+  const more = await within(await runHeader()).findByRole("button", { name: "More actions" });
+  expect(more).toHaveAttribute("aria-haspopup", "menu");
+  expect(more).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(more);
+  expect(more).toHaveAttribute("aria-expanded", "true");
+  const menu = await screen.findByRole("menu");
   const items = within(menu).getAllByRole("menuitem");
-  expect(items.map((i) => i.textContent)).toEqual(["Config (params.json)", "Run directory", "Run ID"]);
+  expect(items.map((i) => i.textContent)).toEqual(["Pin", "Copy config (params.json)", "Copy run directory", "Copy run ID"]);
   expect(items.every((i) => i.tagName === "BUTTON")).toBe(true);
-  await waitFor(() => expect(items[0]).toHaveFocus());
+  await userEvent.keyboard("{ArrowDown}");
+  expect(items[0]).toHaveFocus();
   await userEvent.keyboard("{ArrowDown}");
   expect(items[1]).toHaveFocus();
   await userEvent.keyboard("{ArrowUp}{ArrowUp}");
-  expect(items[2]).toHaveFocus(); // wraps
+  expect(items[3]).toHaveFocus(); // wraps
   await userEvent.keyboard("{Escape}");
-  expect(screen.queryByRole("menu")).toBeNull();
-  expect(copy).toHaveFocus();
+  await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+  await waitFor(() => expect(more).toHaveFocus());
 
-  await userEvent.click(copy);
-  await userEvent.click(within(screen.getByRole("menu")).getByRole("menuitem", { name: "Run directory" }));
+  await userEvent.click(more);
+  await userEvent.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Copy run directory" }));
   expect(await navigator.clipboard.readText()).toBe(`/scratch/amartin/spectio-runs/${ID}`);
   expect(screen.getByText("Copied the run directory")).toHaveAttribute("role", "status");
-  expect(copy).toHaveFocus();
-  await userEvent.click(copy);
-  await userEvent.click(screen.getByRole("menuitem", { name: "Config (params.json)" }));
+  await waitFor(() => expect(more).toHaveFocus());
+  await userEvent.click(more);
+  await userEvent.click(await screen.findByRole("menuitem", { name: "Copy config (params.json)" }));
   expect(JSON.parse(await navigator.clipboard.readText())).toEqual({ outdir: "results", depth: 3 });
 });
 
@@ -469,10 +476,10 @@ test("P3-parC: a Snakemake run copies its config as config.yaml; a run from a te
     workflow: { engine: "snakemake", engine_version: "9.27.1", location: "/g/demo-lab/pipelines/wgs", name: "wgs-germline", version: null },
   });
   app(`/runs/${ID}`);
-  await userEvent.click(await screen.findByRole("button", { name: "Copy" }));
-  const items = within(screen.getByRole("menu")).getAllByRole("menuitem");
-  expect(items.map((i) => i.textContent)).toEqual(["Config (config.yaml)", "Run ID"]);
-  await userEvent.click(items[0]);
+  await userEvent.click(await within(await runHeader()).findByRole("button", { name: "More actions" }));
+  const items = within(await screen.findByRole("menu")).getAllByRole("menuitem");
+  expect(items.map((i) => i.textContent)).toEqual(["Pin", "Copy config (config.yaml)", "Copy run ID"]);
+  await userEvent.click(items[1]);
   expect(await navigator.clipboard.readText()).toBe("outdir: results\ndepth: 3\n");
 });
 
@@ -480,9 +487,9 @@ test("P3-parC: the tab and the log source are in the URL: a log view can be link
   const mock = detail({}, { [`${URL_}/logs?source=head-err`]: () => new Response("boom\n") });
   const router = app(`/runs/${ID}?tab=logs&source=head-err`);
   expect(await screen.findByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
-  expect(screen.getByRole("button", { name: "Head errors" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("radio", { name: "Head errors" })).toBeChecked();
   await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/logs?source=head-err`));
-  await userEvent.click(screen.getByRole("button", { name: "Engine log" }));
+  await userEvent.click(screen.getByRole("radio", { name: "Engine log" }));
   await waitFor(() => expect(router.state.location.search).toEqual({ tab: "logs", source: "engine" }));
   await userEvent.click(screen.getByRole("tab", { name: "Tasks" }));
   await waitFor(() => expect(router.state.location.search).toEqual({ tab: "tasks" }));
@@ -494,16 +501,16 @@ test("FU-P3-109: the URL is the source of truth: Back and Forward step through t
   detail({}, { [`${URL_}/logs?source=head-err`]: () => new Response("boom\n") });
   const router = app(`/runs/${ID}`);
   await userEvent.click(await screen.findByRole("tab", { name: "Logs" }));
-  await userEvent.click(screen.getByRole("button", { name: "Head errors" }));
+  await userEvent.click(screen.getByRole("radio", { name: "Head errors" }));
   await userEvent.click(screen.getByRole("tab", { name: "Parameters" }));
   await waitFor(() => expect(router.state.location.search).toEqual({ tab: "parameters" }));
   act(() => router.history.back());
   await waitFor(() => expect(router.state.location.search).toEqual({ tab: "logs", source: "head-err" }));
   expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
-  expect(screen.getByRole("button", { name: "Head errors" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("radio", { name: "Head errors" })).toBeChecked();
   act(() => router.history.back());
   await waitFor(() => expect(router.state.location.search).toEqual({ tab: "logs", source: "engine" }));
-  expect(screen.getByRole("button", { name: "Engine log" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("radio", { name: "Engine log" })).toBeChecked();
   act(() => router.history.back());
   await waitFor(() => expect(router.state.location.search).toEqual({}));
   expect(screen.getByRole("tab", { name: "Summary" })).toHaveAttribute("aria-selected", "true");
@@ -515,10 +522,10 @@ test("FU-P3-109: the URL is the source of truth: Back and Forward step through t
 test("P3-parC: the picked log source is kept across a tab switch (CR-P3PARC-02)", async () => {
   detail({}, { [`${URL_}/logs?source=head-err`]: () => new Response("boom\n") });
   app(`/runs/${ID}?tab=logs`);
-  await userEvent.click(await screen.findByRole("button", { name: "Head errors" }));
+  await userEvent.click(await screen.findByRole("radio", { name: "Head errors" }));
   await userEvent.click(screen.getByRole("tab", { name: "Summary" }));
   await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
-  expect(await screen.findByRole("button", { name: "Head errors" })).toHaveAttribute("aria-pressed", "true");
+  expect(await screen.findByRole("radio", { name: "Head errors" })).toBeChecked();
 });
 
 test("P3-parC: an unknown tab or source in the URL falls back to the Summary and the engine log", async () => {
@@ -526,7 +533,7 @@ test("P3-parC: an unknown tab or source in the URL falls back to the Summary and
   app(`/runs/${ID}?tab=nope&source=%2Fetc%2Fpasswd`);
   expect(await screen.findByRole("tab", { name: "Summary" })).toHaveAttribute("aria-selected", "true");
   await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
-  expect(screen.getByRole("button", { name: "Engine log" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("radio", { name: "Engine log" })).toBeChecked();
   expect(fetched(mock).some((u) => u.includes("passwd"))).toBe(false);
 });
 
@@ -540,9 +547,35 @@ test("P3-parC: the aside's All logs opens the Logs tab on the tail's source, wit
   const tail = await screen.findByRole("region", { name: "Head errors · last lines" });
   await userEvent.click(within(tail).getByRole("button", { name: /^Open the full head errors/ }));
   expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
-  expect(screen.getByRole("button", { name: "Head errors" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("radio", { name: "Head errors" })).toBeChecked();
   await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Logs" })).toHaveFocus());
   expect(router.state.location.search).toEqual({ tab: "logs", source: "head-err", from: "summary" });
+});
+
+test("FU-P3-124: a head with no head.err: the failed run's aside tails the engine log, and head-err is never asked for", async () => {
+  const mock = detail({
+    state: "failed",
+    ended_at: "2026-10-31T08:00:00+00:00",
+    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1, checked: true },
+    head_logs: ["head-out"],
+  });
+  app(`/runs/${ID}`);
+  const tail = await screen.findByRole("region", { name: "Engine log · last lines" });
+  expect(await within(tail).findByText(/N E X T F L O W/)).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Head errors · last lines" })).toBeNull();
+  expect(screen.queryByText("Not written yet.")).toBeNull();
+  await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
+  expect(screen.getByRole("radio", { name: "Head output" })).toBeInTheDocument();
+  expect(screen.queryByRole("radio", { name: "Head errors" })).toBeNull();
+  expect(fetched(mock).some((u) => u.includes("source=head-err"))).toBe(false);
+});
+
+test("FU-P3-124: a linked Head errors view of a head with no head.err shows the engine log", async () => {
+  const mock = detail({ head_logs: ["head-out"] });
+  app(`/runs/${ID}?tab=logs&source=head-err`);
+  expect(await screen.findByRole("radio", { name: "Engine log" })).toBeChecked();
+  await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/logs?source=engine`));
+  expect(fetched(mock).some((u) => u.includes("source=head-err"))).toBe(false);
 });
 
 test("FU-P3-88a: the last lines open the full log; Back to Summary returns, with focus on the opener", async () => {
@@ -554,7 +587,7 @@ test("FU-P3-88a: the last lines open the full log; Back to Summary returns, with
   expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
   expect(router.state.location.search).toEqual({ tab: "logs", source: "engine", from: "summary" });
   // another source keeps the way back
-  await userEvent.click(screen.getByRole("button", { name: "Head output" }));
+  await userEvent.click(screen.getByRole("radio", { name: "Head output" }));
   expect(router.state.location.search).toEqual({ tab: "logs", source: "head-out", from: "summary" });
   await userEvent.click(screen.getByRole("button", { name: "Back to Summary" }));
   expect(screen.getByRole("tab", { name: "Summary" })).toHaveAttribute("aria-selected", "true");
@@ -595,7 +628,7 @@ test("P3-parC: the log's file on the server, with Copy; an Open raw link to the 
   expect(raw).toHaveAttribute("href", `/api/v1/runs/${ID}/logs?source=engine`);
   expect(raw).toHaveAttribute("target", "_blank");
   expect(raw).toHaveAttribute("rel", expect.stringContaining("noopener"));
-  await userEvent.click(screen.getByRole("button", { name: "Head output" }));
+  await userEvent.click(screen.getByRole("radio", { name: "Head output" }));
   expect(screen.getByLabelText("File")).toHaveTextContent(`/scratch/amartin/spectio-runs/${ID}/launch/.spectio/head.out`);
   expect(screen.getByRole("link", { name: /^Open raw/ })).toHaveAttribute("href", `/api/v1/runs/${ID}/logs?source=head-out`);
 });
@@ -922,7 +955,8 @@ test("UX-P3FU115B-04: Delete… on Run detail returns to Runs with what the dele
     },
   );
   const router = app(`/runs/${ID}`);
-  await userEvent.click(within(await runHeader()).getByRole("button", { name: "Delete…" }));
+  await userEvent.click(await within(await runHeader()).findByRole("button", { name: "More actions" }));
+  await userEvent.click(await screen.findByRole("menuitem", { name: "Delete…" }));
   const sheet = await screen.findByRole("dialog", { name: "Delete 1 run?" });
   await userEvent.click(within(sheet).getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(router.state.location.pathname).toBe("/runs"));
@@ -938,6 +972,7 @@ test("FU-P3-119: an ended run whose jobs sacct has not measured yet is read agai
     const efficiency = () => ({
       jobs: { done: 12, total: 12 },
       measured,
+      pending_accounting: 12 - measured,
       cpu_mean: null, cpu_max: null, mem_mean: null, mem_max: null,
       requested: { cpus: null, mem_bytes: null, time_limit_s: null, varies: false },
       used: { peak_rss_bytes_max: null, elapsed_s_max: null },
@@ -958,4 +993,68 @@ test("FU-P3-119: an ended run whose jobs sacct has not measured yet is read agai
   } finally {
     vi.useRealTimers();
   }
+});
+
+test("UI-10: the Tasks tab starts with one toolbar: the view, the state filters and the Process select", async () => {
+  detail();
+  app(`/runs/${ID}`);
+  await userEvent.click(await screen.findByRole("tab", { name: "Tasks" }));
+  const tools = screen.getByRole("group", { name: "Tasks tools" });
+  expect(within(tools).getByRole("tablist", { name: "Tasks view" })).toBeInTheDocument();
+  expect(within(tools).getByRole("group", { name: "Show tasks" })).toBeInTheDocument();
+  expect(within(tools).getByRole("textbox", { name: "Process" })).toBeInTheDocument();
+  expect(document.querySelector("select")).toBeNull();
+});
+
+test("UI-10: the Parameters tab: a filter in the toolbar, then the table in a card", async () => {
+  detail();
+  app(`/runs/${ID}`);
+  await userEvent.click(await screen.findByRole("tab", { name: "Parameters" }));
+  expect(screen.getByRole("heading", { level: 3, name: "Parameters" })).toBeInTheDocument();
+  const table = screen.getByRole("table", { name: "Parameters" });
+  expect(within(table).getAllByRole("row")).toHaveLength(3);
+  await userEvent.type(within(screen.getByRole("group", { name: "Parameters tools" })).getByRole("searchbox", { name: "Filter the parameters" }), "depth");
+  expect(within(table).getAllByRole("row")).toHaveLength(2);
+  expect(table).not.toHaveTextContent("outdir");
+});
+
+test("UI-11: the Logs toolbar: the actions are named icon buttons, Copy copies the log", async () => {
+  detail();
+  app(`/runs/${ID}`);
+  await userEvent.click(await screen.findByRole("tab", { name: "Logs" }));
+  await screen.findByText(/N E X T F L O W/);
+  const tools = screen.getByRole("group", { name: "Engine log tools" });
+  for (const name of ["Reload", "Download last 64 KiB", "Copy the engine log", "Wrap lines", "Follow the end"]) {
+    expect(within(tools).getByRole("button", { name })).toBeInTheDocument();
+  }
+  expect(within(tools).getByRole("link", { name: /^Open raw/ })).toBeInTheDocument();
+  await userEvent.click(within(tools).getByRole("button", { name: "Copy the engine log" }));
+  expect(await navigator.clipboard.readText()).toBe("N E X T F L O W  ~  version 26.10.4\n");
+  expect(await screen.findByText("Copied the engine log")).toHaveAttribute("role", "status");
+});
+
+test("UI-11: Copy the log without a clipboard says it could not copy", async () => {
+  Reflect.deleteProperty(navigator, "clipboard");
+  detail();
+  app(`/runs/${ID}`);
+  await userEvent.click(await screen.findByRole("tab", { name: "Logs" }));
+  await screen.findByText(/N E X T F L O W/);
+  await userEvent.click(within(screen.getByRole("group", { name: "Engine log tools" })).getByRole("button", { name: "Copy the engine log" }));
+  expect(await screen.findByText(/^Could not copy the engine log/)).toHaveAttribute("role", "status");
+});
+
+test("UI-11: a log not written yet is an empty state, a failed read an error with Retry", async () => {
+  let status = 404;
+  const mock = detail({}, { [`${URL_}/logs?source=engine`]: () => json(status, { title: "nope" }) });
+  app(`/runs/${ID}`);
+  await userEvent.click(await screen.findByRole("tab", { name: "Logs" }));
+  expect(await screen.findByText("This log is not written yet.")).toBeInTheDocument();
+  expect(screen.queryByLabelText("Engine log", { selector: "pre" })).toBeNull();
+  status = 500;
+  await userEvent.click(screen.getByRole("button", { name: "Reload" }));
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent(/The engine log could not be read/);
+  const before = fetched(mock).filter((u) => u.endsWith("logs?source=engine")).length;
+  await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+  await waitFor(() => expect(fetched(mock).filter((u) => u.endsWith("logs?source=engine")).length).toBe(before + 1));
 });

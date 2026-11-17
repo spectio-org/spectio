@@ -34,11 +34,27 @@ function refused(e: Error, runs: Run[]): ReactNode {
 }
 
 /** `why`, when set, refuses Delete… (aria-disabled) and says why beside it. `onDeleted` gets the
- * lines to say: "n runs deleted", then each directory the server could not remove, and the IDs deleted. */
-export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string | null; onDeleted: (said: string[], ids: string[]) => void }) {
+ * lines to say: "n runs deleted", then each directory the server could not remove, and the IDs deleted.
+ * With `opened` the caller owns the Delete… control (a menu item, UI-09): only the dialog renders,
+ * and `onClose` is called when it closes. */
+export function DeleteRuns({
+  runs,
+  why,
+  onDeleted,
+  opened,
+  onClose,
+}: {
+  runs: Run[];
+  why: string | null;
+  onDeleted: (said: string[], ids: string[]) => void;
+  opened?: boolean;
+  onClose?: () => void;
+}) {
   const phone = usePhone();
   const server = useServer();
-  const [asking, setAsking] = useState(false);
+  const [askingHere, setAsking] = useState(false);
+  const owned = opened !== undefined;
+  const asking = owned ? opened : askingHere;
   const [dirs, setDirs] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<ReactNode>(null);
@@ -50,6 +66,7 @@ export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string 
 
   const close = () => {
     setAsking(false);
+    onClose?.();
     setDirs(false);
     setError(null);
     setDirsRefused(false);
@@ -110,11 +127,11 @@ export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string 
           {error}
         </div>
       )}
-      <div className="sp-actions" data-stack={phone || undefined}>
+      <div className="sp-dialog-foot" data-stack={phone || undefined}>
         <Button variant="default" data-autofocus onClick={close} fullWidth={phone}>
           Cancel
         </Button>
-        <Button color="red" onClick={confirm} loading={sending} fullWidth={phone}>
+        <Button color="failed" onClick={confirm} loading={sending} fullWidth={phone}>
           Delete
         </Button>
       </div>
@@ -122,17 +139,18 @@ export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string 
   );
   return (
     <>
-      <Button
-        variant="default"
-        color="red"
-        onClick={() => why || setAsking(true)}
-        aria-disabled={why ? true : undefined}
-        data-disabled={why ? true : undefined}
-        aria-describedby={why ? "delete-why" : undefined}
-      >
-        Delete…
-      </Button>
-      {why && (
+      {!owned && (
+        <Button
+          variant="default"
+          onClick={() => why || setAsking(true)}
+          aria-disabled={why ? true : undefined}
+          data-disabled={why ? true : undefined}
+          aria-describedby={why ? "delete-why" : undefined}
+        >
+          Delete…
+        </Button>
+      )}
+      {!owned && why && (
         <span id="delete-why" className="sp-muted">
           {why}
         </span>
@@ -143,13 +161,13 @@ export function DeleteRuns({ runs, why, onDeleted }: { runs: Run[]; why: string 
           onClose={close}
           position="bottom"
           title={title}
-          returnFocus
+          returnFocus={!owned}
           classNames={{ content: "sp-bottom-sheet", title: "sp-sheet-title" }}
         >
           {body}
         </Drawer>
       ) : (
-        <Modal opened={asking} onClose={close} title={title} returnFocus centered>
+        <Modal opened={asking} onClose={close} title={title} returnFocus={!owned} centered classNames={{ title: "sp-sheet-title" }}>
           {body}
         </Modal>
       )}

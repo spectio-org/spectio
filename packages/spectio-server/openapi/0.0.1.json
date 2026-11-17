@@ -1846,6 +1846,17 @@
             "title": "At",
             "type": "string"
           },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -1885,6 +1896,7 @@
           "kind",
           "run_id",
           "run_name",
+          "engine",
           "at",
           "read"
         ],
@@ -2107,6 +2119,10 @@
             ],
             "title": "Mem Mean"
           },
+          "pending_accounting": {
+            "title": "Pending Accounting",
+            "type": "integer"
+          },
           "requested": {
             "$ref": "#/components/schemas/Requested"
           },
@@ -2117,6 +2133,7 @@
         "required": [
           "jobs",
           "measured",
+          "pending_accounting",
           "cpu_mean",
           "cpu_max",
           "mem_mean",
@@ -3076,6 +3093,17 @@
               }
             ]
           },
+          "head_logs": {
+            "items": {
+              "enum": [
+                "head-out",
+                "head-err"
+              ],
+              "type": "string"
+            },
+            "title": "Head Logs",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -3245,7 +3273,8 @@
           "results_dir",
           "engine_settings",
           "default_resources",
-          "config_file"
+          "config_file",
+          "head_logs"
         ],
         "title": "RunDetail",
         "type": "object"
@@ -7143,6 +7172,42 @@
                 }
               ],
               "title": "Params File"
+            }
+          },
+          {
+            "in": "query",
+            "name": "config_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Config File"
+            }
+          },
+          {
+            "in": "query",
+            "name": "engine",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "nextflow",
+                    "snakemake"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Engine"
             }
           }
         ],

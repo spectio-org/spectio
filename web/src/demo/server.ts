@@ -71,6 +71,7 @@ const DETAIL = {
   parent_run_id: null,
   resumed_as: [],
   results_dir: "/scratch/demo/spectio-runs/rnaseq-ko-vs-wt/results",
+  head_logs: ["head-out"], // a head under tmux writes no head.err (FU-P3-124)
 };
 
 function detailOf(id: string): Record<string, unknown> | null {

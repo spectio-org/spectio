@@ -14,6 +14,7 @@ const GIB = 1024 ** 3;
 const eff = (over: Record<string, unknown>) => ({
   jobs: { done: 48, total: 48 },
   measured: 48,
+  pending_accounting: 0,
   cpu_mean: 0.34,
   cpu_max: 0.41,
   mem_mean: 0.03,
@@ -82,7 +83,7 @@ test("By process is a tab button; its sort buttons are native buttons; each row 
   // the row's name opens the task list filtered to it
   await userEvent.click(screen.getByRole("button", { name: "Show the tasks of process NFCORE:RNASEQ:FASTQC" }));
   expect(await screen.findByRole("tab", { name: "Task list" })).toHaveAttribute("aria-selected", "true");
-  expect(screen.getByRole("combobox", { name: "Process" })).toHaveValue("NFCORE:RNASEQ:FASTQC");
+  expect((screen.getByRole("textbox", { name: "Process" }) as HTMLInputElement).value).toMatch(/^FASTQC \(/);
 });
 
 test("the Tasks table has CPU eff. and Mem eff. columns with a 'low' text badge and their source", async () => {

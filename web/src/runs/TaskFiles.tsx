@@ -12,7 +12,7 @@ import {
   listTaskFiles,
   taskFileUrl,
 } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
 import { LogLines } from "./LogViewer";
@@ -193,7 +193,7 @@ function FilePanel({ task, n, file, running, cleanup, onReload }: { task: Task; 
           {[size > TAIL ? `last 64 KiB of ${fileSize(size)}` : `whole file · ${fileSize(size)}`, age].filter(Boolean).join(" · ")}
         </span>
         <span className="sp-actions">
-          <Button variant="default" size="xs" leftSection={<Icon path={ICONS.reload} size={14} />} onClick={() => setReads((r) => r + 1)}>
+          <Button variant="default" size="xs" leftSection={<Icon name="reload" size="button" />} onClick={() => setReads((r) => r + 1)}>
             Reload
           </Button>
           <Button
@@ -203,7 +203,7 @@ function FilePanel({ task, n, file, running, cleanup, onReload }: { task: Task; 
             href={download}
             download
             aria-label={big ? `Download last 1 MiB of ${file.name}` : `Download ${file.name}`}
-            leftSection={<Icon path={ICONS.download} size={14} />}
+            leftSection={<Icon name="download" size="button" />}
           >
             {big ? "Download last 1 MiB" : "Download"}
           </Button>

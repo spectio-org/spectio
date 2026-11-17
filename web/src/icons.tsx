@@ -1,5 +1,6 @@
-// The light line icons of the lite boards (24 × 24 paths, round caps), in one place. A board's
-// section icon is drawn at 1.6 stroke in a 26–30 px tile; the shell's at 1.8.
+// The light line icons of the lite boards (24 × 24 paths, round caps), in one place, drawn only
+// through `Icon` (or `iconSvg`) at four sizes and one stroke (ui-audit D, UI-02); the lint test in
+// icons.test.tsx rejects a path or a stroke anywhere else.
 
 export const ICONS = {
   // shell (LiteSidebar, LiteTopbar)
@@ -11,8 +12,25 @@ export const ICONS = {
   chevronLeft: "M15 6l-6 6 6 6",
   arrowRight: "M5 12h14 M13 6l6 6-6 6",
   check: "M5 12l5 5 9-10",
+  checkCheck: "M18 6L7 17l-5-5 M22 10l-7.5 7.5L13 16",
   cross: "M6 6l12 12 M18 6L6 18",
   search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4",
+  bell: "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0",
+  sun: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.2 4.2l1.4 1.4 M18.4 18.4l1.4 1.4 M1 12h2 M21 12h2 M4.2 19.8l1.4-1.4 M18.4 5.6l1.4-1.4",
+  moon: "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z",
+  person: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0",
+  fold: "M4 5h16v14H4z M9 5v14 M16 10l-2 2 2 2",
+  unfold: "M4 5h16v14H4z M9 5v14 M14 10l2 2-2 2",
+  // run states (ui-spec §3.1): clock, play, flag, pause, slash; done and failed reuse check and cross
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2",
+  play: "M7 5l12 7-12 7z",
+  flag: "M5 21V4 M5 4h11l-2 4 2 4H5",
+  pause: "M8 5v14 M16 5v14",
+  slash: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M6 18L18 6",
+  // table headers (AG Grid): sort arrows and the unsorted pair
+  sortUp: "M12 19.5v-15 M6 10.5l6-6 6 6",
+  sortDown: "M12 4.5v15 M6 13.5l6 6 6-6",
+  sortBoth: "M7.5 9l4.5-4.5 4.5 4.5 M7.5 15l4.5 4.5 4.5-4.5",
   // sections (LiteHome, LiteRunDetail, LiteRunFailed)
   info: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01",
   layers: "M12 3l9 5-9 5-9-5z M3 13l9 5 9-5",
@@ -46,67 +64,119 @@ export const ICONS = {
   braces: "M9 4c-2 0-2 2-2 4s-1 4-3 4c2 0 3 2 3 4s0 4 2 4 M15 4c2 0 2 2 2 4s1 4 3 4c-2 0-3 2-3 4s0 4-2 4",
   image: "M4 5h16v14H4z M4 16l5-5 4 4 3-3 4 4 M15.5 9h.01",
   pin: "M12 17v5 M9 4h6 M10 4v6l-3 4v3h10v-3l-3-4V4",
+  more: "M5 12h1 M11.5 12h1 M18 12h1",
+  trash: "M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v5 M14 11v5",
+  // the log toolbar (UI-11) and the viewer controls of the file preview (UI-17)
+  wrap: "M4 6h16 M4 12h13a3 3 0 0 1 0 6h-4 M15 16l-2 2 2 2 M4 18h5",
+  follow: "M7 6l5 5 5-5 M7 13l5 5 5-5",
+  toStart: "M5 4h14 M12 20V8 M7 13l5-5 5 5",
+  toEnd: "M5 20h14 M12 4v12 M7 11l5 5 5-5",
+  actualSize: "M4 5h16v14H4z M8 10l1-1v6 M14 10l1-1v6 M11.5 11h.01 M11.5 14h.01",
+  zoomIn: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4 M8 11h6 M11 8v6",
+  zoomOut: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4 M8 11h6",
+  fit: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5",
+  // Launch's "What to run" choice (#161)
+  pipeline: "M3 4h6v5H3z M15 4h6v5h-6z M9 15h6v5H9z M6 9v2.5h12V9 M12 11.5V15",
+  step: "M7 7h10v10H7z M10 12h4",
+  // the workflow graph (#160, 0.0.2 behind graph_view); `fit` above is its full-screen glyph
+  process: "M7 7h10v10H7z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4",
+  temp: "M7 3h10 M7 21h10 M8 3c0 5 8 5 8 9s-8 4-8 9 M16 3c0 5-8 5-8 9s8 4 8 9",
+  conditional: "M6 3v12 M18 9a3 3 0 1 0 0-.01 M6 21a3 3 0 1 0 0-.01 M18 9c0 6-12 3-12 9",
+  cached: "M3 5h18v4H3z M5 9v11h14V9 M10 13h4",
+  minus: "M6 12h12",
+  plus: "M12 6v12 M6 12h12",
+  arrowUp: "M12 19V5 M5 12l7-7 7 7",
+  arrowDown: "M12 5v14 M19 12l-7 7-7-7",
+  channel: "M3 9h18v6H3z M8 9v6 M13 9v6 M18 9v6",
+  eye: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  eyeOff: "M3 3l18 18 M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9 M6.6 6.6C3.9 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 0 0 5.4-1.6 M9.9 9.9a3 3 0 0 0 4.2 4.2",
+  focus: "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  fitBox: "M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5 M9 9h6v6H9z",
+  warn: "M12 9v4 M12 17h.01 M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
+  compact: "M4 7h16 M4 12h10 M4 17h6 M17 14l3 3-3 3",
+  binary: "M6 3h9l4 4v14H6z M14 3v5h5 M9 12v4 M12.5 12h1.5v4 M9 18h.01",
+  cpu: "M7 7h10v10H7z M10 10h4v4h-4z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4",
+  memory: "M3 8h18v8H3z M7 8v8 M11 8v8 M15 8v8 M6 16v3 M18 16v3",
 } as const;
 
-export function Icon({ path, size = 24, stroke = 1.8 }: { path: string; size?: number; stroke?: number }) {
+export type IconName = keyof typeof ICONS;
+
+/** The four icon sizes (ui-audit D): inline with text and in buttons and menus 16, top bar, sidebar
+ * and tab bar 20, a page head's tile 24; `mark` 12 only for the workflow graph's dense map badges
+ * and chips (#160). */
+export const ICON_PX = { mark: 12, inline: 16, button: 16, nav: 20, sidebar: 25, tile: 24 } as const;
+export type IconSize = keyof typeof ICON_PX;
+const STROKE = 1.75;
+
+/** A line icon. Decorative (`aria-hidden`) unless `label` names it, which makes it an image. */
+export function Icon({ name, size = "inline", label }: { name: IconName; size?: IconSize; label?: string }) {
+  const px = ICON_PX[size];
+  const a11y = label ? { role: "img", "aria-label": label } : { "aria-hidden": true };
   return (
     <svg
-      width={size}
-      height={size}
+      className="sp-icon"
+      width={px}
+      height={px}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={stroke}
+      strokeWidth={STROKE}
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-hidden="true"
+      {...a11y}
     >
-      <path d={path} />
+      <path d={ICONS[name]} />
     </svg>
   );
 }
 
+/** The same icon as markup, for a host that takes HTML strings only (AG Grid's `icons`). */
+export function iconSvg(name: IconName, size: IconSize = "inline", className = "sp-icon"): string {
+  const px = ICON_PX[size];
+  return `<svg class="${className}" width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${STROKE}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[name]}"/></svg>`;
+}
+
 // nf-core groups name a Font Awesome icon (`fa_icon`); Spectio draws a few of them as its own line
 // icons and every other one as the neutral sliders (UX-PAR-30). No icon font is loaded.
-const GROUP_ICONS: Record<string, string> = {
-  folder: ICONS.folder,
-  "folder-open": ICONS.folder,
-  "file-import": ICONS.file,
-  dna: ICONS.dna,
-  cut: ICONS.scissors,
-  scissors: ICONS.scissors,
-  "fast-forward": ICONS.skip,
-  cog: ICONS.sliders,
-  cogs: ICONS.sliders,
-  wrench: ICONS.sliders,
-  microchip: ICONS.server,
-  server: ICONS.server,
-  database: ICONS.server,
-  terminal: ICONS.terminal,
-  "chart-bar": ICONS.chart,
-  filter: ICONS.filter,
-  tag: ICONS.tag,
-  tags: ICONS.tag,
-  shield: ICONS.shield,
-  "shield-alt": ICONS.shield,
-  "user-shield": ICONS.shield,
-  university: ICONS.building,
-  building: ICONS.building,
-  institution: ICONS.building,
-  "map-signs": ICONS.signpost,
-  "align-center": ICONS.signpost,
-  download: ICONS.download,
-  "file-download": ICONS.download,
-  question: ICONS.info,
-  "question-circle": ICONS.info,
-  info: ICONS.info,
-  "info-circle": ICONS.info,
-  "exclamation-triangle": ICONS.alert,
-  bug: ICONS.alert,
+const GROUP_ICONS: Record<string, IconName> = {
+  folder: "folder",
+  "folder-open": "folder",
+  "file-import": "file",
+  dna: "dna",
+  cut: "scissors",
+  scissors: "scissors",
+  "fast-forward": "skip",
+  cog: "sliders",
+  cogs: "sliders",
+  wrench: "sliders",
+  microchip: "server",
+  server: "server",
+  database: "server",
+  terminal: "terminal",
+  "chart-bar": "chart",
+  filter: "filter",
+  tag: "tag",
+  tags: "tag",
+  shield: "shield",
+  "shield-alt": "shield",
+  "user-shield": "shield",
+  university: "building",
+  building: "building",
+  institution: "building",
+  "map-signs": "signpost",
+  "align-center": "signpost",
+  download: "download",
+  "file-download": "download",
+  question: "info",
+  "question-circle": "info",
+  info: "info",
+  "info-circle": "info",
+  "exclamation-triangle": "alert",
+  bug: "alert",
 };
 
 /** The line icon of a schema group's `fa_icon` ("fas fa-folder-open"), or the neutral one. */
-export function groupIcon(faIcon: string | null): string {
+export function groupIcon(faIcon: string | null): IconName {
   const name = faIcon?.match(/fa-([a-z-]+)\s*$/)?.[1];
-  return (name && Object.hasOwn(GROUP_ICONS, name) && GROUP_ICONS[name]) || ICONS.sliders; // SEC-P3PARB-02
+  return (name && Object.hasOwn(GROUP_ICONS, name) && GROUP_ICONS[name]) || "sliders"; // SEC-P3PARB-02
 }

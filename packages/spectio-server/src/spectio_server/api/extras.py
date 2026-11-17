@@ -22,13 +22,17 @@ from pathlib import Path
 from typing import Annotated, Any, Literal
 
 import yaml
+from fastapi import Request
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, ValidationError
 
+from spectio import locations
 from spectio.environments import DefaultResources, Environment
 from spectio.locations import refuse_control
 from spectio.runner.rundir import private_dir
+from spectio_server.api.environments import offline
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import NO_ALIASES, load_yaml
+from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 
 MAX_CONFIG_FILE = 256 * 1024
 KEPT_AS = {
@@ -170,6 +174,29 @@ def read_config_file(
         "includes": engine == "nextflow" and "includeConfig" in text,  # a search, not a parse
         "text": text,
     }
+
+
+def checked_config_file(
+    request: Request, path: str, directory: Path, engine: str
+) -> dict[str, Any]:
+    """`path` checked (`locations.check_config_file`) and read in the file pool, as
+    `read_config_file` answers, for `POST /runs` and inspect's check before Launch (FU-P3-121).
+    The home is accepted as written and resolved, and read from the resolved one; the pipeline's
+    directory as `resolve` gives it. Raises Invalid on `config_file`, or the 503 of `offline`."""
+    written, real = request.app.state.home
+    starts = {str(directory): str(directory), written: real, real: real}
+    try:
+        root, parts = locations.check_config_file(path, list(starts), engine)
+        found: dict[str, Any] = request.app.state.files.run(
+            lambda: read_config_file(starts[root], parts, engine), READ_TIMEOUT_S
+        )
+    except Stalled as exc:
+        raise offline(exc) from None
+    except ValueError as exc:
+        raise Invalid("config_file", str(exc)) from None
+    except OSError as exc:
+        raise offline(OSError(f"the config file cannot be read: {exc.strerror}")) from None
+    return found
 
 
 _ABSENT = (errno.ENOENT, errno.ELOOP, errno.ENOTDIR)

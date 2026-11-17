@@ -1,9 +1,30 @@
-/* The launch form's own rules (P1 Task 19); the shell's are in shell/shell.css. */
+/* The launch form's own rules (P1 Task 19), after the global focus rules; the shell's are in shell/shell.css. */
+/* One focus ring for the whole app, Mantine's portals included (dialogs, sheets, menus render
+   outside .sp-shell): the accent focus token, light or dark. */
+:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+/* A route's focus target (a heading, a status line or a panel given tabIndex -1 and focused by
+   script) is announced, not outlined: the reader did not move there. Roving items (a menu's
+   entries, tabs, options) keep the ring. */
+[tabindex="-1"]:not(a, button, [role="menuitem"], [role="option"], [role="tab"]):focus {
+  outline: none;
+}
+/* Dialog and sheet titles are 16 px, as a card's (Mantine's own is md, 14 px on this scale). */
+.mantine-Modal-title,
+.mantine-Drawer-title {
+  font-size: var(--mantine-font-size-lg);
+}
+/* Links underline on hover (Anchor's default) and on keyboard focus. */
+.mantine-Anchor-root:focus-visible {
+  text-decoration: underline;
+}
 /* The Loaded card: the engine's mark on its white tile, the pipeline, a status (UX-PAR-33). */
 .launch-loaded {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
 }
 .launch-loaded-mark {
   width: 36px;
@@ -12,22 +33,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-mark);
   box-shadow: inset 0 0 0 1px var(--sp-line-hairline);
 }
 .launch-engine .sp-engine-mark {
   vertical-align: -3px;
-  margin-right: 6px;
+  margin-right: var(--mantine-spacing-sm);
 }
 .launch-loaded-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   flex-shrink: 0;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 12.5px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-xl);
+  font-size: var(--mantine-font-size-sm);
   font-weight: 600;
   color: var(--sp-state-succeeded-fg);
   background: var(--sp-state-succeeded-bg);
@@ -55,9 +76,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  column-gap: 12px;
-  row-gap: 4px;
-  padding: 10px 0;
+  column-gap: var(--mantine-spacing-md);
+  row-gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-md) 0;
 }
 .launch-param > * {
   grid-column: 1 / -1;
@@ -69,7 +90,7 @@
 /* Required or optional, as text after the name (P1 Task 32; the boards' "(optional)" style). */
 .launch-param-need {
   font-weight: 400;
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
 }
 .launch-param-need[data-required] {
@@ -79,12 +100,12 @@
 .launch-param > .launch-param-meta {
   grid-column: 2;
   grid-row: 1;
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   color: var(--sp-text-secondary);
   text-align: right;
 }
 .launch-param-help {
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   line-height: 1.45;
   color: var(--sp-text-secondary);
 }
@@ -92,11 +113,11 @@
 .launch-head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
 }
 .launch-head-reason {
   max-width: 320px;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   text-align: right;
   color: var(--sp-text-secondary);
 }
@@ -104,7 +125,7 @@
 .launch-engine-name {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
 }
 /* The params preview (UX-PAR-32), on the board's dark card. */
 .launch-preview-card.sp-card {
@@ -123,12 +144,12 @@
 }
 .launch-preview {
   margin: 0;
-  padding: 12px 14px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
   max-height: 320px;
   overflow: auto;
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -138,24 +159,24 @@
 .launch-bar-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
 }
 /* The aside's summary and "Before Launch" (ui-spec §4.6 layout note, FU-P3-86h; LiteLaunch). */
 .launch-summary {
-  padding: 14px 16px;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg);
 }
 .launch-summary-title {
-  margin: 0 0 10px;
-  font-size: 15px;
+  margin: 0 0 var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-lg);
   font-weight: 600;
 }
 .launch-missing-title {
-  margin: 14px 0 6px;
-  font-size: 13px;
+  margin: var(--mantine-spacing-lg) 0 var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-sm);
   font-weight: 600;
 }
 .launch-missing {
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -164,7 +185,7 @@
   margin: 0;
 }
 .launch-missing ul {
-  padding-left: 18px;
+  padding-left: var(--mantine-spacing-lg);
 }
 .launch-missing li[data-warning] a {
   color: var(--sp-state-review-fg);
@@ -172,7 +193,7 @@
 .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 4px 12px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-md);
   margin: 0;
   font-size: var(--mantine-font-size-sm);
 }
@@ -190,8 +211,8 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--mantine-spacing-sm);
+  margin-bottom: var(--mantine-spacing-md);
 }
 .launch-env p,
 .launch-env-state p {
@@ -200,7 +221,7 @@
 .launch-envs {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   width: 100%;
   margin: 0;
   padding: 0;
@@ -208,18 +229,18 @@
 }
 .launch-envs legend {
   padding: 0;
-  margin-bottom: 6px;
+  margin-bottom: var(--mantine-spacing-sm);
   font-weight: 600;
   font-size: var(--mantine-font-size-sm);
 }
 .launch-env-option {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
   min-height: 44px;
-  padding: 10px 12px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md);
   border: 1px solid var(--sp-line-border);
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   cursor: pointer;
 }
 .launch-env-option:has(input:checked) {
@@ -227,14 +248,14 @@
   background: var(--sp-section-environments-bg);
 }
 .launch-env-option input {
-  margin-top: 3px;
+  margin-top: var(--mantine-spacing-xs);
 }
 .launch-env-name {
   font-weight: 600;
 }
 .launch-env-sum {
   display: block;
-  margin-top: 2px;
+  margin-top: var(--mantine-spacing-xs);
   font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-muted);
 }
@@ -251,7 +272,7 @@
   /* minmax(0, 1fr), not the implicit auto column: a long unbreakable path in Try a test pipeline
      must not widen the Pipeline card past the phone's width (Load then sat under the input). */
   grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
+  gap: var(--mantine-spacing-lg);
 }
 @media (min-width: 1200px) {
   .launch-grid {
@@ -273,7 +294,7 @@
     left: 0;
     right: 0;
     bottom: var(--sp-tabbar-h);
-    padding: 8px 16px;
+    padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
     background: var(--sp-surface-page);
     border-top: 1px solid var(--sp-line-border);
     z-index: 2;
@@ -282,7 +303,7 @@
   .launch-bar-row {
     flex-direction: column-reverse;
     align-items: stretch;
-    gap: 6px;
+    gap: var(--mantine-spacing-sm);
   }
   .launch-bar .launch-button {
     width: 100%;
@@ -302,25 +323,25 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--mantine-spacing-sm);
+  margin-bottom: var(--mantine-spacing-md);
 }
 .launch-try-label {
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   font-weight: 600;
   color: var(--sp-text-secondary);
 }
 .launch-try-item {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   max-width: 100%;
   min-height: 40px;
-  padding: 4px 12px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
   border: 1px solid var(--sp-line-input);
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--mantine-font-size-md);
   color: var(--sp-text-primary);
   text-align: left;
   background: var(--sp-surface-raised);
@@ -340,7 +361,7 @@
   min-width: 0;
   overflow: hidden;
   font-family: var(--sp-font-mono);
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   color: var(--sp-text-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -348,12 +369,12 @@
 .launch-try-what {
   flex-basis: 100%;
   margin: 0;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-muted);
 }
 .launch-try-none {
-  margin: 0 0 12px;
-  font-size: 14px;
+  margin: 0 0 var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-md);
   color: var(--sp-text-secondary);
 }
 @media (max-width: 600px) {
@@ -366,20 +387,20 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   background: var(--sp-surface-subtle);
 }
 .launch-loading {
   margin: 0;
-  padding-left: 18px;
-  font-size: 13px;
+  padding-left: var(--mantine-spacing-lg);
+  font-size: var(--mantine-font-size-sm);
 }
 .launch-loading code {
   overflow-wrap: anywhere;
 }
 .launch-warning {
-  margin: -4px 0 8px;
-  font-size: 13px;
+  margin: calc(-1 * var(--mantine-spacing-xs)) 0 var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-state-review-fg);
 }
 
@@ -388,19 +409,19 @@
    stacked on the phone, inputs at least 44 px there. */
 .launch-xrow {
   border: 1px solid var(--sp-line-border);
-  border-radius: 14px;
-  padding: 2px 14px;
-  margin: 12px 0;
+  border-radius: var(--mantine-radius-md);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  margin: var(--mantine-spacing-md) 0;
 }
 .launch-xrow-head {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--mantine-font-size-md);
   font-weight: 600;
 }
 .launch-xrow-head button {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   width: 100%;
   min-height: 40px;
   padding: 0;
@@ -415,7 +436,7 @@
   flex: 1 1 auto;
   min-width: 0;
   text-align: right;
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   font-weight: 400;
   color: var(--sp-text-muted);
   overflow: hidden;
@@ -428,33 +449,33 @@
 .launch-xrow-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-bottom: 12px;
+  gap: var(--mantine-spacing-md);
+  padding-bottom: var(--mantine-spacing-md);
 }
 .launch-xrow-body p {
   margin: 0;
 }
 .launch-xrow-hint,
 .launch-field-hint {
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
 }
 .launch-keep {
   display: flex;
-  gap: 7px;
+  gap: var(--mantine-spacing-sm);
   align-items: baseline;
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   background: var(--sp-surface-subtle);
-  border-radius: 9px;
-  padding: 6px 9px;
+  border-radius: var(--mantine-radius-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-sm);
 }
 .launch-res {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
 }
 .launch-unit {
   display: flex;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   align-items: center;
   min-width: 0;
 }
@@ -471,12 +492,12 @@
   border: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--mantine-spacing-xs);
   min-width: 0;
 }
 .launch-time legend {
   padding: 0;
-  margin-bottom: 4px;
+  margin-bottom: var(--mantine-spacing-xs);
   font-size: var(--mantine-font-size-sm);
   font-weight: 500;
 }
@@ -484,7 +505,7 @@
   flex: 1 1 0;
   min-width: 0;
   height: 36px;
-  padding: 0 10px;
+  padding: 0 var(--mantine-spacing-md);
   border: 1px solid var(--mantine-color-default-border);
   border-radius: var(--mantine-radius-sm);
   background: var(--mantine-color-body);
@@ -496,7 +517,7 @@
   border-color: var(--sp-state-failed-fg);
 }
 .launch-field-error {
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   color: var(--sp-state-failed-fg);
 }
@@ -505,22 +526,22 @@
 }
 .launch-config-input input {
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
 }
 .launch-reading {
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
 }
 /* The 503 of the extra config file: above the form, below the top bar (UX-P3FU110C-12). */
 .launch-banner {
   display: flex;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
   align-items: flex-start;
   flex-wrap: wrap;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-state-failed-bg);
   color: var(--sp-state-failed-fg);
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
 }
 @media (max-width: 767.98px) {
   .launch-xrow .mantine-Input-input,
@@ -535,8 +556,8 @@
 .launch-cat {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--mantine-spacing-sm);
+  margin-bottom: var(--mantine-spacing-md);
 }
 .launch-cat p {
   margin: 0;
@@ -545,12 +566,12 @@
   display: flex;
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 .launch-cat-save {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   flex-shrink: 0;
 }
 @media (max-width: 767.98px) {
@@ -572,7 +593,7 @@
   box-shadow: inset 4px 0 0 var(--tone, transparent);
 }
 .sp-grid-runs .ag-cell {
-  padding-block: 10px;
+  padding-block: var(--mantine-spacing-md);
   line-height: 1.45;
 }
 .sp-grid-icon {
@@ -589,15 +610,15 @@
 .launch-what {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
 }
 .launch-mode {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg);
   border: 1.5px solid var(--sp-line-border);
-  border-radius: 12px;
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   cursor: pointer;
 }
@@ -617,7 +638,7 @@
   flex: none;
   width: 18px;
   height: 18px;
-  margin: 2px 0 0;
+  margin: var(--mantine-spacing-xs) 0 0;
   accent-color: var(--sp-accent);
 }
 .launch-mode-icon {
@@ -626,7 +647,7 @@
   place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: var(--mantine-radius-sm);
   color: var(--sp-accent);
   background: var(--sp-surface-subtle);
 }
@@ -636,7 +657,7 @@
 }
 .launch-mode-sub {
   display: block;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
 }
 @media (max-width: 600px) {
@@ -648,21 +669,21 @@
 .launch-seg {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 2px;
-  margin-bottom: 12px;
-  padding: 3px;
+  gap: var(--mantine-spacing-xs);
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-xs);
   border: 1px solid var(--sp-line-border);
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-subtle);
 }
 .launch-seg label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   min-height: 36px;
-  padding: 4px 14px;
-  border-radius: 7px;
-  font-size: 14px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-sm);
+  font-size: var(--mantine-font-size-md);
   font-weight: 600;
   color: var(--sp-text-secondary);
   cursor: pointer;
@@ -677,19 +698,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin: 6px 0 0;
-  font-size: 13px;
+  gap: var(--mantine-spacing-sm);
+  margin: var(--mantine-spacing-sm) 0 0;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
 }
 .launch-chip {
   display: inline-flex;
   align-items: center;
-  padding: 2px 10px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
   border: 1px solid var(--sp-line-border);
-  border-radius: 999px;
+  border-radius: var(--mantine-radius-xl);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   font-weight: 500;
   color: var(--sp-text-primary);
   background: var(--sp-surface-subtle);
@@ -716,19 +737,19 @@ button.launch-chip:focus-visible,
 .launch-rules {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 .launch-rule {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   min-height: 40px;
-  padding: 8px 11px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
   border: 1px solid var(--sp-line-input);
-  border-radius: 8px;
+  border-radius: var(--mantine-radius-sm);
   font-family: var(--sp-font-mono);
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-primary);
   text-align: left;
   overflow-wrap: anywhere;
@@ -756,9 +777,9 @@ button.launch-chip:focus-visible,
 .launch-plan {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 10px;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-subtle);
 }
 .launch-plan p {
@@ -766,7 +787,7 @@ button.launch-chip:focus-visible,
 }
 .launch-plan-title {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--mantine-font-size-md);
   font-weight: 600;
 }
 .launch-quiet {
@@ -777,7 +798,7 @@ button.launch-chip:focus-visible,
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -785,7 +806,7 @@ button.launch-chip:focus-visible,
 .launch-plan-steps li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
 }
 .launch-plan-steps li + li::before {
   content: "→" / "";
@@ -795,13 +816,13 @@ button.launch-chip:focus-visible,
   display: flex;
   flex-direction: column;
   min-width: 110px;
-  padding: 8px 12px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
   border: 1px solid var(--sp-line-border);
-  border-radius: 8px;
+  border-radius: var(--mantine-radius-sm);
   background: var(--sp-surface-raised);
 }
 .launch-plan-node > span:last-child {
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   color: var(--sp-text-secondary);
 }
 .launch-plan-node[data-target] {

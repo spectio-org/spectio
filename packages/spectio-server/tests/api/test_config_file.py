@@ -566,3 +566,95 @@ def test_req20_get_config_file(
     other = nf(authed_client, pipe).json()["id"]
     assert authed_client.get(f"{API}/runs/{other}/config-file").status_code == 404
     assert authed_client.get(f"{API}/runs/run_nope/config-file").status_code == 404
+
+
+# --- Inspect's `config_file`: the same checks before Launch (FU-P3-121) -------------------------
+
+
+def inspect(client: TestClient, location: Path, **params: str) -> Any:
+    return client.get(f"{API}/workflows:inspect", params={"location": str(location), **params})
+
+
+def test_inspect_config_file_says_what_launch_would_refuse(
+    authed_client: TestClient, pipe: Callable[[str], Path], home: Path
+) -> None:
+    """A group-writable file (login1 retest h): inspect reports Launch's refusal in its words,
+    and a file Launch accepts with `error: null`; never the file's bytes."""
+    path = write(home / "x.config", "SECRET = 1\n", 0o664)
+    found = inspect(authed_client, pipe("nextflow"), config_file=str(path), engine="nextflow")
+    assert found.status_code == 200, found.text
+    assert found.json()["config_file"] == {
+        "path": str(path),
+        "error": "the file is writable by group or others",
+    }
+    path.chmod(0o600)
+    found = inspect(authed_client, pipe("nextflow"), config_file=str(path), engine="nextflow")
+    assert found.json()["config_file"] == {"path": str(path), "error": None}
+    assert "SECRET" not in found.text
+
+
+@pytest.mark.parametrize(
+    ("engine", "name", "text", "why"),
+    [
+        ("nextflow", "x.yaml", "a: 1\n", "a .config file"),
+        ("snakemake", "x.yaml", "__use_yte__: true\n", "__use_yte__"),
+        ("snakemake", "x.json", "{", "not JSON"),
+    ],
+)
+def test_inspect_config_file_follows_the_engine(
+    authed_client: TestClient,
+    pipe: Callable[[str], Path],
+    home: Path,
+    engine: str,
+    name: str,
+    text: str,
+    why: str,
+) -> None:
+    path = write(home / name, text)
+    found = inspect(authed_client, pipe(engine), config_file=str(path), engine=engine)
+    assert why in found.json()["config_file"]["error"]
+
+
+def test_inspect_config_file_outside_the_roots_and_absent(
+    authed_client: TestClient, pipe: Callable[[str], Path], home: Path, tmp_path: Path
+) -> None:
+    path = write(tmp_path / "x.config")
+    found = inspect(authed_client, pipe("nextflow"), config_file=str(path), engine="nextflow")
+    assert "home directory or in the pipeline" in found.json()["config_file"]["error"]
+    assert inspect(authed_client, pipe("nextflow")).json()["config_file"] is None
+
+
+def test_inspect_config_file_engine_from_the_pipeline(
+    authed_client: TestClient, pipe: Callable[[str], Path], home: Path
+) -> None:
+    """Without `engine`, the pipeline's own (main.nf here); an unknown engine is a 422."""
+    path = write(home / "x.config")
+    found = inspect(authed_client, pipe("nextflow"), config_file=str(path))
+    assert found.json()["config_file"] == {"path": str(path), "error": None}
+    bad = inspect(authed_client, pipe("nextflow"), config_file=str(path), engine="cwl")
+    assert bad.status_code == 422
+
+
+def test_inspect_config_file_browser_checks_before_any_read(
+    settings: Settings,
+    writer: Writer,
+    authed_client: TestClient,
+    pipe: Callable[[str], Path],
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Session, Host and cross-site checks as on every route: the file is never read."""
+    from .conftest import client_for
+
+    reads: list[Any] = []
+    monkeypatch.setattr(extras, "read_config_file", lambda *a: reads.append(a))
+    path = write(home / "x.config")
+    params = {"location": str(pipe("nextflow")), "config_file": str(path), "engine": "nextflow"}
+    url = f"{API}/workflows:inspect"
+    assert client_for(settings, writer, signed_in=False).get(url, params=params).status_code == 401
+    for headers, status in (
+        ({"Host": "evil.example"}, 400),
+        ({"Sec-Fetch-Site": "cross-site"}, 403),
+    ):
+        assert authed_client.get(url, params=params, headers=headers).status_code == status
+    assert reads == []

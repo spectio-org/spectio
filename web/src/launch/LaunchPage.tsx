@@ -1,4 +1,5 @@
 import {
+  Anchor,
   Button,
   Checkbox,
   Group,
@@ -34,13 +35,14 @@ import {
   listEnvironments,
 } from "../api";
 import { label as envLabel } from "../environments/fields";
-import { ICONS, Icon, groupIcon } from "../icons";
+import { Icon, groupIcon } from "../icons";
 import { runName } from "../runs/RunState";
 import { engineName, executorLabel, plural, shortId } from "../runs/stateWord";
 import { useServer } from "../server";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PageHead } from "../shell/PageHead";
+import "./launch.css";
 import { usePhone } from "../shell/layout";
 import { CatalogPicker, SaveToCatalog } from "./CatalogPicker";
 import { EngineButtons } from "./EngineButtons";
@@ -146,8 +148,8 @@ const PROFILE_HINTS: Record<Engine, string> = {
 
 /** The two cards of "What to run" (ui-spec §4.15): a pipeline of three steps, and one step alone. */
 const MODES = [
-  { single: false, title: "Whole pipeline", sub: "Every step of a Nextflow or Snakemake pipeline", icon: "M3 4h6v5H3z M15 4h6v5h-6z M9 15h6v5H9z M6 9v2.5h12V9 M12 11.5V15" },
-  { single: true, title: "One step", sub: "A Nextflow module, or one Snakemake rule and what it needs", icon: "M7 7h10v10H7z M10 12h4" },
+  { single: false, title: "Whole pipeline", sub: "Every step of a Nextflow or Snakemake pipeline", icon: "pipeline" as const },
+  { single: true, title: "One step", sub: "A Nextflow module, or one Snakemake rule and what it needs", icon: "step" as const },
 ] as const;
 
 /** One step's kind: a Nextflow module or a Snakemake rule, each with its engine and page head. */
@@ -233,6 +235,11 @@ export function LaunchPage({
   const [resources, setResources] = useState<Draft>(NO_DRAFT);
   const [configFile, setConfigFile] = useState("");
   const [configDown, setConfigDown] = useState<string | null>(null);
+  // What Launch would refuse of that file, asked of inspect before Launch (FU-P3-121); asked again
+  // when the window comes back (a chmod in a terminal) and when Launch is pressed while it blocks;
+  // kept with what it was asked for (pipeline, engine, path), so a change drops it (CR-P3FU121-02)
+  const [configCheck, setConfigCheck] = useState<{ asked: string; found: Inspected["config_file"] } | null>(null);
+  const [recheck, setRecheck] = useState(0);
   const inFlight = useRef<AbortController | null>(null);
   // What to run (ui-spec §4.15, api §5.10): the whole pipeline, or one module or one rule when the
   // server has single targets on. A module loads as a form of its inputs; a Snakemake pipeline
@@ -507,6 +514,33 @@ export function LaunchPage({
     return () => controller.abort();
   }, [copyFrom]);
 
+  const configAsked = loaded && engine && configFile.trim() ? JSON.stringify([loaded.location, loaded.revision, engine, configFile.trim()]) : null;
+  /** The pre-check of the extra config file; a failed one shows nothing: Launch's own read stays the check. */
+  function checkConfig(signal?: AbortSignal) {
+    if (!loaded || !engine || !configAsked) return Promise.resolve(null);
+    const asked = configAsked;
+    return inspect(loaded.location, loaded.revision, signal, null, { path: configFile.trim(), engine }).then(
+      (found) => {
+        const check = { asked, found: found.config_file ?? null };
+        setConfigCheck(check);
+        return check;
+      },
+      () => (signal?.aborted || setConfigCheck(null), null),
+    );
+  }
+  useEffect(() => {
+    if (!configAsked) return setConfigCheck(null);
+    const controller = new AbortController();
+    const timer = setTimeout(() => void checkConfig(controller.signal), 300);
+    return () => (clearTimeout(timer), controller.abort());
+  }, [configAsked, recheck]);
+  useEffect(() => {
+    const again = () => setRecheck((n) => n + 1);
+    window.addEventListener("focus", again);
+    return () => window.removeEventListener("focus", again);
+  }, []);
+  const configRefused = configCheck && configCheck.asked === configAsked ? (configCheck.found?.error ?? null) : null;
+
   /** Every reason Launch waits, in order (ui-spec §4.6): the list of "Before Launch". */
   function reasons(): Reason[] {
     if (loading) return [{ text: "Wait for the pipeline to load", to: "location" }];
@@ -527,6 +561,7 @@ export function LaunchPage({
     for (const [to, wrong] of Object.entries(res.errors)) {
       found.push({ text: `Fix ${RESOURCE_LABELS[to as keyof typeof RESOURCE_LABELS]}: ${wrong.brief}`, to });
     }
+    if (configRefused) found.push({ text: `Fix Extra config file: ${configRefused}`, to: "config_file" });
     for (const field of fields) {
       const wrong = checkValue(field, own(values, field.key));
       const to = `params.${field.key}`;
@@ -555,10 +590,10 @@ export function LaunchPage({
   }
 
   async function submit() {
-    if (reasons().length || !loaded || !engine) {
-      setTried(true);
-      return;
-    }
+    // a refusal of the pre-check may be stale (a chmod since): asked again, and awaited, before
+    // deciding, so the click is not dropped (CR-P3FU121-01)
+    const others = reasons().filter((r) => !(configRefused && r.to === "config_file"));
+    if (others.length || !loaded || !engine) return setTried(true);
     const params = buildParams(fields, values, rows, leaves);
     const path = oneModule ? "" : configFile.trim(); // none for a module (api §5.10)
     const target: TargetIn | null = !targeting
@@ -567,6 +602,10 @@ export function LaunchPage({
         ? { kind: "module", version: module.source === "registry" ? version.trim() : module.version }
         : { kind: "rule", name: rule };
     setSending(true);
+    if (configRefused && (await checkConfig())?.found?.error) {
+      setSending(false);
+      return setTried(true);
+    }
     setErrors({});
     setConfigDown(null);
     try {
@@ -637,8 +676,8 @@ export function LaunchPage({
           .filter(Boolean)
           .join(" · ")
       : null;
-  // One action in two places on a desktop (LiteLaunch: the page head and under the aside), both
-  // described by the "Before Launch" list; the phone has the pinned bar only.
+  // One Launch (ui-spec §12.4, UI-13): at the right of the page head on a desktop, in the pinned bar
+  // on the phone, described by the "Before Launch" list.
   const launchButton = (
     <Button
       type="button"
@@ -647,10 +686,16 @@ export function LaunchPage({
       aria-disabled={why ? true : undefined}
       data-disabled={why ? true : undefined}
       aria-describedby={summary ? "launch-missing launch-reason" : "launch-missing"}
-      leftSection={<Icon path={ICONS.runs} size={16} />}
+      leftSection={<Icon name="runs" size="button" />}
     >
       {sending ? "Launching…" : !targeting ? "Launch" : kind === "module" ? "Launch module" : `Launch ${rule || "rule"}`}
     </Button>
+  );
+  /** A refused launch: in the phone's pinned bar, under Before Launch on the desktop. */
+  const formError = errors.form && (
+    <Text size="sm" c="var(--sp-state-failed-fg)" role="alert" mt={4}>
+      {errors.form}
+    </Text>
   );
   const local = server?.executor === "local";
   const headLine = server ? (local ? `a process on ${server.node}` : `a tmux session on ${server.node}`) : "…";
@@ -684,13 +729,14 @@ export function LaunchPage({
           : `Guessed from ${loaded.engine_files.join(", ")} · change it if the guess is wrong`;
 
   return (
-    <Stack className="launch-page" gap="md">
+    <Stack className="launch-page" gap="xl">
       <PageHead
         section="launch"
         title={targeting ? KINDS[kind].title : "Launch a workflow"}
         sub={targeting ? KINDS[kind].sub : "A directory or a Git repository: Spectio guesses the engine and builds the form from its schema."}
-        phoneBar="title"
-        action={
+        phoneTitle="title"
+        phonePrimary="none"
+        primary={
           <span className="launch-head">
             {/* a visual copy of the first reason of "Before Launch", which describes both buttons */}
             {why && (
@@ -703,28 +749,28 @@ export function LaunchPage({
         }
       />
       {prefillError && (
-        <Text c="red" role="alert">
+        <Text c="var(--sp-state-failed-fg)" role="alert">
           Not prefilled: {prefillError}
         </Text>
       )}
       {prefill && <PrefillBanner prefill={prefill} onClear={onClear} />}
       {configDown !== null && (
         <div role="alert" className="launch-banner">
-          <Icon path={ICONS.alert} size={16} />
+          <Icon name="alert" />
           <span className="sp-grow">{`The extra config file could not be read: ${configDown}. Nothing was started and your values are kept.`}</span>
-          <Button size="xs" onClick={submit}>
+          <Button variant="default" onClick={submit}>
             Launch again
           </Button>
         </div>
       )}
       <div className="launch-grid">
-        <Stack gap="md">
+        <Stack gap="lg">
           {singleOffered && (
             <div className="launch-what" role="radiogroup" aria-label="What to run">
               {MODES.map((m, i) => (
                 <label key={m.title} className="launch-mode">
                   <span className="launch-mode-icon">
-                    <Icon path={m.icon} size={22} />
+                    <Icon name={m.icon} size="tile" />
                   </span>
                   <span className="sp-grow">
                     <span id={`launch-mode-${i}`} className="launch-mode-title">
@@ -748,7 +794,7 @@ export function LaunchPage({
           )}
           <FoldSection
             id="launch-pipeline"
-            icon={ICONS.route}
+            icon="route"
             title={targeting ? (kind === "module" ? "Module" : "Rule") : "Pipeline"}
             card
             reveal={goTo === "location" || goTo === "engine" || goTo === "rule"}
@@ -870,7 +916,7 @@ export function LaunchPage({
                   {markFor(guessed, loaded.name) ? (
                     <PipelineMark engine={guessed} name={loaded.name} size={24} />
                   ) : (
-                    <Icon path={ICONS.folder} size={20} />
+                    <Icon name="folder" size="tile" />
                   )}
                 </span>
                 <div className="sp-grow">
@@ -898,7 +944,7 @@ export function LaunchPage({
                   )}
                 </div>
                 <span className="launch-loaded-status">
-                  <Icon path={ICONS.check} size={14} stroke={2.4} />
+                  <Icon name="check" />
                   <span>Loaded</span>
                 </span>
                 {!module && <SaveToCatalog
@@ -942,7 +988,7 @@ export function LaunchPage({
                   })}
                 </div>
                 {errors.rule && (
-                  <Text id="launch-rule-error" size="sm" c="red" role="alert">
+                  <Text id="launch-rule-error" size="sm" c="var(--sp-state-failed-fg)" role="alert">
                     {errors.rule}
                   </Text>
                 )}
@@ -1035,7 +1081,7 @@ export function LaunchPage({
           </FoldSection>
           <FoldSection
             id="launch-where"
-            icon={ICONS.server}
+            icon="server"
             title="Where it runs"
             card
             reveal={goTo === "environment" || goTo === "config_file" || !!goTo?.startsWith("resources")}
@@ -1068,7 +1114,7 @@ export function LaunchPage({
                   dropErrors("config_file");
                 }}
                 engine={engine}
-                error={errors.config_file}
+                error={errors.config_file ?? configRefused ?? undefined}
                 reading={sending}
                 node={server?.node ?? "the server"}
                 reveal={goTo === "config_file" ? "link" : !!errors.config_file}
@@ -1099,9 +1145,10 @@ export function LaunchPage({
           {loaded && (
             <FoldSection
               id="launch-params"
-              icon={ICONS.sliders}
+              icon="sliders"
               title={module ? "Module inputs" : "Parameters"}
               status={module ? `${fields.filter((f) => f.required).length} required` : undefined}
+              card
               reveal={!!goTo?.startsWith("params.")}
             >
               {sections.length > 1 && (
@@ -1143,18 +1190,18 @@ export function LaunchPage({
             </FoldSection>
           )}
           {loaded && graphOn && (
-            <FoldSection id="launch-map" icon={ICONS.route} title="Workflow map" defaultOpen={false}>
+            <FoldSection id="launch-map" icon="route" title="Workflow map" defaultOpen={false}>
               <Suspense fallback={<p className="sp-muted">Loading the map…</p>}>
                 <LaunchMap location={loaded.location} revision={loaded.revision} name={loaded.name} />
               </Suspense>
             </FoldSection>
           )}
         </Stack>
-        <Stack className="launch-aside" gap="md" component="aside" aria-label="Launch">
+        <Stack className="launch-aside" gap="lg" component="aside" aria-label="Launch">
           <section className="sp-card launch-summary" aria-labelledby="launch-summary-title">
-            <h2 id="launch-summary-title" className="launch-summary-title">
+            <h3 id="launch-summary-title" className="launch-summary-title">
               Summary
-            </h2>
+            </h3>
             <dl className="facts">
               <dt>{oneModule ? "Module" : "Pipeline"}</dt>
               <dd>
@@ -1180,7 +1227,7 @@ export function LaunchPage({
               <dd>{engine ? `${engineName(engine)} ${loaded?.engine_versions[engine] ?? "(version not found)"}` : "Not chosen yet"}</dd>
               <dt>Environment</dt>
               <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
-              <dt>Resources</dt>
+              <dt>Run resources</dt>
               <dd>{summaryLine(res.sent, extras)}</dd>
               {!oneModule && (
                 <>
@@ -1205,7 +1252,7 @@ export function LaunchPage({
                   {[...missing, ...warnings].map((r) => (
                     <li key={r.text} data-warning={warnings.includes(r) || undefined}>
                       {r.to ? (
-                        <a
+                        <Anchor
                           href={`#${targetId(r.to)}`}
                           onClick={(e) => {
                             e.preventDefault();
@@ -1213,7 +1260,7 @@ export function LaunchPage({
                           }}
                         >
                           {r.text}
-                        </a>
+                        </Anchor>
                       ) : (
                         r.text
                       )}
@@ -1222,24 +1269,23 @@ export function LaunchPage({
                 </ul>
               )}
             </div>
+            {!phone && formError}
           </section>
           {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} extra={leaves ? keptAs(engine, configFile) : null} />}
-          <div className="launch-bar">
-            <div className="launch-bar-row">
-              {launchButton}
-              {/* the phone's bar: the first reason (a visual copy), or what Launch sends */}
-              {phone && (why || summary) && (
-                <Text id={summary ? "launch-reason" : undefined} size="sm" c="dimmed" className="launch-reason" aria-hidden={why ? true : undefined}>
-                  {why ?? summary}
-                </Text>
-              )}
+          {/* the phone's pinned bar: Launch, then the first reason (a visual copy) or what it sends */}
+          {phone && (
+            <div className="launch-bar">
+              <div className="launch-bar-row">
+                {launchButton}
+                {(why || summary) && (
+                  <Text id={summary ? "launch-reason" : undefined} size="sm" c="dimmed" className="launch-reason" aria-hidden={why ? true : undefined}>
+                    {why ?? summary}
+                  </Text>
+                )}
+              </div>
+              {formError}
             </div>
-            {errors.form && (
-              <Text size="sm" c="red" role="alert" mt={4}>
-                {errors.form}
-              </Text>
-            )}
-          </div>
+          )}
         </Stack>
       </div>
     </Stack>
@@ -1271,7 +1317,7 @@ function PrefillBanner({ prefill, onClear }: { prefill: Prefill; onClear?: () =>
         </ul>
       )}
       {onClear && (
-        <Button variant="default" size="xs" onClick={onClear}>
+        <Button variant="default" onClick={onClear}>
           Clear and start empty
         </Button>
       )}
@@ -1393,7 +1439,7 @@ function ParamsPreview({ engine, fields, values, rows, extra }: { engine: Engine
     text = null;
   }
   return (
-    <FoldSection id="launch-preview" icon={ICONS.fileCode} title={label} card className="launch-preview-card" defaultOpen={false}>
+    <FoldSection id="launch-preview" icon="fileCode" title={label} card className="launch-preview-card" defaultOpen={false}>
       <Text size="sm" className="launch-preview-note" mb="sm">
         {extra
           ? `Only the keys you set · written to the run directory and passed with --configfile, after ${extra} · other keys come from ${extra}, then the pipeline`

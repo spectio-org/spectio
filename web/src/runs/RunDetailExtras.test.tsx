@@ -103,6 +103,7 @@ test("not readable: the words, and no path, hash or buttons", async () => {
   expect(fact("Default resources")).toHaveTextContent("The run's record of them is damaged; the run itself is not affected.");
   expect(fact("Extra config file")).toHaveTextContent("Not readable");
   expect(fact("Extra config file")).toHaveTextContent("The run's record of it is damaged");
+  expect(fact("Extra config file")).not.toHaveTextContent("no path, hash or View"); // ui-spec §4.6's words only (CR-P3FU110D-04)
   expect(within(fact("Extra config file")).queryByRole("button")).toBeNull();
 });
 
@@ -136,6 +137,17 @@ test("View opens a modal sheet that reads the kept copy; Escape returns focus to
   await userEvent.keyboard("{Escape}");
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   await waitFor(() => expect(view).toHaveFocus());
+});
+
+test("with includes, the sheet says the includeConfig warning above the preview (CR-P3FU110D-04)", async () => {
+  detail({ config_file: { ...KEPT, includes: true } });
+  app(`/runs/${ID}`);
+  await facts();
+  await userEvent.click(within(fact("Extra config file")).getByRole("button", { name: "View extra.config" }));
+  const sheet = await screen.findByRole("dialog", { name: "extra.config" });
+  const preview = await within(sheet).findByLabelText("Contents of extra.config");
+  const warning = within(sheet).getByText("It loads other files with includeConfig; those are not kept with the run.");
+  expect(warning.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 test("the sheet says when the kept copy changed since the launch", async () => {

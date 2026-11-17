@@ -5,7 +5,11 @@
 // built without Gradle by build.sh (P1 Task 21), from the same sources and the same manifest.
 // Pinned: the wrapper's distributionSha256Sum, and the sha256 of every plugin, POM and jar the
 // build resolves in gradle/verification-metadata.xml (regenerate after a version change with
-// `./gradlew --write-verification-metadata sha256 packagePlugin`, then review the diff).
+// `./gradlew --write-verification-metadata sha256 packagePlugin`, then check the new and changed
+// hashes against the ones upstream publishes, e.g. Maven Central's .sha256 files, as the review
+// of P3 Task 26 did: a diff of hashes cannot be judged by reading it).
+// README.md is the registry description of a release: Summary, Get Started, Examples and License
+// sections, no placeholder text (nextflow-plugin-gradle README.md:81-96 at b388249).
 plugins {
     // https://plugins.gradle.org/plugin/io.nextflow.nextflow-plugin, the latest on 2026-11-07.
     id 'io.nextflow.nextflow-plugin' version '1.0.0-beta.16'
@@ -18,10 +22,14 @@ sourceSets {
 }
 
 nextflowPlugin {
-    // Compiled against this release, and Plugin-Requires is `>=` it: the floor of
-    // architecture §13.4, = REQUIRES in build.sh.
+    // Compiled against this release (compileOnly io.nextflow:nextflow:<it>), and Plugin-Requires
+    // is `>=` it (nextflow-plugin-gradle NextflowPlugin.groovy:170, PluginManifest.groovy:22 at
+    // b388249, v1.0.0-beta.16): a bump also raises the floor of architecture §13.4,
+    // = REQUIRES in build.sh, which the dry run checks.
     nextflowVersion = '25.04.0'
-    provider = 'spectio'
+    // = the Provider of the registry claim (Thomas, inbox #66, 2026-10-29), or a release is
+    // refused; = Plugin-Provider in build.sh.
+    provider = 'spectio-org'
     className = 'spectio.SpectioPlugin'
     extensionPoints = ['spectio.SpectioFactory']
     // The plugin spec lists config options and functions; nf-spectio has neither.

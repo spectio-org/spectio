@@ -6,6 +6,7 @@ import { ApiError, type CatalogItem, type CatalogList as List, getCatalogEntry, 
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
+import { ErrorPanel, SkeletonRows } from "../shell/States";
 import { CatalogForm, EMPTY, fromItem } from "./CatalogForm";
 import { CatalogList, DeleteAsk, WAITS_ID, entryLabel, focusHeading, waitsFor } from "./CatalogList";
 
@@ -30,21 +31,17 @@ export function CatalogPage() {
   }, [load]);
   const why = waitsFor(data);
   const add = why ? (
-    <Button size="md" aria-disabled data-disabled aria-describedby={WAITS_ID}>Add pipeline</Button>
+    <Button aria-disabled data-disabled aria-describedby={WAITS_ID}>Add pipeline</Button>
   ) : (
-    <Button component={Link} to="/catalog/new" size="md">Add pipeline</Button>
+    <Button component={Link} to="/catalog/new">Add pipeline</Button>
   );
   const count = data && `${data.items.length} ${data.items.length === 1 ? "pipeline" : "pipelines"}`;
   return (
     <div className="sp-page">
-      <Link to="/launch" className="sp-link sp-cat-back">Back to Launch</Link>
-      <PageHead section="launch" title="Catalog" sub={`Pipelines saved under a name, to pick at Launch${count ? ` · ${count}` : ""}`} action={add} />
+      <PageHead section="launch" icon="list" title="Catalog" sub={`Pipelines saved under a name, to pick at Launch${count ? ` · ${count}` : ""}`} primary={add} />
       <p role="status" className="sp-sr">{said}</p>
       {error ? (
-        <>
-          <p role="alert" className="sp-note sp-alert">The catalog could not be read. {error}</p>
-          <Button variant="default" style={{ alignSelf: "flex-start" }} onClick={() => (setError(null), load())}>Retry</Button>
-        </>
+        <ErrorPanel onRetry={() => (setError(null), load())}>The catalog could not be read. {error}</ErrorPanel>
       ) : (
         <CatalogList data={data} onReload={load} onChanged={(say, focus) => load().then(() => (setSaid(say), focusHeading(focus)))} />
       )}
@@ -86,12 +83,11 @@ export function CatalogEntryPage({ name }: { name: string | null }) {
     return (
       <div className="sp-page">
         <PageHead section="launch" title={name} />
-        <p role="alert" className="sp-note sp-alert">{name} could not be read. {failed.text}</p>
-        <Button variant="default" style={{ alignSelf: "flex-start" }} onClick={() => (setFailed(null), reload())}>Retry</Button>
+        <ErrorPanel onRetry={() => (setFailed(null), reload())}>{name} could not be read. {failed.text}</ErrorPanel>
       </div>
     );
   }
-  if (name && !item) return <p className="sp-muted">Loading the catalog…</p>;
+  if (name && !item) return <SkeletonRows label="Loading the catalog…" />;
   return (
     <div className="sp-page">
       <PageHead
@@ -111,7 +107,7 @@ export function CatalogEntryPage({ name }: { name: string | null }) {
       {phone && item && (
         <div role="group" aria-labelledby="cat-more" className="sp-env-more">
           <h2 id="cat-more">More for this entry</h2>
-          <Button variant="light" color="red" fullWidth onClick={() => setAsking(true)}>Delete {item.name}</Button>
+          <Button variant="default" fullWidth onClick={() => setAsking(true)}>Delete {item.name}</Button>
           <DeleteAsk entry={asking ? item : null} onClose={() => setAsking(false)} onDeleted={() => toList(`Deleted ${item.name}`, null)} onReload={reload} />
         </div>
       )}

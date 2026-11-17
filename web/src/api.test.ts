@@ -133,6 +133,7 @@ const efficiency = {
 const processEfficiency = {
   jobs: { done: 1, total: 2 },
   measured: 1,
+  pending_accounting: 0,
   cpu_mean: 0.4,
   cpu_max: 0.4,
   mem_mean: null,
@@ -174,6 +175,7 @@ const SAMPLES: Record<string, object> = {
     engine_settings: engineSettings,
     default_resources: null,
     config_file: null,
+    head_logs: ["head-out", "head-err"],
   } satisfies RunDetail,
   RunDefaultResources: { cpus: null, mem_mib: null, time_min: null, state: "recorded" } satisfies RunDefaultResources,
   RunConfigFile: {
@@ -223,7 +225,7 @@ const SAMPLES: Record<string, object> = {
   Features: { single_target: false },
   RunTarget: run.target,
   Me: me,
-  Notification: { id: "", kind: "run_failed", run_id: "", run_name: null, at: "", read: false } satisfies Notification,
+  Notification: { id: "", kind: "run_failed", run_id: "", run_name: null, engine: null, at: "", read: false } satisfies Notification,
   Notifications: { items: [], unread: 0, read_up_to: null } satisfies Notifications,
   Principal: me.principal,
   MeSession: me.session,

@@ -1,5 +1,6 @@
 // Search in 0.0.1 (FU-P3-89; ui-spec top bar note): a modal dialog over what the API already
 // serves (GET /runs?q=, GET /runs/{id}, GET /catalog) and the app's pages, no GET /search yet.
+import { readFileSync } from "node:fs";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -18,8 +19,17 @@ function backend(over: Record<string, unknown> = {}) {
   });
 }
 
-beforeEach(() => viewport(1440));
-afterEach(() => vi.unstubAllGlobals());
+// run() ended or started 2026-10-31 07:40 UTC; one hour later reads "1 h ago" (ui-spec §12.8)
+beforeEach(() => {
+  viewport(1440);
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-31T08:41:00+00:00"));
+});
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+const RNA_RUN = "Run rnaseq-a, Running, Nextflow, 1 h ago";
 
 async function openByButton() {
   const opener = await screen.findByRole("button", { name: "Search runs, pipelines and pages" });
@@ -57,7 +67,7 @@ test("results are grouped under Runs, Pipelines and Pages, after one debounced r
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), "rna");
   const runs = await within(dialog).findByRole("region", { name: "Runs" });
-  expect(within(runs).getByRole("button", { name: `Run rnaseq-a, ${ID}` })).toBeInTheDocument();
+  expect(within(runs).getByRole("button", { name: RNA_RUN })).toBeInTheDocument();
   const pipelines = within(dialog).getByRole("region", { name: "Pipelines" });
   expect(within(pipelines).getByRole("button", { name: "Pipeline RNA-seq, /g/p/rnaseq" })).toBeInTheDocument();
   expect(within(dialog).queryByRole("region", { name: "Pages" })).toBeNull();
@@ -88,7 +98,7 @@ test("a run ID is looked up exactly with GET /runs/{id}", async () => {
   const router = app("/environments");
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), ID);
-  const hit = await within(dialog).findByRole("button", { name: `Run wgs-12, ${ID}` });
+  const hit = await within(dialog).findByRole("button", { name: "Run wgs-12, Running, Nextflow, 1 h ago" });
   expect(fetched(mock)).toContain(`/api/v1/runs/${ID}`);
   await userEvent.click(hit);
   await waitFor(() => expect(router.state.location.pathname).toBe(`/runs/${ID}`));
@@ -100,6 +110,35 @@ test("nothing found says No match", async () => {
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), "zzz");
   await waitFor(() => expect(within(dialog).getByRole("status")).toHaveTextContent("No match"));
+  expect(within(dialog).getByText("No run, pipeline or page matches “zzz”.")).toBeInTheDocument();
+});
+
+test("UI-06: a spotlight panel, no close button, an Esc hint, and a prompt before typing", async () => {
+  backend();
+  app("/environments");
+  const { dialog } = await openByButton();
+  expect(within(dialog).queryByRole("button", { name: /close/i })).toBeNull();
+  expect(within(dialog).getByText("Esc")).toBeInTheDocument();
+  expect(within(dialog).getByText("Type a run name or ID, a pipeline or a page.")).toBeInTheDocument();
+});
+
+test("UI-06: a run row shows its state tile and word, engine mark and time; the active row follows the arrows", async () => {
+  backend();
+  app("/environments");
+  const { dialog } = await openByButton();
+  await userEvent.type(within(dialog).getByRole("searchbox"), "rna");
+  const runRow = await within(dialog).findByRole("button", { name: RNA_RUN });
+  expect(runRow.querySelector(".sp-search-tile")).toHaveAttribute("data-tone", "running");
+  expect(within(runRow).getByText("Running")).toBeInTheDocument();
+  expect(within(runRow).getByText("1 h ago")).toBeInTheDocument();
+  expect(runRow.querySelector("img.sp-engine-mark")).not.toBeNull();
+  const pipeRow = within(dialog).getByRole("button", { name: "Pipeline RNA-seq, /g/p/rnaseq" });
+  // Enter on the input opens the first row: it is the active one until the arrows move
+  expect(runRow).toHaveAttribute("data-active");
+  await userEvent.keyboard("{ArrowDown}{ArrowDown}");
+  expect(pipeRow).toHaveFocus();
+  expect(pipeRow).toHaveAttribute("data-active");
+  expect(runRow).not.toHaveAttribute("data-active");
 });
 
 test("a failed request shows an error line", async () => {
@@ -137,6 +176,13 @@ test("FU-P3-116: the short ID the UI shows (last 6 of the run ID) finds its run,
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), "d80950");
   const runs = await within(dialog).findByRole("region", { name: "Runs" });
-  expect(within(runs).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual([`Run sarek-b, ${other.id}`]);
+  expect(within(runs).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual(["Run sarek-b, Running, Nextflow, 1 h ago"]);
   expect(within(dialog).getByRole("status")).toHaveTextContent("1 result");
+});
+
+test("the dialog's row classes share no name with the top bar search button (CR-P3UI06-01)", () => {
+  const classes = (file: string) => new Set(Array.from(readFileSync(file, "utf8").matchAll(/className="([^"]+)"/g), (m) => m[1].split(" ")).flat());
+  const bar = classes("src/shell/TopBar.tsx");
+  const shared = [...classes("src/shell/SearchDialog.tsx")].filter((name) => bar.has(name));
+  expect(shared).toEqual([]);
 });

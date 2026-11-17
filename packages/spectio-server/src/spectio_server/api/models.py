@@ -280,6 +280,7 @@ class RunDetail(Run):
     engine_settings: EngineSettings
     default_resources: RunDefaultResources | None  # null when the launch set none (api §5.7)
     config_file: RunConfigFile | None
+    head_logs: list[Literal["head-out", "head-err"]]  # the head logs there are (FU-P3-124)
 
 
 class TemplateWorkflow(BaseModel):
@@ -374,7 +375,8 @@ class Notification(BaseModel):
     kind: NotificationKind
     run_id: str
     run_name: str | None
-    at: str
+    engine: str | None  # the run's `workflow.engine`, as `WorkflowRef`
+    at: str  # an ended run's `ended_at`, else `state_changed_at` (api §5.9, 2026-11-11)
     read: bool
 
 
@@ -423,6 +425,7 @@ class ProcessEfficiency(BaseModel):
 
     jobs: JobCount
     measured: int
+    pending_accounting: int  # ended jobs sacct has not answered yet (CR-P3FU119-01)
     cpu_mean: float | None
     cpu_max: float | None
     mem_mean: float | None
