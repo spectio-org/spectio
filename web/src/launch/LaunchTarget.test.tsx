@@ -74,7 +74,11 @@ function page(server: ServerVersion = SERVER, onLaunched = vi.fn()) {
   return onLaunched;
 }
 
-const bodies = () => fetchMock.mock.calls.map(([url, init]) => [String(url), init?.body ? JSON.parse(String(init.body)) : null] as const);
+// the graph's `/features` probe (#160, behind its own flag) is left out
+const bodies = () =>
+  fetchMock.mock.calls
+    .map(([url, init]) => [String(url), init?.body ? JSON.parse(String(init.body)) : null] as const)
+    .filter(([url]) => url !== "/api/v1/features");
 const launch = (name = "Launch") => screen.getAllByRole("button", { name }).at(-1)!;
 const singleMode = () => userEvent.click(screen.getByRole("radio", { name: "One step" }));
 const ruleKind = () => userEvent.click(screen.getByRole("radio", { name: "Snakemake rule" }));

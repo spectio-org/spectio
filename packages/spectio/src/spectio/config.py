@@ -120,6 +120,8 @@ class ServerOpts(_Model):
     serve` aborts on it (dev-env §15.3 req. 1); there is no `--host` flag."""
 
     host: str = LOOPBACK
+    # Features off by default (dev-env §15.1); `graph_view`: the workflow graph (issue #160)
+    features: list[Literal["graph_view"]] = []
 
 
 class RunnerOpts(_Model):
@@ -145,6 +147,7 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_PORT": ("port",),
     "SPECTIO_EXECUTOR": ("executor",),
     "SPECTIO_SERVER_HOST": ("server", "host"),
+    "SPECTIO_SERVER_FEATURES": ("server", "features"),
     "SPECTIO_SLURM_PARTITION": ("slurm", "partition"),
     "SPECTIO_SLURM_ACCOUNT": ("slurm", "account"),
     "SPECTIO_SLURM_ACCOUNTING": ("slurm", "accounting"),
@@ -176,8 +179,12 @@ class _FlatEnv(PydanticBaseSettingsSource):
             node = found
             for key in keys[:-1]:
                 node = node.setdefault(key, {})
-            listed = "extra_args" in keys or keys[-1] == "module_namespaces"
-            node[keys[-1]] = shlex.split(value) if listed else value
+            if "extra_args" in keys or keys[-1] == "module_namespaces":
+                node[keys[-1]] = shlex.split(value)
+            elif keys[-1] == "features":  # comma-separated
+                node[keys[-1]] = [v.strip() for v in value.split(",") if v.strip()]
+            else:
+                node[keys[-1]] = value
         return found
 
 

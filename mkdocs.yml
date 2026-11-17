@@ -1,12 +1,21 @@
 site_name: Spectio
-site_description: Launch, monitor and steer Nextflow and Snakemake runs, with QC gates, a headless API and depictio integration.
+site_description: Launch, monitor and steer Nextflow and Snakemake runs, with QC gates, a headless API and Depictio integration.
 site_url: https://spectio.pages.dev/
 repo_url: https://github.com/spectio-org/spectio
 edit_uri: edit/main/docs/
 docs_dir: docs
 strict: true
-# A local Excalifont.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site.
 exclude_docs: |
+  # internal design records: kept in the repository, not published (hooks/internal.py links to them on GitHub)
+  /specs/
+  /decisions/
+  /reviews/
+  /research/
+  /playbooks/
+  /plans/
+  /progress/W*/
+  /map.md
+  # a local Excalifont.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site
   fonts/*.ttf
   # read by the Snakemake plugin catalogue from the root of main, not part of the site
   /intro.md
@@ -57,6 +66,7 @@ extra_javascript:
 hooks:
   - hooks/progress.py
   - hooks/lists.py
+  - hooks/internal.py
 
 markdown_extensions:
   - tables
@@ -105,81 +115,12 @@ nav:
       - Runners: features/runners.md
       - QC gates (optional): features/gates.md
       - Administration: features/administration.md
-      - depictio: features/depictio.md
+      - Depictio: features/depictio.md
+      - LabID: features/labid.md
+      - AI agents: features/ai-agents.md
   - API: api/index.md
   - Developer:
       - developer/index.md
-      - Documentation map: map.md
-      - Claim the package names: developer/claim-package-names.md
-      - Glossary: glossary.md
-      - Progress:
-          - progress/index.md
-      - Specifications:
-          - "MVP 0.0.1": specs/mvp-0.0.1.md
-          - Synthesis: specs/synthesis.md
-          - UI spec: specs/ui-spec.md
-          - Checking scenarios: specs/checking-scenarios.md
-          - API and data model: specs/api-and-data-model.md
-          - Authentication and access: specs/authentication-and-access.md
-          - Plugins and packaging: specs/architecture-plugins-and-packaging.md
-          - Schedulers and monitoring: specs/schedulers-and-monitoring.md
-          - Administration and operations: specs/admin-and-operations.md
-          - Telemetry and analytics: specs/telemetry-and-analytics.md
-          - CLI and shared libraries: specs/cli-and-shared-libraries.md
-          - depictio ecosystem reuse: specs/depictio-ecosystem-reuse.md
-          - Dev environment and testing: specs/dev-environment-and-testing.md
-          - Documentation system: specs/documentation-system.md
-      - Playbooks:
-          - Autopilot: playbooks/autopilot.md
-          - Triage policy: playbooks/triage-policy.md
-          - Next phase (step prompts): playbooks/next-phase.md
-          - "P1: walking-skeleton plan": plans/P1-walking-skeleton.md
-          - "P2: execution guide": plans/P2-execution.md
-      - Reviews:
-          - Format: reviews/README.md
-          - Inbox (questions for Thomas): reviews/inbox.md
-          - "R8b: depictio tooling re-audit": reviews/R8b-depictio-tooling.md
-          - "R12: UI scenarios": reviews/R12-ui-scenarios.md
-          - "R10: synthesis and go / no-go": reviews/R10-synthesis.md
-          - "R1: consistency": reviews/R1-consistency.md
-          - "R2: open validations": reviews/R2-open-validations.md
-          - "R2: verification table": reviews/verification-2026-10-26.md
-          - "Name-claim verification": reviews/verification-2026-10-29-names.md
-          - "R3: journeys": reviews/R3-journeys.md
-          - "R6: API contract": reviews/R6-contract.md
-          - "R4: constraints": reviews/R4-constraints.md
-          - "R5: security": reviews/R5-security.md
-          - "R7: UI": reviews/R7-ui.md
-          - "R8: depictio drift": reviews/R8-depictio.md
-          - "R9: landscape": reviews/R9-landscape.md
-          - "R11: documentation": reviews/R11-docs.md
-          - "Nextflow attach verification": reviews/verification-2026-10-29-nextflow-attach.md
-      - Decisions:
-          - How decisions are recorded: decisions/README.md
-          - Decision log: decisions/log.md
-          - "0001: Nextflow through nf-spectio": decisions/0001-nextflow-through-nf-spectio.md
-      - Research:
-          - depictio harmonisation: research/depictio-harmonization.md
-          - depictio administration and operations: research/depictio-admin-ops.md
-          - depictio CLI and packaging, LabID: research/depictio-cli-packaging.md
-          - depictio frontend and branding: research/depictio-frontend-admin.md
-          - depictio authentication: research/depictio-auth-2026-10-26.md
-          - depictio docs system: research/depictio-docs-system-2026-10-26.md
-          - depictio QC integration: research/depictio-qc-integration-2026-10-26.md
-          - Test corpus and CI: research/corpus-and-ci-2026-10-26.md
-          - Real corpus on CI runners: research/corpus-ci-2026-10-27.md
-          - Budget governor and telemetry: research/budget-and-telemetry-2026-10-26.md
-          - "Spike: synthetic pipelines": research/spike-synthetic-pipelines-2026-10-26.md
-          - "Spike: docs media tooling": research/spike-docs-media-tooling-2026-10-26.md
-          - Adoption and positioning: research/adoption-and-positioning-2026-10-26.md
-          - Landscape: research/landscape-2026-10-26.md
-          - "Spike: cloud environment": research/spike-cloud-env-2026-10-26.md
-          - "Spike T1: fixture workflows and resume identity": research/spike-t1-fixture-workflows-2026-10-27.md
-          - "Spike T2: engine event capture": research/spike-engine-events-2026-10-28.md
-          - "Spike t3-ci: sind SLURM on CI runners": research/spike-t3-ci-2026-10-28.md
-          - "Spike t4-ci: kind and Kueue on CI runners": research/spike-t4-ci-2026-10-28.md
-          - "Spike: stage detection": research/spike-stage-detection-2026-10-28.md
-          - "Checkpoints, temp outputs and SLURM efficiency": research/dag-temp-slurm-efficiency-2026-11-07.md
-          - EMBL login node audit: research/2026-11-08-embl-login-node-audit.md
+      - Progress: progress/index.md
   - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md

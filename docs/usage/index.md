@@ -20,7 +20,7 @@ Spectio sits between you and your workflow engine. It does not replace Nextflow 
 1. **Launch** from the web form, the CLI or the API, on the environment you choose.
 2. **Watch** its stages, tasks, samples and logs, and what the scheduler does with its jobs.
 3. **When something fails,** Spectio tells you why (out of memory, out of time, a tool error, a node lost) and proposes a change. Relaunch: finished work comes back from the cache.
-4. **When it finishes,** outputs, reports and logs stay attached to the run, and can be handed to depictio.
+4. **When it finishes,** outputs, reports and logs stay attached to the run, and can be handed to Depictio.
 
 ## A run with a gate (optional)
 
