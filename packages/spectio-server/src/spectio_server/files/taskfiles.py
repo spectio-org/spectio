@@ -65,6 +65,7 @@ NF_FILES: dict[str, Kind] = {
     ".command.begin": "marker",
     ".command.trace": "trace",
 }
+HEAD_FILES = {"head-out": "head.out", "head-err": "head.err"}  # a run log's head sources
 SPECTIO_SERVED = frozenset({"head.out", "head.err", "nextflow.log"})  # all else in .spectio/
 SLURM_LOGS = PurePosixPath(".snakemake/slurm_logs")
 OPEN_STATES = frozenset({"pending", "submitted", "running"})
@@ -217,6 +218,20 @@ def run_root(
         yield Root(fd, PurePosixPath(paths.launch_dir if part == "launch" else paths.work_dir))
     finally:
         os.close(fd)
+
+
+def head_logs(runs_root: Path, run_id: str) -> list[str]:
+    """The head sources whose file the run's `.spectio/` holds, a regular file of the user as
+    the log route reads it (FU-P3-124: a head under tmux writes no `head.err`)."""
+    found = []
+    with run_root(runs_root, run_id, "launch") as launch:
+        for source, name in HEAD_FILES.items():
+            try:
+                open_confined(launch, PurePosixPath(".spectio", name)).close()
+            except (NotFound, NotAllowed):
+                continue
+            found.append(source)
+    return found
 
 
 def recorded_root(launch_dir: str | None, origin: str | None) -> str | None:

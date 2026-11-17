@@ -61,13 +61,12 @@ from spectio_server.files.confine import (
 )
 from spectio_server.files.confine import tail as tail_of
 from spectio_server.files.redact import strip_escapes
-from spectio_server.files.taskfiles import recorded_root, run_root
+from spectio_server.files.taskfiles import HEAD_FILES, recorded_root, run_root
 from spectio_server.projector.runs import TERMINAL
 from spectio_server.store.schema import runs
 
 router = APIRouter()
 
-HEAD_FILES = {"head-out": "head.out", "head-err": "head.err"}
 SPECTIO_LOG = PurePosixPath(".spectio/nextflow.log")
 NEXTFLOW_LOG = PurePosixPath(".nextflow.log")
 SMK_LOGS = PurePosixPath(".snakemake/log")

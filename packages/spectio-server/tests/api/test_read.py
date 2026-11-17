@@ -366,6 +366,24 @@ def test_logs_tail_and_sources(
     )
 
 
+def test_detail_head_logs(authed_client: TestClient, writer: Writer, settings: Settings) -> None:
+    """`head_logs` names the head logs the launch directory holds (FU-P3-124): a head under tmux
+    writes no `head.err`, so the UI does not ask for it. A non-regular file is not one, as the
+    log route refuses it; a run with no launch directory, or from a terminal, has none."""
+    add_run(writer, settings, rid(1), "local", "failed")
+    add_run(writer, settings, rid(2), "tmux", "failed")
+    add_run(writer, settings, rid(3), "fifo", "failed")
+    add_run(writer, settings, rid(4), "gone", "failed")
+    add_run(writer, settings, rid(5), "terminal", "failed", origin="cli-observed")
+    local = launch_dir(settings, rid(1)) / ".spectio"
+    (local / "head.out").write_text("out\n")
+    (local / "head.err").write_text("")
+    (launch_dir(settings, rid(2)) / ".spectio" / "head.out").write_text("out\n")
+    os.mkfifo(launch_dir(settings, rid(3)) / ".spectio" / "head.err")
+    found = {n: authed_client.get(f"{RUNS}/{rid(n)}").json()["head_logs"] for n in range(1, 6)}
+    assert found == {1: ["head-out", "head-err"], 2: ["head-out"], 3: [], 4: [], 5: []}
+
+
 def test_logs_confined(
     authed_client: TestClient, tmp_path: Path, writer: Writer, settings: Settings
 ) -> None:
