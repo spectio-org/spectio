@@ -1,4 +1,4 @@
-"""The workflow graph routes of issue #160 (api §5.10), behind the `graph_view` feature.
+"""The workflow graph routes of issue #160 (api §5.11), behind the `graph_view` feature.
 
 `GET /features` lists the server's features, off by default (dev-env §15.1: 0.0.1 ships no
 graph). With `graph_view` off, every graph route is `404 feature-disabled`.
@@ -75,7 +75,7 @@ def require_graph(request: Request) -> None:
         raise Problem(404, "feature-disabled", "Not found", f"the {FEATURE} feature is off")
 
 
-@router.get("/features", response_model=models.Features)
+@router.get("/features", response_model=models.FeatureList)
 def features(request: Request) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
     return {"features": list(dict.fromkeys(settings.server.features))}
@@ -516,7 +516,7 @@ def _head_of(raw: bytes, gz: bool, cut: bool) -> tuple[str, bool] | None:
 
 @router.get("/runs/{run_id}/processes/{name}/outputs:head", response_model=models.OutputHead)
 def output_head(request: Request, run_id: str, name: str, path: str, task_id: str) -> Response:
-    """The first lines of one of the process's outputs (api §5.10), read only through the trees
+    """The first lines of one of the process's outputs (api §5.11), read only through the trees
     of the Results and workdir routes, so their rules apply (dev-env §15.3 req. 13 and 14): a
     listed output of the launch or results directory, or a file at the top of the work
     directory of one of the process's tasks, never a name that starts with `.`."""

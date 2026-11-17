@@ -129,6 +129,16 @@ class RunnerOpts(_Model):
     spool_s: Seconds = 2
 
 
+class FeatureOpts(_Model):
+    """Features behind a flag (dev-env §15.1). `single_target`: runs that target one module or
+    one rule (api §5.10); `module_namespaces`: the registry namespaces such a run may use."""
+
+    single_target: bool = False
+    module_namespaces: list[Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")]] = [
+        "nf-core"
+    ]
+
+
 # One flat name per setting, SPECTIO_<AREA>_<FIELD>, no `__` nesting (architecture §7.3).
 _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_DATA_DIR": ("data_dir",),
@@ -149,6 +159,8 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE": ("engines", "extra_args", "snakemake"),
     "SPECTIO_RUNNER_HEAD_WATCH_S": ("runner", "head_watch_s"),
     "SPECTIO_RUNNER_SPOOL_S": ("runner", "spool_s"),
+    "SPECTIO_FEATURES_SINGLE_TARGET": ("features", "single_target"),
+    "SPECTIO_FEATURES_MODULE_NAMESPACES": ("features", "module_namespaces"),
 }
 
 
@@ -167,7 +179,7 @@ class _FlatEnv(PydanticBaseSettingsSource):
             node = found
             for key in keys[:-1]:
                 node = node.setdefault(key, {})
-            if "extra_args" in keys:
+            if "extra_args" in keys or keys[-1] == "module_namespaces":
                 node[keys[-1]] = shlex.split(value)
             elif keys[-1] == "features":  # comma-separated
                 node[keys[-1]] = [v.strip() for v in value.split(",") if v.strip()]
@@ -189,6 +201,7 @@ class Settings(BaseSettings):
     slurm: SlurmOpts = SlurmOpts()
     engines: EngineOpts = EngineOpts()
     runner: RunnerOpts = RunnerOpts()
+    features: FeatureOpts = FeatureOpts()
 
     @classmethod
     def settings_customise_sources(
@@ -226,6 +239,8 @@ def render_toml(settings: Settings) -> str:
     del data["server"]  # its one allowed value is the default (dev-env §15.3 req. 1)
     if settings.executor == "local":
         del data["slurm"]
+    if settings.features == FeatureOpts():
+        del data["features"]  # off by default: written only once someone turns one on
     top = [f"{k} = {_toml_value(v)}" for k, v in data.items() if not isinstance(v, dict)]
     tables = [
         "\n".join([f"[{name}]", *(f"{k} = {_toml_value(v)}" for k, v in table.items())])

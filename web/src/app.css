@@ -583,3 +583,231 @@
   outline: 2px solid var(--sp-line-focus);
   outline-offset: -2px;
 }
+
+/* What to run (ui-spec §4.15; mocks A and B, Thomas 2026-11-11): two cards whose native radio
+   sits on the right, the checked card in the accent; stacked on the phone. */
+.launch-what {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.launch-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--sp-line-border);
+  border-radius: 12px;
+  background: var(--sp-surface-raised);
+  cursor: pointer;
+}
+.launch-mode:has(input:checked) {
+  border-color: var(--sp-accent);
+  background: var(--sp-accent-subtle);
+}
+.launch-mode:has(input:focus-visible),
+.launch-seg label:has(input:focus-visible) {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+.launch-mode input:focus-visible {
+  outline: none; /* the card shows the focus */
+}
+.launch-mode input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--sp-accent);
+}
+.launch-mode-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--sp-accent);
+  background: var(--sp-surface-subtle);
+}
+.launch-mode-title {
+  display: block;
+  font-weight: 600;
+}
+.launch-mode-sub {
+  display: block;
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+}
+@media (max-width: 600px) {
+  .launch-what {
+    grid-template-columns: 1fr;
+  }
+}
+/* One step's kind, a segmented choice of two native radios. */
+.launch-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 12px;
+  padding: 3px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 10px;
+  background: var(--sp-surface-subtle);
+}
+.launch-seg label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 14px;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sp-text-secondary);
+  cursor: pointer;
+}
+.launch-seg label:has(input:checked) {
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-raised);
+  box-shadow: 0 0 0 1px var(--sp-line-hairline);
+}
+/* Chips: the Try modules, the module's facts, the rules not run. */
+.launch-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+}
+.launch-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-subtle);
+}
+.launch-chip[data-tone="accent"] {
+  border-color: transparent;
+  color: var(--sp-accent);
+  background: var(--sp-accent-subtle);
+}
+button.launch-chip {
+  min-height: 32px;
+  font-family: var(--sp-font-mono);
+  cursor: pointer;
+}
+button.launch-chip:hover {
+  background: var(--sp-surface-sunken);
+}
+button.launch-chip:focus-visible,
+.launch-rule:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 1px;
+}
+/* The rules, one toggle button each: the target in the accent, the rules it needs dashed. */
+.launch-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.launch-rule {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid var(--sp-line-input);
+  border-radius: 8px;
+  font-family: var(--sp-font-mono);
+  font-size: 13px;
+  color: var(--sp-text-primary);
+  text-align: left;
+  overflow-wrap: anywhere;
+  background: var(--sp-surface-raised);
+  cursor: pointer;
+}
+.launch-rule small {
+  font-family: var(--sp-font-body);
+  color: var(--sp-text-secondary);
+}
+.launch-rule[aria-checked="true"] {
+  border-color: var(--sp-accent);
+  font-weight: 600;
+  color: var(--sp-accent);
+  background: var(--sp-accent-subtle);
+}
+.launch-rule[aria-checked="true"] small {
+  color: var(--sp-accent);
+}
+.launch-rule[data-needed] {
+  border-style: dashed;
+  border-color: var(--sp-accent);
+}
+/* What will run: the dry run's steps in order, the target last in the accent. */
+.launch-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--sp-surface-subtle);
+}
+.launch-plan p {
+  margin: 0;
+}
+.launch-plan-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.launch-quiet {
+  font-weight: 400;
+  color: var(--sp-text-secondary);
+}
+.launch-plan-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.launch-plan-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.launch-plan-steps li + li::before {
+  content: "→" / "";
+  color: var(--sp-text-muted);
+}
+.launch-plan-node {
+  display: flex;
+  flex-direction: column;
+  min-width: 110px;
+  padding: 8px 12px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 8px;
+  background: var(--sp-surface-raised);
+}
+.launch-plan-node > span:last-child {
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+}
+.launch-plan-node[data-target] {
+  border-color: var(--sp-accent);
+  background: var(--sp-accent-subtle);
+}
+.launch-plan-node[data-target] > span:last-child {
+  color: var(--sp-accent);
+}

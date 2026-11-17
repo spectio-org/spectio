@@ -27,6 +27,7 @@ from sqlalchemy import Connection, insert
 from spectio import locations
 from spectio.environments import PROFILE, DefaultResources, Environment, Name, snapshot
 from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
+from spectio_sdk.targets import RunTarget
 from spectio_server.api.environments import choose, offline
 from spectio_server.api.extras import check_resources, read_config_file
 from spectio_server.api.problems import Invalid
@@ -44,9 +45,10 @@ from spectio_server.api.workflows import (
 )
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
-from spectio_server.store.runs import EngineConflict, first, insert_run
+from spectio_server.store.runs import EngineConflict, first, insert_run, module_source
 from spectio_server.store.schema import principals, runner_commands
 from spectio_server.store.writer import Writer
+from spectio_server.targets import TargetIn, launch_module, launch_rule, require_flag
 
 router = APIRouter()
 
@@ -69,6 +71,7 @@ class LaunchIn(BaseModel):
     profiles: list[str] = Field(default_factory=list, max_length=20)
     params: dict[str, JsonValue] = Field(default_factory=dict)
     environment: Name | None = None  # by name; the default when absent (FU-P3-86c, api §5.4)
+    target: TargetIn | None = None  # one module or one rule (api §5.10), behind a flag
     default_resources: DefaultResources | None = None  # api §5.7 (FU-P3-110a)
     config_file: str | None = None  # an absolute path, api §5.7
 
@@ -123,6 +126,12 @@ def _check_params(found: Found, params: dict[str, Any]) -> None:
 def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str, Any]:
     _check(body)
     engine = body.workflow.engine
+    if body.target is not None:
+        require_flag(request.app.state.settings)
+        if body.target.kind == "module":
+            return _launch_module(body, body.target, request, response)
+        if engine != "snakemake":
+            raise Invalid("target.kind", "a Nextflow run targets a module, not a rule")
     try:
         resolved = resolve(
             request.app.state.settings.data_dir, body.workflow.location, body.workflow.revision
@@ -144,34 +153,93 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     resources = _resources(body, chosen)
     config_file, config_bytes = _config_file(request, body, resolved)
 
+    target = None if body.target is None else launch_rule(body.target)
+    return _create(
+        body,
+        request,
+        response,
+        Workflow(location=resolved.location, revision=resolved.revision, engine=engine),
+        str(resolved.directory),
+        resolved.source,
+        found,
+        environment,
+        target,
+        (resources, config_file, config_bytes),
+    )
+
+
+def _launch_module(
+    body: LaunchIn, given: TargetIn, request: Request, response: Response
+) -> dict[str, Any]:
+    """A run of one Nextflow module (api §5.10): no pipeline to resolve, no schema; the module's
+    inputs are its parameters, and a registry module always runs at a pinned version."""
+    if body.workflow.engine != "nextflow":
+        raise Invalid("target.kind", "a Snakemake run targets a rule, not a module")
+    if body.workflow.revision is not None:
+        raise Invalid("workflow.revision", "a module has a version, not a revision")
+    if body.config_file is not None:  # its roots are a pipeline's (api §5.7, §5.10)
+        raise Invalid("config_file", "a module run takes no extra config file")
+    state = request.app.state
+    module = launch_module(
+        state.settings, state.target_engine, state.files, body.workflow.location, given, body.params
+    )
+    t = module.target
+    found = Found([], "nextflow", t.name, t.version, [], None, "none")
+    chosen = choose(request, body.environment)
+    environment = snapshot(chosen)
+    extras = (_resources(body, chosen), None, None)
+    workflow = Workflow(location=module.location, revision=None, engine="nextflow")
+    source = module_source(t)
+    return _create(
+        body, request, response, workflow, module.location, source, found, environment, t, extras
+    )
+
+
+def _create(
+    body: LaunchIn,
+    request: Request,
+    response: Response,
+    workflow: Workflow,
+    location: str,
+    source: str,
+    found: Found,
+    environment: dict[str, Any],
+    target: RunTarget | None,
+    extras: tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None],
+) -> dict[str, Any]:
+    resources, config_file, config_bytes = extras
     runs_root = request.app.state.settings.runs_root
     run_id = new_id("run")
-    name = body.name or f"{found.name}-{run_id[-6:]}"
+    short = found.name.rsplit("/", 1)[-1] if source.startswith("module-") else found.name
+    name = body.name or f"{short}-{run_id[-6:]}"
     now = datetime.now(UTC)
     paths = run_paths(runs_root, run_id)
     manifest = RunManifest(
         run_id=run_id,
         name=name,
-        workflow=Workflow(location=resolved.location, revision=resolved.revision, engine=engine),
+        workflow=workflow,
         params=body.params,
         profiles=body.profiles,
         created_at=now,
         environment=environment,
+        target=target,
         default_resources=resources,
         config_file=config_file,
     )
     write_run_manifest(paths.run_dir, manifest)
-    payload = {
-        "location": str(resolved.directory),
+    payload: dict[str, Any] = {
+        "location": location,
         "profiles": body.profiles,
         "params": body.params,
         "environment": environment,
         **extras_payload(resources, config_bytes),
     }
+    if target is not None:
+        payload["target"] = target.model_dump(exclude_none=True)
     writer: Writer = request.app.state.writer
     try:
         writer.submit(
-            lambda conn: _insert(conn, manifest, resolved.source, found, payload, now, runs_root)
+            lambda conn: _insert(conn, manifest, source, found, payload, now, runs_root)
         ).result()
     except BaseException:
         shutil.rmtree(paths.run_dir, ignore_errors=True)  # no run directory without its row
@@ -184,14 +252,15 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         "origin": "ui",
         "created_at": now.isoformat(),
         "workflow": {
-            "location": resolved.location,
-            "revision": resolved.revision,
-            "engine": engine,
+            "location": workflow.location,
+            "revision": workflow.revision,
+            "engine": workflow.engine,
             "name": found.name,
             "version": found.version,
         },
         "profiles": body.profiles,
         "params": body.params,
+        "target": None if target is None else target.model_dump(),
     }
 
 
