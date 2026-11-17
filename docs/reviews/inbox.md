@@ -2363,3 +2363,20 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   1. (a) one follow-up, FU-P3-123, that gives `FoldSection` the §12.7 head (or makes it render `CardHead`) for every fold card at once, keeping the section ids, `reveal` and the remembered state, and moves the tests to the title-named chevron; (b) Launch alone now, the other pages later. **(a)**: one change keeps every page's cards alike and settles CR-P3UI03-03.
 - **Build plan:** FU-P3-123 as one P3 task in batch 6 (the CSS sweep, task 19), before the visual-regression shots of task 20.
 - **Assumed (2026-11-11, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a).
+
+### #155 · Assumed: findings of the login1 check of the design-system UI (FU-P3-124, FU-P3-125, 2026-11-11)
+
+- **Covers:** a manual check of PR #298 (`autopilot/docs-public` @ 08f759fc) on login1 by the local Spectio session, 2026-11-11. The server listened on the Unix socket only. Two SLURM runs used the test profile: `run_01M75XPP0VHN14CXHBWA6YC5W4` succeeded (65/65), and `run_01M75XPP5GRWQJGZZ4519XQZH7` failed on purpose (ALIGN S03, SLURM job 64604614, exit 1). Runs list, Run detail, Resume, By process, Snakemake rules, task sheet, Work directory, Results, Launch and Environments all work in light and dark, with 0 CSP errors.
+- **Findings:**
+  1. On a failed run the screen requests `/logs?source=head-err`, which returns 404 `log-not-found` because the head writes only `head.out`. The console shows an error, and the "Head errors · last lines" card says "Not written yet." on a run that has ended.
+  2. Launch has two sections named "Resources": the run-defaults group, and the pipeline schema's own group under Parameters.
+  3. The efficiency sheet shows "Waiting for SLURM accounting" for about 1 min after the run ends, until the first `sacct` call lands. This is transient and expected.
+  4. Old Snakemake runs show Environment and Executor as "not recorded", because they were recorded before those fields existed. This is expected.
+  5. The params.json preview is dark (#0F1020) in the light theme on the desktop boards (`Launch.dc.html:136`, `LiteLaunch.dc.html:313`), but white on the phone board (`MLiteLaunch.dc.html:233`).
+- **Open choices, each with the recommendation (assumed):**
+  1. (a) FU-P3-124: when the head has no `head.err`, the UI neither requests it nor shows the card on an ended run; the API's 404 stays as it is.
+  2. (a) FU-P3-125: rename the run-defaults group to "Run resources" and leave the schema's own titles untouched.
+  3. Keep the desktop dark preview. The phone board is aligned on it during the CSS sweep (UI-19).
+- **Build plan:** FU-P3-124 and FU-P3-125 as P3 tasks in the next batch, before the 0.0.1 cut.
+- **Retaken screenshots:** the seven run-view shots taken on login1 are on Thomas's machine. They contain real `/scratch` paths, so they must be sanitised with `fixtures.yaml` before any use in the docs.
+- **Assumed (2026-11-11, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a), (2a), (3).

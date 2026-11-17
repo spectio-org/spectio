@@ -925,3 +925,9 @@ FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and 
 - Open minors: CR-P3FU105E-01 (DST fold with group_by=hour); CR-P3UI01-02 to -04; CR-P3UI02-01 to -05, SEC-P3UI02-01; CR-P3UI03-03 to -05; CR-P3UI05B-06 to -08; CR-P3UI09-01 to -04; and those of the morning entry (FU-121, 105b–d, UI-05a).
 - **Next:** UI-08 (Runs list), UI-10/11 (run tabs, LogViewer), UI-12 (DetailSheet), UI-13/18 (Launch, dialogs), UI-14/15/16 (Environments, Catalog, Profile), UI-17 (Results) are being built; then UI-19 (CSS sweep), then the back-end work Thomas named; still on Thomas: the CI step of the order fixtures, UX-P3FU110C-07, a confirmed Delete on login1.
 - **Costs** (subagent tokens): UI-01 ~253k, UI-02 ~300k, UI-05b ~396k, UI-09 ~330k.
+
+## 2026-11-11 — docs refresh (PR #298) and login1 check
+
+- **Docs split.** The public site (`mkdocs.yml`) is now home, installation, usage, features, API, roadmap and changelog. The developer material builds with `mkdocs.dev.yml`. The public pages were rewritten for what 0.0.1 contains, and 25 `app-*` screenshots were retaken on the design-system UI (`tools/media/b17_demo.py`).
+- **CI.** On #298, `preview` fails its `/progress/` smoke check: the fix is #299 (previews build the dev site), which touches `.github/workflows/` and waits for Thomas. `web` hit the lazy-grid timeout fixed in #297; I cherry-picked c7b8f606. `e2e-local` failed twice on a runner DNS outage (`azure.archive.ubuntu.com`), as did #297 and #299.
+- **login1 check** of #298 by the local session: the screens work on real SLURM runs. Findings are in inbox #155 (FU-P3-124 head.err 404, FU-P3-125 two "Resources" sections).
