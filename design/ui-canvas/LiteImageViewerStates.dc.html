@@ -113,17 +113,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,[t
           <div class="fp-head"><strong>segmentation.ome.zarr</strong><span>Work directory · S3SEGMENTER (ROI1) · attempt 1 · OME-Zarr · folder</span></div>
           <div role="note" class="fp-note"><strong>This OME-Zarr uses Zarr v2, which a work directory does not serve.</strong><span class="fp-why">Open it from the results once it is published.</span><div class="fp-acts"><button type="button" class="fp-btn" aria-label="Copy path of segmentation.ome.zarr">Copy path</button></div></div>
         </section>
-        <section aria-label="M · published as a link, Zarr v3" class="fp-card">
-          <span class="fp-key">M · PUBLISHED AS A LINK, ZARR V3</span>
+        <section aria-label="M · published as a link, in the results" class="fp-card">
+          <span class="fp-key">M · PUBLISHED AS A LINK (RESULTS, FINAL)</span>
           <div class="fp-head"><strong>registered.ome.zarr</strong><span>OME-Zarr · folder · published as a link</span></div>
-          <div role="note" class="fp-note"><strong>This OME-Zarr was published as a link.</strong><span class="fp-why">Open it from the task's work directory.</span><div class="fp-acts"><button type="button" class="fp-btn" aria-label="Copy path of registered.ome.zarr">Copy path</button></div></div>
-          <span class="fp-aside">The results refuse the keys below a link; the work directory serves a Zarr v3 store (api §5.3.1).</span>
+          <div role="note" class="fp-note"><strong>Spectio cannot open this OME-Zarr here (published as a link).</strong><span class="fp-why">Spectio does not read below a link. A Zarr v2 store cannot be opened from a link in 0.0.1; a Zarr v3 store opens from the task's work directory once Spectio reads Zarr v3.</span><div class="fp-acts"><button type="button" class="fp-btn" aria-label="Copy path of registered.ome.zarr">Copy path</button></div></div>
+          <span class="fp-aside">The server answers a linked folder as a link and refuses every key below it (api §5.3.1), so neither its Zarr version nor its target can be read: one state for both versions (FU-P3-102i).</span>
         </section>
-        <section aria-label="N · published as a link, Zarr v2" class="fp-card">
-          <span class="fp-key">N · PUBLISHED AS A LINK, ZARR V2 (FINAL)</span>
-          <div class="fp-head"><strong>registered_v2.ome.zarr</strong><span>OME-Zarr · folder · published as a link</span></div>
-          <div role="note" class="fp-note"><strong>Spectio cannot open this OME-Zarr here (published as a link, Zarr v2).</strong><div class="fp-acts"><button type="button" class="fp-btn" aria-label="Copy path of registered_v2.ome.zarr">Copy path</button></div></div>
-          <span class="fp-aside">Final: neither the results (a link) nor the work directory (Zarr v2) can serve it, so nothing else is offered.</span>
+        <section aria-label="N · a link in a work directory" class="fp-card">
+          <span class="fp-key">N · A LINK IN A WORK DIRECTORY (FINAL)</span>
+          <div class="fp-head"><strong>registered.ome.zarr</strong><span>Work directory · BASICPY (ROI1) · attempt 1 · OME-Zarr · folder · link</span></div>
+          <div role="note" class="fp-note"><strong>Spectio cannot open this OME-Zarr here (a link in the work directory).</strong><span class="fp-why">Spectio does not read below a link. Open it from the task that wrote it, or from the results once it is published.</span><div class="fp-acts"><button type="button" class="fp-btn" aria-label="Copy path of registered.ome.zarr">Copy path</button></div></div>
+          <span class="fp-aside">A staged input is a link to another task's folder: the store is read from there.</span>
         </section>
         <section aria-label="O · WebGL missing" class="fp-card">
           <span class="fp-key">O · WEBGL MISSING (THE FLAT VIEW)</span>

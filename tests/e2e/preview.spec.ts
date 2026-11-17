@@ -96,7 +96,9 @@ test('a TSV preview is an AG Grid under the CSP: no violation, sorts and moves f
   await expect(page.locator(':focus')).toHaveText('89.7');
   await grid.getByRole('textbox', { name: 'Sample Filter Input' }).fill('S01');
   await expect(grid.getByRole('gridcell', { name: 'S02' })).toHaveCount(0);
-  await page.waitForTimeout(300);
+  await expect(grid.getByRole('gridcell', { name: 'S01', exact: true })).toBeVisible(); // the filtered rows drew
+  // a violation is reported in a task after the style that caused it: two frames let it land
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   expect(await page.evaluate(() => (window as unknown as { cspSeen: string[] }).cspSeen)).toEqual([]);
   expect(requests.filter((u) => !u.startsWith(new URL(page.url()).origin))).toEqual([]); // no font, licence or telemetry call
 });

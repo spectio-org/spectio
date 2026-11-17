@@ -70,7 +70,13 @@ class FilePool:
             if on_done is not None:
                 _call(on_done)
             raise Stalled("the file system is not answering: every file reader is waiting")
-        self._start()
+        try:
+            self._start()
+        except BaseException:  # no reader thread: give back what was taken (CR-P3FU120-01)
+            self._slots.release()
+            if on_done is not None:
+                _call(on_done)
+            raise
         future: Future[T] = Future()
         self._jobs.put((fn, future, on_done))
         try:

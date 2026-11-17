@@ -142,3 +142,13 @@ test("without a task and an attempt the page is not found", async () => {
   app(`/runs/${ID}/workdir`);
   expect(await screen.findByRole("heading", { level: 1, name: "Page not found" })).toBeInTheDocument();
 });
+
+test("an OME-Zarr that is a link in the work directory: its own link state with Copy path, and no key is asked", async () => {
+  const path = "cells.ome.zarr";
+  const mock = work({ [`${API}/stat/${path}`]: { root: WORK, path, name: path, type: "link_outside", size: null, mtime: T } });
+  app(`/runs/${ID}/workdir/file?task=tsk_19&attempt=2&path=${path}`);
+  expect(await screen.findByText("Spectio cannot open this OME-Zarr here (a link in the work directory).")).toBeInTheDocument();
+  expect(screen.getByText("Spectio does not read below a link. Open it from the task that wrote it, or from the results once it is published.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: `Copy path of ${path}` })).toBeInTheDocument();
+  expect(fetched(mock).some((u) => u.includes("/raw/"))).toBe(false);
+});

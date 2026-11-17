@@ -11,6 +11,7 @@ import { FoldSection } from "../shell/FoldSection";
 import { PhoneTitle, usePhone } from "../shell/layout";
 import { type CopyItem, CopyButton, CopyMenu } from "./CopyMenu";
 import { DeleteRuns } from "./DeleteRuns";
+import { extrasFacts } from "./RunDetailExtras";
 import { ResumeAction } from "./ResumeDialog";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
 import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
@@ -143,6 +144,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     ],
     ["Run directory", <span className="sp-mono">{runDirectory(run, server) ?? "—"}</span>],
     ...environmentFacts(run, server),
+    ...extrasFacts(run),
     ...engineSettings(run),
     ["Failure", run.state === "failed" ? failureText(run) : "—"],
   ];

@@ -94,6 +94,9 @@ export function ProfilePage() {
   const [out, setOut] = useState<"no" | "busy" | "failed" | "yes">("no");
   const [outError, setOutError] = useState("");
   usePageCrumb(TITLE);
+  useEffect(() => {
+    document.title = `${TITLE} · Spectio`;
+  }, []);
   // UX-P3FU112-01: the control that had focus is replaced (Retry by "Loading…", Sign out by its
   // status), so focus moves to the text that replaces it rather than falling back to the page.
   const [retried, setRetried] = useState(false);

@@ -44,6 +44,10 @@ export interface LaunchBody {
   /** An environment's name (api §5.4); absent: the server's default. */
   environment?: string;
   params: Record<string, unknown>;
+  /** Schema `DefaultResources` (api §5.7): only the keys set; absent changes nothing. */
+  default_resources?: { cpus?: number; mem_mib?: number; time_min?: number };
+  /** The absolute path of an extra config file, read once by the server at this launch (api §5.7). */
+  config_file?: string;
 }
 
 export interface Launched {
@@ -696,6 +700,18 @@ export async function readResultText(
   const text = await response.text();
   const range = CONTENT_RANGE.exec(response.headers.get("content-range") ?? "");
   return range ? { text, next: Number(range[2]) + 1, size: Number(range[3]) } : { text, next: null, size: null };
+}
+
+/** The run's kept extra config file (`GET /runs/{id}/config-file`, api §5.7), with its `ETag`, the
+ * SHA-256 of the bytes served, unquoted. A refusal is an ApiError with its status (404, 503). */
+export async function getConfigFile(id: string, signal?: AbortSignal): Promise<{ text: string; sha256: string | null }> {
+  const response = await fetch(`${API}${run(id)}/config-file`, { signal });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body?.detail ?? body?.title ?? `HTTP ${response.status}`);
+  }
+  const etag = response.headers.get("etag");
+  return { text: await response.text(), sha256: etag ? etag.replace(/^(W\/)?"|"$/g, "") : null };
 }
 
 export function launch(body: LaunchBody): Promise<Launched> {

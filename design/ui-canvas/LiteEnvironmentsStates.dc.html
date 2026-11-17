@@ -72,7 +72,7 @@ a:focus-visible,button:focus-visible,h2:focus-visible,h3:focus-visible{outline:2
           <p role="alert" class="banner b-warn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 3px;"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg><span>Spectio does not read <span class="mono">~/.spectio/environments.toml</span>: other users can write to it. Fix it with <span class="mono">chmod 600 ~/.spectio/environments.toml</span>; Spectio will not change it.</span></p>
           <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;"><button type="button" class="act primary" aria-disabled="true" aria-describedby="c-why">New environment</button><span id="c-why" class="why">Waits until the environments file can be read</span></div>
           <div class="card"><div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;"><h3 id="c-h-local">Login node</h3><span class="badge b-local">Local</span><span class="badge b-built">Built-in</span></div>
-            <div role="group" aria-label="Actions for local" style="display: flex; gap: 8px; flex-wrap: wrap;"><a class="act" href="LiteEnvironmentEdit.dc.html" aria-label="Duplicate local">Duplicate</a><button type="button" class="act" aria-disabled="true" aria-label="Make local the default" aria-describedby="c-why">Make default</button></div></div>
+            <div role="group" aria-label="Actions for local" style="display: flex; gap: 8px; flex-wrap: wrap;"><button type="button" class="act" aria-disabled="true" aria-label="Duplicate local" aria-describedby="c-why">Duplicate</button><button type="button" class="act" aria-disabled="true" aria-label="Make local the default" aria-describedby="c-why">Make default</button></div></div>
           <span class="note">The reason is the server's <span class="mono">detail</span> (owner, mode, not a regular file, a link): it names the check, never a byte of the file. Only the built-ins are listed; launches with them still work.</span>
         </section>
 
@@ -126,26 +126,24 @@ a:focus-visible,button:focus-visible,h2:focus-visible,h3:focus-visible{outline:2
 
         <section class="pnl" aria-labelledby="t-i">
           <h2 id="t-i" class="tag" style="margin: 0;">I · DELETE REFUSED IN THE DIALOG</h2>
-          <section role="dialog" aria-modal="true" aria-labelledby="del2-title" class="dlg">
+          <section role="dialog" aria-modal="true" aria-labelledby="del2-title" aria-describedby="del2-err" class="dlg">
             <h3 id="del2-title">Delete mylab-long?</h3>
-            <p role="alert" class="banner b-err" style="padding: 8px 10px;"><span>This environment changed in another tab. Reload reads it again; nothing was deleted.</span></p>
+            <p role="alert" id="del2-err" class="banner b-err" style="padding: 8px 10px;"><span>This environment changed in another tab. Reload reads it again; nothing was deleted.</span></p>
             <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
               <button type="button" class="btn btn-sec">Cancel</button>
               <button type="button" class="btn btn-sec">Reload</button>
-              <button type="button" class="btn btn-del" aria-disabled="true" aria-describedby="del2-why">Delete mylab-long</button>
             </div>
-            <span id="del2-why" class="why" style="text-align: right;">Reload first: the environment changed</span>
           </section>
-          <section role="dialog" aria-modal="true" aria-labelledby="del3-title" aria-describedby="del3-cap" class="dlg">
-            <span id="del3-cap" class="why">409 variant</span>
+          <span class="why">409 variant</span>
+          <section role="dialog" aria-modal="true" aria-labelledby="del3-title" aria-describedby="del3-err" class="dlg">
             <h3 id="del3-title">Delete mylab-long?</h3>
-            <p role="alert" class="banner b-err" style="padding: 8px 10px;"><span>The file changed on disk since this page read it. Reload reads it again; nothing was deleted.</span></p>
+            <p role="alert" id="del3-err" class="banner b-err" style="padding: 8px 10px;"><span>The file changed on disk since this page read it. Reload reads it again; nothing was deleted.</span></p>
             <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
               <button type="button" class="btn btn-sec">Cancel</button>
               <button type="button" class="btn btn-sec">Reload</button>
             </div>
           </section>
-          <span class="note">412 etag-mismatch (top) and 409 environments-file-changed (bottom, the 409 variant of the same dialog) are shown in place in the dialog. 409 environments-file-unusable reads "The environments file cannot be changed right now", then the file's state as in C to E. Each is a role="alert"; focus stays in the dialog.</span>
+          <span class="note">412 etag-mismatch (top) and 409 environments-file-changed (bottom, the 409 variant of the same dialog) are shown in place in the dialog, and Reload takes the place of Delete in both. 409 environments-file-unusable reads "The environments file cannot be changed right now", then the file's state as in C to E. Each is a role="alert"; focus stays in the dialog.</span>
         </section>
 
         <section class="pnl" aria-labelledby="t-j">

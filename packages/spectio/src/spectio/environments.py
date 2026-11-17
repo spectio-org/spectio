@@ -214,5 +214,14 @@ def resume_snapshot(column: dict[str, Any] | None, settings: Settings) -> Snapsh
     return env
 
 
+def check_on_server(env: Snapshot, settings: Settings) -> None:
+    """The runner's own check of a payload's snapshot against its server's kind (defence in
+    depth, SEC-P3FU86BCD-02): raises NotAllowed for SLURM on a server with no SLURM, which
+    `choose()` and `resume_snapshot()` already refuse. A `local` without caps is not refused:
+    a file's environment may have none on a SLURM server (api §5.4)."""
+    if env.executor == "slurm" and settings.executor != "slurm":
+        raise NotAllowed("This run asks for SLURM; this server has no SLURM")
+
+
 def _capped(local: LocalValues | None) -> bool:
     return local is not None and (local.cpus is not None or local.mem_mib is not None)

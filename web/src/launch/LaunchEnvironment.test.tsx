@@ -82,14 +82,14 @@ test("from two environments: radios named with their executor, the default check
   expect(posted[0]).toMatchObject({ environment: "local" });
 });
 
-test("one usable environment is a text row; over six, a native select with the summary under it", async () => {
+test("one usable environment is a text row, with New environment beside it", async () => {
   launchWith(list([LOCAL]));
   expect(await screen.findByText("Environment: Login node · on login1 (the login node) · at most 2 CPUs and 8 GiB")).toBeInTheDocument();
   expect(screen.queryByRole("radio")).toBeNull();
   expect(screen.getByRole("button", { name: "New environment" })).toBeInTheDocument();
 });
 
-test("over six environments: a native select", async () => {
+test("over six environments: a native select with the summary under it", async () => {
   const many = Array.from({ length: 6 }, (_, i) => item(`env-${i}`));
   launchWith(list([...BUILTINS, ...many]));
   const select = await screen.findByRole("combobox", { name: "Environment" });

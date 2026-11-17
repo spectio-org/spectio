@@ -135,3 +135,10 @@ test("phone (360 px): the title is the top bar's h1 and the avatar links to /pro
   expect(await within(bar).findByText("Single-user mode · amartin")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Sign out of this session" })).toBeInTheDocument();
 });
+
+test("FU-P3-116: /profile names the browser tab, as the other pages do", async () => {
+  serve({ [ME_URL]: ME });
+  app("/profile");
+  await screen.findByRole("heading", { level: 1, name: "Profile" });
+  await waitFor(() => expect(document.title).toBe("Profile · Spectio"));
+});

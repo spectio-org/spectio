@@ -861,3 +861,32 @@ test("UX-P3FU115B-04: Delete… on Run detail returns to Runs with what the dele
   expect(said).toHaveTextContent(/could not be removed/);
   await waitFor(() => expect(document.activeElement).toHaveTextContent("1 run deleted"));
 });
+
+test("FU-P3-119: an ended run whose jobs sacct has not measured yet is read again, until they are", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    let measured = 0;
+    const efficiency = () => ({
+      jobs: { done: 12, total: 12 },
+      measured,
+      cpu_mean: null, cpu_max: null, mem_mean: null, mem_max: null,
+      requested: { cpus: null, mem_bytes: null, time_limit_s: null, varies: false },
+      used: { peak_rss_bytes_max: null, elapsed_s_max: null },
+    });
+    const mock = detail(
+      { state: "succeeded", ended_at: "2026-10-31T09:00:00+00:00" },
+      { [`${URL_}/processes`]: () => json(200, { items: [{ ...PROCESSES.items[0], efficiency: efficiency() }] }) },
+    );
+    const reads = () => fetched(mock).filter((u) => u.endsWith("/processes")).length;
+    app(`/runs/${ID}`);
+    await runHeader();
+    await waitFor(() => expect(reads()).toBe(1));
+    measured = 12; // sacct has answered
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+    await waitFor(() => expect(reads()).toBe(2));
+    await act(() => vi.advanceTimersByTimeAsync(90_000));
+    expect(reads()).toBe(2);
+  } finally {
+    vi.useRealTimers();
+  }
+});

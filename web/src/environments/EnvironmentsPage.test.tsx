@@ -64,6 +64,13 @@ test("the list: one card per environment, badges in words, actions named with th
   expect(screen.getByText(/Saved in/)).toHaveTextContent("Saved in /home/amartin/.spectio/environments.toml");
 });
 
+test("a name is encoded in the links built from it (SEC-P3FU86F-02)", async () => {
+  serve({ [API]: list([...BUILTINS, item("a/b?c")]), "/api/v1/version": SLURM });
+  app("/environments");
+  expect(await screen.findByRole("link", { name: "Edit a/b?c" })).toHaveAttribute("href", "/environments/a%2Fb%3Fc");
+  expect(screen.getByRole("link", { name: "Duplicate a/b?c" })).toHaveAttribute("href", "/environments/new?from=a%2Fb%3Fc");
+});
+
 test("an invalid file: its line above the cards, New environment waits with its reason", async () => {
   serve({ [API]: list(BUILTINS, "invalid", "Expected (at line 7, column 13)"), "/api/v1/version": SLURM });
   app("/environments");

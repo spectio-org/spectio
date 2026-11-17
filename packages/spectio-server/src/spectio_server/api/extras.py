@@ -111,13 +111,12 @@ def _refusal(exc: OSError, dir_fd: int | None = None, part: str = "") -> Excepti
     return exc  # an I/O error: the route's 503
 
 
-def _checked(fd: int, what: str, uid: int, owners: tuple[int, ...]) -> os.stat_result:
+def _checked(fd: int, what: str, owners: tuple[int, ...]) -> None:
     st = os.fstat(fd)
     if st.st_uid not in owners:
         raise ValueError(f"the {what} is not owned by this user")
     if st.st_mode & _OTHERS:
         raise ValueError(f"the {what} is writable by group or others")
-    return st
 
 
 def _read(start: str, parts: tuple[str, ...], uid: int) -> bytes:
@@ -126,7 +125,7 @@ def _read(start: str, parts: tuple[str, ...], uid: int) -> bytes:
     except OSError as exc:
         raise _refusal(exc) from None
     try:
-        _checked(fd, "directory", uid, (uid, 0))
+        _checked(fd, "directory", (uid, 0))
         for i, part in enumerate(parts):
             last = i == len(parts) - 1
             try:
@@ -136,10 +135,10 @@ def _read(start: str, parts: tuple[str, ...], uid: int) -> bytes:
             os.close(fd)
             fd = child
             if not last:
-                _checked(fd, "directory", uid, (uid, 0))
+                _checked(fd, "directory", (uid, 0))
         if not stat.S_ISREG(os.fstat(fd).st_mode):  # a directory, a FIFO: never read
             raise ValueError("the file is not a regular file")
-        _checked(fd, "file", uid, (uid,))
+        _checked(fd, "file", (uid,))
         with os.fdopen(fd, "rb", closefd=False) as f:
             return f.read(MAX_CONFIG_FILE + 1)
     finally:

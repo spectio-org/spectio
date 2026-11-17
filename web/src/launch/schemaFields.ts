@@ -237,12 +237,14 @@ export function isChanged(field: Field, value: string | boolean | undefined): bo
 /** The params of `POST /runs`: only the values set, nested maps rebuilt from dotted keys, then the
  * name and value rows of a pipeline with no schema. A nested map with one value set is sent whole,
  * its other keys at their defaults: whether Snakemake merges a `--configfile` map key by key into
- * the workflow's own is not checked (CR-P3PARB-04 r2), and a whole map is right either way. */
-export function buildParams(fields: Field[], values: Values, rows: Row[]): Record<string, unknown> {
+ * the workflow's own is not checked (CR-P3PARB-04 r2), and a whole map is right either way.
+ * `leaves`: only the keys set, for a Snakemake run with an extra config file, whose other keys
+ * the map would put back to the pipeline's defaults (api §5.7, CR-P3FU110-SPEC-01). */
+export function buildParams(fields: Field[], values: Values, rows: Row[], leaves = false): Record<string, unknown> {
   // null-prototype maps: a key named `__proto__` is an own key, never Object.prototype
   const params: Record<string, unknown> = Object.create(null);
   const sent = new Map(fields.map((f) => [f, paramValue(f, own(values, f.key))]));
-  const touched = new Set(fields.filter((f) => f.path.length > 1 && sent.get(f) !== undefined).map((f) => f.path[0]));
+  const touched = new Set(fields.filter((f) => !leaves && f.path.length > 1 && sent.get(f) !== undefined).map((f) => f.path[0]));
   for (const field of fields) {
     const set = sent.get(field); // a JSON null typed in is a value, not "unset"
     const value = set !== undefined ? set : touched.has(field.path[0]) && field.path.length > 1 ? field.default : undefined;

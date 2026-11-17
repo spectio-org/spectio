@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
-import { resolveTarget, STATIC_URL } from './base-url';
+import { isLocal, resolveTarget, STATIC_URL } from './base-url';
 
 function scenarioFile(state: object): string {
   const path = test.info().outputPath('scenario.json');
@@ -37,4 +37,9 @@ test('SPECTIO_SCENARIO: urls.spectio of the scenario JSON', () => {
 test('SPECTIO_SCENARIO without urls.spectio says why', () => {
   const path = scenarioFile({ id: 3, urls: {} });  // what dev/scenario.py writes until Spectio runs in a scenario
   expect(() => resolveTarget({ SPECTIO_SCENARIO: path })).toThrow(/no urls\.spectio/);
+});
+
+test('isLocal: loopback hosts only (SEC-P3FU86F-01)', () => {
+  for (const url of ['http://127.0.0.1:8765', 'http://localhost:8765/', 'http://[::1]:8765']) expect(isLocal(url)).toBe(true);
+  for (const url of ['https://spectio.pages.dev/', 'http://10.0.0.5:8765', 'http://127.0.0.1.example.com/']) expect(isLocal(url)).toBe(false);
 });

@@ -466,14 +466,15 @@ def write_launch_files(spec: LaunchSpec) -> Path:
     refuses (`resume.check_dirs`, CR-P3T30-02)."""
     script = render_head_script(spec).encode()
     params = json.dumps(spec.params, ensure_ascii=False).encode()
-    kept = None if spec.config_file is None else _extra_bytes(spec.config_file)
+    extra = spec.config_file
+    kept = None if extra is None else (extra.kept_as, _extra_bytes(extra))
     if spec.engine == "nextflow":
         with contextlib.suppress(FileExistsError):  # a symlink there is refused at Resume
             os.mkdir(spec.engine_dir / ".nextflow", 0o700)
     with private_dir(spec.launch_dir, ".spectio") as fd:
         write_file(fd, "params.json", params)
-        if spec.config_file is not None and kept is not None:  # the run's snapshot (api §5.7)
-            write_file(fd, spec.config_file.kept_as, kept)
+        if kept is not None:  # the run's snapshot (api §5.7)
+            write_file(fd, *kept)
         if spec.engine == "nextflow":
             write_file(fd, "spectio.config", nextflow_config(spec).encode())
             unpack_nf_spectio({**os.environ, **spec.env})

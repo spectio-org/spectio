@@ -29,7 +29,6 @@ import subprocess
 import threading
 import time
 from collections.abc import Callable, Iterator
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -494,8 +493,18 @@ class EngineVersions:
 
     def _refresh(self) -> None:
         try:  # both engines at once: a cold check costs the slower one, not their sum
-            with ThreadPoolExecutor(len(ENTRY_FILES)) as pool:
-                found = dict(zip(ENTRY_FILES, pool.map(self._one, ENTRY_FILES), strict=True))
+            found: dict[str, str | None] = dict.fromkeys(ENTRY_FILES)
+
+            def one(engine: str) -> None:
+                found[engine] = self._one(engine)
+
+            # daemon threads, not a ThreadPoolExecutor, whose workers the interpreter joins at
+            # exit: a slow check would hold a SIGTERM'd `spectio serve` (FU-P3-108c)
+            threads = [threading.Thread(target=one, args=(e,), daemon=True) for e in ENTRY_FILES]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
             with self._lock:
                 self._kept = (self._clock(), found)
         finally:

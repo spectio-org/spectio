@@ -6,6 +6,7 @@ reading of the payload's snapshot (SEC-P3FU86A-R3-02)."""
 
 import errno
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -504,6 +505,36 @@ def test_req18_snapshot_runner_reads_the_payload_not_settings(
     assert failed.failure["class"] == "launch_error"
 
 
+def test_req18_snapshot_runner_checks_the_server_kind(
+    authed_client: TestClient,
+    synthetic: Path,
+    settings: Settings,
+    writer: Writer,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SEC-P3FU86BCD-02: a payload asking for SLURM on a server with no SLURM is a launch
+    error, never a launch, even past the routes."""
+    rid = launched(authed_client, synthetic)
+    query = select(runner_commands.c.id, runner_commands.c.payload).where(
+        runner_commands.c.run_id == rid
+    )
+    cid, sent = writer.submit(lambda c: c.execute(query).one()).result()
+    forged = {**sent, "environment": {"name": "forged", "executor": "slurm"}}
+    writer.submit(
+        lambda c: c.execute(
+            update(runner_commands).where(runner_commands.c.id == cid).values(payload=forged)
+        )
+    ).result()
+    monkeypatch.setattr(loop, "check_engine", lambda engine, cmd: EngineInfo(engine, "9.27.1"))
+    launcher = RecordingLauncher()
+    loop.RunnerLoop(StoreSink(writer, settings.runs_root), launcher, settings).tick()
+    assert launcher.specs == []
+    failed = writer.submit(
+        lambda c: c.execute(select(runs.c.failure).where(runs.c.id == rid)).one()
+    ).result()
+    assert failed.failure["class"] == "launch_error"
+
+
 # --- Resume's rules (api §5.4, Resume; SEC-PRE-FU86-R1-03) -----------------------------------
 
 
@@ -589,3 +620,45 @@ def test_req18_snapshot_launch_template_environment(
     template = authed_client.get(f"{API}/runs/{rid}:launch-template").json()
     assert template["environment"] == "local"
     assert "mylab" in template["environment_notice"]
+
+
+def test_req18_snapshot_launch_template_file_unusable(
+    authed_client: TestClient, synthetic: Path, settings: Settings, writer: Writer
+) -> None:
+    """CR-P3FU86BCD-03: a file that cannot be used now does not say the environment is gone."""
+    create(authed_client)
+    rid = failed(authed_client, writer, settings, synthetic, environment="mylab")
+    path().chmod(0o620)  # others may write it: refused
+    template = authed_client.get(f"{API}/runs/{rid}:launch-template").json()
+    assert template["environment"] == "local"
+    assert template["environment_notice"] == (
+        "The environment mylab of this run cannot be read: the environments file is refused;"
+        " local is chosen."
+    )
+
+
+def test_req13_write_lock_waited_for_outside_the_file_pool(
+    authed_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3FU86BCD-02: a write waits for the one before it in its request thread, never in a
+    file-pool worker (dev-env §15.3 req. 13): while the lock is held, the write answers `503`
+    without entering the pool, and the lock is free again after the next write."""
+    entered: list[str] = []
+    update_kind = envfile.update_kind
+
+    def spy(*args: Any, **kwargs: Any) -> Any:
+        entered.append(threading.current_thread().name)
+        return update_kind(*args, **kwargs)
+
+    monkeypatch.setattr(envfile, "update_kind", spy)
+    monkeypatch.setattr(envfile, "LOCK_TIMEOUT_S", 0.2)
+    assert envfile.WRITE.acquire(blocking=False)
+    try:
+        problem(authed_client.post(ENVS, json=MYLAB), 503, "runner-offline")
+    finally:
+        envfile.WRITE.release()
+    assert entered == []
+    create(authed_client)
+    assert entered and entered[0].startswith("spectio-files-")
+    assert envfile.WRITE.acquire(blocking=False)
+    envfile.WRITE.release()

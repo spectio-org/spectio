@@ -129,3 +129,14 @@ test("on a 360 px phone the search icon still shows and opens the dialog (CR-P3F
   expect(opener).not.toHaveClass("sp-narrow-hide");
   expect(dialog).toHaveAttribute("data-full-screen", "true");
 });
+
+test("FU-P3-116: the short ID the UI shows (last 6 of the run ID) finds its run, in any case", async () => {
+  const other = run({ id: "run_01JBC6Q4ZK7M8N2P3R5SD80950", name: "sarek-b" });
+  backend({ "/api/v1/runs?limit=200": { items: [run(), other], next: null } });
+  app("/environments");
+  const { dialog } = await openByButton();
+  await userEvent.type(within(dialog).getByRole("searchbox"), "d80950");
+  const runs = await within(dialog).findByRole("region", { name: "Runs" });
+  expect(within(runs).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual([`Run sarek-b, ${other.id}`]);
+  expect(within(dialog).getByRole("status")).toHaveTextContent("1 result");
+});

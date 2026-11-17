@@ -52,6 +52,25 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 .prow > label,.prow > .pname{grid-column:1}
 .prow > .pmeta{grid-column:2;grid-row:1;font-size:12px;color:#6E7287;text-align:right}
 .plist{display:flex;flex-direction:column}
+/* ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): the Resources and Extra config file rows of "Where it runs"; fields and bounds in api §5.7. */
+.xrow{border-radius:14px;box-shadow:inset 0 0 0 1px #DFE1EA;padding:2px 14px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.xrow h3{margin:0;font-size:14px;font-weight:600}
+.xrow-b{display:flex;flex-direction:column;gap:10px;min-width:0}
+.res-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.fld{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld > label,.fld > legend{padding:0;font-size:13px;font-weight:600}
+.fld > legend{margin-bottom:5px}
+.unit{display:flex;gap:6px;align-items:center;min-width:0}
+.unit input{flex:1 1 auto;min-width:0}
+.unit select{flex:0 0 78px;width:78px}
+.unit > label,.unit > .u{font-size:12.5px;color:#4D5065;flex-shrink:0}
+.hint{font-size:12px;color:#4D5065;line-height:1.45}
+.ferr{font-size:12px;color:#B02A2A;font-weight:600;line-height:1.45}
+.keep{display:flex;gap:7px;align-items:baseline;font-size:12px;color:#33364A;background:#F7F7FB;border-radius:9px;padding:6px 9px;line-height:1.45}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+select[aria-invalid="true"]{border-color:#DC3B3B}
+.st-pnl{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -131,6 +150,22 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               </div>
               <button type="button" class="btn-env" aria-haspopup="dialog">New environment</button>
             </fieldset>
+            <!-- ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): Resources and Extra config file, drawn open; Snakemake with the profile slurm, so the profile owns the resources and nothing is sent (api §5.7). -->
+            <div class="xrow">
+              <h3 id="xr-res-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="xr-res" style="min-height: 40px;"><span>Resources</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">From the profile slurm</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
+              <div id="xr-res" class="xrow-b">
+                <p class="keep" style="margin: 0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; align-self: center;"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 11v5 M12 8h.01"/></svg><span>The profile slurm sets the resources, so none are set here. Without a profile: memory and time per task (below). Values typed before a Snakemake profile was picked are kept in the form but not sent.</span></p>
+              </div>
+            </div>
+            <div class="xrow">
+              <h3 id="xr-cfg-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="xr-cfg" style="min-height: 40px;"><span>Extra config file</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">kd-screen-extra.yaml</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
+              <div id="xr-cfg" class="xrow-b fld">
+                <label for="f-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+                <input id="f-xcfg" value="/home/amartin/configs/kd-screen-extra.yaml" placeholder="/home/amartin/…/extra.yaml" spellcheck="false" autocomplete="off" aria-describedby="f-xcfg-h f-xcfg-k" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+                <span id="f-xcfg-h" class="hint">A .yaml or .json file of workflow config, merged key by key under the form's values: a key you set here wins, the file's other keys stay. Not a profile: it sets config, not resources. In your home directory or in the pipeline: type its absolute path (the browser cannot list the server's files).</span>
+                <span id="f-xcfg-k" class="keep"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; align-self: center;"><path d="M6 11h12v9H6z M9 11V8a3 3 0 0 1 6 0v3"/></svg><span>Read once at Launch and kept with the run as <span class="mono">extra.yaml</span> (<span class="mono">extra.json</span> for a .json file), readable by you only (0600), with its SHA-256 · at most 256 KiB · a top-level map, no __use_yte__.</span></span>
+              </div>
+            </div>
             <dl style="margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
               <sc-for list="{{where}}" as="w" hint-placeholder-count="4">
                 <div style="display: flex; gap: 10px; align-items: baseline;"><dt style="flex: 0 0 92px; color: #6E7287; font-size: 12px;">{{w.k}}</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;"><sc-if value="{{w.logo}}" hint-placeholder-val="{{false}}"><img src="{{w.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{w.v}}</dd></div>
@@ -229,6 +264,8 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               <div><dt>Pipeline</dt><dd>rna-seq-star-deseq2 v2.1.2 · profile slurm</dd></div>
               <div><dt>Engine</dt><dd><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="14" height="14" alt="" style="display: inline-block; vertical-align: -2px; margin-right: 5px;">Snakemake 9.27.1</dd></div>
               <div><dt>Environment</dt><dd>Long jobs, mylab · SLURM</dd></div>
+              <div><dt>Resources</dt><dd>from the profile slurm</dd></div>
+              <div><dt>Extra config</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 400;">/home/amartin/configs/kd-screen-extra.yaml</dd></div>
               <div><dt>Engine head</dt><dd>tmux session on login1</dd></div>
               <div><dt>Tasks</dt><dd>sent to SLURM by Snakemake · resources and partition from the profile slurm (this environment's are not passed)</dd></div>
               <div><dt>Run directory</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 400;">/scratch/amartin/spectio-runs/&lt;run ID&gt;</dd></div>
@@ -247,7 +284,7 @@ ref:
   build: GRCh38
 trimming:
   activate: true</pre>
-            <span style="font-size: 11.5px; color: #A6A9BA;">Only values you set · written to the run directory and passed with --configfile</span>
+            <span style="font-size: 11.5px; color: #A6A9BA;">Only the keys you set · written to the run directory and passed with --configfile, after extra.yaml · other keys come from extra.yaml, then the pipeline</span>
           </div></div></section>
           <button type="button" class="btn-go" aria-disabled="true" aria-describedby="launch-missing launch-what" style="height: 46px;">Launch</button>
           <span id="launch-what" style="font-size: 12px; color: #4D5065;">Starts the engine in a new tmux session on login1. Spectio checks that workflow/Snakefile exists, not your data files: the engine reads them when the run starts.</span>
@@ -386,6 +423,42 @@ trimming:
           <button type="button" class="btn-go" disabled aria-describedby="s2-go-why s2-h" style="height: 40px;">Launch</button>
           <span id="s2-go-why" style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">Load a pipeline first</span>
         </div>
+        </section>
+        </div>
+      </section>
+      <!-- ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): Snakemake's Resources and Extra config file in other states. -->
+      <section aria-labelledby="h-xr" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h2 id="h-xr" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Where it runs: Snakemake resources and the extra config file, other states</h2>
+          <span style="font-size: 12.5px; color: #4D5065;">ui-spec §4.6, api §5.7. Bounds, caps, the loading state and the 503 are as on LiteLaunch.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 14px; align-items: start;">
+        <section aria-labelledby="sx1-h" class="st-pnl">
+          <h3 id="sx1-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">No profile, Login node: memory and time only</h3>
+          <span id="sx1-hint" class="hint">Used by every rule that does not set its own. A rule that sets its own memory or time keeps them.</span>
+          <p id="sx1-cpu" class="keep" style="margin: 0;">Snakemake takes CPUs from each rule's threads.</p>
+          <div class="res-f">
+            <div class="fld">
+              <label for="sx1-mem">Memory per task</label>
+              <span class="unit"><input id="sx1-mem" inputmode="decimal" value="4" placeholder="the pipeline's default" aria-describedby="sx1-mem-h sx1-hint"><label class="sr" for="sx1-mem-u">Memory per task, unit</label><select id="sx1-mem-u"><option>MiB</option><option selected>GiB</option></select></span>
+              <span id="sx1-mem-h" class="hint">Rounded to MiB · at most 8 GiB (Login node)</span>
+            </div>
+            <fieldset class="fld">
+              <legend>Time per task</legend>
+              <span class="unit"><label class="sr" for="sx1-th">Time per task, hours</label><input id="sx1-th" inputmode="numeric" placeholder="–" aria-describedby="sx1-time-h sx1-hint"><span class="u" aria-hidden="true">h</span><label class="sr" for="sx1-tm">Time per task, minutes</label><input id="sx1-tm" inputmode="numeric" placeholder="–" aria-describedby="sx1-time-h sx1-hint"><span class="u" aria-hidden="true">min</span></span>
+              <span id="sx1-time-h" class="hint">1 min to 720 h · not enforced on this machine</span>
+            </fieldset>
+          </div>
+        </section>
+        <section aria-labelledby="sx2-h" class="st-pnl">
+          <h3 id="sx2-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">The server refused the file (422)</h3>
+          <span class="hint">Nothing was started. Spectio reads the file as data: a YAML alias, a list at the top or __use_yte__ (which makes Snakemake run it as code) is refused.</span>
+          <div class="fld">
+            <label for="sx2-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+            <input id="sx2-xcfg" value="/home/amartin/configs/kd-screen-extra.yaml" spellcheck="false" aria-invalid="true" aria-describedby="sx2-e sx2-o" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="sx2-e" role="alert" class="ferr">The file sets __use_yte__, which runs code: Spectio does not accept it.</span>
+            <span id="sx2-o" class="hint">Also, as the server words them: a .yaml or .yml or .json file · the file cannot be read: it uses a YAML alias, which is not read · the file is not a map of config keys to values.</span>
+          </div>
         </section>
         </div>
       </section>

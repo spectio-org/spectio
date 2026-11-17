@@ -6,6 +6,7 @@ import { ICONS, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
+import { LazyGrid } from "./LazyGrid";
 import { LogViewer } from "./LogViewer";
 import {
   COLUMNS_MAX,
@@ -33,7 +34,6 @@ import { OFFLINE, OFFLINE_WHY, hasDotPart, join } from "./explorer";
 import { BackToRun, Crumbs, type ResultsSearch, useTaskName } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
 import { compareText } from "./gridText";
-import type GridOf from "./DataGrid";
 import { runName } from "./RunState";
 import { isTerminal, when } from "./stateWord";
 
@@ -262,8 +262,6 @@ function JsonView({ id, file, retry }: { id: string; file: ResultStat; retry: ()
   );
 }
 
-// AG Grid is its own chunk, loaded with the first table (ui-spec §4.13).
-const DataGrid = lazy(() => import("./DataGrid")) as unknown as typeof GridOf;
 /** Up to this many rows the table grows to them; past it, a fixed height scrolls them virtually. */
 const SHORT = 15;
 
@@ -314,26 +312,25 @@ function TableView({ id, file, retry }: { id: string; file: ResultStat; retry: (
       {table.comments.length > 0 && <pre className="sp-file-comments">{table.comments.join("\n")}</pre>}
       <p className="sp-muted">{[file.name, cut ? "read from the first 1 MiB" : null, ...notes].filter(Boolean).join(" · ")}</p>
       <div className="sp-file-table" role="region" aria-label={`${file.name}, table`} data-scroll={rows.length > SHORT ? "" : undefined}>
-        <Suspense fallback={<p className="sp-muted">Loading the table…</p>}>
-          <DataGrid<string[]>
-            key={String(header)}
-            label={file.name}
-            rowData={rows}
-            domLayout={rows.length > SHORT ? "normal" : "autoHeight"}
-            defaultColDef={{ flex: 1, minWidth: 120 }}
-            columnDefs={Array.from({ length: columns }, (_, i) => ({
-              colId: String(i),
-              headerName: head ? (head[i] ?? "") : `Column ${i + 1}`,
-              valueGetter: ({ data }) => data?.[i] ?? "",
-              comparator: compareText,
-              filter: "agTextColumnFilter",
-              floatingFilter: true,
-              suppressFloatingFilterButton: true,
-              suppressHeaderMenuButton: true,
-              suppressHeaderFilterButton: true,
-            }))}
-          />
-        </Suspense>
+        <LazyGrid<string[]>
+          loadingLine="Loading the table…"
+          key={String(header)}
+          label={file.name}
+          rowData={rows}
+          domLayout={rows.length > SHORT ? "normal" : "autoHeight"}
+          defaultColDef={{ flex: 1, minWidth: 120 }}
+          columnDefs={Array.from({ length: columns }, (_, i) => ({
+            colId: String(i),
+            headerName: head ? (head[i] ?? "") : `Column ${i + 1}`,
+            valueGetter: ({ data }) => data?.[i] ?? "",
+            comparator: compareText,
+            filter: "agTextColumnFilter",
+            floatingFilter: true,
+            suppressFloatingFilterButton: true,
+            suppressHeaderMenuButton: true,
+            suppressHeaderFilterButton: true,
+          }))}
+        />
       </div>
       {notes.map((n) => (
         <p key={n} className="sp-muted">
@@ -400,27 +397,31 @@ function ImageView({ id, file }: { id: string; file: ResultStat }) {
 
 const px = (w: number, h: number) => `${w.toLocaleString("en-US")} × ${h.toLocaleString("en-US")}`;
 
-/** A TIFF, or an OME-TIFF's first plane on a phone or without WebGL 2: the flat view on a 2D canvas (ui-spec
- * §4.4.1, imaging), read through the pinned client and our decoder pool, or the state that stopped it. */
-function TiffView({ id, file, ome }: { id: string; file: ResultStat; ome: boolean }) {
+/** A TIFF, or an OME-TIFF's or an OME-Zarr's first plane on a phone or without WebGL 2: the flat view on a
+ * 2D canvas (ui-spec §4.4.1, imaging), read through the pinned client (an OME-Zarr: our store, `zarr`)
+ * and our decoder pool, or the state that stopped it. A folder's states offer `actions` (Browse folder). */
+function TiffView({ id, file, ome, zarr, actions }: { id: string; file: ResultStat; ome: boolean; zarr?: (key: string) => string; actions?: ReactNode }) {
   const work = useContext(Work);
   const phone = usePhone();
   const [tries, setTries] = useState(0);
   const [flat, setFlat] = useState<Flat | null>(null);
   const [state, setState] = useState<ImageState | { problem: ApiError } | "phone" | null>(null);
   const [actual, setActual] = useState(false);
-  const empty = (file.size ?? 0) === 0;
+  const empty = !zarr && (file.size ?? 0) === 0;
   useEffect(() => {
     if (empty) return;
     const controller = new AbortController();
     const pool = new DecoderPool();
     setFlat(null);
     setState(null);
-    readFlat(resultUrl(id, file.path, { as: "tiff" }, work), file.size ?? 0, file.name, ome, phone, pool, controller.signal)
+    const read = zarr
+      ? import("./imaging/zarrflat").then(({ readZarrFlat, inWorkers }) => readZarrFlat(zarr, !!work, phone, inWorkers(pool), controller.signal))
+      : readFlat(resultUrl(id, file.path, { as: "tiff" }, work), file.size ?? 0, file.name, ome, phone, pool, controller.signal);
+    read
       .then((read) => controller.signal.aborted || (read ? setFlat(read) : setState("phone")))
-      .catch((err) => controller.signal.aborted || setState(imageState(err)));
+      .catch((err) => controller.signal.aborted || (controller.abort(), setState(imageState(err)))); // stop the reads still queued
     return () => (controller.abort(), pool.destroy());
-  }, [id, file, ome, phone, work, tries, empty]);
+  }, [id, file, ome, zarr, phone, work, tries, empty]);
   const paint = useCallback(
     (canvas: HTMLCanvasElement | null) => {
       const context = flat && canvas?.getContext("2d");
@@ -434,7 +435,7 @@ function TiffView({ id, file, ome }: { id: string; file: ResultStat; ome: boolea
   );
 
   const retry = () => setTries((t) => t + 1);
-  const download = <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />;
+  const download = actions ?? <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />;
   const copyLink = <CopyButton text={window.location.href} label="Copy link" name="Copy link" />;
   if (empty) return <Note title="This file is empty." actions={download} />;
   if (state === "phone") return <Note title="This image is too large to show on a phone." actions={<>{copyLink}{download}</>} />;
@@ -443,9 +444,11 @@ function TiffView({ id, file, ome }: { id: string; file: ResultStat; ome: boolea
 
   const asOme = ome && !flat.noOme;
   const [W, H] = flat.full;
+  // a reduced level (a phone, or an OME-Zarr without WebGL 2) says what is shown (CR-P3FU102I-03)
+  const reduced = phone || flat.width !== W || flat.height !== H;
   const facts = [
-    phone ? `Shown: ${asOme ? "channel 1, first plane, " : ""}${px(flat.width, flat.height)} of ${px(W, H)} px` : `${px(W, H)} px`,
-    !phone && asOme ? "Shown: channel 1, first plane" : null,
+    reduced ? `Shown: ${asOme ? "channel 1, first plane, " : ""}${px(flat.width, flat.height)} of ${px(W, H)} px` : `${px(W, H)} px`,
+    !reduced && asOme ? "Shown: channel 1, first plane" : null,
     !asOme && flat.pages > 1 ? `Shown: page 1 of ${flat.pages}` : null,
     flat.note,
     flat.stretched ? "Contrast stretched for display" : null,
@@ -534,7 +537,7 @@ function OmeTiffView({ id, file }: { id: string; file: ResultStat }) {
 }
 
 /** An OME-Zarr folder: the WebGL viewer reading its keys through our store, with Browse folder
- * where a file has Download. On a phone or without WebGL 2, a note: the flat Zarr view is not built yet. */
+ * where a file has Download. On a phone or without WebGL 2 (also when the viewer's WebGL fails), the flat view. */
 function OmeZarrView({ id, file }: { id: string; file: ResultStat }) {
   const work = useContext(Work);
   const phone = usePhone();
@@ -544,12 +547,36 @@ function OmeZarrView({ id, file }: { id: string; file: ResultStat }) {
   ) : (
     <Link to="/runs/$id/results" params={{ id }} search={{ path: file.path }}>Browse folder</Link>
   );
-  if (phone) return <Note title="Open on a larger screen: Spectio shows an OME-Zarr in the image viewer only." actions={browse} />;
-  if (!hasWebgl2()) return <Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />;
+  const flat = <TiffView id={id} file={file} ome zarr={zarr} actions={browse} />;
+  if (phone) return flat;
+  const noWebgl = (
+    <>
+      <Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />
+      {flat}
+    </>
+  );
+  if (!hasWebgl2()) return noWebgl;
   return (
     <Suspense fallback={<p className="sp-muted">Loading the image…</p>}>
-      <OmeView key={file.path} url="" size={0} zarr={zarr} workdir={!!work} name={file.name} fallback={<Note title="This browser cannot open the image viewer: it needs WebGL 2, which is off or missing." actions={browse} />} stateView={(state, retry) => <ImageStateView state={state} retry={retry} download={browse} />} />
+      <OmeView key={file.path} url="" size={0} zarr={zarr} workdir={!!work} name={file.name} fallback={noWebgl} stateView={(state, retry) => <ImageStateView state={state} retry={retry} download={browse} />} />
     </Suspense>
+  );
+}
+
+/** An OME-Zarr folder that is a link: the server answers its stat as `link_outside` and refuses
+ * every key below it (api §5.3.1 Confinement), so neither its Zarr version nor its target can be
+ * read; one state for the results, one for a work directory (ui-spec §4.4.1, Where it can be read). */
+function ZarrLink({ name, where, work }: { name: string; where: string; work: boolean }) {
+  return (
+    <Note
+      title={work ? "Spectio cannot open this OME-Zarr here (a link in the work directory)." : "Spectio cannot open this OME-Zarr here (published as a link)."}
+      body={
+        work
+          ? "Spectio does not read below a link. Open it from the task that wrote it, or from the results once it is published."
+          : "Spectio does not read below a link. A Zarr v2 store cannot be opened from a link in 0.0.1; a Zarr v3 store opens from the task's work directory once Spectio reads Zarr v3."
+      }
+      actions={<CopyButton text={where} label="Copy path" name={`Copy path of ${name}`} />}
+    />
   );
 }
 
@@ -570,9 +597,10 @@ function Viewer({ id, file, kind, retry, search }: { id: string; file: ResultSta
       if (work) return <Note title="Spectio does not open HTML from a work directory. Download it to open it." actions={download} />;
       const { sort, q, task, attempt } = search;
       if (search.view === "text") return <TextView id={id} file={file} levels={false} retry={retry} />;
-      // the report viewer, as from the folder (FU-P3-88a); past its cap, Download; from a job's
-      // Outputs, a link, so the back link still returns to the sheet
-      if ((file.size ?? 0) > REPORT_MAX) return <Note title="Too large for the report viewer (over 1 GiB). Download it to open it." actions={download} />;
+      // the report viewer, as from the folder (FU-P3-88a); past its cap or of unknown size, Download
+      // (fail closed, SEC-P3FU88A-01); from a job's Outputs, a link, so the back link still returns to the sheet
+      if (file.size === null) return <Note title="Spectio cannot tell this file's size, so the report viewer does not open it. Download it to open it." actions={download} />;
+      if (file.size > REPORT_MAX) return <Note title="Too large for the report viewer (over 1 GiB). Download it to open it." actions={download} />;
       if (!task || !attempt) return <Navigate to="/runs/$id/report" params={{ id }} search={{ path: file.path, from: "results", sort, q }} replace />;
       return (
         <Note
@@ -712,6 +740,8 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
           <Problem error={error} onRetry={retry} />
         ) : !file || !kind ? (
           <p className="sp-muted">Loading the file…</p>
+        ) : file.type === "link_outside" && kind === "omezarr" ? (
+          <ZarrLink name={file.name} where={where!} work={!!work} />
         ) : file.type === "link_outside" ? (
           <Note title={work ? "A link outside the run: not followed." : "A link outside the results directory: not followed."} />
         ) : (

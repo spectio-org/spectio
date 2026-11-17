@@ -190,6 +190,49 @@ def test_req18_file_invalid_detail_has_no_file_bytes(path: Path) -> None:
     assert not any(part in detail for part in ("SECRET", "TOKEN", "'", '"', "\\"))
 
 
+def test_req18_file_invalid_detail_names_no_unknown_key_or_default(path: Path) -> None:
+    """An unknown key and a dangling `default` are not echoed: only the place and the rule
+    (SEC-P3FU86BCD-01, FU-P3-103)."""
+    put(path, "[environments.x]\nexecutor = 'local'\nsecret-hunter2 = 1\n")
+    assert read(path).detail == "environments.x: unknown key"
+    put(path, "[environments.x]\nexecutor = 'local'\nlocal = { token-abc = 1 }\n")
+    assert read(path).detail == "environments.x.local: unknown key"
+    put(path, 'default = "token-abc"\n')
+    assert read(path).detail == "default names no environment"
+
+
+@pytest.mark.parametrize("state", ["missing", "refused", "invalid", "unreachable"])
+def test_req18_file_not_ok_has_no_entries_and_no_default(state: envfile.State) -> None:
+    """CR-P3B10-01: `view()` relies on a file that is not `ok` having no environments and no
+    default; the dataclass refuses to be built otherwise."""
+    assert envfile.File(state, "why").environments == ()
+    mine = Environment(name="mylab", executor="local")
+    for bad in ({"entries": (mine,)}, {"default": "mylab"}):
+        with pytest.raises(ValueError, match="not ok"):
+            envfile.File(state, "why", **bad)
+
+
+def test_req18_file_directory_fstat_error_unreachable(
+    either: tuple[Path, str], kind: envfile.Kind[Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ESTALE at the directory's `fstat` is `unreachable`, and a write raises Stalled
+    (CR-P3FU86BCD-05 round 3)."""
+    path = either[0]
+    put(*either)
+    real_fstat = os.fstat
+
+    def stale(fd: int) -> os.stat_result:
+        if stat.S_ISDIR(real_fstat(fd).st_mode):
+            raise OSError(errno.ESTALE, os.strerror(errno.ESTALE))
+        return real_fstat(fd)
+
+    monkeypatch.setattr(os, "fstat", stale)
+    found = read(path, kind=kind)
+    assert found.state == "unreachable" and found.detail and "cannot be read" in found.detail
+    with pytest.raises(Stalled):
+        envfile.update_kind(kind, path, NAMES, lambda current: (None, []))
+
+
 @pytest.mark.parametrize("where", ["directory", "file"])
 def test_req18_file_open_io_error_unreachable(
     either: tuple[Path, str], kind: envfile.Kind[Any], monkeypatch: pytest.MonkeyPatch, where: str
