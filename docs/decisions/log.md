@@ -1370,3 +1370,11 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Changed.** [documentation system §1 and §2](../specs/documentation-system.md#1-site-structure) (two builds, the landing page, the check); `mkdocs.yml`, new `mkdocs.dev.yml`; `overrides/main.html` (licence text, no map link); `hooks/progress.py` (a comment: no Progress section, no change); `tools/docs/check.py` and its tests (it builds both configurations and skips pages that `exclude_docs` leaves out); the public pages `docs/index.md`, `installation`, `usage`, `features`, `api`, `roadmap`, `changelog`.
 - **CI.** `tools/docs/check.py`, which the docs gate runs, now builds the public and the developer configuration, each with `--strict`. The plain `mkdocs build --strict` steps of `.github/workflows/docs.yml` and `previews.yml` build the public site only, so the previews show only the product pages. Building or deploying the developer site in CI needs a `.github/workflows` change, which waits for Thomas.
 - **[to be validated].** That a checkout (`uv sync`, the built screens, `spectio init`, `spectio serve`) is an install route for people who are not developers: the installation page gives the steps and says so. Screenshots that still show the older UI are retaken in a separate step.
+
+## 2026-11-17 — picomatch advisory accepted for the web dev tooling
+
+- **Context.** On 2026-11-17 osv-scanner started reporting GHSA-fc5q-39xc-vjpf (CVSS 8.7) against `picomatch` 4.0.7 in `web/package-lock.json`, and no fixed version exists yet. The security audit is a dependency of `ci-ok`, so every PR was red.
+- **Decided (Thomas, 2026-11-17: "oui 1").** The advisory is ignored in a new `web/osv-scanner.toml`, with one entry that expires on 2027-02-17. It follows the pattern of `engine-bridges/nf-spectio/gradle/osv-scanner.toml`.
+- **Why.** `picomatch` is dev-only (`"dev": true` in the lockfile). Vite and Vitest use it to match globs from our own config, on the build machine and in CI, and it is not in the shipped web bundle.
+- **Revisit.** Remove the entry and update the lockfile as soon as a fixed `picomatch` is released, or earlier if it stops being dev-only.
+- **[to be validated].** The nature of the advisory was not read.
