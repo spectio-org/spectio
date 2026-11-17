@@ -29,11 +29,11 @@ Until it is released, [install it from a checkout](../installation/index.md).
 
 ## After 0.0.1
 
-- **0.0.2:** pipeline version detection, and performance across runs.
+- **0.0.2:** pipeline version detection, performance across runs, and, behind flags, the interactive workflow graph and runs that target one Nextflow module or one Snakemake rule.
 - **Later, in no set order:**
     - QC gates between stages, with a review screen ([QC gates](../features/gates.md)).
     - Kubernetes, and a shared server with remote runners.
-    - The hand-off of results to depictio ([depictio](../features/depictio.md)).
+    - The hand-off of results to Depictio ([Depictio](../features/depictio.md)).
     - Accounts, roles and administration ([Administration](../features/administration.md)).
     - Relaunch with changed parameters in one step, and rerun from a stage.
     - Full scheduler monitoring.

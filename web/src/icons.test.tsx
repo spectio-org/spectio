@@ -58,6 +58,13 @@ test("UI-02: the markup for a string-only host (AG Grid) is the same icon", () =
 const EXCEPTIONS: Record<string, string> = {
   "./shell/TopBar.tsx": "the Spectio logo (SpectioMark), four filled brand paths",
 };
+// Drawings that are not icons: they may hold an <svg>, a <path d=…> and a stroke width, but still
+// no <Icon path=…> and no path string outside a d= attribute.
+const DRAWINGS: Record<string, string> = {
+  "./demo/server.ts": "a demo image (a bar chart SVG) served as a run's output file",
+  "./runs/graph/GraphView.tsx": "the graph legend's two link samples, drawn as the map draws links (#160)",
+  "./runs/graph/export.ts": "the workflow graph's SVG export: nodes, links and the arrow marker (#160)",
+};
 const sources = import.meta.glob(["./**/*.{ts,tsx}", "!./**/*.test.{ts,tsx}", "!./icons.tsx"], {
   query: "?raw",
   import: "default",
@@ -72,7 +79,7 @@ const ICON_ONLY = [/strokeWidth|stroke-width/, /<Icon\b[^>]*\bpath=/, /(?<!d=)["
 test("UI-02: no icon path or stroke is drawn outside icons.tsx", () => {
   expect(Object.keys(sources).length).toBeGreaterThan(50);
   const offenders = Object.entries(sources).flatMap(([file, text]) => {
-    const rules = file in EXCEPTIONS ? ICON_ONLY : [...BRAND, ...ICON_ONLY];
+    const rules = file in DRAWINGS ? ICON_ONLY.slice(1) : file in EXCEPTIONS ? ICON_ONLY : [...BRAND, ...ICON_ONLY];
     return rules.filter((re) => re.test(text)).map((re) => `${file}: ${re}`);
   });
   expect(offenders).toEqual([]);
@@ -80,4 +87,5 @@ test("UI-02: no icon path or stroke is drawn outside icons.tsx", () => {
 
 test("UI-02: the brand-mark exceptions still exist (a stale entry is removed)", () => {
   for (const file of Object.keys(EXCEPTIONS)) expect(sources[file]).toMatch(/<path\b[^>]*\bd=/);
+  for (const file of Object.keys(DRAWINGS)) expect(sources[file]).toMatch(/<svg\b/);
 });

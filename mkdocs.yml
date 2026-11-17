@@ -5,8 +5,8 @@ repo_url: https://github.com/spectio-org/spectio
 edit_uri: edit/main/docs/
 docs_dir: docs
 strict: true
-# A local Excalifont.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site.
 exclude_docs: |
+  # a local Excalifont.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site
   fonts/*.ttf
   # read by the Snakemake plugin catalogue from the root of main, not part of the site
   /intro.md
@@ -68,6 +68,8 @@ extra_javascript:
 hooks:
   - hooks/progress.py
   - hooks/lists.py
+  # a public page that still links a developer page gets the link to GitHub (#251); not in mkdocs.dev.yml
+  - hooks/internal.py
 
 markdown_extensions:
   - tables
@@ -116,7 +118,9 @@ nav:
       - Runners: features/runners.md
       - QC gates (optional): features/gates.md
       - Administration: features/administration.md
-      - depictio: features/depictio.md
+      - Depictio: features/depictio.md
+      - LabID: features/labid.md
+      - AI agents: features/ai-agents.md
   - API: api/index.md
   - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md

@@ -31,3 +31,8 @@ globalThis.ResizeObserver ??= class {
 
 // The router's scroll restoration calls scrollTo, which jsdom does not implement (FU-P3-23).
 window.scrollTo = () => {};
+
+// jsdom has no SVG layout: React Flow measures edge labels with getBBox
+if (!("getBBox" in SVGElement.prototype)) {
+  Object.defineProperty(SVGElement.prototype, "getBBox", { value: () => ({ x: 0, y: 0, width: 0, height: 0 }) });
+}

@@ -82,6 +82,9 @@ REGISTRY: dict[str, Shot] = {
         Shot("lite-launch", "LiteLaunch", 1440, 1180, "0.0.1: launching a pipeline from its directory, the form built from nextflow_schema.json, here prefilled from an earlier run"),
         Shot("lite-runs", "LiteRuns", 1440, 1180, "0.0.1: every run with its state, workflow, tasks, start and duration"),
         Shot("lite-run-detail-phone", "MLiteRunDetail", 390, 844, "0.0.1: the same run on a phone"),
+        Shot("run-graph", "RunGraph", 1440, 1180, "0.0.2 (graph_view): the Graph tab of a running synthetic run, ALIGN found by search, its sheet with parameters and live outputs, critical path, minimap and replay"),
+        Shot("run-graph-phone", "MRunGraph", 390, 844, "0.0.2 (graph_view): the graph on a phone, opening on the List view"),
+        Shot("launch-map", "LaunchMap", 1440, 1180, "0.0.2 (graph_view): the Launch workflow map of nf-core/fetchngs, a static estimate with a loop in its edges"),
         # Live: from a running `spectio serve` at $SPECTIO_URL, with the synthetic Nextflow pipeline
         # copied to $SPECTIO_DEMO_PIPELINE (a path free of forbidden terms, fixtures.yaml).
         Shot("app-launch", "/launch", 1440, 1000,

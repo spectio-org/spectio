@@ -1,6 +1,6 @@
 import { Button, Modal, SegmentedControl, Select, Tabs } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { type KeyboardEvent, type Ref, useCallback, useEffect, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type Ref, Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   type LogSource,
@@ -20,6 +20,11 @@ import {
 } from "../api";
 import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
+import { GRAPH_VIEW, useFeatures } from "./graph/features";
+import { type GraphSearch, graphSearch } from "./graph/settings";
+
+// the graph, with React Flow and dagre: a lazy chunk, out of the main bundle (issue #160)
+const GraphPanel = lazy(() => import("./graph/GraphPanel").then((m) => ({ default: m.GraphPanel })));
 import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { FoldSection } from "../shell/FoldSection";
@@ -67,16 +72,17 @@ const LOGS: { source: LogSource; label: string }[] = [
 /** The run's log sources: Head errors only when its head wrote head.err (FU-P3-124). */
 const logsOf = (run: RunDetail) => LOGS.filter((l) => l.source !== "head-err" || run.head_logs.includes("head-err"));
 
-const TABS = ["summary", "tasks", "parameters", "logs"] as const;
+const TABS = ["summary", "tasks", "parameters", "logs", "graph"] as const;
 type Tab = (typeof TABS)[number];
 
-type RunSearch = { tab?: Exclude<Tab, "summary">; source?: LogSource; from?: "summary"; process?: string; task?: string; attempt?: number };
+type RunSearch = { tab?: Exclude<Tab, "summary">; source?: LogSource; from?: "summary"; process?: string; task?: string; attempt?: number } & GraphSearch;
 
 /** The run's URL keeps its tab, the log source on Logs (?tab=logs&source=engine, with &from=summary
  * when the Summary's last lines opened it: Logs then shows Back to Summary) and the process
  * on Tasks (?tab=tasks&process=ALIGN), so a view can be linked and reloaded; anything else falls
  * back to the Summary, the engine log and every process. `&task=<id>&attempt=<n>` reopens that
- * task's sheet on that attempt (ui-spec §4.4.1, Back to the task sheet). */
+ * task's sheet on that attempt (ui-spec §4.4.1, Back to the task sheet). The Graph tab keeps its view
+ * (?tab=graph&level=&layout=&overlay=&show=&q=&node=, graph/settings.ts). */
 export function runSearch(search: Record<string, unknown>): RunSearch {
   return { ...tabSearch(search), ...taskSearch(search) };
 }
@@ -84,6 +90,7 @@ export function runSearch(search: Record<string, unknown>): RunSearch {
 function tabSearch(search: Record<string, unknown>): RunSearch {
   const tab = TABS.find((t) => t !== "summary" && t === search.tab) as Exclude<Tab, "summary"> | undefined;
   if (tab === "tasks" && typeof search.process === "string" && search.process !== "") return { tab, process: search.process };
+  if (tab === "graph") return { tab, ...graphSearch(search) };
   if (tab !== "logs") return tab ? { tab } : {};
   const source = LOGS.find((l) => l.source === search.source)?.source ?? "engine";
   return search.from === "summary" ? { tab, source, from: "summary" } : { tab, source };
@@ -220,6 +227,45 @@ function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
   );
 }
 
+/** A Snakemake target run as the chain Launch showed (ui-spec §4.15): the rules it runs in pipeline
+ * order, each with its jobs done and its state's tone, the target last; then the rules it does not
+ * need, dimmed. The process table below keeps the counts. */
+function TargetSteps({ run, steps, outside, ended, open }: { run: RunDetail; steps: Process[]; outside: string[]; ended: boolean; open: string[] }) {
+  const w = words(run.workflow.engine);
+  const target = run.target?.name;
+  return (
+    <div className="sp-target-steps">
+      <ol className="sp-steps" aria-label="Steps to the target">
+        {[...steps]
+          .sort((x, y) => (x.pipeline_order ?? 0) - (y.pipeline_order ?? 0))
+          .map((p) => {
+            const { state, word } = processState(p, ended, open);
+            const done = sum(p.counts, "succeeded", "cached", "stored");
+            return (
+              <li key={p.process} className="sp-step" data-tone={tone(state)} data-target={p.process === target || undefined}>
+                <ProcessName name={p.process} />
+                <span className="sp-step-count">
+                  {word} · {done} / {total(p.counts)} {total(p.counts) === 1 ? w.unit : w.units}
+                  {p.process === target && " · target"}
+                </span>
+              </li>
+            );
+          })}
+      </ol>
+      {outside.length > 0 && (
+        <ul className="sp-steps sp-steps-out" aria-label="Rules outside the target">
+          {outside.map((r) => (
+            <li key={r} className="sp-step">
+              <span className="sp-mono">{r}</span>
+              <span className="sp-step-count">not needed</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Stages in position order, each opening to its processes; or the flat list (ui-spec §4.4 note). */
 function StagesOrProcesses({
   run,
@@ -239,6 +285,9 @@ function StagesOrProcesses({
   const engine = engineName(run.workflow.engine);
   const open = run.summary.open_checkpoints ?? [];
   const updates = run.summary.dag_updates ?? 0;
+  // a target run lists what it runs; the rules it does not need are listed apart (ui-spec §4.15)
+  const outside = run.target ? processes.filter((p) => p.status === "not_needed").map((p) => p.process) : [];
+  const listed = outside.length ? processes.filter((p) => p.status !== "not_needed") : processes;
   const note = (
     <>
       {run.stages_note && (
@@ -269,7 +318,11 @@ function StagesOrProcesses({
       Pending: no {w.unit} has started. Running: {w.units} are running, or some are done and more are to come. Done:
       every {w.unit} succeeded or was reused. Stopped: the run ended before it finished.{" "}
       {run.workflow.engine === "snakemake"
-        ? "Waiting for checkpoint: its jobs may appear once the checkpoint ends. Up to date: its outputs already exist. Not needed in this run: the targets or an input function left it out. \"at least\": a checkpoint is open and more jobs may come."
+        ? `Waiting for checkpoint: its jobs may appear once the checkpoint ends. Up to date: its outputs already exist. ${
+            run.target
+              ? "Outside the target: the rule is not needed to make the target."
+              : "Not needed in this run: the targets or an input function left it out."
+          } "at least": a checkpoint is open and more jobs may come.`
         : "No task (condition or empty input): a when: condition was false, or its input was empty. Processes the script does not call in this run are not listed."}
     </p>
   );
@@ -277,8 +330,11 @@ function StagesOrProcesses({
     return (
       <FoldSection id="processes" screen="run" icon="list" title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
         {note}
-        <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>
-        <ProcessTable processes={processes} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
+        {!run.target && <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>}
+        {run.target && run.target.kind !== "module" && listed.length > 0 && (
+          <TargetSteps run={run} steps={listed} outside={outside} ended={ended} open={open} />
+        )}
+        <ProcessTable processes={listed} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
         {legend}
       </FoldSection>
     );
@@ -1115,7 +1171,8 @@ export function RunDetailPage({ id }: { id: string }) {
   // the root route passes unknown keys through, so the page reads the search through runSearch too
   const search = runSearch(useSearch({ from: "/runs/$id" }));
   const navigate = useNavigate({ from: "/runs/$id" });
-  const tab: Tab = search.tab ?? "summary";
+  const graphOn = useFeatures().includes(GRAPH_VIEW);
+  const tab: Tab = search.tab === "graph" && !graphOn ? "summary" : search.tab ?? "summary";
   const logSource = search.source ?? "engine";
   // the last log source shown, so Logs reopens on it after another tab (also after Back or Forward)
   const lastSource = useRef(logSource);
@@ -1267,6 +1324,7 @@ export function RunDetailPage({ id }: { id: string }) {
           <Tabs.Tab value="tasks">{w.Units}</Tabs.Tab>
           <Tabs.Tab value="parameters">Parameters</Tabs.Tab>
           <Tabs.Tab value="logs">Logs</Tabs.Tab>
+          {graphOn && <Tabs.Tab value="graph">Graph</Tabs.Tab>}
         </Tabs.List>
         <Tabs.Panel value="summary" pt="md">
           <div className="sp-detail-grid">
@@ -1301,6 +1359,19 @@ export function RunDetailPage({ id }: { id: string }) {
             onBack={search.from ? backToSummary : undefined}
           />
         </Tabs.Panel>
+        {graphOn && (
+          <Tabs.Panel value="graph" pt="md">
+            <Suspense fallback={<p className="sp-muted">Loading the graph…</p>}>
+              <GraphPanel
+                run={run}
+                search={graphSearch(search)}
+                onSearch={(graph) => navigate({ search: runSearch({ tab: "graph", ...graph }), resetScroll: false })}
+                onOpen={(view) => setViews([view])}
+                onTasks={showProcess}
+              />
+            </Suspense>
+          </Tabs.Panel>
+        )}
       </Tabs>
     </div>
   );

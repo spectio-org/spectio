@@ -24,7 +24,7 @@ Spectio sits between you and your workflow engine. It does not replace Nextflow 
 Runs you start by hand in a terminal show up too, for watching only ([Runs started from a terminal](runs-from-a-terminal.md)).
 
 !!! note "Not in 0.0.1"
-    Quality gates (a stop between two stages for a check), Kubernetes, the hand-off to depictio, accounts and administration come in later versions. See the [roadmap](../roadmap/index.md).
+    Quality gates (a stop between two stages for a check), Kubernetes, the hand-off to Depictio, accounts and administration come in later versions. See the [roadmap](../roadmap/index.md).
 
 ## Where to start
 

@@ -33,9 +33,10 @@ const fetchMock = vi.fn<typeof fetch>();
 // The Environment row and the catalog picker read their lists on their own (LaunchEnvironment and
 // LaunchCatalog tests): they fail here, so the form sends no environment and the calls below are
 // the form's own.
+// /features too: the Workflow map (graph/features.ts) reads it on its own.
 beforeEach(() =>
   vi.stubGlobal("fetch", (url: RequestInfo | URL, init?: RequestInit) =>
-    ["/api/v1/environments", "/api/v1/catalog"].includes(String(url)) ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
+    ["/api/v1/environments", "/api/v1/catalog", "/api/v1/features"].includes(String(url)) ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
   ),
 );
 afterEach(() => {

@@ -439,6 +439,12 @@ class SpectioObserver implements TraceObserverV2 {
     static final List<String> REQUEST_KEYS = ['cpus', 'memory', 'time', 'disk', 'queue', 'accelerator',
                                               'accelerator_type', 'attempt']
     static final int MAX_CONFIG_DEPTH = 8
+    // The reader drops an event of more than 4096 JSON values (spectio_sdk MAX_EVENT_NODES) or a
+    // line over 64 KiB; a dropped onFlowBegin loses the stage freeze. A DAG costs one value per
+    // process and three per edge, so it is sent whole only under both caps.
+    static final int MAX_DAG_VALUES = 4000
+    static final int MAX_DAG_PROCESSES = 2000  // spectio_sdk NextflowDag's own cap
+    static final int MAX_DAG_BYTES = 57344
 
     private final Spool spool
     private volatile Session session
@@ -499,11 +505,148 @@ class SpectioObserver implements TraceObserverV2 {
             // As Session.cleanup() reads it: `!config.cleanup` by Groovy truth (Session.groovy:1375-1410;
             // its bytecode read in the 26.10.4 jar, 2026-11-07).
             [nextflow: str(BuildInfo.version), resume: s.resumeMode as Boolean, workDir: str(s.workDir),
-             cleanup: s.config?.cleanup ? true : false, clusterOptionsSet: setsClusterOptions(s.config?.process)]
+             cleanup: s.config?.cleanup ? true : false, clusterOptionsSet: setsClusterOptions(s.config?.process),
+             target: moduleTarget(str(s.commandLine), s.workflowMetadata?.scriptFile, str(s.workflowMetadata?.scriptId))]
         }
     }
 
-    @Override void onFlowBegin() { emit('onFlowBegin') { [:] } }
+    static final int MAX_TARGET_FILE = 65536
+    static final List<String> GLOBAL_WITH_VALUE = ['-c', '-C', '-config', '-log', '-syslog', '-trace']
+    static final java.util.regex.Pattern HEX = ~/[0-9a-f]{64}/
+
+    /** `nextflow module run` (Nextflow >= 26.04): the module this run targets, or null for a
+     *  pipeline run (api §5.10, architecture §13.8). The command line is parsed here and never sent.
+     *  `source: registry` and the checksum only when `.module-info` beside the script holds a
+     *  64-hex `checksum=`, with the command line's name; else `source: local`, the script ID and
+     *  the directory. `version` is `meta.yml`'s, else `-version`'s. Any failure: no target. */
+    static Map moduleTarget(String commandLine, Object scriptFile, String scriptId) {
+        try {
+            final words = (commandLine ?: '').take(MAX_MESSAGE_CHARS).trim().split(/\s+/) as List<String>
+            int at = 1  // the first word is the launcher; then its own options, then the command
+            while (at < words.size() && words[at].startsWith('-'))
+                at += words[at] in GLOBAL_WITH_VALUE ? 2 : 1
+            if (at + 2 >= words.size() || words[at] != 'module' || words[at + 1] != 'run' || words[at + 2].startsWith('-'))
+                return null
+            final ref = words[at + 2]
+            final v = words.indexOf('-version')
+            final given = v > at && v + 1 < words.size() ? words[v + 1] : null
+            final Path dir = scriptFile instanceof Path ? ((Path) scriptFile).parent : null
+            final meta = dir == null ? null : smallText(dir.resolve('meta.yml'))
+            final version = (yamlScalar(meta, 'version') ?: given)?.take(64)
+            final info = dir == null ? null : smallText(dir.resolve('.module-info'))
+            final checksum = info?.readLines()?.find { it.startsWith('checksum=') }?.substring(9)?.trim()
+            if (checksum && HEX.matcher(checksum).matches())
+                return [kind: 'module', name: ref.take(MAX_MESSAGE_CHARS), version: version, source: 'registry', hash: checksum]
+            final name = yamlScalar(meta, 'name') ?: dir?.fileName?.toString() ?: ref
+            return [kind: 'module', name: name.take(MAX_MESSAGE_CHARS), version: version, source: 'local',
+                    path: dir?.toAbsolutePath()?.normalize()?.toString()?.take(MAX_MESSAGE_CHARS), hash: scriptId]
+        } catch (Exception ignored) {
+            return null  // only `target` is lost, never the event (§13.3)
+        }
+    }
+
+    /** A regular file's text, at most MAX_TARGET_FILE bytes, never through a symlink; null otherwise. */
+    static String smallText(Path file) {
+        try {
+            if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS))
+                return null
+            final channel = Files.newByteChannel(file, LinkOption.NOFOLLOW_LINKS)
+            try {
+                final buf = ByteBuffer.allocate(MAX_TARGET_FILE + 1)
+                while (buf.hasRemaining()) {
+                    if (channel.read(buf) < 0)
+                        break
+                }
+                if (buf.position() > MAX_TARGET_FILE)
+                    return null
+                return new String(buf.array(), 0, buf.position(), StandardCharsets.UTF_8)
+            } finally {
+                channel.close()
+            }
+        } catch (Exception ignored) {
+            return null
+        }
+    }
+
+    /** A top-level `key: value` of a YAML file: the first line that starts with `key:`, cut at the
+     *  first `#`, trimmed, one pair of matching quotes removed, at most 4096 characters. Enough
+     *  for `meta.yml`'s name and version, with no regular expression to backtrack (SEC-161S-11). */
+    static String yamlScalar(String text, String key) {
+        final line = text?.readLines()?.find { it.startsWith(key + ':') }
+        if (line == null)
+            return null
+        String value = line.substring(key.length() + 1)
+        final hash = value.indexOf('#')
+        value = (hash >= 0 ? value.substring(0, hash) : value).trim()
+        if (value.length() >= 2 && (value[0] == '"' || value[0] == "'") && value[-1] == value[0])
+            value = value.substring(1, value.length() - 1)
+        return value ? value.take(MAX_MESSAGE_CHARS) : null
+    }
+
+    @Override void onFlowBegin() {
+        emit('onFlowBegin') {
+            final dag = processDag(session?.dag)
+            dag == null ? [:] : [dag: dag]
+        }
+    }
+
+    /** The run's DAG at process level (#160, spikes/metroflow/graph-contract.md): the processes in
+     *  creation order, by `TaskProcessor.name` (the qualified name the task events carry), and one
+     *  edge per pair of processes joined through channels and operators. Read from
+     *  `Session.dag`, built before `notifyFlowBegin` (Session.groovy:636-638, DAG.groovy:67-72,
+     *  398-490, nextflow v26.10.4). The DAG is only read, never normalized. Over MAX_DAG_VALUES
+     *  or MAX_DAG_BYTES it is `[truncated: true]`; on any error, null (no field). */
+    static Map processDag(Object dag) {
+        try {
+            final vertices = dag?.vertices
+            final edges = dag?.edges
+            if (!(vertices instanceof List) || !(edges instanceof List))
+                return null
+            final Map<Object, String> names = new IdentityHashMap<>()
+            final List<Object> sources = []
+            final Set<String> processes = new LinkedHashSet<>()
+            for (Object v : (List) vertices) {
+                if (str(v?.type) != 'PROCESS')
+                    continue
+                final name = str(v.process?.name ?: v.label)
+                if (name == null)
+                    continue
+                names.put(v, name)
+                sources << v
+                processes << name
+                if (processes.size() > MAX_DAG_PROCESSES)
+                    return [truncated: true]
+            }
+            final Map<Object, List<Object>> next = new IdentityHashMap<>()
+            for (Object e : (List) edges) {
+                if (e?.from != null && e?.to != null)
+                    next.computeIfAbsent(e.from) { [] } << e.to
+            }
+            final Set<List<String>> pairs = new LinkedHashSet<>()
+            for (Object source : sources) {  // creation order: a stable edge order
+                final from = names.get(source)
+                final Set<Object> seen = Collections.newSetFromMap(new IdentityHashMap<>())
+                final Deque<Object> todo = new ArrayDeque<>(next.get(source) ?: [])
+                while (!todo.isEmpty()) {
+                    final v = todo.pop()
+                    if (!seen.add(v))
+                        continue
+                    final target = names.get(v)
+                    if (target == null) {
+                        todo.addAll(next.get(v) ?: [])
+                    } else if (target != from) {
+                        pairs << [from, target]
+                        if (processes.size() + 3 * pairs.size() > MAX_DAG_VALUES)
+                            return [truncated: true]
+                    }
+                }
+            }
+            final out = [processes: processes as List, edges: pairs as List]
+            return JsonOutput.toJson(out).getBytes(StandardCharsets.UTF_8).length > MAX_DAG_BYTES ? [truncated: true] : out
+        } catch (Throwable e) {
+            return null
+        }
+    }
 
     @Override void onFlowComplete() {
         emit('onFlowComplete') {

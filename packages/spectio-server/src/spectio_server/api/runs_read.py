@@ -85,6 +85,7 @@ _RUN_COLUMNS = (
     runs.c.results_dir,
     runs.c.engine_settings,
     runs.c.environment,
+    runs.c.target,
     runs.c.pinned,
     runs.c.default_resources,
     runs.c.config_file,
@@ -221,6 +222,7 @@ def run_json(
         },
         "profiles": profiles,
         "environment": row.environment,  # null for a run started from a terminal (FU-P3-86a)
+        "target": row.target,  # one module or one rule; null: the whole pipeline (api §5.10)
         "pinned": row.pinned,
         "failure": row.failure,
         "head": head,
@@ -465,11 +467,13 @@ def list_runs(
     state: Annotated[str | None, Query(max_length=200)] = None,
     q: Annotated[str | None, Query(max_length=200)] = None,
     sort: RunSort = "-created_at",
+    target: Literal["any", "none"] | None = None,
     limit: Limit = 50,
     cursor: Cursor = None,
 ) -> dict[str, Any]:
     """Newest first by `created_at`, or by the sort of `_run_keys`, pinned runs first;
-    `sort=-ended_at`: ended runs only, by end time (FU-P3-115a)."""
+    `sort=-ended_at`: ended runs only, by end time (FU-P3-115a). `target=any` lists runs of
+    one module or one rule only, `none` whole-pipeline runs (§5.10)."""
     states = _states(state, RUN_STATES)
     keys = _run_keys(sort)
     query = _runs_query(*(key.label(f"_key{i}") for i, (key, _, _) in enumerate(keys)))
@@ -477,6 +481,10 @@ def list_runs(
         query = query.where(runs.c.ended_at.is_not(None))
     if states is not None:
         query = query.where(runs.c.state.in_(states))
+    if target is not None:  # SQL NULL; a JSON null is never stored (`insert_run`)
+        query = query.where(
+            runs.c.target.is_not(None) if target == "any" else runs.c.target.is_(None)
+        )
     if q:  # a prefix, compared as text: no LIKE pattern
         query = query.where(func.substr(runs.c.name, 1, len(q)) == q)
     query = _keyset(query, keys, cursor, limit)
@@ -517,6 +525,7 @@ def server_version(request: Request) -> dict[str, Any]:
         "runs_root": str(settings.runs_root),
         "account": account,
         "executor": settings.executor,
+        "features": {"single_target": settings.features.single_target},  # api §5.10
     }
 
 
@@ -537,40 +546,49 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     (FU-P3-82)."""
     with read(request) as conn:
         run = run_row(conn, run_id)
-        mine = tasks.c.run_id == run_id
-        known = conn.execute(
-            select(
-                run_processes.c.name,
-                run_processes.c.stage_id,
-                run_processes.c.ended,
-                run_processes.c.jobs_planned,
-                run_processes.c.is_checkpoint,
-            )
-            .where(run_processes.c.run_id == run_id)
-            .order_by(run_processes.c.position)
-        ).all()
-        from_tasks = conn.execute(
-            select(tasks.c.process_or_rule, func.max(tasks.c.stage_id))
-            .where(mine)
-            .group_by(tasks.c.process_or_rule)
-            .order_by(func.min(tasks.c.id))
-        ).all()
-        counts = conn.execute(
-            select(tasks.c.process_or_rule, tasks.c.state, func.count())
-            .where(mine)
-            .group_by(tasks.c.process_or_rule, tasks.c.state)
-        ).all()
-        retries: dict[str, int] = dict(
-            conn.execute(
-                select(tasks.c.process_or_rule, func.count())
-                .join(attempts, attempts.c.task_id == tasks.c.id)
-                .where(mine, attempts.c.n > 1)
-                .group_by(tasks.c.process_or_rule)
-            ).all()
+        return {"items": process_items(conn, run, context(request))[0]}
+
+
+def process_items(
+    conn: Connection, run: Row[Any], ctx: Context
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
+    """The items of `GET /runs/{id}/processes` (the nodes of the run's graph, #160), and the
+    jobs of `task_resources` they were computed from, by task ID."""
+    run_id = run.id
+    mine = tasks.c.run_id == run_id
+    known = conn.execute(
+        select(
+            run_processes.c.name,
+            run_processes.c.stage_id,
+            run_processes.c.ended,
+            run_processes.c.jobs_planned,
+            run_processes.c.is_checkpoint,
         )
-        graphs = _rulegraphs(conn, run)
-        facts = _run_facts(conn, run, graphs[-1] if graphs else {})
-        jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, None, context(request))
+        .where(run_processes.c.run_id == run_id)
+        .order_by(run_processes.c.position)
+    ).all()
+    from_tasks = conn.execute(
+        select(tasks.c.process_or_rule, func.max(tasks.c.stage_id))
+        .where(mine)
+        .group_by(tasks.c.process_or_rule)
+        .order_by(func.min(tasks.c.id))
+    ).all()
+    counts = conn.execute(
+        select(tasks.c.process_or_rule, tasks.c.state, func.count())
+        .where(mine)
+        .group_by(tasks.c.process_or_rule, tasks.c.state)
+    ).all()
+    retries: dict[str, int] = dict(
+        conn.execute(
+            select(tasks.c.process_or_rule, func.count())
+            .join(attempts, attempts.c.task_id == tasks.c.id)
+            .where(mine, attempts.c.n > 1)
+            .group_by(tasks.c.process_or_rule)
+        ).all()
+    )
+    graphs = _rulegraphs(conn, run)
+    facts = _run_facts(conn, run, graphs[-1] if graphs else {})
+    jobs = task_resources(conn, run.id, dir_run_id(run), run.engine, None, ctx)
     by_process: dict[str, dict[str, int]] = {}
     for process, state, n in counts:
         by_process.setdefault(process, {})[state] = n
@@ -607,7 +625,7 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
                 "pipeline_order": ranks[process],
             }
         )
-    return {"items": items}
+    return items, jobs
 
 
 def _pipeline_order(names: list[str], graphs: list[dict[str, Any]], seen: set[str]) -> list[str]:

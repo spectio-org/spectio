@@ -891,6 +891,478 @@
         "title": "Failure",
         "type": "object"
       },
+      "FeatureList": {
+        "properties": {
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Features",
+            "type": "array"
+          }
+        },
+        "required": [
+          "features"
+        ],
+        "title": "FeatureList",
+        "type": "object"
+      },
+      "Features": {
+        "properties": {
+          "single_target": {
+            "title": "Single Target",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "single_target"
+        ],
+        "title": "Features",
+        "type": "object"
+      },
+      "GraphDocument": {
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            },
+            "title": "Edges",
+            "type": "array"
+          },
+          "engine": {
+            "title": "Engine",
+            "type": "string"
+          },
+          "estimate": {
+            "title": "Estimate",
+            "type": "boolean"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/GraphGroup"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "producer": {
+            "enum": [
+              "smk-rulegraph",
+              "nf-dag",
+              "bioflow-insight",
+              "stages-only"
+            ],
+            "title": "Producer",
+            "type": "string"
+          },
+          "version": {
+            "const": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "engine",
+          "producer",
+          "complete",
+          "estimate",
+          "groups",
+          "nodes",
+          "edges"
+        ],
+        "title": "GraphDocument",
+        "type": "object"
+      },
+      "GraphEdge": {
+        "properties": {
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "target",
+          "condition"
+        ],
+        "title": "GraphEdge",
+        "type": "object"
+      },
+      "GraphGroup": {
+        "properties": {
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "stage",
+              "subworkflow"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "parent",
+          "condition"
+        ],
+        "title": "GraphGroup",
+        "type": "object"
+      },
+      "GraphLayout": {
+        "properties": {
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "GraphLayout",
+        "type": "object"
+      },
+      "GraphMetrics": {
+        "properties": {
+          "cpu_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Mean"
+          },
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration S"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "mem_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Max"
+          }
+        },
+        "required": [
+          "duration_s",
+          "cpu_mean",
+          "mem_max",
+          "failed"
+        ],
+        "title": "GraphMetrics",
+        "type": "object"
+      },
+      "GraphNode": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "counts": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counts"
+          },
+          "first_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Start"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "process",
+              "rule",
+              "checkpoint",
+              "gate"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last End"
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphLayout"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "params": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Params",
+            "type": "array"
+          },
+          "pipeline_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pipeline Order"
+          },
+          "retries": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retries"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pending",
+                  "running",
+                  "done",
+                  "failed",
+                  "stopped",
+                  "awaiting_checkpoint",
+                  "not_needed",
+                  "up_to_date",
+                  "no_tasks"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "subworkflow": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subworkflow"
+          },
+          "temp": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temp"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "stage_id",
+          "subworkflow",
+          "source",
+          "condition",
+          "params"
+        ],
+        "title": "GraphNode",
+        "type": "object"
+      },
+      "GraphSource": {
+        "properties": {
+          "file": {
+            "title": "File",
+            "type": "string"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line"
+          }
+        },
+        "required": [
+          "file",
+          "line"
+        ],
+        "title": "GraphSource",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -950,6 +1422,65 @@
           "checked"
         ],
         "title": "Head",
+        "type": "object"
+      },
+      "InspectIn": {
+        "additionalProperties": false,
+        "properties": {
+          "engine": {
+            "enum": [
+              "nextflow",
+              "snakemake"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "location": {
+            "maxLength": 4096,
+            "title": "Location",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "engine",
+          "location"
+        ],
+        "title": "InspectIn",
         "type": "object"
       },
       "JobCount": {
@@ -1034,6 +1565,16 @@
             "maxItems": 20,
             "title": "Profiles",
             "type": "array"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TargetIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "workflow": {
             "$ref": "#/components/schemas/WorkflowIn"
@@ -1123,6 +1664,20 @@
             "title": "Profiles",
             "type": "array"
           },
+          "target": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
           "workflow": {
             "$ref": "#/components/schemas/TemplateWorkflow"
           }
@@ -1135,6 +1690,7 @@
           "code_loading",
           "environment",
           "environment_notice",
+          "target",
           "default_resources",
           "config_file"
         ],
@@ -1381,6 +1937,29 @@
         "title": "Notifications",
         "type": "object"
       },
+      "OutputHead": {
+        "properties": {
+          "gzip": {
+            "title": "Gzip",
+            "type": "boolean"
+          },
+          "more": {
+            "title": "More",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "more",
+          "gzip"
+        ],
+        "title": "OutputHead",
+        "type": "object"
+      },
       "PinIn": {
         "additionalProperties": false,
         "properties": {
@@ -1579,6 +2158,108 @@
           "items"
         ],
         "title": "ProcessList",
+        "type": "object"
+      },
+      "ProcessOutput": {
+        "properties": {
+          "attempt_n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempt N"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "root": {
+            "enum": [
+              "launch",
+              "results",
+              "absolute",
+              "work"
+            ],
+            "title": "Root",
+            "type": "string"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "state": {
+            "enum": [
+              "present",
+              "missing",
+              "removed",
+              "unknown"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "temp": {
+            "title": "Temp",
+            "type": "boolean"
+          },
+          "work_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Path"
+          }
+        },
+        "required": [
+          "path",
+          "root",
+          "task_id",
+          "attempt_n",
+          "state",
+          "temp"
+        ],
+        "title": "ProcessOutput",
+        "type": "object"
+      },
+      "ProcessOutputs": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProcessOutput"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ProcessOutputs",
         "type": "object"
       },
       "Profiles": {
@@ -2135,6 +2816,16 @@
           "summary": {
             "$ref": "#/components/schemas/RunSummary"
           },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "task_counts": {
             "additionalProperties": {
               "type": "integer"
@@ -2157,6 +2848,7 @@
           "workflow",
           "profiles",
           "environment",
+          "target",
           "pinned",
           "failure",
           "head",
@@ -2532,6 +3224,16 @@
           "summary": {
             "$ref": "#/components/schemas/RunSummary"
           },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "task_counts": {
             "additionalProperties": {
               "type": "integer"
@@ -2554,6 +3256,7 @@
           "workflow",
           "profiles",
           "environment",
+          "target",
           "pinned",
           "failure",
           "head",
@@ -2776,6 +3479,127 @@
         "title": "RunSummary",
         "type": "object"
       },
+      "RunTarget": {
+        "description": "`runs.target`: what a run was limited to. Grammars are enforced at launch; a target a\nbridge reports is only bounded (it describes a run that already happened).",
+        "properties": {
+          "checksum_changed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Changed"
+          },
+          "flag": {
+            "anyOf": [
+              {
+                "enum": [
+                  "target",
+                  "until",
+                  "allowed_rules"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag"
+          },
+          "hash": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hash"
+          },
+          "kind": {
+            "enum": [
+              "module",
+              "rule",
+              "file"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "more": {
+            "default": 0,
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "More",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "registry",
+                  "local"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "version",
+          "hash",
+          "source",
+          "path",
+          "flag",
+          "more",
+          "checksum_changed"
+        ],
+        "title": "RunTarget",
+        "type": "object"
+      },
       "Scheduler": {
         "description": "What the scheduler said of a failed job (P1 Task 29): its state and reason, from `sacct`\nor the engine's own message, and requested and used memory and time, from `sacct` or the\ntrace. `accounting` says whether `sacct` answered, is being asked, or is unavailable (off,\nnot on SLURM, no job ID, or no answer).",
         "properties": {
@@ -2909,6 +3733,9 @@
             "title": "Executor",
             "type": "string"
           },
+          "features": {
+            "$ref": "#/components/schemas/Features"
+          },
           "node": {
             "title": "Node",
             "type": "string"
@@ -2927,7 +3754,8 @@
           "node",
           "runs_root",
           "account",
-          "executor"
+          "executor",
+          "features"
         ],
         "title": "ServerVersion",
         "type": "object"
@@ -3269,6 +4097,34 @@
         "title": "SlurmValues",
         "type": "object"
       },
+      "SourceBlock": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "file": {
+            "title": "File",
+            "type": "string"
+          },
+          "line": {
+            "title": "Line",
+            "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "file",
+          "line",
+          "code",
+          "truncated"
+        ],
+        "title": "SourceBlock",
+        "type": "object"
+      },
       "Stage": {
         "properties": {
           "id": {
@@ -3377,6 +4233,49 @@
           "count"
         ],
         "title": "SummaryGroup",
+        "type": "object"
+      },
+      "TargetIn": {
+        "additionalProperties": false,
+        "description": "`target` in the body of `POST /runs`; the rest of the target comes from the server.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "module",
+              "rule"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "TargetIn",
         "type": "object"
       },
       "Task": {
@@ -4432,6 +5331,24 @@
         "summary": "Events Stream"
       }
     },
+    "/api/v1/features": {
+      "get": {
+        "operationId": "features_api_v1_features_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Features"
+      }
+    },
     "/api/v1/me": {
       "get": {
         "operationId": "me_api_v1_me_get",
@@ -4546,7 +5463,7 @@
     },
     "/api/v1/runs": {
       "get": {
-        "description": "Newest first by `created_at`, or by the sort of `_run_keys`, pinned runs first;\n`sort=-ended_at`: ended runs only, by end time (FU-P3-115a).",
+        "description": "Newest first by `created_at`, or by the sort of `_run_keys`, pinned runs first;\n`sort=-ended_at`: ended runs only, by end time (FU-P3-115a). `target=any` lists runs of\none module or one rule only, `none` whole-pipeline runs (\u00a75.10).",
         "operationId": "list_runs_api_v1_runs_get",
         "parameters": [
           {
@@ -4603,6 +5520,26 @@
               ],
               "title": "Sort",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "target",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "any",
+                    "none"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target"
             }
           },
           {
@@ -4817,6 +5754,45 @@
         "summary": "Config File"
       }
     },
+    "/api/v1/runs/{run_id}/graph": {
+      "get": {
+        "operationId": "run_graph_api_v1_runs__run_id__graph_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphDocument"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Graph"
+      }
+    },
     "/api/v1/runs/{run_id}/logs": {
       "get": {
         "operationId": "run_log_api_v1_runs__run_id__logs_get",
@@ -4919,6 +5895,121 @@
           }
         },
         "summary": "List Processes"
+      }
+    },
+    "/api/v1/runs/{run_id}/processes/{name}/outputs": {
+      "get": {
+        "operationId": "process_outputs_api_v1_runs__run_id__processes__name__outputs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessOutputs"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Process Outputs"
+      }
+    },
+    "/api/v1/runs/{run_id}/processes/{name}/outputs:head": {
+      "get": {
+        "description": "The first lines of one of the process's outputs (api \u00a75.11), read only through the trees\nof the Results and workdir routes, so their rules apply (dev-env \u00a715.3 req. 13 and 14): a\nlisted output of the launch or results directory, or a file at the top of the work\ndirectory of one of the process's tasks, never a name that starts with `.`.",
+        "operationId": "output_head_api_v1_runs__run_id__processes__name__outputs_head_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutputHead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Output Head"
       }
     },
     "/api/v1/runs/{run_id}/results": {
@@ -5529,6 +6620,46 @@
         "summary": "Runs Summary"
       }
     },
+    "/api/v1/targets:inspect": {
+      "post": {
+        "operationId": "inspect_api_v1_targets_inspect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InspectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Inspect Api V1 Targets Inspect Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Inspect"
+      }
+    },
     "/api/v1/tasks/{task_id}/attempts/{n}/files": {
       "get": {
         "operationId": "task_files_api_v1_tasks__task_id__attempts__n__files_get",
@@ -5943,6 +7074,61 @@
         "summary": "Server Version"
       }
     },
+    "/api/v1/workflows:graph": {
+      "get": {
+        "operationId": "workflow_graph_api_v1_workflows_graph_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "location",
+            "required": true,
+            "schema": {
+              "title": "Location",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Revision"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphDocument"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Workflow Graph"
+      }
+    },
     "/api/v1/workflows:inspect": {
       "get": {
         "operationId": "inspect_api_v1_workflows_inspect_get",
@@ -6050,6 +7236,70 @@
           }
         },
         "summary": "Inspect"
+      }
+    },
+    "/api/v1/workflows:source": {
+      "get": {
+        "operationId": "workflow_source_api_v1_workflows_source_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "location",
+            "required": true,
+            "schema": {
+              "title": "Location",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Revision"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceBlock"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Workflow Source"
       }
     }
   }
