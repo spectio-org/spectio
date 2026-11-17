@@ -54,7 +54,9 @@ function mockRun(over: object = {}) {
     params: {}, stages_note: null,
     // the fields of P1 Tasks 29 to 31 (schema RunDetail)
     failures: [], failures_total: 0, command: null, parent_run_id: null, resumed_as: [],
-    actions: { resume: { allowed: false, reason: 'running' } }, results_dir: null, ...over,
+    actions: { resume: { allowed: false, reason: 'running' } }, results_dir: null,
+    head_logs: ['head-out', 'head-err'], // FU-P3-124
+    ...over,
   };
 }
 

@@ -64,6 +64,9 @@ const LOGS: { source: LogSource; label: string }[] = [
   { source: "engine", label: "Engine log" },
 ];
 
+/** The run's log sources: Head errors only when its head wrote head.err (FU-P3-124). */
+const logsOf = (run: RunDetail) => LOGS.filter((l) => l.source !== "head-err" || run.head_logs.includes("head-err"));
+
 const TABS = ["summary", "tasks", "parameters", "logs"] as const;
 type Tab = (typeof TABS)[number];
 
@@ -492,19 +495,19 @@ function ParamsList({ params }: { params: RunDetail["params"] }) {
  * Results and reports come with P1 Task 31. */
 function SummaryAside({ run, server, onLogs, logOpener }: { run: RunDetail; server: ServerVersion | null; onLogs: (s: LogSource) => void; logOpener: Ref<HTMLButtonElement> }) {
   const head = run.head;
-  const failed = run.state === "failed";
+  const errs = run.state === "failed" && run.head_logs.includes("head-err"); // FU-P3-124
   const params = Object.keys(run.params).length;
   return (
     <aside className="sp-aside" aria-label="About this run">
       {head?.alive && head.session && run.origin !== "cli-observed" && <HeadByHand run={run} server={server} />}
       <FoldSection
-        id={failed ? "head-err" : "engine-log"}
+        id={errs ? "head-err" : "engine-log"}
         screen="run"
         icon="file"
-        title={failed ? "Head errors · last lines" : "Engine log · last lines"}
+        title={errs ? "Head errors · last lines" : "Engine log · last lines"}
         card
       >
-        <LogTail id={run.id} source={failed ? "head-err" : "engine"} ended={isTerminal(run.state)} onAll={onLogs} openerRef={logOpener} />
+        <LogTail id={run.id} source={errs ? "head-err" : "engine"} ended={isTerminal(run.state)} onAll={onLogs} openerRef={logOpener} />
       </FoldSection>
       {head && !head.alive && run.origin !== "cli-observed" && (
         <FoldSection
@@ -879,7 +882,7 @@ function logFile(run: RunDetail, server: ServerVersion | null, source: LogSource
 function LogsPanel({
   run,
   server,
-  source,
+  source: asked,
   setSource,
   onTasks,
   onBack,
@@ -892,6 +895,8 @@ function LogsPanel({
   /** Back to Summary, when the Summary's last lines opened Logs (FU-P3-88a) */
   onBack?: () => void;
 }) {
+  const sources = logsOf(run);
+  const source = sources.some((l) => l.source === asked) ? asked : "engine";
   const [text, setText] = useState<string | null>(null);
   // a read that did not give the text: "missing" (404, not written yet) or the error's message
   const [failure, setFailure] = useState<string | null>(null);
@@ -941,7 +946,7 @@ function LogsPanel({
       <LogViewer
         text={text}
         label={label}
-        filters={<SegmentedControl size="sm" aria-label="Log" value={source} onChange={(value) => setSource(value as LogSource)} data={LOGS.map((l) => ({ value: l.source, label: l.label }))} />}
+        filters={<SegmentedControl size="sm" aria-label="Log" value={source} onChange={(value) => setSource(value as LogSource)} data={sources.map((l) => ({ value: l.source, label: l.label }))} />}
         actions={
           <>
             <ToolButton label="Reload" icon="reload" onClick={reload} />

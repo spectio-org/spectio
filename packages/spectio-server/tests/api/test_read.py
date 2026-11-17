@@ -3,6 +3,7 @@
 import base64
 import json
 import os
+import shutil
 import socket
 from datetime import UTC, datetime, timedelta
 from importlib.metadata import version
@@ -364,6 +365,36 @@ def test_logs_tail_and_sources(
     problem(
         authed_client.get(f"{RUNS}/{rid(1)}/logs", params={"source": "x"}), 422, "validation-failed"
     )
+
+
+def test_detail_head_logs(
+    authed_client: TestClient, tmp_path: Path, writer: Writer, settings: Settings
+) -> None:
+    """`head_logs` names the head logs the launch directory holds (FU-P3-124): a head under tmux
+    writes no `head.err`, so the UI does not ask for it. A non-regular file is not one, as the
+    log route refuses it; a run with no launch directory, or from a terminal, has none."""
+    add_run(writer, settings, rid(1), "local", "failed")
+    add_run(writer, settings, rid(2), "tmux", "failed")
+    add_run(writer, settings, rid(3), "fifo", "failed")
+    add_run(writer, settings, rid(4), "gone", "failed")
+    add_run(writer, settings, rid(5), "terminal", "failed", origin="cli-observed")
+    local = launch_dir(settings, rid(1)) / ".spectio"
+    (local / "head.out").write_text("out\n")
+    (local / "head.err").write_text("")
+    (launch_dir(settings, rid(2)) / ".spectio" / "head.out").write_text("out\n")
+    os.mkfifo(launch_dir(settings, rid(3)) / ".spectio" / "head.err")
+    # A symlinked log or `.spectio` is never followed, as on the log route (SEC-P3FU124-02).
+    add_run(writer, settings, rid(6), "link", "failed")
+    add_run(writer, settings, rid(7), "linkdir", "failed")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "head.err").write_text("x\n")
+    (launch_dir(settings, rid(6)) / ".spectio" / "head.err").symlink_to(outside / "head.err")
+    linkdir = launch_dir(settings, rid(7)) / ".spectio"
+    shutil.rmtree(linkdir)
+    linkdir.symlink_to(outside)
+    found = {n: authed_client.get(f"{RUNS}/{rid(n)}").json()["head_logs"] for n in range(1, 8)}
+    assert found == {1: ["head-out", "head-err"], 2: ["head-out"]} | {n: [] for n in range(3, 8)}
 
 
 def test_logs_confined(

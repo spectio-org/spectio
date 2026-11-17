@@ -183,6 +183,8 @@ export interface RunDetail extends Run {
    * none (FU-P3-110a, api §5.7). */
   default_resources: RunDefaultResources | null;
   config_file: RunConfigFile | null;
+  /** The head logs the launch directory holds: a head under tmux writes no head.err (FU-P3-124). */
+  head_logs: ("head-out" | "head-err")[];
 }
 
 /** Schema `RunDefaultResources` (api §5.7): its fields are null unless `state` is `recorded`. */
