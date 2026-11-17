@@ -3,13 +3,9 @@ icon: material/server
 ---
 # Keeping the server running: `spectio serve --detach`
 
-!!! note "Built on the integration branch, not released yet"
-
-    `spectio serve --detach` runs today from a checkout (follow-up FU-P3-44, batch [P3-B05](../progress/W5/P3-M9.md#batch-p3-b05), 2026-11-08). The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). **It ran on tmux 3.4 only, never on SLURM or on an EMBL login node** ([Not built or not checked](#not-built-or-not-checked)).
-
 `spectio serve` stops when you close your terminal. `spectio serve --detach` runs the same server in a tmux session named `spectio-server` on the login node, and prints the sign-in link in the terminal you typed in. The server and its runs then outlive your ssh session.
 
-The rules are owned by [development environment §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), requirement 11, and the 2026-11-08 note under it. This page says what you type and see. The sign-in itself is on [Signing in](sign-in.md).
+This page says what you type and see. The sign-in itself is on [Signing in](sign-in.md).
 
 ## What you type
 
@@ -50,7 +46,7 @@ In order:
 
 The server in the pane sees only these variables, passed as words after `env -i`: the launcher's list, `PATH`, `LD_LIBRARY_PATH`, `TMUX_TMPDIR`, `SPECTIO_CONFIG` and the `SPECTIO_*` settings names. The environment of a tmux server that was already running never reaches it. Two consequences:
 
-- **Values are configuration, never secrets.** They show in `ps`. When `--detach` is the call that starts the tmux server itself, they also stay in that server's world-readable `/proc/<pid>/cmdline` while it runs (reproduced on tmux 3.4, SEC-P3FU44-01, open as FU-P3-64).
+- **Values are configuration, never secrets.** They show in `ps`. When `--detach` is the call that starts the tmux server itself, they also stay in that server's world-readable `/proc/<pid>/cmdline` while it runs (seen on tmux 3.4).
 - **A value that ends in `;` is refused,** because tmux cuts a command there. The message names the variable.
 
 ## Stopping and restarting
@@ -65,11 +61,9 @@ The cast runs the real `spectio serve --detach` and a real tmux, in a demo home 
 
 <div class="asciinema-cast" data-cast="assets/casts/spectio-detach.cast"></div>
 
-## Not built or not checked
+## Limits in 0.0.1
 
-- **SLURM and the EMBL login nodes.** No run there. Whether the nodes' tmux is 2.1 or later is **[to be validated]**. On systemd hosts, `KillUserProcesses=yes` can kill a tmux server started from a non-interactive ssh ([logind.conf](https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html)); at EMBL this is **[to be validated]**, and a `spectio doctor` line for it is FU-P3-58.
-- **Other tmux versions.** Everything above was run on 3.4.
-- **The replacement of dead panes** (`kill-pane`) runs against the fake tmux of the tests only (SEC-P3FU44-07, FU-P3-64). A tmux server restart between two `--detach` can aim a `kill-pane` at the other call's pane (SEC-P3FU44-05, FU-P3-64).
-- **The second call prints no attach hint** (CR-P3FU44-04, FU-P3-64).
-- **The server key is sent to the listener of the port** to get a link, only after the listener is checked to be your user ID; a challenge-response instead is FU-P3-57.
-- **Run heads** (`spectio-<run>` sessions) are not protected from `destroy-unattached on` in a user's `~/.tmux.conf` (FU-P3-45).
+- **Checked on tmux 3.4 only,** on one machine. Spectio has not run `--detach` on SLURM or on an EMBL login node yet. Whether the login nodes' tmux is 2.1 or later is **[to be validated]**.
+- **Hosts that kill your processes at logout.** On systemd hosts, `KillUserProcesses=yes` can kill a tmux server started from a non-interactive ssh ([logind.conf](https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html)). Whether the EMBL nodes set it is **[to be validated]**.
+- **Run sessions** (`spectio-<run>`) are not protected from `destroy-unattached on` in your `~/.tmux.conf`.
+- **A second `--detach` call** prints no hint on how to attach to the session.

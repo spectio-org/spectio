@@ -3,11 +3,10 @@ icon: material/memory
 ---
 # Run resources and an extra config file
 
-!!! note "Built on the integration branch, not released yet"
+!!! note "Not checked"
+    Not run: a real pipeline on either engine with these fields through the screens, and Nextflow 26.10 for the order of config files **[to be validated]**.
 
-    Run resources and the extra config file work end to end from a checkout, 2026-11-11: the server (FU-P3-110a), the engines (FU-P3-110b), the boards (FU-P3-110c) and the screens (FU-P3-110d), batch [P3-B15](../progress/W5/P3-M9.md#batch-p3-b15). The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). **Not run:** a real pipeline on either engine with these fields through the screens, and Nextflow 26.10 for the order of config files **[to be validated]**.
-
-Launch can set, for one run, **default resources** (CPUs, memory and time per task) and **one extra config file**. The fields, the bounds and what each engine gets are owned by [api §5.7](../specs/api-and-data-model.md#57-run-resources-and-an-extra-config-file-001); the screens by [ui-spec §4.6](../specs/ui-spec.md#46-launch-and-relaunch).
+Launch can set, for one run, **default resources** (CPUs, memory and time per task) and **one extra config file**.
 
 ## On Launch
 
@@ -21,7 +20,7 @@ Both are folding rows of **Where it runs**, under the environment. Both are opti
 **Resources**
 
 - **CPUs per task**, **Memory per task** (a number with MiB or GiB) and **Time per task** (hours and minutes). Each is optional, and each hint shows its bounds and the environment's cap: "1 to 256 · at most 2 (Two cores)".
-- **A default, not an override.** A process (Nextflow) or a rule (Snakemake) that sets its own CPUs, memory or time keeps them. The row says so. On Nextflow the values replace a general `process` setting of the pipeline's own `nextflow.config` **[to be validated]** (api §5.7).
+- **A default, not an override.** A process (Nextflow) or a rule (Snakemake) that sets its own CPUs, memory or time keeps them. The row says so. On Nextflow the values replace a general `process` setting of the pipeline's own `nextflow.config` **[to be validated]**.
 - **On a `local` environment with caps,** a value above the cap is refused before Launch: "At most 2 CPUs in Two cores".
 - **On a SLURM environment,** an empty Memory or Time says what applies instead: "Empty: 32 GiB, from Long jobs, mylab". The run's value replaces the environment's, for this run only.
 - **Snakemake takes no CPUs here:** it takes them from each rule's threads ("Snakemake takes CPUs from each rule's threads"). With a Snakemake workflow profile the profile owns the resources, so the row shows the profile line in place of the inputs.
@@ -33,16 +32,16 @@ Both are folding rows of **Where it runs**, under the environment. Both are opti
 - **Read once, kept with the run.** When you press Launch, the server reads the file (owner, mode and size, then a copy), hashes it, and keeps the copy in the run directory, mode 0600, as `extra.config` (`extra.yaml` or `extra.json` on Snakemake). A later edit of your file changes no run. At most 256 KiB, UTF-8.
 - **Refused with the reason** on the input, in the server's words: a file writable by group or others, a symbolic link, no such file, over 256 KiB, a Snakemake file that is not a map or sets `__use_yte__`. A `503` ("The extra config file could not be read: …") keeps your values.
 - **`includeConfig`** in a Nextflow file loads other files when the run starts; those are not kept, and Run detail warns.
-- **Said before you press Launch** (step FU-P3-121, batch [P3-B16](../progress/W5/P3-M9.md#batch-p3-b16)). Once a pipeline is loaded and a path is typed, the form asks the server what Launch would refuse (`GET /workflows:inspect` with `config_file` and `engine`, [api §5.7](../specs/api-and-data-model.md#57-run-resources-and-an-extra-config-file-001)), about 300 ms after the last key. A refusal shows under the input and as "Fix Extra config file: …" in **Before Launch**, which blocks Launch. The check is asked again when the browser window gets focus back, so a `chmod go-w` in a terminal clears it; if the only blocker is a refusal that may be old, Launch asks again and goes ahead on the same click. A check that fails to run shows nothing: the server's own read at Launch stays the real check.
+- **Said before you press Launch.** Once a pipeline is loaded and a path is typed, the form asks the server what Launch would refuse (`GET /workflows:inspect` with `config_file` and `engine`), about 300 ms after the last key. A refusal shows under the input and as "Fix Extra config file: …" in **Before Launch**, which blocks Launch. The check is asked again when the browser window gets focus back, so a `chmod go-w` in a terminal clears it; if the only blocker is a refusal that may be old, Launch asks again and goes ahead on the same click. A check that fails to run shows nothing: the server's own read at Launch stays the real check.
 
 ![Launch with an extra config file writable by group: the input is red with "the file is writable by group or others" and "Fix its mode (chmod go-w), then Launch again"; Before Launch lists "Fix Extra config file: the file is writable by group or others" and the Launch button is dimmed](../assets/shots/app-launch-config-warning_light.webp#only-light)
 ![Launch with an extra config file writable by group, dark](../assets/shots/app-launch-config-warning_dark.webp#only-dark)
 
-*A demo file of mode 664 in the pipeline's own directory (`tools/media/b16_demo.py`). A path under the demo home is refused for its place, as the guide's API block says, not for its mode.*
+*A demo file of mode 664 in the pipeline's own directory.*
 
 ## What the engines get
 
-From the code of FU-P3-110b (`packages/spectio/src/spectio/runner/headscript.py`), checked against Nextflow 25.10.9 and Snakemake 9.27.1 by the step's order tests:
+From the code (`packages/spectio/src/spectio/runner/headscript.py`), checked against Nextflow 25.10.9 and Snakemake 9.27.1 by order tests:
 
 | | Nextflow | Snakemake |
 |---|---|---|
@@ -58,7 +57,7 @@ The first line of `head.out` names them: "Spectio: run: cpus 8, memory 65536 MiB
 ![A finished run's Facts: Default resources "8 CPUs · 64 GiB · 12 h per task, set at Launch · processes that set their own keep them", and Extra config file with its path, "kept as extra.config · 167 B · SHA-256 238f89866940…", the buttons View extra.config and Copy SHA-256](../assets/shots/app-run-resources_light.webp#only-light)
 ![A finished run's Facts with Default resources and Extra config file, dark](../assets/shots/app-run-resources_dark.webp#only-dark)
 
-*A run record written by hand, with the file placed in its run directory: no engine ran it. Its Environment therefore reads "not recorded".*
+*A run record written by hand: no engine ran it. Its Environment therefore reads "not recorded".*
 
 - **Default resources** shows the values, what they replaced on a SLURM environment ("time: 48 h from mylab-long" for a key left out), and "processes that set their own keep them". A run with neither field has no such rows, nor has a run started from a terminal.
 - **Extra config file** shows the original path, "kept as extra.config", the size and the start of the SHA-256. **Copy SHA-256** copies all of it and says so.
@@ -72,7 +71,7 @@ The first line of `head.out` names them: "Spectio: run: cpus 8, memory 65536 MiB
 
 ## On the API
 
-Against the demo server of the shots (2026-11-11), with the session cookie and the loopback `Origin`; the demo's home directory is not the host's, so the file path is refused on purpose in the last line:
+Against a demo server, with the session cookie and the loopback `Origin`; the demo's home directory is not the host's, so the file path is refused on purpose in the last line:
 
 ```console
 GET /api/v1/runs/<tuned>   200  default_resources {"cpus": 8, "mem_mib": 65536, "time_min": 720, "state": "recorded"}
@@ -83,14 +82,13 @@ POST /api/v1/runs {"default_resources": {"mem_mib": "4"}}   422  default_resourc
 POST /api/v1/runs {"config_file": "/tmp/x.config"}          422  config_file: Choose a file in your home directory or in the pipeline
 ```
 
-## Not shown, and open
+## Not checked
 
-- **Not shown:** the 422 and 503 states on the input, the SLURM wording, the Snakemake rows, and the phone. `vitest` covers them (`LaunchResources.test.tsx`, `RunDetailExtras.test.tsx`, `ResumeDialog.test.tsx`); no shot does.
-- **Not run:** the Playwright launch smoke with an extra file (api §5.7), and the new CSS in a browser other than the shots' Chromium.
-- **Open findings:** the file's text stays in the page's state after the View sheet closes (SEC-P3FU110D-01); config file text appears in reprs and validation errors (SEC-P3FU110B-02). The CI step that runs the order fixtures is held back for Thomas (a PR that changes `.github/workflows/` waits for him). See [Follow-ups of batch P3-B15](../progress/W5/P3-M9.md#follow-ups-of-batch-p3-b15).
+- **Not shown:** the 422 and 503 states on the input, the SLURM wording, the Snakemake rows, and the phone. Unit tests cover them; no shot does.
+- **Not run:** a browser launch test with an extra file.
+- **Known gaps:** the file's text stays in the page's state after the View sheet closes, and config file text can appear in error reprs.
 
 ## Next
 
 - [Environments](environments.md): the caps and defaults these values meet.
 - [Your pipeline catalog](pipeline-catalog.md): the entry Launch loads.
-- [Progress page of milestone M9](../progress/W5/P3-M9.md).

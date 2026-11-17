@@ -60,7 +60,7 @@ media:
     # copied to a path free of forbidden terms (SPECTIO_DEMO_PIPELINE), tools/media/README.md;
     # since UI parity D it is picked from Try a test pipeline, so the server must have run it once;
     # P1 Task 32 retake: scale set to 0 shows its field error (Launch checks)
-    generator: python3 tools/media/shots.py run --shot app-launch --theme both
+    generator: python3 tools/media/b17_demo.py --shot app-launch
     outputs: [docs/assets/shots/app-launch_light.webp, docs/assets/shots/app-launch_dark.webp]
   - id: app-launch-phone
     kind: screenshot
@@ -138,23 +138,23 @@ media:
     kind: screenshot
     # live (batch P3-B11, FU-P3-86f): a local server whose environments.toml holds two-cores (the default) and
     # eight-cores; names and paths are demo ones (tools/media/README.md, batch P3-B11 shots)
-    generator: python3 tools/media/shots.py run --shot app-environments --theme both
+    generator: python3 tools/media/b17_demo.py --shot app-environments
     outputs: [docs/assets/shots/app-environments_light.webp, docs/assets/shots/app-environments_dark.webp]
   - id: app-environments-phone
     kind: screenshot
     # live, as app-environments, at 390 x 844
-    generator: python3 tools/media/shots.py run --shot app-environments-phone --theme both
+    generator: python3 tools/media/b17_demo.py --shot app-environments-phone
     outputs: [docs/assets/shots/app-environments-phone_light.webp, docs/assets/shots/app-environments-phone_dark.webp]
   - id: app-environment-edit
     kind: screenshot
     # live, as app-environments: the form of two-cores on a local server
-    generator: python3 tools/media/shots.py run --shot app-environment-edit --theme both
+    generator: python3 tools/media/b17_demo.py --shot app-environment-edit
     outputs: [docs/assets/shots/app-environment-edit_light.webp, docs/assets/shots/app-environment-edit_dark.webp]
   - id: app-launch-environment
     kind: screenshot
     # live, as app-launch (the synthetic pipeline picked from Try a test pipeline, scale set to 0), with the two
     # environments of app-environments: Where it runs, the Summary and Before Launch (FU-P3-86g, -86h)
-    generator: python3 tools/media/shots.py run --shot app-launch-environment --theme both
+    generator: python3 tools/media/b17_demo.py --shot app-launch-environment
     outputs: [docs/assets/shots/app-launch-environment_light.webp, docs/assets/shots/app-launch-environment_dark.webp]
   - id: app-run-environment
     kind: screenshot

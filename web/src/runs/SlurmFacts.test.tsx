@@ -5,6 +5,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, app, fetched, run, serve, stubStream } from "../testing";
 
+// The tasks table is a lazy chunk (AG Grid): under CI load it can take longer than findBy's 1 s default.
+const LAZY_GRID = { timeout: 5000 };
+
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
 
@@ -49,7 +52,7 @@ function open(task: Record<string, unknown>, more: Record<string, unknown> = {})
 const factsOf = (region: HTMLElement) => within(region).getAllByRole("term").map((dt) => [dt.textContent, dt.nextElementSibling?.textContent]);
 
 async function sheet() {
-  await userEvent.click(await screen.findByRole("button", { name: "Files of SUBREAD_FEATURECOUNTS (S19), attempt 1" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Files of SUBREAD_FEATURECOUNTS (S19), attempt 1" }, LAZY_GRID));
   return screen.findByRole("dialog", { name: "SUBREAD_FEATURECOUNTS (S19)" });
 }
 

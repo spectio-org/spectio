@@ -4,39 +4,44 @@ hide: [navigation]
 ---
 # Roadmap
 
-Three questions: what is done, what is being worked on, and what comes next. Spectio stays below 1.0 until it has been checked with several use cases and several groups; the conditions are written down in the [release stages](../specs/dev-environment-and-testing.md#14-release-stages-and-the-10-gate).
+**0.0.1 is built and not released yet.** This page says what it contains, what is left before the release, and what comes after. Spectio stays below 1.0 until it has been checked with several use cases and several groups.
 
-<div class="sp-timeline">
-<div class="sp-tl sp-tl--now"><span class="sp-tl__dot"></span><b>Design</b><span class="sp-tl__when">now</span><p>Specifications, screen designs, test pipelines on both engines, reviews before any code.</p></div>
-<div class="sp-tl"><span class="sp-tl__dot"></span><b>0.0.1 · First MVP</b><span class="sp-tl__when">after the go decision</span><p>The simplest version to try: launch, follow and relaunch Nextflow and Snakemake runs on your cluster from the browser. What comes between 0.0.x and the private alpha is not decided yet. <a href="../specs/dev-environment-and-testing/#15-what-ships-in-which-version">What ships in which version</a>.</p></div>
-<div class="sp-tl"><span class="sp-tl__dot"></span><b>0.2 – 0.4 · Private alpha</b><span class="sp-tl__when">with 3 to 5 EMBL groups</span><p>Installed from the docs in under 30 minutes, real pipelines every night, backups tested.</p></div>
-<div class="sp-tl"><span class="sp-tl__dot"></span><b>0.5 – 0.9 · Public beta</b><span class="sp-tl__when">with a demo instance</span><p>Open to everyone, demo instance on EMBL's Kubernetes, upgrades tested release after release.</p></div>
-<div class="sp-tl"><span class="sp-tl__dot"></span><b>1.0 · Stable</b><span class="sp-tl__when">when the 1.0 conditions are met</span><p>Several groups using it daily, both engines on SLURM and Kubernetes, frozen API.</p></div>
-</div>
+## Built for 0.0.1
 
-## Done
+- **Engines:** Nextflow and Snakemake.
+- **Where runs go:** SLURM through a login node, or one Linux machine. On a shared host the server listens on a Unix socket only.
+- **Web interface:** the runs list; a run's detail (stages, tasks, logs, files, CPU and memory efficiency); launch from a schema-built form with resources and an extra config file; resume, copy to a new launch, cancel, pin and delete; environments; a pipeline catalog; file preview, including TIFF, OME-TIFF and OME-Zarr; search; notifications; a profile page.
+- **Runs started from a terminal,** watched through the engine bridges.
+- **Command line:** `init`, `doctor`, `serve`, `login` and `open`.
+- **REST API** under `/api/v1`, with live events over SSE ([API and CLI](../api/index.md)).
+- **Sign-in** with a single-use link, for one user per server.
 
-- **The design**, reviewed before code: 13 specifications, about 60 screen designs, a decision log.
-- **Test pipelines** written for both engines, with 11 scenarios (stops at gates, failures, retries, resumes) passing on Nextflow 26.10 and 25.10 and on Snakemake 9.27, on every change.
-- **A test corpus** of 14 nf-core pipelines and 9 Snakemake catalog workflows on their own test data.
-- **This documentation**, written and reviewed at every step.
+## Before 0.0.1 is released
 
-## Now
+- **End-to-end checks on a SLURM test cluster,** including cancelling a run and restarting the server.
+- **The publish workflow,** so the packages go to PyPI and the Nextflow bridge to its plugin registry.
+- **The release setup on GitHub** (a release bot, a protected release environment, version tags).
+- **A last clean-up of the interface styles.**
+- **The owner's checks on the EMBL login node:** opening Spectio from a laptop, and deleting a run there.
+- **Decisions** the owner still has to confirm on a few open choices.
 
-The design phase runs in waves. Each wave is a set of steps, done by agents and checked before the next wave starts.
+Until it is released, [install it from a checkout](../installation/index.md).
 
-<!-- spectio:progress-strip -->
+## After 0.0.1
 
-Each step has its own page under [Progress](../progress/index.md).
-
-## Next
-
-- **Reviews before code** (waves W1 and W2): consistency, facts, constraints, security, screens, depictio.
-- **Development setup and test clusters** (wave W3): local SLURM and Kubernetes for tests, dev previews, end-to-end tests.
-- **The go decision** (wave W4), then the first version, [0.0.1](../specs/mvp-0.0.1.md): a basic MVP.
+- **0.0.2:** pipeline version detection, and performance across runs.
+- **Later, in no set order:**
+    - QC gates between stages, with a review screen ([QC gates](../features/gates.md)).
+    - Kubernetes, and a shared server with remote runners.
+    - The hand-off of results to depictio ([depictio](../features/depictio.md)).
+    - Accounts, roles and administration ([Administration](../features/administration.md)).
+    - Relaunch with changed parameters in one step, and rerun from a stage.
+    - Full scheduler monitoring.
+    - Docker Compose and a Helm chart.
+    - Webhooks and tokens for robots.
+    - CWL and WDL engines.
 
 ## Ideas, not scheduled
 
-- CWL and WDL engines.
 - Other schedulers: LSF, PBS, SGE.
 - GA4GH WES and TES interfaces.
