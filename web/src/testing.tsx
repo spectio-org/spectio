@@ -164,4 +164,5 @@ export const DETAIL = {
   resumed_as: [],
   actions: { resume: { allowed: false, reason: "running" } },
   results_dir: null,
+  head_logs: ["head-out", "head-err"],
 };

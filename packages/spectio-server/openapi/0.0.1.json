@@ -3093,6 +3093,17 @@
               }
             ]
           },
+          "head_logs": {
+            "items": {
+              "enum": [
+                "head-out",
+                "head-err"
+              ],
+              "type": "string"
+            },
+            "title": "Head Logs",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -3262,7 +3273,8 @@
           "results_dir",
           "engine_settings",
           "default_resources",
-          "config_file"
+          "config_file",
+          "head_logs"
         ],
         "title": "RunDetail",
         "type": "object"

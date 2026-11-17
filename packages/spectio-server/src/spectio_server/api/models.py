@@ -280,6 +280,7 @@ class RunDetail(Run):
     engine_settings: EngineSettings
     default_resources: RunDefaultResources | None  # null when the launch set none (api §5.7)
     config_file: RunConfigFile | None
+    head_logs: list[Literal["head-out", "head-err"]]  # the head logs there are (FU-P3-124)
 
 
 class TemplateWorkflow(BaseModel):

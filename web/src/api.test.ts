@@ -175,6 +175,7 @@ const SAMPLES: Record<string, object> = {
     engine_settings: engineSettings,
     default_resources: null,
     config_file: null,
+    head_logs: ["head-out", "head-err"],
   } satisfies RunDetail,
   RunDefaultResources: { cpus: null, mem_mib: null, time_min: null, state: "recorded" } satisfies RunDefaultResources,
   RunConfigFile: {

@@ -552,6 +552,32 @@ test("P3-parC: the aside's All logs opens the Logs tab on the tail's source, wit
   expect(router.state.location.search).toEqual({ tab: "logs", source: "head-err", from: "summary" });
 });
 
+test("FU-P3-124: a head with no head.err: the failed run's aside tails the engine log, and head-err is never asked for", async () => {
+  const mock = detail({
+    state: "failed",
+    ended_at: "2026-10-31T08:00:00+00:00",
+    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1, checked: true },
+    head_logs: ["head-out"],
+  });
+  app(`/runs/${ID}`);
+  const tail = await screen.findByRole("region", { name: "Engine log · last lines" });
+  expect(await within(tail).findByText(/N E X T F L O W/)).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Head errors · last lines" })).toBeNull();
+  expect(screen.queryByText("Not written yet.")).toBeNull();
+  await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
+  expect(screen.getByRole("radio", { name: "Head output" })).toBeInTheDocument();
+  expect(screen.queryByRole("radio", { name: "Head errors" })).toBeNull();
+  expect(fetched(mock).some((u) => u.includes("source=head-err"))).toBe(false);
+});
+
+test("FU-P3-124: a linked Head errors view of a head with no head.err shows the engine log", async () => {
+  const mock = detail({ head_logs: ["head-out"] });
+  app(`/runs/${ID}?tab=logs&source=head-err`);
+  expect(await screen.findByRole("radio", { name: "Engine log" })).toBeChecked();
+  await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/logs?source=engine`));
+  expect(fetched(mock).some((u) => u.includes("source=head-err"))).toBe(false);
+});
+
 test("FU-P3-88a: the last lines open the full log; Back to Summary returns, with focus on the opener", async () => {
   detail();
   const router = app(`/runs/${ID}`);

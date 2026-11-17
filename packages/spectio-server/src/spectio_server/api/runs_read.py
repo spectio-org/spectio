@@ -31,7 +31,9 @@ from spectio_server import efficiency
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
 from spectio_server.failure import Context, build_failures, dir_run_id, task_resources
-from spectio_server.files.pool import READ_TIMEOUT_S
+from spectio_server.files.confine import NotAllowed, NotFound
+from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
+from spectio_server.files.taskfiles import head_logs
 from spectio_server.resume import command, resume_refusal, resumed_as
 from spectio_server.stages.freeze import FROZEN as STAGES_FROZEN
 from spectio_server.stages.state import RunFacts, checkpoint_open, process_status
@@ -304,7 +306,20 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
         },
         "default_resources": row.default_resources,  # api §5.7 (FU-P3-110a)
         "config_file": row.config_file,
+        "head_logs": _head_logs(row, ctx),
     }
+
+
+def _head_logs(row: Row[Any], ctx: Context) -> list[str]:
+    """The head logs there are (FU-P3-124), read in the file pool; none for a run from a
+    terminal, or when its launch directory cannot be read in time."""
+    if row.origin == "cli-observed":
+        return []
+    try:
+        found: list[str] = ctx.files.run(lambda: head_logs(ctx.runs_root, row.id), ctx.timeout_s)
+    except (Stalled, NotFound, NotAllowed, OSError):
+        return []
+    return found
 
 
 def results_of(row: Row[Any]) -> str | None:
