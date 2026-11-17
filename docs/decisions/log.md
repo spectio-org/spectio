@@ -1357,3 +1357,11 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Why.** The inconsistencies come from missing shared values, not from the library; one themed set fixes them at the source and is cheaper than a change of library or icon package.
 - **Changed.** [ui-spec](../specs/ui-spec.md) new §12; [api](../specs/api-and-data-model.md) §5.9 (one dated line); [UI audit record](../reviews/ui-audit-2026-11-11.md); [inbox #153](../reviews/inbox.md#153-assumed-ui-design-system-and-the-notifications-panel-2026-11-11).
 - **[to be validated].** Nothing rests on another tool's behaviour beyond Mantine 7.17.8's default sizes, read in its `styles.css` (2026-11-11).
+
+## 2026-11-17 — picomatch advisory accepted for the web dev tooling
+
+- **Context.** On 2026-11-17 osv-scanner started reporting GHSA-fc5q-39xc-vjpf (CVSS 8.7) against `picomatch` 4.0.7 in `web/package-lock.json`, and no fixed version exists yet. The security audit is a dependency of `ci-ok`, so every PR was red.
+- **Decided (Thomas, 2026-11-17: "oui 1").** The advisory is ignored in a new `web/osv-scanner.toml`, with one entry that expires on 2027-02-17. It follows the pattern of `engine-bridges/nf-spectio/gradle/osv-scanner.toml`.
+- **Why.** `picomatch` is dev-only (`"dev": true` in the lockfile). Vite and Vitest use it to match globs from our own config, on the build machine and in CI, and it is not in the shipped web bundle.
+- **Revisit.** Remove the entry and update the lockfile as soon as a fixed `picomatch` is released, or earlier if it stops being dev-only.
+- **[to be validated].** The nature of the advisory was not read.
