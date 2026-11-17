@@ -83,13 +83,13 @@ const missing = () => document.getElementById("launch-missing")!;
 test("both rows are folded by default, their closed lines say what is in force, and nothing extra is sent", async () => {
   const posted = launchWith();
   await load();
-  const resources = row(/^Resources/);
+  const resources = row(/^Run resources/);
   expect(resources).toHaveAttribute("aria-expanded", "false");
   expect(resources).toHaveTextContent("The pipeline's defaults");
   const config = row(/^Extra config file/);
   expect(config).toHaveAttribute("aria-expanded", "false");
   expect(config).toHaveTextContent("No extra config file");
-  expect(summaryValue("Resources")).toHaveTextContent("from the environment");
+  expect(summaryValue("Run resources")).toHaveTextContent("from the environment");
   expect(summaryValue("Extra config")).toHaveTextContent("none");
   await userEvent.click(launchButton());
   await waitFor(() => expect(posted).toHaveLength(1));
@@ -100,7 +100,7 @@ test("both rows are folded by default, their closed lines say what is in force, 
 test("Nextflow on Login node: three optional inputs with the caps in their hints; the values go in default_resources", async () => {
   const posted = launchWith();
   await load();
-  await userEvent.click(row(/^Resources/));
+  await userEvent.click(row(/^Run resources/));
   expect(within(where()).getByText(/Used by every process that does not set its own\. A process that sets its own CPUs, memory or time keeps them\. Replaces the pipeline's own default for all processes\./)).toBeInTheDocument();
   const cpus = screen.getByRole("textbox", { name: "CPUs per task" });
   expect(cpus).toHaveAttribute("inputmode", "numeric");
@@ -118,9 +118,9 @@ test("Nextflow on Login node: three optional inputs with the caps in their hints
   fill(mem, "6");
   fill(hours, "2");
   fill(minutes, "0");
-  expect(summaryValue("Resources")).toHaveTextContent("2 CPUs · 6 GiB · 2 h per task; processes that set their own keep them");
-  await userEvent.click(row(/^Resources/));
-  expect(row(/^Resources/)).toHaveTextContent("Defaults: 2 CPUs · 6 GiB · 2 h per task");
+  expect(summaryValue("Run resources")).toHaveTextContent("2 CPUs · 6 GiB · 2 h per task; processes that set their own keep them");
+  await userEvent.click(row(/^Run resources/));
+  expect(row(/^Run resources/)).toHaveTextContent("Defaults: 2 CPUs · 6 GiB · 2 h per task");
   await userEvent.click(launchButton());
   await waitFor(() => expect(posted).toHaveLength(1));
   expect(posted[0].default_resources).toEqual({ cpus: 2, mem_mib: 6144, time_min: 120 });
@@ -129,7 +129,7 @@ test("Nextflow on Login node: three optional inputs with the caps in their hints
 test("out of bounds before Launch: each error under its input, listed in Before Launch with a link, and nothing is sent", async () => {
   const posted = launchWith();
   await load();
-  await userEvent.click(row(/^Resources/));
+  await userEvent.click(row(/^Run resources/));
   const cpus = screen.getByRole("textbox", { name: "CPUs per task" });
   fill(cpus, "4");
   fill(screen.getByRole("textbox", { name: "Memory per task" }), "12");
@@ -146,7 +146,7 @@ test("out of bounds before Launch: each error under its input, listed in Before 
   expect(list.getByRole("link", { name: "Fix CPUs per task: at most 2 on Login node" })).toBeInTheDocument();
   expect(list.getByRole("link", { name: "Fix Memory per task: at most 8 GiB on Login node" })).toBeInTheDocument();
   const timeLink = list.getByRole("link", { name: "Fix Time per task: at least 1 minute" });
-  await userEvent.click(row(/^Resources/)); // folded: the link opens it again
+  await userEvent.click(row(/^Run resources/)); // folded: the link opens it again
   await userEvent.click(timeLink);
   await waitFor(() => expect(screen.getByRole("textbox", { name: "Time per task, hours" })).toHaveFocus());
   await userEvent.click(launchButton());
@@ -159,8 +159,8 @@ test("out of bounds before Launch: each error under its input, listed in Before 
 test("a SLURM environment's values are the placeholders, said under the inputs and on the folded line", async () => {
   launchWith({ environments: envs([LONG], "mylab-long") });
   await load();
-  expect(row(/^Resources/)).toHaveTextContent("From the environment: 48 h · 32 GiB per task");
-  await userEvent.click(row(/^Resources/));
+  expect(row(/^Run resources/)).toHaveTextContent("From the environment: 48 h · 32 GiB per task");
+  await userEvent.click(row(/^Run resources/));
   const mem = screen.getByRole("textbox", { name: "Memory per task" });
   expect(mem).toHaveAttribute("placeholder", "32");
   expect(mem).toHaveAccessibleDescription(expect.stringContaining("Empty: 32 GiB, from Long jobs"));
@@ -181,7 +181,7 @@ test("the server's 422 on a resource lands on its input", async () => {
 test("Snakemake with no profile: memory and time only, CPUs from threads, time not enforced on this machine", async () => {
   const posted = launchWith({ inspected: SNAKEMAKE });
   await load("/data/smk");
-  await userEvent.click(row(/^Resources/));
+  await userEvent.click(row(/^Run resources/));
   expect(screen.queryByRole("textbox", { name: "CPUs per task" })).toBeNull();
   expect(within(where()).getByText("Snakemake takes CPUs from each rule's threads.")).toBeInTheDocument();
   expect(within(where()).getByText(/Used by every rule that does not set its own\. A rule that sets its own memory or time keeps them\./)).toBeInTheDocument();
@@ -195,12 +195,12 @@ test("Snakemake with no profile: memory and time only, CPUs from threads, time n
 test("Snakemake with a profile: the profile sets the resources, values typed before are kept but not sent", async () => {
   const posted = launchWith({ inspected: SNAKEMAKE });
   await load("/data/smk");
-  await userEvent.click(row(/^Resources/));
+  await userEvent.click(row(/^Run resources/));
   fill(screen.getByRole("textbox", { name: "Memory per task" }), "4");
   await userEvent.selectOptions(screen.getByRole("combobox", { name: /^Profile/ }), "slurm");
   expect(within(where()).getByText(/The profile slurm sets the resources, so none are set here\./)).toBeInTheDocument();
   expect(screen.queryByRole("textbox", { name: "Memory per task" })).toBeNull();
-  expect(summaryValue("Resources")).toHaveTextContent("from the profile slurm");
+  expect(summaryValue("Run resources")).toHaveTextContent("from the profile slurm");
   // back to no profile: the value typed is still there
   await userEvent.selectOptions(screen.getByRole("combobox", { name: /^Profile/ }), "");
   expect(screen.getByRole("textbox", { name: "Memory per task" })).toHaveValue("4");
