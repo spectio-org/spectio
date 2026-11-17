@@ -3,11 +3,9 @@ icon: material/account-outline
 ---
 # Your profile
 
-!!! note "Built on the integration branch, not released yet"
+0.0.1 has one mode: single-user. There are no accounts, so the page says who the server runs as and shows nothing about teams or roles.
 
-    The Profile page and its two routes (step FU-P3-112, batch [P3-B14](../progress/W5/P3-M9.md#batch-p3-b14)) work today from a checkout, 2026-11-10. The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). **0.0.1 has one mode: single-user.** There are no accounts, so the page says who the server runs as and shows nothing about teams or roles.
-
-The Profile page answers four questions: who is this server running as, how long is this browser signed in, where are Spectio's files, and which colour mode is on. It is owned by [ui-spec §4.10.1](../specs/ui-spec.md#4101-profile-in-001); its two routes by [api §5.8](../specs/api-and-data-model.md#58-me-and-sign-out-001).
+The Profile page answers four questions: who is this server running as, how long is this browser signed in, where are Spectio's files, and which colour mode is on.
 
 ## Open it
 
@@ -29,18 +27,18 @@ Click the avatar at the right of the top bar. The breadcrumb reads Home › Prof
 
 - **Paths only.** The page and `GET /me` show where things are, never a token, a secret or the contents of a file.
 - **Copy** says "Copied the config file path", or "Could not copy …: the browser gave no clipboard".
-- **Sign out of this session** revokes this session only. The page then says "Signed out of this session. To sign in again, open the link that spectio serve printed, or run spectio login --print-link." and moves focus to that line. Open event streams of the page may keep running until they disconnect (SEC-P3FU112-01, open, low impact: the same browser and the same Unix user).
+- **Sign out of this session** revokes this session only. The page then says "Signed out of this session. To sign in again, open the link that spectio serve printed, or run spectio login --print-link." and moves focus to that line. Open event streams of the page may keep running until they disconnect (low impact: the same browser and the same Unix user).
 - **If the profile cannot be read** the page says "Your profile could not be read." with **Retry**; focus then moves to the loading line and to the first card.
-- **On a phone** the title bar carries "Single-user mode · alice", and **Sign out of this session** is full width (the first review round found it at its natural width and the Copy keys at 40 px; the fix is in `profile.css`, checked in Chrome at 360 px).
+- **On a phone** the title bar carries "Single-user mode · alice", and **Sign out of this session** is full width.
 
 ![The Profile page on a phone: the cards stacked, Sign out of this session full width](../assets/shots/app-profile-phone_light.webp#only-light)
 ![The Profile page on a phone, dark](../assets/shots/app-profile-phone_dark.webp#only-dark)
 
-*Sign out is 36 px tall, under the 44 px of the phone rule (UX-PAR-09): a known minor, open.*
+*Sign out is 36 px tall, under the 44 px target the phone screens aim for: a known minor.*
 
 ## On the API
 
-Both routes are under `/api/v1` and need the session cookie; the write also needs the loopback `Origin`. These calls ran against the demo server of the shots, in this order:
+Both routes are under `/api/v1` and need the session cookie; the write also needs the loopback `Origin`. These calls ran against a demo server, in this order:
 
 ```console
 GET /me
@@ -54,11 +52,9 @@ GET /me                            (the same cookie)
 ```
 
 - **`expires_at` is always `null`** in 0.0.1.
-- **`db_dir` comes from the open database's URL.** A URL with no database would raise a `TypeError` and answer `500` (SEC-P3FU112-03, open).
-- **The sign-out is beyond what the task asked for** ("one read-only GET"). It is recorded in the spec's notes as an assumed scope extension, and the security review found it acceptable.
 
-## Not shown
+## Not checked
 
-- The page on a server with an `expires_at` (no 0.0.1 session has one), the "Could not copy" message, and the Retry state: not captured. Tests cover them (`ProfilePage.test.tsx`).
-- The avatar's "you are here" cue: not built (UX-P3FU112-02, open).
+- The page on a server with an `expires_at` (no 0.0.1 session has one), the "Could not copy" message, and the Retry state were not captured. Unit tests cover them.
+- The avatar has no "you are here" cue yet.
 - Firefox, WebKit and a screen reader: Chromium only.

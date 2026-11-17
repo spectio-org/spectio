@@ -1,0 +1,14 @@
+# osv-scanner exceptions for web/package-lock.json, the only lockfile in this directory.
+# Accepted by Thomas, 2026-11-17 (docs/decisions/log.md, same date).
+#
+# picomatch is a dev-only dependency ("dev": true in package-lock.json): Vite and Vitest use it to
+# match file globs from our own config on the build machine and in CI. It is not in the built
+# web bundle that ships to users.
+#
+# One entry per known vulnerability, so a new one still fails the audit. Remove the entry as soon
+# as a fixed picomatch is released (then update the lockfile), or if picomatch stops being dev-only.
+
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2027-02-17T00:00:00Z
+reason = "picomatch 4.0.7: dev-only (Vite/Vitest build tooling), not in the shipped web bundle; no fixed version yet"
