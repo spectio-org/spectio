@@ -65,7 +65,9 @@ test("the accent is the primary colour", () => {
 
 test("the scales are on a 4 px base", () => {
   expect(merged.spacing).toMatchObject({ xs: rem(4), sm: rem(8), md: rem(12), lg: rem(16), xl: rem(24) });
-  expect(merged.radius).toMatchObject({ xs: rem(4), sm: rem(8), md: rem(12) });
+  // lg equals md, so a Mantine default that reads lg stays on the scale; xl is the pill (ui-spec §12.2).
+  expect(merged.radius).toMatchObject({ xs: rem(4), sm: rem(8), md: rem(12), lg: rem(12), xl: rem(9999) });
+  expect(ours.variables).toMatchObject({ "--sp-space-2xl": rem(32), "--sp-space-3xl": rem(48) });
   expect(merged.defaultRadius).toBe("sm");
   expect(merged.fontSizes).toMatchObject({ xs: rem(12), sm: rem(13), md: rem(14), lg: rem(16), xl: rem(20) });
   expect(merged.headings.fontFamily).toBe("var(--sp-font-display)");
@@ -95,4 +97,27 @@ test("the components' defaults", () => {
 test("one global focus ring, which reaches the portals", () => {
   expect(appCss).toMatch(/^:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--sp-line-focus\)/m);
   expect(shellCss).not.toMatch(/\.sp-shell :focus-visible/);
+});
+
+// UI-19a (ui-spec §12.1, §12.15): these stylesheets read spacing, radius and font sizes from the
+// §12.2 tokens. A 1 px line and the visually hidden -1 px margin stay; so do the two clearances
+// for the phone's pinned bars, which are heights, not steps of the scale.
+const SWEPT = [
+  "src/app.css",
+  "src/shell/shell.css",
+  "src/environments/environments.css",
+  "src/home/home.css",
+  "src/profile/profile.css",
+  "src/launch/launch.css",
+];
+// The fold's sub line is indented by the card's 26 px tile, a width, plus a token. The narrow-phone
+// tab label is 10 px below 340 px (ui-spec §4.8.1, UX-PRE-FU86-R1-09).
+const CLEARANCES = ["padding-bottom: 104px", "calc(var(--sp-tabbar-h) + 96px)", "calc(26px + ", "font-size: 10px"];
+
+test.each(SWEPT)("%s writes no raw px for spacing, radius or font size", (file) => {
+  const declaration = /(?:^|[;{\s])((?:font-size|font|gap|row-gap|column-gap|padding[a-z-]*|margin[a-z-]*|border-radius)\s*:[^;}]*)/g;
+  const raw = [...readFileSync(file, "utf8").matchAll(declaration)]
+    .map((m) => m[1].trim())
+    .filter((d) => /(?<![\w.-])-?(?!1px)\d+(?:\.\d+)?px/.test(CLEARANCES.reduce((s, c) => s.replace(c, ""), d)));
+  expect(raw).toEqual([]);
 });

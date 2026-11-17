@@ -13,7 +13,7 @@
 .sp-env-top h2 {
   margin: 0;
   flex: 1 1 auto;
-  font-size: 16px;
+  font-size: var(--mantine-font-size-lg);
 }
 .sp-env-top h2:focus-visible {
   outline: 2px solid var(--sp-line-focus);
@@ -21,7 +21,7 @@
 }
 .sp-env p {
   margin: var(--mantine-spacing-xs) 0;
-  font-size: 14px;
+  font-size: var(--mantine-font-size-md);
 }
 /* UI-14 (ui-spec §12.7): one card look, padding 16 (12 on the phone), radius md, a 1 px border. */
 .sp-env {
@@ -61,7 +61,7 @@
 }
 .sp-env-more h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--mantine-font-size-lg);
 }
 .sp-env-more .mantine-Button-root {
   min-height: 44px;
@@ -100,7 +100,7 @@
 .sp-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--mantine-spacing-lg);
   min-width: 0;
 }
 /* FU-P3-111: the kind's icon tile, the view switch and the table view. */
@@ -123,7 +123,7 @@
 .sp-env-table th[scope="row"] {
   background: none;
   color: var(--sp-text-primary);
-  font-size: 14px;
+  font-size: var(--mantine-font-size-md);
 }
 .sp-env-table tr[data-default] th[scope="row"] {
   box-shadow: inset 3px 0 0 var(--sp-section-environments);
@@ -139,5 +139,5 @@
 }
 .sp-env-line {
   display: block;
-  margin-top: 4px;
+  margin-top: var(--mantine-spacing-xs);
 }
