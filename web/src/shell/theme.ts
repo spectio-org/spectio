@@ -185,6 +185,9 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     "--sp-font-display": "'Outfit', system-ui, sans-serif",
     "--sp-font-body": "'Inter', system-ui, sans-serif",
     "--sp-font-mono": "'JetBrains Mono', ui-monospace, monospace",
+    // The two spacing steps above the theme's xl (ui-spec §12.2).
+    "--sp-space-2xl": rem(32),
+    "--sp-space-3xl": rem(48),
   },
   light: roles(LIGHT, STATES_LIGHT),
   dark: { ...roles(DARK, STATES_DARK), ...stateColorsDark },
@@ -208,7 +211,8 @@ export const theme = createTheme({
   fontFamilyMonospace: "var(--sp-font-mono)",
   // The 4 px scales of the design system (ui-spec "Design system"): every screen reads these.
   spacing: { xs: rem(4), sm: rem(8), md: rem(12), lg: rem(16), xl: rem(24) },
-  radius: { xs: rem(4), sm: rem(8), md: rem(12) },
+  // lg equals md, so a Mantine default that reads lg stays on the scale; xl is the pill.
+  radius: { xs: rem(4), sm: rem(8), md: rem(12), lg: rem(12), xl: rem(9999) },
   defaultRadius: "sm",
   fontSizes: { xs: rem(12), sm: rem(13), md: rem(14), lg: rem(16), xl: rem(20) },
   lineHeights: { xs: "1.4", sm: "1.45", md: "1.5", lg: "1.5", xl: "1.4" },
