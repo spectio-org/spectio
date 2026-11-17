@@ -485,7 +485,7 @@
 }
 .sp-cards li > a {
   display: block;
-  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-xl);
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-lg) calc(var(--mantine-spacing-lg) + 4px);
   border-radius: var(--mantine-radius-md);
   color: inherit;
   text-decoration: none;
@@ -567,7 +567,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--mantine-spacing-lg);
-  padding: var(--mantine-spacing-xl) var(--mantine-spacing-xl) var(--mantine-spacing-lg);
+  padding: calc(var(--mantine-spacing-lg) + 4px) var(--mantine-spacing-xl) var(--mantine-spacing-lg);
 }
 .sp-run-top {
   display: flex;
@@ -729,7 +729,7 @@
 
 /* Why it failed (LiteRunFailed; UX-PAR-25). */
 .sp-why {
-  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-xl);
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-lg) calc(var(--mantine-spacing-lg) + 4px);
   border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
 }
@@ -839,7 +839,7 @@
   flex-direction: column;
   gap: var(--mantine-spacing-xs);
   min-width: 0;
-  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg) var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg) var(--mantine-spacing-md) calc(var(--mantine-spacing-lg) + 4px);
   border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   font-size: var(--mantine-font-size-sm);
@@ -948,7 +948,7 @@
     margin: 0;
   }
   .sp-run-head {
-    padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) var(--mantine-spacing-lg);
+    padding: calc(var(--mantine-spacing-lg) + 4px) var(--mantine-spacing-lg) var(--mantine-spacing-lg);
   }
   /* More actions stays beside the name; the primary sits in the bar pinned above the tab bar,
      full width, opaque (UI-09; ui-spec §4.11, §12.5). The shell's bottom padding leaves it room. */
