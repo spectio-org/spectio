@@ -3,7 +3,7 @@
 Branch `autopilot/P3-ui19b`, commits `f680f75` and `5a76864`, base `0ad4321`. Reviewer: `code-reviewer`, two rounds. `security-reviewer` did not run (no sensitive path). Format: [`README.md`](../README.md).
 
 ```text
-CODE  step=P3-ui19b  review=changes->fixed b/M/m=0/1/2  security=skipped  rounds=2
+CODE  step=P3-ui19b  review=changes b/M/m=0/1/2  security=skipped b/M/m=0/0/0  rounds=2  simplify=skipped  tests=pass
 ```
 
 ## Findings
