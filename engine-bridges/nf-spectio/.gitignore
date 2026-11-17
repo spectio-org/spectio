@@ -1,3 +1,6 @@
 # Gradle state and outputs of ./gradlew (P1 Task 26).
 .gradle/
 build/
+# A gradle.properties may hold the registry key (npr.apiKey): it belongs in $HOME/.gradle,
+# never here (dev-env §12 Publishing; SEC-P3T26-05 (r1)).
+gradle.properties
