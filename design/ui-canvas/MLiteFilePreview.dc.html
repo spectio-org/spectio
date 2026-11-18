@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — file preview (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,pre:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.fp-btn{min-height:44px;padding:0 14px;border-radius:12px;border:none;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font:600 14px 'Inter',sans-serif;color:#22253A;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.fp-seg{display:grid;grid-template-columns:1fr 1fr;border-radius:12px;background:#ECEDF3;padding:3px;gap:2px}
+.fp-seg button{height:40px;border:none;border-radius:10px;background:transparent;font:500 14px 'Inter',sans-serif;color:#4D5065;cursor:pointer}
+.fp-seg button[aria-pressed="true"]{background:#FFFFFF;color:#0F1020;font-weight:600;box-shadow:0 1px 2px rgba(15,16,32,0.12)}
+.fp-toggle[aria-pressed="true"]{box-shadow:inset 0 0 0 1px #7750D4;color:#4D368B;background:#F4F0FD}
+.fp-log{margin:0;border-radius:14px;background:#0F1020;padding:10px 0;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;color:#C4C7D4;white-space:pre-wrap;overflow-wrap:anywhere}
+.fp-row{display:grid;grid-template-columns:34px minmax(0,1fr);padding-right:10px}
+.fp-n{color:#6E7287;text-align:right;padding-right:8px;user-select:none}
+.fp-cut{color:#F2C46D}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" hint-size="390px,48px"></dc-import></div>
+  <main style="position: absolute; top: 48px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 10px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <a href="MLiteRunDetail.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none; min-height: 44px; display: flex; align-items: center;">← star_salmon / log</a>
+    <nav aria-label="Folder" style="font-size: 12.5px; color: #4D5065; display: flex; gap: 4px; flex-wrap: wrap;"><a href="#">results</a><span aria-hidden="true">/</span><span>…</span><span aria-hidden="true">/</span><a href="#">log</a><span aria-hidden="true">/</span><span aria-current="page" style="overflow-wrap: anywhere;">S11_GSM4567890_rep2_trimmed.Log.final.out</span></nav>
+    <h1 tabindex="-1" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px; line-height: 1.2; overflow-wrap: anywhere;">S11_GSM4567890_rep2_trimmed.Log.final.out</h1>
+    <span style="font-size: 13px; color: #4D5065;">Text · 212.4 KiB · modified today 08:42</span>
+    <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #33364A; overflow-wrap: anywhere; background: #FFFFFF; border-radius: 10px; padding: 8px 10px; box-shadow: inset 0 0 0 1px #EEEFF5;">/g/demo-lab/rnaseq/2026-10-25/star_salmon/log/S11_GSM4567890_rep2_trimmed.Log.final.out</code>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <button type="button" class="fp-btn">Copy path</button>
+      <a href="#" download class="fp-btn" aria-label="Download S11_GSM4567890_rep2_trimmed.Log.final.out">Download</a>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button type="button" class="fp-btn fp-toggle" aria-pressed="true" style="flex: 1 1 0;">Wrap lines</button>
+      <button type="button" class="fp-btn" aria-expanded="false" style="flex: 1 1 0;">Search</button>
+    </div>
+    <div role="group" aria-label="Show lines" style="display: flex; gap: 4px; overflow-x: auto;"><button type="button" class="fp-btn fp-toggle" aria-pressed="true" style="min-height: 40px; font-size: 13px;">All 14</button><button type="button" class="fp-btn" aria-pressed="false" style="min-height: 40px; font-size: 13px;">INFO 14</button><button type="button" class="fp-btn" aria-pressed="false" style="min-height: 40px; font-size: 13px;">WARN 0</button><button type="button" class="fp-btn" aria-pressed="false" style="min-height: 40px; font-size: 13px;">ERROR 0</button></div>
+    <pre class="fp-log" tabindex="0" aria-label="S11_GSM4567890_rep2_trimmed.Log.final.out, lines 1 to 14"><span class="fp-row"><span class="fp-n" aria-hidden="true">1</span><span>                                 Started job on |	Oct 25 07:54:02</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">2</span><span>                             Started mapping on |	Oct 25 07:56:41</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">3</span><span>                                    Finished on |	Oct 25 08:34:48</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">4</span><span>       Mapping speed, Million of reads per hour |	66.31</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">5</span><span></span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">6</span><span>                          Number of input reads |	42118027</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">7</span><span>                      Average input read length |	198</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">8</span><span>                                    UNIQUE READS:</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">9</span><span>                   Uniquely mapped reads number |	38411009</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">10</span><span>                        Uniquely mapped reads % |	91.20%</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">11</span><span>                          Average mapped length |	196.42</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">12</span><span>                       Number of splices: Total |	21308817</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">13</span><span>            Number of splices: Annotated (sjdb) |	21047311</span></span><span class="fp-row"><span class="fp-n" aria-hidden="true">14</span><span>                       Number of splices: GT/AG |	2105<span class="fp-cut">… cut at 64 KiB</span></span></span></pre>
+    <button type="button" class="fp-btn" style="width: 100%;">Load more</button>
+    <span role="status" style="font-size: 12.5px; color: #4D5065;">64 KiB shown of 212.4 KiB</span>
+    <div class="fp-seg" role="group" aria-label="Read from"><button type="button" aria-pressed="true">Start</button><button type="button" aria-pressed="false">End</button></div>
+    <span style="font-size: 11px; color: #6E7287; line-height: 1.4;">Data: a STAR Log.final.out shaped on nf-core/rnaseq 3.27.0 (fixture counts), with a long name that wraps anywhere. The breadcrumb is shortened in the middle; Copy path keeps the whole path. Wrap is on by default on the phone; a .out file gets the level filter and tints, as .log and .err do; Search opens the search field (ui-spec §4.4.1).</span>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="runs" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>

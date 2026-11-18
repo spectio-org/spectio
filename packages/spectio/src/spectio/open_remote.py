@@ -9,7 +9,6 @@ what the remote prints.
 """
 
 import json
-import os
 import re
 import shlex
 import socket
@@ -18,7 +17,7 @@ from typing import Any
 
 from spectio.cli.login import NODE, SENTINEL, TICKET
 from spectio.config import LOOPBACK
-from spectio.ports import SOCKET, SUN_PATH_MAX
+from spectio.ports import SOCKET, is_server_socket
 
 STATE_MARK = "spectio-state-v1"  # tells the state file from what the remote profile prints
 STARTING_MARK = "spectio-starting-v1"  # serve --detach exited 3: its server is still booting
@@ -59,8 +58,7 @@ def check_socket(value: object, db_dir: object) -> str:
     if (
         not isinstance(value, str)
         or not _SOCKET_PATH.fullmatch(value)
-        or value != f"{db_dir}/{SOCKET}"
-        or len(os.fsencode(value)) > SUN_PATH_MAX
+        or not is_server_socket(value, db_dir)
     ):
         raise Unsafe(f"the socket in server.json is not {SOCKET} in its database directory")
     return value

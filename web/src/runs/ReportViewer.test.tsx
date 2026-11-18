@@ -26,6 +26,7 @@ test("a report opens sandboxed, under the untrusted banner, with Download", asyn
   expect(download.getAttribute("href")).toBe(`${URL_}/results/raw/multiqc/star_salmon/multiqc_report.html?download=true`);
   expect(screen.getByRole("link", { name: /rnaseq-2026-10-25/ }).getAttribute("href")).toBe(`/runs/${ID}`);
   expect(screen.getByText(/Report blank\?/)).toBeInTheDocument();
+  expect(getComputedStyle(screen.getByRole("link", { name: "Show the source as text" })).color).toBe("var(--sp-text-link)"); // FU-P3-104
   const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
   expect(await within(crumbs).findByText("rnaseq-2026-10-25")).toBeInTheDocument();
   expect(within(crumbs).getByText("Report").getAttribute("aria-current")).toBe("page");
@@ -58,4 +59,44 @@ test.each(["a/../b.html", "./b.html", "a//b.html", "/etc/b.html", "a\u202eb.html
   expect(await screen.findByRole("heading", { level: 1, name: "No such report" })).toBeInTheDocument();
   expect(screen.queryByTitle(/sandboxed/)).toBeNull();
   expect(screen.queryByText(path)).toBeNull();
+});
+
+test("opened from the results browser: back to the file's folder with its sort, filter and row; the folder path ends with the file (FU-P3-85d)", async () => {
+  serve({ [URL_]: detail() });
+  app(`/runs/${ID}/report?path=${encodeURIComponent(PATH)}&from=results&sort=-mtime&q=multi`);
+  await screen.findByRole("heading", { level: 1, name: "MultiQC report" });
+  const back = screen.getAllByRole("link", { name: "star_salmon" })[0]; // the back link, then the folder path
+  const url = new URL(back.getAttribute("href")!, "http://x");
+  expect(url.pathname).toBe(`/runs/${ID}/results`);
+  expect(Object.fromEntries(url.searchParams)).toEqual({ path: "multiqc/star_salmon", sort: "-mtime", q: "multi", focus: "multiqc_report.html" });
+  expect(screen.queryByRole("link", { name: /Summary/ })).toBeNull();
+  const bar = screen.getByRole("navigation", { name: "Folder" });
+  expect(within(bar).getAllByRole("link").map((a) => a.textContent)).toEqual(["results", "multiqc", "star_salmon"]);
+  expect(within(bar).getByRole("link", { name: "multiqc" }).getAttribute("href")).toBe(`/runs/${ID}/results?path=multiqc&sort=-mtime`);
+  expect(within(bar).getByText("multiqc_report.html")).toHaveAttribute("aria-current", "page");
+});
+
+test("a report at the results root opened from the browser goes back to the root", async () => {
+  serve({ [URL_]: detail() });
+  app(`/runs/${ID}/report?path=report.html&from=results`);
+  await screen.findByRole("heading", { level: 1, name: "report" });
+  const back = screen.getAllByRole("link", { name: "results" })[0];
+  expect(back.getAttribute("href")).toBe(`/runs/${ID}/results?focus=report.html`);
+});
+
+test("opened from the Summary there is no folder path", async () => {
+  serve({ [URL_]: detail() });
+  app(`/runs/${ID}/report?path=${encodeURIComponent(PATH)}`);
+  await screen.findByRole("heading", { level: 1, name: "MultiQC report" });
+  expect(screen.queryByRole("navigation", { name: "Folder" })).toBeNull();
+});
+
+test("the page head (ui-spec §12.5, UI-17): tile and h1 in one header, the run named in the subtitle", async () => {
+  serve({ [URL_]: detail() });
+  app(`/runs/${ID}/report?path=${encodeURIComponent(PATH)}`);
+  const head = (await screen.findByRole("heading", { level: 1, name: "MultiQC report" })).closest("header")!;
+  expect(head).toHaveClass("sp-head");
+  expect(head.querySelector(".sp-head-tile")).not.toBeNull();
+  expect(within(head).getByRole("link", { name: /rnaseq-2026-10-25 · Summary/ })).toBeInTheDocument();
+  expect(within(head).getByRole("link", { name: /Download/ })).toBeInTheDocument();
 });

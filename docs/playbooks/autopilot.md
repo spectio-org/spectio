@@ -267,6 +267,8 @@ Thomas, in the session of 2026-10-30: the autopilot should depend only on its ow
 
 ## 11. Batches of P3 tasks (Thomas, 2026-11-04)
 
+*Note 2026-11-10:* task size, review (defect minors no longer get a fix round of their own), docs, workflows (`tools/autopilot/lean/`) and promotion changed in [§14](#14-feature-sized-tasks-fewer-gates-per-credit-thomas-2026-11-10).
+
 Thomas, in the session of 2026-11-04: review and document in larger batches, so that small tasks do not each pay the full docs and review loop. [Decision log](../decisions/log.md#2026-11-04-p3-tasks-run-in-batches-docs-figure-doc-review-simplify-and-promotion-once-per-batch). It changes §7, §9 and §10 item 3 for P3 tasks; other step kinds are unchanged.
 
 1. **Per task, `p3-task` workflow.**
@@ -275,6 +277,7 @@ Thomas, in the session of 2026-11-04: review and document in larger batches, so 
    - `security-reviewer` only when the diff touches a sensitive path (below), or when the task is a security task (the dev-env §15.3 tasks run with `security: 'always'`).
    - **One fix round** for blockers and majors; more only while a security blocker or major is open (inbox #75). Defects among the minors are still fixed after approval; other minors go to the batch's follow-up list.
    - Short docs (`documentation-system.md` §3.5).
+   - Since 2026-11-09 the per-task loop is lean: [§13](#13-a-shorter-build-cycle-thomas-2026-11-09) items 7 and 8.
    - The orchestrator pushes, opens the PR with the `no-figure` label, and squash-merges it into `autopilot/integration` when CI is green. There is no promotion to `main` per task.
 2. **Sensitive paths.** The list is owned by `SENSITIVE` in `.claude/workflows/p3-task.js`. It covers:
    - the HTTP surface, file access and spool input;
@@ -301,3 +304,40 @@ Thomas, in the session of 2026-11-08: "Je veux des screenshots des amélioration
 2. **What.** A screen change: the real UI, rendered with `tools/media/shots.py` or Playwright from the built wheel, desktop and, when the change touches it, phone. A CLI, test or CI change: a terminal capture of the real command output (the `RESULT` lines, the test summary). Before and after when there is a before.
 3. **Where.** Scratchpad PNGs are enough for the session. Shots that a Progress page or guide keeps go through `docs/assets/media.yaml` in the batch docs (§11), as before.
 4. **Hygiene.** Demo data only: no real hostnames, users, tokens or paths (documentation-system rules for media).
+
+## 13. A shorter build cycle (Thomas, 2026-11-09)
+
+*Note 2026-11-10:* items 3 and 4 (re-review and docs per task), 5 (300-line cap), 6 and 7 (2 tasks in flight) are replaced by [§14](#14-feature-sized-tasks-fewer-gates-per-credit-thomas-2026-11-10).
+
+Thomas, 2026-11-09: "Réduis encore le cycle développement niveau ci et testing, bcp trop long". Measured on FU-P3-86a: CI takes about 4.5 minutes; the agent loop (build, two reviews, two fix rounds, re-reviews, docs) took about 75 minutes. The loop is what is cut. It changes §11 for P3 tasks.
+
+1. **Tests by scope.** The worker runs the tests of the files it touched and the test files the task names, then ruff and mypy on the touched packages. The full suite runs in CI only. Reviewers run only the step's test files.
+2. **Coupled tasks build together.** Tasks of one plan that touch the same module and are reviewed against the same spec section run as one `p3-task` (example: FU-P3-86b, -86c and -86d), so they pay one review loop.
+3. **Re-review only what was raised.** After a fix round, only the reviewer that raised a blocker or major re-reviews, and only on the fix diff.
+4. **Docs per task without an agent.** The orchestrator writes the task's review record, Progress lines and PR body from the reviewers' reports; `doc-writer` runs once per batch.
+5. **Target (Thomas, 2026-11-09, later the same day):** "je veux du 10 15 min si possible et 30min grand max" for one task, from start to merge. So a task is sized to fit: one module and at most about 300 changed lines; a larger plan item is split before it starts. One review pass per task: `code-reviewer`, plus `security-reviewer` in parallel only on sensitive paths. One fix round, checked by the tests and by the reviewer that raised the item only when it was a blocker. A task over 30 minutes is stopped at its next step and split.
+6. **CI.** A path filter that skips the engine and e2e jobs on docs-only PRs would cut CI further. It changes `.github/workflows/`, so it is prepared as its own PR and waits for Thomas.
+7. **The lean per-task workflow (Thomas, 2026-11-09: "Optimise simplifie et réduits pour limiter couts").** It replaces the per-task part of §11 item 1 and items 3 and 5 above where they differ:
+   - **Tests in scope only:** the tests of the touched files and of the task; the full suite runs in CI. A board-only task runs no test: it is rendered and looked at.
+   - **One review pass** (`code-reviewer`, plus `security-reviewer` on sensitive paths) that must report every blocker and major at once.
+   - **One fix round** covering the majors and the defect minors.
+   - **A verify-only check** of those IDs on the fix diff, at low effort. It raises no new findings: anything new it sees is a minor for the batch's follow-up list.
+   - **Short docs at low effort:** the review record, a short Progress section and the PR body.
+   - **At most 2 tasks in flight**, to cut Progress and inbox merge conflicts and CI reruns.
+8. **Fix with the simplest rule (lesson of FU-P3-106a).** Fix a defect minor with the simplest rule that removes it. When a fix round opens new majors on the same mechanism, replace that mechanism with the simplest rule instead of iterating on it. In FU-P3-106a, a batch-halving heuristic added while fixing round-1 minors opened new majors in rounds 2 to 4; round 5 removed it for "only an over-cap batch is split" ([P3-fu106a record](../reviews/code/P3-fu106a.md)).
+
+## 14. Feature-sized tasks, fewer gates per credit (Thomas, 2026-11-10)
+
+Thomas, 2026-11-10: more features per session and per week, within the credits he gives each run; less test, CI and docs time; no pause between waves. An outside audit of the journal, `costs.jsonl` and git history ([decision log](../decisions/log.md#2026-11-10-feature-sized-tasks-and-fewer-gates-per-credit-thomas)) found that each feature was cut into many PRs that each pay the same fixed loop, and that more than half the commits were bookkeeping. This section replaces §11 and §13 where they differ.
+
+1. **A task is a feature slice.** One user-visible change, end to end: its spec decision, the boards of a new screen, the server and the web code it needs. About 800 changed lines at most, tests included; split only above that, or when the parts touch unrelated modules. No standalone spec or board PR before the code unless Thomas asks for a pre-review or the design is security-sensitive (§11 item 2 paths). This replaces the 300-line cap of §13 item 5.
+2. **Up to 4 tasks in flight**, on disjoint modules (replaces §13 item 7, "at most 2"). Two tasks that touch the same module run one after the other.
+3. **Review per task.** One `code-reviewer` pass; `security-reviewer` only on sensitive paths (unchanged). A fix round runs only for blockers and majors; defect minors ride along in it, otherwise they join the batch's follow-up list. The verify-only check runs after a blocker or any security finding, so security blockers and majors stay fixed and verified (inbox #75); tests and CI check the rest.
+4. **Docs per task:** the review record (with the task's assumptions) and the PR body. No Progress section and no local site build: CI's `docs-gate` builds the site on every PR ([documentation-system §3.5](../specs/documentation-system.md#35-docs-per-batch-of-p3-tasks-thomas-2026-11-04)).
+5. **Per batch:** one `code-simplifier` pass (re-reviewed above 20 changed lines, as before) and the Progress sections. **Per milestone end** (`p3-batch` with `milestone: true`): the figure and `doc-reviewer`.
+6. **Promotion to `main` once per session run** (at its end) or at a milestone end, not per batch.
+7. **Bookkeeping once per batch.** Journal, `state.json` and cost records are committed once per batch and at the end of the run, not per PR. The session line per merge (§10 item 2) stays.
+8. **Questions.** An inbox entry only for a question with no safe default or a reserved item (`triage-policy.md`). Assumptions go to the task's review record and, when they decide behaviour, to the decision log.
+9. **Follow-ups.** A minor is folded into the next task that touches the same module; it gets no FU id of its own. The open follow-up list is reviewed once per milestone.
+10. **Waves chain.** The run does not pause at a wave boundary: it goes on to the next ready steps while the budget check answers `go`. The human gates of `pipeline.yaml` still stop it.
+11. **CI by path.** `ci.yml` skips `unit`, `product`, `web` and `e2e-local` on a PR that changes only `docs/`, `design/`, `.autopilot/`, `mkdocs.yml` or top-level Markdown files; `security`, `docs-gate` and `pr-body` run on every PR, and pushes to `main` run everything but the nightly corpus (this delivers §13 item 6).

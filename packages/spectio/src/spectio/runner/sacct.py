@@ -9,8 +9,15 @@ server user's own jobs asked (`--user=<euid>`), never with `--duplicates`; its o
 `MAX_OUTPUT` and parsed as data, field by field, with a random delimiter per call. A job line is
 kept only when its `WorkDir` is one the caller expects for that job (the directory it was
 launched from, SEC-P3T29-01) and its `Submit` is not before the run's launch (inbox #116 rule
-10 (b), FU-P3-53). `SacctLimiter` holds the server-wide pace: one call in flight, one call per
-`INTERVAL_S`.
+10 (b), FU-P3-53). Each call is bounded in time too: `-S` the earliest launch of its jobs less
+`SUBMIT_SKEW_S`, `-E now`, never from Epoch 0 (CON-SLURM-POLL-03). `SacctLimiter` holds the
+server-wide pace: one call in flight, one call per `INTERVAL_S`, doubled up to `MAX_INTERVAL_S`
+after a failed or slow call (CON-SLURM-POLL-02; schedulers §3.8, the SLURM query budget). A
+call that would fail every time (a refused tool, too much output for one ID) is final; a batch
+that says too much is split in two; any other failure is retried unchanged (SEC-P3FU106A-01).
+A window the site's `MaxQueryTimeRange` refuses is final for the jobs whose launch set `-S`
+(FU-P3-106b, SEC-P3FU106B-01): read from the first `MAX_STDERR` bytes of its error text,
+`TOO_WIDE`.
 
 The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
 returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
@@ -31,12 +38,14 @@ import secrets
 import signal
 import stat
 import subprocess
+import tempfile
 import threading
 import time
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from enum import Enum
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -47,12 +56,19 @@ FORMAT = (
     "Partition,Account,QOS,AllocTRES,WorkDir,Submit"
 )  # WorkDir not last: a newline in it leaves two fragments, neither with every field
 _FIELDS = FORMAT.count(",") + 1
-TIMEOUT_S = 10.0
+TIMEOUT_S = 30.0
 INTERVAL_S = 60.0
+MAX_INTERVAL_S = 600.0  # the back-off's ceiling
+SLOW_S = 5.0  # a call slower than this is back-pressure: the next one waits longer
 BATCH = 100
 MAX_PENDING = 100_000  # IDs waiting for a call; more are dropped until the queue drains
 MAX_OUTPUT = 1048576
 MAX_REASON = 256
+MAX_STDERR = 4096
+# slurmdbd's text for a window over `MaxQueryTimeRange` (ESLURM_DB_QUERY_TOO_WIDE: SchedMD
+# slurm src/common/slurm_errno.c, sent by src/slurmdbd/proc_req.c `_get_jobs_cond`), which sacct
+# logs as an error and exits 1; the exact line is [to be validated] on slurm-mini.
+TOO_WIDE = b"Too wide of a date range in query"
 SUBMIT_SKEW_S = 300.0  # a job's Submit may read this much before the run's launch (clocks)
 DELIMITER_LEN = 16  # a multi-character `--delimiter` [to be validated] on slurm-mini
 _DELIMITER_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -74,6 +90,23 @@ _UNITS = {"": 1, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4, "P": 1024*
 
 class Refused(ValueError):
     """A job ID or a tool path that is never passed to `sacct`."""
+
+
+class TooMuch(Exception):
+    """`sacct` said more than MAX_OUTPUT: asked again, the same IDs would say as much."""
+
+
+class TooWide(Exception):
+    """The site's `MaxQueryTimeRange` refused the call's window: any IDs would fail the same."""
+
+
+class Unanswered(Enum):
+    FINAL = "final"  # a call that fails every time it is made: its IDs are given up
+    SITE_LIMIT = "max_query_time_range"  # final as well, for the site's limit (FU-P3-106b)
+
+
+FINAL = Unanswered.FINAL
+SITE_LIMIT = Unanswered.SITE_LIMIT
 
 
 @dataclass(frozen=True)
@@ -101,6 +134,7 @@ class SacctRow:
 Wanted = Mapping[str, Mapping[str, float]]
 # Job ID → {normalised WorkDir: its row}; a job or a directory with no row is absent.
 Found = dict[str, dict[str, SacctRow]]
+Answer = Found | None | Unanswered  # None: failed, to be asked again
 
 
 def check_ids(ids: Iterable[str]) -> list[str]:
@@ -116,13 +150,11 @@ def check_ids(ids: Iterable[str]) -> list[str]:
 
 def check_tool(path: Path) -> None:
     """The stored `sacct`: an absolute path to a regular file that only its owner (root or the
-    user) can write."""
+    user) can write. An OSError of the stat itself (ENOENT, EIO, ESTALE) may pass, so it is
+    raised as is, not Refused: the call is retried (CR-P3FU106A-04)."""
     if not path.is_absolute():
         raise Refused(f"the sacct path {path} is not absolute")
-    try:
-        st = os.stat(path)
-    except OSError as exc:
-        raise Refused(f"sacct at {path}: {exc.strerror}") from None
+    st = os.stat(path)
     if not stat.S_ISREG(st.st_mode) or st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
         raise Refused(f"sacct at {path} is not a regular file, or others can write it")
     if st.st_uid not in (0, os.geteuid()):
@@ -138,7 +170,9 @@ def new_delimiter() -> str:
     return "".join(secrets.choice(_DELIMITER_CHARS) for _ in range(DELIMITER_LEN))
 
 
-def sacct_argv(path: Path, ids: list[str], delimiter: str) -> list[str]:
+def sacct_argv(path: Path, ids: list[str], delimiter: str, start: float) -> list[str]:
+    """The call; `start` (epoch seconds) is its `-S`, written in UTC as `TZ=UTC` reads it."""
+    since = datetime.fromtimestamp(max(0.0, start), UTC).strftime("%Y-%m-%dT%H:%M:%S")
     return [
         str(path),
         "--parsable2",
@@ -147,6 +181,10 @@ def sacct_argv(path: Path, ids: list[str], delimiter: str) -> list[str]:
         "-j",
         ",".join(ids),
         f"--user={os.geteuid()}",
+        "-S",
+        since,
+        "-E",
+        "now",
         f"--format={FORMAT}",
     ]
 
@@ -159,20 +197,25 @@ def sacct_jobs(
     dropped: Counter[str] | None = None,
 ) -> Found | None:
     """The rows `sacct` gives for the `wanted` jobs and directories (`parse_sacct`); None when
-    it failed, timed out or said too much. Raises Refused, before any call, for an ID or a
-    tool that is not accepted."""
+    it failed or timed out. Raises Refused, before any call, for an ID or a tool that is not
+    accepted, OSError when the tool cannot be read for now, TooMuch when it said more than
+    MAX_OUTPUT, and TooWide when it failed with the site's `TOO_WIDE`."""
     ids = check_ids(wanted)
     check_tool(sacct)
     delimiter = new_delimiter()
-    argv = sacct_argv(sacct, ids, delimiter)
-    with subprocess.Popen(  # noqa: S603 - an argument list of checked values, no shell
-        argv,
-        env=sacct_env(sacct),
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    ) as proc:
+    start = min(since for dirs in wanted.values() for since in dirs.values()) - SUBMIT_SKEW_S
+    argv = sacct_argv(sacct, ids, delimiter, start)
+    with (
+        tempfile.TemporaryFile() as err,  # a file, not a pipe: it never blocks the tool
+        subprocess.Popen(  # noqa: S603 - an argument list of checked values, no shell
+            argv,
+            env=sacct_env(sacct),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=err,
+            start_new_session=True,
+        ) as proc,
+    ):
         timer = threading.Timer(timeout_s, _kill, (proc,))
         timer.start()
         try:
@@ -182,7 +225,13 @@ def sacct_jobs(
             code = proc.wait()
         finally:
             timer.cancel()
-    if code != 0 or len(data) > MAX_OUTPUT:
+        err.seek(0)
+        said = err.read(MAX_STDERR)
+    if len(data) > MAX_OUTPUT:
+        raise TooMuch(f"sacct said over {MAX_OUTPUT} bytes for {len(ids)} IDs")
+    if code != 0 and TOO_WIDE in said:
+        raise TooWide(f"sacct refused the window of {len(ids)} IDs: the site's MaxQueryTimeRange")
+    if code != 0:
         log.warning(
             "sacct gave no answer for %d IDs (exit %s, %d bytes)", len(ids), code, len(data)
         )
@@ -367,9 +416,20 @@ Call = Callable[[list[str]], Found | None]
 
 class SacctLimiter:
     """The server's one gate to `sacct`: IDs are queued once each (at most `max_pending`), and
-    `run_once` makes one call for the next `batch` of them when `interval_s` has passed since
-    the last call started and no call is in flight. The caller's thread runs the call: the
-    server runs it on a thread of its own, never the writer's or a request's."""
+    `run_once` makes one call for the next `batch` of them when the interval has passed since
+    the last call started and no call is in flight. The interval is `interval_s`, doubled after
+    a call that failed or took over `slow_s`, up to `max_interval_s`, and reset by a quick
+    answer. `later` queues IDs once a delay has passed (a follow-up). The caller's thread runs
+    the call: the server runs it on a thread of its own, never the writer's or a request's.
+    A Refused call (a policy refusal of the tool or an ID) is FINAL, logged at warning (the same
+    text at most once per `max_interval_s`, CR-P3FU106A-04), and one sacct refused for the
+    site's `MaxQueryTimeRange` (TooWide) is SITE_LIMIT: the caller gives up the jobs whose
+    launch set `-S` and puts the rest back (SEC-P3FU106B-01).
+    Too much output is the only failure that points at the IDs: the batch is split in two, each
+    of its IDs recorded with half its size until it is next taken, and one ID alone is FINAL.
+    Any other failure (a timeout, a non-zero exit, an OSError of the tool's stat) answers None:
+    the caller puts the batch back unchanged under the back-off, until it gives up (GIVE_UP_S in
+    `spectio_server.failure`); an outage splits nothing (SEC-P3FU106A-01, CR-P3FU106A-05)."""
 
     def __init__(
         self,
@@ -378,16 +438,23 @@ class SacctLimiter:
         interval_s: float = INTERVAL_S,
         batch: int = BATCH,
         max_pending: int = MAX_PENDING,
+        max_interval_s: float = MAX_INTERVAL_S,
+        slow_s: float = SLOW_S,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._call = call
-        self._interval = interval_s
+        self._base = self._interval = interval_s
+        self._max_interval = max_interval_s
+        self._slow = slow_s
+        self._later: dict[str, float] = {}  # job ID → when it is queued
         self._batch = batch
         self._max_pending = max_pending
         self._clock = clock
         self._pending: dict[str, None] = {}  # insertion order: first asked, first called
+        self._size: dict[str, int] = {}  # job ID of a split batch → at most this many per call
         self._last: float | None = None
         self._busy = False
+        self._warned: tuple[str, float] | None = None  # the last refusal logged, and when
         self._lock = threading.Lock()
 
     def request(self, ids: Iterable[str]) -> list[str]:
@@ -400,40 +467,106 @@ class SacctLimiter:
                 if job not in self._pending and len(self._pending) >= self._max_pending:
                     break
                 self._pending[job] = None
+                self._later.pop(job, None)  # its follow-up rides along with this call
                 queued.append(job)
         return queued
+
+    def later(self, ids: Iterable[str], delay_s: float) -> list[str]:
+        """Queue the job IDs among `ids` once `delay_s` has passed; returns those taken (none
+        past `max_pending`)."""
+        taken = []
+        with self._lock:
+            due = self._clock() + delay_s
+            for job in ids:
+                if JOB_ID.fullmatch(job) and len(self._later) < self._max_pending:
+                    self._later[job] = due
+                    taken.append(job)
+        return taken
+
+    def _due(self, now: float) -> None:
+        """Move the follow-ups due by `now` into the queue; under the lock."""
+        for job, due in list(self._later.items()):
+            if due <= now and (job in self._pending or len(self._pending) < self._max_pending):
+                self._pending[job] = None
+                del self._later[job]
 
     def pending(self) -> int:
         with self._lock:
             return len(self._pending)
 
     def wait_s(self) -> float | None:
-        """Seconds until the next call may start; None when nothing is queued."""
+        """Seconds until the next call may start; None when nothing is queued or due later."""
         with self._lock:
-            if not self._pending:
+            now = self._clock()
+            self._due(now)
+            if not self._pending and not self._later:
                 return None
-            if self._last is None:
-                return 0.0
-            return max(0.0, self._last + self._interval - self._clock())
+            ready = 0.0 if self._pending else min(self._later.values()) - now
+            pace = 0.0 if self._last is None else self._last + self._interval - now
+            return max(0.0, ready, pace)
 
-    def run_once(self) -> tuple[list[str], Found | None] | None:
-        """One call when one is due: the IDs asked and the rows (None: the call failed).
-        None when nothing is queued, it is too soon, or a call is in flight."""
+    def run_once(self) -> tuple[list[str], Answer] | None:
+        """One call when one is due: the IDs asked and the rows (None: the call failed, FINAL:
+        it would fail every time). None when nothing is queued, it is too soon, or a call is
+        in flight."""
         with self._lock:
+            self._due(self._clock())
             if self._busy or not self._pending:
                 return None
             if self._last is not None and self._clock() < self._last + self._interval:
                 return None
-            ids = list(self._pending)[: self._batch]
+            ids: list[str] = []
+            cap = self._batch  # the smallest recorded size among the IDs taken
+            for job in self._pending:
+                cap = min(cap, self._size.get(job, self._batch))
+                if len(ids) >= cap:
+                    break
+                ids.append(job)
+            sizes = {job: self._size.pop(job) for job in ids if job in self._size}
             for job in ids:
                 del self._pending[job]
-            self._busy, self._last = True, self._clock()
+            started = self._clock()
+            self._busy, self._last = True, started
+        rows: Answer = None
         try:
             rows = self._call(ids)
-        except Exception:  # a refusal or a crash: those IDs get no answer, the next call runs
+        except Refused as exc:  # the tool or an ID: every call of them would be refused
+            self._log_refused(len(ids), str(exc))
+            rows = FINAL
+        except TooWide as exc:  # the site's window limit: the caller gives up the oldest jobs
+            log.warning("%s", exc)
+            rows = SITE_LIMIT
+        except TooMuch as exc:  # split in two, until one ID alone says too much
+            log.warning("%s", exc)
+            if len(ids) == 1:
+                rows = FINAL
+            else:
+                sizes = dict.fromkeys(ids, (len(ids) + 1) // 2)  # two calls, not three
+        except OSError as exc:  # the tool's stat, for now (ENOENT, EIO, ESTALE): retried
+            log.warning("sacct not called for %d IDs: %s", len(ids), exc)
+        except Exception:  # a crash: those IDs get no answer, the next call runs
             log.exception("sacct call failed")
-            rows = None
         finally:
             with self._lock:
                 self._busy = False
+                # the sizes of IDs the caller gave up are dropped; a batch put back keeps its own
+                self._size = {j: n for j, n in self._size.items() if j in self._pending}
+                if rows is None:
+                    self._size.update(sizes)
+                if not isinstance(rows, dict) or self._clock() - started > self._slow:
+                    self._interval = min(self._max_interval, 2 * self._interval)
+                else:
+                    self._interval = self._base
         return ids, rows
+
+    def _log_refused(self, count: int, why: str) -> None:
+        """At warning, unless the same text was logged less than `max_interval_s` ago: then at
+        debug, as a refused tool refuses every call (CR-P3FU106A-04). Only one call is in
+        flight, so this needs no lock."""
+        now = self._clock()
+        last = self._warned
+        warn = last is None or last[0] != why or now - last[1] >= self._max_interval
+        if warn:
+            self._warned = (why, now)
+        level = logging.WARNING if warn else logging.DEBUG
+        log.log(level, "sacct not called for %d IDs: %s", count, why)

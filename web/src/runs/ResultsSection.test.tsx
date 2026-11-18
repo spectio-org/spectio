@@ -146,13 +146,15 @@ test("the results browser shows one folder: path bar, Copy path, and each kind o
   const table = screen.getByRole("table", { name: "fastqc" });
   expect(within(table).getByRole("link", { name: "zips" }).getAttribute("href")).toBe(`/runs/${ID}/results?path=${encodeURIComponent("fastqc/zips")}`);
   expect(within(table).getByRole("link", { name: "S01_fastqc.html" }).getAttribute("href")).toBe(
-    `/runs/${ID}/report?path=${encodeURIComponent("fastqc/S01_fastqc.html")}`,
+    `/runs/${ID}/report?path=${encodeURIComponent("fastqc/S01_fastqc.html")}&from=results`,
   );
+  // a file opens its preview (FU-P3-85d); Download is its own icon button
   const file = within(table).getByRole("link", { name: "versions.yml" });
-  expect(file.getAttribute("href")).toBe(`${URL_}/results/raw/fastqc/versions.yml?download=true`);
+  expect(file.getAttribute("href")).toBe(`/runs/${ID}/results/file?path=${encodeURIComponent("fastqc/versions.yml")}`);
+  expect(within(table).getByRole("link", { name: "Download versions.yml" }).getAttribute("href")).toBe(`${URL_}/results/raw/fastqc/versions.yml?download=true`);
   expect(within(table).queryByRole("link", { name: "latest" })).toBeNull();
-  expect(within(table).getByText("link outside the results directory")).toBeInTheDocument();
-  expect(within(table).getByText("612 KB")).toBeInTheDocument();
+  expect(within(table).getByText("Link outside")).toBeInTheDocument();
+  expect(within(table).getByText("612 KiB")).toBeInTheDocument();
   const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
   expect(within(crumbs).getByText("Results")).toHaveAttribute("aria-current", "page");
 });
@@ -164,7 +166,9 @@ test("the results browser says when a folder is cut at 1,000 entries, or missing
     [URL_]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
   });
   const router = app(`/runs/${ID}/results?path=big`);
-  expect(await screen.findByText("Showing the first 1,000 entries of this folder")).toBeInTheDocument();
+  expect(
+    await screen.findByText("This folder has more than 1,000 entries. Spectio lists 1,000 of them, in no particular order; sort and filter see only those."),
+  ).toBeInTheDocument();
   await router.navigate({ to: "/runs/$id/results", params: { id: ID }, search: { path: "gone" } });
   await waitFor(() => expect(screen.getByText("No such folder in this run's results.")).toBeInTheDocument());
 });

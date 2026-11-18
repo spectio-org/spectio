@@ -29,6 +29,6 @@ JAR=$(nextflow_jar)
 rm -rf "$OUT"
 mkdir -p "$OUT/classes/META-INF"
 java -cp "$JAR" org.codehaus.groovy.tools.FileSystemCompiler -d "$OUT/classes" "$HERE"/src/spectio/*.groovy
-printf 'Manifest-Version: 1.0\nPlugin-Id: nf-spectio\nPlugin-Version: %s\nPlugin-Class: spectio.SpectioPlugin\nPlugin-Provider: spectio\nPlugin-Requires: %s\n' \
+printf 'Manifest-Version: 1.0\nPlugin-Id: nf-spectio\nPlugin-Version: %s\nPlugin-Class: spectio.SpectioPlugin\nPlugin-Provider: spectio-org\nPlugin-Requires: %s\n' \
   "$VERSION" "$REQUIRES" > "$OUT/classes/META-INF/MANIFEST.MF"
 echo spectio.SpectioFactory > "$OUT/classes/META-INF/extensions.idx"

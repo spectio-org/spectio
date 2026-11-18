@@ -3,6 +3,7 @@ taken port, and `spectio login --print-link` sends the server key only to the us
 SLURM and shared hosts the server listens on `SOCKET` in its database directory instead
 (inbox #109 rule 5, Thomas 2026-11-08)."""
 
+import os
 from collections.abc import Iterator, Sequence
 from pathlib import Path
 
@@ -33,3 +34,8 @@ def port_owners(port: int, tables: Sequence[str] = TABLES) -> set[int]:
     """Every uid listening on `port`: login dials 127.0.0.1, and the first listener in the
     table may sit on another local address, so the key goes out only if all are the user's."""
     return set(_listeners(port, tables))
+
+
+def is_server_socket(value: object, db_dir: object) -> bool:
+    """Whether `value` is `SOCKET` in `db_dir`, within the AF_UNIX path limit."""
+    return value == f"{db_dir}/{SOCKET}" and len(os.fsencode(str(value))) <= SUN_PATH_MAX

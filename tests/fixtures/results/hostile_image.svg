@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="60" viewBox="0 0 120 60">
+  <!-- Hand-written (FU-P3-85c, api §5.3 tests): an SVG that tries to run a script and fetch from
+       outside. Loaded in an <img> it must draw the rectangle only; a top-level navigation to the
+       raw URL must download it, never render it. -->
+  <rect width="120" height="60" fill="#3B82F6"/>
+  <image href="https://example.com/svg-image.png" xlink:href="https://example.com/svg-image.png" width="10" height="10"/>
+  <script>
+    fetch('/api/v1/version?svg-script-ran=1');
+    new Image().src = 'https://example.com/svg-script-ran';
+    document.documentElement.setAttribute('data-ran', 'yes');
+  </script>
+  <foreignObject width="1" height="1"><img xmlns="http://www.w3.org/1999/xhtml" src="https://example.com/svg-foreign.png" onerror="fetch('/api/v1/version?svg-onerror-ran=1')"/></foreignObject>
+</svg>

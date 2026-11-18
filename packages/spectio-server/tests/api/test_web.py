@@ -7,6 +7,7 @@ TODO(P1 Task 16): the screens move behind the session with the API.
 """
 
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -49,7 +50,7 @@ def test_spa_routes_serve_index(web: TestClient) -> None:
         assert r.headers["cache-control"] == "no-cache"
         csp = r.headers["content-security-policy"]
         assert "default-src 'none'" in csp
-        assert "script-src 'self';" in csp  # no 'unsafe-inline' script
+        assert "script-src 'self' 'wasm-unsafe-eval';" in csp  # no 'unsafe-inline' script
         assert "connect-src 'self'" in csp
         assert "frame-ancestors 'none'" in csp
         assert r.headers["x-content-type-options"] == "nosniff"
@@ -66,7 +67,20 @@ def test_screens_may_frame_this_origin_only(web: TestClient) -> None:
         csp = r.headers["content-security-policy"]
         assert "frame-src 'self'" in csp, path
         assert "frame-ancestors 'none'" in csp, path
-        assert "script-src 'self';" in csp, path
+        assert "script-src 'self' 'wasm-unsafe-eval';" in csp, path
+
+
+def test_csp_allows_wasm_and_own_workers_only(web: TestClient) -> None:
+    """The imaging viewers' CSP (dev-env §15.3 req. 19): WebAssembly and workers of this origin;
+    never `'unsafe-eval'` nor a `blob:` source (SEC-PRE-FU102-R1-08)."""
+    csp = web.get("/").headers["content-security-policy"]
+    directives = {d.split()[0]: d.split()[1:] for d in csp.split("; ")}
+    assert directives["script-src"] == ["'self'", "'wasm-unsafe-eval'"]
+    assert directives["worker-src"] == ["'self'"]
+    tokens = csp.replace(";", " ").split()
+    assert "'unsafe-eval'" not in tokens
+    assert not any("blob:" in t for t in tokens)
+    assert csp == static.CSP
 
 
 def test_results_browser_is_a_screen(web: TestClient) -> None:
@@ -75,6 +89,42 @@ def test_results_browser_is_a_screen(web: TestClient) -> None:
     assert r.status_code == 200
     assert r.text == INDEX
     assert "frame-src 'self'" in r.headers["content-security-policy"]
+
+
+def test_file_preview_is_a_screen(web: TestClient) -> None:
+    """The preview of one results file `/runs/{id}/results/file` answers the screens, with
+    `img-src 'self'` for its `<img>` of the raw route (ui-spec §4.4.1, FU-P3-85c)."""
+    r = web.get("/runs/run_01K8T2F1XTVRES000000000000/results/file?path=a%3Fb.txt")
+    assert r.status_code == 200
+    assert r.text == INDEX
+    assert "img-src 'self'" in r.headers["content-security-policy"]
+
+
+def test_environments_pages_are_screens(web: TestClient) -> None:
+    """The Environments list and form answer the screens (ui-spec §4.8.1, FU-P3-86f)."""
+    for path in ("/environments", "/environments/new?from=slurm", "/environments/mylab-long"):
+        r = web.get(path)
+        assert r.status_code == 200, path
+        assert r.text == INDEX
+
+
+def test_catalog_pages_are_screens(web: TestClient) -> None:
+    """The Catalog list and form answer the screens (ui-spec §4.7.1, FU-P3-87d)."""
+    for path in ("/catalog", "/catalog/new", "/catalog/rnaseq-test"):
+        r = web.get(path)
+        assert r.status_code == 200, path
+        assert r.text == INDEX
+
+
+def test_workdir_pages_are_screens(web: TestClient) -> None:
+    """The work directory's folder and file pages answer the screens (ui-spec §4.4.1,
+    FU-P3-85e)."""
+    query = "task=tsk_01K8T2F1XTVRES000000000000&attempt=1&path=qc"
+    for page in ("workdir", "workdir/file"):
+        r = web.get(f"/runs/run_01K8T2F1XTVRES000000000000/{page}?{query}")
+        assert r.status_code == 200, page
+        assert r.text == INDEX
+        assert "img-src 'self'" in r.headers["content-security-policy"]
 
 
 def test_head_on_screens_and_assets(web: TestClient) -> None:
@@ -224,3 +274,23 @@ def test_refused_checkout_says_why(tmp_path: Path, caplog: pytest.LogCaptureFixt
     assert [r.getMessage() for r in caplog.records] == [
         f"{web} is group- or world-writable or not yours: chmod g-w,o-w {web}"
     ]
+
+
+def test_profile_page_is_a_screen(web: TestClient) -> None:
+    """A Reload of the Profile page answers the screens (ui-spec §4.10.1, FU-P3-112;
+    DW-P3B14-01: it was a 404)."""
+    r = web.get("/profile")
+    assert r.status_code == 200
+    assert r.text == INDEX
+
+
+def test_every_web_route_is_served() -> None:
+    """Each path of `web/src/routes.tsx` is in `static.ROUTES`, so no screen 404s on a Reload
+    (DW-P3B14-01)."""
+    routes = Path(__file__).parents[4] / "web" / "src" / "routes.tsx"
+    if not routes.is_file():
+        pytest.skip("web/src is not in this checkout")
+    paths = re.findall(r'path: "(/[^"]*)"', routes.read_text())
+    assert paths
+    served = {re.sub(r"\{(\w+)\}", "$x", r) for r in static.ROUTES}
+    assert {re.sub(r"\$\w+", "$x", p) for p in paths} <= served

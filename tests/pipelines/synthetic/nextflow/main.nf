@@ -8,6 +8,8 @@
  * Every process honours task.ext.when, so Spectio can stop at a gate with a generated config
  * (conf/stop_after_qc.config) and continue with -resume.
  * Failure injection: --fail_mode exit|oom|oom_once|oom_real|timeout|flaky  --fail_process NAME  --fail_sample ID
+ *   (-profile fail_demo: COMPARE for treatA exits 1, so the run fails)
+ * Task logs: --verbosity quiet|normal|loud, the lines bin/synth.py writes to .command.out and .command.err
  */
 nextflow.enable.dsl = 2
 
@@ -20,6 +22,7 @@ params.fail_process = ""
 params.fail_sample  = ""
 params.fail_gb      = 2
 params.seed         = 42
+params.verbosity    = "normal"   // quiet | normal | loud: log lines per task (bin/synth.py)
 
 def failHook(proc, sample) {
     (params.fail_mode != "none" && params.fail_process == proc && (!params.fail_sample || params.fail_sample == sample)) ?
@@ -34,7 +37,7 @@ process MAKE_READS {
     when:   task.ext.when == null || task.ext.when
     script:
     """
-    export SPECTIO_ATTEMPT=${task.attempt}
+    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'
     ${failHook('MAKE_READS', sample)}
     synth.py reads ${sample} ${n_reads} ${params.seed} ${sample}.reads.txt
     """
@@ -49,7 +52,7 @@ process QC_STATS {
     when:   task.ext.when == null || task.ext.when
     script:
     """
-    export SPECTIO_ATTEMPT=${task.attempt}
+    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'
     ${failHook('QC_STATS', sample)}
     synth.py stats ${reads} ${sample}.qc.json
     """
@@ -65,7 +68,7 @@ process QC_REPORT {
     when:   task.ext.when == null || task.ext.when
     script:
     """
-    export SPECTIO_ATTEMPT=${task.attempt}
+    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'
     ${failHook('QC_REPORT', '')}
     synth.py report general_stats.tsv multiqc_data.json multiqc_report.html ${jsons}
     """
@@ -81,7 +84,7 @@ process SPLIT {
     // params from the command line arrive as strings: "0" must mean dynamic, not one chunk
     def n = (params.chunks as int) > 0 ? params.chunks : "\$(( (\$(wc -l < ${reads}) + 99) / 100 ))"
     """
-    export SPECTIO_ATTEMPT=${task.attempt}
+    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'
     ${failHook('SPLIT', sample)}
     synth.py split ${reads} ${n} chunks
     """
@@ -95,7 +98,7 @@ process ALIGN {
     when:   task.ext.when == null || task.ext.when
     script:
     """
-    export SPECTIO_ATTEMPT=${task.attempt}
+    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'
     ${failHook('ALIGN', sample)}
     synth.py align ${chunk} ${chunk.baseName}.counts.tsv
     """
@@ -109,7 +112,7 @@ process MERGE {
     when:   task.ext.when == null || task.ext.when
     script:
     """
-    export SPECTIO_ATTEMPT=${task.attempt}
+    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'
     ${failHook('MERGE', '')}
     synth.py merge counts_matrix.tsv ${counts}
     """
@@ -124,7 +127,7 @@ process COMPARE {
     when:   task.ext.when == null || task.ext.when
     script:
     """
-    export SPECTIO_ATTEMPT=${task.attempt}
+    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'
     ${failHook('COMPARE', group_b)}
     synth.py compare ${matrix} ${samples_b.join(',')} ${samples_ctrl.join(',')} ${group_b}_vs_ctrl.tsv
     """
@@ -138,7 +141,7 @@ process FINAL_REPORT {
     when:   task.ext.when == null || task.ext.when
     script:
     """
-    export SPECTIO_ATTEMPT=${task.attempt}
+    export SPECTIO_ATTEMPT=${task.attempt} SYNTH_VERBOSITY='${params.verbosity}'
     ${failHook('FINAL_REPORT', '')}
     { echo '<!doctype html><title>Final report</title><h1>Comparisons</h1><pre>'; cat ${tables}; echo '</pre>'; } > final_report.html
     """

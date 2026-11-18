@@ -1,6 +1,6 @@
-import { Button, Modal, Tabs } from "@mantine/core";
+import { Button, Modal, SegmentedControl, Select, Tabs } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { type KeyboardEvent, useCallback, useEffect, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type Ref, Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   type LogSource,
@@ -18,21 +18,31 @@ import {
   listTasks,
   logUrl,
 } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
+import { GRAPH_VIEW, useFeatures } from "./graph/features";
+import { type GraphSearch, graphSearch } from "./graph/settings";
+
+// the graph, with React Flow and dagre: a lazy chunk, out of the main bundle (issue #160)
+const GraphPanel = lazy(() => import("./graph/GraphPanel").then((m) => ({ default: m.GraphPanel })));
 import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { FoldSection } from "../shell/FoldSection";
+import { CardHead } from "../shell/CardHead";
 import { usePhone } from "../shell/layout";
-import { CopyButton } from "./CopyMenu";
+import { EmptyState, ErrorPanel } from "../shell/States";
+import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
+import { useAccountingReads } from "./accounting";
+import { CopyButton, useCopyStatus } from "./CopyMenu";
 import { type Detail, DetailSheet } from "./DetailSheet";
+import { taskSearch } from "./explorer";
 import { FailureSummary } from "./FailureSummary";
-import { LogLines, LogViewer } from "./LogViewer";
+import { LogLines, LogViewer, ToolButton } from "./LogViewer";
 import { ByProcess } from "./ByProcess";
 import { bytes, isLow, isNear, nearLimit, percent, resourcesLine, seconds } from "./resources";
 import { ResultsSection } from "./ResultsSection";
 import { RunHeader, runDirectory } from "./RunHeader";
-import { Low, NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
+import { CheckpointMark, Low, NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
 import {
   classWord,
   engineName,
@@ -41,6 +51,8 @@ import {
   neededFirst,
   plural,
   processState,
+  refresh,
+  type Shown,
   stageWord,
   sum,
   taskWord,
@@ -57,17 +69,31 @@ const LOGS: { source: LogSource; label: string }[] = [
   { source: "engine", label: "Engine log" },
 ];
 
-const TABS = ["summary", "tasks", "parameters", "logs"] as const;
+/** The run's log sources: Head errors only when its head wrote head.err (FU-P3-124). */
+const logsOf = (run: RunDetail) => LOGS.filter((l) => l.source !== "head-err" || run.head_logs.includes("head-err"));
+
+const TABS = ["summary", "tasks", "parameters", "logs", "graph"] as const;
 type Tab = (typeof TABS)[number];
 
-/** The run's URL keeps its tab, the log source on Logs (?tab=logs&source=engine) and the process
+type RunSearch = { tab?: Exclude<Tab, "summary">; source?: LogSource; from?: "summary"; process?: string; task?: string; attempt?: number } & GraphSearch;
+
+/** The run's URL keeps its tab, the log source on Logs (?tab=logs&source=engine, with &from=summary
+ * when the Summary's last lines opened it: Logs then shows Back to Summary) and the process
  * on Tasks (?tab=tasks&process=ALIGN), so a view can be linked and reloaded; anything else falls
- * back to the Summary, the engine log and every process. */
-export function runSearch(search: Record<string, unknown>): { tab?: Exclude<Tab, "summary">; source?: LogSource; process?: string } {
+ * back to the Summary, the engine log and every process. `&task=<id>&attempt=<n>` reopens that
+ * task's sheet on that attempt (ui-spec §4.4.1, Back to the task sheet). The Graph tab keeps its view
+ * (?tab=graph&level=&layout=&overlay=&show=&q=&node=, graph/settings.ts). */
+export function runSearch(search: Record<string, unknown>): RunSearch {
+  return { ...tabSearch(search), ...taskSearch(search) };
+}
+
+function tabSearch(search: Record<string, unknown>): RunSearch {
   const tab = TABS.find((t) => t !== "summary" && t === search.tab) as Exclude<Tab, "summary"> | undefined;
   if (tab === "tasks" && typeof search.process === "string" && search.process !== "") return { tab, process: search.process };
+  if (tab === "graph") return { tab, ...graphSearch(search) };
   if (tab !== "logs") return tab ? { tab } : {};
-  return { tab, source: LOGS.find((l) => l.source === search.source)?.source ?? "engine" };
+  const source = LOGS.find((l) => l.source === search.source)?.source ?? "engine";
+  return search.from === "summary" ? { tab, source, from: "summary" } : { tab, source };
 }
 
 type Words = ReturnType<typeof words>;
@@ -108,12 +134,12 @@ function doneText(p: Process, w: Words): string {
   return p.lower_bound ? `${done} / at least ${all}` : `${done} / ${all}`;
 }
 
-/** The process's name, and the "Checkpoint" text chip of a checkpoint rule. */
+/** The process's name, and the "Checkpoint" mark of a checkpoint rule. */
 function NameCell({ p, w, onOpen }: { p: Process; w: Words; onOpen: (d: Detail) => void }) {
   return (
     <>
       <OpenProcess name={p.process} w={w} onOpen={onOpen} />
-      {p.is_checkpoint && <span className="sp-chip sp-checkpoint">Checkpoint</span>}
+      {p.is_checkpoint && <CheckpointMark />}
     </>
   );
 }
@@ -201,6 +227,45 @@ function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
   );
 }
 
+/** A Snakemake target run as the chain Launch showed (ui-spec §4.15): the rules it runs in pipeline
+ * order, each with its jobs done and its state's tone, the target last; then the rules it does not
+ * need, dimmed. The process table below keeps the counts. */
+function TargetSteps({ run, steps, outside, ended, open }: { run: RunDetail; steps: Process[]; outside: string[]; ended: boolean; open: string[] }) {
+  const w = words(run.workflow.engine);
+  const target = run.target?.name;
+  return (
+    <div className="sp-target-steps">
+      <ol className="sp-steps" aria-label="Steps to the target">
+        {[...steps]
+          .sort((x, y) => (x.pipeline_order ?? 0) - (y.pipeline_order ?? 0))
+          .map((p) => {
+            const { state, word } = processState(p, ended, open);
+            const done = sum(p.counts, "succeeded", "cached", "stored");
+            return (
+              <li key={p.process} className="sp-step" data-tone={tone(state)} data-target={p.process === target || undefined}>
+                <ProcessName name={p.process} />
+                <span className="sp-step-count">
+                  {word} · {done} / {total(p.counts)} {total(p.counts) === 1 ? w.unit : w.units}
+                  {p.process === target && " · target"}
+                </span>
+              </li>
+            );
+          })}
+      </ol>
+      {outside.length > 0 && (
+        <ul className="sp-steps sp-steps-out" aria-label="Rules outside the target">
+          {outside.map((r) => (
+            <li key={r} className="sp-step">
+              <span className="sp-mono">{r}</span>
+              <span className="sp-step-count">not needed</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Stages in position order, each opening to its processes; or the flat list (ui-spec §4.4 note). */
 function StagesOrProcesses({
   run,
@@ -220,6 +285,9 @@ function StagesOrProcesses({
   const engine = engineName(run.workflow.engine);
   const open = run.summary.open_checkpoints ?? [];
   const updates = run.summary.dag_updates ?? 0;
+  // a target run lists what it runs; the rules it does not need are listed apart (ui-spec §4.15)
+  const outside = run.target ? processes.filter((p) => p.status === "not_needed").map((p) => p.process) : [];
+  const listed = outside.length ? processes.filter((p) => p.status !== "not_needed") : processes;
   const note = (
     <>
       {run.stages_note && (
@@ -250,16 +318,23 @@ function StagesOrProcesses({
       Pending: no {w.unit} has started. Running: {w.units} are running, or some are done and more are to come. Done:
       every {w.unit} succeeded or was reused. Stopped: the run ended before it finished.{" "}
       {run.workflow.engine === "snakemake"
-        ? "Waiting for checkpoint: its jobs may appear once the checkpoint ends. Up to date: its outputs already exist. Not needed in this run: the targets or an input function left it out. \"at least\": a checkpoint is open and more jobs may come."
+        ? `Waiting for checkpoint: its jobs may appear once the checkpoint ends. Up to date: its outputs already exist. ${
+            run.target
+              ? "Outside the target: the rule is not needed to make the target."
+              : "Not needed in this run: the targets or an input function left it out."
+          } "at least": a checkpoint is open and more jobs may come.`
         : "No task (condition or empty input): a when: condition was false, or its input was empty. Processes the script does not call in this run are not listed."}
     </p>
   );
   if (!stages.length) {
     return (
-      <FoldSection id="processes" screen="run" icon={ICONS.list} title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
+      <FoldSection id="processes" screen="run" icon="list" title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
         {note}
-        <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>
-        <ProcessTable processes={processes} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
+        {!run.target && <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>}
+        {run.target && run.target.kind !== "module" && listed.length > 0 && (
+          <TargetSteps run={run} steps={listed} outside={outside} ended={ended} open={open} />
+        )}
+        <ProcessTable processes={listed} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
         {legend}
       </FoldSection>
     );
@@ -267,14 +342,14 @@ function StagesOrProcesses({
   const loose = processes.filter((p) => !stages.some((s) => s.id === p.stage_id));
   const running = stages.filter((s) => s.state === "running").length;
   return (
-    <FoldSection id="stages" screen="run" icon={ICONS.layers} title="Stages" summary={`${plural(stages.length, "stage", "stages")} · ${running} running`}>
+    <FoldSection id="stages" screen="run" icon="layers" title="Stages" summary={`${plural(stages.length, "stage", "stages")} · ${running} running`}>
       {note}
       <p className="sp-intro">
         {plural(stages.length, "stage", "stages")}, in order, each with its {w.groups} in the order {engine} first reported
         them. Open a stage to see its {w.groups}. A stage declared in <span className="sp-mono">spectio.yml</span> shows
         Declared; a detected one shows Detected and is for display only.{" "}
         <button type="button" className="sp-link-button" onClick={onTasks}>
-          All {w.units} <Icon path={ICONS.arrowRight} size={13} />
+          All {w.units} <Icon name="arrowRight" />
         </button>
       </p>
       {stages.map((stage) => {
@@ -297,12 +372,12 @@ function StagesOrProcesses({
                 {done} of {all} {w.units}
               </span>
               <span className="sp-chev">
-                <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+                <Icon name="chevronDown" />
               </span>
             </summary>
             <p className="sp-link-end">
               <button type="button" className="sp-link-button" aria-label={`Open stage ${stage.name ?? stage.id}`} onClick={() => onOpen({ kind: "stage", id: stage.id })}>
-                Stage details <Icon path={ICONS.arrowRight} size={13} />
+                Stage details <Icon name="arrowRight" />
               </button>
             </p>
             <ProcessTable processes={mine} ended={ended} open={open} label={`${w.Groups} of ${stage.name ?? stage.id}`} w={w} onOpen={onOpen} />
@@ -316,7 +391,7 @@ function StagesOrProcesses({
               <strong>Not in a stage</strong>
             </span>
             <span className="sp-chev">
-              <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+              <Icon name="chevronDown" />
             </span>
           </summary>
           <ProcessTable processes={loose} ended={ended} open={open} label={`${w.Groups} not in a stage`} w={w} onOpen={onOpen} />
@@ -348,9 +423,9 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
       let cursor: string | null = null;
       for (let n = 0; n < 5; n += 1) {
         const page = await listTasks(run.id, { state: "failed", limit: 50, cursor }, controller.signal);
-        const found = page.items?.find((t) => t.id === culpritId);
+        const found = page.items.find((t) => t.id === culpritId);
         if (found) return setCulprit(found);
-        cursor = page.next ?? null;
+        cursor = page.next;
         if (!cursor) return;
       }
     };
@@ -360,11 +435,11 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
   const failed = run.summary.tasks.failed;
   const headline = failed > 0 ? `${plural(failed, unit, units)} failed, and the run stopped` : kind ? `The run stopped: ${classWord(kind)}` : "The run stopped";
   return (
-    <FoldSection id="why" screen="run" icon={ICONS.alert} title="Why it failed" summary={kind ? classWord(kind) : undefined}>
+    <FoldSection id="why" screen="run" icon="alert" title="Why it failed" summary={kind ? classWord(kind) : undefined}>
       {failed > 0 && (
         <p className="sp-link-end">
           <button type="button" className="sp-link-button" onClick={onTasks}>
-            {Units}, filtered to Failed <Icon path={ICONS.arrowRight} size={13} />
+            {Units}, filtered to Failed <Icon name="arrowRight" />
           </button>
         </p>
       )}
@@ -390,7 +465,7 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
                   aria-label={`Open ${w.group} ${culprit.process}`}
                   onClick={() => onOpen({ kind: "process", name: culprit.process })}
                 >
-                  {w.Group} {lastSegment(culprit.process)} <Icon path={ICONS.arrowRight} size={13} />
+                  {w.Group} {lastSegment(culprit.process)} <Icon name="arrowRight" />
                 </button>
               </>
             )}
@@ -419,7 +494,7 @@ function HeadByHand({ run, server }: { run: RunDetail; server: ServerVersion | n
   if (local ? pid === undefined : !HOST_NAME.test(head.node) || !SESSION_NAME.test(session)) return null;
   const commands = local ? `ps -o pid,etime,args --sid ${pid}` : `ssh -- '${head.node}'\ntmux attach -t '=${session}'`;
   return (
-    <FoldSection id="attach" screen="run" icon={ICONS.terminal} title="Open the head by hand" summary={local ? `process ${pid}` : `tmux on ${head.node}`} card>
+    <FoldSection id="attach" screen="run" icon="terminal" title="Open the head by hand" summary={local ? `process ${pid}` : `tmux on ${head.node}`} card>
       <p className="sp-muted">
         {local
           ? `The engine runs as process ${pid}, in its own session on ${head.node}, with no terminal to attach to. To see it and what it started:`
@@ -431,24 +506,27 @@ function HeadByHand({ run, server }: { run: RunDetail; server: ServerVersion | n
   );
 }
 
-/** The last lines of a log, read once when the section opens. */
-function LogTail({ id, source, ended, onAll }: { id: string; source: LogSource; ended: boolean; onAll: (s: LogSource) => void }) {
+/** The last lines of a log, read when the section opens and again on each frame of an active run. */
+function LogTail({ id, source, ended, onAll, openerRef }: { id: string; source: LogSource; ended: boolean; onAll: (s: LogSource) => void; openerRef: Ref<HTMLButtonElement> }) {
   const [text, setText] = useState<string | null>(null);
+  const [frames, setFrames] = useState(0); // read again on each frame while the run is active (FU-P3-80)
+  useFrames(() => setFrames((n) => n + 1), id, !ended);
   useEffect(() => {
     const controller = new AbortController();
     getLog(id, source, controller.signal)
       .then((t) => setText(t.trimEnd().split("\n").slice(-6).join("\n") || (ended ? "Empty." : "Empty so far.")))
       .catch((e: ApiError) => controller.signal.aborted || setText(e.status === 404 ? "Not written yet." : `Could not read it: ${e.message}`));
     return () => controller.abort();
-  }, [id, source, ended]);
+  }, [id, source, ended, frames]);
   const label = LOGS.find((l) => l.source === source)!.label;
   return (
     <>
-      <pre className="sp-code sp-log-tail sp-nowrap" tabIndex={0} aria-label={`${label}, last lines`}>
+      {/* a click on the lines opens the full log too, not a text selection; the button below is the keyboard's way (FU-P3-88a) */}
+      <pre className="sp-code sp-log-tail sp-nowrap" data-opens tabIndex={0} aria-label={`${label}, last lines`} onClick={() => { if (!window.getSelection()?.toString()) onAll(source); }}>
         {text === null ? "Loading…" : <LogLines text={text} />}
       </pre>
-      <button type="button" className="sp-link-button" onClick={() => onAll(source)}>
-        All logs: head output, head errors, engine log <Icon path={ICONS.arrowRight} size={13} />
+      <button ref={openerRef} type="button" className="sp-link-button" onClick={() => onAll(source)}>
+        Open the full {label.toLowerCase()} <Icon name="arrowRight" />
       </button>
     </>
   );
@@ -471,27 +549,27 @@ function ParamsList({ params }: { params: RunDetail["params"] }) {
 
 /** The Summary's aside (LiteRunDetail, LiteRunFailed; UX-PAR-23): the parts the 0.0.1 API serves.
  * Results and reports come with P1 Task 31. */
-function SummaryAside({ run, server, onLogs }: { run: RunDetail; server: ServerVersion | null; onLogs: (s: LogSource) => void }) {
+function SummaryAside({ run, server, onLogs, logOpener }: { run: RunDetail; server: ServerVersion | null; onLogs: (s: LogSource) => void; logOpener: Ref<HTMLButtonElement> }) {
   const head = run.head;
-  const failed = run.state === "failed";
+  const errs = run.state === "failed" && run.head_logs.includes("head-err"); // FU-P3-124
   const params = Object.keys(run.params).length;
   return (
     <aside className="sp-aside" aria-label="About this run">
       {head?.alive && head.session && run.origin !== "cli-observed" && <HeadByHand run={run} server={server} />}
       <FoldSection
-        id={failed ? "head-err" : "engine-log"}
+        id={errs ? "head-err" : "engine-log"}
         screen="run"
-        icon={ICONS.file}
-        title={failed ? "Head errors · last lines" : "Engine log · last lines"}
+        icon="file"
+        title={errs ? "Head errors · last lines" : "Engine log · last lines"}
         card
       >
-        <LogTail id={run.id} source={failed ? "head-err" : "engine"} ended={isTerminal(run.state)} onAll={onLogs} />
+        <LogTail id={run.id} source={errs ? "head-err" : "engine"} ended={isTerminal(run.state)} onAll={onLogs} openerRef={logOpener} />
       </FoldSection>
       {head && !head.alive && run.origin !== "cli-observed" && (
         <FoldSection
           id="head-ended"
           screen="run"
-          icon={ICONS.power}
+          icon="power"
           title="The head has ended"
           summary={head.exit_code != null ? `exit ${head.exit_code}` : undefined}
           defaultOpen={false}
@@ -504,7 +582,7 @@ function SummaryAside({ run, server, onLogs }: { run: RunDetail; server: ServerV
         </FoldSection>
       )}
       {run.origin !== "cli-observed" && <ResultsSection run={run} />}
-      <FoldSection id="params" screen="run" icon={ICONS.sliders} title="Parameters" summary={`${params} set at launch`} defaultOpen={false} card>
+      <FoldSection id="params" screen="run" icon="sliders" title="Parameters" summary={`${params} set at launch`} defaultOpen={false} card>
         <ParamsList params={run.params} />
       </FoldSection>
     </aside>
@@ -519,8 +597,6 @@ const TASK_FILTERS: { label: string; states: string[] | null }[] = [
   { label: "Succeeded", states: ["succeeded"] },
   { label: "Failed", states: ["failed"] },
 ];
-
-type Shown = { rows: Task[]; next: string | null };
 
 const EFF_SOURCE = "From sacct when the job has ended; before that from the engine's trace or benchmark";
 
@@ -591,21 +667,13 @@ function FilesButton({ task, onOpen, wide = false }: { task: Task; onOpen: (d: D
       size={wide ? "md" : "xs"}
       fullWidth={wide}
       className={wide ? "sp-files-button" : undefined}
-      leftSection={<Icon path={ICONS.file} size={14} />}
+      leftSection={<Icon name="file" size="button" />}
       aria-label={`Files of ${taskLabel(task)}${attempt}`}
       onClick={() => onOpen({ kind: "task", task })}
     >
       Files
     </Button>
   );
-}
-
-/** A refresh: the fresh first page, then the rows Load more added past it, and their cursor. */
-function refresh(shown: Shown | null, page: Page<Task>): Shown {
-  const fresh = page.items ?? [];
-  const last = fresh[fresh.length - 1];
-  const tail = shown && last && page.next ? shown.rows.filter((t) => t.id > last.id) : [];
-  return tail.length ? { rows: [...fresh, ...tail], next: shown!.next } : { rows: fresh, next: page.next ?? null };
 }
 
 function TasksPanel({
@@ -668,11 +736,54 @@ function TasksPanel({
   const counts = process ? (processes.find((p) => p.process === process)?.counts ?? {}) : run.task_counts;
   const count = (states: string[] | null) => (states ? sum(counts, ...states) : total(counts));
   const tasks = shown?.rows ?? null;
-  const tabs = <ViewTabs view={view} setView={setView} w={w} />;
+  // one toolbar for both views (ui-spec §12.6), the view tabs first so they keep focus on a switch
+  const toolbar = (
+    <Toolbar
+      label={`${w.Units} tools`}
+      filters={
+        <>
+          <ViewTabs view={view} setView={setView} w={w} />
+          {view === "list" && (
+            <>
+              <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
+                {TASK_FILTERS.map((f, i) => (
+                  <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
+                    {f.label}
+                    <span className="sp-count">{count(f.states)}</span>
+                  </button>
+                ))}
+              </div>
+              <Select
+                size="sm"
+                className="sp-task-group"
+                aria-label={w.Group}
+                allowDeselect={false}
+                value={process}
+                onChange={(value) => setProcess(value ?? "")}
+                data={[
+                  { value: "", label: `All ${w.groups} (${processes.length})` },
+                  ...processes.map((p) => ({ value: p.process, label: `${lastSegment(p.process)} (${total(p.counts)})` })),
+                  ...(process && !processes.some((p) => p.process === process) ? [{ value: process, label: lastSegment(process) }] : []),
+                ]}
+              />
+            </>
+          )}
+        </>
+      }
+      caption={
+        view === "list" && (
+          <>
+            In the order {engineName(run.workflow.engine)} first reported them
+            {active && <LiveStatus />}
+          </>
+        )
+      }
+    />
+  );
   if (view === "process") {
     return (
       <section className="sp-runs" aria-label={w.Units}>
-        {tabs}
+        {toolbar}
         <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" hidden />
         <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process">
           <ByProcess
@@ -689,37 +800,9 @@ function TasksPanel({
   }
   return (
     <section className="sp-runs" aria-label={w.Units}>
-      {tabs}
+      {toolbar}
       <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process" hidden />
       <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" className="sp-runs">
-        <div className="sp-filters">
-          <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
-            {TASK_FILTERS.map((f, i) => (
-              <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
-                {f.label}
-                <span className="sp-count">{count(f.states)}</span>
-              </button>
-            ))}
-          </div>
-          <label className="sp-select">
-            {w.Group}{" "}
-            <select value={process} onChange={(e) => setProcess(e.currentTarget.value)}>
-              <option value="">
-                All {w.groups} ({processes.length})
-              </option>
-              {processes.map((p) => (
-                <option key={p.process} value={p.process}>
-                  {lastSegment(p.process)} ({total(p.counts)})
-                </option>
-              ))}
-              {process && !processes.some((p) => p.process === process) && <option value={process}>{lastSegment(process)}</option>}
-            </select>
-          </label>
-        </div>
-        <p className="sp-sub">
-          <span>In the order {engineName(run.workflow.engine)} first reported them</span>
-          {active && <LiveStatus />}
-        </p>
         {error && <p role="alert">The {w.units} could not be read: {error}</p>}
         {tasks === null && !error && <p className="sp-muted">Loading the {w.units}…</p>}
         {tasks?.length === 0 && <p className="sp-empty">No {w.unit} matches these filters.</p>}
@@ -855,27 +938,37 @@ function logFile(run: RunDetail, server: ServerVersion | null, source: LogSource
 function LogsPanel({
   run,
   server,
-  source,
+  source: asked,
   setSource,
   onTasks,
+  onBack,
 }: {
   run: RunDetail;
   server: ServerVersion | null;
   source: LogSource;
   setSource: (s: LogSource) => void;
   onTasks: () => void;
+  /** Back to Summary, when the Summary's last lines opened Logs (FU-P3-88a) */
+  onBack?: () => void;
 }) {
+  const sources = logsOf(run);
+  const source = sources.some((l) => l.source === asked) ? asked : "engine";
   const [text, setText] = useState<string | null>(null);
+  // a read that did not give the text: "missing" (404, not written yet) or the error's message
+  const [failure, setFailure] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
+  const [said, copy] = useCopyStatus();
   const w = words(run.workflow.engine);
   useEffect(() => {
     const controller = new AbortController();
     setText(null);
+    setFailure(null);
     getLog(run.id, source, controller.signal)
       .then(setText)
-      .catch((e: ApiError) => controller.signal.aborted || setText(e.status === 404 ? "Not written yet." : `Could not read it: ${e.message}`));
+      .catch((e: ApiError) => controller.signal.aborted || setFailure(e.status === 404 ? "missing" : e.message));
     return () => controller.abort();
   }, [run.id, source, reloads]);
+  const reload = () => setReloads((n) => n + 1);
   const label = LOGS.find((l) => l.source === source)!.label;
   const file = logFile(run, server, source);
   const download = () => {
@@ -891,36 +984,11 @@ function LogsPanel({
   };
   return (
     <section className="sp-runs sp-logs" aria-label="Logs">
-      <div className="sp-filters sp-log-tools">
-        <div className="sp-segments" role="group" aria-label="Log">
-          {LOGS.map((l) => (
-            <button key={l.source} type="button" aria-pressed={source === l.source} onClick={() => setSource(l.source)}>
-              {l.label}
-            </button>
-          ))}
-        </div>
-        <span className="sp-muted sp-grow">
-          {DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it
-        </span>
-        <span className="sp-actions">
-          <Button variant="default" leftSection={<Icon path={ICONS.reload} size={15} />} onClick={() => setReloads((n) => n + 1)}>
-            Reload
-          </Button>
-          <Button variant="default" leftSection={<Icon path={ICONS.download} size={15} />} onClick={download} disabled={text === null}>
-            Download last 64 KiB
-          </Button>
-          <Button
-            component="a"
-            variant="default"
-            href={logUrl(run.id, source)}
-            target="_blank"
-            rel="noopener noreferrer"
-            leftSection={<Icon path={ICONS.externalLink} size={15} />}
-          >
-            Open raw<span className="sp-sr"> (opens in a new tab)</span>
-          </Button>
-        </span>
-      </div>
+      {onBack && (
+        <button type="button" className="sp-link-button sp-logs-back" onClick={onBack}>
+          <Icon name="chevronLeft" /> Back to Summary
+        </button>
+      )}
       {file && (
         <div className="sp-log-file">
           <span id="log-file-label" className="sp-muted">
@@ -931,18 +999,87 @@ function LogsPanel({
           <CopyButton text={file.path} label="Copy" name={`Copy the ${label.toLowerCase()} path`} />
         </div>
       )}
-      <LogViewer text={text} label={label} />
+      <LogViewer
+        text={text}
+        label={label}
+        filters={<SegmentedControl size="sm" aria-label="Log" value={source} onChange={(value) => setSource(value as LogSource)} data={sources.map((l) => ({ value: l.source, label: l.label }))} />}
+        actions={
+          <>
+            <ToolButton label="Reload" icon="reload" onClick={reload} />
+            <ToolButton label={`Copy the ${label.toLowerCase()}`} icon="copy" disabled={text === null} onClick={() => copy({ label, what: `the ${label.toLowerCase()}`, text: text ?? "" })} />
+            <ToolButton label="Download last 64 KiB" icon="download" disabled={text === null} onClick={download} />
+            <ToolButton label="Open raw (opens in a new tab)" icon="externalLink" href={logUrl(run.id, source)} />
+          </>
+        }
+        placeholder={
+          failure === "missing" ? (
+            <EmptyState icon="file">This log is not written yet.</EmptyState>
+          ) : failure ? (
+            <ErrorPanel onRetry={reload}>
+              The {label.toLowerCase()} could not be read: {failure}
+            </ErrorPanel>
+          ) : undefined
+        }
+      />
+      <p className="sp-muted sp-log-caption">{DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it <span role="status">{said}</span>
+      </p>
       <p className="sp-log-note">
-        <Icon path={ICONS.file} size={15} stroke={1.6} />
+        <Icon name="file" />
         <span>
           {run.workflow.engine === "snakemake"
             ? "Each job's own log, as its rule declares it, is not in these logs:"
             : "Each task's own files (.command.log, .command.err, .command.sh …) stay in its work directory, not in these logs:"}{" "}
           <button type="button" className="sp-link-button" onClick={onTasks}>
-            open a {w.unit} in {w.Units} <Icon path={ICONS.arrowRight} size={13} />
+            open a {w.unit} in {w.Units} <Icon name="arrowRight" />
           </button>
         </span>
       </p>
+    </section>
+  );
+}
+
+/** The Parameters tab (ui-spec §12.6, §12.7; UI-10): a filter in the toolbar, then the parameters
+ * set at launch in a card, a table on desktop and a list on the phone. */
+function ParamsPanel({ params }: { params: RunDetail["params"] }) {
+  const phone = usePhone();
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(true);
+  const all = Object.entries(params);
+  if (all.length === 0) return <EmptyState icon="sliders">No parameters were set at launch.</EmptyState>;
+  const needle = query.trim().toLowerCase();
+  const shown = all.filter(([key, value]) => !needle || `${key} ${JSON.stringify(value)}`.toLowerCase().includes(needle));
+  return (
+    <section className="sp-runs" aria-label="Parameters">
+      <Toolbar label="Parameters tools" search={<ToolbarSearch label="Filter the parameters" value={query} onChange={setQuery} />} />
+      <div className="sp-card">
+        <CardHead id="run-params" icon="sliders" title="Parameters" meta={needle ? `${shown.length} of ${all.length}` : `${all.length} set at launch`} open={open} onToggle={() => setOpen(!open)} />
+        <div id="run-params-body" hidden={!open}>
+          {shown.length === 0 ? (
+            <EmptyState icon="search">No parameter matches this filter.</EmptyState>
+          ) : phone ? (
+            <ParamsList params={Object.fromEntries(shown)} />
+          ) : (
+            <div className="sp-table-wrap">
+              <table className="sp-table" aria-label="Parameters">
+                <thead>
+                  <tr>
+                    <th scope="col">Parameter</th>
+                    <th scope="col">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map(([key, value]) => (
+                    <tr key={key}>
+                      <td className="sp-mono">{key}</td>
+                      <td>{typeof value === "string" ? value : JSON.stringify(value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
@@ -974,7 +1111,7 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
   const running = sum(run.task_counts, "running");
   const pending = sum(run.task_counts, "pending", "submitted");
   return (
-    <Modal opened={opened} onClose={onClose} title="Cancel this run?" returnFocus centered>
+    <Modal opened={opened} onClose={onClose} title="Cancel this run?" returnFocus centered classNames={{ title: "sp-sheet-title" }}>
       <p>
         {local
           ? "Spectio stops its head with signals, and the engine stops its tasks."
@@ -990,16 +1127,32 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
           : "Ctrl-C to the engine in its tmux session, then SIGTERM and SIGKILL after 60 s each."}{" "}
         The run shows Cancelling, then Cancelled.
       </p>
-      <div className="sp-actions">
+      <div className="sp-dialog-foot">
         <Button variant="default" data-autofocus onClick={onClose}>
           Keep running
         </Button>
-        <Button color="red" onClick={onConfirm}>
+        <Button color="failed" onClick={onConfirm}>
           Cancel the run
         </Button>
       </div>
     </Modal>
   );
+}
+
+const FIND_PAGES = 10; // of 200 tasks: the first 2,000 tasks of a run, in ID order
+
+/** One task of the run by its ID, from the run's task listing (no route reads one task alone yet:
+ * `GET /tasks/{id}` is FU-P3-96), so a task past the first 2,000 is not found. */
+export async function findTask(runId: string, taskId: string, signal: AbortSignal): Promise<Task | null> {
+  let cursor: string | null = null;
+  for (let n = 0; n < FIND_PAGES; n += 1) {
+    const page: Page<Task> = await listTasks(runId, { limit: 200, cursor }, signal);
+    const found = page.items.find((t) => t.id === taskId);
+    if (found) return found;
+    cursor = page.next;
+    if (!cursor) return null;
+  }
+  return null;
 }
 
 /** The run detail (ui-spec §4.4, 0.0.1): the shared header with Cancel, the facts and counts, then
@@ -1008,7 +1161,6 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
 export function RunDetailPage({ id }: { id: string }) {
   const valid = RUN_ID.test(id);
   const server = useServer();
-  const phone = usePhone();
   const [run, setRun] = useState<RunDetail | null>(null);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -1019,26 +1171,51 @@ export function RunDetailPage({ id }: { id: string }) {
   // the root route passes unknown keys through, so the page reads the search through runSearch too
   const search = runSearch(useSearch({ from: "/runs/$id" }));
   const navigate = useNavigate({ from: "/runs/$id" });
-  const tab: Tab = search.tab ?? "summary";
+  const graphOn = useFeatures().includes(GRAPH_VIEW);
+  const tab: Tab = search.tab === "graph" && !graphOn ? "summary" : search.tab ?? "summary";
   const logSource = search.source ?? "engine";
-  // the last picked log source, so Logs reopens on it after another tab
+  // the last log source shown, so Logs reopens on it after another tab (also after Back or Forward)
   const lastSource = useRef(logSource);
+  if (tab === "logs") lastSource.current = logSource;
+  // each view is a history entry: Back and Forward step through them (FU-P3-109)
   const go = useCallback(
-    (to: Tab, opts: { source?: LogSource; process?: string } = {}) => {
+    (to: Tab, opts: { source?: LogSource; process?: string; from?: "summary" } = {}) => {
       if (to === "logs") lastSource.current = opts.source ?? lastSource.current;
-      return navigate({ search: runSearch({ tab: to, source: lastSource.current, process: opts.process }), replace: true });
+      return navigate({ search: runSearch({ tab: to, source: lastSource.current, process: opts.process, from: opts.from }) });
     },
     [navigate],
   );
   const [taskFilter, setTaskFilter] = useState<number | null>(null);
   // the detail sheet's views, the shown one last (DetailSheet)
   const [views, setViews] = useState<Detail[]>([]);
+  const [sheetLost, setSheetLost] = useState(false);
+  // &task=&attempt= (back from a Preview of the sheet's Outputs): that task's sheet, on that attempt
+  const { task: openTask, attempt: openAttempt } = search;
+  useEffect(() => {
+    setSheetLost(false);
+    if (!valid || !openTask || !openAttempt) return;
+    const controller = new AbortController();
+    // not found or not read: the page shows without the sheet, and says so
+    findTask(id, openTask, controller.signal)
+      .then((task) => (task ? setViews([{ kind: "task", task, attempt: openAttempt }]) : setSheetLost(true)))
+      .catch(() => controller.signal.aborted || setSheetLost(true));
+    return () => controller.abort();
+  }, [id, valid, openTask, openAttempt]);
+  const closeSheet = () => {
+    setViews([]);
+    if (openTask) navigate({ search: (prev) => runSearch({ ...prev, task: undefined, attempt: undefined }), replace: true });
+  };
   const title = useRef<HTMLHeadingElement>(null);
   const panels = { tasks: useRef<HTMLDivElement>(null), logs: useRef<HTMLDivElement>(null) };
   const focusPanel = useRef(false);
+  // Back to Summary from Logs: focus returns to the last lines' button that opened it (FU-P3-88a)
+  const logOpener = useRef<HTMLButtonElement>(null);
+  const focusOpener = useRef(false);
   useEffect(() => {
     if (focusPanel.current && (tab === "tasks" || tab === "logs")) panels[tab].current?.focus();
+    if (focusOpener.current && tab === "summary") logOpener.current?.focus();
     focusPanel.current = false;
+    focusOpener.current = false;
   }, [tab, logSource, search.process]);
 
   const load = useCallback(() => {
@@ -1054,6 +1231,7 @@ export function RunDetailPage({ id }: { id: string }) {
   }, [id, valid]);
   useEffect(load, [load]);
   useFrames(load, id, valid && !(run && isTerminal(run.state)));
+  useAccountingReads(load, id, !!run && isTerminal(run.state), processes); // sacct lands after the end (FU-P3-119)
 
   const name = run ? runName(run) : null;
   usePageCrumb(name);
@@ -1094,10 +1272,14 @@ export function RunDetailPage({ id }: { id: string }) {
     focusTasks();
     go("tasks");
   };
-  // The Summary's log links open Logs on the same source, with focus on its panel.
+  // The Summary's last lines open Logs on the same source, with focus on its panel and a way back.
   const showLogs = (source: LogSource) => {
     focusPanel.current = true;
-    go("logs", { source });
+    go("logs", { source, from: "summary" });
+  };
+  const backToSummary = () => {
+    focusOpener.current = true;
+    go("summary");
   };
   // The sheet's Open in Tasks: the Tasks tab on that process, every state.
   const showProcess = (process: string) => {
@@ -1107,7 +1289,6 @@ export function RunDetailPage({ id }: { id: string }) {
     go("tasks", { process });
   };
   const w = words(run.workflow.engine);
-  const params = Object.keys(run.params).length;
 
   return (
     <div className="sp-runs">
@@ -1121,7 +1302,10 @@ export function RunDetailPage({ id }: { id: string }) {
         onCancel={() => setAsking(true)}
         cancelError={cancelError}
         onChip={showTasks}
+        onRun={setRun}
+        summaryTab={tab === "summary"}
       />
+      {sheetLost && <p role="status">This job's sheet could not be reopened.</p>}
       <DetailSheet
         run={run}
         stages={stages}
@@ -1129,17 +1313,18 @@ export function RunDetailPage({ id }: { id: string }) {
         views={views}
         onOpen={(view) => setViews((shown) => [...shown, view])}
         onBack={() => setViews((shown) => shown.slice(0, -1))}
-        onClose={() => setViews([])}
+        onClose={closeSheet}
         onTasks={showProcess}
       />
       <CancelDialog run={run} server={server} opened={asking} onClose={() => setAsking(false)} onConfirm={confirm} />
 
-      <Tabs value={tab} onChange={(t) => go(TABS.find((x) => x === t) ?? "summary")} keepMounted={false}>
+      <Tabs className="sp-run-tabs" value={tab} onChange={(t) => go(TABS.find((x) => x === t) ?? "summary")} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
           <Tabs.Tab value="tasks">{w.Units}</Tabs.Tab>
           <Tabs.Tab value="parameters">Parameters</Tabs.Tab>
           <Tabs.Tab value="logs">Logs</Tabs.Tab>
+          {graphOn && <Tabs.Tab value="graph">Graph</Tabs.Tab>}
         </Tabs.List>
         <Tabs.Panel value="summary" pt="md">
           <div className="sp-detail-grid">
@@ -1147,7 +1332,7 @@ export function RunDetailPage({ id }: { id: string }) {
               {run.state === "failed" && <WhyItFailed run={run} processes={processes} onTasks={() => showTasks("Failed")} onOpen={(view) => setViews([view])} />}
               <StagesOrProcesses run={run} stages={stages} processes={processes} onTasks={() => go("tasks")} onOpen={(view) => setViews([view])} />
             </div>
-            <SummaryAside run={run} server={server} onLogs={showLogs} />
+            <SummaryAside run={run} server={server} onLogs={showLogs} logOpener={logOpener} />
           </div>
         </Tabs.Panel>
         <Tabs.Panel value="tasks" pt="md" ref={panels.tasks} tabIndex={-1}>
@@ -1162,36 +1347,31 @@ export function RunDetailPage({ id }: { id: string }) {
           />
         </Tabs.Panel>
         <Tabs.Panel value="parameters" pt="md">
-          {params === 0 ? (
-            <p className="sp-empty">No parameters were set at launch.</p>
-          ) : phone ? (
-            <div className="sp-card">
-              <ParamsList params={run.params} />
-            </div>
-          ) : (
-            <div className="sp-table-wrap">
-              <table className="sp-table" aria-label="Parameters">
-                <thead>
-                  <tr>
-                    <th scope="col">Parameter</th>
-                    <th scope="col">Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(run.params).map(([key, value]) => (
-                    <tr key={key}>
-                      <td className="sp-mono">{key}</td>
-                      <td>{typeof value === "string" ? value : JSON.stringify(value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <ParamsPanel params={run.params} />
         </Tabs.Panel>
         <Tabs.Panel value="logs" pt="md" ref={panels.logs} tabIndex={-1}>
-          <LogsPanel run={run} server={server} source={logSource} setSource={(source) => go("logs", { source })} onTasks={() => go("tasks")} />
+          <LogsPanel
+            run={run}
+            server={server}
+            source={logSource}
+            setSource={(source) => go("logs", { source, from: search.from })}
+            onTasks={() => go("tasks")}
+            onBack={search.from ? backToSummary : undefined}
+          />
         </Tabs.Panel>
+        {graphOn && (
+          <Tabs.Panel value="graph" pt="md">
+            <Suspense fallback={<p className="sp-muted">Loading the graph…</p>}>
+              <GraphPanel
+                run={run}
+                search={graphSearch(search)}
+                onSearch={(graph) => navigate({ search: runSearch({ tab: "graph", ...graph }), resetScroll: false })}
+                onOpen={(view) => setViews([view])}
+                onTasks={showProcess}
+              />
+            </Suspense>
+          </Tabs.Panel>
+        )}
       </Tabs>
     </div>
   );

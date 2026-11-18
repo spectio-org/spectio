@@ -67,7 +67,7 @@ exclude = ['/hatch_build\.py$']
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
-testpaths = ["packages"]
+testpaths = ["packages", "tests/pipelines/synthetic"]  # the second: synth.py and the golden fixtures
 # Engine tests need Java and a real engine: `pytest -m engines` runs them (a later -m wins).
 addopts = ["--import-mode=importlib", "-m", "not engines"]
 markers = [

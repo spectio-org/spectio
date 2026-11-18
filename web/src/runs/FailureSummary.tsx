@@ -1,7 +1,7 @@
 import { Button } from "@mantine/core";
 import type { ReactNode } from "react";
 import type { Failure, Process, RunDetail, Scheduler, Task } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { useServer } from "../server";
 import { CopyButton } from "./CopyMenu";
 import type { Detail } from "./DetailSheet";
@@ -110,7 +110,7 @@ function FailureCard({ run, failure, processes, slurm, onOpen }: { run: RunDetai
         </pre>
       )}
       <div className="sp-failure-actions">
-        <Button variant="default" size="xs" leftSection={<Icon path={ICONS.file} size={14} />} aria-label={`Open the job files of ${name}`} onClick={() => onOpen({ kind: "task", task })}>
+        <Button variant="default" size="xs" leftSection={<Icon name="file" size="button" />} aria-label={`Open the job files of ${name}`} onClick={() => onOpen({ kind: "task", task })}>
           Open job files
         </Button>
         {failure.work_dir && (

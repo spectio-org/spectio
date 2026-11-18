@@ -3,7 +3,7 @@
 // be the schema's properties, so a field added to or dropped from a response model fails here.
 import { expect, test } from "vitest";
 import snapshot from "../../packages/spectio-server/openapi/0.0.1.json";
-import type { CodeLoading, Efficiency, EngineSettings, Failure, LaunchTemplate, Process, ProcessEfficiency, ResultEntry, ResultReport, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Slurm, SlurmAllocated, SlurmRequest, Stage, Task, TaskFile, TaskFiles, TaskOutput } from "./api";
+import type { RunEnvironment, CodeLoading, Efficiency, EngineSettings, Failure, LaunchTemplate, Me, Notification, Notifications, Process, ProcessEfficiency, ResultEntry, ResultReport, ResultStat, Results, Resources, Run, RunConfigFile, RunDefaultResources, RunDetail, Scheduler, ServerVersion, Slurm, SlurmAllocated, SlurmRequest, Stage, Task, TaskFile, TaskFiles, TaskOutput } from "./api";
 
 const schemas = snapshot.components.schemas as unknown as Record<
   string,
@@ -20,6 +20,26 @@ const run = {
   ended_at: null,
   workflow: { engine: null, engine_version: null, location: "", name: null, version: null },
   profiles: [],
+  target: {
+    kind: "module",
+    name: "nf-core/fastqc",
+    version: "0.0.0-6d1763b",
+    hash: null,
+    source: "registry",
+    path: null,
+    flag: null,
+    more: 0,
+    checksum_changed: null,
+  },
+  environment: {
+    name: "slurm",
+    label: "SLURM (from spectio init)",
+    executor: "slurm",
+    slurm: { partition: "htc", account: null, time_min: null, mem_mib: null },
+    local: { cpus: null, mem_mib: null },
+    state: "recorded",
+  },
+  pinned: false,
   failure: null,
   head: { session: null, node: "", alive: false, exit_code: null, checked: true },
   task_counts: {},
@@ -31,6 +51,12 @@ const run = {
     dag_updates: 0,
   },
 } satisfies Run;
+
+const me = {
+  principal: { user: "", uid: 0 },
+  session: { started_at: null, expires_at: null },
+  paths: { config_file: "", data_dir: "", db_dir: "", observed_dir: "" },
+} satisfies Me;
 
 const scheduler = {
   state: null,
@@ -107,6 +133,7 @@ const efficiency = {
 const processEfficiency = {
   jobs: { done: 1, total: 2 },
   measured: 1,
+  pending_accounting: 0,
   cpu_mean: 0.4,
   cpu_max: 0.4,
   mem_mean: null,
@@ -146,10 +173,23 @@ const SAMPLES: Record<string, object> = {
     actions: { resume: { allowed: false, reason: "running" } },
     results_dir: null,
     engine_settings: engineSettings,
+    default_resources: null,
+    config_file: null,
+    head_logs: ["head-out", "head-err"],
   } satisfies RunDetail,
+  RunDefaultResources: { cpus: null, mem_mib: null, time_min: null, state: "recorded" } satisfies RunDefaultResources,
+  RunConfigFile: {
+    path: null,
+    kept_as: null,
+    sha256: null,
+    size: null,
+    includes: null,
+    state: "recorded",
+  } satisfies RunConfigFile,
   ResultEntry: { name: "", type: "file", size: null, mtime: null } satisfies ResultEntry,
   ResultReport: { path: "", title: "", group: null } satisfies ResultReport,
   Results: { root: "", path: "", exists: true, entries: [], truncated: false, reports: [] } satisfies Results,
+  ResultStat: { root: "", path: "", name: "", type: "file", size: null, mtime: null } satisfies ResultStat,
   CodeLoading: { field: "", value: "", writable_by_others: false } satisfies CodeLoading,
   LaunchTemplate: {
     workflow: { location: "", revision: null, engine: "nextflow" },
@@ -157,16 +197,39 @@ const SAMPLES: Record<string, object> = {
     params: {},
     non_default: [],
     code_loading: [],
+    environment: "local",
+    environment_notice: null,
+    target: null,
+    default_resources: null,
+    config_file: null,
   } satisfies LaunchTemplate,
   TemplateWorkflow: { location: "", revision: null, engine: "nextflow" },
   Failure: failure,
   Scheduler: scheduler,
   Resources: resources,
   WorkflowRef: run.workflow,
+  RunEnvironment: run.environment satisfies RunEnvironment,
+  EnvironmentSlurm: run.environment.slurm,
+  EnvironmentLocal: run.environment.local,
   Head: run.head,
   RunSummary: run.summary,
   TaskSummary: run.summary.tasks,
-  ServerVersion: { version: "", node: "", runs_root: "", account: "", executor: "" } satisfies ServerVersion,
+  ServerVersion: {
+    version: "",
+    node: "",
+    runs_root: "",
+    account: "",
+    executor: "",
+    features: { single_target: false },
+  } satisfies ServerVersion,
+  Features: { single_target: false },
+  RunTarget: run.target,
+  Me: me,
+  Notification: { id: "", kind: "run_failed", run_id: "", run_name: null, engine: null, at: "", read: false } satisfies Notification,
+  Notifications: { items: [], unread: 0, read_up_to: null } satisfies Notifications,
+  Principal: me.principal,
+  MeSession: me.session,
+  MePaths: me.paths,
   Process: {
     process: "",
     stage_id: null,
@@ -176,6 +239,7 @@ const SAMPLES: Record<string, object> = {
     is_checkpoint: false,
     lower_bound: true,
     efficiency: processEfficiency,
+    pipeline_order: 0,
   } satisfies Process,
   Stage: { id: "", position: 0, name: null, source: "detected", state: "running", task_counts: {} } satisfies Stage,
   Task: {

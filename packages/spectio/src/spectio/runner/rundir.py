@@ -23,6 +23,7 @@ from typing import Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue
 
 from spectio.fsmodes import write_file as write_file  # its home before P1 Task 15
+from spectio_sdk.targets import RunTarget
 
 RUN_ID = re.compile(r"run_[0-7][0-9A-HJKMNP-TV-Z]{25}")  # a ULID with its prefix (api §7)
 MAX_SMALL_FILE = 1048576  # a manifest, PID, exit or marker file is never larger
@@ -69,6 +70,16 @@ class RunManifest(BaseModel):
     created_at: AwareDatetime
     # A Resume's parent (P1 Task 30): the child runs in its lineage's directories
     parent_run_id: str | None = Field(None, pattern=rf"^{RUN_ID.pattern}$")
+    # The run's environment as resolved at launch (FU-P3-86a, api §5.4): read at rebuild with
+    # the validators of `spectio.environments`, so a bad one makes it `not_readable`, not the
+    # run unreadable; none before FU-P3-86 (`not_recorded`).
+    environment: dict[str, JsonValue] | None = None
+    # One module or one rule (api §5.10, #161); None: the whole pipeline.
+    target: RunTarget | None = None
+    # The launch's `default_resources` and `config_file` (FU-P3-110a, api §5.7): read at rebuild
+    # with the routes' validators, so a bad one is `not_readable` for that field only.
+    default_resources: dict[str, JsonValue] | None = None
+    config_file: dict[str, JsonValue] | None = None
 
 
 def run_paths(runs_root: Path, run_id: str) -> RunPaths:

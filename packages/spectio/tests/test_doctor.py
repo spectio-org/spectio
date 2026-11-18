@@ -391,3 +391,39 @@ def test_doctor_reports_runs_disk(
         f"warn runs_disk {runs} (not created yet, measured at {home}) is on a nearly full file "
         f"system (30.0 GiB free, 97% used): {FIX}"
     )
+
+
+def test_req18_file_doctor_prints_path_state_default(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """FU-P3-86b: the environments file's path, state and default (SEC-PRE-FU86-R1-10); a file
+    that cannot be used is a warning, never a failure: launches with a built-in still work."""
+    settings = configured(home, executor="local")
+    path = home / ".spectio" / "environments.toml"
+    assert line(doctor(capsys, settings)[1], "environments") == (
+        f"ok environments {path}: missing, default local"
+    )
+    path.write_text('default = "small"\n[environments.small]\nexecutor = "local"\n')
+    path.chmod(0o600)
+    assert line(doctor(capsys, settings)[1], "environments") == (
+        f"ok environments {path}: ok, default small"
+    )
+    path.chmod(0o666)
+    found = line(doctor(capsys, settings)[1], "environments")
+    assert found.startswith(f"warn environments {path}: refused (") and "default local" in found
+
+
+def test_req18_catalog_file_doctor_prints_path_state(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """FU-P3-87a (api §5.6): the catalog file's path and state; a bad value written by hand is
+    `invalid`, a warning, never a crash, and its detail never quotes the value."""
+    settings = configured(home, executor="local")
+    path = home / ".spectio" / "catalog.toml"
+    assert line(doctor(capsys, settings)[1], "catalog") == f"ok catalog {path}: missing"
+    path.write_text('[pipelines.x]\nengine = "nextflow"\nlocation = "/srv/x"\n')
+    path.chmod(0o600)
+    assert line(doctor(capsys, settings)[1], "catalog") == f"ok catalog {path}: ok"
+    path.write_text('[pipelines.x]\nengine = "nextflow"\nlocation = "http://h/SECRET"\n')
+    found = line(doctor(capsys, settings)[1], "catalog")
+    assert found.startswith(f"warn catalog {path}: invalid (") and "SECRET" not in found

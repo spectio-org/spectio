@@ -57,35 +57,53 @@ def init_store(db_dir: Path, *, user: str, kind: str, config: dict[str, Any], ve
 def ensure_tenancy(
     conn: Connection, user: str, kind: str, config: dict[str, Any], version: str
 ) -> bool:
-    env_id = conn.execute(
-        select(environments.c.id).order_by(environments.c.created_at).limit(1)
-    ).scalar()
-    if env_id is not None:
+    """The rows of a new install; then, at each start, the server's built-in environment row,
+    found by its name (`kind`, the built-in of the server's kind), never "the oldest row": a
+    re-init to the other kind adds that one's row and changes no other (FU-P3-86a). No run reads
+    these rows for its executor: its own `runs.environment` does (api §5.4)."""
+    found = conn.execute(select(environments.c.id).where(environments.c.name == kind)).scalar()
+    if found is not None:
         conn.execute(
-            update(environments).where(environments.c.id == env_id).values(kind=kind, config=config)
+            update(environments).where(environments.c.id == found).values(kind=kind, config=config)
         )
         return False
     now = datetime.now(UTC)
-    usr, grp, env = new_id("usr"), new_id("grp"), new_id("env")
-    # The first principal names itself as creator; there is no `system` row to name.
-    conn.execute(
-        insert(principals).values(
-            id=usr, kind="user", display_name=user, created_at=now, created_by=usr
+    tenancy = conn.execute(
+        select(projects.c.owning_group_id, projects.c.created_by).order_by(projects.c.created_at)
+    ).first()
+    if tenancy is None:
+        usr, grp = new_id("usr"), new_id("grp")
+        # The first principal names itself as creator; there is no `system` row to name.
+        conn.execute(
+            insert(principals).values(
+                id=usr, kind="user", display_name=user, created_at=now, created_by=usr
+            )
         )
-    )
+        conn.execute(
+            insert(projects).values(
+                id=new_id("prj"),
+                owning_group_id=grp,
+                name="default",
+                created_at=now,
+                created_by=usr,
+            )
+        )
+    else:  # the tenancy exists: only this built-in's row is new
+        grp, usr = tenancy
     mine = {"created_at": now, "created_by": usr}
+    env = new_id("env")
     conn.execute(
-        insert(projects).values(id=new_id("prj"), owning_group_id=grp, name="default", **mine)
-    )
-    conn.execute(
-        insert(environments).values(id=env, owning_group_id=grp, kind=kind, config=config, **mine)
-    )
-    conn.execute(
-        insert(runners).values(
-            id=new_id("rnr"), environment_id=env, principal_id=usr, version=version, **mine
+        insert(environments).values(
+            id=env, owning_group_id=grp, name=kind, kind=kind, config=config, **mine
         )
     )
-    return True
+    if tenancy is None:
+        conn.execute(
+            insert(runners).values(
+                id=new_id("rnr"), environment_id=env, principal_id=usr, version=version, **mine
+            )
+        )
+    return tenancy is None
 
 
 def db_checks(

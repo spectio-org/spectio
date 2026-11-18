@@ -8,8 +8,11 @@
 - `POST /api/v1/auth/links` (`Authorization: Bearer <server key>`): a new link, for
   `spectio login --print-link`. The key gives a link, never a session.
 
-All four answer `Cache-Control: no-store`, `Referrer-Policy: no-referrer` and a CSP of this
-origin only. The session middleware lets these four through (`middleware.EXEMPT`).
+- `POST /api/v1/auth/session:sign-out`: revokes this session and clears its cookie (204); behind
+  the session, with the Origin of every write (the Profile page, FU-P3-112).
+
+All five answer `Cache-Control: no-store`, `Referrer-Policy: no-referrer` and a CSP of this
+origin only. The session middleware lets the first four through (`middleware.EXEMPT`).
 """
 
 from pathlib import Path
@@ -98,3 +101,12 @@ def new_link(request: Request) -> Response:
         return _refused("unauthenticated", "Server key required", "Send the server key.")
     url = link_url(state.settings.port, state.tickets.mint())
     return JSONResponse({"url": url}, headers=HEADERS)
+
+
+@router.post("/auth/session:sign-out", status_code=204, response_class=Response)
+def sign_out(request: Request) -> Response:
+    name = cookie_name(request.headers.get("host"))
+    request.app.state.sessions.revoke(request.cookies.get(name, ""))
+    answer = Response(status_code=204, headers=HEADERS)
+    answer.delete_cookie(name, httponly=True, samesite="strict", path="/")
+    return answer

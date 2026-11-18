@@ -45,12 +45,28 @@ MODELS = {
     ("/api/v1/runs", "get", "200"): "RunList",
     ("/api/v1/runs/{run_id}", "get", "200"): "RunDetail",
     ("/api/v1/runs/{run_id}:cancel", "post", "202"): "RunDetail",
+    ("/api/v1/environments", "get", "200"): "EnvironmentList",  # FU-P3-86d
+    ("/api/v1/environments/{name}", "get", "200"): "EnvironmentItem",
+    ("/api/v1/environments", "post", "201"): "EnvironmentItem",
+    ("/api/v1/environments/{name}", "put", "200"): "EnvironmentItem",
+    ("/api/v1/catalog", "get", "200"): "CatalogList",  # FU-P3-87b
+    ("/api/v1/catalog/{name}", "get", "200"): "CatalogItem",
+    ("/api/v1/catalog", "post", "201"): "CatalogItem",
+    ("/api/v1/catalog/{name}", "put", "200"): "CatalogItem",
     ("/api/v1/runs:summary", "get", "200"): "Summary",
     ("/api/v1/version", "get", "200"): "ServerVersion",
+    ("/api/v1/me", "get", "200"): "Me",  # FU-P3-112
     ("/api/v1/runs/{run_id}/processes", "get", "200"): "ProcessList",
     ("/api/v1/runs/{run_id}/stages", "get", "200"): "StageList",
     ("/api/v1/runs/{run_id}/tasks", "get", "200"): "TaskList",
     ("/api/v1/tasks/{task_id}/attempts/{n}/files", "get", "200"): "TaskFiles",
+    ("/api/v1/runs/{run_id}/results/stat/{path}", "get", "200"): "ResultStat",
+    ("/api/v1/tasks/{task_id}/attempts/{n}/workdir", "get", "200"): "WorkDir",
+    ("/api/v1/tasks/{task_id}/attempts/{n}/workdir/stat/{path}", "get", "200"): "ResultStat",
+    ("/api/v1/features", "get", "200"): "FeatureList",  # issue #160
+    ("/api/v1/runs/{run_id}/graph", "get", "200"): "GraphDocument",
+    ("/api/v1/runs/{run_id}/processes/{name}/outputs", "get", "200"): "ProcessOutputs",
+    ("/api/v1/workflows:graph", "get", "200"): "GraphDocument",
 }
 
 

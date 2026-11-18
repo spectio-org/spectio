@@ -23,3 +23,6 @@ export function resolveTarget(env: NodeJS.ProcessEnv): Target {
   }
   return { url: STATIC_URL, serveStatic: true };
 }
+
+/** Whether a base URL is this machine: specs that write the server's files run only there (SEC-P3FU86F-01). */
+export const isLocal = (url: string): boolean => ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname);

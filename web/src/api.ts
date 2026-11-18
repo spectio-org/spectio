@@ -24,6 +24,19 @@ export interface Inspected {
   schema: JSONSchema | null;
   schema_source: "nextflow_schema.json" | "config.schema.yaml" | "inferred" | "none";
   profiles: string[];
+  /** Asked with `params_file` (api §5.6): every top-level key of the file, or `values: null` and
+   * an `error` in words; what in it, or the file itself, loads code. */
+  params_file: ParamsFile | null;
+  /** Asked with `config_file` and `engine` (FU-P3-121): what Launch would refuse of the extra
+   * config file, in its words, or `error: null`; never the file's bytes (api §5.7). */
+  config_file?: { path: string; error: string | null } | null;
+}
+
+export interface ParamsFile {
+  path: string;
+  values: Record<string, unknown> | null;
+  code_loading: CodeLoading[];
+  error: string | null;
 }
 
 /** The body of `POST /api/v1/runs` (api §5 note of 2026-10-30). */
@@ -31,7 +44,15 @@ export interface LaunchBody {
   workflow: { location: string; revision: string | null; engine: Engine };
   name?: string;
   profiles: string[];
+  /** An environment's name (api §5.4); absent: the server's default. */
+  environment?: string;
   params: Record<string, unknown>;
+  /** One module or one rule (api §5.10, 0.0.2); absent: the whole pipeline. */
+  target?: TargetIn;
+  /** Schema `DefaultResources` (api §5.7): only the keys set; absent changes nothing. */
+  default_resources?: { cpus?: number; mem_mib?: number; time_min?: number };
+  /** The absolute path of an extra config file, read once by the server at this launch (api §5.7). */
+  config_file?: string;
 }
 
 export interface Launched {
@@ -47,6 +68,65 @@ export interface ServerVersion {
   runs_root: string;
   account: string;
   executor: string;
+  /** Feature flags of this server (api §5.10): the launch parts of single targets show only when on. */
+  features: Features;
+}
+
+/** Schema `Features`. */
+export interface Features {
+  single_target: boolean;
+}
+
+/** Schema `RunTarget` (api §5.10): what a run was limited to; null on a run is the whole pipeline. */
+export interface RunTarget {
+  kind: "module" | "rule" | "file";
+  name: string;
+  version: string | null;
+  hash: string | null;
+  source: "registry" | "local" | null;
+  path: string | null;
+  flag: "target" | "until" | "allowed_rules" | null;
+  more: number;
+  checksum_changed: boolean | null;
+}
+
+/** `target` in the body of `POST /runs` (api §5.10); the server fills the rest. */
+export interface TargetIn {
+  kind: "module" | "rule";
+  name?: string | null;
+  version?: string | null;
+}
+
+/** One declared input of a module (`POST /targets:inspect`). */
+export interface ModuleInput {
+  name: string;
+  type: string;
+  description: string;
+}
+
+/** `POST /api/v1/targets:inspect` (api §5.10): a module's inputs, or a pipeline's rules. */
+export type TargetInspected =
+  | {
+      kind: "module";
+      source: "registry" | "local";
+      name: string;
+      version: string | null;
+      description: string;
+      inputs: ModuleInput[];
+    }
+  | {
+      kind: "rule";
+      rules: string[];
+      plan: { jobs: Record<string, number>; total: number } | null;
+      error?: string;
+    };
+
+/** `GET /api/v1/me` in 0.0.1 (schema `Me`, api §5.8): paths only, never a secret. */
+export interface Me {
+  principal: { user: string; uid: number };
+  /** `expires_at` null: the session ends when the server stops. */
+  session: { started_at: string | null; expires_at: string | null };
+  paths: { config_file: string; data_dir: string; db_dir: string; observed_dir: string };
 }
 
 /** api §7.1 (schema `Run.state`). */
@@ -75,6 +155,17 @@ export type StageState = "not_started" | "running" | "awaiting_review" | "comple
 export type Counts = Record<string, number>;
 export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 
+/** Schema `RunEnvironment`: the run's own environment, as resolved at launch (FU-P3-86a, api
+ * §5.4); its fields are null unless `state` is `recorded`. */
+export interface RunEnvironment {
+  name: string | null;
+  label: string | null;
+  executor: "local" | "slurm" | null;
+  slurm: { partition: string | null; account: string | null; time_min: number | null; mem_mib: number | null } | null;
+  local: { cpus: number | null; mem_mib: number | null } | null;
+  state: "recorded" | "not_recorded" | "not_readable";
+}
+
 /** Schema `Run`: an item of `GET /runs`. */
 export interface Run {
   id: string;
@@ -92,6 +183,12 @@ export interface Run {
     version: string | null;
   };
   profiles: string[];
+  /** One module or one rule; null for the whole pipeline (api §5.10). */
+  target?: RunTarget | null;
+  /** Null for a run started from a terminal; read by the run's facts and Resume (FU-P3-86g). */
+  environment?: RunEnvironment | null;
+  /** First in every sort of the runs list but `-ended_at` (api §5, FU-P3-115a). */
+  pinned?: boolean;
   failure: { [key: string]: Json } | null;
   /** `checked` false: a run started from a terminal on another host or boot, whose head the
    * server cannot see (architecture §13.8). */
@@ -137,6 +234,30 @@ export interface RunDetail extends Run {
    * P1 Task 31). */
   results_dir: string | null;
   engine_settings?: EngineSettings;
+  /** The launch's default resources and extra config file as recorded; null when the launch set
+   * none (FU-P3-110a, api §5.7). */
+  default_resources: RunDefaultResources | null;
+  config_file: RunConfigFile | null;
+  /** The head logs the launch directory holds: a head under tmux writes no head.err (FU-P3-124). */
+  head_logs: ("head-out" | "head-err")[];
+}
+
+/** Schema `RunDefaultResources` (api §5.7): its fields are null unless `state` is `recorded`. */
+export interface RunDefaultResources {
+  cpus: number | null;
+  mem_mib: number | null;
+  time_min: number | null;
+  state: "recorded" | "not_readable";
+}
+
+/** Schema `RunConfigFile` (api §5.7): what a run keeps of its extra config file. */
+export interface RunConfigFile {
+  path: string | null;
+  kept_as: "extra.config" | "extra.yaml" | "extra.json" | null;
+  sha256: string | null;
+  size: number | null;
+  includes: boolean | null;
+  state: "recorded" | "not_readable";
 }
 
 /** Schema `ResultEntry`: one item of a results folder. */
@@ -154,6 +275,17 @@ export interface ResultReport {
   group: string | null;
 }
 
+/** Schema `ResultStat`: the listing's entry for one results path, with the root and the path the
+ * server answered for (api §5.3). */
+export interface ResultStat {
+  root: string;
+  path: string;
+  name: string;
+  type: "dir" | "file" | "link_outside";
+  size: number | null;
+  mtime: string | null;
+}
+
 /** `GET /api/v1/runs/{id}/results?path=` (P1 Task 31). */
 export interface Results {
   root: string;
@@ -161,6 +293,7 @@ export interface Results {
   exists: boolean;
   entries: ResultEntry[];
   truncated: boolean;
+  /** Absent from a work directory's listing. */
   reports: ResultReport[];
 }
 
@@ -181,6 +314,15 @@ export interface LaunchTemplate {
   /** The top-level parameters that differ from the pipeline's schema defaults. */
   non_default: string[];
   code_loading: CodeLoading[];
+  /** The run's environment by name, or the default when that name is gone (FU-P3-86c). */
+  environment: string;
+  /** Why the default is chosen instead of the run's environment. */
+  environment_notice: string | null;
+  /** The run's target, kept by the copy (api §5.10). */
+  target?: TargetIn | null;
+  /** As recorded, and the extra config file's path (FU-P3-110a, api §5.7). */
+  default_resources: { [key: string]: number | null } | null;
+  config_file: string | null;
 }
 
 /** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */
@@ -254,6 +396,8 @@ export type ProcessStatus =
 export interface ProcessEfficiency {
   jobs: { done: number; total: number };
   measured: number;
+  /** The ended jobs sacct has not answered yet (CR-P3FU119-01). */
+  pending_accounting: number;
   cpu_mean: number | null;
   cpu_max: number | null;
   mem_mean: number | null;
@@ -272,6 +416,8 @@ export interface Process {
   is_checkpoint?: boolean;
   lower_bound?: boolean;
   efficiency?: ProcessEfficiency;
+  /** 0 first: the rule graph's topological order, else the list's (FU-P3-82). */
+  pipeline_order?: number;
 }
 
 /** Schema `Stage`. */
@@ -327,7 +473,7 @@ export interface Efficiency {
   peak_rss_bytes: number | null;
   state: "running" | "pending_accounting" | "available" | "unavailable";
   source: "sacct" | "trace" | "benchmark" | null;
-  reason: "local" | "no_job_id" | "accounting_off" | "not_found" | "cached" | null;
+  reason: "local" | "no_job_id" | "accounting_off" | "not_found" | "cached" | "max_query_time_range" | null;
 }
 
 /** Schema `Task`. */
@@ -395,6 +541,8 @@ export class ApiError extends Error {
     message: string,
     readonly errors: FieldError[] = [],
     readonly reason: string | null = null,
+    /** The problem's `type` slug, such as `environment-exists` (api §5.4). */
+    readonly slug: string | null = null,
   ) {
     super(message);
   }
@@ -408,7 +556,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const detail = body?.detail ?? body?.title ?? `HTTP ${response.status}`;
     const reason = typeof body?.reason === "string" ? body.reason : null;
-    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : [], reason);
+    const slug = typeof body?.type === "string" ? body.type.replace("/problems/", "") : null;
+    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : [], reason, slug);
   }
   return body as T;
 }
@@ -417,13 +566,24 @@ export function getVersion(signal?: AbortSignal): Promise<ServerVersion> {
   return call("/version", { signal });
 }
 
+export const getMe = (): Promise<Me> => call("/me");
+/** Ends this session only (api §5.8); the cookie is cleared. */
+export const signOut = (): Promise<null> => call("/auth/session:sign-out", { method: "POST" });
+
 export function inspect(
   location: string,
   revision: string | null,
   signal?: AbortSignal,
+  paramsFile?: string | null,
+  configFile?: { path: string; engine: Engine },
 ): Promise<Inspected> {
   const query = new URLSearchParams({ location });
   if (revision) query.set("revision", revision);
+  if (paramsFile) query.set("params_file", paramsFile);
+  if (configFile) {
+    query.set("config_file", configFile.path);
+    query.set("engine", configFile.engine);
+  }
   return call(`/workflows:inspect?${query}`, { signal });
 }
 
@@ -437,16 +597,42 @@ const query = (params: Record<string, string | number | null | undefined>) => {
 };
 const run = (id: string) => `/runs/${encodeURIComponent(id)}`;
 
+/** `GET /runs` `sort=` (api §5, note of 2026-11-10): a key, `-` for descending. */
+export type RunsSort =
+  | "-created_at"
+  | "-ended_at"
+  | `${"" | "-"}${"name" | "state" | "started_at" | "duration"}`;
+
 export interface RunsQuery {
   state?: string;
+  /** `any`: runs that target one module or rule; `none`: whole-pipeline runs (api §5.10). */
+  target?: "any" | "none";
   q?: string;
-  sort?: "-created_at" | "-ended_at";
+  sort?: RunsSort;
   limit?: number;
   cursor?: string | null;
 }
 
 export function listRuns(params: RunsQuery, signal?: AbortSignal): Promise<Page<Run>> {
   return call(`/runs${query({ ...params })}`, { signal });
+}
+
+/** `POST /runs:delete`: soft deletes ended runs, all or none; `directories` also removes each
+ * run's own directory (api §5, note of 2026-11-10). */
+export function deleteRuns(
+  ids: string[],
+  directories: boolean,
+): Promise<{ deleted: string[]; directories: { id: string; result: "removed" | "missing" | "failed" }[] }> {
+  return call("/runs:delete", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ids, directories }),
+  });
+}
+
+/** `PATCH /runs/{id}` `{pinned}`: answers the run as `GET /runs/{id}`. */
+export function setPinned(id: string, pinned: boolean): Promise<RunDetail> {
+  return call(run(id), { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ pinned }) });
 }
 
 export function runsSummary(signal?: AbortSignal): Promise<Summary> {
@@ -467,7 +653,7 @@ export function listStages(id: string, signal?: AbortSignal): Promise<{ items: S
 
 export function listTasks(
   id: string,
-  params: { state?: string; process?: string; cursor?: string | null; limit?: number },
+  params: { state?: string; process?: string; task?: string; cursor?: string | null; limit?: number },
   signal?: AbortSignal,
 ): Promise<Page<Task>> {
   return call(`${run(id)}/tasks${query({ ...params })}`, { signal });
@@ -490,9 +676,19 @@ export function getLaunchTemplate(id: string, signal?: AbortSignal): Promise<Lau
   return call(`${run(id)}:launch-template`, { signal });
 }
 
-/** One folder of the run's results, `path` relative to its root ("" for the root). */
-export function listResults(id: string, path: string, signal?: AbortSignal): Promise<Results> {
-  return call(`${run(id)}/results${query({ path })}`, { signal });
+/** A Nextflow attempt's work directory, read in place of the run's results by the same calls
+ * (`GET /tasks/{id}/attempts/{n}/workdir`, api §5.3, FU-P3-85e): no reports, no report viewer. */
+export interface WorkRoot {
+  task: string;
+  attempt: number;
+}
+const tree = (id: string, work?: WorkRoot) =>
+  work ? `/tasks/${encodeURIComponent(work.task)}/attempts/${work.attempt}/workdir` : `${run(id)}/results`;
+
+/** One folder of the run's results, or of `work`, `path` relative to its root ("" for the root);
+ * a work directory's listing has no `reports`. */
+export function listResults(id: string, path: string, signal?: AbortSignal, work?: WorkRoot): Promise<Results> {
+  return call(`${tree(id, work)}${query({ path })}`, { signal });
 }
 
 /** Where a run log's text is served: the same origin, text/plain (the Logs tab's Open raw). */
@@ -530,10 +726,76 @@ export async function getTaskFile(taskId: string, n: number, name: string, signa
   return response.text();
 }
 
+/** A results path in a URL: each part encoded, so `?`, `#`, `%` and `%2F` stay in the name. */
+const resultPath = (path: string) => path.split("/").map(encodeURIComponent).join("/");
+
 /** Where a results file is served: an HTML report with the sandbox CSP of req. 14 (for the
- * report viewer's iframe), any other file, or `download`, as an attachment. */
-export const resultUrl = (id: string, path: string, opts: { download?: boolean } = {}) =>
-  `${API}${run(id)}/results/raw/${path.split("/").map(encodeURIComponent).join("/")}${query({ download: opts.download ? "true" : null })}`;
+ * report viewer's iframe), any other file, or `download`, as an attachment; `as: "image"` for
+ * the preview's `<img>` (api §5.3). */
+export const resultUrl = (id: string, path: string, opts: { download?: boolean; as?: "image" | "tiff" | "zarr" } = {}, work?: WorkRoot) =>
+  `${API}${tree(id, work)}/raw/${resultPath(path)}${query({ download: opts.download ? "true" : null, as: opts.as })}`;
+
+/** Where a results file is read as text (api §5.3). */
+export const resultTextUrl = (id: string, path: string, tail?: number, work?: WorkRoot) => `${API}${tree(id, work)}/text/${resultPath(path)}${query({ tail })}`;
+
+/** The facts of one results path (api §5.3). */
+export function statResult(id: string, path: string, signal?: AbortSignal, work?: WorkRoot): Promise<ResultStat> {
+  return call(`${tree(id, work)}/stat/${resultPath(path)}`, { signal });
+}
+
+/** A text read: `next` is the byte after the last one read (the `Content-Range` last byte + 1)
+ * and `size` the file's, for a Range read; both null for a tail read. */
+export interface TextRead {
+  text: string;
+  next: number | null;
+  size: number | null;
+}
+
+const CONTENT_RANGE = /^bytes (\d+)-(\d+)\/(\d+)$/;
+
+/** A results file as text: bytes `from` to `to` with one Range, or its last `tail` bytes. A
+ * refusal is an ApiError with its status and the server's text. */
+export async function readResultText(
+  id: string,
+  path: string,
+  opts: { from?: number; to?: number; tail?: number },
+  signal?: AbortSignal,
+  work?: WorkRoot,
+): Promise<TextRead> {
+  const headers = opts.from === undefined ? undefined : { range: `bytes=${opts.from}-${opts.to ?? ""}` };
+  const response = await fetch(resultTextUrl(id, path, opts.tail, work), { signal, headers });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body?.detail ?? body?.title ?? `HTTP ${response.status}`);
+  }
+  const text = await response.text();
+  const range = CONTENT_RANGE.exec(response.headers.get("content-range") ?? "");
+  return range ? { text, next: Number(range[2]) + 1, size: Number(range[3]) } : { text, next: null, size: null };
+}
+
+export function inspectTarget(
+  body: { engine: Engine; location: string; version?: string | null; revision?: string | null; rule?: string | null },
+  signal?: AbortSignal,
+): Promise<TargetInspected> {
+  return call("/targets:inspect", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
+}
+
+/** The run's kept extra config file (`GET /runs/{id}/config-file`, api §5.7), with its `ETag`, the
+ * SHA-256 of the bytes served, unquoted. A refusal is an ApiError with its status (404, 503). */
+export async function getConfigFile(id: string, signal?: AbortSignal): Promise<{ text: string; sha256: string | null }> {
+  const response = await fetch(`${API}${run(id)}/config-file`, { signal });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body?.detail ?? body?.title ?? `HTTP ${response.status}`);
+  }
+  const etag = response.headers.get("etag");
+  return { text: await response.text(), sha256: etag ? etag.replace(/^(W\/)?"|"$/g, "") : null };
+}
 
 export function launch(body: LaunchBody): Promise<Launched> {
   return call("/runs", {
@@ -542,3 +804,94 @@ export function launch(body: LaunchBody): Promise<Launched> {
     body: JSON.stringify(body),
   });
 }
+
+/** Schema `EnvironmentItem` (api §5.4): a built-in or one of `environments.toml`'s. */
+export interface EnvironmentItem {
+  name: string;
+  label: string | null;
+  executor: "local" | "slurm";
+  builtin: boolean;
+  default: boolean;
+  usable: boolean;
+  unusable_reason: string | null;
+  slurm: NonNullable<RunEnvironment["slurm"]> | null;
+  local: NonNullable<RunEnvironment["local"]> | null;
+  profiles: { nextflow: string | null; snakemake: string | null };
+  etag: string;
+}
+export type EnvironmentBody = Omit<EnvironmentItem, "builtin" | "default" | "usable" | "unusable_reason" | "etag">;
+
+/** Schema `EnvironmentList`. */
+export interface EnvironmentList {
+  items: EnvironmentItem[];
+  default: string;
+  file: { path: string; state: "missing" | "ok" | "refused" | "invalid" | "unreachable"; detail: string | null };
+}
+
+const env = (name: string) => `/environments/${encodeURIComponent(name)}`;
+const sendJson = (method: string, body: unknown, etag?: string): RequestInit => ({
+  method,
+  headers: { "content-type": "application/json", ...(etag ? { "if-match": etag } : {}) },
+  body: JSON.stringify(body),
+});
+
+export const listEnvironments = (signal?: AbortSignal): Promise<EnvironmentList> => call("/environments", { signal });
+export const getEnvironment = (name: string, signal?: AbortSignal): Promise<EnvironmentItem> => call(env(name), { signal });
+export const createEnvironment = (body: EnvironmentBody): Promise<EnvironmentItem> => call("/environments", sendJson("POST", body));
+export const replaceEnvironment = (body: EnvironmentBody, etag: string): Promise<EnvironmentItem> =>
+  call(env(body.name), sendJson("PUT", body, etag));
+export const deleteEnvironment = (name: string, etag: string): Promise<null> =>
+  call(env(name), { method: "DELETE", headers: { "if-match": etag } });
+export const makeDefault = (name: string): Promise<null> => call(`${env(name)}:make-default`, { method: "POST" });
+
+/** Schema `CatalogItem` (api §5.6): a named pipeline location with its launch defaults. */
+export interface CatalogItem {
+  name: string;
+  label: string | null;
+  engine: "nextflow" | "snakemake";
+  location: string;
+  revision: string | null;
+  profile: string | null;
+  params_file: string | null;
+  etag: string;
+}
+export type CatalogBody = Omit<CatalogItem, "etag">;
+
+/** Schema `CatalogList`: the entries in name order, and the file's state (empty unless `ok`). */
+export interface CatalogList {
+  items: CatalogItem[];
+  file: EnvironmentList["file"];
+}
+
+const entry = (name: string) => `/catalog/${encodeURIComponent(name)}`;
+export const listCatalog = (signal?: AbortSignal): Promise<CatalogList> => call("/catalog", { signal });
+export const getCatalogEntry = (name: string, signal?: AbortSignal): Promise<CatalogItem> => call(entry(name), { signal });
+export const createCatalogEntry = (body: CatalogBody): Promise<CatalogItem> => call("/catalog", sendJson("POST", body));
+export const replaceCatalogEntry = (body: CatalogBody, etag: string): Promise<CatalogItem> =>
+  call(entry(body.name), sendJson("PUT", body, etag));
+export const deleteCatalogEntry = (name: string, etag: string): Promise<null> =>
+  call(entry(name), { method: "DELETE", headers: { "if-match": etag } });
+
+export type NotificationKind = "run_succeeded" | "run_failed" | "run_cancelled" | "gate_waiting";
+/** Schema `Notification` (api §5.9): derived from a run in 0.0.1. */
+export interface Notification {
+  id: string;
+  kind: NotificationKind;
+  run_id: string;
+  run_name: string | null;
+  /** The run's `workflow.engine`, as `WorkflowRef`. */
+  engine: string | null;
+  /** An ended run's `ended_at`, else `state_changed_at`; a waiting run's `state_changed_at`. */
+  at: string;
+  read: boolean;
+}
+/** Schema `Notifications`: newest first, at most 50; `unread` counts them all. */
+export interface Notifications {
+  items: Notification[];
+  unread: number;
+  read_up_to: string | null;
+}
+export const listNotifications = (signal?: AbortSignal): Promise<Notifications> => call("/me/notifications", { signal });
+/** Marks every item up to `upTo` read (api §5.10); answers the list as `GET` does. */
+export const markNotificationsRead = (upTo: string): Promise<Notifications> =>
+  call("/me/notifications:mark-read", sendJson("POST", { up_to: upTo }));

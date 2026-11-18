@@ -1,8 +1,10 @@
 """The screens: the built `web/dist` (P1 Task 19), served at `/` beside the API.
 
 Only the screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}`, the report viewer
-`/runs/{run_id}/report` and the results browser `/runs/{run_id}/results`) answer `index.html`
-(to `GET` and `HEAD`), and
+`/runs/{run_id}/report`, the results browser `/runs/{run_id}/results` and the Environments pages
+`/environments`, `/environments/new`, `/environments/{name}`, FU-P3-86f; the Catalog pages
+`/catalog`, `/catalog/new`, `/catalog/{name}`, FU-P3-87d) answer `index.html` (to `GET` and
+`HEAD`), and
 only `/assets/<name>` answers a file: one plain name, a known web type, opened under `dist`
 with `O_NOFOLLOW` at each step, so no symlink is followed and no path leaves the directory.
 Hashed assets are cached for a year, `index.html` is revalidated, and every answer carries a
@@ -11,8 +13,10 @@ allow them), with `Referrer-Policy: no-referrer` and `Cross-Origin-Opener-Policy
 (SEC-P3T19-03). Every screen allows `frame-src 'self'`, for the report viewer's sandboxed
 report, which the API serves with the CSP of req. 14 (P1 Task 31): a CSP is the document's, and
 the viewer is also reached by in-app navigation from another screen's document (CR-P3T31-02);
-the iframe's `sandbox` attribute and that CSP carry the protection. `app.create_app` mounts
-these routes only with the API (inbox #80, #86).
+the iframe's `sandbox` attribute and that CSP carry the protection. The imaging viewers add
+`'wasm-unsafe-eval'` (WebAssembly, no `eval` of JavaScript) and `worker-src 'self'` (workers
+from `/assets/`); never `'unsafe-eval'` nor `blob:` (dev-env §15.3 req. 19).
+`app.create_app` mounts these routes only with the API (inbox #80, #86).
 """
 
 import logging
@@ -74,6 +78,16 @@ ROUTES = (
     "/runs/{run_id}",
     "/runs/{run_id}/report",
     "/runs/{run_id}/results",
+    "/runs/{run_id}/results/file",
+    "/runs/{run_id}/workdir",
+    "/runs/{run_id}/workdir/file",
+    "/environments",
+    "/environments/new",
+    "/environments/{name}",
+    "/catalog",
+    "/catalog/new",
+    "/catalog/{name}",
+    "/profile",
 )
 ASSET = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,199}")
 TYPES = {
@@ -84,9 +98,9 @@ TYPES = {
     ".woff2": "font/woff2",
 }
 CSP = (
-    "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-    "img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; "
-    "form-action 'self'; frame-ancestors 'none'; frame-src 'self'"
+    "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; "
+    "style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self'; "
+    "base-uri 'none'; form-action 'self'; frame-ancestors 'none'; frame-src 'self'"
 )
 HEADERS = {
     "Content-Security-Policy": CSP,

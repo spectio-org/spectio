@@ -27,19 +27,31 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
 
+from spectio import envfile
+from spectio.catalog import KIND as CATALOG
+from spectio.catalog import catalog_path
 from spectio.config import Settings
-from spectio_server import static
+from spectio.envfile import environments_path
+from spectio_server import static, targets
 from spectio_server.api import (
     browser,
     cancel,
+    catalog,
+    environments,
+    extras,
+    graph,
     logs,
+    me,
+    notifications,
     problems,
     relaunch,
     results,
+    runs_manage,
     runs_read,
     runs_write,
     stream,
     taskfiles,
+    workdir,
     workflows,
 )
 from spectio_server.auth import host, middleware, routes, writes
@@ -128,10 +140,13 @@ def create_app(
     app.state.settings = settings
     app.state.writer = writer
     app.state.files = FilePool() if files is None else files  # dev-env §15.3 req. 13
+    app.state.home = extras.home_roots()  # read once, from the password database (api §5.7)
+    app.state.imaging_slots = results.ImagingSlots(results.IMAGING_SLOTS)  # api §5.3.1
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
-    app.state.engine_versions = workflows.engine_versions(settings)
+    app.state.engine_versions = workflows.EngineVersions(settings)
+    app.state.target_engine = targets.login_engine(settings)  # api §5.10; replaced in tests
     app.state.server_key = server_key or ServerKey.new()
     app.state.tickets = TicketStore()
     app.state.sessions = SessionStore()
@@ -163,7 +178,28 @@ def create_app(
         # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`
         app.state.reports = {}  # the reports of ended runs (P1 Task 31)
         app.state.follows = logs.Follows()  # dev-env §15.3 req. 14
-        routers = (workflows, runs_write, relaunch, runs_read, logs, taskfiles, results, cancel)
+        app.state.environments = environments.Store(
+            environments_path(), envfile.ENVIRONMENTS, "environments"
+        )  # §15.3 req. 18
+        app.state.catalog = environments.Store(catalog_path(), CATALOG, "catalog")  # api §5.6
+        routers = (
+            graph,  # `/workflows:graph` before any `/workflows/{…}`
+            workflows,
+            runs_write,
+            runs_manage,
+            relaunch,
+            runs_read,
+            logs,
+            taskfiles,
+            results,
+            workdir,
+            cancel,
+            environments,
+            catalog,
+            targets,
+            me,
+            notifications,
+        )
         for module in (*routers, stream):
             app.include_router(module.router, prefix=API)
     else:

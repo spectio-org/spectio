@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { FakeEventSource, app, json, run, serve, stubStream } from "../testing";
 
@@ -31,6 +31,8 @@ test("home shows the count cards, the active runs, the runs that ended and the p
   const pipelines = screen.getByRole("region", { name: "Your pipelines" });
   expect(await within(pipelines).findByText("/g/demo-lab/pipelines/plate-qc")).toBeInTheDocument();
   expect(within(pipelines).getByText("/g/demo-lab/pipelines/rnaseq")).toBeInTheDocument();
+  // ui-spec §4.7.1: Home reaches the Catalog page (FU-P3-87d)
+  expect(within(pipelines).getByRole("link", { name: "Your catalog" })).toHaveAttribute("href", "/catalog");
   expect(screen.getByRole("link", { name: "Launch a workflow" })).toHaveAttribute("href", "/launch");
   expect(within(active).getByRole("link", { name: "All runs" })).toHaveAttribute("href", "/runs");
   // inbox #91 (b): the pipeline's mark, nf-core for an nf-core/ name, else the engine's (P3-parC)
@@ -140,4 +142,29 @@ test("P3-parD: a pipeline of Your pipelines opens Launch prefilled with its dire
   const pipelines = await screen.findByRole("region", { name: "Your pipelines" });
   const link = await within(pipelines).findByRole("link", { name: "Launch plate-qc, /g/demo-lab/pipelines/plate-qc" });
   expect(link).toHaveAttribute("href", "/launch?location=%2Fg%2Fdemo-lab%2Fpipelines%2Fplate-qc");
+});
+
+test("UI-07: every Home section is a card with the shared card head (ui-spec §12.7)", async () => {
+  serve({
+    "/api/v1/runs:summary": { groups: [{ key: "running", count: 1 }, { key: "succeeded", count: 1 }] },
+    "/api/v1/runs?sort=-ended_at": { items: [ended], next: null },
+    "/api/v1/runs?state=": { items: [run()], next: null },
+    "/api/v1/runs": { items: [run(), ended], next: null },
+  });
+  app("/");
+  for (const name of ["Active runs", "Finished recently", "Your pipelines", "Where your runs go"]) {
+    const card = await screen.findByRole("region", { name });
+    expect(card).toHaveClass("sp-card");
+    expect(within(card).getByRole("heading", { level: 3, name })).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name })).toHaveAttribute("aria-expanded", "true");
+  }
+  // a section link sits in the card head, never on its own row
+  const active = screen.getByRole("region", { name: "Active runs" });
+  expect(within(active).getByRole("link", { name: "All runs" }).closest(".sp-cardhead")).not.toBeNull();
+  const pipelines = screen.getByRole("region", { name: "Your pipelines" });
+  expect(within(pipelines).getByRole("link", { name: "Your catalog" }).closest(".sp-cardhead")).not.toBeNull();
+  // folding hides the body and is remembered for Home
+  fireEvent.click(within(active).getByRole("button", { name: "Active runs" }));
+  expect(within(active).queryByRole("link", { name: "Open run rnaseq-a" })).toBeNull();
+  expect(window.localStorage.getItem("spectio-open:home:home-active")).toBe("0");
 });

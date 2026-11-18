@@ -9,6 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, JsonValue
 
+from spectio_sdk.targets import RunTarget
+
 RunState = Literal[
     "queued",
     "running",
@@ -70,6 +72,106 @@ class RunSummary(BaseModel):
     dag_updates: int  # the count of `snakemake.dag_updated`
 
 
+class EnvironmentSlurm(BaseModel):
+    partition: str | None
+    account: str | None
+    time_min: int | None
+    mem_mib: int | None
+
+
+class EnvironmentLocal(BaseModel):
+    cpus: int | None
+    mem_mib: int | None
+
+
+class RunEnvironment(BaseModel):
+    """The run's own environment, as resolved at launch (FU-P3-86a, api §5.4); its fields are
+    null unless `state` is `recorded`."""
+
+    name: str | None
+    label: str | None
+    executor: Literal["local", "slurm"] | None
+    slurm: EnvironmentSlurm | None
+    local: EnvironmentLocal | None
+    state: Literal["recorded", "not_recorded", "not_readable"]
+
+
+class RunDefaultResources(BaseModel):
+    """A launch's `default_resources` (FU-P3-110a, api §5.7); its fields are null unless `state`
+    is `recorded`."""
+
+    cpus: int | None
+    mem_mib: int | None
+    time_min: int | None
+    state: Literal["recorded", "not_readable"]
+
+
+class RunConfigFile(BaseModel):
+    """What a run keeps of its extra config file (FU-P3-110a, api §5.7): the user's `path`, the
+    name `kept_as` in its `.spectio/`, the SHA-256 and size of the bytes, and `includes` when a
+    Nextflow file holds `includeConfig`; null fields unless `state` is `recorded`."""
+
+    path: str | None
+    kept_as: Literal["extra.config", "extra.yaml", "extra.json"] | None
+    sha256: str | None
+    size: int | None
+    includes: bool | None
+    state: Literal["recorded", "not_readable"]
+
+
+class EnvironmentProfiles(BaseModel):
+    nextflow: str | None
+    snakemake: str | None
+
+
+class EnvironmentItem(BaseModel):
+    """One environment of `GET /environments` (FU-P3-86d, api §5.4): a built-in or one of the
+    file's; `usable: false` with its reason, such as a SLURM one on a local server."""
+
+    name: str
+    label: str | None
+    executor: Literal["local", "slurm"]
+    builtin: bool
+    default: bool
+    usable: bool
+    unusable_reason: str | None
+    slurm: EnvironmentSlurm | None
+    local: EnvironmentLocal | None
+    profiles: EnvironmentProfiles
+    etag: str
+
+
+class EnvironmentsFile(BaseModel):
+    path: str
+    state: Literal["missing", "ok", "refused", "invalid", "unreachable"]
+    detail: str | None
+
+
+class EnvironmentList(BaseModel):
+    items: list[EnvironmentItem]
+    default: str
+    file: EnvironmentsFile
+
+
+class CatalogItem(BaseModel):
+    """One entry of `GET /catalog` (FU-P3-87b, api §5.6): a named pipeline location with its
+    launch defaults."""
+
+    name: str
+    label: str | None
+    engine: Literal["nextflow", "snakemake"]
+    location: str
+    revision: str | None
+    profile: str | None
+    params_file: str | None
+    etag: str
+
+
+class CatalogList(BaseModel):
+    items: list[CatalogItem]
+    file: EnvironmentsFile  # the same five states as environments.toml
+
+
 class Run(BaseModel):
     id: str
     name: str | None
@@ -80,6 +182,9 @@ class Run(BaseModel):
     ended_at: str | None
     workflow: WorkflowRef
     profiles: list[str]
+    environment: RunEnvironment | None  # null for a run started from a terminal
+    target: RunTarget | None  # one module or one rule; null: the whole pipeline (api §5.10)
+    pinned: bool  # first in the runs list (FU-P3-115a)
     failure: dict[str, JsonValue] | None
     head: Head | None
     task_counts: dict[str, int]
@@ -173,6 +278,9 @@ class RunDetail(Run):
     actions: Actions
     results_dir: str | None  # null when unknown, and for a run started from a terminal
     engine_settings: EngineSettings
+    default_resources: RunDefaultResources | None  # null when the launch set none (api §5.7)
+    config_file: RunConfigFile | None
+    head_logs: list[Literal["head-out", "head-err"]]  # the head logs there are (FU-P3-124)
 
 
 class TemplateWorkflow(BaseModel):
@@ -200,6 +308,11 @@ class LaunchTemplate(BaseModel):
     params: dict[str, JsonValue]
     non_default: list[str]
     code_loading: list[CodeLoading]
+    environment: str  # the run's, preselected by name, or the default when it is gone (§5.4)
+    environment_notice: str | None  # why the default is preselected instead
+    target: dict[str, JsonValue] | None  # the launch's `target` (api §5.10)
+    default_resources: dict[str, int | None] | None  # as sent (api §5.7)
+    config_file: str | None  # the original path, read again at the new launch
 
 
 class RunList(BaseModel):
@@ -216,12 +329,63 @@ class Summary(BaseModel):
     groups: list[SummaryGroup]
 
 
+class Features(BaseModel):
+    single_target: bool  # runs of one module or one rule (api §5.10)
+
+
 class ServerVersion(BaseModel):
     version: str
     node: str
     runs_root: str
     account: str
     executor: str
+    features: Features
+
+
+class Principal(BaseModel):
+    user: str
+    uid: int
+
+
+class MeSession(BaseModel):
+    started_at: str | None
+    expires_at: str | None
+
+
+class MePaths(BaseModel):
+    config_file: str
+    data_dir: str
+    db_dir: str
+    observed_dir: str
+
+
+class Me(BaseModel):
+    """`GET /me` in 0.0.1 (api §5.8): paths only, never a secret or a file's contents."""
+
+    principal: Principal
+    session: MeSession
+    paths: MePaths
+
+
+NotificationKind = Literal["run_succeeded", "run_failed", "run_cancelled", "gate_waiting"]
+
+
+class Notification(BaseModel):
+    id: str
+    kind: NotificationKind
+    run_id: str
+    run_name: str | None
+    engine: str | None  # the run's `workflow.engine`, as `WorkflowRef`
+    at: str  # an ended run's `ended_at`, else `state_changed_at` (api §5.9, 2026-11-11)
+    read: bool
+
+
+class Notifications(BaseModel):
+    """`GET /me/notifications` in 0.0.1 (api §5.9): derived from the run records."""
+
+    items: list[Notification]
+    unread: int
+    read_up_to: str | None
 
 
 ProcessStatus = Literal[
@@ -261,6 +425,7 @@ class ProcessEfficiency(BaseModel):
 
     jobs: JobCount
     measured: int
+    pending_accounting: int  # ended jobs sacct has not answered yet (CR-P3FU119-01)
     cpu_mean: float | None
     cpu_max: float | None
     mem_mean: float | None
@@ -278,6 +443,7 @@ class Process(BaseModel):
     is_checkpoint: bool
     lower_bound: bool
     efficiency: ProcessEfficiency
+    pipeline_order: int  # 0 first: the rule graph's topological order, else `items`' (FU-P3-82)
 
 
 class ProcessList(BaseModel):
@@ -357,7 +523,12 @@ class Efficiency(BaseModel):
     peak_rss_bytes: int | None
     state: Literal["running", "pending_accounting", "available", "unavailable"]
     source: Literal["sacct", "trace", "benchmark"] | None
-    reason: Literal["local", "no_job_id", "accounting_off", "not_found", "cached"] | None
+    reason: (
+        Literal[
+            "local", "no_job_id", "accounting_off", "not_found", "cached", "max_query_time_range"
+        ]
+        | None
+    )
 
 
 class Task(BaseModel):
@@ -432,10 +603,33 @@ class ResultEntry(BaseModel):
     mtime: str | None
 
 
+class ResultStat(BaseModel):
+    """The listing's entry for one results path (api §5.3), with the root and the path the
+    server answered for."""
+
+    root: str
+    path: str
+    name: str
+    type: Literal["dir", "file", "link_outside"]
+    size: int | None
+    mtime: str | None
+
+
 class ResultReport(BaseModel):
     path: str  # relative to the results root
     title: str
     group: str | None  # the folder it shares with other reports, such as FastQC's
+
+
+class WorkDir(BaseModel):
+    """One folder of a Nextflow attempt's work directory (api §5.3, FU-P3-85e): the results
+    listing without `reports`, names that start with `.` hidden."""
+
+    root: str
+    path: str
+    exists: bool
+    entries: list[ResultEntry]
+    truncated: bool
 
 
 class Results(BaseModel):
@@ -447,3 +641,102 @@ class Results(BaseModel):
     entries: list[ResultEntry]
     truncated: bool
     reports: list[ResultReport]
+
+
+# --- The workflow graph (issue #160; api §5.11), behind the `graph_view` feature -------------
+
+
+class FeatureList(BaseModel):
+    features: list[str]
+
+
+class GraphGroup(BaseModel):
+    id: str  # `stage:<id>`, `sub:<A:B>` (Nextflow), `file:<path>` (Snakemake rule file)
+    kind: Literal["stage", "subworkflow"]
+    name: str
+    parent: str | None
+    condition: str | None
+
+
+class GraphSource(BaseModel):
+    file: str
+    line: int | None
+
+
+class GraphLayout(BaseModel):
+    x: float
+    y: float
+
+
+class GraphMetrics(BaseModel):
+    duration_s: float | None
+    cpu_mean: float | None
+    mem_max: float | None
+    failed: int
+
+
+class GraphNode(BaseModel):
+    id: str  # the stored process or rule name
+    name: str
+    kind: Literal["process", "rule", "checkpoint", "gate"]
+    stage_id: str | None
+    subworkflow: str | None
+    source: GraphSource | None
+    condition: str | None
+    params: list[str]
+    layout: GraphLayout | None = None  # BioFlow-Insight's position, when it produced the graph
+    # The runtime overlay: on `/runs/{id}/graph` only
+    status: ProcessStatus | None = None
+    counts: dict[str, int] | None = None
+    retries: int | None = None
+    pipeline_order: int | None = None
+    metrics: GraphMetrics | None = None
+    first_start: str | None = None
+    last_end: str | None = None
+    temp: bool | None = None  # Snakemake: a `temp()` output of the rule was removed
+    code: str | None = None  # BioFlow-Insight (Launch): the process's code, as text
+
+
+class SourceBlock(BaseModel):
+    file: str  # relative to the pipeline directory
+    line: int  # 1-based, where the definition starts
+    code: str
+    truncated: bool  # longer than static.MAX_CODE_LINES lines
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    condition: str | None  # BioFlow-Insight's `if` around the link, when it gave one
+
+
+class GraphDocument(BaseModel):
+    version: Literal[1]
+    engine: str
+    producer: Literal["smk-rulegraph", "nf-dag", "bioflow-insight", "stages-only"]
+    complete: bool
+    estimate: bool  # static edges (BioFlow-Insight): may hold cycles or miss runtime links
+    groups: list[GraphGroup]
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
+class ProcessOutput(BaseModel):
+    path: str  # relative to `root`, else absolute
+    root: Literal["launch", "results", "absolute", "work"]  # work: the attempt's work directory
+    task_id: str | None
+    attempt_n: int | None
+    state: Literal["present", "missing", "removed", "unknown"]
+    temp: bool
+    size: int | None = None  # bytes, when `present`
+    work_path: str | None = None  # Nextflow: the copy in the attempt's work directory
+
+
+class ProcessOutputs(BaseModel):
+    items: list[ProcessOutput]
+
+
+class OutputHead(BaseModel):
+    text: str  # the first lines, at most 40 and 16 KiB
+    more: bool
+    gzip: bool

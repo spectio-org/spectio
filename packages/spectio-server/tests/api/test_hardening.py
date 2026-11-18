@@ -94,3 +94,11 @@ def test_unknown_path_is_a_problem(authed_client: TestClient) -> None:
     response = authed_client.get("/api/v1/nothing-here")
     assert response.status_code == 404, response.text
     assert response.json()["type"] == "/problems/not-found"
+
+
+@pytest.mark.parametrize("location", [f"https://u:SECRET{chr(0xFF20)}host/r", "https://[SECRET]/r"])
+def test_unparsable_url_detail_never_quotes_it(authed_client: TestClient, location: str) -> None:
+    response = authed_client.get(INSPECT, params={"location": location})
+    assert response.status_code == 422, response.text
+    assert response.json()["errors"][0]["field"] == "location"
+    assert "SECRET" not in response.text

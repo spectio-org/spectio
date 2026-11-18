@@ -9,7 +9,9 @@ from pathlib import Path
 
 import typer
 
+from spectio import catalog, envfile
 from spectio.config import MIN_UV, NF_SPECTIO_VERSION, Settings, config_path
+from spectio.environments import builtins
 from spectio.loginshell import run_login, which
 from spectio.runner.engines import (
     NEXTFLOW_VERSION,
@@ -51,10 +53,9 @@ def uv_version(out: str) -> tuple[int, int, int] | None:
     return (int(match[1]), int(match[2]), int(match[3])) if match else None
 
 
-def _uv() -> Result:
+def _uv(path: str | None) -> Result:
     """The uv on the login PATH: only installing Spectio needs it, so an old one is a warning
     and a missing one is fine (FU-P3-73)."""
-    path = which("uv")["uv"]
     if not path:
         return "ok", "uv", "not found on PATH: only installing Spectio needs it"
     out = run_login('"$1" --version', path)
@@ -75,12 +76,12 @@ def _uv() -> Result:
     return "ok", "uv", f"{found} {path}"
 
 
-def _tools(local: bool) -> list[Result]:
+def _tools(local: bool, paths: Mapping[str, str | None]) -> list[Result]:
     """tmux (the heads, the server's session) and sbatch (the engines' task jobs); the runs of
     local mode need neither (P1 Assumption 23)."""
     results: list[Result] = []
-    for name, path in which("tmux", "sbatch").items():
-        if path:
+    for name in ("tmux", "sbatch"):
+        if path := paths[name]:
             results.append(("ok", name, path))
         elif not local:
             results.append(("fail", name, "not found on PATH"))
@@ -134,6 +135,26 @@ def _nxf_plugins(env: Mapping[str, str]) -> Result:
     return result
 
 
+def _environments(settings: Settings) -> Result:
+    """The environments file (FU-P3-86b, api §5.4): its path, state and the default. A file
+    that cannot be used is a warning: launches with a built-in still work."""
+    path = envfile.environments_path()
+    found = envfile.read_file(path, [b.environment.name for b in builtins(settings)])
+    default = (found.state == "ok" and found.default) or settings.executor
+    state = found.state if found.detail is None else f"{found.state} ({found.detail})"
+    status = "ok" if found.state in ("missing", "ok") else "warn"
+    return status, "environments", f"{path}: {state}, default {default}"
+
+
+def _catalog() -> Result:
+    """The catalog file (FU-P3-87a, api §5.6): its path and state. A file that cannot be used
+    is a warning: the free Pipeline field still works."""
+    path = catalog.catalog_path()
+    found = envfile.read_kind(catalog.KIND, path, ())
+    state = found.state if found.detail is None else f"{found.state} ({found.detail})"
+    return ("ok" if found.state in ("missing", "ok") else "warn"), "catalog", f"{path}: {state}"
+
+
 def checks(
     settings: Settings, env: Mapping[str, str], mountinfo: Path | None = None
 ) -> list[Result]:
@@ -154,6 +175,7 @@ def checks(
             results.append(("fail", "db_dir", str(exc)))
         else:
             results += server.db_checks(db_dir, mountinfo, fallback=settings.db_dir is None)
+    results += [_environments(settings), _catalog()]
     status, detail = runs_disk(settings.runs_root)  # a `warn` at most (FU-P3-74)
     results.append((status, "runs_disk", detail))
     here = socket.gethostname()
@@ -167,8 +189,9 @@ def checks(
     results.append(_engine("nextflow", engines.nextflow_cmd, "-version", NEXTFLOW_VERSION))
     results.append(_engine("snakemake", engines.snakemake_cmd, "--version", SNAKEMAKE_VERSION))
     results.append(_java())
-    results += _tools(settings.executor == "local")
-    results.append(_uv())
+    paths = which("tmux", "sbatch", "uv")
+    results += _tools(settings.executor == "local", paths)
+    results.append(_uv(paths["uv"]))
     results.append(_nxf_plugins(env))
     return results
 

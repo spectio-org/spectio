@@ -3,7 +3,10 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { DETAIL, app, run, serve, stubStream } from "../testing";
+import { DETAIL, app, fetched, run, serve, stubStream } from "../testing";
+
+// The tasks table is a lazy chunk (AG Grid): under CI load it can take longer than findBy's 1 s default.
+const LAZY_GRID = { timeout: 5000 };
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -31,8 +34,9 @@ const TASK = {
   efficiency: { cpu: 0.69, mem: 1.0, elapsed_s: 360, peak_rss_bytes: 8 * GIB, state: "available", source: "sacct", reason: null },
 };
 
-function open(task: Record<string, unknown>) {
-  serve({
+function open(task: Record<string, unknown>, more: Record<string, unknown> = {}) {
+  const mock = serve({
+    ...more,
     [`${URL_}/processes`]: { items: [{ process: PROCESS, stage_id: null, counts: { failed: 1 }, retries: 0 }] },
     [`${URL_}/stages`]: { items: [] },
     [`${URL_}/tasks`]: { items: [task], next: null },
@@ -41,13 +45,14 @@ function open(task: Record<string, unknown>) {
     [URL_]: { ...DETAIL, ...run({ state: "failed" }), params: {}, failures: [], failures_total: 0 },
   });
   app(`/runs/${ID}?tab=tasks`);
+  return mock;
 }
 
 /** A block's facts as [term, value] pairs. */
 const factsOf = (region: HTMLElement) => within(region).getAllByRole("term").map((dt) => [dt.textContent, dt.nextElementSibling?.textContent]);
 
 async function sheet() {
-  await userEvent.click(await screen.findByRole("button", { name: "Files of SUBREAD_FEATURECOUNTS (S19), attempt 1" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Files of SUBREAD_FEATURECOUNTS (S19), attempt 1" }, LAZY_GRID));
   return screen.findByRole("dialog", { name: "SUBREAD_FEATURECOUNTS (S19)" });
 }
 
@@ -96,4 +101,24 @@ test("a running job's efficiency is measured when it ends", async () => {
   const efficiency = within(drawer).getByRole("region", { name: "Efficiency" });
   expect(within(efficiency).getByText("Measured when the job ends")).toBeInTheDocument();
   expect(factsOf(efficiency)).toEqual([["Elapsed · time limit", "2 min of 8 h"]]);
+});
+
+test("opening a job's SLURM facts reads that one task, so sacct is asked while the run is live (CON-SLURM-POLL-01)", async () => {
+  const mock = open(TASK);
+  await sheet();
+  expect(fetched(mock)).toContain(`${URL_}/tasks?task=tsk_19&limit=1`);
+});
+
+test("the sheet shows the one task's fresh SLURM facts, not the list's", async () => {
+  const fresh = { ...TASK, efficiency: { ...TASK.efficiency, cpu: 0.42 } };
+  open(TASK, { [`${URL_}/tasks?task=tsk_19`]: { items: [fresh], next: null } });
+  const drawer = await sheet();
+  const efficiency = within(drawer).getByRole("region", { name: "Efficiency" });
+  expect(await within(efficiency).findByText(/^42 %/)).toBeInTheDocument();
+});
+
+test("a task with no SLURM block asks nothing more when opened", async () => {
+  const mock = open({ ...TASK, slurm: null });
+  await sheet();
+  expect(fetched(mock).filter((u) => u.includes("task=tsk_19"))).toEqual([]);
 });

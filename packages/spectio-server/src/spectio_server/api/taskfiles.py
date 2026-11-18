@@ -5,18 +5,23 @@ The listing names every file the attempt has or may have, with its state; a read
 last 64 KiB as `text/plain`, `?tail=` bytes (at most 1 MiB), or one `Range` (at most 1 MiB, 206).
 What may be read and how is `files.taskfiles`; this module reads the attempt's row, runs the
 file system part in the file pool (`app.state.files`) with `READ_TIMEOUT_S`, and maps refusals
-to problems: `422 file-not-allowed`, `404 log-not-found`, `410 log-cleaned`, `415 binary-file`,
+to problems: `422 file-not-allowed`, `404 log-not-found`, `410 log-cleaned`,
+`409 run-dir-unreachable` (the runs root is not there, or is not the run's: FU-P3-81),
+`415 binary-file`,
 and `503 runner-offline` when the file system did not answer in time.
 
 `n` is the attempt number the task's attempts show; when a resumed run has an attempt `n` in
 more than one launch, the latest launch's is served (assumed, inbox #94). A `Content-Range`
 counts the file's bytes, while the body has its escape sequences removed (and, for
-`.command.run`, counts the bytes of the hidden text): assumed, inbox #94.
+`.command.run`, counts the bytes of the hidden text): assumed, inbox #94. The read is the one
+reader of every text route (`files.taskfiles.read_text`, api §5.3): a range ends on a whole
+UTF-8 sequence, an empty file is `200`, and the answer carries the text CSP.
 """
 
 import errno
 import logging
 import re
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -35,10 +40,13 @@ from spectio_server.files.taskfiles import (
     AttemptFiles,
     Binary,
     Cleaned,
+    Served,
+    Unreachable,
     attempt_dir,
     list_task_files,
     output_states,
     read_task_file,
+    recorded_root,
 )
 from spectio_server.store.schema import (
     attempts,
@@ -52,11 +60,13 @@ from spectio_server.store.schema import (
 log = logging.getLogger(__name__)
 router = APIRouter()
 
-HEADERS = {
+HEADERS = {  # of every file and listing route
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": "no-store",
     "Referrer-Policy": "no-referrer",
+    "Cross-Origin-Resource-Policy": "same-origin",  # api §5.3 Shared changes
 }
+TEXT_CSP = "sandbox; default-src 'none'"  # every text read (dev-env §15.3 req. 14, 2026-11-08)
 _RANGE = re.compile(r"bytes=([0-9]{1,15})-([0-9]{0,15})")
 
 
@@ -72,6 +82,8 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
             attempts.c.native_id,
             attempts.c.logs,
             attempts.c.outputs,
+            runs.c.launch_dir,
+            runs.c.origin,
         )
         .join(tasks, tasks.c.id == attempts.c.task_id)
         .join(runs, runs.c.id == tasks.c.run_id)
@@ -99,6 +111,8 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
         tuple(p for p in row.outputs or [] if isinstance(p, str))
         if row.engine == "snakemake"
         else None,
+        recorded_root(row.launch_dir, row.origin),
+        row.origin == "cli-observed",
     )
 
 
@@ -161,20 +175,25 @@ def in_pool(
     timeout_s: float | None = None,
     missing: str = "log-not-found",
     refused_missing: bool = False,
+    on_done: Callable[[], None] | None = None,
 ) -> Any:
     """`job()` in the routes' file pool, its refusals mapped to problems (one mapping for every
     file route: CR-P3T28-01 r4): `503 runner-offline`, `415 binary-file`, `410 log-cleaned`,
+    `409 run-dir-unreachable`,
     `422 file-not-allowed` (`404 <missing>` with `refused_missing`, as a run log answers it),
-    and `404 <missing>`. Any other file system error is `503` for `EIO` and `ESTALE`, else
+    and `404 <missing>`. `on_done()` runs once the pool job is over (`FilePool.run`). Any
+    other file system error is `503` for `EIO` and `ESTALE`, else
     `404`, with a fixed text, and is logged (CR-P3T28-02 r4)."""
     try:
-        return request.app.state.files.run(job, timeout_s or READ_TIMEOUT_S)
+        return request.app.state.files.run(job, timeout_s or READ_TIMEOUT_S, on_done)
     except Stalled as exc:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
     except Binary as exc:
         raise Problem(415, "binary-file", "Binary file", f"{exc}: not shown as text") from None
     except Cleaned as exc:
         raise Problem(410, "log-cleaned", "Cleaned", str(exc)) from None
+    except Unreachable as exc:
+        raise Problem(409, "run-dir-unreachable", "Run directory not reachable", str(exc)) from None
     except NotAllowed as exc:
         if refused_missing:
             raise not_found(str(exc), missing) from None
@@ -253,11 +272,17 @@ def task_file(
     if download:
         base = name.rsplit("/", 1)[-1]
         headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(base, safe='')}"
-    status = 200
-    if served.partial and served.start >= served.size:
+    return text_response(served, headers)
+
+
+def text_response(served: Served, headers: dict[str, str]) -> Response:
+    """A text read as `text/plain` with the text CSP: `206` with its `Content-Range` (the bytes
+    actually read, and the total) for a range, `422` on `Range` for one past the end."""
+    headers = {**headers, "Content-Security-Policy": TEXT_CSP}
+    if not served.partial:
+        return Response(served.text, 200, headers=headers, media_type="text/plain; charset=utf-8")
+    if served.start >= served.size:
         raise Invalid("Range", f"the file has {served.size} bytes")
-    if served.partial:
-        status = 206
-        last = max(served.start, served.end - 1)
-        headers["Content-Range"] = f"bytes {served.start}-{last}/{served.size}"
-    return Response(served.text, status, headers=headers, media_type="text/plain; charset=utf-8")
+    last = max(served.start, served.end - 1)
+    headers["Content-Range"] = f"bytes {served.start}-{last}/{served.size}"
+    return Response(served.text, 206, headers=headers, media_type="text/plain; charset=utf-8")

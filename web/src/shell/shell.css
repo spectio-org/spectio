@@ -21,28 +21,31 @@ body {
   white-space: nowrap;
   border: 0;
 }
-.sp-shell :focus-visible {
-  outline: 2px solid var(--sp-line-focus);
-  outline-offset: 2px;
-}
 .sp-grow {
   flex: 1 1 auto;
+}
+/* A button's icon sits 8 px from its label, whatever the spacing scale (ui-audit D, UI-02). */
+.mantine-Button-section[data-position="left"] {
+  margin-inline-end: var(--mantine-spacing-sm);
+}
+.mantine-Button-section[data-position="right"] {
+  margin-inline-start: var(--mantine-spacing-sm);
 }
 
 /* Brand */
 .sp-home {
   display: flex;
   align-items: flex-end;
-  gap: 9px;
+  gap: var(--mantine-spacing-sm);
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: var(--mantine-radius-sm);
   color: var(--sp-text-primary);
   text-decoration: none;
 }
 .sp-word {
   font-family: var(--sp-font-display);
   font-weight: 600;
-  font-size: 23px;
+  font-size: var(--mantine-font-size-xl);
   line-height: 0.74;
   letter-spacing: -0.035em;
 }
@@ -61,7 +64,7 @@ body {
   justify-content: center;
   padding: 0;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--mantine-radius-md);
   background: transparent;
   color: var(--sp-text-secondary);
   cursor: pointer;
@@ -82,33 +85,33 @@ body {
   align-items: center;
   justify-content: center;
 }
-/* The account placeholder: a dashed ring inside the key's hit area. */
+/* The avatar, a link to Profile (FU-P3-112): a ring inside the key's hit area. */
 .sp-avatar .sp-key-face {
   width: 34px;
   height: 34px;
   box-sizing: border-box;
   border-radius: 50%;
   background: var(--sp-surface-subtle);
-  border: 1px dashed var(--sp-line-input);
+  border: 1px solid var(--sp-line-input);
 }
 
 /* Desktop and tablet top bar: a floating paper bar. */
 .sp-topbar {
-  margin: 10px 10px 0;
+  margin: var(--mantine-spacing-md) var(--mantine-spacing-md) 0;
   min-height: 56px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px 8px 16px;
-  border-radius: 18px;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-sm) var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
 .sp-rule {
   width: 1px;
   height: 22px;
-  margin: 0 4px;
+  margin: 0 var(--mantine-spacing-xs);
   flex-shrink: 0;
   background: var(--sp-line-border);
 }
@@ -116,13 +119,17 @@ body {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  font-size: var(--mantine-font-size-md);
+  line-height: 20px;
   color: var(--sp-text-muted);
 }
 .sp-crumbs ol {
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -131,7 +138,7 @@ body {
 .sp-crumbs li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   flex-shrink: 0;
 }
 .sp-crumbs li:last-child {
@@ -142,8 +149,9 @@ body {
   color: var(--sp-text-faint);
 }
 .sp-crumbs a {
-  padding: 2px 4px;
-  border-radius: 6px;
+  display: block;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-sm);
   color: var(--sp-text-muted);
   text-decoration: none;
 }
@@ -154,7 +162,7 @@ body {
 .sp-crumbs [aria-current="page"] {
   display: block;
   min-width: 0;
-  padding: 2px 4px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 600;
@@ -163,16 +171,16 @@ body {
 .sp-search {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   flex-shrink: 0;
   width: 240px;
-  height: 38px;
-  padding: 0 10px 0 12px;
+  height: 40px;
+  padding: 0 var(--mantine-spacing-md);
   border: none;
-  border-radius: 11px;
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-subtle);
   box-shadow: inset 0 0 0 1px var(--sp-line-border);
-  font: 400 13px var(--sp-font-body);
+  font: 400 var(--mantine-font-size-sm) var(--sp-font-body);
 }
 .sp-search-text {
   flex-grow: 1;
@@ -181,10 +189,10 @@ body {
 }
 .sp-search kbd {
   font: inherit;
-  font-size: 11px;
-  padding: 1px 6px;
+  font-size: var(--mantine-font-size-xs);
+  padding: 0 var(--mantine-spacing-xs);
   border: 1px solid var(--sp-line-border);
-  border-radius: 6px;
+  border-radius: var(--mantine-radius-sm);
 }
 @media (max-width: 999.98px) {
   .sp-search {
@@ -209,7 +217,7 @@ body {
 .sp-main {
   flex: 1;
   min-width: 0;
-  padding: 16px 24px 32px;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-xl) var(--sp-space-2xl);
 }
 
 /* Sidebar: 236 px open, the 92 px icon rail folded (ui-spec §2). */
@@ -221,58 +229,57 @@ body {
   width: 216px;
   height: calc(100vh - 86px);
   box-sizing: border-box;
-  margin: 10px 0 10px 10px;
-  padding: 14px 12px 12px;
+  margin: var(--mantine-spacing-md) 0 var(--mantine-spacing-md) var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-md) var(--mantine-spacing-md);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   overflow: hidden;
-  border-radius: 22px;
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
 .sp-sidebar[data-open="false"] {
   width: 72px;
-  padding: 14px 8px 12px;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-sm) var(--mantine-spacing-md);
 }
 .sp-sidebar-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 36px;
-  padding-left: 12px;
-  margin-bottom: 4px;
+  height: 40px;
+  padding-left: var(--mantine-spacing-lg);
+  margin-bottom: var(--mantine-spacing-xs);
 }
 .sp-sidebar[data-open="false"] .sp-sidebar-head {
   justify-content: center;
   padding-left: 0;
 }
 .sp-eyebrow {
-  font-size: 11px;
+  font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--sp-text-muted);
 }
 .sp-fold {
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
+  border-radius: var(--mantine-radius-md);
   box-shadow: inset 0 0 0 1px var(--sp-line-border);
 }
 .sp-nav-items {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-nav-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-height: 56px;
-  padding: 0 16px;
-  border-radius: 16px;
-  font-size: 16px;
+  gap: var(--mantine-spacing-md);
+  height: 56px;
+  box-sizing: border-box;
+  padding: 0 var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
+  font-size: var(--mantine-font-size-lg);
   font-weight: 500;
   white-space: nowrap;
   text-decoration: none;
@@ -297,6 +304,10 @@ body {
 .sp-tab[data-section="launch"][aria-current="page"] svg {
   color: var(--sp-section-launch);
 }
+.sp-nav-item[data-section="environments"] svg,
+.sp-tab[data-section="environments"][aria-current="page"] svg {
+  color: var(--sp-section-environments);
+}
 .sp-nav-item[aria-current="page"],
 .sp-tab[aria-current="page"] {
   color: var(--sp-text-primary);
@@ -310,14 +321,17 @@ body {
 [data-section="launch"][aria-current="page"] {
   background: var(--sp-section-launch-bg);
 }
+[data-section="environments"][aria-current="page"] {
+  background: var(--sp-section-environments-bg);
+}
 .sp-sidebar-foot {
   margin-top: auto;
-  padding: 8px 4px 0;
+  padding: var(--mantine-spacing-sm) 0 0;
   border-top: 1px solid var(--sp-line-divider);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 12.5px;
+  gap: var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-xs);
 }
 .sp-sidebar[data-open="false"] .sp-sidebar-foot {
   align-items: center;
@@ -326,9 +340,9 @@ body {
 .sp-node {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-xl);
   background: var(--sp-ok-bg);
   color: var(--sp-ok-fg);
   font-weight: 600;
@@ -338,15 +352,19 @@ body {
   background: var(--sp-down-bg);
   color: var(--sp-down-fg);
 }
+/* In the sidebar foot the status card starts on the items' 16 px inset. */
+.sp-sidebar-foot .sp-status {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+}
 .sp-dot {
   width: 7px;
   height: 7px;
   flex-shrink: 0;
-  border-radius: 4px;
+  border-radius: var(--mantine-radius-xs);
   background: currentColor;
 }
 .sp-foot-text {
-  padding: 0 12px;
+  padding: 0 var(--mantine-spacing-lg);
   line-height: 1.45;
   color: var(--sp-text-muted);
   overflow-wrap: anywhere;
@@ -366,27 +384,27 @@ body {
   height: 48px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 0 12px;
+  gap: var(--mantine-spacing-xs);
+  padding: 0 var(--mantine-spacing-md);
 }
 .sp-mtopbar .sp-home {
-  gap: 7px;
+  gap: var(--mantine-spacing-sm);
   min-height: 44px;
   align-items: center;
 }
 .sp-mtopbar .sp-word {
-  font-size: 20px;
+  font-size: var(--mantine-font-size-xl);
 }
 .sp-mtopbar .sp-key {
   width: 44px;
   height: 44px;
 }
 .sp-node {
-  gap: 5px;
+  gap: var(--mantine-spacing-xs);
   min-width: 0;
   height: 26px;
-  padding: 0 8px;
-  font-size: 12px;
+  padding: 0 var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-xs);
   white-space: nowrap;
 }
 .sp-node > span:last-child {
@@ -403,7 +421,7 @@ body {
   min-height: calc(100vh - 48px);
 }
 .sp-shell[data-layout="phone"] .sp-main {
-  padding: 16px 16px calc(var(--sp-tabbar-h) + 96px);
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg) calc(var(--sp-tabbar-h) + 96px);
 }
 .sp-tabbar {
   position: fixed;
@@ -411,16 +429,16 @@ body {
   right: 0;
   bottom: 0;
   z-index: 3;
-  padding: 0 8px max(8px, env(safe-area-inset-bottom));
+  padding: 0 var(--mantine-spacing-sm) max(var(--mantine-spacing-sm), env(safe-area-inset-bottom));
   background: var(--sp-surface-page);
 }
 .sp-tabbar nav {
   height: 64px;
   box-sizing: border-box;
   display: flex;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 24px;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   box-shadow: 0 0 0 1px var(--sp-line-hairline), 0 12px 32px -14px rgba(15, 16, 32, 0.35);
 }
@@ -430,15 +448,29 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  border-radius: 19px;
-  font-size: 11px;
+  gap: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-md);
+  font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   text-decoration: none;
   color: var(--sp-text-muted);
 }
 .sp-tab svg {
   color: var(--sp-text-faint);
+}
+/* Four tabs keep their full label (ui-spec §4.8.1, UX-PRE-FU86-R1-09): it may wrap, hyphenated. */
+.sp-tab span {
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+/* Below 340 px the label drops to 10 px, off the font-size scale on purpose (ui-spec §4.8.1, UX-PRE-FU86-R1-09). */
+@media (max-width: 339px) {
+  .sp-tab {
+    font-size: 10px;
+  }
 }
 
 /* Shared rules for the screens of Task 20. */
@@ -451,14 +483,6 @@ body {
   white-space: normal;
 }
 
-/* Tables (UX-G3a-05): a column marked data-wide hides below 1100 px, so the runs table fits at
-   1024 px without a sideways scroll. Task 20 marks Started with it. */
-@media (max-width: 1099.98px) {
-  .sp-table [data-wide] {
-    display: none;
-  }
-}
-
 /* UI parity A (docs/reviews/ui-parity-0.0.1.md). */
 
 /* The Runs item's count of active runs (LiteSidebar; UX-PAR-07): a pill open, a corner badge on
@@ -469,10 +493,10 @@ body {
 .sp-badge {
   margin-left: auto;
   min-width: 22px;
-  padding: 1px 7px;
+  padding: 1px var(--mantine-spacing-sm);
   box-sizing: border-box;
-  border-radius: 999px;
-  font-size: 12px;
+  border-radius: var(--mantine-radius-xl);
+  font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   text-align: center;
   color: var(--sp-state-running-fg);
@@ -483,15 +507,15 @@ body {
   top: 6px;
   right: 6px;
   min-width: 18px;
-  padding: 0 5px;
-  font-size: 11px;
+  padding: 0 var(--mantine-spacing-xs);
+  font-size: var(--mantine-font-size-xs);
 }
 
 /* Page head (ui-spec §7; UX-PAR-03): a tinted 48 px tile in the section's colour. */
 .sp-head-main {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: var(--mantine-spacing-lg);
   min-width: 0;
 }
 .sp-head-tile {
@@ -501,7 +525,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: var(--mantine-radius-md);
 }
 .sp-head-tile[data-section="home"] {
   color: var(--sp-section-home);
@@ -515,6 +539,10 @@ body {
   color: var(--sp-section-launch);
   background: var(--sp-section-launch-bg);
 }
+.sp-head-tile[data-section="environments"] {
+  color: var(--sp-section-environments);
+  background: var(--sp-section-environments-bg);
+}
 
 /* Engine marks (ui-spec §4.3; UX-PAR-01): on white, never recoloured. */
 .sp-engine-mark {
@@ -522,8 +550,8 @@ body {
   object-fit: contain;
 }
 [data-mantine-color-scheme="dark"] .sp-engine-mark {
-  padding: 2px;
-  border-radius: 5px;
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-xs);
   background: var(--sp-surface-mark);
 }
 
@@ -541,13 +569,13 @@ body {
 .sp-fold-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
   width: 100%;
   min-height: 40px;
   box-sizing: border-box;
   padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   font: inherit;
   color: inherit;
   text-align: left;
@@ -561,7 +589,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--mantine-radius-md);
   color: var(--sp-text-secondary);
   background: var(--sp-surface-subtle);
   box-shadow: inset 0 0 0 1px var(--sp-line-hairline);
@@ -569,24 +597,24 @@ body {
 .sp-fold-title {
   min-width: 0;
   font-family: var(--sp-font-display);
-  font-size: 20px;
+  font-size: var(--mantine-font-size-xl);
   font-weight: 600;
 }
 .sp-card .sp-fold-title {
   font-family: var(--sp-font-body);
-  font-size: 15px;
+  font-size: var(--mantine-font-size-lg);
 }
 .sp-card .sp-fold-tile {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border-radius: var(--mantine-radius-sm);
 }
 .sp-fold-sum {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   font-weight: 400;
   color: var(--sp-text-secondary);
 }
@@ -595,13 +623,14 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 4px 10px;
-  font-size: 12.5px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-sm);
   font-weight: 500;
 }
 .sp-fold-sub {
-  margin: 2px 0 0 36px;
-  font-size: 12.5px;
+  /* Under the title: the card's 26 px tile, then the head's gap. */
+  margin: var(--mantine-spacing-xs) 0 0 calc(26px + var(--mantine-spacing-md));
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-fold-chev {
   display: flex;
@@ -613,10 +642,10 @@ body {
   transform: rotate(180deg);
 }
 .sp-fold-body {
-  padding-top: 8px;
+  padding-top: var(--mantine-spacing-sm);
 }
 .sp-card.sp-foldsec {
-  padding: 14px 16px;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg);
 }
 
 /* UI parity B (docs/reviews/ui-parity-0.0.1.md): the phone, after MLiteTopbar, MLiteRuns,
@@ -627,8 +656,8 @@ body {
 .sp-mtitle {
   display: flex;
   align-items: flex-start;
-  gap: 4px;
-  padding: 2px 16px 10px 8px;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-lg) var(--mantine-spacing-md) var(--mantine-spacing-sm);
   border-top: 1px solid var(--sp-line-hairline);
 }
 .sp-mtitle:empty {
@@ -636,18 +665,18 @@ body {
 }
 .sp-mtitle-text {
   min-width: 0;
-  padding: 8px 0 0 8px;
+  padding: var(--mantine-spacing-sm) 0 0 var(--mantine-spacing-sm);
 }
 .sp-mtitle h1 {
   margin: 0;
   font-family: var(--sp-font-display);
-  font-size: 19px;
+  font-size: var(--mantine-font-size-xl);
   font-weight: 600;
   line-height: 1.25;
 }
 .sp-mtitle .sp-sub {
-  margin-top: 2px;
-  font-size: 12px;
+  margin-top: var(--mantine-spacing-xs);
+  font-size: var(--mantine-font-size-xs);
 }
 .sp-back {
   color: var(--sp-text-primary);
@@ -668,4 +697,481 @@ body {
   .sp-link-button {
     min-height: 44px;
   }
+}
+/* Search (FU-P3-89, UI-06): a spotlight panel; the 44 px field with its icon and Esc hint, then
+   rows like the notification rows (ui-spec §12.13). */
+.sp-search-body {
+  padding: 0;
+}
+.sp-search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+  height: 44px;
+  padding: 0 var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--sp-line-border);
+  color: var(--sp-text-muted);
+}
+.sp-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--sp-text-primary);
+  font: 400 var(--mantine-font-size-lg) var(--sp-font-body);
+}
+/* the field is the whole bar: the panel border carries focus, not a ring inside it */
+.sp-search-input:focus-visible {
+  outline: none;
+}
+.sp-search-input::-webkit-search-cancel-button {
+  appearance: none;
+}
+.sp-search-bar:focus-within {
+  box-shadow: inset 0 -2px 0 var(--sp-accent);
+}
+.sp-search-esc {
+  font: 500 var(--mantine-font-size-xs) var(--sp-font-body);
+  padding: 0 var(--mantine-spacing-xs);
+  border: 1px solid var(--sp-line-border);
+  border-radius: var(--mantine-radius-xs);
+}
+.sp-search-dialog .sp-emptystate {
+  padding: var(--mantine-spacing-lg);
+}
+.sp-search-error {
+  margin: var(--mantine-spacing-sm) var(--mantine-spacing-lg) 0;
+  font-size: var(--mantine-font-size-sm);
+  color: var(--sp-state-failed-fg);
+}
+.sp-search-results {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0 var(--mantine-spacing-sm) var(--mantine-spacing-sm);
+}
+.sp-search-results:empty {
+  display: none;
+}
+.sp-search-group {
+  margin: var(--mantine-spacing-md) var(--mantine-spacing-sm) var(--mantine-spacing-xs);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sp-text-muted);
+}
+.sp-search-hits {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-search-hit {
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  gap: var(--mantine-spacing-md);
+  align-items: center;
+  padding: var(--mantine-spacing-sm);
+  box-sizing: border-box;
+  border: none;
+  border-radius: var(--mantine-radius-sm);
+  background: transparent;
+  color: var(--sp-text-primary);
+  font: 400 var(--mantine-font-size-md) var(--sp-font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.sp-search-hit:hover {
+  background: var(--sp-surface-subtle);
+}
+.sp-search-hit[data-active] {
+  background: var(--sp-accent-subtle);
+}
+.sp-search-hit:focus-visible {
+  outline-offset: -2px;
+}
+.sp-search-tile {
+  display: inline-flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--mantine-radius-sm);
+  background: var(--tone-bg, var(--sp-surface-subtle));
+  color: var(--tone-fg, var(--sp-text-secondary));
+}
+.sp-search-row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  min-width: 0;
+}
+.sp-search-line {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  min-width: 0;
+  line-height: 18px;
+}
+.sp-search-name {
+  overflow: hidden;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sp-search-word {
+  flex-shrink: 0;
+  color: var(--tone-fg, var(--sp-text-muted));
+  font-size: var(--mantine-font-size-sm);
+}
+.sp-search-meta {
+  font-size: var(--mantine-font-size-xs);
+  line-height: 16px;
+  color: var(--sp-text-secondary);
+}
+.sp-search-detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Notifications (ui-spec §12.13): the bell's unread count, and its panel (a popover under the bell,
+   a bottom sheet on the phone). Unread is not a failure: the count uses the accent (§3.4). */
+.sp-bell {
+  position: relative;
+}
+.sp-bell-count {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--mantine-spacing-xs);
+  box-sizing: border-box;
+  border-radius: var(--mantine-radius-xl);
+  background: var(--sp-accent);
+  color: var(--sp-accent-on);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+.sp-link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--sp-text-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.sp-notif-popover {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  padding: 0;
+  border: 1px solid var(--sp-line-border);
+  overflow: hidden;
+}
+.sp-notif-sheet {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  max-height: 90dvh;
+  overflow: hidden;
+}
+.sp-notif-sheet .sp-notif-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+.sp-notif-sheet .sp-notif-title {
+  font-size: var(--mantine-font-size-lg);
+}
+.sp-notif-sheet .sp-notif-line {
+  font-size: var(--mantine-font-size-lg);
+}
+.sp-notif-title {
+  margin: 0;
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
+}
+.sp-notif-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md) var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+.sp-notif-head .sp-notif-title {
+  flex: 1;
+}
+.sp-notif-sheet .sp-notif-head {
+  justify-content: space-between;
+  padding: 0 var(--mantine-spacing-lg) var(--mantine-spacing-sm);
+}
+.sp-notif-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-sm);
+  margin: var(--mantine-spacing-sm) var(--mantine-spacing-md) 0;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--sp-state-failed-bg);
+  color: var(--sp-state-failed-fg);
+  font-size: var(--mantine-font-size-sm);
+}
+.sp-notif-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--mantine-spacing-xs);
+}
+.sp-notif-day {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg) var(--mantine-spacing-xs);
+  background: var(--sp-surface-raised);
+  color: var(--sp-text-muted);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sp-notif-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-notif-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+  height: 56px;
+  padding: 0 var(--mantine-spacing-lg);
+  box-sizing: border-box;
+  color: var(--sp-text-primary);
+  text-decoration: none;
+}
+.sp-notif-row[data-unread] {
+  background: var(--sp-accent-subtle);
+}
+.sp-notif-row:hover {
+  background: var(--sp-surface-subtle);
+}
+/* An unread row keeps its tint on hover; focus shows the ring only (CR-P3UI05B-05). */
+.sp-notif-row[data-unread]:hover {
+  background: var(--sp-accent-subtle);
+}
+.sp-notif-row:focus-visible {
+  outline-offset: -2px;
+}
+.sp-notif-tile {
+  display: inline-flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--mantine-radius-sm);
+  background: var(--tone-bg);
+  color: var(--tone-fg);
+}
+.sp-notif-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  min-width: 0;
+}
+.sp-notif-line {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  min-width: 0;
+  font-size: var(--mantine-font-size-md);
+  line-height: 18px;
+}
+.sp-notif-name {
+  overflow: hidden;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sp-notif-state {
+  flex-shrink: 0;
+  color: var(--tone-fg);
+  font-size: var(--mantine-font-size-sm);
+}
+.sp-notif-meta {
+  gap: var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-xs);
+  line-height: 16px;
+  color: var(--sp-text-secondary);
+}
+.sp-notif-dot {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sp-accent);
+}
+.sp-notif-foot {
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  border-top: 1px solid var(--sp-line-divider);
+}
+.sp-notif-all {
+  color: var(--sp-accent);
+  font-size: var(--mantine-font-size-md);
+  font-weight: 500;
+  text-decoration: none;
+}
+.sp-notif-all:hover,
+.sp-notif-all:focus-visible {
+  text-decoration: underline;
+}
+
+/* Shared primitives of ui-spec §12 (UI-03): page head v2, toolbar, card head and the states.
+   Sizes are the theme's (--mantine-*), except the fixed sizes §12 lists (36, 44, 28 px). */
+.sp-head-text {
+  min-width: 0;
+}
+.sp-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  margin-left: auto;
+}
+.sp-menu-danger,
+.sp-menu-danger .mantine-Menu-itemSection {
+  color: var(--sp-state-failed-fg);
+}
+/* The phone: the primary in the bar pinned above the tab bar (§4.11); the shell's main already
+   leaves room under the content for it. */
+.sp-head-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--sp-tabbar-h);
+  z-index: 2;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  border-top: 1px solid var(--sp-line-border);
+  background: var(--sp-surface-page);
+}
+.sp-head-bar > * {
+  width: 100%;
+}
+
+.sp-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  min-height: 36px;
+}
+.sp-toolbar-search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sp-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  margin-left: auto;
+}
+.sp-toolbar-caption {
+  font-size: var(--mantine-font-size-sm);
+  color: var(--sp-text-secondary);
+}
+@media (max-width: 767.98px) {
+  .sp-toolbar {
+    flex-wrap: wrap;
+  }
+  .sp-toolbar-search {
+    flex-basis: 100%;
+  }
+}
+
+.sp-cardhead {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  min-height: 44px;
+}
+.sp-cardhead-tile {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-subtle);
+}
+.sp-cardhead-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sp-cardhead-title {
+  margin: 0;
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
+}
+.sp-cardhead-meta {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mantine-font-size-sm);
+  color: var(--sp-text-secondary);
+}
+.sp-cardhead-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+}
+.sp-cardhead-fold svg {
+  transition: transform 0.15s;
+}
+.sp-cardhead[data-open="true"] .sp-cardhead-fold svg {
+  transform: rotate(180deg);
+}
+
+.sp-emptystate,
+.sp-errorpanel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-md);
+}
+.sp-emptystate-icon {
+  display: flex;
+  color: var(--sp-text-secondary);
+}
+.sp-emptystate-text,
+.sp-errorpanel-text,
+.sp-errorpanel-id {
+  margin: 0;
+  font-size: var(--mantine-font-size-sm);
+}
+.sp-emptystate-text,
+.sp-errorpanel-id {
+  color: var(--sp-text-secondary);
+}
+.sp-skelrows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
 }

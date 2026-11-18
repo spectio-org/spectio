@@ -2,6 +2,7 @@
 
 import os
 import shlex
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 
@@ -71,3 +72,15 @@ def fakebin(tools: Callable[..., Path]) -> Path:
 def login(home: Path) -> Callable[..., None]:
     """`login(*dirs)`: the login shell's PATH becomes exactly `dirs`."""
     return lambda *dirs: login_path(home, *dirs)
+
+
+@pytest.fixture
+def term_in_tail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A `date` on the head's PATH that SIGTERMs its own process group, the head's, as a
+    Cancel's SIGTERM can while the head writes head.exit (FU-P3-77)."""
+    shim = tmp_path / "term-in-tail"
+    shim.mkdir()
+    real = shutil.which("date") or "/bin/date"
+    (shim / "date").write_text(f'#!/bin/bash\nkill -TERM 0\nexec {shlex.quote(real)} "$@"\n')
+    (shim / "date").chmod(0o755)
+    monkeypatch.setenv("PATH", f"{shim}:{os.environ['PATH']}")

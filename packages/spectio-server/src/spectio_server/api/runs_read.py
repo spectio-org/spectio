@@ -10,6 +10,7 @@ for the writer. The run's `Location` of `POST /runs` is served here (inbox #86, 
 
 import base64
 import binascii
+import heapq
 import json
 import os
 import pwd
@@ -19,7 +20,9 @@ from importlib.metadata import version
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Query, Request
-from sqlalchemy import Connection, Row, Select, and_, func, select
+from sqlalchemy import Connection, Float, Row, Select, and_, func, literal, or_, select
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import FunctionElement
 
 from spectio.config import Settings
 from spectio.runner.local import checkable
@@ -28,7 +31,9 @@ from spectio_server import efficiency
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
 from spectio_server.failure import Context, build_failures, dir_run_id, task_resources
-from spectio_server.files.pool import READ_TIMEOUT_S
+from spectio_server.files.confine import NotAllowed, NotFound
+from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
+from spectio_server.files.taskfiles import head_logs
 from spectio_server.resume import command, resume_refusal, resumed_as
 from spectio_server.stages.freeze import FROZEN as STAGES_FROZEN
 from spectio_server.stages.state import RunFacts, checkpoint_open, process_status
@@ -79,6 +84,11 @@ _RUN_COLUMNS = (
     runs.c.launch_dir,
     runs.c.results_dir,
     runs.c.engine_settings,
+    runs.c.environment,
+    runs.c.target,
+    runs.c.pinned,
+    runs.c.default_resources,
+    runs.c.config_file,
     workflows.c.engine,
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
@@ -93,13 +103,16 @@ _RUN_COLUMNS = (
 )
 
 
-def _runs_query() -> Select[Any]:
+def _runs_query(*extra: Any) -> Select[Any]:
+    """The runs not deleted (FU-P3-115a: `POST /runs:delete` soft deletes), with `extra`
+    columns."""
     return (
-        select(*_RUN_COLUMNS)
+        select(*_RUN_COLUMNS, *extra)
         .join(workflow_versions, workflow_versions.c.id == runs.c.workflow_version_id)
         .join(workflows, workflows.c.id == workflow_versions.c.workflow_id)
         .outerjoin(_last_n, _last_n.c.run_id == runs.c.id)
         .outerjoin(launches, and_(launches.c.run_id == runs.c.id, launches.c.n == _last_n.c.n))
+        .where(runs.c.deleted_at.is_(None))
     )
 
 
@@ -208,6 +221,9 @@ def run_json(
             "version": row.workflow_version,
         },
         "profiles": profiles,
+        "environment": row.environment,  # null for a run started from a terminal (FU-P3-86a)
+        "target": row.target,  # one module or one rule; null: the whole pipeline (api §5.10)
+        "pinned": row.pinned,
         "failure": row.failure,
         "head": head,
         "task_counts": counts,
@@ -288,7 +304,22 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
             "cleanup": (row.engine_settings or {}).get("cleanup"),
             "notemp": None,
         },
+        "default_resources": row.default_resources,  # api §5.7 (FU-P3-110a)
+        "config_file": row.config_file,
+        "head_logs": _head_logs(row, ctx),
     }
+
+
+def _head_logs(row: Row[Any], ctx: Context) -> list[str]:
+    """The head logs there are (FU-P3-124), read in the file pool; none for a run from a
+    terminal, or when its launch directory cannot be read in time."""
+    if row.origin == "cli-observed":
+        return []
+    try:
+        found: list[str] = ctx.files.run(lambda: head_logs(ctx.runs_root, row.id), ctx.timeout_s)
+    except (Stalled, NotFound, NotAllowed, OSError):
+        return []
+    return found
 
 
 def results_of(row: Row[Any]) -> str | None:
@@ -297,7 +328,66 @@ def results_of(row: Row[Any]) -> str | None:
     return None if row.origin == "cli-observed" else row.results_dir
 
 
-# --- Cursors: base64url of [sort value, id], or of the id alone when it is the sort key -----
+# --- Cursors: base64url of the sort values of the page's last row, or of the ID alone when it
+# is the sort key (tasks) -------------------------------------------------------------------
+
+
+class _Seconds(FunctionElement[float]):
+    """`end - start` in seconds, NULL when either is: SQLite has no interval type. Its
+    `julianday` reads the stored `YYYY-MM-DD HH:MM:SS.SSSSSS` text, any count of fraction digits
+    (https://www.sqlite.org/lang_datefunc.html, "Time Values")."""
+
+    type = Float()
+    inherit_cache = True
+
+
+@compiles(_Seconds, "sqlite")
+def _seconds_sqlite(element: _Seconds, compiler: Any, **kw: Any) -> str:
+    start, end = (compiler.process(c, **kw) for c in element.clauses)
+    return f"((julianday({end}) - julianday({start})) * 86400.0)"
+
+
+@compiles(_Seconds, "postgresql")
+def _seconds_postgresql(element: _Seconds, compiler: Any, **kw: Any) -> str:
+    start, end = (compiler.process(c, **kw) for c in element.clauses)
+    return f"EXTRACT(EPOCH FROM ({end} - {start}))"
+
+
+RunSort = Literal[
+    "-created_at",
+    "-ended_at",
+    "name",
+    "-name",
+    "state",
+    "-state",
+    "started_at",
+    "-started_at",
+    "duration",
+    "-duration",
+]
+NO_END = 1e15  # seconds: a run with no duration sorts after every real one
+
+
+def _run_keys(sort: str) -> list[tuple[Any, bool, str]]:
+    """The keyset of `GET /runs?sort=` as (expression, descending, kind): pinned runs first but
+    for `-ended_at` (Home's recently ended), then the key, then the ID in the key's direction
+    (api §5 note of 2026-11-10). Every expression is NOT NULL, so a row compares."""
+    descending, name = sort.startswith("-"), sort.lstrip("-")
+    key: Any
+    kind = "time"
+    if name == "name":
+        key, kind = func.coalesce(runs.c.name, ""), "text"
+    elif name == "state":
+        key, kind = runs.c.state, "text"
+    elif name == "started_at":  # a run not started takes its creation
+        key = func.coalesce(runs.c.started_at, runs.c.created_at)
+    elif name == "duration":  # a run not ended comes last, in both directions
+        seconds = _Seconds(runs.c.started_at, runs.c.ended_at)
+        key, kind = func.coalesce(seconds, -1.0 if descending else NO_END), "number"
+    else:  # created_at, ended_at (the route keeps ended runs only)
+        key = runs.c[name]
+    keys = [(key, descending, kind), (runs.c.id, descending, "text")]
+    return keys if name == "ended_at" else [(runs.c.pinned, True, "bool"), *keys]
 
 
 def _encode(value: Any) -> str:
@@ -305,43 +395,57 @@ def _encode(value: Any) -> str:
     return base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
 
 
-def _decode(cursor: str, timestamp: bool) -> tuple[Any, str]:
-    try:
-        found = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
-        if not timestamp:
-            if not isinstance(found, str):
-                raise ValueError("not an ID")
-            return found, found
-        value, id_ = found
-        if not isinstance(id_, str):
-            raise ValueError("no ID")
-        at = datetime.fromisoformat(value)
+def _value(raw: Any, kind: str) -> Any:
+    if kind == "time":
+        at = datetime.fromisoformat(raw)  # TypeError when not a string
         if at.utcoffset() is None:  # the store takes aware times only
             raise ValueError("naive")
-        return at, id_
+        return at
+    types = {"bool": (bool,), "text": (str,), "number": (int, float)}[kind]
+    if not isinstance(raw, types) or (kind == "number" and isinstance(raw, bool)):
+        raise ValueError(f"not a {kind}")
+    return raw
+
+
+def _decode(cursor: str, kinds: list[str]) -> list[Any]:
+    try:
+        found = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
+        if not isinstance(found, list) or len(found) != len(kinds):
+            raise ValueError("not a list of the sort's values")
+        return [_value(v, k) for v, k in zip(found, kinds, strict=True)]
     except (ValueError, TypeError, binascii.Error):
         raise Invalid("cursor", "not a cursor this server gave") from None
 
 
-def _page(
-    query: Select[Any],
-    key: Any,
-    id_col: Any,
-    cursor: str | None,
-    limit: int,
-    descending: bool,
-    timestamp: bool,
+def _keyset(
+    query: Select[Any], keys: list[tuple[Any, bool, str]], cursor: str | None, limit: int
 ) -> Select[Any]:
+    """The rows after the cursor's in the order of `keys`, one more than `limit`."""
     if cursor is not None:
-        value, id_ = _decode(cursor, timestamp)
-        if not timestamp:  # the ID is the key (tasks): one comparison
-            query = query.where(key < value if descending else key > value)
-        elif descending:
-            query = query.where((key < value) | ((key == value) & (id_col < id_)))
-        else:
-            query = query.where((key > value) | ((key == value) & (id_col > id_)))
-    order = (key.desc(), id_col.desc()) if descending else (key.asc(), id_col.asc())
+        values = _decode(cursor, [kind for _, _, kind in keys])
+        bound = [literal(v, key.type) for (key, _, _), v in zip(keys, values, strict=True)]
+        after = []
+        for i, (key, descending, _) in enumerate(keys):
+            same = [k == v for (k, _, _), v in zip(keys[:i], bound[:i], strict=True)]
+            after.append(and_(*same, key < bound[i] if descending else key > bound[i]))
+        query = query.where(or_(*after))
+    order = [key.desc() if descending else key.asc() for key, descending, _ in keys]
     return query.order_by(*order).limit(limit + 1)
+
+
+def _decode_id(cursor: str) -> str:
+    try:
+        found = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
+    except (ValueError, TypeError, binascii.Error):
+        found = None
+    if not isinstance(found, str):
+        raise Invalid("cursor", "not a cursor this server gave")
+    return found
+
+
+def _cursor_of(row: Row[Any], keys: list[tuple[Any, bool, str]]) -> str:
+    values = list(row[-len(keys) :])
+    return _encode([v.isoformat() if isinstance(v, datetime) else v for v in values])
 
 
 def _states(value: str | None, allowed: tuple[str, ...]) -> list[str] | None:
@@ -362,21 +466,28 @@ def list_runs(
     request: Request,
     state: Annotated[str | None, Query(max_length=200)] = None,
     q: Annotated[str | None, Query(max_length=200)] = None,
-    sort: Literal["-created_at", "-ended_at"] = "-created_at",
+    sort: RunSort = "-created_at",
+    target: Literal["any", "none"] | None = None,
     limit: Limit = 50,
     cursor: Cursor = None,
 ) -> dict[str, Any]:
-    """Newest first by `created_at`, or by `ended_at` (`sort=-ended_at`: ended runs only)."""
+    """Newest first by `created_at`, or by the sort of `_run_keys`, pinned runs first;
+    `sort=-ended_at`: ended runs only, by end time (FU-P3-115a). `target=any` lists runs of
+    one module or one rule only, `none` whole-pipeline runs (§5.10)."""
     states = _states(state, RUN_STATES)
-    key = runs.c.ended_at if sort == "-ended_at" else runs.c.created_at
-    query = _runs_query()
+    keys = _run_keys(sort)
+    query = _runs_query(*(key.label(f"_key{i}") for i, (key, _, _) in enumerate(keys)))
     if sort == "-ended_at":
         query = query.where(runs.c.ended_at.is_not(None))
     if states is not None:
         query = query.where(runs.c.state.in_(states))
+    if target is not None:  # SQL NULL; a JSON null is never stored (`insert_run`)
+        query = query.where(
+            runs.c.target.is_not(None) if target == "any" else runs.c.target.is_(None)
+        )
     if q:  # a prefix, compared as text: no LIKE pattern
         query = query.where(func.substr(runs.c.name, 1, len(q)) == q)
-    query = _page(query, key, runs.c.id, cursor, limit, descending=True, timestamp=True)
+    query = _keyset(query, keys, cursor, limit)
     with read(request) as conn:
         rows = conn.execute(query).all()
         page = [r.id for r in rows[:limit]]
@@ -385,8 +496,7 @@ def list_runs(
     items = [
         run_json(r, profiles.get(r.id, []), modes.get(r.id), marked[r.id]) for r in rows[:limit]
     ]
-    last = rows[limit - 1] if len(rows) > limit else None
-    next_ = None if last is None else _encode([getattr(last, key.name).isoformat(), last.id])
+    next_ = _cursor_of(rows[limit - 1], keys) if len(rows) > limit else None
     return {"items": items, "next": next_}
 
 
@@ -394,7 +504,11 @@ def list_runs(
 def runs_summary(request: Request, group_by: Literal["state"] = "state") -> dict[str, Any]:
     """Counts by state over all the runs, with no time window (0.0.1: no `since`, `project`)."""
     with read(request) as conn:
-        rows = conn.execute(select(runs.c.state, func.count()).group_by(runs.c.state)).all()
+        rows = conn.execute(
+            select(runs.c.state, func.count())
+            .where(runs.c.deleted_at.is_(None))
+            .group_by(runs.c.state)
+        ).all()
     return {"groups": [{"key": key, "count": n} for key, n in rows]}
 
 
@@ -411,6 +525,7 @@ def server_version(request: Request) -> dict[str, Any]:
         "runs_root": str(settings.runs_root),
         "account": account,
         "executor": settings.executor,
+        "features": {"single_target": settings.features.single_target},  # api §5.10
     }
 
 
@@ -422,45 +537,58 @@ def get_run(request: Request, run_id: str) -> dict[str, Any]:
 
 @router.get("/runs/{run_id}/processes", response_model=models.ProcessList)
 def list_processes(request: Request, run_id: str) -> dict[str, Any]:
-    """One item per process or rule: those the projector recorded (`onProcessCreate`, the rule
-    files at the freeze, a first task), in that order, with the stage they froze with; then any
-    known from tasks only (a database from before P1 Task 27), in their first task's order.
-    Each has its `status`, and the `efficiency` of its jobs (P1 Task 34)."""
+    """One item per process or rule in first-seen order (ui-spec §4.4): for Snakemake the rules
+    by their first job, then those the freeze recorded in the rule files' order (FU-P3-107);
+    for Nextflow those the projector recorded (`onProcessCreate`, a first task), in that order;
+    then any known from tasks only (a database from before P1 Task 27), in their first task's
+    order. Each keeps the stage it froze with.
+    Each has its `status`, the `efficiency` of its jobs (P1 Task 34), and its `pipeline_order`
+    (FU-P3-82)."""
     with read(request) as conn:
         run = run_row(conn, run_id)
-        mine = tasks.c.run_id == run_id
-        known = conn.execute(
-            select(
-                run_processes.c.name,
-                run_processes.c.stage_id,
-                run_processes.c.ended,
-                run_processes.c.jobs_planned,
-                run_processes.c.is_checkpoint,
-            )
-            .where(run_processes.c.run_id == run_id)
-            .order_by(run_processes.c.position)
-        ).all()
-        from_tasks = conn.execute(
-            select(tasks.c.process_or_rule, func.max(tasks.c.stage_id))
-            .where(mine)
-            .group_by(tasks.c.process_or_rule)
-            .order_by(func.min(tasks.c.id))
-        ).all()
-        counts = conn.execute(
-            select(tasks.c.process_or_rule, tasks.c.state, func.count())
-            .where(mine)
-            .group_by(tasks.c.process_or_rule, tasks.c.state)
-        ).all()
-        retries: dict[str, int] = dict(
-            conn.execute(
-                select(tasks.c.process_or_rule, func.count())
-                .join(attempts, attempts.c.task_id == tasks.c.id)
-                .where(mine, attempts.c.n > 1)
-                .group_by(tasks.c.process_or_rule)
-            ).all()
+        return {"items": process_items(conn, run, context(request))[0]}
+
+
+def process_items(
+    conn: Connection, run: Row[Any], ctx: Context
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
+    """The items of `GET /runs/{id}/processes` (the nodes of the run's graph, #160), and the
+    jobs of `task_resources` they were computed from, by task ID."""
+    run_id = run.id
+    mine = tasks.c.run_id == run_id
+    known = conn.execute(
+        select(
+            run_processes.c.name,
+            run_processes.c.stage_id,
+            run_processes.c.ended,
+            run_processes.c.jobs_planned,
+            run_processes.c.is_checkpoint,
         )
-        facts = _run_facts(conn, run)
-        jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, None, context(request))
+        .where(run_processes.c.run_id == run_id)
+        .order_by(run_processes.c.position)
+    ).all()
+    from_tasks = conn.execute(
+        select(tasks.c.process_or_rule, func.max(tasks.c.stage_id))
+        .where(mine)
+        .group_by(tasks.c.process_or_rule)
+        .order_by(func.min(tasks.c.id))
+    ).all()
+    counts = conn.execute(
+        select(tasks.c.process_or_rule, tasks.c.state, func.count())
+        .where(mine)
+        .group_by(tasks.c.process_or_rule, tasks.c.state)
+    ).all()
+    retries: dict[str, int] = dict(
+        conn.execute(
+            select(tasks.c.process_or_rule, func.count())
+            .join(attempts, attempts.c.task_id == tasks.c.id)
+            .where(mine, attempts.c.n > 1)
+            .group_by(tasks.c.process_or_rule)
+        ).all()
+    )
+    graphs = _rulegraphs(conn, run)
+    facts = _run_facts(conn, run, graphs[-1] if graphs else {})
+    jobs = task_resources(conn, run.id, dir_run_id(run), run.engine, None, ctx)
     by_process: dict[str, dict[str, int]] = {}
     for process, state, n in counts:
         by_process.setdefault(process, {})[state] = n
@@ -468,9 +596,14 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     for job in jobs.values():
         of_process.setdefault(job["process"], []).append(job)
     rows = {r.name: r for r in known}
-    order: dict[str, str | None] = {r.name: r.stage_id for r in known}
-    for process, stage_id in from_tasks:
-        order.setdefault(process, stage_id)
+    task_stage: dict[str, str | None] = dict(from_tasks)  # in first task's order
+    # Snakemake's rules recorded at the freeze are not seen yet: first-seen is the first job
+    seen = list(task_stage) if run.engine == "snakemake" else []
+    order: dict[str, str | None] = {}
+    for name in [*seen, *rows, *task_stage]:
+        order.setdefault(name, rows[name].stage_id if name in rows else task_stage[name])
+    pipeline = _pipeline_order(list(order), graphs, set(seen))
+    ranks = {name: n for n, name in enumerate(pipeline)}
     items = []
     for process, stage_id in order.items():
         r = rows.get(process)
@@ -489,13 +622,81 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
                 "is_checkpoint": bool(r is not None and r.is_checkpoint),
                 "lower_bound": facts.checkpoint_open,
                 "efficiency": efficiency.aggregate(of_process.get(process, []), planned),
+                "pipeline_order": ranks[process],
             }
         )
-    return {"items": items}
+    return items, jobs
 
 
-def _run_facts(conn: Connection, run: Row[Any]) -> RunFacts:
-    """What the process statuses read of the run (Snakemake: its `run_info`, rule graph, open
+def _pipeline_order(names: list[str], graphs: list[dict[str, Any]], seen: set[str]) -> list[str]:
+    """`names` (in their recorded order) in topological order of the links of every rule graph
+    of the run (`sourcerule` before `targetrule`; tests/fixtures/engine-events/
+    snakemake-9.27.1_checkpoint_flaky_retry.spool.jsonl:4), ties broken by the recorded order.
+    A rule in no graph's nodes (one that joined the DAG after a checkpoint, FU-P3-90) comes after
+    every graph rule, in the recorded order; with no graph (Nextflow, an older plugin), all do;
+    once `seen` (it has a job) it is a graph rule with no links, placed by its first job
+    (FU-P3-107).
+    A cycle, which a rule graph should not have, leaves its rules after the others of the graph
+    in the recorded order."""
+    in_graph = set(seen)
+    links: list[Any] = []
+    for graph in graphs:
+        nodes, found = graph.get("nodes"), graph.get("links")
+        for node in nodes if isinstance(nodes, list) else []:
+            if isinstance(node, dict) and isinstance(node.get("rule"), str):
+                in_graph.add(node["rule"])
+        links += found if isinstance(found, list) else []
+    members = [name for name in names if name in in_graph]
+    rank = {name: n for n, name in enumerate(members)}
+    after: dict[str, set[str]] = {name: set() for name in members}
+    for link in links:
+        if not isinstance(link, dict):
+            continue
+        source, target = link.get("sourcerule"), link.get("targetrule")
+        if isinstance(source, str) and isinstance(target, str) and source != target:
+            if source in rank and target in rank:
+                after[source].add(target)
+    waiting = {name: 0 for name in members}
+    for targets in after.values():
+        for target in targets:
+            waiting[target] += 1
+    ready = [rank[name] for name in members if waiting[name] == 0]
+    heapq.heapify(ready)
+    done: list[str] = []
+    while ready:
+        name = members[heapq.heappop(ready)]
+        done.append(name)
+        for target in after[name]:
+            waiting[target] -= 1
+            if waiting[target] == 0:
+                heapq.heappush(ready, rank[target])
+    placed = set(done)
+    return (
+        done
+        + [name for name in members if name not in placed]
+        + [name for name in names if name not in in_graph]
+    )
+
+
+def _rulegraphs(conn: Connection, run: Row[Any]) -> list[dict[str, Any]]:
+    """Every rule graph the Snakemake logger plugin sent, oldest first (none for Nextflow).
+    Snakemake 9.27.1 logs one per invocation, after the DAG is built and its checkpoint
+    dependencies updated (snakemake/workflow.py:1274-1279, `log_rulegraph`); the plugin sends
+    each one as is (engine-bridges/snakemake-logger-plugin-spectio/
+    snakemake_logger_plugin_spectio/__init__.py:178-180)."""
+    if run.engine != "snakemake":
+        return []
+    payloads = conn.execute(
+        select(events.c.payload)
+        .where(events.c.run_id == run.id, events.c.type == RULEGRAPH)
+        .order_by(events.c.seq)
+    ).scalars()
+    graphs = [(payload or {}).get("rulegraph") for payload in payloads]
+    return [graph for graph in graphs if isinstance(graph, dict)]
+
+
+def _run_facts(conn: Connection, run: Row[Any], graph: dict[str, Any]) -> RunFacts:
+    """What the process statuses read of the run (Snakemake: its `run_info`, rule `graph`, open
     checkpoints, and whether jobs are to come after a DAG update)."""
     if run.engine != "snakemake":
         return RunFacts(run.engine, run.state)
@@ -503,13 +704,7 @@ def _run_facts(conn: Connection, run: Row[Any]) -> RunFacts:
     planned = conn.execute(
         select(events.c.id).where(mine, events.c.type == RUN_INFO).limit(1)
     ).first()
-    graph = conn.execute(
-        select(events.c.payload)
-        .where(mine, events.c.type == RULEGRAPH)
-        .order_by(events.c.seq.desc())
-        .limit(1)
-    ).scalar()
-    nodes = ((graph or {}).get("rulegraph") or {}).get("nodes")
+    nodes = graph.get("nodes")
     rules = frozenset(
         n["rule"]
         for n in (nodes if isinstance(nodes, list) else [])
@@ -555,22 +750,30 @@ def list_tasks(
     run_id: str,
     state: Annotated[str | None, Query(max_length=200)] = None,
     process: Annotated[str | None, Query(max_length=1024)] = None,
+    task: Annotated[str | None, Query(max_length=64)] = None,
     limit: Limit = 50,
     cursor: Cursor = None,
 ) -> dict[str, Any]:
-    """The run's tasks in first-seen order (by ID)."""
+    """The run's tasks in first-seen order (by ID). `task`: that one task, whose SLURM panel
+    is open, so its ended job is asked of `sacct` while the run is live (CON-SLURM-POLL-01)."""
     states = _states(state, TASK_STATES)
     query = select(tasks).where(tasks.c.run_id == run_id)
+    if task is not None:
+        query = query.where(tasks.c.id == task)
     if states is not None:
         query = query.where(tasks.c.state.in_(states))
     if process is not None:
         query = query.where(tasks.c.process_or_rule == process)
-    query = _page(query, tasks.c.id, tasks.c.id, cursor, limit, descending=False, timestamp=False)
+    if cursor is not None:  # the task's ID is its sort key: the cursor is that ID
+        query = query.where(tasks.c.id > _decode_id(cursor))
+    query = query.order_by(tasks.c.id).limit(limit + 1)
     with read(request) as conn:
         run = run_row(conn, run_id)
         rows = conn.execute(query).all()
         page = [r.id for r in rows[:limit]]
-        jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, page, context(request))
+        jobs = task_resources(
+            conn, run_id, dir_run_id(run), run.engine, page, context(request), opened=task
+        )
     items = [
         {
             "id": r.id,

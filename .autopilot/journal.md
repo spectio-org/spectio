@@ -724,3 +724,222 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - 2026-11-08 · P3-fu73 · PR #170 merged (0da295d).
 - 2026-11-08 · P3-fu74 · build done (review approve, security approve, 2 rounds); PR #171 into autopilot/integration, label no-figure. Next: batch close P3-B07 (fu72, fu73, fu74).
+
+- 2026-11-08 · P3-fu74 · PR #171 merged (47d78c4).
+- 2026-11-08 · P3-B07 · batch docs: simplify -13/+17 (re-review approve), figure, cast; doc-reviewer changes 12/14 after two revisions, its last finding (figure shell count) fixed by the orchestrator in f5b7a8e, not re-reviewed. PR #172.
+- 2026-11-08 · P3-t22 · merged integration again (d19ce3f6): M5 page conflict resolved keeping both sides; still waits for Thomas.
+
+- 2026-11-08 · P3-fu77 · root cause of the tmux launcher timeouts on PR #172 (product bug: a cancel SIGTERM killed `date` in the head tail, head.exit unparseable, run never ends); fix built (review and security approve, 1 round); PR #173. FU-P3-78 (dead head + malformed head.exit never ends) recorded for Thomas.
+
+- 2026-11-08 · P3-fu77 · PR #173 merged (1a89e33). P3-B07 · PR #172 merged (d2523ac) after taking the fix. Promotion #174 to main merged (8237e13). Open for Thomas: login1 checks of FU-P3-72, #164 (e2e client to the socket, FU-P3-75), #111, FU-P3-71 (repo size), FU-P3-78 (policy: dead head with malformed head.exit).
+- 2026-11-08 · Thomas login1 UI feedback: FU-P3-79..83 launched in parallel; P3-fu82 → PR #175.
+- 2026-11-08 · P3-fu80 → PR #176.
+- 2026-11-08 · P3-fu82 #175 merged; P3-fu80 #176 merged; P3-fu79 → #177 (wheel manifest fix for the favicon); P3-fu81 → #178 (blocked workflow finished by hand: round-2 fix, re-review approve).
+- 2026-11-08 · P3-fu79 #177 merged; P3-fu83 → #179 (round-2 major fixed after review, docs only, not re-reviewed).
+
+- 2026-11-08T21:5xZ · FU-P3-83 merged (#179, squash 68e24c02) after a merge of integration and a fence fix; all checks green. Thomas decided: the five login1 items join 0.0.1 (FU-P3-85..89), engine polling unchanged (decision log 2026-11-08).
+
+- 2026-11-08T23:2xZ · Batch P3-B08 docs: workflow done (simplify -12/+4, doc-reviewer approve 13/14); PR #180 opened and subscribed. New major DW-P3B08-01 (a rule after a checkpoint sorts first), follow-up FU-P3-90; FU-P3-91 minors. Cost recorded: 30 USD.
+
+- 2026-11-08T22:5xZ · Batch P3-B08 merged (#180, squash b1974f73) and promoted to main (#181, merge 17c488fb), checks green. Next: FU-P3-90 (rule after a checkpoint sorts first), then FU-P3-85 file preview and explorer (spec note first).
+
+- 2026-11-08T23:2xZ · P3-fu90 (FU-P3-90) built: review approve 0/0/1, security approve 0/0/1, round 1. PR #182 opened, subscribed. Inbox #126 assumed (a rule in no graph comes after the graph rules). Cost recorded: 12 USD.
+
+- 2026-11-08T23:3xZ · FU-P3-90 merged (#182, squash 157a2e75), checks green. Next: FU-P3-85 design note (spec first).
+
+- 2026-11-09T00:0xZ · FU-P3-85 design (P3-fu85-spec): note written, independent pre-review R1 (security changes 0/2/9, ux changes 0/5/15) all applied (1603104c). PR #183 opened, subscribed. Inbox #127 assumed. Build plan FU-P3-85a..e. Cost recorded: 25 USD.
+
+- 2026-11-09T00:1xZ · FU-P3-85 design merged (#183, squash 2b23c415). Next: FU-P3-85a (server: results stat and text routes, strip_escapes fix, CORP).
+
+- 2026-11-09T00:3xZ · P3-fu85a (FU-P3-85a) built: review approve 0/0/1, security approve 0/0/3, round 1. PR #184 opened, subscribed. Inbox #128 assumed. FU-P3-93 opened. Cost recorded: 18 USD.
+
+- 2026-11-09T00:5xZ · FU-P3-85a merged (#184, squash b01788f0). Next: FU-P3-85b (image mode of the raw route).
+
+- 2026-11-09T01:1xZ · P3-fu85b (FU-P3-85b) built: review approve 0/0/1, security approve 0/0/3, round 1. A wrong attribution trailer on the docs commit was fixed before the push. PR #185 opened, subscribed. Inbox #129 assumed. Cost recorded: 16 USD.
+
+- 2026-11-09T01:4xZ · FU-P3-85b merged (#185, squash 0426dc8e). Next: FU-P3-85c (UI preview page).
+
+- 2026-11-09T02:5xZ · P3-fu85c (FU-P3-85c) built: review approve 0/0/3, security approve 0/0/0, 4 rounds. The ci.yml line for preview.spec.ts is moved to branch autopilot/ci-preview-e2e (its PR opens after #186 merges and waits for Thomas). PR #186 opened, subscribed. Inbox #130 assumed. FU-P3-94, FU-P3-95 opened. Cost recorded: 20 USD.
+
+- 2026-11-09T02:0xZ · FU-P3-85c merged (#186, squash ebdb3d60). PR #187 (ci: preview.spec.ts in the e2e job) opened; it touches .github/workflows/ and waits for Thomas. Next: FU-P3-85d (explorer card, sort, filter, URL state).
+
+- 2026-11-09T02:4xZ · P3-fu85d (FU-P3-85d) built: review approve 0/0/8, security approve 0/0/2, 2 rounds. PR #188 opened, subscribed. Inbox #131 assumed. FU-P3-96, FU-P3-97 opened. PR #187 CI green (e2e-local runs preview.spec.ts), waits for Thomas. Cost recorded: 12 USD.
+
+- 2026-11-09T03:0xZ · FU-P3-85d merged (#188, squash 3b7b7093). e2e-local failed twice on the old results-browser test; the test follows the explorer now (two commits on the branch). Next: FU-P3-85e (work-directory routes and UI).
+
+- 2026-11-09T03:5xZ · P3-fu85e (FU-P3-85e) built: review approve 0/0/7, security approve 0/0/2, 2 rounds. PR #189 opened, subscribed. Inbox #132 assumed. FU-P3-98 opened. Safety check-ins for #164 and #111 stopped after 3 empty ones. Cost recorded: 16 USD.
+
+- 2026-11-09T04:0xZ · FU-P3-85e merged (#189, squash a89d6fde). FU-P3-85 complete (85a-e). Next: batch P3-B09 (FU-P3-90, 85 design, 85a-e), then promotion to main.
+
+- 2026-11-09T04:4xZ · Batch P3-B09 built: simplify -61/+54 (re-review approve 0/0/2, security 0/0/1), figure, 4 shots, guide browse-and-preview-files, doc-reviewer approve 13/14 (required change applied). PR #190 opened, subscribed. Seen on the shot app-workdir: the topbar breadcrumb repeats the run name instead of ending with "Work directory"; added to FU-P3-98. Cost recorded: 14 USD.
+
+- 2026-11-09T05:0xZ · Batch P3-B09 merged (#190, squash f0a070cb). Promotion to main opened.
+
+- 2026-11-09T05:1xZ · Promotion to main merged (#191, merge f31a3a6e): batch P3-B09. Next: FU-P3-86 environments, design step running (spec note, inbox item, R1 security and UX review before code).
+
+- 2026-11-09 · P3-fu86-spec merged (#192): design of FU-P3-86, environments in 0.0.1 (inbox #133, assumed). R1 independent: security changes 0/2/10, UX changes 0/7/16, all applied except UX-PRE-FU86-R1-21 (Later). Build plan FU-P3-86a..g; next FU-P3-86a (per-run environment snapshot).
+
+- 2026-11-09 · P3-fu86a merged (#193): each run keeps its own environment snapshot (`runs.environment`, `read_as`); failure/resume read it; `--local-cores 2` last. 3 rounds: code approve 0/0/2, security approve 0/0/2 (R3 items to -86c). Security CI jobs hit GitHub release 504s, green on one re-run. Thomas: AG Grid, imaging viewers, shorter cycle → PR #194 (inbox #134, autopilot §13). Next: FU-P3-86b+c+d as one task (§13.2).
+- 2026-11-09 — P3-fu86bcd merged (#197). P3-fu102a built (1 round, approve 0/0/2, security 0/0/2), PR #198 opened; 535 lines, over the 300 target: 102b..g cut smaller.
+- 2026-11-09 — P3-fu102a merged (#198) after one re-run of the security linters (504 on the release download).
+- 2026-11-09 — login1 retest of FU-P3-85 (main f31a3a6, Unix socket, no TCP), relayed by the local session: explorer, sandboxed HTML, PNG, TSV table, Start/End and Load more on 668 KiB, the level filter, the work dir (dot files hidden, HTML download only) and Download (200, attachment, exact size, by fetch) pass. End without Load more and a session lost on server restart are as specified (ui-spec §4.4.1; dev-env §15 "Sessions are kept in memory"). FU-P3-104, folded into the FU-P3-88 UI pass: the breadcrumb repeats the run, the table caption is misplaced, a link is unstyled. Not tested: 360 px, a real nf-core run, JPEG, a Snakemake work dir, #182.
+- 2026-11-09 — P3-fu86e merged (#199, one re-run of the security linters for 504s). Thomas: "Where it runs" belongs in the main column of Launch, between Pipeline and Parameters (the aside keeps the preview); done in FU-P3-86e3 with a ui-spec §4.8.1 note.
+- 2026-11-09 — P3-fu102b merged (#200): the orchestrator fixed the finalizer lock (SEC-P3FU102B-01) and the unguarded on_done before the PR, and the e2e header test for the new CSP after e2e-local failed on it. Disk full once: idle worktrees stripped of node_modules and .venv (13 GB freed).
+- 2026-11-09 — P3-fu86e2 merged (#201): its inbox entry renumbered #141 (#138 was 102b's; #139 FU-P3-105 spec, #140 102c). Security pre-review R1 of the FU-P3-105 spec: changes, 0/7/7; the Snakemake plugin efficiency report is dropped (it re-runs sacct by name over the day, even with accounting off), SLURM metrics come from one end-of-run sacct sweep.
+- 2026-11-09 — login1 retest b of FU-P3-85 (main f31a3a6, Unix socket only): 360 px (Chromium emulated: order, scrollWidth 360, tab bar, Search, Load more keeps focus), JPEG, SVG in img, raw SVG URL downloads: pass. Search button looks like plain text → FU-P3-104 (folded into FU-P3-88). No Browse work directory on a Snakemake job: as specified (ui-spec §4.4.1). nf-core: not tested. #182 partial: a fresh Snakemake run lists `align` last instead of after `split`, and the Summary 'Rule, first-seen order' is alphabetical → FU-P3-107 (fix, launched).
+- 2026-11-09 — P3-fu102c merged (#202) and the FU-P3-105 Performance spec merged (#203, 0.0.2; R1 UX and security findings applied, plugin efficiency report dropped for one end-of-run sacct sweep). Each PR took one merge of integration for Progress and inbox conflicts.
+- 2026-11-09 — Thomas: the orchestrator triggers the local session (login1, session_01MF8RxR2q6ddXK95BeTrA26) by itself whenever something must be re-checked or tested live (send_message with what to test, the commit and the report path; summary of 10 lines at most).
+- 2026-11-09 — P3-fu86e3 merged (#204): Launch in two columns (main: Pipeline, Where it runs, Parameters; aside: summary, Before Launch, preview, Launch), head Launch kept per the 'two places' rule. P3-fu107 built, PR #205 (Snakemake rules: rule-file order, then first job).
+- 2026-11-09 — Thomas: "optimise, simplifie et réduis pour limiter les coûts". Per-task workflow is now p3-lean: tests in scope only (full suite in CI; boards run no test, render only), one review pass that must report every blocker and major at once, one fix round covering majors and defect minors, then a verify-only check of those IDs on the fix diff (low effort, no new findings; anything new is a minor for the batch), short docs at low effort. At most 2 tasks in flight to cut Progress and inbox merge conflicts and CI reruns. To write into autopilot.md §11/§13 in the next batch docs PR.
+
+## 2026-11-09 — 205, 206, 207 merged; 106a simplified
+- Merged #205 (FU-P3-107), #206 (FU-P3-102d1), #207 (FU-P3-86e4) into autopilot/integration.
+- FU-P3-106a (old p3-task workflow, about 1.0M subagent tokens): review loop spiralled on a per-ID sacct batch-halving heuristic (each fix opened a new major). Decision: replace it with the simplest rule (split only an over-cap batch; retry timeouts and non-zero exits unchanged under the global back-off; policy refusals final, stat errors retried). Lesson kept in the lean policy: fix a defect-minor with the simplest rule, never grow a heuristic across rounds.
+
+## 2026-11-09 — 106a, 86f, B10 merged; promotion P3-B10 (#212)
+- Merged #208 (FU-P3-106a), #209 (FU-P3-86f), #210 (batch P3-B10 docs), then promoted integration to main (#212, merge 9819372b).
+- Costs (subagent tokens): 106a ~1.15M (old workflow plus the simplification), 86f ~525k and 86g ~555k (p3-lean), B10 ~960k (batch plus fixes).
+- #210 pr-body: the tool that posts PR bodies turns an embedded image into a plain link, so the batch figure cannot be embedded; used the no-figure label with the reason in the body. Question for Thomas: keep that, or let tools/docs/check.py accept a link to docs/assets/diagrams/*.png.
+- Follow-up: test_local_launcher.py::test_cancel_with_a_stale_ref_after_the_launch failed once on #210 (the `started` file exists after a cancel) and passed on its one re-run; not in the batch diff. Root-cause it (race between launch and cancel).
+- #211 (FU-P3-86g): e2e-local fails on phone, the Load button of Launch sits under the Pipeline input; fix in progress.
+- #211 merged (squash be551cfc) after the fix 401f1274: `.launch-grid` gets `minmax(0, 1fr)` below 1200 px so the long test-pipeline path no longer widens the card; full e2e locally 52 passed, 6 skipped. Next: FU-P3-86h (Launch aside, inbox #145) and FU-P3-102c2 (boards), at most 2 in flight.
+
+## 2026-11-09 — Thomas's UI feedback, 213 and 214 merged, batch P3-B11 started
+- Thomas's own try of the UI and the login1 retest c (main 9819372b) placed in inbox #146: FU-P3-109 (defects) built now; FU-P3-110 resources (spec first), 111 environments UX, 112 profile page, 113 notifications added to 0.0.1; run-detail items into FU-P3-88.
+- Merged #213 (FU-P3-86h, plus a run icon on both Launch buttons, inbox #146 item 2) and #214 (FU-P3-109). Costs: 86h ~366k, 109 ~392k.
+- Live screenshots of Launch taken from a local `spectio serve` on its Unix socket only (Playwright relays each request over the socket, Host header kept): no TCP port. Seen: Engine head reads "Not chosen yet" in Where it runs but "a process on vm" in the summary; minor for FU-P3-108.
+- Batch P3-B11 (86f, 86g, 86h, 109; d2147ede..b35198e2) started; FU-P3-102c2 boards in flight. After B11: promote, then ask login1 for retest d.
+- 2026-11-09 — Thomas: pause at the next wave. In flight finish (batch P3-B11 docs, FU-P3-102c2 boards, their PRs, the B11 promotion); no new task starts until Thomas resumes.
+
+## 2026-11-09 — 215, 216 merged; promotion P3-B11 (#217); paused
+- Merged #215 (FU-P3-102c2 boards; the worker could not run ux-reviewer, so the orchestrator ran it: approve 0/0/7; 11 minors open for FU-P3-108 and FU-P3-102d/g) and #216 (batch P3-B11 docs). #216 docs-gate first failed on the screenshot churn guard (nine Launch shots retaken on purpose); the `screenshots` label opts in. Promoted to main (#217, merge 74b4c939), with the same label.
+- Costs (subagent tokens): 102c2 ~309k + ux-reviewer ~69k, B11 ~859k.
+- login1 asked for retest d on main 74b4c939 (report-2026-11-09d.md).
+- Paused at Thomas's request: no new task starts until he resumes. Next on resume: FU-P3-102d2.
+
+## 2026-11-10 — handoff to the next-wave session
+
+- Lean helpers committed to `tools/autopilot/lean/` (0d8b4f77): p3-lean.js, p3-batch.js, prflow.sh (SCRATCH now required), waitci.sh, resolve_docs.py, sockshot.js, README.
+- New orchestrator session session_01MF8RxQASDmXaFjVA49aybZ, from autopilot/integration: wave FU-P3-102d2 → 102g, 87, 88 (+101, 104), 110 spec, 111, 112, 89, 113; 108 minors, 106b and the flaky cancel test in parallel. Speed rules: up to 3 disjoint tasks in flight, batch every 4–5, promote at once; live retests through the local session cshk_01MF8RxPQMMC58MHn31SYWYyUCNZQatBzPebBAU92BEyyq (login1).
+- This session stops orchestrating.
+
+## 2026-11-10 — next wave: tasks 218–227 merged, batch P3-B12
+
+Orchestrator session session_01MF8RxQASDmXaFjVA49aybZ. Lean helpers: p3-lean per task, p3-batch per batch.
+
+**Merged into integration**
+- FU-P3-102d2 #218: the decoder worker and the capped Deflate and LZW decoders.
+- FU-P3-87 spec #219: inbox #147, api §5.6, ui-spec §4.7.1.
+- FU-P3-108a #220: the cancel race. A local cancel reads cancelled as soon as the head exits; this was the root cause of the flaky cancel test.
+- FU-P3-102d3 #221: the TIFF flat view. CI first failed on the packaging globs, then passed once they were fixed.
+- FU-P3-108b #222: focus moves to the form on New and Edit, and to the field from Before Launch.
+- FU-P3-87a #223: catalog.toml, `spectio.locations`, and `envfile` generalised.
+- FU-P3-106b #224: a MaxQueryTimeRange refusal is final. The 1-second bound of `test_req13_directive_linear` failed once on a loaded runner (1.0008 s) and passed on the next head; the robust bound is left for the FU-P3-108 minors.
+- FU-P3-87b #225: the catalog routes and inspect's `params_file`; security review run.
+- FU-P3-87c #226: the catalog boards. The worker could not run `ux-reviewer`, so the orchestrator did: approve 0/0/8. 02–05 were fixed on the branch; 01 and 06–08 are carried to 87d and 87e.
+- FU-P3-102e #227: the OME-TIFF viewer with Viv 0.23.0, deck.gl 9.4.1 and luma.gl 9.4.2. Every finding but one was fixed: the npm audit gate is met with overrides, and there is now a no-OME fallback, a lifecycle fix and a 20-level cap. Open: SEC-P3FU102E-05, the viewer test on Firefox and WebKit (only Chromium is available here and in CI), recorded in inbox #148. The CSP is unchanged.
+
+**Batch P3-B12** (102d2, 87-spec, 108a, 102d3, 108b)
+- The simplifier changed 3 lines; doc-reviewer approved at 13/14.
+- At the merge, the Progress page sections duplicated by the batch move were deduplicated, and the batch's FU-P3-114 inbox entry was renumbered #149, since #148 was already the 102e entry.
+
+**Costs** (subagent tokens): 106b ~383k, 87b ~425k, 87c ~486k + ux-reviewer ~115k, 102e ~596k + docs ~72k, 87d ~485k, 102f ~375k, B12 ~836k.
+
+**In flight:** 87d (#228), 102f. **Next:** promote B12, then the login1 retest; batch B13 (87a, 106b, 87b, 87c, 102e).
+
+## 2026-11-10 — FU-P3-104 hand-off: FU-P3-104b after FU-P3-101a
+
+FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and the bare links of the run's pages. Three items of the login1 retest of 2026-11-09 wait for FU-P3-101a, which replaces the preview table and changes `web/src/runs/FilePreview.tsx`. They are follow-up **FU-P3-104b**, to start once FU-P3-101a has merged (CR-P3FU104-02; ui-spec §4.4.1, status note of 2026-11-10):
+- the table's caption: already the table's first child, so check it on screen inside the sticky scroll region;
+- Browse folder, on the preview page: takes `.sp-text-link`;
+- Open it in the report viewer, on the preview page: takes `.sp-text-link`.
+
+## 2026-11-10 — 228 to 233 merged; promotion P3-B12 (#232); 102g, 110-spec, 101a in flight
+- Merged #228 (FU-P3-87d), #229 (batch P3-B12 docs), #230 (FU-P3-102f), #231 (FU-P3-87e), #233 (FU-P3-88a) into autopilot/integration; promoted integration to main with #232 (main 5f3bdd25, #218–#230).
+- #229: the SAST rule on argv reaching `subprocess` in `tools/media/tiff_demo.py` was fixed by iterating a constant tuple of shot names. As in B11, the figure is cited in text with the `no-figure` label, because the body tool rewrites image embeds.
+- FU-P3-102g (#234): numcodecs needs `'unsafe-eval'` for Blosc and LZ4, which is reserved for Thomas. The viewer therefore refuses them (fail-closed state) and the choice goes to inbox #150 (recommendation: our own pure-JS decoder, FU-P3-102h). zod runs jitless, so there is no CSP report. CSP unchanged.
+- FU-P3-110 spec (#235): inbox #151 (renumbered from #150, which 102g took) and a decision-log entry; docs only.
+- pr-body re-runs reuse the event's stale empty label list; removing and re-adding the label starts a fresh run.
+- login1 retest e (main 5f3bdd25) not delivered: the session could not be verified and the fallback is inactive. To resend with the next promotion.
+- **Next:** merge 234, 235, 101a; batch B13 (87e, 88a, 102g, 101a, 110-spec); promote; login1 retest.
+- 2026-11-10 later: merged #234 (102g), #235 (110-spec, inbox #151), #236 (101a), #237 (FU-P3-104), #238 (FU-P3-111; ux-reviewer approve 0/0/5, UX-02 fixed). To send to the local session on Thomas's Mac, this session needed Thomas's approval (a trusted-device card), so retest e was undelivered until then. Thomas allowed it, and retest e came back green; it is inbox #146 item 12.
+- Batch P3-B13 (87e, 88a, 102g, 110-spec, 101a): the simplifier found nothing; the orchestrator dropped the dead `data-wide` CSS (CR-P3FU101A-04). doc-reviewer approved at 13. Open: 87a–87d, 102e, 102f and 106b were never batched (DW-P3B13-01), so they go in B14 with 104, 111 and 112.
+- Costs (subagent tokens): 110-spec ~554k, 101a ~502k, 104 ~371k, 111 ~339k + ux ~53k.
+
+## 2026-11-10 — promotion P3-B13 (#240); 241 to 250; batch P3-B14 (#249); autopilot §14 from #244
+- Promotion #240 merged to main (1c348813). login1 retest f on it: 5/5 PASS (run detail, Catalog → Launch by mouse and keyboard, Environments at 360 px, AG Grid runs table with 0 CSP violations, OME-Zarr Blosc message). Into the follow-up list: "at most 1 CPUs" on an environment card; a luma.gl `instancePickingColors` warning on the zlib OME-Zarr view.
+- Merged into autopilot/integration: #241 FU-P3-112 (profile), #242 FU-P3-115a (delete and pin, server), #243 FU-P3-89 (search), #245 FU-P3-110a (resources and extra config file, server), #247 FU-P3-113 (notifications), #249 batch P3-B14 docs. Then #248 FU-P3-115b (runs table actions, web) and #250 FU-P3-110b (runner).
+- Migrations collided twice on 0012/0013: 110a's became 0013 after 115a's 0012, 113's became 0014.
+- #243: two FilePreview tests failed after the merge because the top-bar button and the viewer's button were both named "Search". The top-bar button is now "Search runs, pipelines and pages".
+- #245: the web snapshot test failed until the client's RunDetail and LaunchTemplate types carried `default_resources` and `config_file`.
+- #247 also fixes DW-P3B14-01: `/profile` was missing from `static.ROUTES`, so a Reload answered 404. A test now checks that every path of `routes.tsx` is in `ROUTES`.
+- #248: ux-reviewer asked for changes and UX-P3FU115B-01 to -04 were fixed (checkbox class, 44 px phone targets, sort icons, Run detail Delete result lines); -05 to -12 are open in the review record. The runs page tests timed out at 5 s on CI: two older tests went from 2.6-3.0 s to 3.1-3.3 s with the new columns. The file now runs with a 15 s timeout. Before that change, local full-suite runs had timed out under the load of parallel workers.
+- #250: the worker's CI step in `.github/workflows/pipelines-synthetic.yml` (the order fixtures on the Snakemake leg) was removed from the PR, because workflows wait for Thomas. The fixtures passed locally on Nextflow 25.10.9 and Snakemake 9.27.1.
+- Batch P3-B14 (87a–87d, 102e, 102f, 106b, 104, 111, 112, 115a) ran in the old mode, started before #244: the simplifier found nothing; there were a figure and 7 new shots; doc-reviewer approved at 13/14. Two doc-writer commits carried a Sonnet trailer and were amended before the push.
+- From #244 (Thomas, autopilot §14), the run used main's lean scripts: feature slices, a review record and PR body per task, Progress per batch, promotion once at the end of the run.
+- Budget: Thomas set a stop at 90% of the weekly window (77% at 20:05). No task started after that.
+- **Costs** (subagent tokens): 89 ~282k, 110a ~456k, 113 ~391k, 115b ~405k + ux ~56k + fix ~110k, 110b ~519k, B14 ~769k.
+- **Next run:** FU-P3-110c/d (boards, form, Run detail facts), 102h (Blosc/LZ4 decoder), the FU-P3-108 list with the UX-P3FU115B minors, the CI step of the order fixtures (Thomas).
+- **Not batched yet** (Progress sections for the next batch, §14 item 5): FU-P3-89, 110a, 113, 115b, 110b.
+
+## 2026-11-10 — promotion P3-B14 (#253) and login1 retest g
+
+- #252 (run-end journal) merged into integration (9f6d2207); promotion #253 merged into main (0f90388f), CI green.
+- **Retest g** (login1, Unix socket only, 0 CSP violations): search, bell, profile and Run detail PASS; runs table FAIL on the sort icons only.
+  - Sort icons render as solid squares: `web/src/runs/DataGrid.tsx:20` builds the theme with `withoutPart("iconSet")`, so AG Grid's own `.ag-icon-*` glyphs have no mask image, and FU-P3-115b turned on `unSortIcon`. Fix: draw our own sort icons or keep an icon set. The `ag-icon-aasc` class names are AG Grid's **[to be validated]**.
+  - Minors: the short run ID shown in the UI ("D80950") gives no match in search; focus drops to the page after "Mark all as read"; /profile sets no document.title; after Pin, focus lands on another run's cell; the one-run Delete sheet says "these runs".
+  - No Delete was confirmed on login1: the peer's auto mode blocked it as irreversible. Untested.
+- **Next run:** these items go first (sort icons as a fix, the minors folded into their modules), then the list of the run-end entry above.
+
+## 2026-11-11 — 256 to 266, batch P3-B15 (#267), the 0.0.1 line closed in integration
+
+- Merged into autopilot/integration: #256 FU-P3-108c, #257 FU-P3-110c (boards), #258 FU-P3-116 (sort icons, retest g minors), #259 FU-P3-118, #260 FU-P3-102h (Blosc, LZ4, zstd without `unsafe-eval`), #261 FU-P3-117, #264 FU-P3-119, #263 FU-P3-110d (resources and extra config file on Launch and Run detail), #265 FU-P3-120, #266 FU-P3-102i (OME-Zarr flat view, link states), then #267 batch P3-B15.
+- Orchestrator fixes of defect minors, each with a test seen failing first: CR-P3FU116-01 and -03; CR-P3FU110D-01 (only the file's own 503 shows its banner) and -03 / SEC-P3FU110D-02 (no ETag is not "Changed"); CR-P3FU120-01 / SEC-P3FU120-01 (a reader thread that cannot start gives back its pool slot and the environments write lock, which stayed held until a restart).
+- Integration with every merge of the morning: `tsc` clean, vitest 58 files and 768 tests pass; pytest 1710 passed in the batch gate.
+- #259 and #265: the strict docs build failed on a review record linking `(README.md)`; the lean task script now tells the doc step to write `(../README.md)`.
+- #267: the PR-body tool turns an embedded image into a plain link (as for #210 and #229), so the figure is linked and the PR carries `no-figure`.
+- Batch P3-B15 (89, 110a, 113, 115b, 110b, 108c, 110c, 116, 118, 102h, 117, 119, 110d, 120) closes the M9 work of 0.0.1: simplifier −9/+10 in three commits, a figure, 7 shot pairs, two guides (run resources; search and notifications), doc-reviewer approve 13/14. 102i is not in the batch (merged after its base): its Progress section goes to the next batch. The batch was first launched with a mistyped base sha and stopped before any commit.
+- Held, not merged: #262 FU-P3-105a (attempt metrics, migration 0015), because 0.0.2 work waits for Thomas while integration ships 0.0.1; 105b to 105f paused.
+- Open for Thomas: the CI step of the order fixtures (DW-P3B15-06, `.github/workflows/`); UX-P3FU110C-07 naming; whether to merge 0.0.2 work; the versioning proposals (resolved commit on every run, newer-version detection on Load) asked in the session, not yet in the inbox.
+- Open minors: CR-P3FU119-01 and -02 (bounded re-reads after sacct), CR-P3FU110D-02, -04, SEC-P3FU110D-01, CR-P3FU102I-01, -02, SEC-P3FU102I-02, CR-P3FU120-02, CR-P3FU118-01; LaunchResources tests near the 5 s timeout under parallel load.
+- **Costs** (subagent tokens): 110d ~420k, 119 ~266k, 102i ~476k, 120 ~305k, B15 ~650k; the earlier tasks of this run are in their workflow journals.
+- **Next:** promotion to main, then login1 retest h (sort icons, short-ID search, profile title, Pin focus, one-run Delete wording, resources form and config file, Blosc/LZ4/zstd images, Environments "1 CPU").
+- 2026-11-11 ISSUE-161: doc-reviewer approve 12/14 (round 1 changes 10/14, required changes 1-6 applied)
+
+## 2026-11-11 — promotion P3-B15 (#269) and login1 retest h
+
+- #268 (journal) merged into integration (036574f6); promotion #269 merged into main (498e8c0f), CI green. #262 (FU-P3-105a, 0.0.2) stays out.
+- **Retest h** (login1, main 498e8c0f, Unix socket only, 0 SLURM jobs, 0 sacct calls, 0 CSP violations): 6 PASS, 1 UNTESTED.
+  - PASS: sort icons are arrows and a third press clears `?sort=`; search by the short ID "D80950"; the /profile tab title, and Pin keeps focus on its own button; Launch Resources and Extra config file, a run with 1 CPU succeeded and Run detail shows "1 CPU per task · Set at Launch" and the kept file (0600 on disk, View opens it); Blosc(lz4), LZ4 and zstd OME-Zarrs render; the Environments card reads "at most 1 CPU and 8 GiB".
+  - UNTESTED: the one-run Delete sheet now reads in the singular, but no Delete was confirmed (the peer's auto mode blocks it as irreversible), as in retest g.
+  - Minors for the follow-up list: Before Launch says "Nothing is missing", then Launch refuses a group-writable (664) config file; the pre-check could say it first. A pointer click on the aside Launch button sent no POST (Enter and a DOM click did), as in retest e (FU-P3-108). The luma.gl `instancePickingColors` warning (FU-P3-108).
+- **Next:** Thomas's decisions (0.0.2 work and #262, the CI step of the order fixtures, UX-P3FU110C-07, the versioning proposals); the minors above with the open list of the 2026-11-11 entry; a confirmed Delete on login1 by Thomas.
+
+## 2026-11-11 — design system UI-01 to UI-09, 0.0.2 on its own branch, batch P3-B16
+
+- Thomas (2026-11-11): "a real UI pass: many inconsistencies, icons and buttons badly placed; the notification column is not modern at all; I want everything coherent and consistent". Audit, then ui-spec §12 "Design system" and inbox #153 (#277).
+- Merged into autopilot/integration: #271 inbox #152, #272 FU-P3-122, #275 FU-P3-121 (title corrected: the pointer-click cause on login1 is not found, CR-P3FU121-05), #276 prflow.sh takes BASE, #278 UI-05a (notification items carry `engine`, `at` is the run's end time), #280 UI-03 (page head, toolbar, card head, empty and error states), #282 UI-01 (theme tokens, one global focus ring), #283 UI-02 (one `<Icon name size>` API, sizes 16/20/24, stroke 1.75), #284 UI-05b (notifications panel: popover, day groups, unread dots, roving keyboard), #285 UI-09 (run header: one primary, a "More actions" menu, pinned phone primary, Facts folded off the summary), #286 UI-04 (top bar and sidebar), #288 UI-06 (search dialog), #287 UI-07 (Home; FU-P3-109 e2e caught an ellipsis rule on the pipelines' paths, removed).
+- Merged into autopilot/next-0.0.2 (inbox #152, `Release-As: 0.0.2`): #262 FU-P3-105a, #273 105b, #274 105c, #279 105d, #281 105e (performance across runs).
+- Orchestrator fixes: SEC-P3FU105E-02 (an extreme `until` gave 500, now 422, test seen failing first); CR-P3UI01-01 (drawers keep square corners on the viewport edge); the parC figure re-drawn from the new icon paths (docs gate on #283); merge conflicts of UI-02 with UI-03, of UI-05b and UI-09 with UI-02 resolved to the new icon API, full vitest green each time (807, 824, 830, 837 tests).
+- The disk allowance filled during the first batch launch: `node_modules` and `.venv` of merged worktrees deleted, batch relaunched.
+- Batch P3-B16 (102i, 122, 121, UI-05a, UI-03, UI-01, UI-02, UI-05b), not a milestone end: simplify and Progress only. UI-09, UI-04, UI-06 and UI-07 merged after the batch base: their Progress sections go to the next batch.
+- Open minors: CR-P3FU105E-01 (DST fold with group_by=hour); CR-P3UI01-02 to -04; CR-P3UI02-01 to -05, SEC-P3UI02-01; CR-P3UI03-03 to -05; CR-P3UI05B-06 to -08; CR-P3UI09-01 to -04; and those of the morning entry (FU-121, 105b–d, UI-05a).
+- **Next:** UI-08 (Runs list), UI-10/11 (run tabs, LogViewer), UI-12 (DetailSheet), UI-13/18 (Launch, dialogs), UI-14/15/16 (Environments, Catalog, Profile), UI-17 (Results) are being built; then UI-19 (CSS sweep), then the back-end work Thomas named; still on Thomas: the CI step of the order fixtures, UX-P3FU110C-07, a confirmed Delete on login1.
+- **Costs** (subagent tokens): UI-01 ~253k, UI-02 ~300k, UI-05b ~396k, UI-09 ~330k.
+
+## 2026-11-11 — docs refresh (PR #298) and login1 check
+
+- **Docs split.** The public site (`mkdocs.yml`) is now home, installation, usage, features, API, roadmap and changelog. The developer material builds with `mkdocs.dev.yml`. The public pages were rewritten for what 0.0.1 contains, and 25 `app-*` screenshots were retaken on the design-system UI (`tools/media/b17_demo.py`).
+- **CI.** On #298, `preview` fails its `/progress/` smoke check: the fix is #299 (previews build the dev site), which touches `.github/workflows/` and waits for Thomas. `web` hit the lazy-grid timeout fixed in #297; I cherry-picked c7b8f606. `e2e-local` failed twice on a runner DNS outage (`azure.archive.ubuntu.com`), as did #297 and #299.
+- **login1 check** of #298 by the local session: the screens work on real SLURM runs. Findings are in inbox #155 (FU-P3-124 head.err 404, FU-P3-125 two "Resources" sections).
+
+## 2026-11-17 — inbox #155, UI-19a/b, FU-P3-51, promotion of B17 (#296), batch P3-B17
+
+- Merged into autopilot/integration: #301 FU-P3-125 (Launch "Run resources" row, the schema's own Resources group keeps its title), #302 FU-P3-124 (RunDetail `head_logs`: no head.err request or empty Head errors card when the head wrote none; security pass approve, `open_confined` with O_NOFOLLOW, symlink tests added), #305 UI-19a (shell, app, environments and profile CSS on tokens, a lint test; the phone params preview of MLiteLaunch in dark), #304 FU-P3-51 (nf-spectio README, provider, hardened release dry run), #306 UI-19b (runs.css up to the log frame on tokens, a lint test).
+- **Main ancestry.** The parent session squash-merged #297 into main, so main stayed a non-ancestor of integration. #303 merges main (479c1cc, with #251 and #255) into integration as a real merge commit (merge_method "merge"). Promotion #296 merged into main as a merge commit (24e9d4e). A misworded merge message on promote-b17 (912e00b) was already pushed and is explained in the #303 body (no force-push).
+- **For Thomas:** #303 adds a `DRAWINGS` allowlist to `web/src/icons.test.tsx` (demo server, graph view, graph export skip the first ICON_ONLY rule, with a stale-entry check): it loosens a test, please confirm; the graph icon sizes with it. FU-P3-51's release dry run is unverified here (Gradle 403, no Nextflow in the container). Task 22 and Task 23 change `.github/workflows/pipelines-slurm.yml` and need slurm-mini: they wait for Thomas; #164 stays unmerged.
+- Batch P3-B17 (fu125, fu124, ui19a, fu51, ui19b), not a milestone end: simplify and Progress only. Batch PR #308: simplify made no change (tests pass: pytest 1853, vitest 1004, tsc); Progress sections in `docs/progress/W5/P3-M9.md`, record `docs/reviews/code/P3-B17.md`. Open: DW-P3B17-03 (shots `app-launch-resources` and `app-launch-config-warning` predate FU-P3-125 and UI-19a), DW-P3B17-04 (FU-P3-51 dry run `tests=partial`), DW-P3B17-05 (#251 has no review record or Progress section). **Gate gap:** `tools/docs/check.py` runs `mkdocs build --strict -q`, and with `-q` a broken anchor does not fail; the doc-writer reproduced it on one ui-spec anchor (fixed). To fix in a later step. The doc-writer used a wrong Co-Authored-By model line; I corrected it before the push.
+- Open minors: SEC-P3FU124-01 (FilePool cost on NFS), SEC-P3FU124-03 (unknown and none both give `[]`), CR-P3FU124-01/-02, CR-P3UI19A-02/-03, CR-P3UI19B-02/-03, CR-P3FU51-01 to -03, SEC-P3FU51-01/-02.
+- #307 UI-19c merged (95838dc): the rest of runs.css on tokens, the raw-px lint covers the whole file, one shared `web/src/rawPx.ts` (closes CR-P3UI19B-03). Open minors CR-P3UI19C-01 to -03. Its Progress section goes to the next batch.
+- **Costs** (subagent tokens): UI-19c ~174k, B17 ~206k.
+- **Next:** Thomas's decisions above; the check.py `-q` gate gap; the UI-19 sweep is complete except graph.css (0.0.2).

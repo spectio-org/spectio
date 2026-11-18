@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — profile (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+a:focus-visible,button:focus-visible,input:focus-visible,h1:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.pf-card{border-radius:16px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.07),0 1px 2px rgba(15,16,32,0.05);padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pf-card h2{margin:0;font-family:'Outfit',sans-serif;font-size:16px;font-weight:600}
+.pf-facts{display:grid;grid-template-columns:1fr;gap:10px 24px;margin:0}
+.pf-facts dt,.pf-paths dt{font-size:12.5px;color:#6E7287}
+.pf-facts dd{margin:2px 0 0;font-size:14px;overflow-wrap:anywhere}
+.pf-paths{display:grid;gap:10px;margin:0}
+.pf-paths dd{margin:2px 0 0;display:flex;align-items:center;gap:6px}
+.pf-path{flex:1;min-width:0;padding:6px 10px;border-radius:8px;background:#F7F7FB;font-family:'JetBrains Mono',monospace;font-size:13px;color:#22253A;overflow-wrap:anywhere}
+.pf-copy{width:44px;height:44px;border:none;border-radius:12px;background:transparent;color:#33364A;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
+.pf-copy:hover{background:#F1F2F6}
+.pf-sub{margin:0;font-size:13px;color:#4D5065;line-height:1.45}
+.pf-out{align-self:stretch;min-height:48px;padding:0 16px;border-radius:10px;border:1px solid #C4C7D4;background:#FFFFFF;color:#22253A;font:600 14px 'Inter',sans-serif;cursor:pointer}
+.pf-themes{display:flex;flex-wrap:wrap;gap:8px 20px}
+.pf-themes label{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px;cursor:pointer}
+.pf-themes input{width:18px;height:18px;accent-color:#7750D4;margin:0}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12.5px}
+</style>
+</helmet>
+<!-- Width follows the viewport: drawn at 360 px (ui-spec §4.10.1, §4.11). No Profile tab: the avatar in the top bar opens it; the tab bar marks nothing. -->
+<div style="width: 100%; height: 100vh; min-height: 640px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="Profile" sub="Single-user mode · amartin" hint-size="100%,104px"></dc-import></div>
+  <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+        <section class="pf-card" aria-labelledby="pf-who">
+      <h2 id="pf-who">Who the server runs as</h2>
+      <dl class="pf-facts">
+        <div><dt>Unix user</dt><dd>{{me.user}}</dd></div>
+        <div><dt>UID</dt><dd>{{me.uid}}</dd></div>
+      </dl>
+      <p class="pf-sub">You are the only principal: runs, files and settings are this user's.</p>
+    </section>
+
+    <section class="pf-card" aria-labelledby="pf-session">
+      <h2 id="pf-session">This session</h2>
+      <dl class="pf-facts">
+        <div><dt>Started</dt><dd>{{me.started}}</dd></div>
+        <div><dt>Expires</dt><dd>Ends when the server stops, or when you sign out</dd></div>
+      </dl>
+      <button type="button" class="pf-out">Sign out of this session</button>
+    </section>
+
+    <section class="pf-card" aria-labelledby="pf-paths">
+      <h2 id="pf-paths">Config paths</h2>
+      <dl class="pf-paths">
+        <sc-for list="{{paths}}" as="p" hint-placeholder-count="4">
+          <div>
+            <dt>{{p.label}}</dt>
+            <dd>
+              <code class="pf-path">{{p.path}}</code>
+              <button type="button" class="pf-copy" aria-label="Copy {{p.what}}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h11v11H9z M5 15H4V4h11v1"/></svg>
+              </button>
+            </dd>
+          </div>
+        </sc-for>
+      </dl>
+      <p class="pf-sub">Read-only here: change them in spectio.toml, then restart spectio serve.</p>
+      <p role="status" class="pf-sub">Copied the database directory path</p>
+    </section>
+
+    <section class="pf-card" aria-labelledby="pf-theme">
+      <h2 id="pf-theme">Theme</h2>
+      <div role="radiogroup" aria-labelledby="pf-theme" class="pf-themes">
+        <label><input type="radio" name="pf-theme" value="light">Light</label>
+        <label><input type="radio" name="pf-theme" value="dark">Dark</label>
+        <label><input type="radio" name="pf-theme" value="auto" checked>System</label>
+      </div>
+      <p class="pf-sub">Kept in this browser. System follows your device's setting.</p>
+    </section>
+    <span style="font-size: 11.5px; color: #6E7287; padding: 0 2px;">Data: the fixture of LiteProfile. Each path wraps anywhere beside its 44 px Copy button, so nothing overflows at 320 px; Sign out is full width. The signed-out, loading and failed states are those of LiteProfile.</span>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="none" hint-size="100%,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":1400}}'>
+class Component extends DCLogic {
+renderVals() {
+  // ui-spec §4.10.1: the four paths, each with its own Copy button named after the row.
+  const path = (label, what, p) => ({ label, what, path: p });
+  return {
+    me: { user: 'amartin', uid: '1000', started: 'Today 08:40' },
+    paths: [
+      path('Config file', 'the config file path', '/home/amartin/.spectio/spectio.toml'),
+      path('Data directory', 'the data directory path', '/home/amartin/.spectio'),
+      path('Database directory', 'the database directory path', '/tmp/spectio-1000'),
+      path('Observed runs directory', 'the observed runs directory path', '/home/amartin/.spectio/observed')
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>
