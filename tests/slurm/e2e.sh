@@ -110,8 +110,13 @@ launch() { # nextflow|snakemake
   inc "$e/home" command -v tmux >/dev/null || { echo "no tmux on the login node" >&2; return 1; }
   inc "$e/home" rm -rf "$db"
   log "spectio init and serve --detach as $([ "$CLUSTER" = mini ] && echo spx || echo "$USER_"), partition $PARTITION"
+  # squeue: slurm-mini has no accounting, so sacct exits 1 (Slurm 26.05.5 src/sacct/options.c:944-947). The
+  # SLURM plugin 2.8.0 picks sacct whenever it is on PATH (__init__.py:76-95); a failed status query yields no
+  # job (1339-1352, 1449), the executor drops them (snakemake-interface-executor-plugins 9.4.0
+  # executors/remote.py:183-190) and the head waits forever. squeue --states=all keeps finished jobs for
+  # MinJobAge (scenarios.sh, mini: jobs-in-squeue).
   inc "$e/home" env SPECTIO_CONFIG="$cfg" SPECTIO_RUNNER_HEAD_WATCH_S=5 \
-    SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE="--slurm-init-seconds-before-status-checks 5" \
+    SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE="--slurm-init-seconds-before-status-checks 5 --slurm-status-command squeue" \
     spectio init --data-dir "$e/data" --db-dir "$db" --runs-root "$e/runs" --partition "$PARTITION" \
     --nextflow "$e/bin/nextflow" --snakemake "$e/bin/snakemake"
   # A first link is printed: never into the log, the client asks for its own.
