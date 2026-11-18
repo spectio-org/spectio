@@ -1,21 +1,18 @@
-// UI-19b (ui-spec §12.1, §12.15): the first part of runs.css, through the run header, reads
-// spacing, radius and font sizes from the §12.2 tokens. A 1 px line stays, and so does the 4 px
-// rail added to the side that carries it (§12.15 allowlist); the rest of the file
-// (from the log frame on) is UI-19c.
+// UI-19b and UI-19c (ui-spec §12.1, §12.15): runs.css reads spacing, radius and font sizes from
+// the §12.2 tokens. A 1 px line stays, and so does the 4 px rail added to the side that carries it
+// (§12.15 allowlist).
 /// <reference types="node" />
 import { readFileSync } from "node:fs";
+import { rawPx } from "../rawPx";
 
 const css = readFileSync("src/runs/runs.css", "utf8");
-const end = css.indexOf("/* the frame of an empty, failed or loading log");
 
-test("runs.css through the run header writes no raw px for spacing, radius or font size", () => {
-  expect(end).toBeGreaterThan(0);
-  const declaration = /(?:^|[;{\s])((?:font-size|font|gap|row-gap|column-gap|padding[a-z-]*|margin[a-z-]*|border-radius)\s*:[^;}]*)/g;
-  const raw = [...css.slice(0, end).matchAll(declaration)]
-    .map((m) => m[1].trim())
-    .map((d) => d.replaceAll("+ 4px)", ")"))
-    .filter((d) => /(?<![\w.-])-?(?!1px)\d+(?:\.\d+)?px/.test(d));
-  expect(raw).toEqual([]);
+// Fixed geometry, not steps of the scale: the icon centred on the first line of a name (half the
+// 16 px icon), the switch knob's two positions inside its 36 px track, and the pin's optical nudge.
+const GEOMETRY = ["+ 4px)", "calc(0.5lh - 8px)", "margin-left: 3px", "margin-left: 17px", "margin-top: -2px"];
+
+test("runs.css writes no raw px for spacing, radius or font size", () => {
+  expect(rawPx(css, GEOMETRY)).toEqual([]);
 });
 
 // CR-P3UI19B-01: the side that carries the 4 px rail is lg + 4 px, not a snapped step, so cards

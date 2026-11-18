@@ -1072,29 +1072,29 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-log-file code {
   flex: 1 1 0;
   min-width: 0;
-  padding: 7px 10px;
-  border-radius: 9px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-sm);
   font-family: var(--sp-font-mono);
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   overflow-wrap: anywhere;
   background: var(--sp-surface-subtle);
 }
 .sp-log-note {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
 }
 .sp-log-note svg {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--mantine-spacing-xs);
 }
 .sp-log span[data-tone="ok"],
 .sp-log-tail span[data-tone="ok"] {
@@ -1131,21 +1131,21 @@
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
   min-width: 0;
 }
 .sp-copy-line .sp-mono {
   overflow-wrap: anywhere;
 }
 .sp-why-first {
-  margin: 6px 0 0;
-  font-size: 14px;
+  margin: var(--mantine-spacing-sm) 0 0;
+  font-size: var(--mantine-font-size-md);
 }
 .sp-sheet {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  padding-top: 16px;
+  gap: var(--mantine-spacing-md);
+  padding-top: var(--mantine-spacing-lg);
 }
 .sp-sheet:focus-visible {
   outline: 2px solid var(--sp-line-focus);
@@ -1153,7 +1153,7 @@
 }
 /* UI-12: the sheet's head stays on top: title, a task's state, then Close at the right. */
 .sp-sheet-head {
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
   border-bottom: 1px solid var(--sp-line-divider);
 }
 /* Dialog and sheet titles, and their footer (ui-spec §12.4, UI-18): 16/600 in the display font;
@@ -1183,11 +1183,11 @@
 }
 /* On the phone the sheet rises from the bottom, rounded on its free edge only. */
 .sp-sheet-bottom {
-  border-radius: 12px 12px 0 0;
+  border-radius: var(--mantine-radius-md) var(--mantine-radius-md) 0 0;
 }
 .sp-sheet-name {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
   overflow-wrap: anywhere;
 }
@@ -1195,7 +1195,7 @@
   margin: 0;
 }
 .sp-sheet-h {
-  margin: 12px 0 0;
+  margin: var(--mantine-spacing-md) 0 0;
   font-family: var(--sp-font-display);
   font-size: var(--mantine-font-size-lg);
   font-weight: 600;
@@ -1205,7 +1205,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: 12px;
+  border-radius: var(--mantine-radius-md);
   box-shadow: 0 0 0 1px var(--sp-line-border);
 }
 .sp-sheet-list li + li {
@@ -1214,13 +1214,13 @@
 .sp-sheet-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
   width: 100%;
   min-height: 44px;
-  padding: 8px 12px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
   border: 0;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--mantine-font-size-md);
   color: inherit;
   text-align: left;
   background: none;
@@ -1238,21 +1238,21 @@
 .sp-task-rows .sp-sheet-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 9.5rem;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
 }
 .sp-task-rows .sp-sheet-row > .sp-mono {
   overflow-wrap: anywhere;
 }
 .sp-task-head {
-  padding: 0 12px;
-  font-size: 12px;
+  padding: 0 var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   color: var(--sp-text-secondary);
 }
 /* Facts in a sheet: two columns on every screen, one label style (xs/600 muted). */
 .sp-facts.sp-sheet-facts {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 16px;
+  gap: var(--mantine-spacing-md) var(--mantine-spacing-lg);
 }
 .sp-sheet-facts > div {
   display: block;
@@ -1265,7 +1265,7 @@
   color: var(--sp-text-muted);
 }
 .sp-sheet-facts dd {
-  margin: 2px 0 0;
+  margin: var(--mantine-spacing-xs) 0 0;
 }
 .sp-log-count {
   font-variant-numeric: tabular-nums;
@@ -1276,7 +1276,7 @@
 /* the viewer is dark in both schemes: a match is dark text on the code palette's amber, the
    current one also outlined */
 .sp-log mark {
-  border-radius: 3px;
+  border-radius: var(--mantine-radius-xs);
   color: var(--sp-surface-code);
   background: var(--sp-code-review);
 }
@@ -1288,7 +1288,7 @@
 .sp-quick-link {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--mantine-spacing-xs);
   min-width: 0;
   color: inherit;
   text-decoration: none;
@@ -1301,10 +1301,10 @@
    LiteTaskFilesStates, LiteRunFailed and their phone twins). */
 .sp-near {
   display: inline-block;
-  margin-left: 2px;
-  padding: 1px 7px;
-  border-radius: 7px;
-  font-size: 11.5px;
+  margin-left: var(--mantine-spacing-xs);
+  padding: 1px var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   white-space: nowrap;
   color: var(--sp-state-review-fg);
@@ -1316,20 +1316,20 @@
 .sp-files {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
   min-width: 0;
 }
 .sp-file-tabs {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 12px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-md);
   border-bottom: 1px solid var(--sp-line-divider);
 }
 /* one row of file tabs, scrolled sideways when they do not fit (UI-12) */
 .sp-file-tabs [role="tablist"] {
   display: flex;
-  gap: 2px;
+  gap: var(--mantine-spacing-xs);
   min-width: 0;
   max-width: 100%;
   overflow-x: auto;
@@ -1337,12 +1337,12 @@
 .sp-file-tabs [role="tab"] {
   flex-shrink: 0;
   height: 36px;
-  padding: 0 12px;
+  padding: 0 var(--mantine-spacing-md);
   white-space: nowrap;
   border: 0;
   border-bottom: 2px solid transparent;
   font-family: var(--sp-font-mono);
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-secondary);
   background: none;
   cursor: pointer;
@@ -1358,23 +1358,23 @@
 }
 .sp-file-panel {
   display: grid;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   min-width: 0;
 }
 .sp-file-panel p {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-file-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-file-why {
   display: grid;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-file-why strong {
   color: var(--sp-text-primary);
@@ -1384,14 +1384,14 @@
 }
 .sp-failure {
   display: grid;
-  gap: 8px;
-  padding: 14px 16px;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-lg);
 }
 .sp-failure-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 10px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-md);
   margin: 0;
 }
 .sp-failure-facts {
@@ -1400,15 +1400,15 @@
 .sp-failure-message {
   margin: 0;
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-state-failed-fg);
 }
 .sp-failure-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
+  gap: var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-files-button {
   min-height: 44px;
@@ -1423,9 +1423,9 @@
 .sp-report-back {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mantine-spacing-xs);
   align-self: flex-start;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   font-weight: 600;
   color: var(--sp-text-muted);
   text-decoration: none;
@@ -1436,9 +1436,9 @@
 .sp-report-banner {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   border: 1px solid var(--sp-state-review);
   background: var(--sp-state-review-bg);
   color: var(--sp-state-review-fg);
@@ -1452,14 +1452,14 @@
   overflow-wrap: anywhere;
 }
 .sp-report-banner p + p {
-  margin-top: 4px;
+  margin-top: var(--mantine-spacing-xs);
 }
 .sp-report-frame {
   width: 100%;
   height: 70vh;
   min-height: 420px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--mantine-radius-md);
   box-shadow: 0 0 0 1px var(--sp-line-border);
   background: #fff;
 }
@@ -1476,15 +1476,15 @@
   order: 10;
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   margin: 0;
   max-width: 460px;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-muted);
 }
 .sp-resume-why svg {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--mantine-spacing-xs);
 }
 .sp-run-actions .mantine-Button-root[aria-disabled="true"],
 .sp-run-bar .mantine-Button-root[aria-disabled="true"] {
@@ -1500,22 +1500,22 @@
 .sp-lines {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--mantine-spacing-xs);
 }
 /* The executor beside an environment's name (LiteRunDetail, LiteLaunch). */
 .sp-env-badge {
-  margin-left: 8px;
+  margin-left: var(--mantine-spacing-sm);
 }
 
 /* Results and reports (LiteRunDetail) and the results browser (LiteResults). */
 .sp-results {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-results-h {
-  margin: 8px 0 0;
-  font-size: 13px;
+  margin: var(--mantine-spacing-sm) 0 0;
+  font-size: var(--mantine-font-size-sm);
   font-weight: 600;
 }
 .sp-results-list {
@@ -1524,30 +1524,30 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-results-list li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding-top: 6px;
+  gap: var(--mantine-spacing-sm);
+  padding-top: var(--mantine-spacing-sm);
   border-top: 1px solid var(--sp-line-divider);
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-results-what {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--mantine-spacing-xs);
 }
 .sp-results-what > :first-child {
   font-weight: 500;
 }
 .sp-results-what .sp-mono {
   overflow-wrap: anywhere;
-  font-size: 11.5px;
+  font-size: var(--mantine-font-size-xs);
 }
 .sp-results a {
   flex-shrink: 0;
@@ -1561,15 +1561,15 @@
 .sp-results-all {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
+  gap: var(--mantine-spacing-xs);
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-results-state {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-subtle);
 }
 .sp-pathbar {
@@ -1577,9 +1577,9 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
-  padding: 8px 12px;
-  border-radius: 12px;
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-subtle);
 }
 .sp-pathbar ol {
@@ -1588,11 +1588,11 @@
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--mantine-spacing-xs);
 }
 .sp-pathbar li + li::before {
   content: "/";
-  margin-right: 4px;
+  margin-right: var(--mantine-spacing-xs);
   color: var(--sp-text-muted);
 }
 .sp-pathbar [aria-current] {
@@ -1655,7 +1655,7 @@
   margin-bottom: var(--mantine-spacing-lg);
 }
 .sp-explorer .sp-note p {
-  margin: 0 0 4px;
+  margin: 0 0 var(--mantine-spacing-xs);
 }
 /* one row height for files and folders, icon, name, size and date on one centre line (§12.8) */
 .sp-explorer-table tbody th,
@@ -1671,10 +1671,10 @@
 .sp-kind {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 1px 8px;
-  border-radius: 6px;
-  font-size: 12px;
+  gap: var(--mantine-spacing-xs);
+  padding: 1px var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  font-size: var(--mantine-font-size-xs);
   font-weight: 500;
   white-space: nowrap;
   color: var(--sp-text-secondary);
@@ -1683,11 +1683,11 @@
 .sp-sort {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  margin: -4px -6px;
-  padding: 4px 6px;
+  gap: var(--mantine-spacing-xs);
+  margin: calc(-1 * var(--mantine-spacing-xs)) calc(-1 * var(--mantine-spacing-sm));
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--mantine-radius-sm);
   font: inherit;
   font-weight: 600;
   color: inherit;
@@ -1716,15 +1716,15 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
-  padding: 8px 12px;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
   text-decoration: none;
   color: inherit;
 }
 .sp-explorer-first {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   min-width: 0;
 }
 .sp-explorer-first svg {
@@ -1742,26 +1742,26 @@
   color: var(--sp-text-link);
 }
 .sp-explorer-first + .sp-muted {
-  padding-left: 26px;
-  font-size: 12.5px;
+  padding-left: var(--mantine-spacing-xl);
+  font-size: var(--mantine-font-size-sm);
 }
 
 /* Resume's question (LiteRunActions, MLiteResumeSheet): the launch directory in its own block, wrapped
    anywhere; on the phone a bottom sheet as tall as its content, its top corners rounded. */
 .sp-resume-path {
   display: block;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-sm);
   background: var(--sp-surface-subtle);
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   overflow-wrap: anywhere;
-  margin-bottom: 12px;
+  margin-bottom: var(--mantine-spacing-md);
 }
 .sp-bottom-sheet {
   height: auto;
   max-height: 90dvh;
-  border-radius: 16px 16px 0 0;
+  border-radius: var(--mantine-radius-md) var(--mantine-radius-md) 0 0;
 }
 
 /* P1 Task 35: process and rule states, checkpoints, the By process view and efficiency
@@ -1774,15 +1774,15 @@
   /* a light mark, not a filled chip (FU-P3-88a) */
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: var(--mantine-spacing-xs);
+  font-size: var(--mantine-font-size-xs);
   color: var(--sp-text-muted);
 }
 .sp-table .sp-checkpoint,
 .sp-row-card .sp-checkpoint {
   display: flex;
   width: max-content;
-  margin-top: 3px;
+  margin-top: var(--mantine-spacing-xs);
 }
 .sp-log-tail[data-opens] {
   cursor: pointer;
@@ -1810,14 +1810,14 @@
   /* By process: Pipeline order / A to Z (ui-spec §4.4 note 2026-11-08) */
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  font-size: 14px;
+  gap: var(--mantine-spacing-lg);
+  font-size: var(--mantine-font-size-md);
   color: var(--sp-text-secondary);
 }
 .sp-order label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
   min-height: 32px;
   cursor: pointer;
 }
@@ -1840,7 +1840,7 @@
 }
 .sp-outputs .sp-sheet-row {
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
+  font-size: var(--mantine-font-size-sm);
   overflow-wrap: anywhere;
 }
 .sp-card-facts {
@@ -1859,7 +1859,7 @@
 .sp-log-row {
   display: grid;
   grid-template-columns: 6ch minmax(0, 1fr);
-  column-gap: 12px;
+  column-gap: var(--mantine-spacing-md);
 }
 .sp-log-n {
   text-align: right;
@@ -1891,14 +1891,14 @@
 .sp-file-viewer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--mantine-spacing-md);
   min-width: 0;
 }
 .sp-file-pager {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 12px;
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-md);
 }
 .sp-file-cut {
   font-family: var(--sp-font-mono);
@@ -1910,7 +1910,7 @@
 .sp-file-comments {
   margin: 0;
   font-family: var(--sp-font-mono);
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   color: var(--sp-text-secondary);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -1931,9 +1931,9 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-  padding: 12px;
-  border-radius: 12px;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
   background: #f4f4f6;
   color: #33364a;
 }
@@ -1951,14 +1951,14 @@
   overflow: auto;
 }
 .sp-file-natural {
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
 }
 /* the WebGL viewer: a black backdrop in both themes, the focus ring outside the canvas */
 .sp-ome-region {
   position: relative; /* deck.gl places its canvas absolutely */
   height: 60vh;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--mantine-radius-md);
   background: #000;
   outline-offset: 2px;
 }
@@ -1971,20 +1971,20 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   align-items: start;
-  gap: 16px;
+  gap: var(--mantine-spacing-lg);
 }
 .sp-ome-channels {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 12px;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-subtle);
 }
 .sp-ome-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   max-height: 70vh;
   overflow: auto;
   margin: 0;
@@ -1992,8 +1992,8 @@
   list-style: none;
 }
 .sp-ome-row {
-  padding: 10px;
-  border-radius: 10px;
+  padding: var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-raised);
   box-shadow: 0 0 0 1px var(--sp-line-border);
 }
@@ -2011,13 +2011,13 @@
 .sp-ome-swatch {
   width: 14px;
   height: 14px;
-  border-radius: 3px;
+  border-radius: var(--mantine-radius-xs);
 }
 .sp-ome-switch {
   width: 36px;
   height: 22px;
   border: 0;
-  border-radius: 11px;
+  border-radius: var(--mantine-radius-xl);
   background: var(--sp-line-input);
   cursor: pointer;
 }
@@ -2044,8 +2044,8 @@
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-ome-range span {
   font-family: var(--sp-font-mono);
@@ -2074,7 +2074,7 @@
 .sp-target {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
 }
 /* The runs table actions (FU-P3-115b; ui-spec §4.3 note of 2026-11-10; board LiteRuns): the bulk
    bar over the table, the pin beside a run's name, the Delete sheet's list and box. */
@@ -2082,9 +2082,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 8px 14px;
-  border-radius: 12px;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-subtle);
 }
 .sp-bulk .mantine-Button-root[aria-disabled="true"] {
@@ -2100,14 +2100,14 @@
 .sp-run-cell {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-pin {
   display: inline-flex;
   /* a 25 px hit target around its 15 px icon, over WCAG 2.5.8's 24 px (UX-P3FU115B-05) */
-  padding: 5px;
+  padding: var(--mantine-spacing-xs);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--mantine-radius-sm);
   color: var(--sp-text-secondary);
   background: none;
   cursor: pointer;
@@ -2130,13 +2130,13 @@
   accent-color: var(--sp-line-focus);
 }
 .sp-delete-list {
-  margin: 0 0 8px;
-  padding-left: 18px;
+  margin: 0 0 var(--mantine-spacing-sm);
+  padding-left: var(--mantine-spacing-lg);
 }
 .sp-check {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
   font-weight: 600;
 }
 
@@ -2144,23 +2144,23 @@
 .sp-extra-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-xs);
 }
 .sp-extra-warn {
   display: flex;
-  gap: 7px;
+  gap: var(--mantine-spacing-sm);
   align-items: baseline;
   color: var(--sp-state-review-fg);
 }
 .sp-extra-text {
   max-height: 60vh;
   overflow: auto;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
   background: var(--sp-surface-subtle);
   font-family: var(--sp-font-mono);
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -2170,12 +2170,12 @@
    at the cut edge so a hidden pill reads as cut. */
 .sp-toolbar .sp-segments {
   flex-wrap: nowrap;
-  padding: 2px;
+  padding: var(--mantine-spacing-xs);
   border-radius: var(--mantine-radius-sm);
 }
 .sp-toolbar .sp-segments button {
   min-height: 32px;
-  border-radius: 6px;
+  border-radius: var(--mantine-radius-sm);
   white-space: nowrap;
 }
 @media (max-width: 767.98px) {
@@ -2233,10 +2233,10 @@
 .sp-scope {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 11.5px;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2255,12 +2255,12 @@
 }
 .sp-scope-cells {
   display: inline-flex;
-  gap: 2px;
+  gap: var(--mantine-spacing-xs);
 }
 .sp-scope-cells i {
   width: 6px;
   height: 6px;
-  border-radius: 2px;
+  border-radius: var(--mantine-radius-xs);
   background: currentColor;
   opacity: 0.3;
 }
@@ -2271,11 +2271,11 @@
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
 }
 .sp-target-to {
   font-family: var(--sp-font-mono);
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
   font-weight: 600;
   color: var(--sp-section-environments);
   overflow-wrap: anywhere;
@@ -2295,15 +2295,15 @@
   align-items: stretch;
   max-width: 100%;
   border: 1px solid var(--sp-line-border);
-  border-radius: 8px;
+  border-radius: var(--mantine-radius-sm);
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-target-badge > span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
   border-left: 1px solid var(--sp-line-divider);
   min-width: 0;
   overflow-wrap: anywhere;
@@ -2312,7 +2312,7 @@
   border-left: 0;
 }
 .sp-target-kind {
-  font-size: 11.5px;
+  font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2327,10 +2327,10 @@
 .sp-target-warn {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  gap: var(--mantine-spacing-xs);
+  margin-top: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-sm);
   color: var(--sp-state-review-fg);
   background: var(--sp-state-review-bg);
 }
@@ -2338,14 +2338,14 @@
 .sp-target-steps {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--mantine-spacing-sm);
+  margin-bottom: var(--mantine-spacing-md);
 }
 .sp-steps {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
-  gap: 8px 28px;
+  gap: var(--mantine-spacing-sm) var(--sp-space-2xl);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2354,11 +2354,11 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--mantine-spacing-xs);
   min-width: 120px;
-  padding: 8px 12px;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
   border: 1px solid var(--sp-line-border);
-  border-radius: 8px;
+  border-radius: var(--mantine-radius-sm);
   background: var(--sp-surface-subtle);
 }
 ol.sp-steps > li + li::before {
@@ -2385,7 +2385,7 @@ ol.sp-steps > li + li::before {
   border-width: 2px;
 }
 .sp-steps-out {
-  gap: 8px;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-steps-out > li {
   border-style: dashed;
@@ -2393,6 +2393,6 @@ ol.sp-steps > li + li::before {
   opacity: 0.6;
 }
 .sp-step-count {
-  font-size: 12px;
+  font-size: var(--mantine-font-size-xs);
   color: var(--sp-text-secondary);
 }
