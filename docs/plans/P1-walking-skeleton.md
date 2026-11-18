@@ -805,7 +805,7 @@ test("a request without the cookie shows the 401 page, not data", async ({ page 
 
 **Interfaces:**
 - Consumes: the wheel (Task 21), installed into `$SLURM_DATA/tools` as `dev/slurm/cluster.sh` expects; `inc` from `tests/slurm/scenarios.sh` (run as user `spx` on the submitter).
-- Produces: `spectio init --runs-root $SLURM_DATA/runs --partition htc`, then `spectio serve --detach`, with `engines.extra_args.snakemake = ["--slurm-init-seconds-before-status-checks", "5"]` and `runner.head_watch_s = 5`.
+- Produces: `spectio init --runs-root $SLURM_DATA/runs --partition htc`, then `spectio serve --detach`, with `engines.extra_args.snakemake = ["--slurm-init-seconds-before-status-checks", "5", "--slurm-status-command", "squeue"]` (slurm-mini has no accounting, so `sacct` exits 1 and the SLURM plugin, which picks `sacct` whenever it is installed, would never see its jobs end; `tests/slurm/e2e.sh`) and `runner.head_watch_s = 5`.
 
 - [ ] **Step 1: Write the failing test** (the harness). For each engine: launch the synthetic `happy` (params from `tests/pipelines/synthetic/scenarios.yaml`, profile `slurm`); expect `queued` → `running` with the head alive in the tmux session `spectio-<run_id>` on the submitter node (no `sbatch` for the head: the submit log of the engines' task jobs holds no `spectio-head-` name) → `succeeded`. The per-process counts must equal `tests/pipelines/synthetic/golden/{nextflow-26.10.4,snakemake-9.27.1}/happy.tsv`, the head end state comes from `head.exit`, `spool_drops` stays empty, and at the end `squeue --me` lists no job of the run and `tmux ls` no session `spectio-<run_id>`.
 - [ ] **Step 2:** `bash dev/slurm/cluster.sh up mini && CLUSTER=mini bash tests/slurm/e2e.sh launch nextflow`: FAIL.
