@@ -16,7 +16,9 @@
 # SPECTIO_HOME=$SLURM_DATA/tools SPECTIO_BIN=$SLURM_DATA/tools/bin UV_PYTHON_INSTALL_DIR=$SLURM_DATA/tools/python,
 # then `e2e.sh install`), and in native mode $SLURM_DATA must be a path $E2E_USER can reach (not under /root).
 # Each launch starts from new directories under $SLURM_DATA/e2e/<engine> and a new database, and stops its
-# server at the end; the checks are those of tests/slurm/e2e_client.py.
+# server at the end; the checks are those of tests/slurm/e2e_client.py. On SLURM the server listens only on
+# spectio.sock in its 0700 database directory, never on a TCP port (FU-P3-72): the client finds the socket in
+# server.json and speaks HTTP over it, so the database path stays short (a socket path has at most 107 bytes).
 set -euo pipefail
 repo=$(cd "$(dirname "$0")/../.." && pwd)
 # shellcheck source=dev/versions.env
@@ -119,6 +121,7 @@ launch() { # nextflow|snakemake
     --timeout "$TIMEOUT" || rc=$?
   if [ "$rc" != 0 ]; then
     echo "::group::server pane"; inc "$e/home" tmux capture-pane -p -S -200 -t =spectio-server: || true; echo "::endgroup::"
+    echo "::group::server.json"; inc "$e/home" cat "$e/data/server.json" || true; echo; echo "::endgroup::"
     for f in "$e"/runs/*/launch/.spectio/head.out; do
       [ -f "$f" ] && { echo "::group::tail $f"; tail -n 40 "$f"; echo "::endgroup::"; }
     done
