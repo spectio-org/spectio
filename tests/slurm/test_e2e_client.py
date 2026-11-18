@@ -1,11 +1,17 @@
-"""The pure parts of e2e_client.py (P1 Task 22): the ticket line, the session cookie, the golden
-counts, the run's states, the expect lines of a scenario and the jobs of a run; and its transport, against a
-stand-in HTTP server on a Unix socket and on TCP. No Spectio server and no cluster: tests/slurm/e2e.sh runs the
-client itself. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
+"""The pure parts of e2e_client.py (P1 Tasks 22 and 23): the ticket line, the session cookie, the golden
+counts, the run's states, the expect lines of a scenario and the jobs of a run, the cancel and restart checks
+and the teardown; and its transport, against a stand-in HTTP server on a Unix socket and on TCP. No Spectio
+server and no cluster: tests/slurm/e2e.sh runs the client itself. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
 import http.server
+import importlib.util
+import inspect
+import io
 import json
 import os
+import socket
 import socketserver
+import sqlite3
+import subprocess
 import sys
 import tempfile
 import threading
@@ -179,6 +185,138 @@ class Local(unittest.TestCase):
         self.assertIn(str(me), c.head_left((me, me, start)))
         self.assertIsNone(c.head_left((me, me, start + "0")))  # another process that reused the PID
         self.assertIsNone(c.head_left(None))
+
+
+class CancelChecks(unittest.TestCase):
+    """P1 Task 23: once running with tasks running, `POST :cancel`; the run goes cancelling, then cancelled."""
+
+    def test_ready_once_running_with_a_task_running(self):
+        self.assertTrue(c.tasks_running({"state": "running", "task_counts": {"running": 2, "succeeded": 1}}))
+        self.assertFalse(c.tasks_running({"state": "running", "task_counts": {"succeeded": 3}}))
+        self.assertFalse(c.tasks_running({"state": "running", "task_counts": {}}))
+        self.assertFalse(c.tasks_running({"state": "queued", "task_counts": {"running": 1}}))
+
+    def test_queued_running_cancelling_cancelled(self):
+        self.assertIsNone(c.cancel_states_problem(["queued", "running", "running", "cancelling", "cancelled"]))
+
+    def test_each_wrong_path(self):
+        for seen in (["queued", "running", "cancelled"], ["queued", "running", "cancelling"],
+                     ["queued", "running", "cancelling", "failed"], ["queued", "cancelling", "cancelled"],
+                     ["queued", "running", "succeeded"], []):
+            self.assertIsNotNone(c.cancel_states_problem(seen), seen)
+
+    def test_the_window_is_the_grace_and_120_s(self):
+        self.assertEqual(c.CANCEL_WINDOW_S, c.CANCEL_GRACE_S + 120)
+
+    @unittest.skipUnless(importlib.util.find_spec("spectio"), "the spectio package is not installed")
+    def test_the_grace_is_the_tmux_launchers(self):
+        from spectio.runner.tmux import TmuxLauncher
+
+        self.assertEqual(inspect.signature(TmuxLauncher.cancel).parameters["grace_s"].default, c.CANCEL_GRACE_S)
+
+    def test_job_states_of_the_run(self):
+        lines = ["12|nf-A|CANCELLED|/r/runs/run_1/work/ab", "13|nf-B|RUNNING|/r/runs/run_1/work/cd",
+                 "14|nf-C|CANCELLED|/r/runs/run_10/work", "15|nf-D|COMPLETED|/r/runs/run_1"]
+        self.assertEqual(c.job_states(lines, "/r/runs/run_1"), {"CANCELLED": 1, "RUNNING": 1, "COMPLETED": 1})
+        self.assertEqual(c.job_states([], "/r/runs/run_1"), {})
+
+
+class Store(unittest.TestCase):
+    """Read-only queries of the server's database: attempts by state, and duplicate event IDs."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.db = os.path.join(tmp.name, "spectio.db")
+        with sqlite3.connect(self.db) as conn:
+            conn.executescript(
+                "CREATE TABLE tasks (id TEXT, run_id TEXT, process_or_rule TEXT, state TEXT);"
+                "CREATE TABLE attempts (id TEXT, task_id TEXT, n INTEGER, state TEXT);"
+                "CREATE TABLE events (id TEXT, run_id TEXT, event_id TEXT);"
+                "INSERT INTO tasks VALUES ('t1', 'run_1', 'ALIGN', 'running'), ('t2', 'run_1', 'QC', 'aborted'),"
+                " ('t3', 'run_2', 'ALIGN', 'running');"
+                "INSERT INTO attempts VALUES ('a1', 't1', 1, 'running'), ('a2', 't2', 1, 'aborted'),"
+                " ('a3', 't2', 2, 'failed'), ('a4', 't3', 1, 'running');"
+                "INSERT INTO events VALUES ('e1', 'run_1', 'x'), ('e2', 'run_1', 'y'), ('e3', 'run_1', 'x'),"
+                " ('e4', 'run_2', 'y');")
+        conn.close()
+
+    def test_attempts_in_a_state(self):
+        self.assertEqual(c.attempts_in(self.db, "run_1", ("running",)), ["ALIGN attempt 1: running"])
+        self.assertEqual(c.attempts_in(self.db, "run_1", ("pending",)), [])
+
+    def test_duplicate_event_ids(self):
+        self.assertEqual(c.duplicate_events(self.db, "run_1"), ["x (2 times)"])
+        self.assertEqual(c.duplicate_events(self.db, "run_2"), [])
+
+
+class Restart(unittest.TestCase):
+    """P1 Task 23: SIGKILL the server named by server.json, start it again, and the head is adopted."""
+
+    LOG = ("-V\n"
+           "new-session -d -P -F #{pane_id} #{pane_pid} -s spectio-server -c / /usr/bin/env -i a=b\n"
+           "new-session -d -P -F #{pane_id} #{pane_pid} -s spectio-run_1 -c /r/run_1/launch /bin/bash h.sh\n"
+           "has-session -t =spectio-run_1\n"
+           "new-session -d -P -F #{pane_id} #{pane_pid} -s spectio-run_10 -c /r/run_10/launch /bin/bash h.sh\n"
+           "list-panes -s -t =spectio-run_1 -F #{pane_id} #{pane_pid}\n")
+
+    def test_new_sessions_of_the_run(self):
+        self.assertEqual(c.new_sessions(self.LOG, "spectio-run_1"), 1)
+        self.assertEqual(c.new_sessions(self.LOG + self.LOG, "spectio-run_1"), 2)
+        self.assertEqual(c.new_sessions(self.LOG, "spectio-run_2"), 0)
+        self.assertEqual(c.new_sessions("", "spectio-run_1"), 0)
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.data = tmp.name
+
+    def state(self, **record):
+        with open(os.path.join(self.data, "server.json"), "w") as f:
+            json.dump({"host": socket.gethostname(), "port": 8123} | record, f)
+
+    def test_the_pid_of_a_spectio_serve_on_this_node(self):
+        proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", "-m", "spectio", "serve",
+                                 "--pane"])
+        self.addCleanup(proc.wait)
+        self.addCleanup(proc.kill)
+        self.state(pid=proc.pid)
+        self.assertEqual(c.server_pid(self.data), proc.pid)
+
+    def test_any_other_pid_is_refused(self):
+        for record in ({"pid": os.getpid()}, {"pid": "1"}, {"pid": 1}, {"pid": None},
+                       {"pid": os.getpid(), "host": "elsewhere"}):
+            self.state(**record)
+            with self.assertRaises(c.Failed, msg=record):
+                c.server_pid(self.data)
+
+
+class Teardown(unittest.TestCase):
+    """FU-P3-68: after a failure, the heads' sessions and the jobs of the runs under the runs root go."""
+
+    def test_sessions_and_jobs_under_the_runs_root(self):
+        names = ["run_01M7PX2ZKY0WRFJFYGWH5WAQA0", "golden.tsv", "run_x", "run_01M7PX6QD89EB1SPPZSMGFAFZY"]
+        lines = ["12|nf-A|/r/runs/run_01M7PX2ZKY0WRFJFYGWH5WAQA0/work/ab", "13|other|/r/runs2/x", "14|b|/r/runs/z"]
+        self.assertEqual(c.teardown_plan(names, lines, "/r/runs"),
+                         (["spectio-run_01M7PX2ZKY0WRFJFYGWH5WAQA0", "spectio-run_01M7PX6QD89EB1SPPZSMGFAFZY"],
+                          ["12", "14"]))
+
+
+class Main(unittest.TestCase):
+    """A hung squeue or tmux (TimeoutExpired) or an OSError ends the client with a FAIL line, not a traceback
+    (CR-P3T22-08 (r3)); a teardown with no config left tears nothing down and passes."""
+
+    def test_a_timeout_or_os_error_is_a_fail_line(self):
+        for exc in (subprocess.TimeoutExpired(["squeue"], 60), ProcessLookupError(3, "No such process")):
+            with self.subTest(exc), mock.patch.object(c, "cancel", side_effect=exc), \
+                    mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+                self.assertEqual(c.main(["cancel", "nextflow", "--config", "x", "--location", "y"]), 1)
+                self.assertTrue(out.getvalue().startswith("FAIL "), out.getvalue())
+
+    def test_teardown_without_a_config(self):
+        with mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+            self.assertEqual(c.main(["teardown", "--config", "/nonexistent/spectio.toml"]), 0)
+        self.assertIn("teardown: nothing to tear down", out.getvalue())
 
 
 class Echo(http.server.BaseHTTPRequestHandler):

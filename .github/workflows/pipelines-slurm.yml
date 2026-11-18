@@ -3,8 +3,9 @@ name: pipelines · SLURM (sind)
 # The sind profiles of docs/specs/dev-environment-and-testing.md §4.1 (dev/slurm/cluster.sh) and the SLURM
 # scenarios (tests/slurm/scenarios.sh): the synthetic pipelines with Nextflow -profile slurm and Snakemake
 # --workflow-profile profiles/slurm and each failure mode, OOM / TIMEOUT / NODE_FAIL / pending-reason probes,
-# a Snakemake head in sbatch, slurmrestd with JWT; and job e2e (tests/slurm/e2e.sh, P1 Task 22): Spectio from its
-# wheel on the slurm-mini submitter launches and monitors both engines, each head in its tmux session. Fixtures go to the slurm-fixtures-* artifacts (committed
+# a Snakemake head in sbatch, slurmrestd with JWT; and job e2e (tests/slurm/e2e.sh, P1 Tasks 22 and 23): Spectio from
+# its wheel on the slurm-mini submitter launches and monitors both engines, each head in its tmux session, cancels a
+# run of each, and adopts a Nextflow head after a server restart. Fixtures go to the slurm-fixtures-* artifacts (committed
 # copies in tests/fixtures/slurm/slurm-<version>/). Step page: docs/progress/W3/T3.md.
 # Not called by ci.yml, so not part of ci-ok: like dev-env.yml it runs on any push that touches its paths.
 on:
@@ -25,7 +26,7 @@ jobs:
   slurm:
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04
-    # e2e: bootstrap, install and cluster up (10 min each at most), then its step's 40, then the steps after it.
+    # e2e: bootstrap, install and cluster up (10 min each at most), then its step's 55, then the steps after it.
     timeout-minutes: ${{ matrix.timeout || 40 }}
     permissions:
       contents: read
@@ -38,7 +39,7 @@ jobs:
           - {name: snakemake-b, profile: site, scenarios: "snakemake:oom_fatal,timeout_fatal,tool_error_then_fixed_resume heads"}
           - {name: rest, profile: rest, scenarios: "rest"}
           - {name: mini, profile: mini, scenarios: "nextflow:happy"}
-          - {name: e2e, profile: mini, scenarios: "", e2e: "nextflow snakemake", timeout: 75}
+          - {name: e2e, profile: mini, scenarios: "", e2e: "launch:nextflow launch:snakemake cancel:nextflow cancel:snakemake restart", timeout: 90}
     env:
       SIND_REALM: spx-t3
       SIND_PROGRESS: plain
@@ -78,21 +79,24 @@ jobs:
             bash tests/slurm/scenarios.sh "$s"
             echo "TIMING $s $((SECONDS - start)) s"
           done
-      - name: End to end (launch and monitor)
+      - name: End to end (launch, cancel, restart)
         if: matrix.e2e
-        # Below the job's budget, so a hung run ends as a step failure: its FAIL lines, the server pane and
-        # head.out are printed and "Cluster state on failure" runs. 900 s a run: the native runs took 1 and 8 min.
-        timeout-minutes: 40
+        # Below the job's budget, so a hung case ends as a step failure and "Cluster state on failure" runs.
+        # A case that hits its client's own deadline (E2E_TIMEOUT a wait, 900 s) prints its FAIL lines, the
+        # server pane and head.out; one cut by this step's timeout prints nothing more. On 31a4880 the launches
+        # took 124 and 225 s; each cancel ends within its 180 s window, the restart adds about 30 s to a launch.
+        timeout-minutes: 55
         env:
-          ENGINES: ${{ matrix.e2e }}
+          CASES: ${{ matrix.e2e }}
           E2E_TIMEOUT: "900"
         run: |
           rc=0
-          for e in $ENGINES; do
+          for c in $CASES; do
             start=$SECONDS
-            echo "===== e2e launch $e"
-            bash tests/slurm/e2e.sh launch "$e" || rc=1
-            echo "TIMING e2e-launch-$e $((SECONDS - start)) s"
+            echo "===== e2e $c"
+            read -r cmd arg <<<"${c/:/ }"
+            bash tests/slurm/e2e.sh "$cmd" ${arg:+"$arg"} || rc=1
+            echo "TIMING e2e-${c/:/-} $((SECONDS - start)) s"
           done
           exit $rc
       - name: Cluster state on failure

@@ -1,8 +1,15 @@
-"""tests/slurm/e2e.sh on slurm-mini, with a fake `sind` that records each command and runs nothing:
-the Snakemake head must ask squeue for its jobs' states. slurm-mini has no accounting, so `sacct`
-exits 1 ("Slurm accounting storage is disabled"); the SLURM plugin 2.8.0 picks sacct whenever it is
-on PATH, and a failed status query yields no job, so the head waits for its jobs forever (PR #164,
-CI job 134667343638)."""
+"""tests/slurm/e2e.sh on slurm-mini, with a fake `sind` that records each command and runs
+nothing (it prints a tmux path for `command -v tmux`, and exits 1 for a command that contains
+$FAIL_ON):
+
+- the Snakemake head must ask squeue for its jobs' states. slurm-mini has no accounting, so
+  `sacct` exits 1 ("Slurm accounting storage is disabled"); the SLURM plugin 2.8.0 picks sacct
+  whenever it is on PATH, and a failed status query yields no job, so the head waits for its jobs
+  forever (PR #164, CI job 134667343638);
+- `cancel <engine>` and `restart` (P1 Task 23) run their client with a larger scale, and the
+  tmux shim that logs each tmux call;
+- every case prints its RESULT line and tears down, even when a step before the client fails
+  (FU-P3-68)."""
 
 import os
 import pathlib
@@ -17,36 +24,113 @@ E2E = HERE / "e2e.sh"
 BASH = shutil.which("bash")
 
 
-class E2eMiniSnakemake(unittest.TestCase):
-    def test_the_snakemake_head_queries_squeue(self):
+class E2eMini(unittest.TestCase):
+    def setUp(self):
         tmp = pathlib.Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, tmp)
-        data, fakes, calls = tmp / "data", tmp / "bin", tmp / "calls"
-        (data / "tools" / "bin").mkdir(parents=True)
+        self.data, fakes, self.calls = tmp / "data", tmp / "bin", tmp / "calls"
+        (self.data / "tools" / "bin").mkdir(parents=True)
         fakes.mkdir()
+        sind = (
+            f'printf "%s\\n" "$*" >>"{self.calls}"\n'
+            'case "$*" in *"command -v tmux"*) echo /usr/bin/tmux ;; esac\n'
+            'case "$*" in *"${FAIL_ON:-no such command}"*) exit 1 ;; esac\n'
+            "exit 0"
+        )
         for path, body in (
-            (data / "tools" / "bin" / "spectio", "exit 0"),
-            (fakes / "sind", f'printf "%s\\n" "$*" >>"{calls}"; exit 0'),
+            (self.data / "tools" / "bin" / "spectio", "exit 0"),
+            (fakes / "sind", sind),
         ):
             path.write_text(f"#!/bin/sh\n{body}\n")
             path.chmod(stat.S_IRWXU)
-        env = {
+        self.env = {
             **os.environ,
             "PATH": f"{fakes}:{os.environ['PATH']}",
             "CLUSTER": "mini",
-            "SLURM_DATA": str(data),
+            "SLURM_DATA": str(self.data),
         }
-        out = subprocess.run(
-            [BASH, str(E2E), "launch", "snakemake"], env=env, capture_output=True, text=True
+
+    def run_e2e(self, *args, **env):
+        return subprocess.run(
+            [BASH, str(E2E), *args], env=self.env | env, capture_output=True, text=True
         )
+
+    def lines(self, word):
+        return [line for line in self.calls.read_text().splitlines() if word in line]
+
+    def test_the_snakemake_head_queries_squeue(self):
+        out = self.run_e2e("launch", "snakemake")
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
-        init = [line for line in calls.read_text().splitlines() if " spectio init " in line]
-        self.assertEqual(len(init), 1, calls.read_text())
+        init = self.lines(" spectio init ")
+        self.assertEqual(len(init), 1, self.calls.read_text())
         self.assertIn(
             "SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE=--slurm-init-seconds-before-status-checks 5 "
             "--slurm-status-command squeue ",
             init[0],
         )
+        self.assertIn("RESULT e2e-launch-snakemake pass", out.stdout)
+
+    def test_cancel_runs_a_larger_happy(self):
+        for engine in ("nextflow", "snakemake"):
+            with self.subTest(engine):
+                self.calls.unlink(missing_ok=True)
+                out = self.run_e2e("cancel", engine)
+                self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+                client = self.lines(f"e2e_client.py cancel {engine} ")
+                self.assertEqual(len(client), 1, self.calls.read_text())
+                self.assertIn('"scale": 4', client[0])
+                self.assertIn(f"/e2e/cancel-{engine}/", client[0])
+                self.assertIn(f"RESULT e2e-cancel-{engine} pass", out.stdout)
+
+    def test_restart_logs_tmux_through_its_shim(self):
+        out = self.run_e2e("restart")
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        e = self.data / "e2e" / "restart"
+        client = self.lines("e2e_client.py restart ")
+        self.assertEqual(len(client), 1, self.calls.read_text())
+        self.assertIn(f"--tmux-log {e}/tmux.log", client[0])
+        self.assertIn(f"--golden {e}/golden.tsv", client[0])
+        # every command of the case has the shim first on PATH, so the server's tmux calls too
+        serve = self.lines(" spectio serve --detach")
+        self.assertEqual(len(serve), 1)
+        self.assertIn(f"E2E_BIN={e}/tmux-bin ", serve[0])
+        shim = (e / "tmux-bin" / "tmux").read_text()
+        self.assertIn(f'>>"{e}/tmux.log"', shim)
+        self.assertIn('exec /usr/bin/tmux "$@"', shim)
+        self.assertIn("RESULT e2e-restart pass", out.stdout)
+
+    def test_a_failed_step_still_prints_result_and_tears_down(self):
+        for case, name in (
+            (("launch", "nextflow"), "launch-nextflow"),
+            (("cancel", "snakemake"), "cancel-snakemake"),
+            (("restart",), "restart"),
+        ):
+            with self.subTest(case):
+                self.calls.unlink(missing_ok=True)
+                out = self.run_e2e(*case, FAIL_ON=" spectio init ")
+                self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+                self.assertIn(f"RESULT e2e-{name} fail", out.stdout)
+                self.assertEqual(
+                    self.lines("e2e_client.py launch")
+                    + self.lines("e2e_client.py cancel")
+                    + self.lines("e2e_client.py restart"),
+                    [],
+                )
+                self.assertEqual(
+                    len(self.lines("e2e_client.py teardown ")), 1, self.calls.read_text()
+                )
+                self.assertEqual(len(self.lines("tmux kill-session -t =spectio-server")), 1)
+
+    def test_a_failed_client_prints_fail(self):
+        out = self.run_e2e("cancel", "nextflow", FAIL_ON="e2e_client.py cancel")
+        self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+        self.assertIn("RESULT e2e-cancel-nextflow fail", out.stdout)
+        self.assertEqual(len(self.lines("e2e_client.py teardown ")), 1)
+
+    def test_an_unknown_case_is_refused(self):
+        for args in (("cancel", "cwl"), ("restart", "snakemake"), ("launch",), ()):
+            with self.subTest(args):
+                self.assertEqual(self.run_e2e(*args).returncode, 2)
 
 
 if __name__ == "__main__":
