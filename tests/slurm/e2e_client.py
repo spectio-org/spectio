@@ -56,6 +56,7 @@ CHECKS = (
     "head.exit 0, as the run reads it",
     "no spool drop",
     "no job or session left",
+    "socket only, no TCP port",
 )
 LOCAL_CHECKS = (
     "run succeeded",
@@ -68,16 +69,22 @@ LOCAL_CHECKS = (
 CANCEL_CHECKS = (
     "run cancelled in time",
     "no job or session left",
-    "no attempt left running",
+    "no attempt left pending, submitted or running",
+    "socket only, no TCP port",
 )
 RESTART_CHECKS = (
     "run succeeded",
     "head adopted, not started again",
     "counts equal the golden",
     "no duplicate event_id",
+    "no spool drop",
     "old cookie refused, new link works",
     "no job or session left",
+    "socket only, no TCP port",
 )
+SUCCEEDED_PATH = ("queued", "running", "succeeded")
+CANCELLED_PATH = ("queued", "running", "cancelling", "cancelled")
+OPEN_ATTEMPTS = ("pending", "submitted", "running")  # an attempt in none of these has ended
 CANCEL_GRACE_S = 60  # spectio.runner.tmux.TmuxLauncher.cancel: Ctrl-C, SIGTERM after it, SIGKILL after another
 CANCEL_WINDOW_S = CANCEL_GRACE_S + 120  # P1 Task 23: cancelling → cancelled within grace + 120 s
 RESTART_WAIT_S = 20  # P1 Task 23: between the SIGKILL and `spectio serve --detach`
@@ -142,17 +149,9 @@ def changes(states: list[str]) -> list[str]:
     return [s for i, s in enumerate(states) if i == 0 or s != states[i - 1]]
 
 
-def states_problem(seen: list[str]) -> str | None:
-    """None when the run went queued, then running, then succeeded, and through nothing else."""
-    if changes(seen) != ["queued", "running", "succeeded"]:
-        return f"states seen {' → '.join(changes(seen)) or 'none'}, not queued → running → succeeded"
-    return None
-
-
-def cancel_states_problem(seen: list[str]) -> str | None:
-    """None when the run went queued, running, cancelling, then cancelled, and through nothing else."""
-    want = ["queued", "running", "cancelling", "cancelled"]
-    if changes(seen) != want:
+def states_problem(seen: list[str], want: tuple[str, ...] = SUCCEEDED_PATH) -> str | None:
+    """None when the run went through the states of `want`, in order, and through nothing else."""
+    if tuple(changes(seen)) != want:
         return f"states seen {' → '.join(changes(seen)) or 'none'}, not {' → '.join(want)}"
     return None
 
@@ -267,8 +266,13 @@ def teardown_plan(names: list[str], lines: list[str], runs_root: str) -> tuple[l
     return sessions, [line.split("|")[0] for line in run_jobs(lines, runs_root)]
 
 
+# The server's own process: `spectio serve --detach` starts `python -P -m spectio serve --pane` in its tmux
+# pane (spectio/cli/serve.py `_pane_argv`, `_runs_pane_serve`), and server.json names that PID.
+PANE_SERVE = ["-m", "spectio", "serve", "--pane"]
+
+
 def server_pid(data_dir: str) -> int:
-    """The PID of server.json, once checked to be a `spectio serve` of this node: the one to SIGKILL."""
+    """The PID of server.json, once checked to be the `spectio serve --pane` of this node and this uid."""
     try:
         record = json.loads(Path(data_dir, "server.json").read_text())
     except (OSError, ValueError) as exc:
@@ -279,16 +283,61 @@ def server_pid(data_dir: str) -> int:
     if type(pid) is not int or pid <= 1:
         raise Failed(f"server.json names PID {pid!r}")
     try:
+        uid = os.stat(f"/proc/{pid}").st_uid
         words = Path(f"/proc/{pid}/cmdline").read_bytes().decode(errors="replace").split("\0")
     except OSError as exc:
         raise Failed(f"server.json names PID {pid}, which does not run: {exc}") from exc
-    if not any(words[i : i + 2] == ["spectio", "serve"] for i in range(len(words))):
-        raise Failed(f"PID {pid} of server.json runs {' '.join(words)[:200]!r}, not spectio serve")
+    if uid != os.getuid():
+        raise Failed(f"PID {pid} of server.json belongs to uid {uid}, not {os.getuid()}")
+    if not any(words[i : i + len(PANE_SERVE)] == PANE_SERVE for i in range(len(words))):
+        raise Failed(f"PID {pid} of server.json runs {' '.join(words)[:200]!r}, not spectio serve --pane")
     return pid
 
 
-def server_address(data_dir: str, db_dir: str) -> tuple[int, str | None]:
-    """The port and the socket of `<data_dir>/server.json`; the socket is None for a server on TCP.
+def kill_server(data_dir: str) -> int:
+    """SIGKILL to the server of server.json, through a pidfd opened before the checks, so that a process
+    that took its PID meanwhile is never signalled (SEC-P3T23-03). Its PID."""
+    try:
+        record = json.loads(Path(data_dir, "server.json").read_text())
+        fd = os.pidfd_open(record["pid"])
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise Failed(f"the server of {data_dir}/server.json cannot be signalled: {exc!r}") from exc
+    try:
+        pid = server_pid(data_dir)
+        if pid != record["pid"]:
+            raise Failed(f"server.json changed while it was read: PID {record['pid']}, then {pid}")
+        signal.pidfd_send_signal(fd, signal.SIGKILL)
+    finally:
+        os.close(fd)
+    return pid
+
+
+def socket_only(config: dict) -> bool:
+    """Off a machine only the user uses (executor `local`), the server listens on its socket only (FU-P3-72)."""
+    return config.get("executor") != "local"
+
+
+def tcp_listener(port: int | None) -> str | None:
+    """What listens on 127.0.0.1 at server.json's port, None when nothing does (or there is no port)."""
+    if port is None:
+        return None
+    try:
+        with socket.create_connection((LOOPBACK, port), timeout=5):
+            return f"something listens on {LOOPBACK}:{port}: the server must listen on its socket only"
+    except OSError:
+        return None
+
+
+def same_socket(old: str | None, new: str | None) -> str | None:
+    """None when the restarted server is on the socket the first one was on."""
+    if old is None or new is None:
+        return f"no socket in server.json (before: {old}, after: {new})"
+    return None if old == new else f"the socket moved from {old} to {new}"
+
+
+def server_address(data_dir: str, db_dir: str, socket_only: bool = False) -> tuple[int, str | None]:
+    """The port and the socket of `<data_dir>/server.json`; the socket is None for a server on TCP, which
+    `socket_only` (SLURM, a shared host) refuses: no TCP fallback (SEC-P3T23-01).
     A socket other than `SOCKET` in `db_dir`, the config's database directory, is refused."""
     try:
         record = json.loads(Path(data_dir, "server.json").read_text())
@@ -299,6 +348,8 @@ def server_address(data_dir: str, db_dir: str) -> tuple[int, str | None]:
         raise Failed(f"server.json names port {port!r}, not one in 1024-65535")
     if sock is not None and sock != f"{db_dir.rstrip('/')}/{SOCKET}":
         raise Failed(f"server.json names socket {sock!r}, not {SOCKET} in {db_dir}")
+    if socket_only and sock is None:
+        raise Failed("server.json names no socket: on SLURM the server listens on its socket only")
     return port, sock
 
 
@@ -410,7 +461,9 @@ def attempts_in(db: str, run_id: str, states: tuple[str, ...]) -> list[str]:
 
 
 def duplicate_events(db: str, run_id: str) -> list[str]:
-    """The run's event IDs that the events table holds more than once."""
+    """The run's event IDs that the events table holds more than once. The schema refuses them already
+    (UniqueConstraint run_id, event_id: migration 0001_initial_store.py:253), so this guards that the
+    constraint stays, not the projector (CR-P3T23-02)."""
     with sqlite3.connect(f"file:{db}?mode=ro", uri=True) as conn:
         rows = conn.execute(
             "SELECT event_id, COUNT(*) FROM events WHERE run_id = ? GROUP BY event_id HAVING COUNT(*) > 1 "
@@ -421,7 +474,7 @@ def duplicate_events(db: str, run_id: str) -> list[str]:
 
 def signed_in(config: dict) -> Api:
     """The API of the server that server.json names, with a session cookie from a new link."""
-    port, socket_path = server_address(config["data_dir"], config["db_dir"])
+    port, socket_path = server_address(config["data_dir"], config["db_dir"], socket_only(config))
     api = Api(port, socket_path)
     print(f"server on {socket_path or f'{LOOPBACK}:{port}'}", flush=True)
     out = subprocess.run(["spectio", "login", "--print-link", "--json"],  # noqa: S603, S607
@@ -474,6 +527,7 @@ def cancel(args: argparse.Namespace) -> int:
     run = start(api, args)
     run_id, states = run["id"], [run["state"]]
     session, run_dir = f"spectio-{run_id}", f"{config['runs_root']}/{run_id}"
+    tcp = tcp_listener(api.port)
     detail = poll_until(api, run, states, tasks_running, args.timeout)
     if not tasks_running(detail):
         raise Failed(f"run {run_id} was never running with a task running: {detail['state']} {detail['task_counts']}")
@@ -484,7 +538,8 @@ def cancel(args: argparse.Namespace) -> int:
     detail = poll_until(api, detail, states, lambda d: False, CANCEL_WINDOW_S)
     took = time.monotonic() - asked
     checks: dict[str, str | None] = dict.fromkeys(CANCEL_CHECKS)
-    checks["run cancelled in time"] = cancel_states_problem(states) or (
+    checks["socket only, no TCP port"] = tcp
+    checks["run cancelled in time"] = states_problem(states, CANCELLED_PATH) or (
         f"cancelled after {took:.0f} s, not within {CANCEL_WINDOW_S} s" if took > CANCEL_WINDOW_S else None)
     # Whether the engine's abort cancels its SLURM jobs is [to be validated] (schedulers §3.1.1): shown, not checked.
     try:
@@ -493,8 +548,8 @@ def cancel(args: argparse.Namespace) -> int:
     except Failed as exc:
         print(f"info: squeue --states=all failed: {exc}", flush=True)
     checks["no job or session left"] = wait_left_over(run_dir, session)
-    left = attempts_in(str(Path(config["db_dir"]) / "spectio.db"), run_id, ("running",))
-    checks["no attempt left running"] = "; ".join(left) or None
+    left = attempts_in(str(Path(config["db_dir"]) / "spectio.db"), run_id, OPEN_ATTEMPTS)
+    checks["no attempt left pending, submitted or running"] = "; ".join(left) or None
     return report(CANCEL_CHECKS, checks, detail)
 
 
@@ -505,13 +560,13 @@ def restart(args: argparse.Namespace) -> int:
     run = start(api, args)
     run_id, states = run["id"], [run["state"]]
     session, run_dir = f"spectio-{run_id}", f"{config['runs_root']}/{run_id}"
+    tcp = [tcp_listener(api.port)]
     detail = poll_until(api, run, states, lambda d: (d.get("task_counts") or {}).get("succeeded", 0) > 0,
                         args.timeout)
     if detail["state"] != "running":
         raise Failed(f"run {run_id} was {detail['state']} at its first succeeded task, not running")
-    _, old_socket = server_address(config["data_dir"], config["db_dir"])
-    pid = server_pid(config["data_dir"])
-    os.kill(pid, signal.SIGKILL)
+    _, old_socket = server_address(config["data_dir"], config["db_dir"], socket_only(config))
+    pid = kill_server(config["data_dir"])
     print(f"  server {pid} killed (SIGKILL) at tasks={detail['task_counts']}; {RESTART_WAIT_S} s", flush=True)
     time.sleep(RESTART_WAIT_S)
     started = subprocess.run(["spectio", "serve", "--detach"], stdout=subprocess.DEVNULL,  # noqa: S603, S607
@@ -519,15 +574,14 @@ def restart(args: argparse.Namespace) -> int:
     if started.returncode != 0:
         raise Failed(f"spectio serve --detach exited {started.returncode}: {started.stderr.strip()[:500]}")
     checks: dict[str, str | None] = dict.fromkeys(RESTART_CHECKS)
-    port, new_socket = server_address(config["data_dir"], config["db_dir"])  # server.json, written again
+    port, new_socket = server_address(config["data_dir"], config["db_dir"], socket_only(config))  # written again
+    tcp.append(tcp_listener(port))
     stale = Api(port, new_socket)
     stale.cookie = api.cookie  # the session of the server that was killed
     refused = stale.call("GET", f"/api/v1/runs/{run_id}")[0]
     api = signed_in(config)
     detail = poll_until(api, detail, states, lambda d: False, args.timeout)
-    problems = []
-    if new_socket != old_socket:
-        problems.append(f"the socket moved from {old_socket} to {new_socket}")
+    problems = [p for p in (same_socket(old_socket, new_socket),) if p]
     if refused != 401:
         problems.append(f"the old cookie got HTTP {refused}, not 401")
     checks["old cookie refused, new link works"] = "; ".join(problems) or None
@@ -536,6 +590,9 @@ def restart(args: argparse.Namespace) -> int:
     diff = count_diff(golden_counts(Path(args.golden).read_text()), process_counts(items["items"]))
     checks["counts equal the golden"] = "; ".join(diff) or None
     checks["no duplicate event_id"] = "; ".join(duplicate_events(db, run_id)) or None
+    drops = spool_drops(Path(db), run_id)
+    checks["no spool drop"] = f"spool_drops: {drops}" if drops else None
+    checks["socket only, no TCP port"] = "; ".join(t for t in tcp if t) or None
     checks["no job or session left"] = wait_left_over(run_dir, session)
     try:
         started_n = new_sessions(Path(args.tmux_log).read_text(), session)
@@ -578,6 +635,7 @@ def launch(args: argparse.Namespace) -> int:
     names = checks_of(config)
     local = names == LOCAL_CHECKS
     api = signed_in(config)
+    tcp = None if local else tcp_listener(api.port)
     run = start(api, args)
     run_id = run["id"]
     session = f"spectio-{run_id}"
@@ -609,6 +667,8 @@ def launch(args: argparse.Namespace) -> int:
         except Failed as exc:  # skip the sample
             squeue_error = squeue_error and str(exc)
     checks: dict[str, str | None] = dict.fromkeys(names)
+    if not local:
+        checks["socket only, no TCP port"] = tcp
     checks["run succeeded"] = states_problem(states)
     heads = head_jobs(sorted(jobs_seen))
     if local:

@@ -84,7 +84,9 @@ jobs:
         # Below the job's budget, so a hung case ends as a step failure and "Cluster state on failure" runs.
         # A case that hits its client's own deadline (E2E_TIMEOUT a wait, 900 s) prints its FAIL lines, the
         # server pane and head.out; one cut by this step's timeout prints nothing more. On 31a4880 the launches
-        # took 124 and 225 s; each cancel ends within its 180 s window, the restart adds about 30 s to a launch.
+        # took 124 and 225 s (measured). Bounds, not measures: a cancel waits at most E2E_TIMEOUT for a running
+        # task, then 180 s for cancelled and 60 s for its jobs; the restart is a launch plus 20 s down and its
+        # serve --detach (at most 120 s).
         timeout-minutes: 55
         env:
           CASES: ${{ matrix.e2e }}

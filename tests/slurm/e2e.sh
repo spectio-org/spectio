@@ -119,7 +119,9 @@ setup() {
   # The node's tmux behind a shim that logs each call: the restart counts its run's new-session calls.
   tmux=$(inc "$e/home" command -v tmux) || { echo "no tmux on the login node" >&2; return 1; }
   [[ $tmux =~ ^/[A-Za-z0-9._/-]+$ ]] || { echo "tmux is not at a plain absolute path: $tmux" >&2; return 1; }
-  printf '#!/bin/sh\nprintf %s "$*" >>"%s/tmux.log"\nexec %s "$@"\n' "'%s\n'" "$e" "$tmux" >"$e/tmux-bin/tmux"
+  # The log is 0600 (SEC-P3T23-05); the umask is the subshell's, so tmux keeps the caller's.
+  printf '#!/bin/sh\n(umask 077 && printf %s "$*" >>"%s/tmux.log")\nexec %s "$@"\n' "'%s\n'" "$e" "$tmux" \
+    >"$e/tmux-bin/tmux"
   chmod 755 "$e/tmux-bin/tmux"
   [ "$CLUSTER" = mini ] || chown -R "$USER_" "$DATA/e2e"
   BIN=$e/tmux-bin
@@ -153,9 +155,12 @@ finish() {
   if [ "$rc" != 0 ]; then
     echo "::group::server pane"; inc "$e/home" tmux capture-pane -p -S -200 -t =spectio-server:; echo "::endgroup::"
     echo "::group::server.json"; inc "$e/home" cat "$e/data/server.json"; echo; echo "::endgroup::"
-    # As the run's user, never as root: a head.out made a symlink reads nothing of root's (SEC-P3T22-01).
+    # As the run's user, never as root, and neither a symlink nor a hard link to another file (SEC-P3T22-01,
+    # SEC-P3T23-05).
     inc "$e/home" bash -c 'for f in "$0"/runs/*/launch/.spectio/head.out "$0/tmux.log"; do
-      if [ -f "$f" ] && [ ! -L "$f" ]; then echo "::group::tail $f"; tail -n 40 "$f"; echo "::endgroup::"; fi
+      if [ -f "$f" ] && [ ! -L "$f" ] && [ "$(stat -c %h -- "$f")" = 1 ]; then
+        echo "::group::tail $f"; tail -n 40 -- "$f"; echo "::endgroup::"
+      fi
     done' "$e"
     rc=1
   fi

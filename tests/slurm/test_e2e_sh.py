@@ -33,7 +33,7 @@ class E2eMini(unittest.TestCase):
         fakes.mkdir()
         sind = (
             f'printf "%s\\n" "$*" >>"{self.calls}"\n'
-            'case "$*" in *"command -v tmux"*) echo /usr/bin/tmux ;; esac\n'
+            'case "$*" in *"command -v tmux"*) echo "${FAKE_TMUX:-/usr/bin/tmux}" ;; esac\n'
             'case "$*" in *"${FAIL_ON:-no such command}"*) exit 1 ;; esac\n'
             "exit 0"
         )
@@ -98,6 +98,18 @@ class E2eMini(unittest.TestCase):
         self.assertIn(f'>>"{e}/tmux.log"', shim)
         self.assertIn('exec /usr/bin/tmux "$@"', shim)
         self.assertIn("RESULT e2e-restart pass", out.stdout)
+
+    def test_the_shim_log_is_private(self):
+        """SEC-P3T23-05: the log of the tmux calls is written 0600, whatever the caller's umask."""
+        out = self.run_e2e("restart", FAKE_TMUX="/bin/true")
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        e = self.data / "e2e" / "restart"
+        shim = e / "tmux-bin" / "tmux"
+        done = subprocess.run(["/bin/sh", "-c", f'umask 022; exec "{shim}" new-session -s x'])
+        self.assertEqual(done.returncode, 0)
+        log = e / "tmux.log"
+        self.assertEqual(log.read_text(), "new-session -s x\n")
+        self.assertEqual(stat.S_IMODE(log.stat().st_mode), 0o600)
 
     def test_a_failed_step_still_prints_result_and_tears_down(self):
         for case, name in (
