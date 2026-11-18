@@ -987,7 +987,7 @@ media:
     outputs: [docs/assets/shots/app-runs-delete_light.webp, docs/assets/shots/app-runs-delete_dark.webp]
   - id: app-launch-resources
     kind: screenshot
-    # Launch from a catalog entry with Resources (2 CPUs, 3 GiB, 1 h per task, in a Two cores environment capped at 2 CPUs and 4 GiB) and Extra config file opened, a path typed, the Summary beside them, at 1440 x 1500 (FU-P3-110d)
+    # Launch from a catalog entry with Run resources (2 CPUs, 3 GiB, 1 h per task, in a Two cores environment capped at 2 CPUs and 4 GiB) and Extra config file opened, a path typed, the Summary beside them, at 1440 x 1500 (FU-P3-110d)
     generator: python3 tools/media/b15_demo.py --shot app-launch-resources
     outputs: [docs/assets/shots/app-launch-resources_light.webp, docs/assets/shots/app-launch-resources_dark.webp]
   - id: app-run-resources
