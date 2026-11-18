@@ -10,14 +10,14 @@ Launch can set, for one run, **default resources** (CPUs, memory and time per ta
 
 ## On Launch
 
-Both are folding rows of **Where it runs**, under the environment. Both are optional.
+Both are folding rows of **Where it runs**, under the environment: **Run resources** and **Extra config file**. Both are optional. The row is called Run resources so that it is not mixed up with a pipeline's own parameter group named Resources, which Launch shows as the pipeline's schema writes it.
 
-![Launch from a catalog entry, with Resources open (2 CPUs, 3 GiB, 1 h per task) and Extra config file open with a path typed; the Summary beside it lists Resources and Extra config](../assets/shots/app-launch-resources_light.webp#only-light)
-![Launch with Resources and Extra config file open, dark](../assets/shots/app-launch-resources_dark.webp#only-dark)
+![Launch from a catalog entry, with the resources row open (2 CPUs, 3 GiB, 1 h per task) and Extra config file open with a path typed; the Summary beside it lists the resources and Extra config](../assets/shots/app-launch-resources_light.webp#only-light)
+![Launch with the resources row and Extra config file open, dark](../assets/shots/app-launch-resources_dark.webp#only-dark)
 
-*A seeded server with one environment, Two cores (at most 2 CPUs and 4 GiB). Launch was not pressed.*
+*A seeded server with one environment, Two cores (at most 2 CPUs and 4 GiB). Launch was not pressed. The shot was taken before the row got its name: it reads "Resources" in it, and "Run resources" now, in the row and in the Summary.*
 
-**Resources**
+**Run resources**
 
 - **CPUs per task**, **Memory per task** (a number with MiB or GiB) and **Time per task** (hours and minutes). Each is optional, and each hint shows its bounds and the environment's cap: "1 to 256 · at most 2 (Two cores)".
 - **A default, not an override.** A process (Nextflow) or a rule (Snakemake) that sets its own CPUs, memory or time keeps them. The row says so. On Nextflow the values replace a general `process` setting of the pipeline's own `nextflow.config` **[to be validated]**.
