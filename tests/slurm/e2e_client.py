@@ -10,17 +10,23 @@ and checks each item of CHECKS. The `expect` lines of --scenario must each name 
 `ok` or `FAIL` line per check; exit 0 when every check passed, 1 otherwise. When the config's executor
 is `local` (tests/local/e2e.sh, P2 §10.8), the head runs in its own session (setsid), not in tmux, and
 there is no squeue: LOCAL_CHECKS replace the two cluster checks.
+
+The server is the one `<data dir>/server.json` names. On SLURM and on a shared host it listens only on
+`spectio.sock` in its 0700 database directory, never on a TCP port (FU-P3-72, dev-env §15.3 req. 1): the
+client then speaks HTTP over that socket, with `Host` and `Origin` naming 127.0.0.1 and the port, as a
+browser at the laptop's end of the tunnel does. With no socket in server.json (local mode on a machine only
+the user uses) it uses 127.0.0.1 and the port. Never a proxy.
 """
 import argparse
+import http.client
 import json
 import re
+import socket
 import sqlite3
 import subprocess
 import sys
 import time
 import tomllib
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 POLL_S = 2
@@ -48,7 +54,8 @@ LOCAL_CHECKS = (
 )
 # `.spectio/head.pid` as the head script writes it (spectio.runner.local._PID_LINE): PID, group, start.
 HEAD_PID = re.compile(r"([1-9][0-9]{0,9}) ([1-9][0-9]{0,9}) ([0-9]{1,20}) [0-9a-f-]{36} [A-Za-z0-9._-]{1,255}\n")
-DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # loopback, never a proxy
+LOOPBACK = "127.0.0.1"
+SOCKET = "spectio.sock"  # spectio.ports.SOCKET: the server's socket, in its database directory
 
 
 class Failed(Exception):
@@ -192,32 +199,76 @@ def head_jobs(lines: list[str]) -> list[str]:
     return [line for line in lines if line.split("|")[1:2] and line.split("|")[1].startswith("spectio-head-")]
 
 
+def server_address(data_dir: str, db_dir: str) -> tuple[int, str | None]:
+    """The port and the socket of `<data_dir>/server.json`; the socket is None for a server on TCP.
+    A socket other than `SOCKET` in `db_dir`, the config's database directory, is refused."""
+    try:
+        record = json.loads(Path(data_dir, "server.json").read_text())
+    except (OSError, ValueError) as exc:
+        raise Failed(f"no usable {data_dir}/server.json: {exc}") from exc
+    port, sock = record.get("port"), record.get("socket")
+    if type(port) is not int or not 1024 <= port <= 65535:
+        raise Failed(f"server.json names port {port!r}, not one in 1024-65535")
+    if sock is not None and sock != f"{db_dir.rstrip('/')}/{SOCKET}":
+        raise Failed(f"server.json names socket {sock!r}, not {SOCKET} in {db_dir}")
+    return port, sock
+
+
+class UnixHTTP(http.client.HTTPConnection):
+    """HTTP on the server's Unix socket."""
+
+    def __init__(self, path: str, timeout: float) -> None:
+        super().__init__(LOOPBACK, timeout=timeout)
+        self.socket_path = path
+
+    def connect(self) -> None:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            sock.settimeout(self.timeout)
+            sock.connect(self.socket_path)
+        except BaseException:
+            sock.close()
+            raise
+        self.sock = sock
+
+
 class Api:
-    def __init__(self, port: int) -> None:
+    """The server's API, on its socket when it has one, else on 127.0.0.1 and the port. `Host` and `Origin`
+    always name 127.0.0.1 and the port, as the browser's do through the tunnel (the session cookie is per port)."""
+
+    def __init__(self, port: int, socket_path: str | None) -> None:
         self.port = port
-        self.origin = f"http://127.0.0.1:{port}"
+        self.socket_path = socket_path
+        self.address = (LOOPBACK, port)  # used when there is no socket
+        self.origin = f"http://{LOOPBACK}:{port}"
         self.cookie: str | None = None
 
     def call(self, method: str, path: str, body: dict | None = None) -> tuple[int, object, object]:
-        headers = {"Host": f"127.0.0.1:{self.port}", "Origin": self.origin, "Accept": "application/json"}
+        headers = {"Host": f"{LOOPBACK}:{self.port}", "Origin": self.origin, "Accept": "application/json"}
         data = None
         if body is not None:
             data = json.dumps(body).encode()
             headers["Content-Type"] = "application/json"
         if self.cookie:
             headers["Cookie"] = self.cookie
-        req = urllib.request.Request(self.origin + path, data=data, headers=headers, method=method)
+        if self.socket_path is None:
+            conn = http.client.HTTPConnection(*self.address, timeout=30)
+        else:
+            conn = UnixHTTP(self.socket_path, timeout=30)
         try:
-            with DIRECT.open(req, timeout=30) as answer:
-                raw = answer.read()
-                return answer.status, (json.loads(raw) if raw else None), answer.headers
-        except urllib.error.HTTPError as exc:
-            raw = exc.read()
-            try:
-                doc = json.loads(raw)
-            except ValueError:
-                doc = raw[:500].decode(errors="replace")
-            return exc.code, doc, exc.headers
+            conn.request(method, path, body=data, headers=headers)
+            answer = conn.getresponse()
+            raw = answer.read()
+        except (OSError, http.client.HTTPException) as exc:
+            where = self.socket_path or f"{self.address[0]}:{self.address[1]}"
+            raise Failed(f"{method} {path} on {where}: {exc!r}") from exc
+        finally:
+            conn.close()
+        try:
+            doc = json.loads(raw) if raw else None
+        except ValueError:
+            doc = raw[:500].decode(errors="replace")
+        return answer.status, doc, answer.headers
 
     def expect(self, code: int, method: str, path: str, body: dict | None = None):
         got, doc, headers = self.call(method, path, body)
@@ -262,10 +313,12 @@ def spool_drops(db: Path, run_id: str) -> list[tuple]:
 
 def launch(args: argparse.Namespace) -> int:
     config = tomllib.loads(Path(args.config).read_text())
-    port, runs_root, db_dir = config["port"], config["runs_root"], config["db_dir"]
+    runs_root, db_dir = config["runs_root"], config["db_dir"]
+    port, socket_path = server_address(config["data_dir"], db_dir)
     names = checks_of(config)
     local = names == LOCAL_CHECKS
-    api = Api(port)
+    api = Api(port, socket_path)
+    print(f"server on {socket_path or f'{LOOPBACK}:{port}'}", flush=True)
     out = subprocess.run(["spectio", "login", "--print-link", "--json"],  # noqa: S603, S607
                          capture_output=True, text=True, timeout=60)
     _, headers = api.expect(204, "POST", "/api/v1/auth/magic-links:exchange",
