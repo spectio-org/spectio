@@ -940,4 +940,5 @@ FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and 
 - **For Thomas:** #303 adds a `DRAWINGS` allowlist to `web/src/icons.test.tsx` (demo server, graph view, graph export skip the first ICON_ONLY rule, with a stale-entry check): it loosens a test, please confirm; the graph icon sizes with it. FU-P3-51's release dry run is unverified here (Gradle 403, no Nextflow in the container). Task 22 and Task 23 change `.github/workflows/pipelines-slurm.yml` and need slurm-mini: they wait for Thomas; #164 stays unmerged.
 - Batch P3-B17 (fu125, fu124, ui19a, fu51, ui19b), not a milestone end: simplify and Progress only.
 - Open minors: SEC-P3FU124-01 (FilePool cost on NFS), SEC-P3FU124-03 (unknown and none both give `[]`), CR-P3FU124-01/-02, CR-P3UI19A-02/-03, CR-P3UI19B-02/-03, CR-P3FU51-01 to -03, SEC-P3FU51-01/-02.
-- **Next:** UI-19c (the rest of runs.css from the log frame; graph.css stays for 0.0.2), then Thomas's decisions above.
+- #307 UI-19c merged (95838dc): the rest of runs.css on tokens, the raw-px lint covers the whole file, one shared `web/src/rawPx.ts` (closes CR-P3UI19B-03). Open minors CR-P3UI19C-01 to -03. Its Progress section goes to the next batch.
+- **Next:** Thomas's decisions above; the UI-19 sweep is complete except graph.css (0.0.2).
