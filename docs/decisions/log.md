@@ -1242,6 +1242,7 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 
 - **Context.** P1 Task 22's `e2e` job launches through `POST /api/v1/runs`, which answers `404` on SLURM and shared hosts by [#109](../reviews/inbox.md#109-assumed-writes-need-origin-and-json-as-built-p3-task-16) rule 5 (a); on the CI run of PR #164 both engines printed `RESULT e2e-launch-<engine> fail` for that reason only ([inbox #123](../reviews/inbox.md#123-question-p1-task-22-needs-the-api-on-slurm-which-109-rule-5-a-keeps-unmounted)).
 - **Decided (Thomas, 2026-11-08, in the session's question dialog): (b), keep it unmounted** until the by-hand check on a real login node (W6). No product change. PR #164 waits for Thomas (keep open, or merge with the `e2e` entry off, his call); step P3-t22 stays `waiting_human` and M5 stays open.
+- **Note 2026-11-18.** Overtaken by the [socket decision](#2026-11-08-on-slurm-and-shared-hosts-the-api-is-served-only-on-a-unix-socket-inbox-109-rule-5-thomas) once FU-P3-72 was built: the API is mounted on SLURM behind the socket only, and Task 22's client now uses that socket ([#123](../reviews/inbox.md#123-question-p1-task-22-needs-the-api-on-slurm-which-109-rule-5-a-keeps-unmounted)). Thomas still merges PR #164.
 
 ## 2026-11-08 — Screenshots of each round for Thomas (inbox #124, Thomas)
 
