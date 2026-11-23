@@ -122,10 +122,10 @@ test('cancel in one tab, the other shows Cancelled and no Cancel button', async 
   expect(errors).toEqual([]);
 });
 
-test('Mark all as read in one tab clears the count in the other', async ({ page, context, request }) => {
+test('Mark all as read in one tab marks the run read in the other', async ({ page, context, request }) => {
   test.skip(!ENGINES, NEEDS_ENGINES);
   test.setTimeout(180_000);
-  await endedRun(request); // an ended run is an unread notification
+  const { name } = await endedRun(request); // an ended run is an unread notification
   const other = await context.newPage();
   await page.goto('/runs');
   await other.goto('/runs');
@@ -135,11 +135,15 @@ test('Mark all as read in one tab clears the count in the other', async ({ page,
 
   await bellOf(page).click();
   await page.getByRole('button', { name: 'Mark all as read' }).click();
-  await expect(bellOf(page)).toHaveAccessibleName('Notifications, 0 unread');
 
-  // Marking is no run change, so no frame says so: the other tab's count is read again on its next load.
+  // Marking is no run change, so no frame says so: the other tab's notifications are read again on
+  // its next load. Other tests end runs too, so not the unread count — this test's own run: its
+  // item is there, and its label does not end with "unread" (the bell names an item that way).
   await other.reload();
-  await expect(bellOf(other)).toHaveAccessibleName('Notifications, 0 unread');
+  await bellOf(other).click();
+  const item = other.locator('.sp-notif-list').getByRole('link', { name: new RegExp(`^${name},`) });
+  await expect(item).toBeVisible();
+  await expect(item).not.toHaveAccessibleName(/unread$/);
 });
 
 test('signing out in one tab sends the other to sign-in on its next request', async ({ browser }) => {

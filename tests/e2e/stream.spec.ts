@@ -28,10 +28,10 @@ async function launch(request: APIRequestContext, profiles: string[], params: ob
   return (await response.json()).id;
 }
 
-/** Wait until the run's API state is one of `states`. */
-async function reach(request: APIRequestContext, id: string, states: string[]) {
+/** Wait until the run's API state is one of `states`, polling for up to `timeout` ms. */
+async function reach(request: APIRequestContext, id: string, states: string[], timeout = 120_000) {
   await expect
-    .poll(async () => (await (await request.get(`/api/v1/runs/${id}`)).json()).state, { timeout: 120_000 })
+    .poll(async () => (await (await request.get(`/api/v1/runs/${id}`)).json()).state, { timeout })
     .toMatch(new RegExp(`^(${states.join('|')})$`));
 }
 
@@ -79,7 +79,7 @@ test('a dropped event stream says Reconnecting…, comes back and refetches the 
 
 test('the run detail reconnects after a dropped stream and shows the tasks that finished', async ({ page, request }) => {
   test.skip(!ENGINES, NEEDS_ENGINES);
-  test.setTimeout(240_000);
+  test.setTimeout(360_000);
   const id = await launch(request, ['local'], { scale: 5 });
   const stream = watchStream(page);
 
@@ -91,8 +91,9 @@ test('the run detail reconnects after a dropped stream and shows the tasks that 
   await expect(state).toHaveText(/Queued|Running/);
   await expect(header.getByText('Reconnecting…')).toBeVisible();
 
-  // The run ends meanwhile: the API says so, the page does not.
-  await reach(request, id, ['succeeded']);
+  // The run ends meanwhile: the API says so, the page does not. The scale-5 run can outlast the
+  // default 2 minutes of `reach`, so it gets more.
+  await reach(request, id, ['succeeded'], 240_000);
   expect(stream.answered()).toBe(0);
   await expect(state).not.toHaveText('Succeeded');
 
