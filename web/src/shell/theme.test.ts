@@ -3,6 +3,7 @@
 /// <reference types="node" />
 import { readFileSync } from "node:fs";
 import { DEFAULT_THEME, defaultCssVariablesResolver, mergeMantineTheme, rem } from "@mantine/core";
+import { rawPx } from "../rawPx";
 import { cssVariablesResolver, theme } from "./theme";
 
 // Vitest loads no CSS here, so the stylesheets are read as text (the suite runs from web/).
@@ -115,9 +116,5 @@ const SWEPT = [
 const CLEARANCES = ["padding-bottom: 104px", "calc(var(--sp-tabbar-h) + 96px)", "calc(26px + ", "font-size: 10px"];
 
 test.each(SWEPT)("%s writes no raw px for spacing, radius or font size", (file) => {
-  const declaration = /(?:^|[;{\s])((?:font-size|font|gap|row-gap|column-gap|padding[a-z-]*|margin[a-z-]*|border-radius)\s*:[^;}]*)/g;
-  const raw = [...readFileSync(file, "utf8").matchAll(declaration)]
-    .map((m) => m[1].trim())
-    .filter((d) => /(?<![\w.-])-?(?!1px)\d+(?:\.\d+)?px/.test(CLEARANCES.reduce((s, c) => s.replace(c, ""), d)));
-  expect(raw).toEqual([]);
+  expect(rawPx(readFileSync(file, "utf8"), CLEARANCES)).toEqual([]);
 });

@@ -8,7 +8,7 @@
 | 2 | `29a0f8e` | CR-P3UI19A-01 fixed; approve on the fix |
 
 ```text
-CODE-REVIEW  verdict=approve  rounds=2  security=skipped
+CODE  step=P3-ui19a  review=changes-fixed b/M/m=0/1/2  security=skipped b/M/m=0/0/0  rounds=2  simplify=skipped -0/+0  tests=pass
 ```
 
 ## Findings

@@ -101,7 +101,7 @@ A run you started in a terminal has no recorded runs root and always answers `41
 ![The Summary of a run: Facts, Processes, and on the right the Engine log with its last lines and the button Open the full engine log](../assets/shots/app-run-engine-log_light.webp#only-light)
 ![The Summary of a run: Facts, Processes, and on the right the Engine log with its last lines and the button Open the full engine log](../assets/shots/app-run-engine-log_dark.webp#only-dark)
 
-- **The last lines open the log.** A click on them, or the button **Open the full engine log →** (on a failed run, "head errors"), opens the Logs tab on the same source.
+- **The last lines open the log.** A click on them, or the button **Open the full engine log →**, opens the Logs tab on the same source. On a failed run whose head wrote `head.err`, the card is **Head errors** and the button says "head errors". A head started in tmux writes no `head.err`: its failed run shows the engine log, and the Logs tab lists Head output and Engine log only. A link that asks for Head errors on such a run opens the engine log.
 - **A click that ends a text selection does not open it,** so you can still copy a line.
 - **Back to Summary** sits above the log's tools and returns to the Summary. The address carries `&from=summary`, so it survives a reload.
 
