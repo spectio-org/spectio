@@ -3,12 +3,15 @@ name: pipelines · SLURM (sind)
 # The sind profiles of docs/specs/dev-environment-and-testing.md §4.1 (dev/slurm/cluster.sh) and the SLURM
 # scenarios (tests/slurm/scenarios.sh): the synthetic pipelines with Nextflow -profile slurm and Snakemake
 # --workflow-profile profiles/slurm and each failure mode, OOM / TIMEOUT / NODE_FAIL / pending-reason probes,
-# a Snakemake head in sbatch, slurmrestd with JWT. Fixtures go to the slurm-fixtures-* artifacts (committed
+# a Snakemake head in sbatch, slurmrestd with JWT; and job e2e (tests/slurm/e2e.sh, P1 Tasks 22 and 23): Spectio from
+# its wheel on the slurm-mini submitter launches and monitors both engines, each head in its tmux session, cancels a
+# run of each, and adopts a Nextflow head after a server restart. Fixtures go to the slurm-fixtures-* artifacts (committed
 # copies in tests/fixtures/slurm/slurm-<version>/). Step page: docs/progress/W3/T3.md.
 # Not called by ci.yml, so not part of ci-ok: like dev-env.yml it runs on any push that touches its paths.
 on:
   push:                    # any branch, so autopilot branches are checked before their PR
-    paths: ["dev/slurm/**", "dev/versions.env", "dev/lib.sh", "dev/bootstrap.sh", "tests/slurm/**", "tests/pipelines/synthetic/**", ".github/workflows/pipelines-slurm.yml"]
+    paths: ["dev/slurm/**", "dev/versions.env", "dev/lib.sh", "dev/bootstrap.sh", "tests/slurm/**", "tests/pipelines/synthetic/**",
+            "tests/scenarios/happy-slurm-mini.yaml", "packages/**", "engine-bridges/**", "web/**", ".github/workflows/pipelines-slurm.yml"]
   schedule:
     - cron: "41 4 * * *"   # nightly (§11)
   workflow_dispatch:
@@ -23,7 +26,8 @@ jobs:
   slurm:
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    # e2e: bootstrap, install and cluster up (10 min each at most), then its step's 55, then the steps after it.
+    timeout-minutes: ${{ matrix.timeout || 40 }}
     permissions:
       contents: read
     strategy:
@@ -35,6 +39,7 @@ jobs:
           - {name: snakemake-b, profile: site, scenarios: "snakemake:oom_fatal,timeout_fatal,tool_error_then_fixed_resume heads"}
           - {name: rest, profile: rest, scenarios: "rest"}
           - {name: mini, profile: mini, scenarios: "nextflow:happy"}
+          - {name: e2e, profile: mini, scenarios: "", e2e: "launch:nextflow launch:snakemake cancel:nextflow cancel:snakemake restart", timeout: 90}
     env:
       SIND_REALM: spx-t3
       SIND_PROGRESS: plain
@@ -57,6 +62,10 @@ jobs:
       - name: Bootstrap (sind, Nextflow, Snakemake at the dev/versions.env pins)
         timeout-minutes: 10
         run: mkdir -p "$SLURM_DATA" && bash dev/bootstrap.sh --ci
+      - name: Spectio from its wheel into the data directory
+        if: matrix.e2e
+        timeout-minutes: 10
+        run: bash tests/slurm/e2e.sh install
       - name: Cluster up
         timeout-minutes: 10
         run: bash dev/slurm/cluster.sh up "$CLUSTER"
@@ -70,6 +79,28 @@ jobs:
             bash tests/slurm/scenarios.sh "$s"
             echo "TIMING $s $((SECONDS - start)) s"
           done
+      - name: End to end (launch, cancel, restart)
+        if: matrix.e2e
+        # Below the job's budget, so a hung case ends as a step failure and "Cluster state on failure" runs.
+        # A case that hits its client's own deadline (E2E_TIMEOUT a wait, 900 s) prints its FAIL lines, the
+        # server pane and head.out; one cut by this step's timeout prints nothing more. On 31a4880 the launches
+        # took 124 and 225 s (measured). Bounds, not measures: a cancel waits at most E2E_TIMEOUT for a running
+        # task, then 180 s for cancelled and 60 s for its jobs; the restart is a launch plus 20 s down and its
+        # serve --detach (at most 120 s).
+        timeout-minutes: 55
+        env:
+          CASES: ${{ matrix.e2e }}
+          E2E_TIMEOUT: "900"
+        run: |
+          rc=0
+          for c in $CASES; do
+            start=$SECONDS
+            echo "===== e2e $c"
+            read -r cmd arg <<<"${c/:/ }"
+            bash tests/slurm/e2e.sh "$cmd" ${arg:+"$arg"} || rc=1
+            echo "TIMING e2e-${c/:/-} $((SECONDS - start)) s"
+          done
+          exit $rc
       - name: Cluster state on failure
         if: failure()
         run: |
