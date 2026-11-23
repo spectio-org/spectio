@@ -6,6 +6,7 @@ import os
 import shutil
 import socket
 import sqlite3
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -542,6 +543,93 @@ def test_doctor_local_has_no_slurm_accounting_line(
     )
     _, lines = doctor(capsys, configured(home, fakebin, executor="local"))
     assert not [x for x in lines if x.split()[1] == "slurm_accounting"]
+
+
+def snakemake_with_plugin(home: Path, plugin: str | None) -> Path:
+    """A snakemake that, like a module's bin/snakemake or a wrapper that loads one, runs a real
+    Python: the one running these tests, in which no real plugin is installed. It finds the
+    fake dist-info of `plugin` (None: no dist-info, so: not installed). Returns the script, as
+    an absolute engines.snakemake_cmd."""
+    root = home.parent / "snakemake-module"
+    (root / "bin").mkdir(parents=True, exist_ok=True)
+    libs = root / "lib"
+    libs.mkdir(exist_ok=True)
+    if plugin is not None:
+        dist = libs / f"snakemake_executor_plugin_slurm-{plugin}.dist-info"
+        dist.mkdir(exist_ok=True)
+        (dist / "METADATA").write_text(
+            f"Metadata-Version: 2.1\nName: snakemake-executor-plugin-slurm\nVersion: {plugin}\n"
+        )
+    smk = root / "bin" / "snakemake"
+    smk.write_text(
+        "#!/bin/sh\n"
+        "echo 9.27.1\n"
+        f'PYTHONPATH="{libs}${{PYTHONPATH:+:$PYTHONPATH}}" {sys.executable} -c pass\n'
+    )
+    smk.chmod(0o755)
+    return smk
+
+
+def test_doctor_slurm_plugin_new(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """On a SLURM server, one line with the version of Snakemake's SLURM plugin, written by the
+    probe that the configured snakemake's own Python loads."""
+    smk = snakemake_with_plugin(home, "2.8.0")
+    settings = configured(home, executor="slurm", engines={"snakemake_cmd": str(smk)})
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "snakemake") == f"ok snakemake 9.27.1 {smk}"
+    assert line(lines, "snakemake_slurm_plugin") == "ok snakemake_slurm_plugin 2.8.0"
+
+
+def test_doctor_slurm_plugin_older(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The EMBL module snakemake/9.23.1 ships the plugin 2.6.1: one warn line that names what
+    to install."""
+    smk = snakemake_with_plugin(home, "2.6.1")
+    settings = configured(home, executor="slurm", engines={"snakemake_cmd": str(smk)})
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "snakemake_slurm_plugin") == (
+        "warn snakemake_slurm_plugin 2.6.1: older than 2.8.0, which Spectio needs to see the "
+        "jobs of a Snakemake SLURM run; install snakemake-executor-plugin-slurm>=2.8.0"
+    )
+
+
+def test_doctor_slurm_plugin_not_installed(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A snakemake whose Python has no plugin: one warn line, never a fail, that names the need."""
+    smk = snakemake_with_plugin(home, None)
+    settings = configured(home, executor="slurm", engines={"snakemake_cmd": str(smk)})
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "snakemake_slurm_plugin") == (
+        "warn snakemake_slurm_plugin version unknown (not installed): Snakemake SLURM runs "
+        "need snakemake-executor-plugin-slurm 2.8.0 or later"
+    )
+
+
+def test_doctor_slurm_plugin_wrapper_without_python(
+    home: Path, tools: Callable[..., Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A wrapper that never runs Python loads no probe: the version is unknown, a warning,
+    never a failure."""
+    tools("snakemake")
+    settings = configured(home, executor="slurm", engines={"snakemake_cmd": "snakemake"})
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "snakemake") == "ok snakemake 9.27.1 snakemake"
+    assert line(lines, "snakemake_slurm_plugin") == (
+        "warn snakemake_slurm_plugin version unknown (Snakemake's Python did not load the "
+        "probe): Snakemake SLURM runs need snakemake-executor-plugin-slurm 2.8.0 or later"
+    )
+
+
+def test_doctor_slurm_plugin_only_on_a_slurm_server(
+    home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A local server has no plugin line, and a SLURM server whose Snakemake check failed has
+    none either: the line needs a working Snakemake to ask."""
+    code, lines = doctor(capsys, configured(home, fakebin, executor="local"))
+    assert code == 0, lines
+    assert not [x for x in lines if x.split()[1] == "snakemake_slurm_plugin"]
+    settings = configured(home, executor="slurm", engines={"snakemake_cmd": "snakemake-gone"})
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "snakemake").startswith("fail snakemake")
+    assert not [x for x in lines if x.split()[1] == "snakemake_slurm_plugin"]
 
 
 def test_req18_file_doctor_prints_path_state_default(

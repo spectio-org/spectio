@@ -5,6 +5,7 @@ import json
 import os
 import re
 import socket
+import tempfile
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,6 +31,19 @@ Result = tuple[str, str, str]  # status, check, detail
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
 _UV = re.compile(r"^uv ([0-9]+)\.([0-9]+)\.([0-9]+)\b", re.MULTILINE)
 _PLUGINS_BLOCK = re.compile(r"\bplugins\s*\{[^}]*nf-spectio", re.DOTALL)
+# 2.8.0 is the first Snakemake SLURM executor plugin that logs job events (its #478: run_job_pre);
+# older ones never do, and Spectio then shows no task of a Snakemake SLURM run.
+MIN_SLURM_PLUGIN = (2, 8, 0)
+_PLUGIN_VERSION = re.compile(r"([0-9]+)\.([0-9]+)(?:\.([0-9]+))?")
+_PLUGIN_PROBE = (
+    "import importlib.metadata as m, os\n"
+    "try:\n"
+    "    version = m.version('snakemake-executor-plugin-slurm')\n"
+    "except m.PackageNotFoundError:\n"
+    "    version = 'none'\n"
+    "with open(os.environ['SPECTIO_PROBE_OUT'], 'w') as out:\n"
+    "    out.write(version)\n"
+)
 
 
 def _engine(name: str, cmd: str | None, flag: str, pattern: re.Pattern[str]) -> Result:
@@ -221,6 +235,48 @@ def _slurm_accounting(settings: Settings) -> Result:
     )
 
 
+def _slurm_plugin(cmd: str) -> Result:
+    """The version of Snakemake's SLURM executor plugin, asked the way the Spectio logger
+    plugin reaches Snakemake: a sitecustomize.py on PYTHONPATH, so the Python that the
+    configured command itself runs answers — also when a wrapper script loads a module first,
+    or the command is a line like `pixi run snakemake`. MIN_SLURM_PLUGIN is the first that logs
+    job events, without which Spectio shows no task of a Snakemake SLURM run; whatever stands in
+    the way is a warning, so the line never fails a doctor run."""
+    check, want = "snakemake_slurm_plugin", ".".join(map(str, MIN_SLURM_PLUGIN))
+    need = f"Snakemake SLURM runs need snakemake-executor-plugin-slurm {want} or later"
+
+    def unknown(reason: str) -> Result:
+        return "warn", check, f"version unknown ({reason}): {need}"
+
+    with tempfile.TemporaryDirectory() as tmp:  # the probe, private and gone after the run
+        (Path(tmp) / "sitecustomize.py").write_text(_PLUGIN_PROBE, encoding="utf-8")
+        answer_file = Path(tmp) / "plugin-version"
+        run_login(
+            f'PYTHONPATH="$1${{PYTHONPATH:+:$PYTHONPATH}}" SPECTIO_PROBE_OUT="$2" {cmd} --version',
+            tmp,
+            str(answer_file),
+        )
+        try:
+            answer = answer_file.read_bytes()[:100].decode(errors="replace").strip()
+        except OSError:
+            answer = None
+    if answer is None:
+        return unknown("Snakemake's Python did not load the probe")
+    if answer == "none":
+        return unknown("not installed")
+    found = _PLUGIN_VERSION.search(answer)
+    if found is None:
+        return unknown("printed no version")
+    if (int(found[1]), int(found[2]), int(found[3] or 0)) < MIN_SLURM_PLUGIN:
+        return (
+            "warn",
+            check,
+            f"{found[0]}: older than {want}, which Spectio needs to see the jobs of a Snakemake "
+            f"SLURM run; install snakemake-executor-plugin-slurm>={want}",
+        )
+    return "ok", check, found[0]
+
+
 def checks(
     settings: Settings, env: Mapping[str, str], mountinfo: Path | None = None
 ) -> list[Result]:
@@ -255,12 +311,15 @@ def checks(
     engines = settings.engines
     nextflow = _engine("nextflow", engines.nextflow_cmd, "-version", NEXTFLOW_VERSION)
     results.append(nextflow)
-    results.append(_engine("snakemake", engines.snakemake_cmd, "--version", SNAKEMAKE_VERSION))
+    snakemake = _engine("snakemake", engines.snakemake_cmd, "--version", SNAKEMAKE_VERSION)
+    results.append(snakemake)
     results.append(_java(nextflow[0] == "ok"))
     paths = which("tmux", "sbatch", "uv")
     results += _tools(settings.executor == "local", paths)
     if settings.executor == "slurm":
         results.append(_slurm_accounting(settings))
+        if snakemake[0] == "ok" and (cmd := engines.snakemake_cmd) is not None:
+            results.append(_slurm_plugin(cmd))
     results.append(_uv(paths["uv"]))
     results.append(_nxf_plugins(env))
     return results
