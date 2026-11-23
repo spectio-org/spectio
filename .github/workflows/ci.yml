@@ -160,13 +160,14 @@ jobs:
       - run: npm run build
 
   e2e-local:
-    # The Playwright smoke of P1 Task 20 (tests/e2e/skeleton.spec.ts) against a real `spectio serve` in local
-    # mode (tests/e2e/serve-local.sh), with Nextflow for the tests that launch, cancel and follow a run.
+    # The Playwright specs of tests/e2e (desktop and phone projects) against a real `spectio serve` in local
+    # mode (tests/e2e/serve-local.sh), with Nextflow and Snakemake for the tests that launch, cancel and follow a
+    # run (RC1 acceptance campaign, docs/reviews/RC1-acceptance.md).
     # Not in ci-ok's needs until it has proven reliable on CI (inbox #90): a red run here does not block a PR.
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 45
     permissions:
       contents: read
     steps:
@@ -197,26 +198,37 @@ jobs:
           npm --prefix web run build
           npm --prefix tests/e2e ci --no-audit --no-fund --ignore-scripts
           (cd tests/e2e && npx --no-install playwright install --with-deps chromium)
+      - name: Install Snakemake (hash-locked)
+        # dev/snakemake.lock.txt pins every package with its hash (§1). The Spectio logger is not installed:
+        # the head script puts it on PYTHONPATH from the bridges directory that serve-local.sh fills.
+        run: |
+          . dev/versions.env
+          uv venv "$RUNNER_TEMP/smk" --python "$PYTHON_VERSION"
+          uv pip install --python "$RUNNER_TEMP/smk/bin/python" --require-hashes -r dev/snakemake.lock.txt
+          "$RUNNER_TEMP/smk/bin/snakemake" --version
       - name: Start Spectio (local mode)
         # The head runs the engine through the login shell (bash -l), whose PATH lacks setup-nextflow's
         # directory: name the binary, as the local exit check does.
         run: |
           SPECTIO_ENGINES_NEXTFLOW_CMD=$(command -v nextflow)
-          export SPECTIO_ENGINES_NEXTFLOW_CMD
+          SPECTIO_ENGINES_SNAKEMAKE_CMD=$RUNNER_TEMP/smk/bin/snakemake
+          export SPECTIO_ENGINES_NEXTFLOW_CMD SPECTIO_ENGINES_SNAKEMAKE_CMD
           bash tests/e2e/serve-local.sh --port 8765 --seed-stages > "$RUNNER_TEMP/serve.log" 2>&1 &
           for _ in $(seq 1 300); do
             [ -f tests/e2e/.local/8765.config ] && exit 0  # serve-local.sh writes it once /auth/link answers
             sleep 1
           done
           cat "$RUNNER_TEMP/serve.log"; exit 1
-      - name: Smoke, desktop and phone
+      - name: Every spec, desktop and phone
+        # Without file arguments Playwright runs each spec its project's testMatch names (playwright.config.ts).
         working-directory: tests/e2e
         env:
           CI: "true"
           SPECTIO_E2E_BASE_URL: http://127.0.0.1:8765
           SPECTIO_E2E_ENGINES: "1"
           SPECTIO_E2E_SEEDED: "1"
-        run: npx --no-install playwright test skeleton.spec.ts report.spec.ts --project desktop --project phone
+          SPECTIO_E2E_SNAKEMAKE: "1"
+        run: npx --no-install playwright test --project desktop --project phone
       - name: Keep the report and the server log
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
