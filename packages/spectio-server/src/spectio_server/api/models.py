@@ -267,9 +267,18 @@ class EngineSettings(BaseModel):
     notemp: bool | None
 
 
+class Stall(BaseModel):
+    """Tasks held as running whose SLURM jobs are gone from squeue and sacct past the grace
+    period, and when the last of them was seen (FU-P3-126, schedulers §3.9)."""
+
+    tasks: int
+    since: str
+
+
 class RunDetail(Run):
     params: dict[str, JsonValue]
     stages_note: str | None  # why declared stages were not applied (P1 Task 27)
+    stall: Stall | None  # null unless the stall check found one (FU-P3-126)
     failures: list[Failure]  # the first 10 (P1 Task 29)
     failures_total: int
     command: Command | None  # null for a run started from a terminal (P1 Task 30)

@@ -1,0 +1,192 @@
+"""The stall watch (FU-P3-126, schedulers §3.9): a run's tasks whose SLURM jobs are in
+neither squeue nor sacct for longer than the grace period warn on their run.
+
+`squeue` is a fake `call` answering sets of job IDs (None when it failed), the clock is fake
+and shared with the limiter, and the runs root is a private directory of the test.
+"""
+
+import json
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from spectio.config import Settings
+from spectio_server.failure import Accounting
+from spectio_server.stall import GRACE_S, WATCH_S, Stall, StallWatch
+
+
+class Clock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+class Squeue:
+    """A fake `squeue_ids`: the sets to answer, one per call, None when it failed."""
+
+    def __init__(self, *answers: set[str] | None) -> None:
+        self.answers = list(answers)
+        self.calls = 0
+
+    def __call__(self) -> set[str] | None:
+        self.calls += 1
+        assert self.answers, "squeue called more times than it has answers"
+        return self.answers.pop(0)
+
+
+@pytest.fixture
+def runs(tmp_path: Path) -> Path:
+    root = tmp_path / "spectio-runs"
+    root.mkdir(mode=0o700)
+    return root
+
+
+def stall_watch(
+    runs: Path, clock: Clock, call: Callable[[], set[str] | None], **kwargs: Any
+) -> StallWatch:
+    seen = kwargs.pop("in_sacct", lambda run: set())
+    return StallWatch(runs, None, seen, call=call, interval_s=60, clock=clock, **kwargs)
+
+
+def test_seen_then_gone_past_grace(runs: Path) -> None:
+    """A job seen once, then gone from squeue and sacct past the grace: the run stalls, the
+    stall file is written and the run is notified."""
+    clock = Clock()
+    sq = Squeue({"8812401"}, set())
+    notified: list[str] = []
+    watch = stall_watch(runs, clock, sq, notify=notified.append)
+    watch.watch("run_a", {"8812401": clock.now})
+    assert watch.step()  # the first call: the job is in squeue
+    assert watch.stall("run_a") is None
+    clock.now += GRACE_S + 100
+    watch.watch("run_a", {"8812401": 1000.0})  # the page re-read: still its submitted time
+    assert watch.step()
+    assert watch.stall("run_a") == Stall(tasks=1, since=1000.0)
+    assert notified == ["run_a"]
+    body = json.loads((runs / ".stalled.json").read_text())
+    assert body == {
+        "v": 1,
+        "checked": clock.now,
+        "runs": {"run_a": {"tasks": 1, "since": 1000.0}},
+    }
+
+
+def test_gone_within_grace(runs: Path) -> None:
+    """A job gone from squeue and sacct within the grace period: no warning yet."""
+    clock = Clock()
+    sq = Squeue({"8812401"}, set())
+    watch = stall_watch(runs, clock, sq)
+    watch.watch("run_b", {"8812401": clock.now})
+    watch.step()
+    clock.now += GRACE_S - 100
+    assert watch.step()
+    assert watch.stall("run_b") is None
+    assert not (runs / ".stalled.json").exists()
+
+
+def test_seen_in_sacct_not_stalled(runs: Path) -> None:
+    """A job gone from squeue but with a row in sacct ended: it is not gone."""
+    clock = Clock()
+    sq = Squeue({"8812401"}, set())
+    seen: dict[str, set[str]] = {}
+
+    def in_sacct(run: str) -> set[str]:
+        return seen.get(run, set())
+
+    watch = stall_watch(runs, clock, sq, in_sacct=in_sacct)
+    watch.watch("run_c", {"8812401": clock.now})
+    watch.step()
+    clock.now += 2 * GRACE_S
+    seen["run_c"] = {"8812401"}  # sacct has the job's row: it ended
+    assert watch.step()
+    assert watch.stall("run_c") is None
+
+
+def test_failed_call_backs_off(runs: Path) -> None:
+    """A failed squeue warns nothing and the next call waits the doubled interval."""
+    clock = Clock()
+    sq = Squeue(None, None)
+    watch = stall_watch(runs, clock, sq)
+    watch.watch("run_d", {"8812401": clock.now})
+    assert watch.step()
+    assert watch.stall("run_d") is None  # squeue fails: no warning
+    assert watch.wait_s() == 120  # the first back-off (CR-P3FU106A-05)
+    clock.now += 120
+    assert watch.step()
+    assert watch.wait_s() == 240
+
+
+def test_never_seen_submitted_past_grace(runs: Path) -> None:
+    """A job squeue never said and whose submission is past the grace: stalled at once, its
+    stall since its submission."""
+    clock = Clock()
+    sq = Squeue(set())
+    watch = stall_watch(runs, clock, sq)
+    watch.watch("run_e", {"8812402": clock.now - GRACE_S - 10})
+    assert watch.step()
+    assert watch.stall("run_e") == Stall(tasks=1, since=clock.now - GRACE_S - 10)
+
+
+def test_watch_empty_forgets(runs: Path) -> None:
+    """A run watched with no jobs (it ended, or is not on SLURM) is forgotten, its stall too."""
+    clock = Clock()
+    sq = Squeue(set(), set())
+    watch = stall_watch(runs, clock, sq)
+    watch.watch("run_f", {"8812401": clock.now - GRACE_S - 10})
+    assert watch.step()
+    assert watch.stall("run_f") is not None
+    assert watch.watch("run_f", {})  # a stall was forgotten: the caller rewrites the file
+    assert watch.stall("run_f") is None
+    assert watch.missing("run_f") == []
+    clock.now += 60
+    assert watch.step()  # the request left from the last answer: nothing asked after it
+    assert watch.wait_s() is None
+
+
+def test_run_not_read_for_watch_s_is_dropped(runs: Path) -> None:
+    """A run no view has read for WATCH_S is no longer polled, but keeps its stall."""
+    clock = Clock()
+    sq = Squeue(set(), set())
+    watch = stall_watch(runs, clock, sq)
+    watch.watch("run_g", {"8812401": clock.now - GRACE_S - 10})
+    assert watch.step()
+    stall = watch.stall("run_g")
+    assert stall is not None
+    clock.now += WATCH_S + 1
+    assert watch.step()
+    assert watch.stall("run_g") == stall  # kept: the page still shows the warning
+    assert watch.missing("run_g") == []
+    assert watch.wait_s() is None  # no longer polled
+
+
+def test_disabled_without_squeue(runs: Path) -> None:
+    """Without a squeue path (and no call to test with), nothing is watched or asked."""
+    watch = StallWatch(runs, None, lambda run: set(), clock=Clock())
+    assert not watch.enabled
+    watch.watch("run_x", {"8812401": 0.0})  # no-op: nothing queued, nothing asked
+    assert not watch.step()
+
+
+def test_stall_file_of_a_refused_runs_root(tmp_path: Path) -> None:
+    """A runs root others can write into is refused: the watch still answers, without a file."""
+    clock = Clock()
+    sq = Squeue(set())
+    runs = tmp_path / "spectio-runs"
+    runs.mkdir()
+    runs.chmod(0o757)  # others can write it
+    watch = stall_watch(runs, clock, sq)
+    watch.watch("run_h", {"8812401": clock.now - GRACE_S - 10})
+    assert watch.step()
+    assert watch.stall("run_h") is not None
+    assert not (runs / ".stalled.json").exists()  # refused: no file written
+
+
+def test_from_settings_without_squeue(settings: Settings) -> None:
+    """From settings with no squeue path recorded: disabled (a plain server)."""
+    accounting = Accounting.from_settings(settings, start_thread=False)
+    watch = StallWatch.from_settings(settings, accounting)
+    assert not watch.enabled

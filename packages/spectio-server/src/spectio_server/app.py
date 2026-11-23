@@ -58,6 +58,7 @@ from spectio_server.auth import host, middleware, routes, writes
 from spectio_server.auth.secrets import ServerKey, SessionStore, TicketStore
 from spectio_server.failure import Accounting, Measures
 from spectio_server.files.pool import FilePool
+from spectio_server.stall import StallWatch
 from spectio_server.store.writer import Writer
 
 PLACEHOLDER = "Spectio {version} is running.\n{why}\n"
@@ -144,6 +145,14 @@ def create_app(
     app.state.imaging_slots = results.ImagingSlots(results.IMAGING_SLOTS)  # api §5.3.1
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
+
+    def notify_stall(run_id: str) -> None:
+        if stream := getattr(app.state, "stream", None):  # made later, on the socket only
+            stream.notify({run_id: set()})  # the run's page re-reads it (api §8.3)
+
+    # schedulers §3.9: the stall watch, a poller of the accounting thread (FU-P3-126)
+    app.state.stall = StallWatch.from_settings(settings, app.state.accounting, notify=notify_stall)
+    app.state.accounting.pollers.append(app.state.stall)
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
     app.state.engine_versions = workflows.EngineVersions(settings)
     app.state.target_engine = targets.login_engine(settings)  # api §5.10; replaced in tests

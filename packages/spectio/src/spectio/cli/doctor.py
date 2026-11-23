@@ -1,10 +1,12 @@
 """`spectio doctor` (P1 Task 8): one `ok|warn|fail <check> <detail>` line per check of
 architecture §7.3 that 0.0.1 needs, and exit 1 on any `fail`."""
 
+import json
 import os
 import re
 import socket
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from pathlib import Path
 
 import typer
@@ -19,7 +21,8 @@ from spectio.runner.engines import (
     existing_copy,
     nf_plugin_copy,
 )
-from spectio.runner.rundir import runs_disk
+from spectio.runner.rundir import private_dir, read_small, runs_disk
+from spectio.runner.squeue import STALL_FILE
 
 Result = tuple[str, str, str]  # status, check, detail
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
@@ -155,6 +158,38 @@ def _catalog() -> Result:
     return ("ok" if found.state in ("missing", "ok") else "warn"), "catalog", f"{path}: {state}"
 
 
+def _utc(epoch: float) -> str:
+    return datetime.fromtimestamp(epoch, UTC).strftime("%Y-%m-%d %H:%M UTC")
+
+
+def _stalled(runs_root: Path, shown: int = 5) -> Result:
+    """The runs the server last saw stalled (FU-P3-126, schedulers §3.9): tasks running whose
+    SLURM jobs are gone from squeue and sacct, from the server's stall file, read with no link
+    followed. A missing file is none; one that cannot be read is a warning."""
+    try:
+        with private_dir(runs_root) as fd:
+            data = read_small(fd, STALL_FILE)
+        if data is None:
+            return "ok", "stalled_runs", "none"
+        body = json.loads(data)
+        if not isinstance(body, dict) or body.get("v") != 1:
+            raise ValueError("not a stall file of version 1")
+        found = [
+            f"{run}: {int(s['tasks'])} tasks running, their SLURM jobs gone from squeue and "
+            f"sacct since {_utc(float(s['since']))}"
+            for run, s in sorted(body["runs"].items())
+        ]
+        checked = _utc(float(body["checked"]))
+    except FileNotFoundError:  # no runs root yet
+        return "ok", "stalled_runs", "none"
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, RecursionError) as exc:
+        return "warn", "stalled_runs", f"{STALL_FILE} not read: {exc}"
+    if not found:
+        return "ok", "stalled_runs", "none"
+    more = f"; +{len(found) - shown} more" if len(found) > shown else ""
+    return "warn", "stalled_runs", "; ".join(found[:shown]) + f"{more} (checked {checked})"
+
+
 def checks(
     settings: Settings, env: Mapping[str, str], mountinfo: Path | None = None
 ) -> list[Result]:
@@ -178,6 +213,7 @@ def checks(
     results += [_environments(settings), _catalog()]
     status, detail = runs_disk(settings.runs_root)  # a `warn` at most (FU-P3-74)
     results.append((status, "runs_disk", detail))
+    results.append(_stalled(settings.runs_root))
     here = socket.gethostname()
     if settings.host == here:
         results.append(("ok", "host", here))

@@ -157,6 +157,7 @@ export function run(over: Record<string, unknown> = {}) {
 export const DETAIL = {
   params: {},
   stages_note: null,
+  stall: null,
   failures: [],
   failures_total: 0,
   command: null,

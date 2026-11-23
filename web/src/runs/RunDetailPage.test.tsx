@@ -166,6 +166,15 @@ test("no stages note when the run has none", async () => {
   expect(screen.queryByRole("note")).toBeNull();
 });
 
+test("a stalled run says its SLURM jobs are gone from squeue and sacct (FU-P3-126)", async () => {
+  detail({}, {
+    [URL_]: { ...DETAIL, ...run(), stall: { tasks: 12, since: "2026-11-23T10:30:00+00:00" } },
+  });
+  app(`/runs/${ID}`);
+  const note = await screen.findByText(/^12 tasks are running but their SLURM jobs are gone from squeue and sacct since \d\d:\d\d/);
+  expect(note).toHaveAttribute("role", "status");
+});
+
 test("on a failed run the tasks filter starts at failed", async () => {
   const mock = detail({ state: "failed", ended_at: "2026-10-31T08:00:00+00:00" });
   app(`/runs/${ID}`);

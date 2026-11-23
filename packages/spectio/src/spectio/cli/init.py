@@ -97,6 +97,19 @@ def _slurm(settings: Settings) -> SlurmOpts:
     return slurm.model_copy(update={"sacct": Path(found)})
 
 
+def _squeue(settings: Settings, slurm: SlurmOpts) -> SlurmOpts:
+    """`squeue`'s path, resolved once through the login shell and recorded (FU-P3-126,
+    schedulers §3.9), with or without `accounting`: a recorded or given one is kept; with
+    none, the stall check is unavailable."""
+    if settings.executor != "slurm" or slurm.squeue is not None:
+        return slurm
+    found = which("squeue")["squeue"]
+    if found is None:
+        typer.echo("warning: squeue not found on the login shell's PATH: no stall check")
+        return slurm
+    return slurm.model_copy(update={"squeue": Path(found)})
+
+
 def _unix_user() -> str:
     """The principal's name: the uid's, never the environment's (P1 Assumption 18)."""
     try:
@@ -151,7 +164,7 @@ def _init(settings: Settings) -> None:
                 else _free_port(DEFAULT_PORT),
                 "host": socket.gethostname(),
                 "engines": EngineOpts.model_validate(_engines(settings)),
-                "slurm": _slurm(settings),
+                "slurm": _squeue(settings, _slurm(settings)),
             }
         )
         server.init_store(

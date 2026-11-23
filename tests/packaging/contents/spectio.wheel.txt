@@ -36,5 +36,6 @@ spectio/runner/resume.py
 spectio/runner/rundir.py
 spectio/runner/sacct.py
 spectio/runner/spool.py
+spectio/runner/squeue.py
 spectio/runner/tmux.py
 spectio/runner/types.py

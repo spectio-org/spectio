@@ -1465,3 +1465,11 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
 - **Why.** `picomatch` is dev-only (`"dev": true` in the lockfile). Vite and Vitest use it to match globs from our own config, on the build machine and in CI, and it is not in the shipped web bundle.
 - **Revisit.** Remove the entry and update the lockfile as soon as a fixed `picomatch` is released, or earlier if it stops being dev-only.
 - **[to be validated].** The nature of the advisory was not read.
+
+## 2026-11-23 — Stall check for SLURM jobs gone from the queue, in 0.0.1-rc1 (FU-P3-126, inbox #156, Thomas)
+
+- **Decision.** Inbox #156 item 2 (a) moves from after 0.0.1 into 0.0.1-rc1 (Thomas, 2026-11-23). A task Spectio holds as `submitted` or `running` whose SLURM job has been in neither `squeue` nor `sacct` for 15 min (`GRACE_S`) gets a warning on its run, and `spectio doctor` reports such runs ([schedulers §3.9](../specs/schedulers-and-monitoring.md#39-jobs-gone-from-the-queue-the-stall-check)).
+- **Why.** On `slurm-mini` a Snakemake run showed 12 tasks `running` for 967 s with `squeue` empty, and Spectio said nothing (PR #164).
+- **Budget.** It fits §3.8: one `squeue --me --states=all` per poll cycle at most, never `-j` with a list, on a second `SacctLimiter` (for `slurmctld`) run by the accounting thread, with `sacct`'s timeout, output cap, absolute path and back-off; `sacct` asked once per job gone from `squeue`. It is the one periodic call, and it runs only while a live SLURM run was read in the last hour.
+- **Order of the tools.** `squeue` first, then `sacct` only for the jobs `squeue` no longer lists: one `squeue --me` covers every job of the user, where `sacct -j` takes 100 IDs per call, and on a site without accounting only `squeue` answers.
+- **[to be validated].** `MinJobAge` at EMBL (7200 s as given) and its default; `squeue --me` on EMBL's Slurm; pending array ranges.
