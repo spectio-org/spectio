@@ -1,11 +1,16 @@
-"""The pure parts of e2e_client.py (P1 Task 22): the ticket line, the session cookie, the golden
-counts, the run's states, the expect lines of a scenario and the jobs of a run; and its transport, against a
-stand-in HTTP server on a Unix socket and on TCP. No Spectio server and no cluster: tests/slurm/e2e.sh runs the
-client itself. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
+"""The pure parts of e2e_client.py (P1 Tasks 22 and 23): the ticket line, the session cookie, the golden
+counts, the run's states, the expect lines of a scenario and the jobs of a run, the cancel and restart checks
+and the teardown; and its transport, against a stand-in HTTP server on a Unix socket and on TCP. No Spectio
+server and no cluster: tests/slurm/e2e.sh runs the client itself. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
+import ast
 import http.server
+import io
 import json
 import os
+import socket
 import socketserver
+import sqlite3
+import subprocess
 import sys
 import tempfile
 import threading
@@ -181,6 +186,179 @@ class Local(unittest.TestCase):
         self.assertIsNone(c.head_left(None))
 
 
+class CancelChecks(unittest.TestCase):
+    """P1 Task 23: once running with tasks running, `POST :cancel`; the run goes cancelling, then cancelled."""
+
+    def test_ready_once_running_with_a_task_running(self):
+        self.assertTrue(c.tasks_running({"state": "running", "task_counts": {"running": 2, "succeeded": 1}}))
+        self.assertFalse(c.tasks_running({"state": "running", "task_counts": {"succeeded": 3}}))
+        self.assertFalse(c.tasks_running({"state": "running", "task_counts": {}}))
+        self.assertFalse(c.tasks_running({"state": "queued", "task_counts": {"running": 1}}))
+
+    def test_queued_running_cancelling_cancelled(self):
+        seen = ["queued", "running", "running", "cancelling", "cancelled"]
+        self.assertIsNone(c.states_problem(seen, c.CANCELLED_PATH))
+        self.assertIsNotNone(c.states_problem(seen))  # the default path ends succeeded
+
+    def test_each_wrong_path(self):
+        for seen in (["queued", "running", "cancelled"], ["queued", "running", "cancelling"],
+                     ["queued", "running", "cancelling", "failed"], ["queued", "cancelling", "cancelled"],
+                     ["queued", "running", "succeeded"], []):
+            self.assertIsNotNone(c.states_problem(seen, c.CANCELLED_PATH), seen)
+
+    def test_the_grace_is_the_tmux_launchers(self):
+        """Read from the source with ast, so the check also runs where spectio is not installed (CR-P3T23-01)."""
+        tree = ast.parse(open(os.path.join(HERE, "..", "..", "packages", "spectio", "src", "spectio", "runner",
+                                           "tmux.py")).read())
+        launcher = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "TmuxLauncher")
+        cancel = next(n for n in launcher.body if isinstance(n, ast.FunctionDef) and n.name == "cancel")
+        names = [a.arg for a in cancel.args.args]
+        default = cancel.args.defaults[names.index("grace_s") - (len(names) - len(cancel.args.defaults))]
+        self.assertEqual(ast.literal_eval(default), c.CANCEL_GRACE_S)
+
+    def test_job_states_of_the_run(self):
+        lines = ["12|nf-A|CANCELLED|/r/runs/run_1/work/ab", "13|nf-B|RUNNING|/r/runs/run_1/work/cd",
+                 "14|nf-C|CANCELLED|/r/runs/run_10/work", "15|nf-D|COMPLETED|/r/runs/run_1"]
+        self.assertEqual(c.job_states(lines, "/r/runs/run_1"), {"CANCELLED": 1, "RUNNING": 1, "COMPLETED": 1})
+        self.assertEqual(c.job_states([], "/r/runs/run_1"), {})
+
+
+class Store(unittest.TestCase):
+    """Read-only queries of the server's database: attempts by state, and duplicate event IDs."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.db = os.path.join(tmp.name, "spectio.db")
+        with sqlite3.connect(self.db) as conn:
+            conn.executescript(
+                "CREATE TABLE tasks (id TEXT, run_id TEXT, process_or_rule TEXT, state TEXT);"
+                "CREATE TABLE attempts (id TEXT, task_id TEXT, n INTEGER, state TEXT);"
+                "CREATE TABLE events (id TEXT, run_id TEXT, event_id TEXT);"
+                "INSERT INTO tasks VALUES ('t1', 'run_1', 'ALIGN', 'running'), ('t2', 'run_1', 'QC', 'aborted'),"
+                " ('t3', 'run_2', 'ALIGN', 'running');"
+                "INSERT INTO attempts VALUES ('a1', 't1', 1, 'running'), ('a2', 't2', 1, 'aborted'),"
+                " ('a3', 't2', 2, 'failed'), ('a4', 't3', 1, 'running');"
+                "INSERT INTO events VALUES ('e1', 'run_1', 'x'), ('e2', 'run_1', 'y'), ('e3', 'run_1', 'x'),"
+                " ('e4', 'run_2', 'y');")
+        conn.close()
+
+    def test_attempts_in_a_state(self):
+        self.assertEqual(c.attempts_in(self.db, "run_1", ("running",)), ["ALIGN attempt 1: running"])
+        self.assertEqual(c.attempts_in(self.db, "run_1", ("pending",)), [])
+
+    def test_open_attempts_are_pending_submitted_or_running(self):
+        self.assertEqual(c.OPEN_ATTEMPTS, ("pending", "submitted", "running"))
+        with sqlite3.connect(self.db) as conn:
+            conn.execute("INSERT INTO attempts VALUES ('a5', 't2', 3, 'submitted'), ('a6', 't2', 4, 'pending')")
+        conn.close()
+        self.assertEqual(c.attempts_in(self.db, "run_1", c.OPEN_ATTEMPTS),
+                         ["ALIGN attempt 1: running", "QC attempt 3: submitted", "QC attempt 4: pending"])
+        self.assertIn("no attempt left pending, submitted or running", c.CANCEL_CHECKS)
+
+    def test_the_restart_checks_the_spool_too(self):
+        self.assertIn("no spool drop", c.RESTART_CHECKS)
+
+    def test_duplicate_event_ids(self):
+        self.assertEqual(c.duplicate_events(self.db, "run_1"), ["x (2 times)"])
+        self.assertEqual(c.duplicate_events(self.db, "run_2"), [])
+
+
+class Restart(unittest.TestCase):
+    """P1 Task 23: SIGKILL the server named by server.json, start it again, and the head is adopted."""
+
+    LOG = ("-V\n"
+           "new-session -d -P -F #{pane_id} #{pane_pid} -s spectio-server -c / /usr/bin/env -i a=b\n"
+           "new-session -d -P -F #{pane_id} #{pane_pid} -s spectio-run_1 -c /r/run_1/launch /bin/bash h.sh\n"
+           "has-session -t =spectio-run_1\n"
+           "new-session -d -P -F #{pane_id} #{pane_pid} -s spectio-run_10 -c /r/run_10/launch /bin/bash h.sh\n"
+           "list-panes -s -t =spectio-run_1 -F #{pane_id} #{pane_pid}\n")
+
+    def test_new_sessions_of_the_run(self):
+        self.assertEqual(c.new_sessions(self.LOG, "spectio-run_1"), 1)
+        self.assertEqual(c.new_sessions(self.LOG + self.LOG, "spectio-run_1"), 2)
+        self.assertEqual(c.new_sessions(self.LOG, "spectio-run_2"), 0)
+        self.assertEqual(c.new_sessions("", "spectio-run_1"), 0)
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.data = tmp.name
+
+    def state(self, **record):
+        with open(os.path.join(self.data, "server.json"), "w") as f:
+            json.dump({"host": socket.gethostname(), "port": 8123} | record, f)
+
+    def fake_serve(self, *tail):
+        proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", *tail])
+        self.addCleanup(proc.wait)
+        self.addCleanup(proc.kill)
+        return proc
+
+    def test_the_pid_of_a_spectio_serve_on_this_node(self):
+        proc = self.fake_serve("-m", "spectio", "serve", "--pane")
+        self.state(pid=proc.pid)
+        self.assertEqual(c.server_pid(self.data), proc.pid)
+
+    def test_not_the_pane_or_not_ours_is_refused(self):
+        """SEC-P3T23-03: only `-m spectio serve --pane` (cli/serve.py `_runs_pane_serve`), of this uid."""
+        for tail in (("spectio", "serve"), ("-m", "spectio", "serve"), ("-m", "spectio", "serve", "--detach")):
+            proc = self.fake_serve(*tail)
+            self.state(pid=proc.pid)
+            with self.assertRaisesRegex(c.Failed, "not spectio serve --pane", msg=tail):
+                c.server_pid(self.data)
+        proc = self.fake_serve("-m", "spectio", "serve", "--pane")
+        self.state(pid=proc.pid)
+        with mock.patch.object(c.os, "getuid", return_value=os.getuid() + 1), \
+                self.assertRaisesRegex(c.Failed, "uid"):
+            c.server_pid(self.data)
+
+    def test_kill_server_sigkills_it_through_a_pidfd(self):
+        proc = self.fake_serve("-m", "spectio", "serve", "--pane")
+        self.state(pid=proc.pid)
+        with mock.patch.object(c.signal, "pidfd_send_signal", wraps=c.signal.pidfd_send_signal) as sent:
+            self.assertEqual(c.kill_server(self.data), proc.pid)
+        self.assertEqual(proc.wait(timeout=10), -9)
+        self.assertEqual(sent.call_args.args[1], c.signal.SIGKILL)
+        with self.assertRaises(c.Failed):  # gone now
+            c.kill_server(self.data)
+
+    def test_any_other_pid_is_refused(self):
+        for record in ({"pid": os.getpid()}, {"pid": "1"}, {"pid": 1}, {"pid": None},
+                       {"pid": os.getpid(), "host": "elsewhere"}):
+            self.state(**record)
+            with self.assertRaises(c.Failed, msg=record):
+                c.server_pid(self.data)
+
+
+class Teardown(unittest.TestCase):
+    """FU-P3-68: after a failure, the heads' sessions and the jobs of the runs under the runs root go."""
+
+    def test_sessions_and_jobs_under_the_runs_root(self):
+        names = ["run_01M7PX2ZKY0WRFJFYGWH5WAQA0", "golden.tsv", "run_x", "run_01M7PX6QD89EB1SPPZSMGFAFZY"]
+        lines = ["12|nf-A|/r/runs/run_01M7PX2ZKY0WRFJFYGWH5WAQA0/work/ab", "13|other|/r/runs2/x", "14|b|/r/runs/z"]
+        self.assertEqual(c.teardown_plan(names, lines, "/r/runs"),
+                         (["spectio-run_01M7PX2ZKY0WRFJFYGWH5WAQA0", "spectio-run_01M7PX6QD89EB1SPPZSMGFAFZY"],
+                          ["12", "14"]))
+
+
+class Main(unittest.TestCase):
+    """A hung squeue or tmux (TimeoutExpired) or an OSError ends the client with a FAIL line, not a traceback
+    (CR-P3T22-08 (r3)); a teardown with no config left tears nothing down and passes."""
+
+    def test_a_timeout_or_os_error_is_a_fail_line(self):
+        for exc in (subprocess.TimeoutExpired(["squeue"], 60), ProcessLookupError(3, "No such process")):
+            with self.subTest(exc), mock.patch.object(c, "cancel", side_effect=exc), \
+                    mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+                self.assertEqual(c.main(["cancel", "nextflow", "--config", "x", "--location", "y"]), 1)
+                self.assertTrue(out.getvalue().startswith("FAIL "), out.getvalue())
+
+    def test_teardown_without_a_config(self):
+        with mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+            self.assertEqual(c.main(["teardown", "--config", "/nonexistent/spectio.toml"]), 0)
+        self.assertIn("teardown: nothing to tear down", out.getvalue())
+
+
 class Echo(http.server.BaseHTTPRequestHandler):
     """Answers each request with what it received; `/missing` answers 404 with a JSON problem."""
 
@@ -244,6 +422,36 @@ class Transport(unittest.TestCase):
             self.state(**record)
             with self.assertRaises(c.Failed, msg=record):
                 c.server_address(self.data, self.db)
+
+    def test_on_slurm_a_server_without_a_socket_is_refused(self):
+        """SEC-P3T23-01: on SLURM the server listens only on its socket, never TCP: no fallback."""
+        self.state(socket=None)
+        with self.assertRaisesRegex(c.Failed, "no socket"):
+            c.server_address(self.data, self.db, socket_only=True)
+        self.state()
+        self.assertEqual(c.server_address(self.data, self.db, socket_only=True), (8123, self.sock))
+        self.assertTrue(c.socket_only({"executor": "slurm"}))
+        self.assertTrue(c.socket_only({}))
+        self.assertFalse(c.socket_only({"executor": "local"}))
+
+    def test_a_listener_on_the_port_fails_socket_only(self):
+        listener = socket.socket()
+        self.addCleanup(listener.close)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        port = listener.getsockname()[1]
+        self.assertIn(f"127.0.0.1:{port}", c.tcp_listener(port))
+        listener.close()
+        self.assertIsNone(c.tcp_listener(port))
+        self.assertIsNone(c.tcp_listener(None))  # server.json names no port
+        for checks in (c.CHECKS, c.CANCEL_CHECKS, c.RESTART_CHECKS):
+            self.assertIn("socket only, no TCP port", checks)
+        self.assertNotIn("socket only, no TCP port", c.LOCAL_CHECKS)
+
+    def test_the_same_socket_after_the_restart(self):
+        self.assertIsNone(c.same_socket(self.sock, self.sock))
+        self.assertIn("moved", c.same_socket(self.sock, self.db + "/x/spectio.sock"))
+        self.assertIn("no socket", c.same_socket(None, None))  # None == None is not the same socket
 
     def test_no_server_json(self):
         with self.assertRaisesRegex(c.Failed, "server.json"):
