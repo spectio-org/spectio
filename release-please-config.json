@@ -40,12 +40,7 @@
       "release-type": "simple",
       "package-name": "spectio",
       "changelog-path": "CHANGELOG.md",
-      "extra-files": [
-        "packages/spectio-sdk/pyproject.toml",
-        "packages/spectio/pyproject.toml",
-        "packages/spectio-server/pyproject.toml",
-        "engine-bridges/snakemake-logger-plugin-spectio/pyproject.toml"
-      ]
+      "extra-files": []
     }
   },
   "bump-minor-pre-major": true,

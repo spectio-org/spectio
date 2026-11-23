@@ -6,7 +6,7 @@
 # dry run only: tests/packaging/test_bridges_release.sh). `uv build` here makes the sdist and wheel.
 [project]
 name = "snakemake-logger-plugin-spectio"  # lowercase and hyphenated, as the plugin catalogue matches it
-version = "0.0.1"  # x-release-please-version: a release PR rewrites this (release-please-config.json)
+version = "0.0.1"
 description = "Snakemake logger plugin that writes a run's events to Spectio's spool"
 readme = "README.md"  # the PyPI description only: the catalogue page is the root docs/intro.md (decision log 2026-10-29)
 license = "MIT"
