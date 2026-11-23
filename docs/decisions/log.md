@@ -1465,3 +1465,16 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
 - **Why.** `picomatch` is dev-only (`"dev": true` in the lockfile). Vite and Vitest use it to match globs from our own config, on the build machine and in CI, and it is not in the shipped web bundle.
 - **Revisit.** Remove the entry and update the lockfile as soon as a fixed `picomatch` is released, or earlier if it stops being dev-only.
 - **[to be validated].** The nature of the advisory was not read.
+
+## 2026-11-23 — 0.0.1-rc1: scope, campaign and pre-release (Thomas)
+
+- **Decided (Thomas, 2026-11-23):**
+    - A full test campaign, then `0.0.1-rc1` as a GitHub pre-release and on PyPI as `0.0.1rc1`. No tag while a cell of `docs/reviews/RC1-acceptance.md` is FAIL.
+    - #156 enters the RC: accounting detection for the Snakemake status command (FU-P3-106b) and the stall check for jobs gone from `squeue` and `sacct` (FU-P3-126).
+    - The `DRAWINGS` allowlist of `web/src/icons.test.tsx` (#303) is accepted.
+    - Old PRs: #1 closed (already covered by `docs.yml` with full history), #187 redone as #314 on the current integration branch (a workflow change, so it waits for Thomas), #111 deferred until after the RC, #162 left to Thomas.
+    - The session may merge #164 and #313 (workflow changes) once green.
+    - Next to the RC, three evaluations become issues after a fact-check: Bilayers and Fractal, custom tools as modules, and the metro-map graph view.
+- **Out of scope for the RC:** `next-0.0.2`, #251 and #255 behind their flags, the #111 demo.
+- **Changed.** [inbox #121, #122, #157](../reviews/inbox.md); [roadmap](../roadmap/index.md) at the release step.
+
