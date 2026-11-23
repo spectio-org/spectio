@@ -24,7 +24,8 @@ test('add, edit and delete a catalog entry with the keyboard', async ({ page, is
   await expect(page.getByRole('heading', { level: 1, name: 'Add pipeline' })).toBeFocused();
   await page.getByLabel('Name').focus();
   await page.keyboard.type(name);
-  await page.getByLabel('Pipeline').focus();
+  // exact: the top bar's "Search runs, pipelines and pages" also contains "pipeline"
+  await page.getByLabel('Pipeline', { exact: true }).focus();
   await page.keyboard.type('nf-core/rnaseq');
   await page.keyboard.press('Tab'); // Revision, shown once Pipeline reads as a repository
   await page.keyboard.type('3.27.0');
