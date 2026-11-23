@@ -172,6 +172,33 @@ def test_doctor_local_skips_sbatch(
     assert line(lines, "sbatch") == "fail sbatch not found on PATH"
 
 
+@pytest.mark.parametrize(
+    ("storage", "expected"),
+    [
+        ("accounting_storage/slurmdbd", "ok accounting on: AccountingStorageType="),
+        ("accounting_storage/none", "warn accounting off: AccountingStorageType="),
+    ],
+)
+def test_doctor_reports_the_site_accounting(
+    home: Path,
+    tools: Callable[..., Path],
+    capsys: pytest.CaptureFixture[str],
+    storage: str,
+    expected: str,
+) -> None:
+    """RC1-acceptance K-04: one line, from `scontrol show config` (FU-P3-106b)."""
+    fakebin = tools("nextflow", "snakemake", "java", "tmux", "sbatch")
+    (fakebin / "scontrol").write_text(f"#!/bin/sh\necho 'AccountingStorageType = {storage}'\n")
+    (fakebin / "scontrol").chmod(0o755)
+    _, lines = doctor(capsys, configured(home, fakebin, executor="slurm"))
+    found = line(lines, "accounting")
+    assert found.startswith(expected + storage), found
+    if storage.endswith("none"):
+        assert "squeue" in found
+    _, lines = doctor(capsys, configured(home, fakebin, executor="local"))
+    assert line(lines, "accounting") == "ok accounting not needed in local mode"
+
+
 def test_doctor_host_pin_and_config(
     home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

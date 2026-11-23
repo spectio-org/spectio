@@ -505,6 +505,34 @@ def test_req18_snapshot_runner_reads_the_payload_not_settings(
     assert failed.failure["class"] == "launch_error"
 
 
+def test_runner_reads_the_site_accounting_once(
+    authed_client: TestClient,
+    synthetic: Path,
+    settings: Settings,
+    writer: Writer,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """FU-P3-106b: a Snakemake launch on SLURM carries the site's accounting state, read once
+    per runner (so per server start), never for a local launch."""
+    slurm = as_slurm(authed_client, settings)
+    create(authed_client)  # mylab: a local environment
+    rids = [launched(authed_client, synthetic) for _ in range(2)]
+    local = launched(authed_client, synthetic, environment="mylab")
+    calls: list[None] = []
+
+    def site_accounting() -> tuple[bool, str]:
+        calls.append(None)
+        return False, "off: AccountingStorageType=accounting_storage/none (scontrol)"
+
+    monkeypatch.setattr(loop, "site_accounting", site_accounting)
+    monkeypatch.setattr(loop, "check_engine", lambda engine, cmd: EngineInfo(engine, "9.27.1"))
+    launcher = RecordingLauncher()
+    loop.RunnerLoop(StoreSink(writer, settings.runs_root), launcher, slurm).tick()
+    found = {spec.run_id: spec.slurm_accounting for spec in launcher.specs}
+    assert found == {rids[0]: False, rids[1]: False, local: True}
+    assert len(calls) == 1
+
+
 def test_req18_snapshot_runner_checks_the_server_kind(
     authed_client: TestClient,
     synthetic: Path,

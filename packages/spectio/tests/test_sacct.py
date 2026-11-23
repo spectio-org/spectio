@@ -827,3 +827,63 @@ def test_sacct_site_time_range_limit_is_final(
     assert limiter.run_once() == (["8812477", "8812478"], expected)
     assert limiter.run_once() is None  # the caller puts back only a failed call's (None) IDs
     assert (fakebin.dir / "count").read_text() == "x\n"
+
+
+# --- The site's accounting state, for the Snakemake SLURM plugin's status command (FU-P3-106b) --
+
+
+def fake_slurm(home: Path, login: Any, scontrol: str | None, sacct_exit: int | None) -> Path:
+    """`scontrol` printing `scontrol` (None: no scontrol) and `sacct` exiting `sacct_exit`
+    (None: no sacct) on the login shell's PATH; `calls` records each call."""
+    fakes = home.parent / "slurm-fakes"
+    fakes.mkdir()
+    calls = fakes / "calls"
+    if scontrol is not None:
+        (fakes / "scontrol").write_text(f'#!/bin/sh\necho "scontrol $*" >>{calls}\n{scontrol}\n')
+        (fakes / "scontrol").chmod(0o755)
+    if sacct_exit is not None:
+        (fakes / "sacct").write_text(f'#!/bin/sh\necho "sacct $*" >>{calls}\nexit {sacct_exit}\n')
+        (fakes / "sacct").chmod(0o755)
+    login(fakes)
+    return calls
+
+
+SHOW_CONFIG = "echo 'AccountingStorageHost   = (null)'; echo 'AccountingStorageType   = {}'"
+
+
+@pytest.mark.parametrize(
+    ("storage", "on"),
+    [("accounting_storage/slurmdbd", True), ("accounting_storage/none", False)],
+)
+def test_site_accounting_from_scontrol(home: Path, login: Any, storage: str, on: bool) -> None:
+    """`AccountingStorageType` decides; `sacct` is not asked."""
+    calls = fake_slurm(home, login, SHOW_CONFIG.format(storage), sacct_exit=1 if on else 0)
+    found, detail = sacct.site_accounting()
+    assert found is on
+    assert f"AccountingStorageType={storage}" in detail
+    assert calls.read_text() == "scontrol show config\n"
+
+
+@pytest.mark.parametrize(
+    ("scontrol", "why"),
+    [
+        (None, "scontrol show config exited 127"),
+        ("echo boom >&2; exit 1", "scontrol show config exited 1"),
+        ("echo 'ClusterName = mini'", "scontrol show config gave no AccountingStorageType"),
+        (
+            SHOW_CONFIG.format("accounting_storage/other"),
+            "AccountingStorageType=accounting_storage/other",
+        ),
+    ],
+)
+@pytest.mark.parametrize(("sacct_exit", "on"), [(0, True), (1, False), (None, False)])
+def test_site_accounting_falls_back_to_sacct(
+    home: Path, login: Any, scontrol: str | None, why: str, sacct_exit: int | None, on: bool
+) -> None:
+    """scontrol missing, failing or unclear: the state is unknown, and `sacct`'s exit status
+    decides; the detail says so."""
+    fake_slurm(home, login, scontrol, sacct_exit)
+    found, detail = sacct.site_accounting()
+    assert found is on
+    assert why in detail and "unknown" in detail
+    assert ("sacct answered" if on else "sacct exited") in detail

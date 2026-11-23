@@ -282,6 +282,61 @@ def test_workflow_profile_keeps_its_default_resources(home: Path, bridges: Path)
     assert not {"--default-resources", "--jobs", "--cores"} & set(args)
 
 
+SQUEUE = ["--slurm-status-command", "squeue"]
+
+
+def _status_command(args: list[str]) -> list[str]:
+    return [a for a in args if a.startswith("--slurm-status-command")]
+
+
+@pytest.mark.parametrize(("accounting", "added"), [(False, True), (True, False)])
+def test_snakemake_status_command_from_the_site_accounting(
+    home: Path, bridges: Path, accounting: bool, added: bool
+) -> None:
+    """FU-P3-106b: with accounting off, the SLURM plugin 2.8.0 would still pick `sacct` when it
+    is on PATH and drop the jobs, so the head asks squeue; with it on, the plugin's own choice
+    is kept (nothing added)."""
+    spec = snakemake_spec(home, slurm=SlurmValues(partition="htc"), slurm_accounting=accounting)
+    args = engine_args(spec)
+    if added:
+        at = args.index("--slurm-status-command")
+        assert args[at : at + 2] == SQUEUE and args.count("--slurm-status-command") == 1
+    else:
+        assert _status_command(args) == []
+    # never on the local executor, whatever the site
+    local = snakemake_spec(home, slurm_accounting=False)
+    assert _status_command(engine_args(local)) == []
+
+
+@pytest.mark.parametrize(
+    "given", [["--slurm-status-command", "sacct"], ["--slurm-status-command=sacct"]]
+)
+def test_snakemake_status_command_given_is_kept(
+    home: Path, bridges: Path, given: list[str]
+) -> None:
+    spec = snakemake_spec(
+        home, slurm=SlurmValues(partition="htc"), slurm_accounting=False, extra_args=given
+    )
+    assert _status_command(engine_args(spec)) == given[:1]
+
+
+@pytest.mark.parametrize("name", ["config.yaml", "config.v8+.yaml"])
+@pytest.mark.parametrize("key", ["slurm-status-command", "slurm_status_command"])
+def test_snakemake_status_command_in_the_profile_is_kept(
+    home: Path, bridges: Path, name: str, key: str
+) -> None:
+    """A workflow profile's value: a command-line flag would win over it, so none is added."""
+    profile = home / "pipeline" / "profiles" / "slurm"
+    profile.mkdir(parents=True)
+    (profile / name).write_text(f"jobs: 5\n{key}: sacct\n")
+    spec = snakemake_spec(
+        home, profiles=["slurm"], slurm=SlurmValues(partition="htc"), slurm_accounting=False
+    )
+    assert _status_command(engine_args(spec)) == []
+    (profile / name).write_text("jobs: 5\n")
+    assert _status_command(engine_args(spec)) == ["--slurm-status-command"]
+
+
 def test_pythonpath_prepended_to_the_login_profiles(home: Path, bridges: Path) -> None:
     """CR-P3T09-05: a PYTHONPATH the login profile (or a module) sets is kept, after pylib."""
     with (home / ".bash_profile").open("a") as f:

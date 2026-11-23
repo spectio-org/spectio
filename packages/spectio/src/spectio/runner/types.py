@@ -103,7 +103,8 @@ class LaunchSpec:
     environment, and `slurm` (on the SLURM executor) or `local` (its caps, None for none) are
     its values (FU-P3-86c, api §5.4); `slurm` is None on the local executor. `env` holds extra
     variables for the engine, set after the login profile. `default_resources` and
-    `config_file` are the run's own (api §5.7).
+    `config_file` are the run's own (api §5.7). `slurm_accounting` is the site's accounting
+    state, as the runner read it once (FU-P3-106b): off, a Snakemake head on SLURM asks squeue.
     `launch_dir` holds the launch's `.spectio/`; the engine runs there too, except for a Resume,
     which runs in `resume_of`'s directories. `target` limits the run to one module or one rule
     (api §5.10); a registry module's `location` is its name, every other one a directory.
@@ -128,6 +129,7 @@ class LaunchSpec:
     target: RunTarget | None = None
     default_resources: DefaultResources | None = None
     config_file: ExtraFile | None = None
+    slurm_accounting: bool = True
 
     @property
     def engine_dir(self) -> Path:

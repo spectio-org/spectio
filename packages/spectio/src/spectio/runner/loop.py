@@ -49,6 +49,7 @@ from spectio.runner.rundir import (
     runs_disk,
     write_file,
 )
+from spectio.runner.sacct import site_accounting
 from spectio.runner.spool import SPOOL_REFUSED, SPOOL_STALLED, try_read_spool
 from spectio.runner.types import (
     Command,
@@ -179,6 +180,7 @@ class RunnerLoop:
         self._last: dict[str, HeadReport] = {}
         self._ended_at: dict[str, float] = {}
         self._starts: list[tuple[Command, LaunchSpec]] = []  # the heads of this lease, to start
+        self._accounting: bool | None = None  # the site's, read at the first SLURM Snakemake launch
 
     def run(self, stop: threading.Event) -> None:
         while not stop.is_set():
@@ -324,6 +326,10 @@ class RunnerLoop:
             engines = self.settings.engines
             cmd = engines.nextflow_cmd if ref.engine == "nextflow" else engines.snakemake_cmd
             info = check_engine(ref.engine, cmd)
+            fields = launch_fields(environment)  # the run's own, never the server's (req. 18)
+            accounting = True
+            if ref.engine == "snakemake" and fields["slurm"] is not None:
+                accounting = self._site_accounting()
             spec = LaunchSpec(
                 run_id=ref.run_id,
                 launch_n=ref.launch_n,
@@ -334,13 +340,14 @@ class RunnerLoop:
                 work_dir=paths.work_dir,
                 profiles=payload.profiles,
                 params=payload.params,
-                **launch_fields(environment),  # the run's own, never the server's (req. 18)
+                **fields,
                 nxf_opts=engines.nxf_opts,
                 extra_args=engines.extra_args.get(ref.engine, []),
                 resume_of=resume,
                 target=payload.target,
                 default_resources=payload.default_resources,
                 config_file=extra_file(payload),
+                slurm_accounting=accounting,
             )
             status, detail = runs_disk(self.settings.runs_root)
             if status == "warn":  # never refused: the engine may still fit (FU-P3-74)
@@ -350,6 +357,14 @@ class RunnerLoop:
         except (OSError, ValueError) as exc:
             return self._fail(ref, "launch_error", str(exc))
         return spec
+
+    def _site_accounting(self) -> bool:
+        """The site's SLURM accounting state, read once per runner, so once per server start
+        (FU-P3-106b); a site that changes it needs a restart."""
+        if self._accounting is None:
+            self._accounting, detail = site_accounting()
+            log.info("slurm accounting %s", detail)
+        return self._accounting
 
     def _start(self, ref: LaunchRef, spec: LaunchSpec) -> str | None:
         if ref.launch_id in self._known:

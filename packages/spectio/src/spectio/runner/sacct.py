@@ -48,6 +48,8 @@ from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 
+from spectio.loginshell import run_login
+
 log = logging.getLogger(__name__)
 
 JOB_ID = re.compile(r"[0-9]{1,12}(_[0-9]{1,8})?")
@@ -163,6 +165,41 @@ def check_tool(path: Path) -> None:
 
 def sacct_env(path: Path) -> dict[str, str]:
     return {"PATH": str(path.parent), "SLURM_TIME_FORMAT": "standard", "TZ": "UTC"}
+
+
+# The site's accounting state (FU-P3-106b, inbox #156): on a site without slurmdbd, `sacct` exits
+# 1 (Slurm 26.05.5 src/sacct/options.c:944-947), yet the Snakemake SLURM plugin 2.8.0 picks it as
+# its status command whenever it is on PATH (`_get_status_command_default`,
+# snakemake_executor_plugin_slurm/__init__.py:76-95), then drops the jobs and the head hangs.
+# Both tools are run through the login shell, whose PATH is the one the head and the plugin see.
+_STORAGE = re.compile(r"^AccountingStorageType\s*=\s*(\S+)", re.MULTILINE)
+_STORAGE_ON = "accounting_storage/slurmdbd"
+_STORAGE_OFF = "accounting_storage/none"
+_PROBE_BYTES = 65536
+
+
+def site_accounting() -> tuple[bool, str]:
+    """Whether the site keeps SLURM accounting, and one line saying how this was read: from
+    `scontrol show config`'s `AccountingStorageType`; when scontrol is missing, fails or gives
+    another value, the state is unknown and `sacct`'s exit status decides (0: on)."""
+    out = run_login("scontrol show config", max_bytes=_PROBE_BYTES)
+    match = _STORAGE.search(out.stdout) if out.returncode == 0 else None
+    storage = match[1] if match else None
+    if storage in (_STORAGE_ON, _STORAGE_OFF):
+        on = storage == _STORAGE_ON
+        return on, f"{'on' if on else 'off'}: AccountingStorageType={storage} (scontrol)"
+    if out.returncode != 0:
+        why = f"scontrol show config exited {out.returncode}"
+    elif storage is None:
+        why = "scontrol show config gave no AccountingStorageType"
+    else:
+        why = f"AccountingStorageType={storage}"
+    probe = run_login(
+        "sacct --noheader --allocations --starttime now --endtime now", max_bytes=_PROBE_BYTES
+    )
+    if probe.returncode == 0:
+        return True, f"on: unknown from scontrol ({why}); sacct answered"
+    return False, f"off: unknown from scontrol ({why}); sacct exited {probe.returncode}"
 
 
 def new_delimiter() -> str:

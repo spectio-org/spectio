@@ -20,6 +20,7 @@ from spectio.runner.engines import (
     nf_plugin_copy,
 )
 from spectio.runner.rundir import runs_disk
+from spectio.runner.sacct import site_accounting
 
 Result = tuple[str, str, str]  # status, check, detail
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
@@ -90,6 +91,17 @@ def _tools(local: bool, paths: Mapping[str, str | None]) -> list[Result]:
         else:
             results.append(("warn", name, "not found on PATH: spectio serve --detach needs it"))
     return results
+
+
+def _accounting(local: bool) -> Result:
+    """The site's SLURM accounting state (RC1-acceptance K-04, FU-P3-106b): off is a warning,
+    since then no failed job has sacct's reason and Snakemake runs ask squeue."""
+    if local:
+        return "ok", "accounting", "not needed in local mode"
+    on, detail = site_accounting()
+    if on:
+        return "ok", "accounting", detail
+    return "warn", "accounting", f"{detail}; Snakemake runs ask squeue for their jobs"
 
 
 def _nxf_plugins(env: Mapping[str, str]) -> Result:
@@ -191,6 +203,7 @@ def checks(
     results.append(_java())
     paths = which("tmux", "sbatch", "uv")
     results += _tools(settings.executor == "local", paths)
+    results.append(_accounting(settings.executor == "local"))
     results.append(_uv(paths["uv"]))
     results.append(_nxf_plugins(env))
     return results

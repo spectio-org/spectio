@@ -190,6 +190,10 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             # The SLURM plugin deletes a job's log when the job succeeds; kept, every job has
             # its log while the run directory exists (architecture §13.7, `slurm.py:209-243`).
             args += ["--executor", "slurm", "--slurm-keep-successful-logs"]
+            if not spec.slurm_accounting and not _status_given(spec, profiles):
+                # The plugin 2.8.0 picks sacct whenever it is on PATH, and with no accounting
+                # drops the jobs: the head hangs (FU-P3-106b, `sacct.site_accounting`).
+                args += ["--slurm-status-command", "squeue"]
         if profiles:
             # The profile owns resources and concurrency: `--default-resources` here would
             # replace its whole `default-resources` (CR-P3T09-06), so the environment's SLURM
@@ -343,6 +347,24 @@ def _snakemake_base(spec: LaunchSpec, target: RunTarget | None = None) -> list[s
 def list_rules_args(spec: LaunchSpec) -> list[str]:
     """`--list-rules` with the launch's Snakefile, configuration and extra arguments."""
     return _snakemake_base(spec) + spec.extra_args + ["--list-rules"]
+
+
+_STATUS_KEY = re.compile(r"^slurm[-_]status[-_]command\s*:", re.MULTILINE)
+
+
+def _status_given(spec: LaunchSpec, profiles: list[str]) -> bool:
+    """A `--slurm-status-command` in `extra_args`, or a key for it in the workflow profile,
+    which a command-line flag would override."""
+    if any(arg.split("=", 1)[0] == "--slurm-status-command" for arg in spec.extra_args):
+        return True
+    if not profiles:
+        return False
+    profile = spec.location / "profiles" / profiles[0]
+    for name in ("config.yaml", "config.v8+.yaml"):
+        with contextlib.suppress(OSError):
+            if _STATUS_KEY.search((profile / name).read_text(errors="replace")):
+                return True
+    return False
 
 
 def _sets_concurrency(arg: str) -> bool:
