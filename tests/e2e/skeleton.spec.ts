@@ -756,7 +756,8 @@ test('the Logs tab of a real run shows the engine log and downloads it', async (
     page.waitForEvent('download'),
     logs.getByRole('button', { name: 'Download last 64 KiB' }).click(),
   ]);
-  expect(download.suggestedFilename()).toBe(`${name}-engine.log`);
+  // the name is the run's name, whose "/" the browser turns into "_" in a file name
+  expect(download.suggestedFilename()).toBe(`${name.replaceAll('/', '_')}-engine.log`);
   const saved = readFileSync((await download.path())!, 'utf8');
   expect(saved).toMatch(/nextflow/i);
   expect(await lines.innerText()).toContain(saved.split('\n').find((line) => line.trim() !== '')!.trim());
