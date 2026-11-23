@@ -65,7 +65,7 @@ BUILD_CONFIGS = ["mkdocs.yml", "mkdocs.dev.yml"]
 def check_build() -> None:
     for config in BUILD_CONFIGS:
         with tempfile.TemporaryDirectory() as site:
-            r = subprocess.run(["uvx", "--with", "mkdocs-material", "mkdocs", "build", "--strict", "-q", "-f", config, "-d", site],
+            r = subprocess.run(["uvx", "--with", "mkdocs-material", "mkdocs", "build", "--strict", "-f", config, "-d", site],
                                cwd=ROOT, capture_output=True, text=True)
             if r.returncode:
                 fail("build", f"mkdocs build --strict -f {config} failed:\n" + (r.stderr or r.stdout)[-3000:])

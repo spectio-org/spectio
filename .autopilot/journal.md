@@ -943,3 +943,12 @@ FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and 
 - #307 UI-19c merged (95838dc): the rest of runs.css on tokens, the raw-px lint covers the whole file, one shared `web/src/rawPx.ts` (closes CR-P3UI19B-03). Open minors CR-P3UI19C-01 to -03. Its Progress section goes to the next batch.
 - **Costs** (subagent tokens): UI-19c ~174k, B17 ~206k.
 - **Next:** Thomas's decisions above; the check.py `-q` gate gap; the UI-19 sweep is complete except graph.css (0.0.2).
+
+## 2026-11-18 — docs gate without -q (#310), launch shots (#311), Task 22 green, Task 23 built
+
+- Merged into autopilot/integration: #309 (the 2026-11-17 journal entry), #310 (`tools/docs/check.py` runs `mkdocs build --strict` without `-q`: a broken anchor now fails the gate; checked with an injected `ui-spec.md#no-such-anchor-zz`, removed), #311 (shots `app-launch-resources` and `app-launch-config-warning` retaken after FU-P3-125 and UI-19a, `shots.py` opens "Run resources"; closes DW-P3B17-03).
+- **Task 22 (#164).** Merged integration in (one conflict, `docs/progress/W5/P3-M5.md`). `tests/slurm/e2e_client.py` now talks to the server over its Unix socket only, read from `server.json` (socket must be `spectio.sock` in `db_dir`); TCP only in local mode on an unshared host. Inbox #123 overtaken by FU-P3-72. The Snakemake case hung: on slurm-mini `sacct` fails (no accounting) and the SLURM plugin 2.8.0 drops its jobs; `e2e.sh` now passes `--slurm-status-command squeue`. CI all green at `31a4880` (Nextflow 124 s, Snakemake 225 s). It touches `.github/workflows/pipelines-slurm.yml`: Thomas merges it.
+- **Inbox #156** (assumed, after 0.0.1): accounting detection for the Snakemake status command (FU-P3-106b) and a stall check for jobs gone from the queue (FU-P3-126).
+- **Task 23** (cancel and restart on slurm-mini) built on `autopilot/P3-t23` from `autopilot/P3-t22`: `e2e.sh cancel nextflow|snakemake` and `e2e.sh restart`, a tmux shim on `PATH` to count `new-session` calls, teardown after every case, FU-P3-68 minors CR-P3T22-02/-03/-06/-08 and part of SEC-P3T22-01. Not run on a cluster here (no Docker); code-reviewer and security-reviewer running. It also touches the workflow: Thomas merges it.
+- **Costs** (subagent tokens): Task 23 build ~255k.
+- **Next:** Task 23 review, PR and CI; Thomas: merge #164 then the Task 23 PR, DRAWINGS (#303), FU-P3-75, the 0.0.1 release notes, inbox #156; then a batch close (UI-19c, #310, #311, Task 22, Task 23) and the promotion.

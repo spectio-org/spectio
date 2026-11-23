@@ -2396,3 +2396,16 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Build plan:** FU-P3-124 and FU-P3-125 as P3 tasks in the next batch, before the 0.0.1 cut.
 - **Retaken screenshots:** the seven run-view shots taken on login1 are on Thomas's machine. They contain real `/scratch` paths, so they must be sanitised with `fixtures.yaml` before any use in the docs.
 - **Assumed (2026-11-11, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a), (2a), (3).
+
+### #156 · Assumed: a SLURM site without accounting, and a run whose jobs left the queue (Task 22, 2026-11-18)
+
+- **Covers:** the debugging of the Snakemake e2e case on slurm-mini (PR #164, Task 22, 2026-11-18). The run stayed `running` with 12 tasks running for 967 s while `squeue` was empty, and the case timed out.
+- **Cause.** slurm-mini runs without `slurmdbd`, so `sacct` exits 1 ("Slurm accounting storage is disabled"). The Snakemake SLURM plugin 2.8.0 picks `sacct` as its status command whenever `sacct` is on `PATH` (`_get_status_command_default`, [`__init__.py` v2.8.0](https://github.com/snakemake/snakemake-executor-plugin-slurm/blob/v2.8.0/snakemake_executor_plugin_slurm/__init__.py), lines 76–95 as read on 2026-11-18). After the failed queries it drops the jobs from tracking and the head waits with no message. With `--slurm-status-command squeue` the case passes (Nextflow 124 s, Snakemake 225 s, PR #164 at `31a4880`). The harness now passes that flag; the product does not.
+- **Findings:**
+  1. On a SLURM site without accounting, every Snakemake run Spectio launches would hang the same way. [schedulers-and-monitoring §3](../specs/schedulers-and-monitoring.md) plans to generate `--slurm-status-command sacct` (FU-P3-106b), which would make it certain.
+  2. Spectio did not notice the stall: it showed 12 tasks `running` while none of the run's jobs had been in `squeue` for more than 15 minutes.
+- **Open choices, each with the recommendation (assumed):**
+  1. (a) detect accounting once per site (`scontrol show config`, `AccountingStorageType`) and generate `--slurm-status-command squeue` where it is off, `sacct` where it is on; (b) refuse to launch Snakemake on such a site with a clear message; (c) do nothing. **(a)**, in FU-P3-106b, where the generated engine options are built; (b) is the fallback if `squeue` status proves unreliable. When: after 0.0.1, unless Thomas names a pilot site without `slurmdbd`.
+  2. (a) a stall check: a task Spectio holds as `running` whose SLURM job is in neither `squeue` nor `sacct` for longer than a grace period gets a warning on the run and in `spectio doctor`; (b) later. **(a)**, as a new follow-up FU-P3-126, after 0.0.1.
+- **Why a question:** both change what a 0.0.1 user sees on a site without accounting; Thomas decides whether one of them is a pre-0.0.1 item.
+- **Assumed (2026-11-18, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a) after 0.0.1, (2a) after 0.0.1.
