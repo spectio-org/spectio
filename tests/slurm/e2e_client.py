@@ -34,6 +34,7 @@ browser at the laptop's end of the tunnel does. With no socket in server.json (l
 the user uses) it uses 127.0.0.1 and the port. Never a proxy.
 """
 import argparse
+import errno
 import http.client
 import itertools
 import json
@@ -317,21 +318,39 @@ def server_pid(data_dir: str) -> int:
     return pid
 
 
+def _pidfd(pid: object) -> int | None:
+    """A pidfd of `pid`, or None on a kernel without pidfd_open: EL8's 4.18 answers ENOSYS to the
+    call, and a Python without it names no function at all. Any other error is raised."""
+    try:
+        return os.pidfd_open(pid)
+    except AttributeError:
+        return None
+    except OSError as exc:
+        if exc.errno != errno.ENOSYS:
+            raise
+        return None
+
+
 def kill_server(data_dir: str) -> int:
     """SIGKILL to the server of server.json, through a pidfd opened before the checks, so that a process
-    that took its PID meanwhile is never signalled (SEC-P3T23-03). Its PID."""
+    that took its PID meanwhile is never signalled (SEC-P3T23-03). On a kernel without pidfd_open
+    (EL8's 4.18) the signal goes through os.kill after the same checks. Its PID."""
     try:
         record = json.loads(Path(data_dir, "server.json").read_text())
-        fd = os.pidfd_open(record["pid"])
+        fd = _pidfd(record["pid"])
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise Failed(f"the server of {data_dir}/server.json cannot be signalled: {exc!r}") from exc
     try:
         pid = server_pid(data_dir)
         if pid != record["pid"]:
             raise Failed(f"server.json changed while it was read: PID {record['pid']}, then {pid}")
-        signal.pidfd_send_signal(fd, signal.SIGKILL)
+        if fd is None:
+            os.kill(pid, signal.SIGKILL)  # the pidfd-less fallback, after the same checks
+        else:
+            signal.pidfd_send_signal(fd, signal.SIGKILL)
     finally:
-        os.close(fd)
+        if fd is not None:
+            os.close(fd)
     return pid
 
 

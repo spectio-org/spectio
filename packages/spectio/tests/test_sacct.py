@@ -882,13 +882,16 @@ def fake_site(root: Path, scontrol: str) -> Path:
 
 @pytest.fixture
 def site(tmp_path: Path) -> Iterator[Path]:
-    """A bin directory of the fake pair, and `site_accounting`'s cache cleared before and
-    after the test: its answer is once per process, so no test may see another's."""
-    sacct.site_accounting.cache_clear()
+    """A bin directory of the fake pair, and `site_accounting`'s answers and warned reasons
+    cleared before and after the test: its definite answer is once per process, so no test
+    may see another's."""
+    sacct._ask_site.cache_clear()
+    sacct._WARNED.clear()
     root = tmp_path / "slurm" / "bin"
     root.mkdir(parents=True)
     yield root
-    sacct.site_accounting.cache_clear()
+    sacct._ask_site.cache_clear()
+    sacct._WARNED.clear()
 
 
 @pytest.mark.parametrize(("config", "expected"), [(DB_ON, True), (DB_OFF, False)])
@@ -901,10 +904,30 @@ def test_site_accounting_from_the_sibling_scontrol(site: Path, config: str, expe
     assert (site / "count").read_text() == "x\n"
 
 
+def test_site_accounting_retries_a_failed_scontrol(
+    site: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A failed `scontrol` answer is not kept for the server's life (login1: one transient
+    "scontrol gave no answer (exit 1)" left every later launch without --slurm-status-command):
+    the next call asks again, and the definite answer it then gets is the cached one, with the
+    one warning of the failure, not one per call."""
+    tried = (
+        f"if [ -f \"${{0%/*}}/tried\" ]; then printf '{DB_ON}'; "
+        f'else : > "${{0%/*}}/tried"; exit 1; fi'
+    )
+    path = fake_site(site, tried)
+    with caplog.at_level(logging.WARNING, logger="spectio.runner.sacct"):
+        assert sacct.site_accounting(path) is None  # the transient failure
+    assert sacct.site_accounting(path) is True  # asked again, and answered
+    assert sacct.site_accounting(path) is True  # the cached answer
+    assert (site / "count").read_text() == "x\nx\n"  # scontrol ran twice, not three times
+    assert [r.levelno for r in caplog.records] == [logging.WARNING]
+
+
 def test_site_accounting_unknown(site: Path, caplog: pytest.LogCaptureFixture) -> None:
     """No sacct recorded, a missing `scontrol`, a failing one, a hanging one: unknown, one
-    warning each naming why (the cache makes it once per process), and a timeout is killed,
-    never waited out."""
+    warning per reason however often it comes back (a repeated failure is asked again, not
+    warned of again), and a timeout is killed, never waited out."""
     with caplog.at_level(logging.WARNING, logger="spectio.runner.sacct"):
         assert sacct.site_accounting(None) is None  # `spectio init` found no sacct
         (site / "sacct").write_text("#!/bin/sh\nexit 0\n")
@@ -914,7 +937,7 @@ def test_site_accounting_unknown(site: Path, caplog: pytest.LogCaptureFixture) -
             started = time.monotonic()
             path = fake_site(site / f"bin{n}", body)
             assert sacct.site_accounting(path, timeout_s) is None
-            assert sacct.site_accounting(path, timeout_s) is None  # cached
+            assert sacct.site_accounting(path, timeout_s) is None  # asked again, warned once
             assert time.monotonic() - started < 5
     assert [r.levelno for r in caplog.records] == [logging.WARNING] * 4
     assert all("default status command" in r.getMessage() for r in caplog.records)
