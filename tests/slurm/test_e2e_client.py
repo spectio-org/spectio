@@ -444,7 +444,7 @@ class Transport(unittest.TestCase):
         listener.close()
         self.assertIsNone(c.tcp_listener(port))
         self.assertIsNone(c.tcp_listener(None))  # server.json names no port
-        for checks in (c.CHECKS, c.CANCEL_CHECKS, c.RESTART_CHECKS):
+        for checks in (c.CHECKS, c.CANCEL_CHECKS, c.CANCEL_PENDING_CHECKS, c.RESTART_CHECKS):
             self.assertIn("socket only, no TCP port", checks)
         self.assertNotIn("socket only, no TCP port", c.LOCAL_CHECKS)
 
