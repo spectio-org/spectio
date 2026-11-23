@@ -35,15 +35,27 @@ _PLUGINS_BLOCK = re.compile(r"\bplugins\s*\{[^}]*nf-spectio", re.DOTALL)
 # older ones never do, and Spectio then shows no task of a Snakemake SLURM run.
 MIN_SLURM_PLUGIN = (2, 8, 0)
 _PLUGIN_VERSION = re.compile(r"([0-9]+)\.([0-9]+)(?:\.([0-9]+))?")
-_PLUGIN_PROBE = (
-    "import importlib.metadata as m, os\n"
-    "try:\n"
-    "    version = m.version('snakemake-executor-plugin-slurm')\n"
-    "except m.PackageNotFoundError:\n"
-    "    version = 'none'\n"
-    "with open(os.environ['SPECTIO_PROBE_OUT'], 'w') as out:\n"
-    "    out.write(version)\n"
-)
+_PLUGIN_PROBE = """\
+import importlib.metadata as m, os, sys
+me = sys.modules.pop("sitecustomize")
+sys.path[:] = [p for p in sys.path if os.path.abspath(p or ".") != os.path.dirname(__file__)]
+try:  # the site's own sitecustomize still runs: EasyBuild's sets the module's search path
+    import sitecustomize  # noqa: F401
+except Exception:
+    sys.modules["sitecustomize"] = me
+try:
+    version = m.version("snakemake-executor-plugin-slurm")
+except m.PackageNotFoundError:
+    version = "none"
+path = os.environ["SPECTIO_PROBE_OUT"]
+try:  # only into this user's own directory, never through a link
+    if os.stat(os.path.dirname(path)).st_uid == os.getuid():
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW
+        with os.fdopen(os.open(path, flags, 0o600), "w") as out:
+            out.write(version)
+except OSError:
+    pass
+"""
 
 
 def _engine(name: str, cmd: str | None, flag: str, pattern: re.Pattern[str]) -> Result:
@@ -236,12 +248,12 @@ def _slurm_accounting(settings: Settings) -> Result:
 
 
 def _slurm_plugin(cmd: str) -> Result:
-    """The version of Snakemake's SLURM executor plugin, asked the way the Spectio logger
-    plugin reaches Snakemake: a sitecustomize.py on PYTHONPATH, so the Python that the
-    configured command itself runs answers — also when a wrapper script loads a module first,
-    or the command is a line like `pixi run snakemake`. MIN_SLURM_PLUGIN is the first that logs
-    job events, without which Spectio shows no task of a Snakemake SLURM run; whatever stands in
-    the way is a warning, so the line never fails a doctor run."""
+    """The version of Snakemake's SLURM executor plugin, asked through PYTHONPATH, the way the
+    head script gives Snakemake the Spectio logger plugin: a sitecustomize.py there makes the
+    Python that the configured command itself runs answer — also when a wrapper script loads a
+    module first, or the command is a line like `pixi run snakemake`. MIN_SLURM_PLUGIN is the
+    first that logs job events, without which Spectio shows no task of a Snakemake SLURM run;
+    whatever stands in the way is a warning, so the line never fails a doctor run."""
     check, want = "snakemake_slurm_plugin", ".".join(map(str, MIN_SLURM_PLUGIN))
     need = f"Snakemake SLURM runs need snakemake-executor-plugin-slurm {want} or later"
 
@@ -251,15 +263,19 @@ def _slurm_plugin(cmd: str) -> Result:
     with tempfile.TemporaryDirectory() as tmp:  # the probe, private and gone after the run
         (Path(tmp) / "sitecustomize.py").write_text(_PLUGIN_PROBE, encoding="utf-8")
         answer_file = Path(tmp) / "plugin-version"
-        run_login(
-            f'PYTHONPATH="$1${{PYTHONPATH:+:$PYTHONPATH}}" SPECTIO_PROBE_OUT="$2" {cmd} --version',
+        out = run_login(
+            'export PYTHONPATH="$1${PYTHONPATH:+:$PYTHONPATH}" SPECTIO_PROBE_OUT="$2"; '
+            f"{cmd} --version",
             tmp,
             str(answer_file),
         )
         try:
-            answer = answer_file.read_bytes()[:100].decode(errors="replace").strip()
+            with answer_file.open("rb") as file:
+                answer = file.read(100).decode(errors="replace").strip()
         except OSError:
             answer = None
+    if out.returncode == 124:
+        return unknown("timed out")
     if answer is None:
         return unknown("Snakemake's Python did not load the probe")
     if answer == "none":
