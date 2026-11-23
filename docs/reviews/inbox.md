@@ -2444,7 +2444,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 
 ### #159 · Assumed: Snakemake SLURM runs need executor plugin 2.8.0; Spectio reports the floor and does not enforce it (2026-11-24)
 
-- **Covers:** the Snakemake run on EMBL login1 that finished with 2 of 67 jobs seen, and 12 `output_unknown` spool drops. The bisect over Snakemake 9.23.1 to 9.27.1 and the SLURM plugin's source are in [schedulers §3.8](../specs/schedulers-and-monitoring.md#38-slurm-query-budget), under "SLURM executor plugin floor".
+- **Covers:** the Snakemake run on EMBL login1 that finished with 2 of 67 jobs seen, and 12 `output_unknown` spool drops. The bisect over Snakemake 9.23.1 to 9.27.1 and the SLURM plugin's source are in [architecture §13.4](../specs/architecture-plugins-and-packaging.md#134-supported-engine-versions), the bullet on `snakemake-executor-plugin-slurm`.
 - **Cause.** The EMBL module `snakemake/9.23.1-foss-2025b` ships `snakemake-executor-plugin-slurm` 2.6.1. Versions before 2.8.0 never log `job_info`, so the bridge has no job to report. With Snakemake 9.27.1 and plugin 2.8.0, the same run matched its golden counts.
 - **Open choices:**
   - (a) `spectio doctor` reports the plugin's version, with a `warn` under 2.8.0, and the install guide says how to install a recent Snakemake;
