@@ -1893,11 +1893,13 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - (c) wait.
 - **Recommendation:** (a).
 - **Decided (Thomas, 2026-11-08, same dialog):** (a), "Task 22 en CI": built after P3-fu66; its PR changes `.github/workflows/pipelines-slurm.yml`, so Thomas merges it.
+- **Closed (2026-11-23):** Thomas allowed the merge for the 0.0.1-rc1 session; Task 22 merged as #164 (f28d3106) and Task 23 as #313 (4124268d), both with the `e2e` job green. *Handled.*
 
 ### #122 · Decided: refresh the public demo PR #111, then Thomas merges it
 
 - **Covers:** PR #111 (P3-demo, `autopilot/P3-demo-pub`); FU-P3-29.
 - **Decided (Thomas, 2026-11-08, same dialog):** "Rafraîchir puis merger": `autopilot/integration` is merged into the branch and the recording is taken again, so the demo shows the current UI; Thomas merges it (it publishes demo data and changes `previews.yml`).
+- **Deferred (Thomas, 2026-11-23):** PR #111 waits until after 0.0.1-rc1 (262 commits behind); it stays open.
 
 ### #123 · Question: P1 Task 22 needs the API on SLURM, which #109 rule 5 (a) keeps unmounted
 
@@ -2409,3 +2411,17 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   2. (a) a stall check: a task Spectio holds as `running` whose SLURM job is in neither `squeue` nor `sacct` for longer than a grace period gets a warning on the run and in `spectio doctor`; (b) later. **(a)**, as a new follow-up FU-P3-126, after 0.0.1.
 - **Why a question:** both change what a 0.0.1 user sees on a site without accounting; Thomas decides whether one of them is a pre-0.0.1 item.
 - **Assumed (2026-11-18, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a) after 0.0.1, (2a) after 0.0.1.
+
+### #157 · Your part: repository and PyPI settings before the 0.0.1-rc1 publish (2026-11-23)
+
+- **Covers:** the release-publish PR (the real `pypi-publish.yml`); reviews SEC-REL-01, SEC-REL-04 and CR-REL-02 of 2026-11-23; [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases); [claim-package-names.md](../developer/claim-package-names.md).
+- **Why you:** these are repository settings, PyPI account actions and a publish, reserved by [triage-policy](../playbooks/triage-policy.md) (publishing, infrastructure). The workflow now publishes on `release: published`, so the job's ref is the tag `vX.Y.Z`, not `main`. What the security review read on 2026-11-23 (`gh api`, read-only): `pypi-spectio` and `pypi-snakemake-logger-plugin-spectio` allow every ref and let admins bypass; `pypi-spectio-sdk`, `pypi-spectio-server` and `release` do not exist; no ruleset; `main` requires a PR but no status check, and admins are not enforced. On PyPI, `spectio-sdk` and `spectio-server` are not held (404).
+- **To do, in this order:**
+  1. **Claim `spectio-sdk` and `spectio-server` now** with pending publishers (workflow `pypi-publish.yml`, environments `pypi-spectio-sdk` and `pypi-spectio-server`). A pending publisher holds nothing until it is used: the first rc1 publish creates the projects, so keep the gap short.
+  2. **Four environments** `pypi-spectio-sdk`, `pypi-spectio`, `pypi-spectio-server`, `pypi-snakemake-logger-plugin-spectio`: deployment "Selected branches and tags" with the single tag rule `v*`, admin bypass unticked. Optional: a required reviewer (yourself) for real releases.
+  3. **A tag ruleset** on `refs/tags/v*` blocking creation, update and deletion, with the release App as the only bypass actor (§12 "Bot token").
+  4. **`main` protection:** add the CI checks as required and enforce for admins. Without it, "the commit is on main" proves nothing.
+  5. **The `release` environment and the App** (§12 "Bot token"), then `RELEASE_PLEASE_ENABLED=true`.
+  6. **Merge the release-publish PR** (it changes `.github/workflows/`), then the release-please PR for `0.0.1-rc1` once the RC campaign is all PASS (`docs/reviews/RC1-acceptance.md`).
+- **Not blocked meanwhile:** the RC campaign, the promotion to `main` and the `Release-As` commit go on; only the publish waits on items 1 to 5.
+
