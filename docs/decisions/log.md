@@ -1478,3 +1478,17 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
 - **Out of scope for the RC:** `next-0.0.2`, #251 and #255 behind their flags, the #111 demo.
 - **Changed.** [inbox #121, #122, #157](../reviews/inbox.md); [roadmap](../roadmap/index.md) at the release step.
 
+
+## 2026-11-23 — Snakemake's SLURM status command from the site's accounting, in 0.0.1-rc1 (Thomas, #156)
+
+- **Context.** On a SLURM site without `slurmdbd`, the Snakemake SLURM plugin 2.8.0 still queries `sacct`, which fails, and the run hangs ([inbox #156](../reviews/inbox.md#156-assumed-a-slurm-site-without-accounting-and-a-run-whose-jobs-left-the-queue-task-22-2026-11-18)). Choice (1a) had been assumed for after 0.0.1.
+- **Decided (Thomas, 2026-11-23).** (1a) is in 0.0.1-rc1: the server reads `AccountingStorageType` from `scontrol show config` once per process and passes `--slurm-status-command squeue` (off) or `sacct` (on) to Snakemake SLURM launches; the user's own flag wins; unknown keeps the plugin's default. `spectio doctor` shows the result.
+- **Changed.** [schedulers-and-monitoring §3.8](../specs/schedulers-and-monitoring.md#38-slurm-query-budget); the `slurm-mini` e2e harness no longer passes `--slurm-status-command squeue` itself.
+
+## 2026-11-23 — Stall check for SLURM jobs gone from the queue, in 0.0.1-rc1 (FU-P3-126, inbox #156, Thomas)
+
+- **Decision.** Inbox #156 item 2 (a) moves from after 0.0.1 into 0.0.1-rc1 (Thomas, 2026-11-23). A task Spectio holds as `submitted` or `running` whose SLURM job has been in neither `squeue` nor `sacct` for 15 min (`GRACE_S`) gets a warning on its run, and `spectio doctor` reports such runs ([schedulers §3.9](../specs/schedulers-and-monitoring.md#39-jobs-gone-from-the-queue-the-stall-check)).
+- **Why.** On `slurm-mini` a Snakemake run showed 12 tasks `running` for 967 s with `squeue` empty, and Spectio said nothing (PR #164).
+- **Budget.** It fits §3.8: one `squeue --me --states=all` per poll cycle at most, never `-j` with a list, on a second `SacctLimiter` (for `slurmctld`) run by the accounting thread, with `sacct`'s timeout, output cap, absolute path and back-off; `sacct` asked once per job gone from `squeue`. It is the one periodic call, and it runs only while a live SLURM run was read in the last hour.
+- **Order of the tools.** `squeue` first, then `sacct` only for the jobs `squeue` no longer lists: one `squeue --me` covers every job of the user, where `sacct -j` takes 100 IDs per call, and on a site without accounting only `squeue` answers.
+- **[to be validated].** `MinJobAge` at EMBL (7200 s as given) and its default; `squeue --me` on EMBL's Slurm; pending array ranges.

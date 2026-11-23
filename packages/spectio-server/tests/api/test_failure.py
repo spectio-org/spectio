@@ -35,6 +35,7 @@ from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.projector.ingest import ingest
 from spectio_server.serve import boot
 from spectio_server.stages.freeze import StageSources
+from spectio_server.stall import GRACE_S, StallWatch
 from spectio_server.store.db import open_db
 from spectio_server.store.schema import attempts, events, runs, tasks
 from spectio_server.store.writer import Writer
@@ -990,6 +991,45 @@ def test_sacct_live_run_asks_failures_and_opened_panel(
     task_items(client)  # one sweep: a second view queues nothing again
     assert acct.step() and sorted(fakebin.ids()[1:]) == ["8812401", "8812421"]
     assert not acct.step()
+
+
+def test_stall_on_the_run_detail(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """FU-P3-126 (schedulers §3.9): a live SLURM run whose submitted job squeue no longer
+    lists, and sacct has no row for, carries `stall` once past the grace; sacct is asked for
+    that job once, and a run off SLURM is never watched."""
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    clock = Clock()
+    clock.now = time.time()
+    watch = StallWatch(
+        settings.runs_root,
+        None,
+        lambda r: {j for j, row in acct.rows(r).items() if row is not None},
+        call=set,
+        interval_s=0,
+        clock=clock,
+    )
+    client.app.state.stall = watch  # type: ignore[attr-defined]
+    run = Run(settings, writer, slurm=True)
+    workdir = run.paths.work_dir.joinpath(*HASHES[0])
+    workdir.mkdir(parents=True)
+    common = {"process": "ALIGN", "tag": "S00", "attempt": 1}
+    run.push(
+        "nextflow.onTaskSubmit", **common, trace={"workdir": str(workdir), "native_id": "8812401"}
+    )
+    assert detail(client)["stall"] is None  # watched now
+    assert watch.step() and watch.missing(RUN) == ["8812401"]
+    assert detail(client)["stall"] is None  # within the grace; sacct is asked for the job
+    assert acct.step() and fakebin.ids() == ["8812401"]
+    clock.now += GRACE_S + 1
+    assert watch.step()
+    assert detail(client)["stall"] is None  # this read confirms the task still running
+    assert watch.step()
+    found = detail(client)["stall"]
+    assert found is not None and found["tasks"] == 1
+    run.end()
+    assert detail(client)["stall"] is None  # ended: forgotten
+    assert json.loads((settings.runs_root / ".stalled.json").read_text())["runs"] == {}
 
 
 def test_req15_cache_file(

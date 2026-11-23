@@ -58,6 +58,8 @@ up() { # mini|site|rest
     tmux -V'
   sind exec "$profile" -- sinfo -V
   sind exec "$profile" -- sinfo -o '%P %a %l %D %N %c %m'
+  # The site's accounting as the server reads it (FU-P3-106b, sacct.parse_accounting).
+  sind exec "$profile" -- scontrol show config | grep AccountingStorageType || echo "no AccountingStorageType line"
   [ "$profile" = mini ] || sind exec "$profile" -- sacctmgr -n -P show assoc format=cluster,account,user,maxjobs
 }
 

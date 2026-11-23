@@ -37,6 +37,7 @@ from spectio_server.files.taskfiles import head_logs
 from spectio_server.resume import command, resume_refusal, resumed_as
 from spectio_server.stages.freeze import FROZEN as STAGES_FROZEN
 from spectio_server.stages.state import RunFacts, checkpoint_open, process_status
+from spectio_server.stall import run_stall
 from spectio_server.store.schema import (
     RUN_STATES,
     TASK_STATES,
@@ -263,6 +264,7 @@ def context(request: Request) -> Context:
         READ_TIMEOUT_S,
         state.settings,
         state.measures,
+        state.stall,
     )
 
 
@@ -292,6 +294,7 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
         **found,
         "params": params or {},
         "stages_note": note if isinstance(note, str) else None,
+        "stall": run_stall(conn, row, ctx),
         "failures": failures,
         "failures_total": total,
         "command": command(conn, row, ctx.settings),
