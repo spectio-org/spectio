@@ -3195,6 +3195,16 @@
             ],
             "title": "Stages Note"
           },
+          "stall": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Stall"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "started_at": {
             "anyOf": [
               {
@@ -3264,6 +3274,7 @@
           "summary",
           "params",
           "stages_note",
+          "stall",
           "failures",
           "failures_total",
           "command",
@@ -4199,6 +4210,25 @@
           "items"
         ],
         "title": "StageList",
+        "type": "object"
+      },
+      "Stall": {
+        "description": "Tasks held as running whose SLURM jobs are gone from squeue and sacct past the grace\nperiod, and when the last of them was seen (FU-P3-126, schedulers \u00a73.9).",
+        "properties": {
+          "since": {
+            "title": "Since",
+            "type": "string"
+          },
+          "tasks": {
+            "title": "Tasks",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tasks",
+          "since"
+        ],
+        "title": "Stall",
         "type": "object"
       },
       "Summary": {

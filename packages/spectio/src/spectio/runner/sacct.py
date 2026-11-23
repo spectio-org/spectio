@@ -154,17 +154,17 @@ def check_ids(ids: Iterable[str]) -> list[str]:
     return found
 
 
-def check_tool(path: Path) -> None:
-    """The stored `sacct`: an absolute path to a regular file that only its owner (root or the
-    user) can write. An OSError of the stat itself (ENOENT, EIO, ESTALE) may pass, so it is
-    raised as is, not Refused: the call is retried (CR-P3FU106A-04)."""
+def check_tool(path: Path, tool: str = "sacct") -> None:
+    """The stored `sacct` (or `squeue`, FU-P3-126): an absolute path to a regular file that
+    only its owner (root or the user) can write. An OSError of the stat itself (ENOENT, EIO,
+    ESTALE) may pass, so it is raised as is, not Refused: the call is retried (CR-P3FU106A-04)."""
     if not path.is_absolute():
-        raise Refused(f"the sacct path {path} is not absolute")
+        raise Refused(f"the {tool} path {path} is not absolute")
     st = os.stat(path)
     if not stat.S_ISREG(st.st_mode) or st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
-        raise Refused(f"sacct at {path} is not a regular file, or others can write it")
+        raise Refused(f"{tool} at {path} is not a regular file, or others can write it")
     if st.st_uid not in (0, os.geteuid()):
-        raise Refused(f"sacct at {path} belongs to uid {st.st_uid}")
+        raise Refused(f"{tool} at {path} belongs to uid {st.st_uid}")
 
 
 def sacct_env(path: Path) -> dict[str, str]:
