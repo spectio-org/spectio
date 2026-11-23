@@ -198,13 +198,13 @@ jobs:
           npm --prefix web run build
           npm --prefix tests/e2e ci --no-audit --no-fund --ignore-scripts
           (cd tests/e2e && npx --no-install playwright install --with-deps chromium)
-      - name: Install Snakemake (hash-locked) and the Spectio logger plugin
-        # dev/snakemake.lock.txt pins every package with its hash (§1); the logger plugin comes from this checkout.
+      - name: Install Snakemake (hash-locked)
+        # dev/snakemake.lock.txt pins every package with its hash (§1). The Spectio logger is not installed:
+        # the head script puts it on PYTHONPATH from the bridges directory that serve-local.sh fills.
         run: |
           . dev/versions.env
           uv venv "$RUNNER_TEMP/smk" --python "$PYTHON_VERSION"
           uv pip install --python "$RUNNER_TEMP/smk/bin/python" --require-hashes -r dev/snakemake.lock.txt
-          uv pip install --python "$RUNNER_TEMP/smk/bin/python" --no-deps ./engine-bridges/snakemake-logger-plugin-spectio
           "$RUNNER_TEMP/smk/bin/snakemake" --version
       - name: Start Spectio (local mode)
         # The head runs the engine through the login shell (bash -l), whose PATH lacks setup-nextflow's
