@@ -334,7 +334,8 @@ def _pidfd(pid: object) -> int | None:
 def kill_server(data_dir: str) -> int:
     """SIGKILL to the server of server.json, through a pidfd opened before the checks, so that a process
     that took its PID meanwhile is never signalled (SEC-P3T23-03). On a kernel without pidfd_open
-    (EL8's 4.18) the signal goes through os.kill after the same checks. Its PID."""
+    (EL8's 4.18) the signal goes through os.kill after the same checks, which leaves a short race: a
+    process that takes the PID between the checks and the kill would get the signal. Its PID."""
     try:
         record = json.loads(Path(data_dir, "server.json").read_text())
         fd = _pidfd(record["pid"])

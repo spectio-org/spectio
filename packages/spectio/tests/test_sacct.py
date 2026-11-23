@@ -887,11 +887,13 @@ def site(tmp_path: Path) -> Iterator[Path]:
     may see another's."""
     sacct._ask_site.cache_clear()
     sacct._WARNED.clear()
+    sacct._FAILED_AT.clear()
     root = tmp_path / "slurm" / "bin"
     root.mkdir(parents=True)
     yield root
     sacct._ask_site.cache_clear()
     sacct._WARNED.clear()
+    sacct._FAILED_AT.clear()
 
 
 @pytest.mark.parametrize(("config", "expected"), [(DB_ON, True), (DB_OFF, False)])
@@ -918,6 +920,9 @@ def test_site_accounting_retries_a_failed_scontrol(
     path = fake_site(site, tried)
     with caplog.at_level(logging.WARNING, logger="spectio.runner.sacct"):
         assert sacct.site_accounting(path) is None  # the transient failure
+        assert sacct.site_accounting(path) is None  # within RETRY_S: not asked again
+    assert (site / "count").read_text() == "x\n"
+    sacct._FAILED_AT[path] -= sacct.RETRY_S  # RETRY_S later
     assert sacct.site_accounting(path) is True  # asked again, and answered
     assert sacct.site_accounting(path) is True  # the cached answer
     assert (site / "count").read_text() == "x\nx\n"  # scontrol ran twice, not three times

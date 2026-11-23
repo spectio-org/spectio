@@ -279,6 +279,8 @@ class _GaveUp(Exception):
 
 
 _WARNED: set[str] = set()  # the reasons already warned of: a retried failure does not warn again
+RETRY_S = 300.0  # after a failure, scontrol is not asked again for this long
+_FAILED_AT: dict[Path, float] = {}  # sacct path -> time.monotonic() of its last failure
 
 
 def _gives_up(why: str) -> None:
@@ -336,14 +338,20 @@ def site_accounting(sacct: Path | None, timeout_s: float = TIMEOUT_S) -> bool | 
     told — no sacct recorded, a refused or missing `scontrol`, a non-zero exit, a timeout, too
     much output, no config dump — and one warning per reason then names why. A definite answer
     is cached once per process; a failure is not (login1: one transient scontrol error must
-    not leave every later launch without `--slurm-status-command`), but its reason warns once
-    however often it comes back. The call is `sacct_jobs`'s own, bounded the same way."""
+    not leave every later launch without `--slurm-status-command`), but it is asked again only
+    `RETRY_S` later, so a hung scontrol does not hold every launch for `timeout_s`, and its
+    reason warns once however often it comes back. The call is `sacct_jobs`'s own, bounded the
+    same way."""
     if sacct is None:
         _gives_up("no sacct path was recorded by spectio init")
         return None
+    failed_at = _FAILED_AT.get(sacct)
+    if failed_at is not None and time.monotonic() - failed_at < RETRY_S:
+        return None  # its reason was warned of when it failed
     try:
         return _ask_site(sacct, timeout_s)
     except _GaveUp as exc:
+        _FAILED_AT[sacct] = time.monotonic()
         _gives_up(str(exc))
         return None
 
