@@ -166,6 +166,15 @@ test("no stages note when the run has none", async () => {
   expect(screen.queryByRole("note")).toBeNull();
 });
 
+test("a stalled run says its SLURM jobs are gone from squeue and sacct (FU-P3-126)", async () => {
+  detail({}, {
+    [URL_]: { ...DETAIL, ...run(), stall: { tasks: 12, since: "2026-11-23T10:30:00+00:00" } },
+  });
+  app(`/runs/${ID}`);
+  const note = await screen.findByText(/^12 tasks are running but their SLURM jobs are gone from squeue and sacct since \d\d:\d\d/);
+  expect(note).toHaveAttribute("role", "status");
+});
+
 test("on a failed run the tasks filter starts at failed", async () => {
   const mock = detail({ state: "failed", ended_at: "2026-10-31T08:00:00+00:00" });
   app(`/runs/${ID}`);
@@ -1057,4 +1066,20 @@ test("UI-11: a log not written yet is an empty state, a failed read an error wit
   const before = fetched(mock).filter((u) => u.endsWith("logs?source=engine")).length;
   await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
   await waitFor(() => expect(fetched(mock).filter((u) => u.endsWith("logs?source=engine")).length).toBe(before + 1));
+});
+
+test("D-09: a 409 run-dir-unreachable on the Logs tab names the directory it tried", async () => {
+  detail({}, {
+    [`${URL_}/logs?source=engine`]: () =>
+      json(409, {
+        type: "/problems/run-dir-unreachable",
+        title: "Run directory not reachable",
+        status: 409,
+        detail: "Run directory not reachable: /scratch/gone/run_x/launch",
+      }),
+  });
+  app(`/runs/${ID}?tab=logs`);
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent(/The engine log could not be read: Run directory not reachable: \/scratch\/gone\/run_x\/launch/);
+  expect(document.body.textContent).not.toMatch(/cleaned/i);
 });

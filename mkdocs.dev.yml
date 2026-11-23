@@ -118,5 +118,8 @@ nav:
           - "Spike: MetroFlow graph": research/spike-metroflow-2026-11-10.md
           - MetroFlow gap: research/metroflow-gap-2026-11-11.md
           - "Spike: module run": research/spike-module-run-2026-11-10.md
+          - Bilayers evaluation: research/bilayers-evaluation-2026-11-23.md
+          - Fractal evaluation: research/fractal-evaluation-2026-11-23.md
+          - Metro-map graph view evaluation: research/metro-map-evaluation-2026-11-23.md
   - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md

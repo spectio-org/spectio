@@ -1,6 +1,7 @@
 """`spectio doctor` (P1 Task 8, architecture §7.3 and §13.8, G6 of P2 §10.7): one
 `ok|warn|fail <check> <detail>` line per check, exit 1 on any `fail`."""
 
+import json
 import os
 import shutil
 import socket
@@ -11,6 +12,7 @@ from typing import Any
 
 import pytest
 
+from spectio.cli import doctor as doctor_cli
 from spectio.cli.doctor import run_doctor, uv_version
 from spectio.config import Settings, write_config
 from spectio.runner.rundir import runs_disk
@@ -391,6 +393,118 @@ def test_doctor_reports_runs_disk(
         f"warn runs_disk {runs} (not created yet, measured at {home}) is on a nearly full file "
         f"system (30.0 GiB free, 97% used): {FIX}"
     )
+
+
+CHECKED = 1_794_128_400.0  # 2026-11-08T09:00:00Z
+SINCE = CHECKED - 600  # the job was last seen ten minutes before the check
+
+
+def write_stall(runs: Path, body: dict[str, Any]) -> None:
+    """The stall file as the server's watch writes it (FU-P3-126, schedulers §3.9)."""
+    file = runs / ".stalled.json"
+    file.write_text(json.dumps(body))
+    file.chmod(0o600)
+
+
+def test_doctor_stalled_runs_none(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """FU-P3-126: no runs root yet, or no stall file, is no stalled run."""
+    settings = configured(home, executor="local")
+    assert line(doctor(capsys, settings)[1], "stalled_runs") == "ok stalled_runs none"
+    (home / "spectio-runs").mkdir(mode=0o700)
+    assert line(doctor(capsys, settings)[1], "stalled_runs") == "ok stalled_runs none"
+
+
+def test_doctor_stalled_runs_warn(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """FU-P3-126: each stalled run, at most five, then how many more, and when checked."""
+    settings = configured(home, executor="local")
+    runs = home / "spectio-runs"
+    runs.mkdir(mode=0o700)
+    write_stall(
+        runs, {"v": 1, "checked": CHECKED, "runs": {"run_x": {"tasks": 12, "since": SINCE}}}
+    )
+    assert line(doctor(capsys, settings)[1], "stalled_runs") == (
+        "warn stalled_runs run_x: 12 tasks running, their SLURM jobs gone from squeue and "
+        "sacct since 2026-11-08 08:50 UTC (checked 2026-11-08 09:00 UTC)"
+    )
+    write_stall(
+        runs,
+        {
+            "v": 1,
+            "checked": CHECKED,
+            "runs": {f"run_{n}": {"tasks": 1, "since": SINCE} for n in range(7)},
+        },
+    )
+    assert line(doctor(capsys, settings)[1], "stalled_runs") == (
+        "warn stalled_runs "
+        + "; ".join(
+            f"run_{n}: 1 tasks running, their SLURM jobs gone from squeue and sacct "
+            f"since 2026-11-08 08:50 UTC"
+            for n in range(5)
+        )
+        + "; +2 more (checked 2026-11-08 09:00 UTC)"
+    )
+
+
+def test_doctor_stalled_runs_refused(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """FU-P3-126: a stall file that cannot be read or parsed is a warning, never a failure."""
+    settings = configured(home, executor="local")
+    runs = home / "spectio-runs"
+    runs.mkdir(mode=0o700)
+    write_stall(runs, {"v": 1, "checked": CHECKED, "runs": {"run_x": {"tasks": 1, "since": SINCE}}})
+    (runs / ".stalled.json").chmod(0o622)  # others can write it: refused (req. 10)
+    found = line(doctor(capsys, settings)[1], "stalled_runs")
+    assert found.startswith("warn stalled_runs .stalled.json not read:")
+    write_stall(runs, {"v": 2, "checked": CHECKED, "runs": {}})  # not a stall file of version 1
+    assert line(doctor(capsys, settings)[1], "stalled_runs").startswith(
+        "warn stalled_runs .stalled.json not read:"
+    )
+    for body in (  # out of range: a warning, not a traceback (SEC-P3FU126-STALL-01)
+        {"v": 1, "checked": CHECKED, "runs": {"run_x": {"tasks": 1, "since": 1e20}}},
+        {"v": 1, "checked": float("inf"), "runs": {}},
+        {"v": 1, "checked": CHECKED, "runs": {"run_x": {"tasks": float("inf"), "since": SINCE}}},
+    ):
+        write_stall(runs, body)
+        assert line(doctor(capsys, settings)[1], "stalled_runs").startswith(
+            "warn stalled_runs .stalled.json not read:"
+        )
+
+
+@pytest.mark.parametrize(
+    ("found", "expected"),
+    [
+        (True, "ok slurm_accounting on: Snakemake polls its SLURM jobs with sacct"),
+        (False, "ok slurm_accounting off: Snakemake polls its SLURM jobs with squeue"),
+        (
+            None,
+            "warn slurm_accounting unknown (the reason is logged as a warning): "
+            "Snakemake keeps its SLURM plugin's default",
+        ),
+    ],
+)
+def test_doctor_slurm_accounting(
+    home: Path,
+    fakebin: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    found: bool | None,
+    expected: str,
+) -> None:
+    """FU-P3-106b (inbox #156 item 1): on a SLURM server one line says what Snakemake's SLURM
+    plugin will poll its jobs with, once the site's accounting is known — or not."""
+    monkeypatch.setattr(doctor_cli, "site_accounting", lambda *args: found)
+    _, lines = doctor(capsys, configured(home, fakebin, executor="slurm"))
+    assert line(lines, "slurm_accounting") == expected
+
+
+def test_doctor_local_has_no_slurm_accounting_line(
+    home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A local server has no SLURM: no accounting line, and no `scontrol` is ever asked."""
+    monkeypatch.setattr(
+        doctor_cli, "site_accounting", lambda *args: pytest.fail("scontrol asked on a local server")
+    )
+    _, lines = doctor(capsys, configured(home, fakebin, executor="local"))
+    assert not [x for x in lines if x.split()[1] == "slurm_accounting"]
 
 
 def test_req18_file_doctor_prints_path_state_default(

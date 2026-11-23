@@ -1238,6 +1238,12 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Context.** Cloud sessions run on cgroup v1, so sind and `slurm-mini` do not start there; a native Slurm 23.11 with slurmdbd, installed from the Ubuntu packages, ran in the session and checked FU-P3-53 by hand ([inbox #120](../reviews/inbox.md#120-question-devslurmnativesh-native-slurm-in-cloud-sessions-fu-p3-66)).
 - **Decided (Thomas, 2026-11-08, in the session's question dialog):** build `dev/slurm/native.sh` (FU-P3-66, step P3-fu66) with a security review; then P1 Task 22 in CI, whose PR Thomas merges ([#121](../reviews/inbox.md#121-question-p1-task-22-slurm-mini-end-to-end-in-ci)); refresh PR #111 and leave its merge to Thomas ([#122](../reviews/inbox.md#122-decided-refresh-the-public-demo-pr-111-then-thomas-merges-it)).
 
+## 2026-11-08 — The API stays unmounted on SLURM; Task 22 waits (inbox #123, Thomas)
+
+- **Context.** P1 Task 22's `e2e` job launches through `POST /api/v1/runs`, which answers `404` on SLURM and shared hosts by [#109](../reviews/inbox.md#109-assumed-writes-need-origin-and-json-as-built-p3-task-16) rule 5 (a); on the CI run of PR #164 both engines printed `RESULT e2e-launch-<engine> fail` for that reason only ([inbox #123](../reviews/inbox.md#123-question-p1-task-22-needs-the-api-on-slurm-which-109-rule-5-a-keeps-unmounted)).
+- **Decided (Thomas, 2026-11-08, in the session's question dialog): (b), keep it unmounted** until the by-hand check on a real login node (W6). No product change. PR #164 waits for Thomas (keep open, or merge with the `e2e` entry off, his call); step P3-t22 stays `waiting_human` and M5 stays open.
+- **Note 2026-11-18.** Overtaken by the [socket decision](#2026-11-08-on-slurm-and-shared-hosts-the-api-is-served-only-on-a-unix-socket-inbox-109-rule-5-thomas) once FU-P3-72 was built: the API is mounted on SLURM behind the socket only, and Task 22's client now uses that socket ([#123](../reviews/inbox.md#123-question-p1-task-22-needs-the-api-on-slurm-which-109-rule-5-a-keeps-unmounted)). Thomas still merges PR #164.
+
 ## 2026-11-08 — Screenshots of each round for Thomas (inbox #124, Thomas)
 
 - **Decided (Thomas, 2026-11-08, in the session):** after each P3 task or batch, the orchestrator sends Thomas screenshots of the improvements: the real UI for screen changes, a terminal capture for CLI, test and CI changes ([autopilot §12](../playbooks/autopilot.md#12-screenshots-of-each-round-for-thomas-thomas-2026-11-08), [inbox #124](../reviews/inbox.md#124-decided-screenshots-of-each-rounds-improvements)).
@@ -1459,3 +1465,30 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
 - **Why.** `picomatch` is dev-only (`"dev": true` in the lockfile). Vite and Vitest use it to match globs from our own config, on the build machine and in CI, and it is not in the shipped web bundle.
 - **Revisit.** Remove the entry and update the lockfile as soon as a fixed `picomatch` is released, or earlier if it stops being dev-only.
 - **[to be validated].** The nature of the advisory was not read.
+
+## 2026-11-23 — 0.0.1-rc1: scope, campaign and pre-release (Thomas)
+
+- **Decided (Thomas, 2026-11-23):**
+    - A full test campaign, then `0.0.1-rc1` as a GitHub pre-release and on PyPI as `0.0.1rc1`. No tag while a cell of `docs/reviews/RC1-acceptance.md` is FAIL.
+    - #156 enters the RC: accounting detection for the Snakemake status command (FU-P3-106b) and the stall check for jobs gone from `squeue` and `sacct` (FU-P3-126).
+    - The `DRAWINGS` allowlist of `web/src/icons.test.tsx` (#303) is accepted.
+    - Old PRs: #1 closed (already covered by `docs.yml` with full history), #187 redone as #314 on the current integration branch (a workflow change, so it waits for Thomas), #111 deferred until after the RC, #162 left to Thomas.
+    - The session may merge #164 and #313 (workflow changes) once green.
+    - Next to the RC, three evaluations become issues after a fact-check: Bilayers and Fractal, custom tools as modules, and the metro-map graph view.
+- **Out of scope for the RC:** `next-0.0.2`, #251 and #255 behind their flags, the #111 demo.
+- **Changed.** [inbox #121, #122, #157](../reviews/inbox.md); [roadmap](../roadmap/index.md) at the release step.
+
+
+## 2026-11-23 — Snakemake's SLURM status command from the site's accounting, in 0.0.1-rc1 (Thomas, #156)
+
+- **Context.** On a SLURM site without `slurmdbd`, the Snakemake SLURM plugin 2.8.0 still queries `sacct`, which fails, and the run hangs ([inbox #156](../reviews/inbox.md#156-assumed-a-slurm-site-without-accounting-and-a-run-whose-jobs-left-the-queue-task-22-2026-11-18)). Choice (1a) had been assumed for after 0.0.1.
+- **Decided (Thomas, 2026-11-23).** (1a) is in 0.0.1-rc1: the server reads `AccountingStorageType` from `scontrol show config` once per process and passes `--slurm-status-command squeue` (off) or `sacct` (on) to Snakemake SLURM launches; the user's own flag wins; unknown keeps the plugin's default. `spectio doctor` shows the result.
+- **Changed.** [schedulers-and-monitoring §3.8](../specs/schedulers-and-monitoring.md#38-slurm-query-budget); the `slurm-mini` e2e harness no longer passes `--slurm-status-command squeue` itself.
+
+## 2026-11-23 — Stall check for SLURM jobs gone from the queue, in 0.0.1-rc1 (FU-P3-126, inbox #156, Thomas)
+
+- **Decision.** Inbox #156 item 2 (a) moves from after 0.0.1 into 0.0.1-rc1 (Thomas, 2026-11-23). A task Spectio holds as `submitted` or `running` whose SLURM job has been in neither `squeue` nor `sacct` for 15 min (`GRACE_S`) gets a warning on its run, and `spectio doctor` reports such runs ([schedulers §3.9](../specs/schedulers-and-monitoring.md#39-jobs-gone-from-the-queue-the-stall-check)).
+- **Why.** On `slurm-mini` a Snakemake run showed 12 tasks `running` for 967 s with `squeue` empty, and Spectio said nothing (PR #164).
+- **Budget.** It fits §3.8: one `squeue --me --states=all` per poll cycle at most, never `-j` with a list, on a second `SacctLimiter` (for `slurmctld`) run by the accounting thread, with `sacct`'s timeout, output cap, absolute path and back-off; `sacct` asked once per job gone from `squeue`. It is the one periodic call, and it runs only while a live SLURM run was read in the last hour.
+- **Order of the tools.** `squeue` first, then `sacct` only for the jobs `squeue` no longer lists: one `squeue --me` covers every job of the user, where `sacct -j` takes 100 IDs per call, and on a site without accounting only `squeue` answers.
+- **[to be validated].** `MinJobAge` at EMBL (7200 s as given) and its default; `squeue --me` on EMBL's Slurm; pending array ranges.

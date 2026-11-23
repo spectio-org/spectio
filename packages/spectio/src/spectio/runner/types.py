@@ -107,6 +107,8 @@ class LaunchSpec:
     `launch_dir` holds the launch's `.spectio/`; the engine runs there too, except for a Resume,
     which runs in `resume_of`'s directories. `target` limits the run to one module or one rule
     (api §5.10); a registry module's `location` is its name, every other one a directory.
+    `slurm_accounting` is the site's accounting as `site_accounting` found it (FU-P3-106b),
+    None when unknown or not a SLURM Snakemake launch.
     """
 
     run_id: str
@@ -128,6 +130,7 @@ class LaunchSpec:
     target: RunTarget | None = None
     default_resources: DefaultResources | None = None
     config_file: ExtraFile | None = None
+    slurm_accounting: bool | None = None
 
     @property
     def engine_dir(self) -> Path:

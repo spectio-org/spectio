@@ -27,7 +27,7 @@ from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import Connection, func, select
@@ -50,6 +50,9 @@ from spectio_server.files.taskfiles import (
 )
 from spectio_server.projector.runs import TERMINAL as RUN_ENDED
 from spectio_server.store.schema import attempts, runs, tasks
+
+if TYPE_CHECKING:
+    from spectio_server.stall import StallWatch
 
 log = logging.getLogger(__name__)
 
@@ -262,6 +265,15 @@ class _CachedRow(BaseModel):
     alloc_tres: str | None = Field(None, pattern=r"^[A-Za-z0-9_.,:/=+-]{1,1024}$")
 
 
+class Poller(Protocol):
+    """A consumer of the accounting thread's pace (the stall watch, FU-P3-126): asked for its
+    wait, and stepped after the thread's own step, when either is due."""
+
+    def wait_s(self) -> float | None: ...
+
+    def step(self) -> bool: ...
+
+
 class Accounting:
     """`sacct` for the whole server (dev-env §15.3 req. 15): one `SacctLimiter`, run by a thread
     of its own, so a call that hangs holds neither the writer nor a request until its timeout
@@ -320,6 +332,7 @@ class Accounting:
         self._wake = threading.Event()
         self._start_thread = start_thread
         self._thread: threading.Thread | None = None
+        self.pollers: list[Poller] = []  # stepped with the limiter, on the thread (FU-P3-126)
 
     @classmethod
     def from_settings(cls, settings: Settings, **kwargs: Any) -> "Accounting":
@@ -582,15 +595,27 @@ class Accounting:
             self._thread = threading.Thread(target=self._run, name="spectio-sacct", daemon=True)
             self._thread.start()
 
+    def kick(self) -> None:
+        """Start the thread and wake it: a poller has just been given work (FU-P3-126)."""
+        self._ensure_thread()
+        self._wake.set()
+
     def _run(self) -> None:
         while True:
-            wait = self._limiter.wait_s()
+            waits = [
+                w
+                for w in (self._limiter.wait_s(), *(p.wait_s() for p in self.pollers))
+                if w is not None
+            ]
+            wait = min(waits) if waits else None
             if wait is None or wait > 0:
                 self._wake.wait(wait)
                 self._wake.clear()
                 continue
             try:
                 self.step()
+                for poller in self.pollers:
+                    poller.step()  # each is a no-op when its own call is not due
             except Exception:  # never ends the thread: the next call is tried
                 log.exception("sacct step failed")
                 time.sleep(1)
@@ -689,6 +714,7 @@ class Context:
     timeout_s: float
     settings: Settings  # for the run's command (P1 Task 30)
     measures: Measures
+    stall: "StallWatch | None" = None  # the server's watch, when it has one (FU-P3-126)
 
 
 def on_slurm(environment: dict[str, Any] | None, settings: Settings) -> bool:

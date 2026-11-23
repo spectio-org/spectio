@@ -165,6 +165,7 @@ const SAMPLES: Record<string, object> = {
     ...run,
     params: {},
     stages_note: null,
+    stall: null,
     failures: [failure],
     failures_total: 1,
     command: null,

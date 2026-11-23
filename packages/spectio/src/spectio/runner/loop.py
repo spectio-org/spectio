@@ -49,6 +49,7 @@ from spectio.runner.rundir import (
     runs_disk,
     write_file,
 )
+from spectio.runner.sacct import site_accounting
 from spectio.runner.spool import SPOOL_REFUSED, SPOOL_STALLED, try_read_spool
 from spectio.runner.types import (
     Command,
@@ -324,6 +325,7 @@ class RunnerLoop:
             engines = self.settings.engines
             cmd = engines.nextflow_cmd if ref.engine == "nextflow" else engines.snakemake_cmd
             info = check_engine(ref.engine, cmd)
+            fields = launch_fields(environment)  # the run's own, never the server's (req. 18)
             spec = LaunchSpec(
                 run_id=ref.run_id,
                 launch_n=ref.launch_n,
@@ -334,13 +336,20 @@ class RunnerLoop:
                 work_dir=paths.work_dir,
                 profiles=payload.profiles,
                 params=payload.params,
-                **launch_fields(environment),  # the run's own, never the server's (req. 18)
+                **fields,
                 nxf_opts=engines.nxf_opts,
                 extra_args=engines.extra_args.get(ref.engine, []),
                 resume_of=resume,
                 target=payload.target,
                 default_resources=payload.default_resources,
                 config_file=extra_file(payload),
+                # Only the Snakemake SLURM plugin has a status command to set (FU-P3-106b);
+                # asked once per process, whatever the answer.
+                slurm_accounting=(
+                    site_accounting(self.settings.slurm.sacct)
+                    if ref.engine == "snakemake" and fields["slurm"] is not None
+                    else None
+                ),
             )
             status, detail = runs_disk(self.settings.runs_root)
             if status == "warn":  # never refused: the engine may still fit (FU-P3-74)

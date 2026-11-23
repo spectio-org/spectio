@@ -83,6 +83,7 @@ spectio_server/stages/detect_nf.py
 spectio_server/stages/detect_smk.py
 spectio_server/stages/freeze.py
 spectio_server/stages/state.py
+spectio_server/stall.py
 spectio_server/static.py
 spectio_server/store/__init__.py
 spectio_server/store/db.py
