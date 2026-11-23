@@ -22,3 +22,8 @@ CODE  step=P3-ui19c  review=approve b/M/m=0/0/3  security=skipped b/M/m=0/0/0  r
 - CR-P3UI19B-03 is closed: `web/src/rawPx.ts` holds the shared `rawPx(css, allowed)`.
 - ui-spec §12.15 is not changed: the allowlist rule is the same as UI-19a's CLEARANCES.
 - The temporary `web/node_modules` symlink was removed.
+
+## After the merge (2026-11-18)
+
+Merged as [PR #307](https://github.com/spectio-org/spectio/pull/307), squash `95838dc`, on `autopilot/integration`. Added by batch P3-B18. The three minors stay open: CR-P3UI19C-01 (the rail row `.sp-list li[data-rail]` at plain `lg`), -02 (two shorthands repeat a token), -03 (the allowlist matches fragments, not selectors). CR-P3UI19B-03 is closed by this step. `graph.css` is not swept (0.0.2, the autopilot journal of 2026-11-17).
+
