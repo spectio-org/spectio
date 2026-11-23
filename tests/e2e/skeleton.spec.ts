@@ -1,7 +1,9 @@
-import { test, expect, type APIRequestContext, type Page, type Request } from '@playwright/test';
+import { test, expect, type APIRequestContext, type Browser, type Page, type Request } from '@playwright/test';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { resolveTarget } from './base-url';
-import { sessionCookie } from './global-setup';
+import { isLocal, resolveTarget } from './base-url';
+import { newTicket, sessionCookie, withoutTicket } from './global-setup';
 
 // The 0.0.1 smoke of P1 Task 20, against a real `spectio serve` (tests/e2e/serve-local.sh):
 //   bash tests/e2e/serve-local.sh --port 8765 &
@@ -9,11 +11,16 @@ import { sessionCookie } from './global-setup';
 // Tests that run a workflow engine need Nextflow on the server's PATH and SPECTIO_E2E_ENGINES=1;
 // CI's e2e-local job sets it after dev/bootstrap.sh. The others answer from the server alone or
 // from route mocks. Each test has the session that global-setup.ts got through the token link
-// (P1 Task 12); the expired-link and 401-page tests wait for Task 16 as fixme (inbox #80).
+// (P1 Task 12); the tests of the link itself and of Sign out open their own context with a fresh link.
 
 const target = resolveTarget(process.env);
 const ENGINES = process.env.SPECTIO_E2E_ENGINES === '1';
 const NEEDS_ENGINES = 'needs Nextflow: set SPECTIO_E2E_ENGINES=1 (CI job e2e-local)';
+// Snakemake on the server's PATH too (RC1 gaps E-02 and X-09), with the Snakemake logger plugin installed.
+const SNAKEMAKE = process.env.SPECTIO_E2E_SNAKEMAKE === '1';
+const NEEDS_SNAKEMAKE = 'needs Snakemake and its logger plugin on the server: set SPECTIO_E2E_SNAKEMAKE=1 (with SPECTIO_E2E_ENGINES=1)';
+// Tests that mint a token link or write a pipeline copy need the server's files, so its machine.
+const NEEDS_LOCAL = 'needs the server on this machine: serve-local.sh writes the link pointer next to the specs';
 // The run tests/e2e/seed_stages.py writes (serve-local.sh --seed-stages): P1 Task 27.
 const SEEDED = 'run_01K8T27SEEDED0000000000000';
 const IS_SEEDED = process.env.SPECTIO_E2E_SEEDED === '1';
@@ -24,10 +31,16 @@ const RUN = 'run_01JBC6Q4ZK7M8N2P3R5S7T9V1W';
 test.skip(target.serveStatic, 'needs a Spectio server: SPECTIO_E2E_BASE_URL (tests/e2e/serve-local.sh)');
 
 /** POST /runs as the launch form does; `profiles` and `params` slow the run down when asked. */
-async function launch(request: APIRequestContext, profiles: string[], params: object = {}): Promise<string> {
+async function launch(
+  request: APIRequestContext,
+  profiles: string[],
+  params: object = {},
+  engine: 'nextflow' | 'snakemake' = 'nextflow',
+  location = join(SYNTHETIC, engine),
+): Promise<string> {
   const response = await request.post('/api/v1/runs', {
     headers: { Origin: new URL(target.url).origin },
-    data: { workflow: { location: join(SYNTHETIC, 'nextflow'), revision: null, engine: 'nextflow' }, profiles, params },
+    data: { workflow: { location, revision: null, engine }, profiles, params },
   });
   expect(response.status(), await response.text()).toBe(201);
   return (await response.json()).id;
@@ -202,8 +215,43 @@ test('a seeded rnaseq run shows 8 detected stages above its processes (P1 Task 2
   await expect(section.getByText('Report', { exact: true })).toBeVisible();
 });
 
-test('cancel a running Snakemake run → Cancelled', async () => {
-  test.fixme(true, 'TODO(P1 Task 7): the Snakemake logger plugin is not built, so a Snakemake run reports nothing yet');
+test('launch happy (Snakemake, local) → detail shows Succeeded and the golden counts', async ({ page, request }) => {
+  test.skip(!ENGINES || !SNAKEMAKE, !ENGINES ? NEEDS_ENGINES : NEEDS_SNAKEMAKE);
+  test.setTimeout(240_000);
+  // chunks=2: what Nextflow's profile `test` sets, and what the golden of the happy scenario counts
+  const id = await launch(request, ['local'], { chunks: 2 }, 'snakemake');
+  await reach(request, id, ['succeeded']);
+  await page.goto(`/runs/${id}`);
+  await expect(page.locator('header .sp-state')).toHaveText('Succeeded', { timeout: 150_000 });
+  await expect(page.locator('header').getByText(/^(\d+) \/ \1 jobs$/)).toBeVisible(); // done = total, in jobs
+  // the golden of the scenario, rule by rule (tests/slurm/e2e_client.py compares the same way)
+  const golden = join(SYNTHETIC, 'golden', readdirSync(join(SYNTHETIC, 'golden')).find((d) => d.startsWith('snakemake-'))!, 'happy.tsv');
+  const want: Record<string, number> = {};
+  for (const line of readFileSync(golden, 'utf8').split('\n')) {
+    const [, process, status, , , , count] = line.split('\t');
+    if (status === 'COMPLETED') want[process] = Number(count);
+  }
+  const got = Object.fromEntries(
+    ((await (await request.get(`/api/v1/runs/${id}/processes`)).json()).items as { process: string; counts: { succeeded?: number } }[])
+      .map((p) => [p.process.toUpperCase(), p.counts.succeeded ?? 0]),
+  );
+  expect(got).toEqual(want);
+});
+
+test('cancel a running Snakemake run → Cancelled', async ({ page, request }) => {
+  test.skip(!ENGINES || !SNAKEMAKE, !ENGINES ? NEEDS_ENGINES : NEEDS_SNAKEMAKE);
+  test.setTimeout(240_000);
+  const id = await launch(request, ['local'], { chunks: 2, scale: 5 }, 'snakemake'); // more samples: it still runs
+  await reach(request, id, ['running']);
+  await page.goto(`/runs/${id}`);
+  const cancel = page.getByRole('button', { name: 'Cancel run' });
+  await cancel.click();
+  const dialog = page.getByRole('dialog', { name: 'Cancel this run?' });
+  await expect(dialog).toHaveAttribute('aria-modal', 'true');
+  await dialog.getByRole('button', { name: 'Cancel the run' }).click();
+  await expect(page.locator('header .sp-state')).toHaveText(/Cancelling|Cancelled/);
+  await expect(page.locator('header .sp-state')).toHaveText('Cancelled', { timeout: 150_000 });
+  await expect(cancel).toHaveCount(0);
 });
 
 test('cancel a running Nextflow run → Cancelled', async ({ page, request }) => {
@@ -222,8 +270,39 @@ test('cancel a running Nextflow run → Cancelled', async ({ page, request }) =>
   await expect(cancel).toHaveCount(0);
 });
 
-test('a reused link shows the expired message', async () => {
-  test.fixme(true, 'TODO(P1 Task 16): no token link before Tasks 12 to 16 (inbox #80, local-only order)');
+/** A browser context with no session: the cookies global-setup.ts got are not in it. */
+const bare = (browser: Browser) => browser.newContext({ baseURL: target.url, storageState: { cookies: [], origins: [] } });
+
+/** Opens the token link of `ticket` in `page`, as a user does; an error never names the ticket. */
+async function openLink(page: Page, ticket: string) {
+  await page.goto(`/auth/link#${ticket}`).catch((error) => {
+    throw withoutTicket(error, ticket);
+  });
+}
+
+test('a reused link shows the expired message', async ({ browser }) => {
+  test.skip(!isLocal(target.url), NEEDS_LOCAL);
+  const ticket = newTicket(target.url);
+  const first = await bare(browser);
+  const second = await bare(browser);
+  try {
+    // the first use signs in: the bootstrap page exchanges the ticket and opens the app
+    const used = await first.newPage();
+    await openLink(used, ticket);
+    await expect(used).toHaveURL(new URL('/', target.url).href);
+    expect((await first.cookies()).map((c) => c.name)).toContain(sessionCookie(target.url));
+    // the second finds the ticket burnt: the message, no sign-in, no cookie
+    const reused = await second.newPage();
+    await openLink(reused, ticket);
+    await expect(reused.getByText('This link was already used or has expired.')).toBeVisible();
+    await expect(reused.getByText('spectio login --print-link')).toBeVisible();
+    await expect(reused.getByText('Signing in…')).toBeHidden();
+    expect(new URL(reused.url()).hash).toBe(''); // the ticket is out of the address bar
+    expect((await second.cookies()).map((c) => c.name)).not.toContain(sessionCookie(target.url));
+  } finally {
+    await first.close();
+    await second.close();
+  }
 });
 
 test('the detail updates without a reload as tasks finish', async ({ page, request }) => {
@@ -244,11 +323,27 @@ test('the detail updates without a reload as tasks finish', async ({ page, reque
   expect((await streams[0].allHeaders()).cookie).toMatch(new RegExp(`(^|; )${sessionCookie(target.url)}=`));
 });
 
-test('a request without the cookie shows the 401 page, not data', async () => {
-  test.fixme(true, 'TODO(P1 Task 16): no session cookie before Tasks 12 to 16 (inbox #80, local-only order)');
+test('a request without the cookie shows the 401 page, not data', async ({ browser }) => {
+  const context = await bare(browser);
+  try {
+    const page = await context.newPage();
+    const response = await page.goto('/runs');
+    expect(response!.status()).toBe(401);
+    const body = await page.locator('body').innerText();
+    expect(body).toContain('Sign-in required');
+    expect(body).toContain('spectio login --print-link');
+    expect(body).not.toContain('"items"'); // no run data
+    for (const path of ['/api/v1/runs', '/api/v1/me']) {
+      const api = await context.request.get(path);
+      expect(api.status(), path).toBe(401);
+      expect(await api.text(), path).not.toContain('"items"');
+    }
+  } finally {
+    await context.close();
+  }
 });
 
-// What holds in the local-only order, in place of the two session tests above.
+// What holds whatever the order of the tasks: the Host check and the headers.
 
 test('a foreign Host gets 400 and no data', async ({ playwright }) => {
   const request = await playwright.request.newContext({ baseURL: target.url, extraHTTPHeaders: { Host: 'evil.example' } });
@@ -628,4 +723,177 @@ test('the results browser shows one folder; an HTML file opens in the viewer, an
   await expect(table.getByText('not followed')).toBeVisible();
   await table.getByRole('link', { name: /^S01_fastqc\.html/ }).click();
   await expect(page.getByText('Untrusted report: fastqc/S01_fastqc.html')).toBeVisible();
+});
+
+// RC1 gaps D-07, Q-02, N-02, X-16, X-03 and U-02 (docs: RC1 acceptance §18): what a user does on a
+// real, ended run: its logs, the search, the bell, the pin, Resume, and the profile's Sign out.
+
+/** A happy run that has ended, and its name (what the list, the search and the bell call it). */
+async function endedRun(request: APIRequestContext): Promise<{ id: string; name: string }> {
+  const id = await launch(request, ['test']);
+  await reach(request, id, ['succeeded']);
+  return { id, name: (await (await request.get(`/api/v1/runs/${id}`)).json()).name };
+}
+
+const escapeRe = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+test('the Logs tab of a real run shows the engine log and downloads it', async ({ page, request }) => {
+  test.skip(!ENGINES, NEEDS_ENGINES);
+  test.setTimeout(180_000);
+  const { id, name } = await endedRun(request);
+  await page.goto(`/runs/${id}`);
+  await page.getByRole('tab', { name: 'Logs' }).click();
+  const logs = page.getByRole('region', { name: 'Logs' });
+  // the file the engine log is read from, then its lines (the last 64 KiB of .nextflow.log)
+  await expect(logs.getByRole('code', { name: 'File' })).toContainText(`/${id}/launch/.nextflow.log`);
+  const lines = logs.locator('pre[aria-label="Engine log"]');
+  await expect(lines).toContainText(/nextflow/i);
+  await expect(logs.getByRole('group', { name: 'Show lines' }).getByRole('button', { name: /^All/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(logs.getByText("Nextflow's log of this run · last 64 KiB")).toBeVisible();
+  // Download saves what the viewer shows
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    logs.getByRole('button', { name: 'Download last 64 KiB' }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe(`${name}-engine.log`);
+  const saved = readFileSync((await download.path())!, 'utf8');
+  expect(saved).toMatch(/nextflow/i);
+  expect(await lines.innerText()).toContain(saved.split('\n').find((line) => line.trim() !== '')!.trim());
+});
+
+test('Ctrl+K finds a run by its short ID and Enter opens it', async ({ page, request }) => {
+  test.skip(!ENGINES, NEEDS_ENGINES);
+  test.setTimeout(180_000);
+  const { id, name } = await endedRun(request);
+  await page.goto('/runs');
+  await page.keyboard.press('Control+K');
+  const dialog = page.getByRole('dialog', { name: 'Search' });
+  await expect(dialog).toBeVisible();
+  const input = dialog.getByRole('searchbox', { name: 'Search runs, pipelines and pages' });
+  await expect(input).toBeFocused();
+  await input.fill(id.slice(-6)); // the short ID the UI shows: the last six characters
+  // wait for the row before Enter: it opens the first result once there is one
+  await expect(dialog.getByRole('button', { name: new RegExp(`^Run ${escapeRe(name)}, Succeeded, Nextflow,`) })).toBeVisible();
+  await input.press('Enter');
+  await expect(page).toHaveURL(new RegExp(`/runs/${id}$`));
+  await expect(dialog).toBeHidden();
+});
+
+test('an ended run appears in the bell and opens from it', async ({ page, request }) => {
+  test.skip(!ENGINES, NEEDS_ENGINES);
+  test.setTimeout(180_000);
+  const { id, name } = await endedRun(request);
+  await page.goto('/runs');
+  const bell = page.getByRole('button', { name: /^Notifications, \d+ unread$/ });
+  await expect(bell).toHaveAccessibleName(/^Notifications, [1-9]\d* unread$/); // the run that just ended is unread
+  await bell.click();
+  const row = page.getByRole('link', { name: new RegExp(`^${escapeRe(name)}, Succeeded, Nextflow, .*unread$`) });
+  await row.click();
+  await expect(page).toHaveURL(new RegExp(`/runs/${id}$`));
+  // opening a run does not read it; Mark all as read does
+  await bell.click();
+  await page.getByRole('button', { name: 'Mark all as read' }).click();
+  await expect(bell).toHaveAccessibleName('Notifications, 0 unread');
+  await expect(page.getByRole('link', { name: new RegExp(`^${escapeRe(name)}, Succeeded, Nextflow, [^,]*$`) })).toBeVisible(); // still listed, now read
+});
+
+test('pin a run; it stays first after a reload', async ({ page, request }) => {
+  test.skip(!ENGINES, NEEDS_ENGINES);
+  test.setTimeout(240_000);
+  const { id, name } = await endedRun(request);
+  const newer = await launch(request, ['test']); // created after the pinned run: it comes first until the pin
+  const origin = new URL(target.url).origin;
+  try {
+    await page.goto('/runs');
+    const pin = page.getByRole('button', { name: `Pin run ${name}`, exact: true });
+    await expect(pin).toHaveAttribute('aria-pressed', 'false');
+    await pin.click();
+    await expect(pin).toHaveAttribute('aria-pressed', 'true');
+    await page.reload();
+    await expect(pin).toHaveAttribute('aria-pressed', 'true');
+    // of every Pin button on the page, the pinned run's is the topmost
+    await expect
+      .poll(async () => {
+        const tops = await page.getByRole('button', { name: /^Pin run / }).evaluateAll((els) =>
+          els.map((el) => ({ label: el.getAttribute('aria-label'), y: el.getBoundingClientRect().y })));
+        return tops.sort((a, b) => a.y - b.y)[0]?.label;
+      })
+      .toBe(`Pin run ${name}`);
+  } finally {
+    await request.patch(`/api/v1/runs/${id}`, { headers: { Origin: origin }, data: { pinned: false } });
+    await request.post(`/api/v1/runs/${newer}:cancel`, { headers: { Origin: origin } }); // it may have ended already
+  }
+});
+
+test('resume a real failed run: the child caches the tasks that succeeded', async ({ page, request }) => {
+  test.skip(!ENGINES, NEEDS_ENGINES);
+  test.skip(!isLocal(target.url), NEEDS_LOCAL);
+  test.setTimeout(300_000);
+  // A copy of the pipeline whose injected failure ends once a marker file exists: the user's fix.
+  // The script text is the same in both runs, so the tasks that succeeded keep their cache.
+  const copy = mkdtempSync(join(tmpdir(), 'spectio-e2e-resume-'));
+  cpSync(SYNTHETIC, copy, { recursive: true, dereference: true });
+  const marker = join(copy, 'FIXED');
+  const main = join(copy, 'nextflow', 'main.nf');
+  const hook = '"synth.py fail ${params.fail_mode}';
+  const source = readFileSync(main, 'utf8');
+  expect(source).toContain(hook);
+  writeFileSync(main, source.replace(hook, () => `"test -e '${marker}' || synth.py fail \${params.fail_mode}`));
+
+  // the scenario tool_error_then_fixed_resume: COMPARE for treatA exits 1 and is not retried
+  const failed = await launch(request, ['test'], { fail_mode: 'exit', fail_process: 'COMPARE', fail_sample: 'treatA' }, 'nextflow', join(copy, 'nextflow'));
+  await reach(request, failed, ['failed']);
+  writeFileSync(marker, 'fixed\n');
+
+  await page.goto(`/runs/${failed}`);
+  await expect(page.locator('header .sp-state')).toHaveText('Failed');
+  const resume = page.locator('header').getByRole('button', { name: 'Resume', exact: true });
+  await expect(resume).not.toHaveAttribute('aria-disabled', 'true');
+  await resume.click();
+  const dialog = page.getByRole('dialog', { name: 'Resume this run?' });
+  await expect(dialog).toContainText('Nextflow runs again with -resume and reuses the');
+  await dialog.getByRole('button', { name: 'Resume', exact: true }).click();
+
+  // the child is a new run, Succeeded, and reused what the first run finished (cached_min 50 in the scenario)
+  await expect(page).toHaveURL(/\/runs\/run_[0-9A-Z]{26}$/);
+  const child = new URL(page.url()).pathname.split('/').pop()!;
+  expect(child).not.toBe(failed);
+  await expect(page.locator('header .sp-state')).toHaveText('Succeeded', { timeout: 200_000 });
+  const cached = await page.getByRole('list', { name: 'Tasks by state' }).getByText(/^\d+ cached$/).innerText();
+  expect(Number(cached.split(' ')[0])).toBeGreaterThanOrEqual(50);
+  expect((await (await request.get(`/api/v1/runs/${child}`)).json()).parent_run_id).toBe(failed);
+  expect((await (await request.get(`/api/v1/runs/${failed}`)).json()).state).toBe('failed'); // the parent stays Failed
+});
+
+test('the profile names the account and Sign out ends this session', async ({ browser, request }) => {
+  test.skip(!isLocal(target.url), NEEDS_LOCAL);
+  // its own session, from its own link: signing out must not end the one the other tests share
+  const context = await bare(browser);
+  try {
+    const page = await context.newPage();
+    await openLink(page, newTicket(target.url));
+    await expect(page).toHaveURL(new URL('/', target.url).href);
+    const me = await (await context.request.get('/api/v1/me')).json();
+
+    await page.goto('/profile');
+    await expect(page.getByRole('heading', { level: 1, name: 'Profile' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Who the server runs as' })).toContainText(me.principal.user);
+    const paths = page.getByRole('region', { name: 'Config paths' });
+    await expect(paths).toContainText(me.paths.config_file);
+    await expect(paths).toContainText(me.paths.data_dir);
+    await expect(paths.getByRole('button', { name: 'Copy the config file path' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Sign out of this session' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Signed out of this session.' })).toBeVisible();
+    expect((await context.cookies()).map((c) => c.name)).not.toContain(sessionCookie(target.url));
+    // the next request meets the sign-in answer, not the app
+    const next = await page.goto('/runs');
+    expect(next!.status()).toBe(401);
+    await expect(page.locator('body')).toContainText('Sign-in required');
+    expect((await context.request.get('/api/v1/me')).status()).toBe(401);
+    // the session of the other tests is still good
+    expect((await request.get('/api/v1/me')).status()).toBe(200);
+  } finally {
+    await context.close();
+  }
 });
