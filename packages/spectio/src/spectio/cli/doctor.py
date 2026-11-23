@@ -182,7 +182,15 @@ def _stalled(runs_root: Path, shown: int = 5) -> Result:
         checked = _utc(float(body["checked"]))
     except FileNotFoundError:  # no runs root yet
         return "ok", "stalled_runs", "none"
-    except (OSError, ValueError, TypeError, KeyError, AttributeError, RecursionError) as exc:
+    except (
+        OSError,
+        ValueError,
+        TypeError,
+        KeyError,
+        AttributeError,
+        RecursionError,
+        OverflowError,
+    ) as exc:
         return "warn", "stalled_runs", f"{STALL_FILE} not read: {exc}"
     if not found:
         return "ok", "stalled_runs", "none"

@@ -51,8 +51,9 @@ class Stall:
 
 class StallWatch:
     """The watches of the runs their pages read: each run's job IDs and when they were last
-    seen in `squeue` or `sacct`, polled on the accounting thread. A run no view has read for
-    WATCH_S is no longer polled, but keeps its stall."""
+    seen in `squeue` or `sacct`, polled on the accounting thread. A job past the grace stalls
+    its run only once a read after the grace still holds its task running; a run no view has
+    read for WATCH_S is no longer polled, and its stall is dropped."""
 
     def __init__(
         self,
@@ -88,6 +89,8 @@ class StallWatch:
         self._limiter = SacctLimiter(
             self._ask, interval_s=interval_s, batch=sacct.MAX_PENDING, clock=clock
         )
+        if self.enabled:
+            self.write()  # server start: no stall yet, whatever an earlier server saw
 
     @classmethod
     def from_settings(
@@ -107,7 +110,7 @@ class StallWatch:
 
     def _ask(self, ids: list[str]) -> sacct.Found | None:
         """The limiter's call: the whole `squeue` answer, kept for the asked IDs it holds
-        (an array line's base covers its tasks); None when it failed."""
+        (a pending array range's base covers its tasks); None when it failed."""
         said = self._call()
         if said is None:
             return None
@@ -145,17 +148,23 @@ class StallWatch:
     def step(self) -> bool:
         """One `squeue` call when one is due; False when none was. A failed or refused call
         keeps no warning and asks again; an answer without a job past the grace stalls its
-        run. Returns True when a call was made."""
+        run once a read after the grace confirmed its task still running, and notifies the
+        run until one did. Returns True when a call was made."""
         done = self._limiter.run_once()
         if done is None:
             return False
         answer = done[1]
         now = self._clock()
         changed: set[str] = set()
+        with self._lock:
+            before = dict(self._stalled)
+            for run_id, viewed in list(self._viewed.items()):
+                if now - viewed > self._watch_s:  # no view read the run: stop polling it
+                    for state in (self._jobs, self._viewed, self._missing, self._stalled):
+                        state.pop(run_id, None)
         if not isinstance(answer, dict):
             # None, FINAL, SITE_LIMIT: squeue failed or was refused — no warning (§3.9)
             with self._lock:
-                before = dict(self._stalled)
                 self._stalled.clear()
                 ids = [job for jobs in self._jobs.values() for job in jobs]
             if before:
@@ -163,7 +172,6 @@ class StallWatch:
             self._limiter.request(ids)  # the limiter has already backed off
             return True
         with self._lock:
-            before = dict(self._stalled)
             for run_id, jobs in self._jobs.items():
                 was = self._missing.get(run_id, [])
                 ended = self._in_sacct(run_id)  # once per run, not per job
@@ -171,7 +179,11 @@ class StallWatch:
                     if job in answer or job in ended:
                         jobs[job] = now
                 self._missing[run_id] = [job for job in jobs if job not in answer]
-                gone = [job for job, at in jobs.items() if now - at > self._grace]
+                late = [job for job, at in jobs.items() if now - at > self._grace]
+                # gone: a read after the grace still held its task running (no read: no stall)
+                gone = [job for job in late if self._viewed[run_id] >= jobs[job] + self._grace]
+                if len(gone) < len(late):
+                    changed.add(run_id)  # an open page reads the run again
                 if gone:
                     self._stalled[run_id] = Stall(len(gone), max(jobs[job] for job in gone))
                 else:
@@ -179,10 +191,6 @@ class StallWatch:
                 if self._stalled.get(run_id) != before.get(run_id) or self._missing[run_id] != was:
                     changed.add(run_id)
             stalled_changed = self._stalled != before
-            for run_id, viewed in list(self._viewed.items()):
-                if now - viewed > self._watch_s:  # no view read the run: stop polling it
-                    for state in (self._jobs, self._viewed, self._missing):
-                        state.pop(run_id, None)
             ids = [job for jobs in self._jobs.values() for job in jobs]
         for run_id in changed:
             self._notify_run(run_id)

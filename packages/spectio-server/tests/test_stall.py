@@ -85,7 +85,7 @@ def test_gone_within_grace(runs: Path) -> None:
     clock.now += GRACE_S - 100
     assert watch.step()
     assert watch.stall("run_b") is None
-    assert not (runs / ".stalled.json").exists()
+    assert json.loads((runs / ".stalled.json").read_text())["runs"] == {}
 
 
 def test_seen_in_sacct_not_stalled(runs: Path) -> None:
@@ -147,20 +147,69 @@ def test_watch_empty_forgets(runs: Path) -> None:
     assert watch.wait_s() is None
 
 
-def test_run_not_read_for_watch_s_is_dropped(runs: Path) -> None:
-    """A run no view has read for WATCH_S is no longer polled, but keeps its stall."""
+def test_created_watch_clears_the_stall_file(runs: Path) -> None:
+    """CR-P3FU126-STALL-01: a new watch (server start) writes an empty stall file, so the
+    doctor no longer reports what an earlier server saw."""
+    old = {"v": 1, "checked": 1.0, "runs": {"run_old": {"tasks": 1, "since": 1.0}}}
+    (runs / ".stalled.json").write_text(json.dumps(old))
+    stall_watch(runs, Clock(), Squeue())
+    assert json.loads((runs / ".stalled.json").read_text())["runs"] == {}
+
+
+def test_gone_unconfirmed_notifies_then_read_stalls(runs: Path) -> None:
+    """CR-P3FU126-STALL-01: a job past the grace with no read since does not stall its run: the
+    run is notified, and once a read has confirmed the task still running, the next answer
+    stalls it."""
+    clock = Clock()
+    sq = Squeue({"8812401"}, set(), set())
+    notified: list[str] = []
+    watch = stall_watch(runs, clock, sq, notify=notified.append)
+    watch.watch("run_g", {"8812401": clock.now})
+    assert watch.step()  # seen at 1000
+    clock.now += GRACE_S + 100
+    assert watch.step()
+    assert watch.stall("run_g") is None  # not confirmed by a read
+    assert notified == ["run_g"]  # an open page reads it again
+    watch.watch("run_g", {"8812401": 1000.0})  # the read: the task is still running
+    clock.now += 60
+    assert watch.step()
+    assert watch.stall("run_g") == Stall(tasks=1, since=1000.0)
+    assert notified == ["run_g", "run_g"]
+
+
+def test_not_read_again_task_ended_no_stall(runs: Path) -> None:
+    """CR-P3FU126-STALL-01: a run read once, whose task then ended and whose job left squeue,
+    never stalls with no read; past WATCH_S it is no longer polled and the file stays empty."""
+    clock = Clock()
+    sq = Squeue({"8812401"}, set(), set())
+    watch = stall_watch(runs, clock, sq)
+    watch.watch("run_h", {"8812401": clock.now})
+    assert watch.step()
+    clock.now += GRACE_S + 100
+    assert watch.step()
+    assert watch.stall("run_h") is None
+    clock.now += WATCH_S
+    assert watch.step()
+    assert watch.stall("run_h") is None
+    assert watch.missing("run_h") == []
+    assert watch.wait_s() is None  # no longer polled
+    assert json.loads((runs / ".stalled.json").read_text())["runs"] == {}
+
+
+def test_run_not_read_for_watch_s_drops_its_stall(runs: Path) -> None:
+    """CR-P3FU126-STALL-01: a run no view has read for WATCH_S is no longer polled, and its
+    stall is dropped from the watch and the file."""
     clock = Clock()
     sq = Squeue(set(), set())
     watch = stall_watch(runs, clock, sq)
-    watch.watch("run_g", {"8812401": clock.now - GRACE_S - 10})
+    watch.watch("run_i", {"8812401": clock.now - GRACE_S - 10})
     assert watch.step()
-    stall = watch.stall("run_g")
-    assert stall is not None
+    assert watch.stall("run_i") is not None
     clock.now += WATCH_S + 1
     assert watch.step()
-    assert watch.stall("run_g") == stall  # kept: the page still shows the warning
-    assert watch.missing("run_g") == []
-    assert watch.wait_s() is None  # no longer polled
+    assert watch.stall("run_i") is None
+    assert watch.wait_s() is None
+    assert json.loads((runs / ".stalled.json").read_text())["runs"] == {}
 
 
 def test_disabled_without_squeue(runs: Path) -> None:
@@ -179,9 +228,9 @@ def test_stall_file_of_a_refused_runs_root(tmp_path: Path) -> None:
     runs.mkdir()
     runs.chmod(0o757)  # others can write it
     watch = stall_watch(runs, clock, sq)
-    watch.watch("run_h", {"8812401": clock.now - GRACE_S - 10})
+    watch.watch("run_r", {"8812401": clock.now - GRACE_S - 10})
     assert watch.step()
-    assert watch.stall("run_h") is not None
+    assert watch.stall("run_r") is not None
     assert not (runs / ".stalled.json").exists()  # refused: no file written
 
 

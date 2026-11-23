@@ -1023,6 +1023,8 @@ def test_stall_on_the_run_detail(settings: Settings, writer: Writer, fakebin: Fa
     assert acct.step() and fakebin.ids() == ["8812401"]
     clock.now += GRACE_S + 1
     assert watch.step()
+    assert detail(client)["stall"] is None  # this read confirms the task still running
+    assert watch.step()
     found = detail(client)["stall"]
     assert found is not None and found["tasks"] == 1
     run.end()

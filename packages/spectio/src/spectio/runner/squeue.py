@@ -25,7 +25,7 @@ from spectio.runner.sacct import (
 
 log = logging.getLogger(__name__)
 
-_BASE = re.compile(r"[0-9]{1,12}")
+_RANGE = re.compile(r"([0-9]{1,12})_\[[^\]]*\]")  # a pending array range: 55_[1-3]
 STALL_FILE = ".stalled.json"  # in the runs root: what `spectio doctor` reads (FU-P3-126)
 
 
@@ -37,8 +37,9 @@ def squeue_argv(path: Path) -> list[str]:
 def squeue_ids(path: Path, timeout_s: float = TIMEOUT_S) -> set[str] | None:
     """The job IDs `squeue` holds now; None when it failed or timed out. Raises Refused for
     a tool that is not accepted, OSError when the tool cannot be read for now (both as
-    `sacct`, CR-P3FU106A-04). A line is a job ID; a pending array line `55_[1-3]` also keeps
-    its base `55`, whose tasks the watch is on."""
+    `sacct`, CR-P3FU106A-04). A line is a job ID; a pending array range `55_[1-3]` gives
+    its base `55`, which covers the tasks the watch is on (a running task `55_3` is itself
+    only, CR-P3FU126-STALL-02)."""
     check_tool(path, "squeue")
     with (
         tempfile.TemporaryFile() as err,  # a file, not a pipe: it never blocks the tool
@@ -68,7 +69,6 @@ def squeue_ids(path: Path, timeout_s: float = TIMEOUT_S) -> set[str] | None:
         job = line.strip()
         if JOB_ID.fullmatch(job):
             found.add(job)
-        base = job.partition("_")[0]  # an array line 55_[1-3]: its base covers its tasks
-        if _BASE.fullmatch(base):
-            found.add(base)
+        elif pending := _RANGE.fullmatch(job):
+            found.add(pending[1])
     return found

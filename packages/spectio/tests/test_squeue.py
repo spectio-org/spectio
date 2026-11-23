@@ -64,9 +64,10 @@ def test_squeue_argv(fakebin: Fake) -> None:
 
 
 def test_squeue_ids_and_arrays(fakebin: Fake) -> None:
-    """Each line is a job ID; a pending array line `55_[1-3]` also keeps its base `55`."""
-    fakebin.output("8812401\n8812402_3\n55_[1-3]\n")
-    assert squeue_ids(fakebin.path) == {"8812401", "8812402_3", "8812402", "55"}
+    """Each line is a job ID; only a pending array range `55_[1-3]` keeps its base `55`: a
+    running array task `8812402_3` does not cover its siblings (CR-P3FU126-STALL-02)."""
+    fakebin.output("8812401\n8812402_3\n55_[1-3]\n56_[4-9%2]\n")
+    assert squeue_ids(fakebin.path) == {"8812401", "8812402_3", "55", "56"}
 
 
 def test_squeue_failure_gives_no_answer(fakebin: Fake) -> None:

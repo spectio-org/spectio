@@ -457,6 +457,15 @@ def test_doctor_stalled_runs_refused(home: Path, capsys: pytest.CaptureFixture[s
     assert line(doctor(capsys, settings)[1], "stalled_runs").startswith(
         "warn stalled_runs .stalled.json not read:"
     )
+    for body in (  # out of range: a warning, not a traceback (SEC-P3FU126-STALL-01)
+        {"v": 1, "checked": CHECKED, "runs": {"run_x": {"tasks": 1, "since": 1e20}}},
+        {"v": 1, "checked": float("inf"), "runs": {}},
+        {"v": 1, "checked": CHECKED, "runs": {"run_x": {"tasks": float("inf"), "since": SINCE}}},
+    ):
+        write_stall(runs, body)
+        assert line(doctor(capsys, settings)[1], "stalled_runs").startswith(
+            "warn stalled_runs .stalled.json not read:"
+        )
 
 
 def test_req18_file_doctor_prints_path_state_default(
