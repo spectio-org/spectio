@@ -1,6 +1,6 @@
 [project]
 name = "spectio"
-version = "0.0.1"
+version = "0.0.1"  # x-release-please-version: a release PR rewrites this (release-please-config.json)
 description = "Spectio's CLI and runner (no FastAPI, no SQLAlchemy: architecture §6)"
 license = "MIT"
 requires-python = ">=3.11"

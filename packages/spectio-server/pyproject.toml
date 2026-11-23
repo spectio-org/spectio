@@ -1,6 +1,6 @@
 [project]
 name = "spectio-server"
-version = "0.0.1"
+version = "0.0.1"  # x-release-please-version: a release PR rewrites this (release-please-config.json)
 description = "Spectio's server: API, store and projector"
 license = "MIT"
 requires-python = ">=3.11"

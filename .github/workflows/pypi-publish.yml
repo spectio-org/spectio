@@ -1,65 +1,193 @@
 name: pypi-publish
 
-# Publishes one PyPI project with trusted publishing, started by hand (docs/developer/claim-package-names.md).
-# For now it builds the name-holding packages under tools/release/pypi-placeholders/ (dev-environment-and-testing.md §12).
-# PyPI's trusted publisher is registered against this file name, so keep it a top-level workflow named pypi-publish.yml.
+# Publishes Spectio's Python packages to PyPI with trusted publishing (dev-environment-and-testing.md
+# §12, "Publishing"): spectio-sdk, spectio and spectio-server from packages/, and the Snakemake logger
+# from engine-bridges/. It starts when release-please publishes a GitHub release (the vX.Y.Z tag on main),
+# or by hand with workflow_dispatch to re-run one. The publish jobs run in the order of §12, through
+# `needs`: spectio-sdk, then the logger and spectio, then spectio-server, each with skip-existing so a
+# re-run after a partial failure resumes, and only for a tag on a commit of main. PyPI's trusted
+# publishers are registered against this file name, so keep it a top-level workflow named pypi-publish.yml.
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
-      project:
-        description: PyPI project to publish
+      tag:
+        description: Tag to publish (e.g. v0.0.1), to re-run a release
         required: true
-        type: choice
-        options: [spectio, snakemake-logger-plugin-spectio]
+        type: string
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
-  group: pypi-publish-${{ inputs.project }}
+  group: pypi-publish-${{ github.event.release.tag_name || inputs.tag }}
   cancel-in-progress: false
 
+env:
+  # The tag release-please made (release: published) or the one asked for (workflow_dispatch).
+  # Scripts read it from the environment, never from the github or inputs contexts.
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
 jobs:
-  # Runs nothing but uv and the pinned build backend: the checkers run in smoke, on a copy.
+  # Runs nothing but uv, npm and the pinned build backends, plus the paper checks (twine, the
+  # wheel contents): only smoke runs the wheels' code, on a copy.
   build:
+    # The wheels are built as tests/packaging/test_wheel.sh builds them: the web screens with npm
+    # (web/dist), nf-spectio with Java and Nextflow (engine-bridges/nf-spectio/build.sh, through
+    # the hatch build hook), every wheel from its sdist (`uv build --all-packages`), plus `uv build`
+    # of the Snakemake logger plugin.
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
+    permissions:
+      contents: read
     outputs:
-      sums: ${{ steps.build.outputs.sums }}
+      version: ${{ steps.match.outputs.version }}
+      on-main: ${{ steps.tag.outputs.on-main }}
+      sums-sdk: ${{ steps.build.outputs.sums-sdk }}
+      sums-spectio: ${{ steps.build.outputs.sums-spectio }}
+      sums-server: ${{ steps.build.outputs.sums-server }}
+      sums-plugin: ${{ steps.build.outputs.sums-plugin }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with: {persist-credentials: false}
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          fetch-depth: 0 # the tag's commit is checked against origin/main below
+          persist-credentials: false
+      - name: Read the pins (dev/versions.env, §1)
+        id: pins
+        run: |
+          . dev/versions.env
+          { echo "node=$NODE_VERSION"; echo "nextflow=$NEXTFLOW_VERSION"; echo "python=$PYTHON_VERSION"; } >> "$GITHUB_OUTPUT"
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           version: "0.11.32" # = UV_VERSION in dev/versions.env
           # = UV_SHA256 in dev/versions.env (the x86_64 linux tarball); setup-uv v6.8.0 knows no sum for this version.
           checksum: aab924fd522efd06f1c5f3b93a243864fc453132c94b2dc49f1371b528a4b967
           enable-cache: false
-      - name: Build
-        id: build
-        env:
-          PROJECT: ${{ inputs.project }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        # No npm cache: its artifacts end up in the published wheels (zizmor cache-poisoning).
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+          package-manager-cache: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with: {distribution: temurin, java-version: "21"} # = JAVA_MAJOR in dev/versions.env
+      - uses: nf-core/setup-nextflow@893c28b667aedeba26e37f296d260ccc5bc4d914 # v3.0.1
+        with:
+          version: ${{ steps.pins.outputs.nextflow }}
+      - name: Resolve the tag and check its commit is on main
+        id: tag
         run: |
-          case "$PROJECT" in
-            spectio|snakemake-logger-plugin-spectio) ;;
-            *) echo "::error::Unknown project: $PROJECT"; exit 1 ;;
-          esac
-          uv build --out-dir dist "tools/release/pypi-placeholders/$PROJECT"
+          tag=${TAG#refs/tags/}
+          [ -n "$tag" ] || { echo "::error::the release has no tag"; exit 1; }
+          # The publish jobs run only for a tag on a commit of main: their `if:` reads this output.
+          if git merge-base --is-ancestor HEAD origin/main; then onmain=true; else
+            onmain=false
+            echo "::warning::$tag is not on a commit of main: nothing will be published"
+          fi
+          # The version the packages carry: the tag without the leading v (v0.0.1-rc1 -> 0.0.1-rc1),
+          # the string release-please wrote into the pyproject.toml files.
+          { echo "on-main=$onmain"; echo "version=${tag#v}"; } >> "$GITHUB_OUTPUT"
+      - name: Build the web screens (web/dist)
+        run: |
+          npm --prefix web ci --no-audit --no-fund --ignore-scripts
+          npm --prefix web run build
+      - name: Build the sdists and wheels
+        id: build
+        run: |
+          . dev/versions.env
+          uv build --quiet --all-packages --python "$PYTHON_VERSION" --out-dir dist
+          uv build --quiet --python "$PYTHON_VERSION" --out-dir dist engine-bridges/snakemake-logger-plugin-spectio
           # smoke runs third-party code with the run's artifact token: publish checks these sums.
-          { echo "sums<<EOF"; sha256sum dist/*; echo "EOF"; } >> "$GITHUB_OUTPUT"
+          sums() { { echo "sums-$1<<EOF"; sha256sum "dist/$2"-*; echo "EOF"; } >> "$GITHUB_OUTPUT"; }
+          sums sdk spectio_sdk
+          sums spectio spectio
+          sums server spectio_server
+          sums plugin snakemake_logger_plugin_spectio
+          sha256sum dist/*
+      - name: The tag matches every package version
+        id: match
+        # PEP 440 normalised, so v0.0.1-rc1 == 0.0.1rc1: the tag must be the version of every sdist
+        # and wheel (uv build writes the normalised version into the file names).
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          . dev/versions.env
+          uv run --no-project --with "packaging==$PACKAGING_VERSION" python -c '
+          import re, sys
+          from pathlib import Path
+          from packaging.version import Version
+          tag = Version(sys.argv[1])
+          for f in sorted(Path("dist").iterdir()):
+              if f.name.startswith("."):
+                  continue  # uv build puts a .gitignore into dist/
+              m = re.match(r"^(.*)-([^-]+)-py[^-]*-[^-]*-[^-]*\.whl$", f.name) or \
+                  re.match(r"^(.*)-([^-]+)\.tar\.gz$", f.name)
+              if not m:
+                  sys.exit(f"dist holds {f.name}, which is no sdist or wheel")
+              if Version(m.group(2)) != tag:
+                  sys.exit(f"{f.name} carries {m.group(2)}, not the tag version {sys.argv[1]}")
+          # The normalised form (0.0.1rc1) is what METADATA and `spectio --version` carry.
+          with open(sys.argv[2], "a") as out:
+              out.write(f"version={tag}\n")
+          ' "$VERSION" "$GITHUB_OUTPUT"
+      - name: twine check --strict
+        run: |
+          . dev/versions.env
+          uvx "twine==$TWINE_VERSION" check --strict dist/*
+      - name: The wheel contents (tests/packaging/contents/)
+        # The check of tests/packaging/test_wheel.sh: every wheel lists exactly its file, one glob
+        # per line. The version of the list's dist-info entry becomes a glob too, so a list written
+        # for 0.0.1 also proves a 0.0.1rc1 wheel.
+        run: |
+          contents() {
+            local name=$1 list=$2 entry pat found version
+            local -a pats
+            local -A hit=()
+            version=$(sed -n "s/^$name-\\([^-]*\\)\\.dist-info\\/METADATA$/\\1/p" "$list" | head -1)
+            [ -n "$version" ] || { echo "::error::$list lists no $name-<version>.dist-info/METADATA"; exit 1; }
+            mapfile -t pats < <(grep -v "^#" "$list" | sed "s/${version//./\\.}/*/g")
+            while IFS= read -r entry; do
+              found=
+              for pat in "${pats[@]}"; do
+                # shellcheck disable=SC2053  # $pat is a glob
+                if [[ $entry == $pat ]]; then hit[$pat]=1; found=1; break; fi
+              done
+              [ -n "$found" ] || { echo "::error::$name carries $entry, which $list does not list"; exit 1; }
+            done
+            for pat in "${pats[@]}"; do
+              [ -n "${hit[$pat]:-}" ] || { echo "::error::$name has nothing for $pat ($list)"; exit 1; }
+            done
+          }
+          contents spectio tests/packaging/contents/spectio.wheel.txt < <(unzip -Z1 dist/spectio-*.whl)
+          contents spectio_server tests/packaging/contents/spectio_server.wheel.txt < <(unzip -Z1 dist/spectio_server-*.whl)
+          contents spectio_sdk tests/packaging/contents/spectio_sdk.wheel.txt < <(unzip -Z1 dist/spectio_sdk-*.whl)
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: dist
-          path: dist/
+          name: dist-spectio-sdk
+          path: dist/spectio_sdk-*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist-spectio
+          path: dist/spectio-*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist-spectio-server
+          path: dist/spectio_server-*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist-snakemake-logger-plugin-spectio
+          path: dist/snakemake_logger_plugin_spectio-*
           if-no-files-found: error
 
   smoke:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions: {}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with: {persist-credentials: false}
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           version: "0.11.32" # = UV_VERSION in dev/versions.env
@@ -68,37 +196,131 @@ jobs:
           enable-cache: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: dist
+          name: dist-spectio-sdk
           path: dist/
-      - name: Check, install and smoke-test the wheel
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist-spectio
+          path: dist/
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist-spectio-server
+          path: dist/
+      - name: Install the server wheel with its local deps and smoke-test it
+        # The same checks as tests/packaging/test_wheel.sh: the version the CLI prints (the PEP 440
+        # normalised version hatchling writes into METADATA, 0.0.1rc1) and the packaged web screens.
         env:
-          PROJECT: ${{ inputs.project }}
+          VERSION: ${{ needs.build.outputs.version }}
         run: |
-          . dev/versions.env
-          uvx "twine==$TWINE_VERSION" check --strict dist/*
-          diff <(unzip -Z1 dist/*.whl | LC_ALL=C sort) "tools/release/pypi-placeholders/$PROJECT/wheel-contents.txt"
           uv venv --python 3.12 /tmp/smoke
-          uv pip install --python /tmp/smoke/bin/python dist/*.whl
-          /tmp/smoke/bin/python tools/release/pypi-placeholders/smoke.py "$PROJECT"
+          uv pip install --python /tmp/smoke/bin/python dist/spectio_server-*.whl dist/spectio-*.whl dist/spectio_sdk-*.whl
+          got=$(/tmp/smoke/bin/spectio --version)
+          want="spectio $VERSION"
+          [ "$got" = "$want" ] || { echo "::error::spectio --version printed '$got', not '$want'"; exit 1; }
+          /tmp/smoke/bin/python -I -c '
+          import sys
+          from spectio_server import static
+          ok = static.built(static.DIST) and str(static.DIST.resolve()).startswith(sys.argv[1])
+          sys.exit(None if ok else f"the screens come from {static.DIST}")
+          ' "$(cd /tmp/smoke && pwd -P)"
 
-  publish:
+  # §12: a strict order through `needs` (spectio-sdk -> spectio -> spectio-server, the logger after
+  # spectio-sdk), so a re-run after a partial failure resumes; skip-existing makes it idempotent.
+  publish-spectio-sdk:
     needs: [build, smoke]
-    if: github.ref == 'refs/heads/main'
+    # Only for a tag on a commit of main (release-please tags main; a re-run for any other tag
+    # builds and smoke-tests but publishes nothing).
+    if: needs.build.outputs.on-main == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
-      name: pypi-${{ inputs.project }}
-      url: https://pypi.org/p/${{ inputs.project }}
+      name: pypi-spectio-sdk
+      url: https://pypi.org/p/spectio-sdk
     permissions:
-      id-token: write # trusted publishing; only this job gets it
+      id-token: write # trusted publishing; only the publish jobs get it
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: dist
+          name: dist-spectio-sdk
           path: dist/
       - name: Check the files are the ones build made
         env:
-          SUMS: ${{ needs.build.outputs.sums }}
+          SUMS: ${{ needs.build.outputs.sums-sdk }}
+        run: |
+          printf '%s\n' "$SUMS" | sha256sum --check --strict
+          test "$(find dist -type f ! -name '.*' | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)"
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          skip-existing: true
+
+  publish-snakemake-logger-plugin-spectio:
+    needs: [build, smoke, publish-spectio-sdk]
+    if: needs.build.outputs.on-main == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi-snakemake-logger-plugin-spectio
+      url: https://pypi.org/p/snakemake-logger-plugin-spectio
+    permissions:
+      id-token: write # trusted publishing; only the publish jobs get it
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist-snakemake-logger-plugin-spectio
+          path: dist/
+      - name: Check the files are the ones build made
+        env:
+          SUMS: ${{ needs.build.outputs.sums-plugin }}
+        run: |
+          printf '%s\n' "$SUMS" | sha256sum --check --strict
+          test "$(find dist -type f ! -name '.*' | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)"
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          skip-existing: true
+
+  publish-spectio:
+    needs: [build, smoke, publish-spectio-sdk]
+    if: needs.build.outputs.on-main == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi-spectio
+      url: https://pypi.org/p/spectio
+    permissions:
+      id-token: write # trusted publishing; only the publish jobs get it
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist-spectio
+          path: dist/
+      - name: Check the files are the ones build made
+        env:
+          SUMS: ${{ needs.build.outputs.sums-spectio }}
+        run: |
+          printf '%s\n' "$SUMS" | sha256sum --check --strict
+          test "$(find dist -type f ! -name '.*' | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)"
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          skip-existing: true
+
+  publish-spectio-server:
+    needs: [build, smoke, publish-spectio]
+    if: needs.build.outputs.on-main == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi-spectio-server
+      url: https://pypi.org/p/spectio-server
+    permissions:
+      id-token: write # trusted publishing; only the publish jobs get it
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist-spectio-server
+          path: dist/
+      - name: Check the files are the ones build made
+        env:
+          SUMS: ${{ needs.build.outputs.sums-server }}
         run: |
           printf '%s\n' "$SUMS" | sha256sum --check --strict
           test "$(find dist -type f ! -name '.*' | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)"
