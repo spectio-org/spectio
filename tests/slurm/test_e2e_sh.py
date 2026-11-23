@@ -2,10 +2,9 @@
 nothing (it prints a tmux path for `command -v tmux`, and exits 1 for a command that contains
 $FAIL_ON):
 
-- the Snakemake head must ask squeue for its jobs' states. slurm-mini has no accounting, so
-  `sacct` exits 1 ("Slurm accounting storage is disabled"); the SLURM plugin 2.8.0 picks sacct
-  whenever it is on PATH, and a failed status query yields no job, so the head waits for its jobs
-  forever (PR #164, CI job 134667343638);
+- the Snakemake launch needs no `--slurm-status-command` from the environment: slurm-mini has
+  no accounting (sacct exits 1), so Spectio passes `squeue` itself (FU-P3-106b), and the env
+  keeps only the delay before the executor's first status check (PR #164, CI job 134667343638);
 - `cancel <engine>` and `restart` (P1 Task 23) run their client with a larger scale, and the
   tmux shim that logs each tmux call;
 - every case prints its RESULT line and tears down, even when a step before the client fails
@@ -58,16 +57,16 @@ class E2eMini(unittest.TestCase):
     def lines(self, word):
         return [line for line in self.calls.read_text().splitlines() if word in line]
 
-    def test_the_snakemake_head_queries_squeue(self):
+    def test_the_snakemake_init_keeps_only_the_status_check_delay(self):
         out = self.run_e2e("launch", "snakemake")
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
         init = self.lines(" spectio init ")
         self.assertEqual(len(init), 1, self.calls.read_text())
         self.assertIn(
-            "SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE=--slurm-init-seconds-before-status-checks 5 "
-            "--slurm-status-command squeue ",
+            "SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE=--slurm-init-seconds-before-status-checks 5 ",
             init[0],
         )
+        self.assertNotIn("--slurm-status-command", init[0])  # Spectio passes squeue itself
         self.assertIn("RESULT e2e-launch-snakemake pass", out.stdout)
 
     def test_cancel_runs_a_larger_happy(self):

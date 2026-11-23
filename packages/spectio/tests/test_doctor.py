@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 
+from spectio.cli import doctor as doctor_cli
 from spectio.cli.doctor import run_doctor, uv_version
 from spectio.config import Settings, write_config
 from spectio.runner.rundir import runs_disk
@@ -391,6 +392,44 @@ def test_doctor_reports_runs_disk(
         f"warn runs_disk {runs} (not created yet, measured at {home}) is on a nearly full file "
         f"system (30.0 GiB free, 97% used): {FIX}"
     )
+
+
+@pytest.mark.parametrize(
+    ("found", "expected"),
+    [
+        (True, "ok slurm_accounting on: Snakemake polls its SLURM jobs with sacct"),
+        (False, "ok slurm_accounting off: Snakemake polls its SLURM jobs with squeue"),
+        (
+            None,
+            "warn slurm_accounting unknown (scontrol show config gave no answer): "
+            "Snakemake keeps its SLURM plugin's default",
+        ),
+    ],
+)
+def test_doctor_slurm_accounting(
+    home: Path,
+    fakebin: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    found: bool | None,
+    expected: str,
+) -> None:
+    """FU-P3-106b (inbox #156 item 1): on a SLURM server one line says what Snakemake's SLURM
+    plugin will poll its jobs with, once the site's accounting is known — or not."""
+    monkeypatch.setattr(doctor_cli, "site_accounting", lambda *args: found)
+    _, lines = doctor(capsys, configured(home, fakebin, executor="slurm"))
+    assert line(lines, "slurm_accounting") == expected
+
+
+def test_doctor_local_has_no_slurm_accounting_line(
+    home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A local server has no SLURM: no accounting line, and no `scontrol` is ever asked."""
+    monkeypatch.setattr(
+        doctor_cli, "site_accounting", lambda *args: pytest.fail("scontrol asked on a local server")
+    )
+    _, lines = doctor(capsys, configured(home, fakebin, executor="local"))
+    assert not [x for x in lines if x.split()[1] == "slurm_accounting"]
 
 
 def test_req18_file_doctor_prints_path_state_default(
