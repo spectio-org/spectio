@@ -35,10 +35,9 @@ export function withoutTicket(error: unknown, ticket: string): Error {
   return new Error(`opening the token link failed: ${message.replaceAll(ticket, '<ticket>')}`);
 }
 
-export default async function globalSetup(): Promise<void> {
-  const target = resolveTarget(process.env);
-  if (target.serveStatic) return;
-  const pointer = join(LOCAL, `${portOf(target.url)}.config`);
+/** A fresh single-use ticket for the server at `url`, from `spectio login --print-link --json`. */
+export function newTicket(url: string): string {
+  const pointer = join(LOCAL, `${portOf(url)}.config`);
   let config: string;
   try {
     config = readFileSync(pointer, 'utf8').trim();
@@ -51,7 +50,13 @@ export default async function globalSetup(): Promise<void> {
   });
   const line = /^spectio-ticket-v1 (\{.*\})$/m.exec(out);
   if (!line) throw new Error('spectio login --print-link --json printed no ticket');
-  const { ticket } = JSON.parse(line[1]) as { ticket: string };
+  return (JSON.parse(line[1]) as { ticket: string }).ticket;
+}
+
+export default async function globalSetup(): Promise<void> {
+  const target = resolveTarget(process.env);
+  if (target.serveStatic) return;
+  const ticket = newTicket(target.url);
 
   const browser = await chromium.launch();
   try {

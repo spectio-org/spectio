@@ -65,6 +65,7 @@ function runOf(id: string): Record<string, unknown> | null {
 
 const DETAIL = {
   stages_note: null,
+  stall: null,
   failures: [],
   failures_total: 0,
   command: null,

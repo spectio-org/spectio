@@ -96,13 +96,15 @@ class _Model(BaseModel):
 
 class SlurmOpts(_Model):
     """The engines' SLURM executors, for their task jobs (P1 Assumption 14), and `sacct`, for
-    failed jobs and job resources (dev-env §15.3 req. 15): its path, resolved once by `spectio
-    init`, and `accounting = false` to never call it."""
+    failed jobs and job resources (dev-env §15.3 req. 15): their paths, resolved once by
+    `spectio init`, and `accounting = false` to never call sacct. `squeue` is the stall check
+    (FU-P3-126, schedulers §3.9), which works without accounting."""
 
     partition: SlurmName | None = None
     account: SlurmName | None = None
     accounting: bool = True
     sacct: AbsPath | None = None
+    squeue: AbsPath | None = None
 
 
 class EngineOpts(_Model):
@@ -152,6 +154,7 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_SLURM_ACCOUNT": ("slurm", "account"),
     "SPECTIO_SLURM_ACCOUNTING": ("slurm", "accounting"),
     "SPECTIO_SLURM_SACCT": ("slurm", "sacct"),
+    "SPECTIO_SLURM_SQUEUE": ("slurm", "squeue"),
     "SPECTIO_ENGINES_NEXTFLOW_CMD": ("engines", "nextflow_cmd"),
     "SPECTIO_ENGINES_SNAKEMAKE_CMD": ("engines", "snakemake_cmd"),
     "SPECTIO_ENGINES_NXF_OPTS": ("engines", "nxf_opts"),

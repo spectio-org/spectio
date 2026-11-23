@@ -11,6 +11,8 @@ import { resolveTarget } from './base-url';
 // call is recorded; none may happen. Projects desktop (Chromium), firefox and webkit. The OME-Zarr
 // case (FU-P3-102g) reads imaging/cells.ome.zarr key by key through the raw route with as=zarr,
 // a raw level and a zlib level (Blosc and LZ4 are refused: numcodecs needs 'unsafe-eval', inbox #135).
+// The plain-TIFF case (RC1 P-06) reads imaging/plain.tif (one 8-bit grey plane, no OME-XML): a TIFF
+// is drawn flat on a 2D canvas through the same pinned client and decoder pool, never in WebGL.
 
 const target = resolveTarget(process.env);
 const SEEDED = 'run_01K8T27SEEDED0000000000000';
@@ -77,4 +79,38 @@ test('the OME-Zarr viewer draws under the CSP, reading only keys below its folde
   expect(keys).not.toHaveLength(0);
   for (const u of keys) expect(u).toMatch(/\/results\/raw\/imaging\/cells\.ome\.zarr\/[A-Za-z0-9_.\/-]+\?as=zarr$/);
   expect(keys.some((u) => u.includes('.zmetadata'))).toBe(false);
+});
+
+test('a plain TIFF draws flat under the CSP', async ({ page, baseURL }) => {
+  await watchCsp(page);
+  const requests: string[] = [];
+  page.on('request', (r) => requests.push(r.url()));
+  await page.goto(`/runs/${SEEDED}/results/file?path=${encodeURIComponent('imaging/plain.tif')}`);
+  // the flat view: a canvas named for the file, its facts line, and none of the WebGL viewer's parts
+  const canvas = page.getByRole('img', { name: 'plain.tif' });
+  await expect(canvas).toBeVisible();
+  await expect(page.getByText('64 × 48 px', { exact: true })).toBeVisible();
+  await expect(page.getByText('Loading the image…')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'plain.tif, image viewer' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Fit' })).toHaveCount(0);
+  await expect(page.getByText('This file has no OME metadata: shown as a TIFF.')).toHaveCount(0); // a .tif name is not an OME claim
+  await expect(page.getByText('Not an image Spectio can read', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('This image could not be decoded.')).toHaveCount(0);
+  // drawn: the canvas has the plane's size and its pixels, (4x + 2y) mod 256 in grey
+  const pixels = await canvas.evaluate((el: HTMLCanvasElement) => {
+    const at = (x: number, y: number) => Array.from(el.getContext('2d')!.getImageData(x, y, 1, 1).data);
+    return { width: el.width, height: el.height, first: at(0, 0), last: at(63, 47) };
+  });
+  expect(pixels).toEqual({ width: 64, height: 48, first: [0, 0, 0, 255], last: [90, 90, 90, 255] });
+  // Actual size keeps the same canvas, in a scroll region
+  await page.getByRole('button', { name: 'Actual size' }).click();
+  await expect(page.getByRole('region', { name: 'plain.tif, image' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'plain.tif' })).toBeVisible();
+  // no CSP violation, no blob: URL (a blob: worker would be refused), nothing leaves the origin
+  expect(await page.evaluate(() => (window as unknown as { cspSeen: string[] }).cspSeen)).toEqual([]);
+  const origin = new URL(baseURL!).origin;
+  expect(requests.filter((u) => !u.startsWith(origin))).toEqual([]);
+  const reads = requests.filter((u) => u.includes('plain.tif') && !u.includes('/results/stat') && !u.includes('/results/file'));
+  expect(reads).not.toHaveLength(0);
+  for (const u of reads) expect(u).toMatch(/\/results\/raw\/imaging\/plain\.tif\?as=tiff$/);
 });
