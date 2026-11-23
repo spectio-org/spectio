@@ -1,0 +1,7 @@
+# snakemake_logger_plugin_spectio-0.0.1-py3-none-any.whl: every entry, one glob per line (* for hashed assets and class files). tools/release/wheel_contents.sh (tests/packaging/test_bridges_release.sh, .github/workflows/pypi-publish.yml)
+snakemake_logger_plugin_spectio-0.0.1.dist-info/
+snakemake_logger_plugin_spectio-0.0.1.dist-info/METADATA
+snakemake_logger_plugin_spectio-0.0.1.dist-info/RECORD
+snakemake_logger_plugin_spectio-0.0.1.dist-info/WHEEL
+snakemake_logger_plugin_spectio/
+snakemake_logger_plugin_spectio/__init__.py
