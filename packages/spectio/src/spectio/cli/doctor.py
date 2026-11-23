@@ -21,7 +21,9 @@ from spectio.runner.engines import (
     existing_copy,
     nf_plugin_copy,
 )
+from spectio.runner.headscript import status_command
 from spectio.runner.rundir import private_dir, read_small, runs_disk
+from spectio.runner.sacct import site_accounting
 from spectio.runner.squeue import STALL_FILE
 
 Result = tuple[str, str, str]  # status, check, detail
@@ -198,6 +200,23 @@ def _stalled(runs_root: Path, shown: int = 5) -> Result:
     return "warn", "stalled_runs", "; ".join(found[:shown]) + f"{more} (checked {checked})"
 
 
+def _slurm_accounting(settings: Settings) -> Result:
+    """FU-P3-106b (inbox #156 item 1): what Snakemake's SLURM plugin will poll this site's
+    jobs with, once the site's accounting is known."""
+    if (cmd := status_command(site_accounting(settings.slurm.sacct))) is None:
+        return (
+            "warn",
+            "slurm_accounting",
+            "unknown (the reason is logged as a warning): Snakemake keeps its SLURM plugin's"
+            " default",
+        )
+    return (
+        "ok",
+        "slurm_accounting",
+        f"{'on' if cmd == 'sacct' else 'off'}: Snakemake polls its SLURM jobs with {cmd}",
+    )
+
+
 def checks(
     settings: Settings, env: Mapping[str, str], mountinfo: Path | None = None
 ) -> list[Result]:
@@ -235,6 +254,8 @@ def checks(
     results.append(_java())
     paths = which("tmux", "sbatch", "uv")
     results += _tools(settings.executor == "local", paths)
+    if settings.executor == "slurm":
+        results.append(_slurm_accounting(settings))
     results.append(_uv(paths["uv"]))
     results.append(_nxf_plugins(env))
     return results

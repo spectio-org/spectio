@@ -1112,3 +1112,58 @@ def test_req20_order_on_snakemake(home: Path, bridges: Path) -> None:
     )
     found = json.loads((spec.engine_dir / "out.json").read_text())
     assert found["ref"] == {"build": "GRCh38", "release": 112, "x": "own"}
+
+
+# --- FU-P3-106b: the SLURM status command (inbox #156 item 1) --------------------------------
+
+
+@pytest.mark.parametrize(("accounting", "cmd"), [(False, "squeue"), (True, "sacct"), (None, None)])
+def test_snakemake_slurm_status_command(
+    home: Path, bridges: Path, accounting: bool | None, cmd: str | None
+) -> None:
+    """FU-P3-106b: the SLURM plugin 2.8.0 picks sacct whenever it is on PATH, and on a site
+    without slurmdbd sacct exits 1, the jobs are dropped and the run hangs; so the site's
+    accounting decides the command — squeue off, sacct on, nothing unknown — right after
+    `--executor slurm`, before extra_args."""
+    spec = snakemake_spec(
+        home,
+        slurm=SlurmValues(partition="htc"),
+        extra_args=["--keep-going"],
+        slurm_accounting=accounting,
+    )
+    args = engine_args(spec)
+    if cmd is None:
+        assert "--slurm-status-command" not in args
+    else:
+        at = args.index("--slurm-status-command")
+        assert at < args.index("--keep-going") and args[at + 1] == cmd
+        assert args.count("--slurm-status-command") == 1
+
+
+@pytest.mark.parametrize(
+    "given", [["--slurm-status-command", "sacct"], ["--slurm-status-command=sacct"]]
+)
+def test_the_users_status_command_wins(home: Path, bridges: Path, given: list[str]) -> None:
+    """A `--slurm-status-command` in [engines] extra_args.snakemake is the user's alone:
+    Spectio never adds its own beside it, whatever the site's accounting."""
+    spec = snakemake_spec(
+        home, slurm=SlurmValues(partition="htc"), extra_args=given, slurm_accounting=False
+    )
+    args = engine_args(spec)
+    found = [
+        arg
+        for arg in args
+        if arg == "--slurm-status-command" or arg.startswith("--slurm-status-command=")
+    ]
+    assert found == [given[0]] and "squeue" not in args
+
+
+def test_no_status_command_off_snakemake_slurm(home: Path, bridges: Path) -> None:
+    """A local Snakemake launch and a Nextflow one (SLURM or not) never see the flag: only
+    the Snakemake SLURM plugin has a status command to set."""
+    assert "--slurm-status-command" not in engine_args(
+        snakemake_spec(home, local=CAPS, slurm_accounting=False)
+    )
+    assert "--slurm-status-command" not in engine_args(
+        make_spec(home / "runs", slurm=SlurmValues(partition="htc"), slurm_accounting=False)
+    )
