@@ -401,7 +401,7 @@ def test_doctor_reports_runs_disk(
         (False, "ok slurm_accounting off: Snakemake polls its SLURM jobs with squeue"),
         (
             None,
-            "warn slurm_accounting unknown (scontrol show config gave no answer): "
+            "warn slurm_accounting unknown (the reason is logged as a warning): "
             "Snakemake keeps its SLURM plugin's default",
         ),
     ],

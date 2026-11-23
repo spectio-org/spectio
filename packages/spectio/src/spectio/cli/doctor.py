@@ -164,7 +164,7 @@ def _slurm_accounting(settings: Settings) -> Result:
         return (
             "warn",
             "slurm_accounting",
-            "unknown (scontrol show config gave no answer): Snakemake keeps its SLURM plugin's"
+            "unknown (the reason is logged as a warning): Snakemake keeps its SLURM plugin's"
             " default",
         )
     return (

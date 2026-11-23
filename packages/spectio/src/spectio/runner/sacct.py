@@ -260,11 +260,14 @@ _ACCOUNTING_TYPE = re.compile(r"accounting_storage/([a-z0-9_]{1,32})")
 def parse_accounting(text: str) -> bool | None:
     """The site's accounting from the `AccountingStorageType = <value>` line of a `scontrol
     show config` dump: `accounting_storage/none` is off, any other `accounting_storage/<name>`
-    is on, the key absent from a dump is off (the site keeps no accounting records), and
-    garbage, an empty text or a value of another shape is None: unknown."""
+    is on, the key absent from a dump, empty or `(null)` (unset, Slurm's default: no
+    accounting records) is off, and garbage, an empty text or a value of another shape is
+    None: unknown."""
     found = _ACCOUNTING.search(text)
     if found is None:
         return False if _CONFIG_LINE.search(text) else None
+    if found[1] in ("", "(null)"):
+        return False
     name = _ACCOUNTING_TYPE.fullmatch(found[1])
     return None if name is None else name[1] != "none"
 

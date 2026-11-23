@@ -847,6 +847,11 @@ DB_OFF = (
         (DB_ON, True),
         (DB_OFF, False),
         ("JobAcctGatherType = jobacct_gather/linux\n", False),  # a config dump without the key
+        # Unset: "Unset by default, which indicates that accounting records are not
+        # maintained" (slurm.conf(5), slurm.schedmd.com, read 2026-11-23); `scontrol show
+        # config` prints an unset key as `(null)` (EMBL login-node audit, 2026-11-08, §1).
+        ("AccountingStorageType   = (null)\nJobAcctGatherType = jobacct_gather/linux\n", False),
+        ("AccountingStorageType =\nJobAcctGatherType = jobacct_gather/linux\n", False),
         ("segmentation fault\n", None),
         ("", None),
         ("AccountingStorageType = $(rm -rf /)\n", None),  # a value of another shape
@@ -855,7 +860,8 @@ DB_OFF = (
 )
 def test_parse_accounting(text: str, expected: bool | None) -> None:
     """The site's accounting from one line of `scontrol show config`: slurmdbd on, `none` off,
-    the key absent from a config dump off, and garbage or a foreign value unknown."""
+    the key absent from a config dump, empty or `(null)` off, and garbage or a foreign value
+    unknown."""
     assert sacct.parse_accounting(text) is expected
 
 
