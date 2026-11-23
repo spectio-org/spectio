@@ -1,0 +1,67 @@
+# Batch P3-B07 (FU-P3-72 to 74): the three things a login node changed, run for real from the
+# repository's .venv, in a demo HOME (shown as ~) with a demo TMPDIR inside it (shown as $TMPDIR).
+#   - spectio doctor with an old uv (a fake script that prints 0.9.29) and a runs directory on a
+#     20 MB tmpfs that is 90% full: the `uv` and `runs_disk` lines warn (FU-P3-73, FU-P3-74);
+#   - spectio serve on a machine that looks shared (SLURM_CONF is set, which is one of the signs
+#     shared_host() reads): it listens on spectio.sock in its database directory, no TCP port
+#     (FU-P3-72).
+# nextflow and snakemake are two fake scripts in ~/bin, put on the login shell's PATH by
+# ~/.bash_profile (init and doctor find them through `bash -l`); they only print a version.
+# The tmpfs needs a mount namespace, and the host name is a demo one, so run the generator as
+# docs/assets/media.yaml does (root or unprivileged user namespaces):
+#   unshare --uts --mount sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-cluster-checks.yaml'
+# Port 18080, not the default 8080, so the cast does not clash with a server already on the machine.
+# Needs `uv sync` first (the .venv of the checkout).
+title: "P3-B07: doctor warns on an old uv and a full disk; serve listens on a Unix socket on a shared host"
+cols: 150
+rows: 32
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  HOME: "{workdir}"
+  TMPDIR: "{workdir}/.tmp"
+  PATH: "{repo}/.venv/bin:$PATH"
+setup:
+  - |
+    chmod 700 .
+    mkdir -m 700 .tmp
+    mkdir bin
+    printf '#!/bin/sh\necho "nextflow version 26.10.4 (fake, for this cast)"\n' > bin/nextflow
+    printf '#!/bin/sh\necho "9.27.1"\n' > bin/snakemake
+    printf '#!/bin/sh\necho "uv 0.9.29 (fake, for this cast)"\n' > bin/uv
+    chmod +x bin/nextflow bin/snakemake bin/uv
+    echo 'export PATH="$HOME/bin:$PATH"' > .bash_profile
+    mkdir -m 700 scratch
+    mount -t tmpfs -o size=20m,mode=700 tmpfs scratch
+    dd if=/dev/zero of=scratch/ballast bs=1M count=18 status=none
+replace:  # applied in order, after the two {workdir} keys, which cast.py puts first
+  "{workdir}/": "~/"
+  "{workdir}": "~"
+  "~/.tmp": "$TMPDIR"
+  "root@demo-hpc-login1": "alice@demo-hpc-login1"
+steps:
+  - comment: "1. init in local mode, on a port of its own"
+  - run: "spectio init --local --port 18080"
+    drop: "^warning: nf-spectio not unpacked"
+  - pause: 0.8
+  - clear: true
+  - comment: "2. doctor: uv 0.9.29 is older than 0.13.7; ~/scratch is a 20 MB disk, 90% full"
+  - run: "SPECTIO_RUNS_ROOT=~/scratch/runs spectio doctor | grep -E '^(warn|ok|fail) (uv|runs_disk) ' | fold -s -w 130"
+  - pause: 2.0
+  - run: "df -h ~/scratch"
+  - pause: 1.5
+  - clear: true
+  - comment: "3. serve where SLURM_CONF is set: a Unix socket, no TCP port"
+  - run: "SLURM_CONF=/etc/slurm/slurm.conf spectio serve > serve.out 2> serve.err &"
+  - run: "sleep 3; sed -E 's/#[A-Za-z0-9_-]{43}/#<ticket>/' serve.out"
+  - pause: 1.5
+  - run: "stat -c '%A %n' $TMPDIR/spectio-*/spectio.sock"
+  - run: "jq -c '{port, socket}' ~/.spectio/server.json"
+  - comment: "no TCP listener on 18080 (the laptop's end of the tunnel): count 0"
+  - run: "ss -ltn | grep -c ':18080' || true"
+  - pause: 1.5
+  - comment: "4. SIGTERM is a clean stop: the socket and server.json are removed"
+  - run: "kill -TERM $(jq .pid ~/.spectio/server.json); sleep 2; ls $TMPDIR/spectio-* ~/.spectio"
+  - pause: 1.5

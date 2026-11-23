@@ -1,0 +1,17 @@
+# The synthetic Snakemake pipeline, scenario happy, with the local executor (docs/specs/dev-environment-and-testing.md §5).
+# `python3 dev/scenario.py up happy-local-snakemake` creates its environment. The expect lines are checked by
+# `bash tests/local/e2e.sh launch snakemake` (P2 §10.8, G7): each one names a check of tests/slurm/e2e_client.py
+# in local mode, and a line that names none fails the run.
+deployment: bundle                        # bundle | compose
+scheduler: local                          # local | slurm-mini | slurm-site | slurm-rest | k8s-mini | k8s-kueue
+engine: snakemake 9.27
+fixture: tests/pipelines/synthetic/snakemake
+params: [scenario=happy, profile=local, chunks=2]    # tests/pipelines/synthetic/scenarios.yaml
+gate: none                                # gate script: who decides what, when
+expect:
+  - run succeeded
+  - head in its own session
+  - counts equal the golden
+  - head.exit 0, as the run reads it
+  - no spool drop
+  - no head left

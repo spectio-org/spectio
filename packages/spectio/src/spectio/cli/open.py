@@ -7,9 +7,10 @@ req. 8; cli §2).
    `node` of `clusters.toml` or `<host>`: `spectio init` if there is no data directory, then
    `spectio serve --detach --no-link`, and the state file it wrote; if it exited 3 (its server
    is still booting), the ticket of step 3 is asked again for up to `TICKET_WAIT_S`.
-3. Open the tunnel to that node on a free local port, get a ticket from `spectio login
-   --print-link --json` there, build the link and open the browser. Wait until the tunnel ends
-   or Ctrl-C; the server and its runs keep going.
+3. Open the tunnel to that node on a free local port, to the server's Unix socket when
+   server.json names one (SLURM and shared hosts, inbox #109 rule 5), get a ticket from
+   `spectio login --print-link --json` there, build the link and open the browser. Wait until
+   the tunnel ends or Ctrl-C; the server and its runs keep going.
 
 `~/.config/spectio/clusters.toml` holds one table per `<host>`: `node` (the first-start node)
 and `remote_cmd` (shell text run instead of `spectio`, such as `module load spectio &&
@@ -171,7 +172,8 @@ def _open(
     state, starting = (probed, False) if probed else remote.start(node or first or host)
     target = node or state.node
     lport = free_port() if local_port is None else check_port(local_port, "--local-port")
-    with subprocess.Popen(tunnel_argv(ssh, target, lport, state.port)) as tunnel:  # noqa: S603
+    argv = tunnel_argv(ssh, target, lport, state.port, state.socket)
+    with subprocess.Popen(argv) as tunnel:  # noqa: S603
         try:
             _wait_up(tunnel, lport)
             try:

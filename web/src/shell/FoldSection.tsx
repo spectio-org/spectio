@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { ICONS, Icon } from "../icons";
+import { type IconName, Icon } from "../icons";
 
 // A titled section that folds (ui-spec §4.4 "Open sections", UX-318; UX-PAR-02), as on the lite
 // boards: the h2 holds a native button (aria-expanded, aria-controls) with a light line icon in a
@@ -10,7 +10,7 @@ import { ICONS, Icon } from "../icons";
 
 const key = (screen: string, id: string) => `spectio-open:${screen}:${id}`;
 
-function remembered(screen: string, id: string): boolean | null {
+export function remembered(screen: string, id: string): boolean | null {
   try {
     const value = window.localStorage.getItem(key(screen, id));
     return value === null ? null : value === "1";
@@ -19,7 +19,7 @@ function remembered(screen: string, id: string): boolean | null {
   }
 }
 
-function remember(screen: string, id: string, open: boolean) {
+export function remember(screen: string, id: string, open: boolean) {
   try {
     window.localStorage.setItem(key(screen, id), open ? "1" : "0");
   } catch {
@@ -31,7 +31,7 @@ interface Props {
   id: string;
   /** The screen whose choices this section shares: "home", "run". Without one nothing is kept. */
   screen?: string;
-  icon: string;
+  icon: IconName;
   title: string;
   /** Shown while folded: "8 stages · 4 running", "4 set at launch". */
   summary?: ReactNode;
@@ -40,8 +40,9 @@ interface Props {
   /** A line under the head, the button's description. */
   sub?: ReactNode;
   defaultOpen?: boolean;
-  /** Opens the section when it turns true: a server error on one of its fields. */
-  reveal?: boolean;
+  /** Opens the section when it changes to a truthy value: a server error on one of its fields
+   * (true), or a "Before Launch" link ("link", so it still opens a group already failed). */
+  reveal?: boolean | string;
   /** A card ("sp-card") or a plain section. */
   card?: boolean;
   /** More classes on the section: "launch-preview-card", the dark preview card. */
@@ -83,7 +84,7 @@ export function FoldSection({
           onClick={toggle}
         >
           <span className="sp-fold-tile">
-            <Icon path={icon} size={17} stroke={1.6} />
+            <Icon name={icon} />
           </span>
           <span id={`${id}-title`} className="sp-fold-title">
             {title}
@@ -98,7 +99,7 @@ export function FoldSection({
             </>
           )}
           <span className="sp-fold-chev">
-            <Icon path={ICONS.chevronDown} size={16} stroke={2} />
+            <Icon name="chevronDown" />
           </span>
         </button>
       </h2>

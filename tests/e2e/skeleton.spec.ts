@@ -54,7 +54,9 @@ function mockRun(over: object = {}) {
     params: {}, stages_note: null,
     // the fields of P1 Tasks 29 to 31 (schema RunDetail)
     failures: [], failures_total: 0, command: null, parent_run_id: null, resumed_as: [],
-    actions: { resume: { allowed: false, reason: 'running' } }, results_dir: null, ...over,
+    actions: { resume: { allowed: false, reason: 'running' } }, results_dir: null,
+    head_logs: ['head-out', 'head-err'], // FU-P3-124
+    ...over,
   };
 }
 
@@ -109,6 +111,34 @@ test('home at / shows the count cards, the active runs and the runs that ended',
   await expect(page.getByRole('region', { name: 'Your pipelines' })).toContainText('/g/demo-lab/pipelines/rnaseq');
 });
 
+test('FU-P3-109: Home\'s Your pipelines and Where your runs go keep long paths inside the page, shown whole', async ({ page }, info) => {
+  if (info.project.name === 'desktop') await page.setViewportSize({ width: 1440, height: 1180 });
+  const long = '/g/demo-lab/' + 'a-very-long-directory-name-without-any-break/'.repeat(4) + 'rnaseq';
+  const root = '/scratch/amartin/' + 'spectio-runs-on-a-long-shared-scratch-volume/'.repeat(3) + 'runs';
+  const server = await (await page.request.get('/api/v1/version')).json();
+  await page.route('**/api/v1/version', (r) => r.fulfill(json({ ...server, runs_root: root })));
+  await page.route('**/api/v1/runs:summary*', (r) => r.fulfill(json({ groups: [{ key: 'succeeded', count: 1 }] })));
+  const ended = mockRun({ state: 'succeeded', ended_at: '2026-10-31T08:00:00+00:00',
+    workflow: { engine: 'nextflow', engine_version: '26.10.4', location: long, name: null, version: null } });
+  await page.route('**/api/v1/runs?*', (r) => r.fulfill(json({ items: [ended], next: null })));
+  await page.goto('/');
+  const pipelines = page.getByRole('region', { name: 'Your pipelines' });
+  const where = page.getByRole('region', { name: 'Where your runs go' });
+  await expect(pipelines.getByRole('link', { name: `Launch ${long}, ${long}` })).toBeVisible();
+  await expect(where).toContainText(root);
+  // nothing runs past the right edge: no page scroll, every card within the viewport
+  const width = page.viewportSize()!.width;
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  for (const card of [pipelines, where]) {
+    const box = (await card.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+  }
+  // the whole value is on screen as text, not cut by an ellipsis (no hover needed)
+  for (const text of [pipelines.getByText(long).last(), where.getByText(root)]) {
+    expect(await text.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  }
+});
+
 test('the detail shows the flat list with no stage, and the stages when /stages has items', async ({ page }, info) => {
   // The phone shows the processes as stacked cards, not a table (UX-PAR-10).
   const processes = info.project.name === 'phone' ? 'list' : 'table';
@@ -137,6 +167,23 @@ test('a run of the synthetic happy shows no stage, only its processes (P1 Task 2
   await page.goto(`/runs/${id}`);
   await expect(page.getByText('No stages for this pipeline: processes as the engine reports them.')).toBeVisible();
   await expect(page.getByRole(info.project.name === 'phone' ? 'list' : 'table', { name: 'Processes' })).toBeVisible();
+});
+
+test('FU-P3-115b: an ended run is selected in the list and deleted, and leaves the API', async ({ page, request }) => {
+  test.skip(!ENGINES, NEEDS_ENGINES);
+  test.setTimeout(180_000);
+  const id = await launch(request, ['test']);
+  await reach(request, id, ['succeeded']);
+  const name = (await (await request.get(`/api/v1/runs/${id}`)).json()).name;
+  await page.goto(`/runs?q=${encodeURIComponent(name)}`);
+  await page.getByRole('checkbox', { name: `Select run ${name}` }).check();
+  await page.getByRole('button', { name: 'Delete…' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Delete 1 run?' });
+  await expect(sheet.getByRole('listitem')).toHaveText(`${name} · Succeeded`);
+  await sheet.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.getByRole('status').getByText('1 run deleted')).toBeVisible();
+  await expect(page.getByRole('link', { name: `Open run ${name}` })).toHaveCount(0);
+  expect((await request.get(`/api/v1/runs/${id}`)).status()).toBe(404);
 });
 
 test('a seeded rnaseq run shows 8 detected stages above its processes (P1 Task 27)', async ({ page, request }) => {
@@ -220,7 +267,10 @@ test('the served pages carry the CSP, Referrer-Policy and COOP headers', async (
     const response = await page.goto(path);
     const headers = response!.headers();
     expect(headers['content-security-policy'], path).toContain("default-src 'none'");
-    expect(headers['content-security-policy'], path).toContain("script-src 'self';");
+    expect(headers['content-security-policy'], path).toContain("script-src 'self' 'wasm-unsafe-eval';");
+    expect(headers['content-security-policy'], path).toContain("worker-src 'self'");
+    expect(headers['content-security-policy'], path).not.toContain("'unsafe-eval'");
+    expect(headers['content-security-policy'], path).not.toContain('blob:');
     expect(headers['referrer-policy'], path).toBe('no-referrer');
     expect(headers['cross-origin-opener-policy'], path).toBe('same-origin');
   }
@@ -361,7 +411,7 @@ const SLURM_TASK = {
   efficiency: { cpu: 0.69, mem: 1.0, elapsed_s: 360, peak_rss_bytes: 8 * GIB, state: 'available', source: 'sacct', reason: null },
 };
 const PROC_EFFICIENCY = {
-  jobs: { done: 24, total: 25 }, measured: 24, cpu_mean: 0.34, cpu_max: 0.41, mem_mean: 0.03, mem_max: 0.05,
+  jobs: { done: 24, total: 25 }, measured: 24, pending_accounting: 0, cpu_mean: 0.34, cpu_max: 0.41, mem_mean: 0.03, mem_max: 0.05,
   requested: { cpus: 6, mem_bytes: 8 * GIB, time_limit_s: 8 * 3600, varies: false }, used: { peak_rss_bytes_max: 0.4 * GIB, elapsed_s_max: 360 },
 };
 
@@ -395,15 +445,20 @@ test('By process is a tab button; the waste line names the process', async ({ pa
   await expect(page.getByRole('tab', { name: 'Task list' })).toHaveAttribute('aria-selected', 'true');
 });
 
-test("the Copy menu is in the shared header on every tab and state, and announces 'Copied'", async ({ page, context }) => {
+test("the Copy items are in the shared header's More actions on every tab and state, and announce 'Copied'", async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await mockFailed(page);
   for (const tab of ['', '?tab=tasks', '?tab=parameters', '?tab=logs']) {
     await page.goto(`/runs/${RUN}${tab}`);
-    await expect(page.locator('header').getByRole('button', { name: 'Copy', exact: true })).toBeVisible();
+    await expect(page.locator('header').getByRole('button', { name: 'More actions', exact: true })).toBeVisible();
   }
-  await page.locator('header').getByRole('button', { name: 'Copy', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Run ID' }).click();
+  await page.locator('header').getByRole('button', { name: 'More actions', exact: true }).click();
+  // the menu stays in the viewport, on the phone too (UI-09)
+  const menu = page.getByRole('menu');
+  const box = (await menu.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  await menu.getByRole('menuitem', { name: 'Copy run ID' }).click();
   // The header holds the Copy status and, on the desktop, the Facts region's own status line.
   await expect(page.locator('header').getByRole('status').filter({ hasText: 'Copied' })).toHaveText('Copied the run ID');
 });
@@ -422,7 +477,7 @@ test('Launch: a wrong value shows its error on the field; each row says required
   const depth = page.getByRole('textbox', { name: 'depth (optional)' });
   await depth.fill('12');
   await expect(depth).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.getByText('Must be at most 9.')).toBeVisible();
+  await expect(page.getByText('Must be at most 9.', { exact: true })).toBeVisible(); // Before Launch says it too (FU-P3-86h)
   await expect(page.getByRole('button', { name: 'Launch', exact: true }).last()).toHaveAttribute('aria-disabled', 'true');
 });
 
@@ -507,7 +562,9 @@ test('Copy to a new launch opens the form prefilled with the non-default values 
       custom_config_base: { type: 'string' } } },
   })));
   await page.goto(`/runs/${RUN}`);
-  await page.locator('header').getByRole('link', { name: 'Copy to a new launch' }).click();
+  // a failed run's primary is Resume: Copy to a new launch is in More actions (UI-09)
+  await page.locator('header').getByRole('button', { name: 'More actions', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Copy to a new launch' }).click();
   await expect(page).toHaveURL(new RegExp(`/launch\\?from=${RUN}$`));
   await expect(page.getByText(
     "Prefilled from rnaseq-mock (7T9V1W): 3 values differ from the pipeline's defaults: input, outdir, custom_config_base.",
@@ -556,14 +613,19 @@ test("a report opens in the viewer with its 'Untrusted report' banner", async ({
   await expect(page.locator('iframe[title$="sandboxed"]')).toHaveAttribute('sandbox', 'allow-scripts allow-downloads');
 });
 
-test('the results browser shows one folder; an HTML file opens in the viewer, another downloads', async ({ page }) => {
+test('the results browser shows one folder; an HTML file opens in the viewer, another opens its preview', async ({ page }, info) => {
   await mockResults(page);
   await page.goto(`/runs/${RUN}/results?path=fastqc`);
   await expect(page.getByRole('heading', { level: 1, name: 'Results' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Folder' }).getByRole('link', { name: 'results' })).toBeVisible();
-  const table = page.getByRole('table', { name: 'fastqc' });
-  await expect(table.getByRole('link', { name: 'versions.yml' })).toHaveAttribute('href', `/api/v1/runs/${RUN}/results/raw/fastqc/versions.yml?download=true`);
-  await expect(table.getByText('link outside the results directory')).toBeVisible();
-  await table.getByRole('link', { name: 'S01_fastqc.html' }).click();
+  const phone = info.project.name === 'phone';
+  const table = page.getByRole(phone ? 'list' : 'table', { name: 'fastqc' });
+  // FU-P3-85d: a file's name opens its preview; on the desktop, Download is the row's icon button.
+  await expect(table.getByRole('link', { name: /^versions\.yml/ })).toHaveAttribute('href', `/runs/${RUN}/results/file?path=${encodeURIComponent('fastqc/versions.yml')}`);
+  if (!phone) {
+    await expect(table.getByRole('link', { name: 'Download versions.yml' })).toHaveAttribute('href', `/api/v1/runs/${RUN}/results/raw/fastqc/versions.yml?download=true`);
+  }
+  await expect(table.getByText('not followed')).toBeVisible();
+  await table.getByRole('link', { name: /^S01_fastqc\.html/ }).click();
   await expect(page.getByText('Untrusted report: fastqc/S01_fastqc.html')).toBeVisible();
 });

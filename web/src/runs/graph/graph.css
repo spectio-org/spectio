@@ -1,0 +1,1723 @@
+/* The workflow graph (issue #160). Node colours come from [data-tone] (runs.css), so both
+   colour schemes follow the --sp-state-* tokens. */
+.sp-graph {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sp-gtoolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+.sp-gsearch {
+  min-width: 240px;
+  flex: 1 1 240px;
+  max-width: 360px;
+}
+.sp-gview {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--sp-surface-sunken);
+}
+.sp-gbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+  background: none;
+  cursor: pointer;
+}
+.sp-gbtn[aria-pressed="true"],
+.sp-gbtn[aria-checked="true"] {
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-raised);
+  box-shadow: var(--sp-shadow);
+}
+.sp-gbtn:focus-visible,
+.sp-gnode-btn:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+.sp-graph-map {
+  height: min(70vh, 720px);
+  min-height: 420px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 10px;
+  background: var(--sp-surface-page);
+  overflow: hidden;
+}
+.sp-graph-map .react-flow {
+  --xy-background-color: var(--sp-surface-page);
+  --xy-edge-stroke: var(--sp-text-faint);
+  --xy-handle-background-color: transparent;
+  --xy-handle-border-color: transparent;
+}
+.sp-gnode {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1.5px solid var(--tone);
+  border-radius: 8px;
+  color: var(--tone-fg);
+  background: var(--tone-bg);
+  transition: opacity 120ms;
+}
+.sp-gnode[data-heat] {
+  background: color-mix(in srgb, var(--sp-state-failed) var(--sp-heat), var(--sp-surface-raised));
+  color: var(--sp-text-primary);
+}
+.sp-gnode[data-kind="gate"] {
+  border-radius: 999px;
+  border-style: dashed;
+}
+.sp-gnode[data-kind="checkpoint"] {
+  border-style: double;
+  border-width: 3px;
+}
+.sp-gnode[data-kind="stage"],
+.sp-gnode[data-kind="subworkflow"] {
+  border-width: 2.5px;
+}
+.sp-gnode[data-crit] {
+  box-shadow: 0 0 0 3px var(--sp-state-review);
+}
+.sp-gnode[data-match] {
+  box-shadow: 0 0 0 3px var(--sp-line-focus);
+}
+.sp-gnode[data-dim] {
+  opacity: 0.3;
+}
+.sp-gnode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+.sp-gnode-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-gnode-meta {
+  font-size: 11px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.sp-gnode-badge {
+  position: absolute;
+  top: -10px;
+  right: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-raised);
+  box-shadow: inset 0 0 0 1px var(--sp-line-border);
+}
+.sp-gedge-crit .react-flow__edge-path {
+  stroke: var(--sp-state-review);
+  stroke-width: 3;
+}
+.sp-gedge-dim {
+  opacity: 0.2;
+}
+.sp-gramp {
+  display: inline-block;
+  width: 64px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: -1px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sp-state-failed) 10%, var(--sp-surface-raised)), var(--sp-state-failed));
+}
+.sp-gtag {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-sunken);
+}
+.sp-gnote {
+  margin: 0;
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+}
+.sp-greplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp-greplay input[type="range"] {
+  width: 220px;
+}
+.sp-gsheet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gsheet-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+@media (max-width: 767px) {
+  .sp-graph-map {
+    height: 60vh;
+    min-height: 320px;
+  }
+  .sp-gsearch {
+    max-width: none;
+  }
+}
+.sp-gbanner {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--sp-state-review-fg);
+  background: var(--sp-state-review-bg);
+}
+.sp-gkey {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gswatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  vertical-align: -2px;
+  border: 1.5px solid var(--tone);
+  background: var(--tone-bg);
+}
+/* Jobs level: the step's name above the job's key */
+.sp-gnode-step {
+  font-size: 10px;
+  color: var(--sp-text-tertiary, var(--sp-text-secondary));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-gnode[data-kind="job"] .sp-gnode-btn {
+  padding: 4px 8px;
+  gap: 0;
+}
+.sp-gnode[data-kind="job"] .sp-gnode-meta {
+  display: none;
+}
+.react-flow__edge {
+  cursor: pointer;
+}
+.sp-gcode {
+  max-height: 60vh;
+  margin: 0;
+  padding: 8px 0;
+  overflow: auto;
+  border-radius: 6px;
+  font: 12px/1.45 var(--sp-font-mono, ui-monospace, monospace);
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-sunken);
+  white-space: pre;
+}
+.sp-gcode-n {
+  display: inline-block;
+  width: 3.5em;
+  padding-right: 10px;
+  text-align: right;
+  color: var(--sp-text-faint);
+  user-select: none;
+}
+.sp-gcodepop {
+  position: fixed;
+  z-index: 300;
+  width: min(560px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sp-surface-raised);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.22), inset 0 0 0 1px var(--sp-line-border);
+}
+.sp-gcodepop header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.sp-gcodepop .sp-gcode {
+  max-height: 50vh;
+}
+.sp-gdetails summary {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Docked inspector (Thomas, 2026-11-11: no drawer over the map) */
+/* The map fills the screen under the toolbar (Thomas: less room for the header): the window's
+   height less the toolbar's (--sp-ghead, measured), never under 420 px. */
+.sp-gbody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  height: max(420px, calc(var(--sp-gview-h, 100dvh) - var(--sp-ghead, 120px) - 28px));
+}
+.sp-gbody[data-list] {
+  height: auto;
+}
+.sp-gbody:has(> .sp-ginspect) {
+  grid-template-columns: minmax(0, 1fr) var(--sp-side-w, 400px);
+}
+.sp-gmapcell {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+}
+.sp-gmapcell > .sp-graph-map {
+  height: 100%;
+  min-height: 0;
+}
+.sp-ginspect {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 10px;
+  background: var(--sp-surface-raised);
+}
+.sp-ginspect-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+/* the panel's left edge: drag it to resize (or focus it, then the arrow keys) */
+.sp-ginspect-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  width: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+.sp-ginspect-resize:hover,
+.sp-ginspect-resize:focus-visible {
+  background: color-mix(in srgb, var(--sp-accent) 45%, transparent);
+  outline: none;
+}
+.sp-ginspect > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--sp-line-divider);
+  background: var(--sp-surface-raised);
+}
+.sp-ginspect h2 {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.sp-ginspect h2:focus {
+  outline: none;
+}
+.sp-ginspect h2 svg {
+  flex-shrink: 0;
+  color: var(--sp-accent);
+}
+.sp-ginspect .sp-sheet {
+  padding: 4px 14px 14px;
+}
+.sp-gicon {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--sp-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+.sp-gicon:hover {
+  background: var(--sp-surface-subtle);
+}
+.sp-gicon:focus-visible,
+.sp-gaction:focus-visible,
+.sp-gfold:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 1px;
+}
+.sp-ghelp {
+  margin: 0 0 6px;
+  font-size: 12px;
+}
+
+/* nodes: kind icon, fold button */
+.sp-gnode-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.react-flow__edge-textbg {
+  fill: var(--sp-accent-subtle);
+}
+.react-flow__edge-text {
+  font-size: 10.5px;
+  font-weight: 600;
+  fill: var(--sp-accent);
+}
+@media (max-width: 760px) {
+  .sp-gbody:has(> .sp-ginspect) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.sp-ginspect .sp-sheet > p {
+  font-size: 13px;
+}
+
+/* 2026-11-11, second pass (Thomas): badges, fold, spotlight, panel, files, efficiency */
+.sp-gsr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.sp-gnode-kind {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+}
+.sp-gnode-name {
+  max-width: calc(100% - 22px);
+}
+.sp-gnode-bar {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--sp-text-faint) 25%, transparent);
+  overflow: hidden;
+}
+.sp-gnode-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--band, var(--sp-accent));
+}
+[data-band="low"] {
+  --band: #d97706;
+}
+[data-band="fair"] {
+  --band: #ca8a04;
+}
+[data-band="good"] {
+  --band: var(--sp-state-succeeded);
+}
+[data-band="over"] {
+  --band: var(--sp-state-failed);
+}
+.sp-gnode[data-band] {
+  border-color: var(--band);
+  background: color-mix(in srgb, var(--band) 12%, var(--sp-surface-raised));
+  color: var(--sp-text-primary);
+}
+/* marks: round badges riding on the box's top edge */
+.sp-gbadges {
+  position: absolute;
+  top: -9px;
+  left: 8px;
+  display: flex;
+  gap: 3px;
+  pointer-events: none;
+  z-index: 3;
+}
+.sp-gbadge {
+  position: relative;
+  pointer-events: auto;
+  cursor: help;
+}
+/* the mark's word: shown when the step has keyboard focus, so nothing is hover-only */
+.sp-gbadge-word {
+  display: none;
+  font-size: 10px;
+  font-weight: 600;
+  padding-right: 2px;
+}
+.sp-gnode:has(.sp-gnode-btn:focus-visible) .sp-gbadge,
+.sp-gnode[data-ring] .sp-gbadge {
+  width: auto;
+  padding: 0 6px 0 4px;
+  grid-auto-flow: column;
+  gap: 3px;
+}
+.sp-gnode:has(.sp-gnode-btn:focus-visible) .sp-gbadge-word,
+.sp-gnode[data-ring] .sp-gbadge-word {
+  display: inline;
+}
+/* the full explanation, on hover of the badge */
+.sp-gbadge-tip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--sp-text-primary);
+  color: var(--sp-surface-page);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: left;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.2);
+  z-index: 10;
+}
+.sp-gbadge:hover .sp-gbadge-tip {
+  display: block;
+}
+.sp-gbadge,
+.sp-gflag-dot {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--flag);
+  box-shadow: 0 0 0 2px var(--sp-surface-page);
+}
+.sp-gflag-dot {
+  width: 16px;
+  height: 16px;
+  box-shadow: none;
+}
+[data-flag="checkpoint"] {
+  --flag: #7c3aed;
+}
+[data-flag="temp"] {
+  --flag: #0891b2;
+}
+[data-flag="conditional"] {
+  --flag: #2563eb;
+}
+[data-flag="retried"] {
+  --flag: #ea580c;
+}
+[data-flag="cached"] {
+  --flag: #64748b;
+}
+.sp-gflag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px 1px 2px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--flag);
+  background: color-mix(in srgb, var(--flag) 12%, transparent);
+}
+/* fold and unfold: a round accent button on the box's corner */
+.sp-gfold {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1.5px solid var(--sp-accent);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sp-accent);
+  background: var(--sp-surface-raised);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  cursor: pointer;
+}
+.sp-gfold:hover {
+  color: #fff;
+  background: var(--sp-accent);
+}
+.sp-gfold[data-folded] {
+  color: #fff;
+  background: var(--sp-accent);
+}
+.sp-gfold[data-folded]:hover {
+  filter: brightness(1.1);
+}
+/* a step's fold button shows on hover, on keyboard focus and on the open step; a folded box's
+   unfold button always shows (and both are in the details panel and on double-click) */
+@media (hover: hover) {
+  /* shown on hover; on a touch screen it stays visible, never an invisible tap target (CR-10) */
+  .sp-gfold:not([data-folded]) {
+    opacity: 0;
+    transition: opacity 120ms;
+  }
+}
+.sp-gnode:hover > .sp-gfold,
+.sp-gnode[data-ring] > .sp-gfold,
+.sp-gfold:focus-visible {
+  opacity: 1;
+}
+.sp-gfold-key {
+  position: static;
+  opacity: 1 !important;
+  display: inline-flex;
+  vertical-align: middle;
+}
+/* the open step lights up, with its links and neighbours; everything else fades */
+.sp-gnode[data-ring="selected"] {
+  box-shadow: 0 0 0 3px var(--sp-accent), 0 0 18px 4px color-mix(in srgb, var(--sp-accent) 45%, transparent);
+}
+.sp-gnode[data-ring="near"] {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sp-accent) 60%, transparent);
+}
+.sp-gnode[data-dim] {
+  opacity: 0.28;
+}
+.react-flow__edge.sp-gedge-near .react-flow__edge-path {
+  /* solid: a dashed line means a condition (CR-11) */
+  stroke: var(--sp-accent);
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--sp-accent) 60%, transparent));
+}
+.react-flow__edge.sp-gedge-if .react-flow__edge-path {
+  stroke-dasharray: 5 4;
+}
+.react-flow__edge.sp-gedge-dim {
+  opacity: 0.12;
+}
+.sp-glane {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--sp-line-border);
+  border-radius: 12px;
+  background: var(--sp-surface-subtle);
+}
+.sp-glane[data-area] {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--sp-accent) 25%, var(--sp-line-border));
+  background: color-mix(in srgb, var(--sp-accent) 4%, var(--sp-surface-page));
+}
+.sp-glane-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 6px;
+}
+.sp-glane-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 4px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--sp-text-secondary);
+}
+.sp-glane[data-selected] {
+  border-color: var(--sp-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sp-accent) 30%, transparent);
+}
+.sp-glane-fold {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--sp-accent) 35%, transparent);
+  border-radius: 999px;
+  background: var(--sp-surface-page);
+  color: var(--sp-text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.sp-glane-fold:hover,
+.sp-glane-fold:focus-visible {
+  border-color: var(--sp-accent);
+  color: var(--sp-text-primary);
+}
+.sp-glane-fold-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sp-accent);
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.sp-glane-fold-icon:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+/* legend: one line, the rest on demand */
+.sp-glegend {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 6;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+  pointer-events: none;
+}
+.sp-glegend > * {
+  pointer-events: auto;
+}
+.sp-glegend-row {
+  justify-self: start;
+  max-width: 100%;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--sp-line-divider);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--sp-surface-raised) 92%, transparent);
+  box-shadow: var(--sp-shadow);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+.sp-glegend-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-raised);
+  cursor: pointer;
+}
+.sp-glegend-toggle:focus-visible,
+.sp-gcode-copy:focus-visible,
+.sp-gwire-chip:focus-visible,
+.sp-gflow-end:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 1px;
+}
+.sp-glegend-more {
+  display: grid;
+  gap: 8px;
+  max-width: 760px;
+  max-height: 55vh;
+  overflow: auto;
+  box-shadow: var(--sp-shadow);
+  padding: 10px 12px;
+  border: 1px solid var(--sp-line-divider);
+  border-radius: 10px;
+  background: var(--sp-surface-raised);
+}
+.sp-glegend-help {
+  margin: 0;
+}
+.sp-gkey-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 6px 16px;
+}
+.sp-gkey-grid li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sp-gkey-edge {
+  stroke: var(--sp-text-secondary);
+  stroke-width: 2;
+  fill: none;
+}
+.sp-gkey-arrow {
+  fill: var(--sp-text-secondary);
+}
+.sp-gswatch[data-band] {
+  border-color: var(--band);
+  background: color-mix(in srgb, var(--band) 25%, var(--sp-surface-raised));
+}
+.sp-gswatch[data-ring] {
+  border-color: var(--sp-accent);
+  box-shadow: 0 0 6px var(--sp-accent);
+  background: var(--sp-surface-raised);
+}
+.sp-gswatch[data-crit] {
+  border: 3px solid var(--sp-state-review);
+  background: transparent;
+}
+.sp-gbanner-focus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--sp-text-primary);
+  background: var(--sp-accent-subtle);
+}
+.sp-gbtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sp-gbtn-line {
+  border: 1px solid var(--sp-line-border);
+}
+.sp-graph[data-full] {
+  padding: 12px;
+  overflow: auto;
+  background: var(--sp-surface-page);
+}
+.sp-graph[data-full] {
+  --sp-gview-h: calc(100vh - 24px);
+}
+/* details panel */
+.sp-ginspect-icon {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--tone, var(--sp-accent));
+  background: color-mix(in srgb, var(--tone, var(--sp-accent)) 14%, transparent);
+}
+.sp-ginspect h2 {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+.sp-ginspect h2 small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--sp-text-secondary);
+}
+.sp-sheet-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 16px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--sp-text-secondary);
+}
+.sp-sheet-h svg {
+  color: var(--sp-accent);
+}
+.sp-ghero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 10px 0 4px;
+  font-size: 12.5px;
+}
+.sp-ghero-jobs,
+.sp-ghero-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--sp-text-secondary);
+}
+.sp-ghero-bar,
+.sp-ggauge-bar {
+  position: relative;
+  display: inline-block;
+  width: 72px;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--sp-surface-sunken);
+}
+.sp-ghero-bar > span,
+.sp-ggauge-bar > span:first-child {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--band, var(--sp-state-succeeded));
+}
+.sp-gactions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  margin: 10px 0 6px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--sp-surface-raised);
+}
+.sp-gaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--sp-line-divider);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--sp-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+.sp-gaction:last-child {
+  border-right: 0;
+}
+.sp-gaction svg {
+  color: var(--sp-accent);
+}
+.sp-gaction:hover {
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-subtle);
+}
+.sp-gaction[aria-pressed="true"] {
+  color: #fff;
+  background: var(--sp-accent);
+}
+.sp-gaction[aria-pressed="true"] svg {
+  color: #fff;
+}
+/* links: inputs, the step, outputs */
+.sp-gwire {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--sp-surface-sunken);
+}
+.sp-gwire-row,
+.sp-gsteps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gsteps {
+  justify-content: flex-start;
+}
+.sp-gwire-chip,
+.sp-gflow-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 9px 3px 5px;
+  border: 1.5px solid var(--tone);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-raised);
+  cursor: pointer;
+}
+.sp-gwire-chip span,
+.sp-gflow-end span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-gwire-chip svg,
+.sp-gflow-end svg {
+  flex-shrink: 0;
+  color: var(--tone);
+}
+.sp-gwire-chip:hover,
+.sp-gflow-end:hover {
+  background: color-mix(in srgb, var(--tone) 12%, var(--sp-surface-raised));
+}
+.sp-gwire-if {
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  color: #fff;
+  background: #2563eb;
+}
+.sp-gwire-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0 6px 12px;
+  border-left: 2px dashed var(--sp-accent);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--sp-accent);
+}
+.sp-gwire-me {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 2px solid var(--tone);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--sp-surface-raised);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sp-accent) 25%, transparent);
+}
+.sp-gwire-none {
+  margin: 0;
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--sp-text-secondary);
+}
+/* the link panel */
+.sp-gflow-diagram {
+  display: grid;
+  justify-items: start;
+  gap: 0;
+  margin: 12px 0 8px;
+}
+.sp-gflow-pipe {
+  display: grid;
+  gap: 4px;
+  margin-left: 14px;
+  padding: 8px 0 8px 16px;
+  border-left: 3px solid var(--sp-accent);
+}
+.sp-gflow-carrier {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sp-accent);
+}
+.sp-gflow-if {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #2563eb;
+}
+.sp-ghelp {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+}
+.sp-ghelp svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.sp-gfrom {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+/* outputs as file cards */
+.sp-gfiles {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+.sp-gfile {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 8px;
+  background: var(--sp-surface-page);
+}
+.sp-gfile[data-state="missing"],
+.sp-gfile[data-state="removed"] {
+  opacity: 0.7;
+}
+.sp-gfile-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  overflow: hidden;
+  color: var(--sp-accent);
+  background: var(--sp-accent-subtle);
+}
+.sp-gfile-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sp-gfile-text {
+  display: grid;
+  min-width: 0;
+}
+.sp-gfile-name {
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-gfile-sub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--sp-text-secondary);
+}
+.sp-gfile-dir {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-gdot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sp-text-faint);
+}
+.sp-gdot[data-state="present"] {
+  background: var(--sp-state-succeeded);
+}
+.sp-gdot[data-state="missing"] {
+  background: var(--sp-state-failed);
+}
+.sp-gfile-acts {
+  display: inline-flex;
+  gap: 2px;
+}
+.sp-gfile-head {
+  grid-column: 1 / -1;
+}
+.sp-gfile-head .sp-gcode {
+  max-height: 220px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+/* efficiency gauges */
+.sp-ggauges {
+  display: grid;
+  gap: 10px;
+}
+.sp-ggauge {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 10px;
+  font-size: 12.5px;
+}
+.sp-ggauge-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+.sp-ggauge > strong {
+  justify-self: end;
+  font-variant-numeric: tabular-nums;
+}
+.sp-ggauge-bar {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+}
+.sp-ggauge-bar > span:first-child {
+  background: var(--band, var(--sp-accent));
+}
+.sp-ggauge-tick {
+  position: absolute;
+  top: -2px;
+  left: 70%;
+  width: 0;
+  height: 12px;
+  border-left: 1px dashed var(--sp-text-faint);
+}
+.sp-ggauge-hint {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--sp-text-secondary);
+}
+.sp-gcode-wrap {
+  position: relative;
+}
+.sp-gcode-copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-raised);
+  cursor: pointer;
+}
+.sp-gcode-said {
+  position: absolute;
+  top: 34px;
+  right: 8px;
+  font-size: 11px;
+  color: var(--sp-text-secondary);
+}
+.sp-gdetails summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* a link's declared channel type or files: the upstream's output, the downstream's input */
+.sp-gdecls {
+  display: grid;
+  gap: 8px;
+}
+.sp-gdecl-title {
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.sp-gdecl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  /* the same columns in every table of the panel, so the two sides line up */
+  table-layout: fixed;
+}
+.sp-gdecl-table th:first-child {
+  width: 34%;
+}
+.sp-gdecl-table thead th:nth-child(2) {
+  width: 56px;
+}
+.sp-gdecl-table th,
+.sp-gdecl-table td {
+  padding: 3px 8px 3px 0;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.sp-gdecl-table thead th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sp-text-secondary);
+  border-bottom: 1px solid var(--sp-line-border);
+}
+.sp-gdecl-table tbody + tbody {
+  border-top: 1px solid color-mix(in srgb, var(--sp-line-border) 60%, transparent);
+}
+.sp-gdecl-table tbody th {
+  font-weight: 600;
+}
+.sp-gdecl-opt {
+  display: block;
+  font-family: var(--sp-font-sans, inherit);
+  font-weight: 400;
+  font-size: 10.5px;
+  color: var(--sp-text-secondary);
+}
+.sp-gdecl-kind {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--sp-line-border);
+  font-size: 11px;
+  color: var(--sp-text-secondary);
+}
+.sp-gdecl-kind[data-kind="path"],
+.sp-gdecl-kind[data-kind="file"] {
+  color: var(--sp-accent);
+  border-color: color-mix(in srgb, var(--sp-accent) 40%, transparent);
+}
+.sp-gdecl-kind[data-kind="temp"] {
+  border-style: dashed;
+}
+
+/* a job out of its step's norm under a colour mode: an amber dashed outline (the words are in the
+   node's meta line and accessible name, not only the colour) */
+.sp-gnode[data-odd] .sp-gnode-btn:not(:focus-visible) {
+  outline: 2px dashed var(--sp-state-review, #d97706);
+  outline-offset: 2px;
+}
+.sp-gswatch[data-odd] {
+  border: 2px dashed var(--sp-state-review);
+  background: transparent;
+}
+
+
+.sp-gdecl-kind[data-kind="default"] {
+  border-style: dashed;
+}
+
+/* the header: the toolbar's labels beside their fields, on one line where it fits (Thomas: less
+   room for the header) */
+.sp-ghead {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sp-ghead > p[role="status"]:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.sp-gtoolbar {
+  align-items: center;
+  gap: 8px 12px;
+}
+.sp-gtoolbar .mantine-NativeSelect-root,
+.sp-gtoolbar .mantine-TextInput-root {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+.sp-gtoolbar .mantine-NativeSelect-label,
+.sp-gtoolbar .mantine-TextInput-label {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+}
+.sp-gtoolbar .mantine-TextInput-wrapper {
+  flex: 1;
+}
+.sp-gtoolbar .mantine-TextInput-description {
+  flex-basis: 100%;
+}
+
+/* zoom buttons: dark enough to read as live (the fit icon looked disabled) */
+.sp-gcontrols .react-flow__controls-button {
+  color: var(--sp-text-primary);
+}
+.sp-gcontrols .react-flow__controls-button svg {
+  fill: none;
+  max-width: none;
+  max-height: none;
+}
+.sp-gcontrols .react-flow__controls-button:first-child svg,
+.sp-gcontrols .react-flow__controls-button:nth-child(2) svg {
+  fill: currentColor;
+  max-width: 12px;
+  max-height: 12px;
+}
+
+/* cards on steps, group names and links, drawn over the whole map: a light card, its colour the
+   state's (Thomas: coloured, more graphic). Shown after a short hover, at once on keyboard focus. */
+.sp-gtip {
+  position: absolute;
+  z-index: 20;
+  width: max-content;
+  min-width: 200px;
+  max-width: 308px;
+  padding: 0 0 8px;
+  border: 1px solid var(--sp-line-border);
+  border-top: 3px solid var(--tone, var(--sp-accent));
+  border-radius: 10px;
+  background: var(--sp-surface-raised);
+  color: var(--sp-text-primary);
+  font-size: 12px;
+  line-height: 1.35;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.16);
+  pointer-events: none;
+  animation: sp-gtip-in 0s 0.3s both;
+}
+/* opened by keyboard focus: at once */
+.sp-gtip[data-now] {
+  animation: none;
+}
+.sp-gtip[data-above] {
+  transform: translateY(-100%);
+}
+@keyframes sp-gtip-in {
+  from {
+    visibility: hidden;
+  }
+  to {
+    visibility: visible;
+  }
+}
+.sp-gtip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 6px;
+}
+.sp-gtip-icon {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  color: var(--tone, var(--sp-accent));
+  background: color-mix(in srgb, var(--tone, var(--sp-accent)) 15%, transparent);
+}
+.sp-gtip-title {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.sp-gtip-title strong {
+  overflow-wrap: anywhere;
+  font-weight: 650;
+}
+.sp-gtip-title small {
+  font-size: 11px;
+  color: var(--sp-text-secondary);
+}
+.sp-gtip-state {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tone-fg, var(--sp-text-primary));
+  background: var(--tone-bg, var(--sp-surface-sunken));
+}
+.sp-gtip-ends {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px 6px;
+  color: var(--sp-text-secondary);
+}
+.sp-gtip-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border: 1px solid var(--tone);
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  background: var(--tone-bg);
+}
+.sp-gtip-end svg {
+  color: var(--tone);
+}
+.sp-gtip-prog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 6px;
+  font-size: 11px;
+  color: var(--sp-text-secondary);
+}
+.sp-gtip-progbar,
+.sp-gtip-bar {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sp-surface-sunken);
+  overflow: hidden;
+}
+.sp-gtip-progbar > span,
+.sp-gtip-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--tone, var(--sp-accent));
+}
+.sp-gtip-bar {
+  display: block;
+  flex: none;
+  width: 100%;
+  margin-top: 3px;
+}
+.sp-gtip-bar[data-band] > span {
+  background: var(--band);
+}
+.sp-gtip-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 10px 6px;
+}
+.sp-gtip-chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tone-fg);
+  background: var(--tone-bg);
+}
+.sp-gtip dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 6px 10px 0;
+  border-top: 1px solid var(--sp-line-divider);
+}
+.sp-gtip dl > div {
+  display: contents;
+}
+.sp-gtip dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--sp-text-secondary);
+}
+.sp-gtip dt svg {
+  color: var(--sp-accent);
+}
+.sp-gtip dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sp-gtip [data-warn] dt,
+.sp-gtip [data-warn] dd,
+.sp-gtip [data-warn] dt svg {
+  color: var(--sp-state-review);
+}
+.sp-gtip-hint {
+  display: block;
+  margin: 6px 10px 0;
+  font-size: 10.5px;
+  color: var(--sp-text-faint, var(--sp-text-secondary));
+}
+.sp-gtip-hint:empty {
+  display: none;
+}
+
+/* details panel: each section set apart by a line (Thomas: keep separators) */
+.sp-ginspect .sp-sheet > .sp-sheet-h,
+.sp-ginspect .sp-sheet > .sp-gdetails {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--sp-line-divider);
+}
+/* the Code section's title reads as the other sections' titles */
+.sp-ginspect .sp-gdetails > summary {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--sp-text-secondary);
+}
+.sp-ginspect .sp-gdetails > summary svg {
+  color: var(--sp-accent);
+}
+/* one column no wider than the panel: a long line of code scrolls inside its block */
+.sp-ginspect .sp-sheet {
+  grid-template-columns: minmax(0, 1fr);
+}
+.sp-gactions-go {
+  margin-top: 6px;
+}
+.sp-gcond {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0 0;
+  font-size: 12.5px;
+}
+.sp-gcond svg {
+  color: var(--sp-accent);
+}
+
+/* a job's key as chips */
+.sp-gkeychips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-gkeychip {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--sp-accent) 40%, transparent);
+  border-radius: 999px;
+  font-size: 12px;
+}
+.sp-gkeychip > span {
+  padding: 2px 8px;
+  color: var(--sp-text-secondary);
+  background: var(--sp-accent-subtle);
+}
+.sp-gkeychip > strong {
+  padding: 2px 8px;
+  font-weight: 600;
+}
+
+/* a job among its step's jobs: one bar each */
+.sp-gchart-pick {
+  margin-bottom: 8px;
+}
+.sp-gchart {
+  position: relative;
+  overflow-x: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 84px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--sp-line-border);
+}
+.sp-gchart-bar {
+  flex: 1 0 3px;
+  min-width: 3px;
+  max-width: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px 3px 0 0;
+  background: color-mix(in srgb, var(--tone) 35%, var(--sp-surface-sunken));
+  cursor: pointer;
+}
+.sp-gchart-bar[data-odd] {
+  outline: 1.5px dashed var(--sp-state-review);
+  outline-offset: 1px;
+}
+.sp-gchart-bar[data-me] {
+  background: var(--sp-accent);
+}
+.sp-gchart-bar:hover {
+  background: color-mix(in srgb, var(--sp-accent) 60%, var(--sp-surface-sunken));
+}
+.sp-gchart-bar:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 1px;
+}
+.sp-gchart-median {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1.5px dashed var(--sp-text-secondary);
+  pointer-events: none;
+}
+
+/* parameters: the name on its own line, then the kind and the value */
+.sp-gparams {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+.sp-gparams li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: baseline;
+  padding: 6px 0;
+}
+.sp-gparams li + li {
+  border-top: 1px solid color-mix(in srgb, var(--sp-line-border) 60%, transparent);
+}
+.sp-gparam-name {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sp-gparams li[data-set] .sp-gparam-name::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 6px 1px 0;
+  border-radius: 999px;
+  background: var(--sp-accent);
+}
+.sp-gparam-value {
+  overflow-wrap: anywhere;
+}
+.sp-gparam-value[data-bool="true"] {
+  color: var(--sp-state-succeeded, inherit);
+}
+.sp-gparam-value[data-bool="false"] {
+  color: var(--sp-text-secondary);
+}
+
+/* a hovered step above its neighbours, so its marks' words are not covered */
+.react-flow__node-sp:hover,
+.react-flow__node-sp:focus-within {
+  z-index: 1000 !important;
+}

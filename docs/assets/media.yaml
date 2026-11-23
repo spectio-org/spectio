@@ -60,7 +60,7 @@ media:
     # copied to a path free of forbidden terms (SPECTIO_DEMO_PIPELINE), tools/media/README.md;
     # since UI parity D it is picked from Try a test pipeline, so the server must have run it once;
     # P1 Task 32 retake: scale set to 0 shows its field error (Launch checks)
-    generator: python3 tools/media/shots.py run --shot app-launch --theme both
+    generator: python3 tools/media/b17_demo.py --shot app-launch
     outputs: [docs/assets/shots/app-launch_light.webp, docs/assets/shots/app-launch_dark.webp]
   - id: app-launch-phone
     kind: screenshot
@@ -89,7 +89,7 @@ media:
     outputs: [docs/assets/shots/app-runs-phone_light.webp]
   - id: app-launch-snakemake
     kind: screenshot
-    # live, as app-launch, with SPECTIO_DEMO_SMK_PIPELINE (tools/media/README.md, live shots: config.yaml with a nested map `ref`), at 1440 x 1380
+    # live, as app-launch, with SPECTIO_DEMO_SMK_PIPELINE (tools/media/README.md, live shots), at 1440 x 1380; opens two schema groups
     generator: python3 tools/media/shots.py run --shot app-launch-snakemake --theme light
     outputs: [docs/assets/shots/app-launch-snakemake_light.webp]
   - id: app-run-detail
@@ -134,6 +134,33 @@ media:
     # searched for MERGE (four matches, P3 UI parity D)
     generator: python3 tools/media/shots.py run --shot app-run-logs --theme both
     outputs: [docs/assets/shots/app-run-logs_light.webp, docs/assets/shots/app-run-logs_dark.webp]
+  - id: app-environments
+    kind: screenshot
+    # live (batch P3-B11, FU-P3-86f): a local server whose environments.toml holds two-cores (the default) and
+    # eight-cores; names and paths are demo ones (tools/media/README.md, batch P3-B11 shots)
+    generator: python3 tools/media/b17_demo.py --shot app-environments
+    outputs: [docs/assets/shots/app-environments_light.webp, docs/assets/shots/app-environments_dark.webp]
+  - id: app-environments-phone
+    kind: screenshot
+    # live, as app-environments, at 390 x 844
+    generator: python3 tools/media/b17_demo.py --shot app-environments-phone
+    outputs: [docs/assets/shots/app-environments-phone_light.webp, docs/assets/shots/app-environments-phone_dark.webp]
+  - id: app-environment-edit
+    kind: screenshot
+    # live, as app-environments: the form of two-cores on a local server
+    generator: python3 tools/media/b17_demo.py --shot app-environment-edit
+    outputs: [docs/assets/shots/app-environment-edit_light.webp, docs/assets/shots/app-environment-edit_dark.webp]
+  - id: app-launch-environment
+    kind: screenshot
+    # live, as app-launch (the synthetic pipeline picked from Try a test pipeline, scale set to 0), with the two
+    # environments of app-environments: Where it runs, the Summary and Before Launch (FU-P3-86g, -86h)
+    generator: python3 tools/media/b17_demo.py --shot app-launch-environment
+    outputs: [docs/assets/shots/app-launch-environment_light.webp, docs/assets/shots/app-launch-environment_dark.webp]
+  - id: app-run-environment
+    kind: screenshot
+    # live, as app-environments; SPECTIO_DEMO_RUN is a finished run launched with environment eight-cores (FU-P3-86g)
+    generator: python3 tools/media/shots.py run --shot app-run-environment --theme both
+    outputs: [docs/assets/shots/app-run-environment_light.webp, docs/assets/shots/app-run-environment_dark.webp]
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
@@ -534,6 +561,86 @@ media:
       - docs/assets/diagrams/p3-b05-sacct-bind-detach_dark.svg
       - docs/assets/diagrams/p3-b05-sacct-bind-detach_light.png
       - docs/assets/diagrams/p3-b05-sacct-bind-detach_dark.png
+  - id: p3-b06-native-slurm-local-e2e
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b06_native_slurm_local_e2e.py
+    outputs:
+      - docs/assets/diagrams/p3-b06-native-slurm-local-e2e_light.svg
+      - docs/assets/diagrams/p3-b06-native-slurm-local-e2e_dark.svg
+      - docs/assets/diagrams/p3-b06-native-slurm-local-e2e_light.png
+      - docs/assets/diagrams/p3-b06-native-slurm-local-e2e_dark.png
+  - id: p3-b07-socket-uv-disk
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b07_socket_uv_disk.py
+    outputs:
+      - docs/assets/diagrams/p3-b07-socket-uv-disk_light.svg
+      - docs/assets/diagrams/p3-b07-socket-uv-disk_dark.svg
+      - docs/assets/diagrams/p3-b07-socket-uv-disk_light.png
+      - docs/assets/diagrams/p3-b07-socket-uv-disk_dark.png
+  - id: p3-b08-login1-followups
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b08_login1_followups.py
+    outputs:
+      - docs/assets/diagrams/p3-b08-login1-followups_light.svg
+      - docs/assets/diagrams/p3-b08-login1-followups_dark.svg
+      - docs/assets/diagrams/p3-b08-login1-followups_light.png
+      - docs/assets/diagrams/p3-b08-login1-followups_dark.png
+  - id: p3-b09-file-explorer
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b09_file_explorer.py
+    outputs:
+      - docs/assets/diagrams/p3-b09-file-explorer_light.svg
+      - docs/assets/diagrams/p3-b09-file-explorer_dark.svg
+      - docs/assets/diagrams/p3-b09-file-explorer_light.png
+      - docs/assets/diagrams/p3-b09-file-explorer_dark.png
+  - id: p3-b10-environments-imaging
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b10_environments_imaging.py
+    outputs:
+      - docs/assets/diagrams/p3-b10-environments-imaging_light.svg
+      - docs/assets/diagrams/p3-b10-environments-imaging_dark.svg
+      - docs/assets/diagrams/p3-b10-environments-imaging_light.png
+      - docs/assets/diagrams/p3-b10-environments-imaging_dark.png
+  - id: p3-b11-environments-screens
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b11_environments_screens.py
+    outputs:
+      - docs/assets/diagrams/p3-b11-environments-screens_light.svg
+      - docs/assets/diagrams/p3-b11-environments-screens_dark.svg
+      - docs/assets/diagrams/p3-b11-environments-screens_light.png
+      - docs/assets/diagrams/p3-b11-environments-screens_dark.png
+  - id: p3-b12-tiff-cancel-catalog
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b12_tiff_cancel_catalog.py
+    outputs:
+      - docs/assets/diagrams/p3-b12-tiff-cancel-catalog_light.svg
+      - docs/assets/diagrams/p3-b12-tiff-cancel-catalog_dark.svg
+      - docs/assets/diagrams/p3-b12-tiff-cancel-catalog_light.png
+      - docs/assets/diagrams/p3-b12-tiff-cancel-catalog_dark.png
+  - id: p3-b13-catalog-zarr-grid
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b13_catalog_zarr_grid.py
+    outputs:
+      - docs/assets/diagrams/p3-b13-catalog-zarr-grid_light.svg
+      - docs/assets/diagrams/p3-b13-catalog-zarr-grid_dark.svg
+      - docs/assets/diagrams/p3-b13-catalog-zarr-grid_light.png
+      - docs/assets/diagrams/p3-b13-catalog-zarr-grid_dark.png
+  - id: p3-b14-catalog-viewer-pages
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b14_catalog_viewer_pages.py
+    outputs:
+      - docs/assets/diagrams/p3-b14-catalog-viewer-pages_light.svg
+      - docs/assets/diagrams/p3-b14-catalog-viewer-pages_dark.svg
+      - docs/assets/diagrams/p3-b14-catalog-viewer-pages_light.png
+      - docs/assets/diagrams/p3-b14-catalog-viewer-pages_dark.png
+  - id: p3-b15-resources-bell-runs-codecs
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b15_resources_bell_runs_codecs.py
+    outputs:
+      - docs/assets/diagrams/p3-b15-resources-bell-runs-codecs_light.svg
+      - docs/assets/diagrams/p3-b15-resources-bell-runs-codecs_dark.svg
+      - docs/assets/diagrams/p3-b15-resources-bell-runs-codecs_light.png
+      - docs/assets/diagrams/p3-b15-resources-bell-runs-codecs_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
@@ -733,6 +840,171 @@ media:
     # live, the Nextflow run, process FINAL_REPORT: the task sheet with Efficiency from the engine's trace
     generator: python3 tools/media/shots.py run --shot app-run-task-efficiency --theme both
     outputs: [docs/assets/shots/app-run-task-efficiency_light.webp, docs/assets/shots/app-run-task-efficiency_dark.webp]
+  - id: app-run-by-rule-order
+    kind: screenshot
+    # live, the Snakemake run, Jobs, By rule at 1440 x 1000: the Order radio group, Pipeline order checked (batch P3-B08, FU-P3-82)
+    generator: python3 tools/media/shots.py run --shot app-run-by-rule-order --theme both
+    outputs: [docs/assets/shots/app-run-by-rule-order_light.webp, docs/assets/shots/app-run-by-rule-order_dark.webp]
+  - id: app-run-by-rule-order-phone
+    kind: screenshot
+    # live, as app-run-by-rule-order at 390 x 844: the radio group above the Sort by select
+    generator: python3 tools/media/shots.py run --shot app-run-by-rule-order-phone --theme both
+    outputs: [docs/assets/shots/app-run-by-rule-order-phone_light.webp, docs/assets/shots/app-run-by-rule-order-phone_dark.webp]
+  - id: app-run-process-columns
+    kind: screenshot
+    # live, the Nextflow run, the sheet of process ALIGN: its tasks under a Task and State header (batch P3-B08, FU-P3-80)
+    generator: python3 tools/media/shots.py run --shot app-run-process-columns --theme both
+    outputs: [docs/assets/shots/app-run-process-columns_light.webp, docs/assets/shots/app-run-process-columns_dark.webp]
+  - id: app-run-failed-synth
+    kind: screenshot
+    # live, a Nextflow run launched with the profile fail_demo: Why it failed and the failed COMPARE task's .command.log with its WARN, INFO and ERROR lines (batch P3-B08, FU-P3-83)
+    generator: python3 tools/media/shots.py run --shot app-run-failed-synth --theme both
+    outputs: [docs/assets/shots/app-run-failed-synth_light.webp, docs/assets/shots/app-run-failed-synth_dark.webp]
+  - id: app-results-explorer
+    kind: screenshot
+    # live, the finished Nextflow run, the results directory at 1440 x 1000: sort buttons, the filter, a Kind badge and a Download button per entry (batch P3-B09, FU-P3-85d)
+    generator: python3 tools/media/shots.py run --shot app-results-explorer --theme both
+    outputs: [docs/assets/shots/app-results-explorer_light.webp, docs/assets/shots/app-results-explorer_dark.webp]
+  - id: app-file-preview
+    kind: screenshot
+    # live, the same run, quant/counts_matrix.tsv at 1440 x 1000: a TSV shown as a table, with its path, Copy path and Download (batch P3-B09, FU-P3-85c)
+    generator: python3 tools/media/shots.py run --shot app-file-preview --theme both
+    outputs: [docs/assets/shots/app-file-preview_light.webp, docs/assets/shots/app-file-preview_dark.webp]
+  - id: app-file-preview-phone
+    kind: screenshot
+    # live, as app-file-preview at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-file-preview-phone --theme both
+    outputs: [docs/assets/shots/app-file-preview-phone_light.webp, docs/assets/shots/app-file-preview-phone_dark.webp]
+  - id: app-file-preview-tiff
+    kind: screenshot
+    # a seeded server, no pipeline: one finished run record and results/imaging/cells.tif (16-bit, 512 x 384) at 1440 x 1000; tiff_demo.py runs shots.py itself (batch P3-B12, DW-P3B12-01)
+    generator: python3 tools/media/tiff_demo.py --shot app-file-preview-tiff
+    outputs: [docs/assets/shots/app-file-preview-tiff_light.webp, docs/assets/shots/app-file-preview-tiff_dark.webp]
+  - id: app-file-preview-tiff-phone
+    kind: screenshot
+    # as app-file-preview-tiff, at 390 x 844
+    generator: python3 tools/media/tiff_demo.py --shot app-file-preview-tiff-phone
+    outputs: [docs/assets/shots/app-file-preview-tiff-phone_light.webp, docs/assets/shots/app-file-preview-tiff-phone_dark.webp]
+  - id: app-launch-catalog
+    kind: screenshot
+    # a seeded server, no pipeline run: catalog.toml with three entries and a copy of the synthetic Nextflow pipeline; the rnaseq-test entry chosen and loaded, at 1440 x 1100; b13_demo.py runs shots.py itself (batch P3-B13, FU-P3-87e)
+    generator: python3 tools/media/b13_demo.py --shot app-launch-catalog
+    outputs: [docs/assets/shots/app-launch-catalog_light.webp, docs/assets/shots/app-launch-catalog_dark.webp]
+  - id: app-launch-catalog-manage
+    kind: screenshot
+    # as app-launch-catalog, with Manage catalog opened, at 1440 x 900 (FU-P3-87e)
+    generator: python3 tools/media/b13_demo.py --shot app-launch-catalog-manage
+    outputs: [docs/assets/shots/app-launch-catalog-manage_light.webp, docs/assets/shots/app-launch-catalog-manage_dark.webp]
+  - id: app-runs-grid
+    kind: screenshot
+    # seven seeded run records (succeeded, running, failed, cancelled) in the runs list as an AG Grid table, at 1440 x 900 (FU-P3-101a)
+    generator: python3 tools/media/b13_demo.py --shot app-runs-grid
+    outputs: [docs/assets/shots/app-runs-grid_light.webp, docs/assets/shots/app-runs-grid_dark.webp]
+  - id: app-file-preview-grid
+    kind: screenshot
+    # a 30-row TSV, results/quant/counts_matrix.tsv, in the AG Grid preview table at 1440 x 1000 (FU-P3-101a)
+    generator: python3 tools/media/b13_demo.py --shot app-file-preview-grid
+    outputs: [docs/assets/shots/app-file-preview-grid_light.webp, docs/assets/shots/app-file-preview-grid_dark.webp]
+  - id: app-file-preview-zarr
+    kind: screenshot
+    # results/imaging/cells.ome.zarr (Zarr v2, two uint16 channels, raw and zlib levels) in the Viv viewer through the capped store, headless Chromium with its software WebGL 2, at 1440 x 1000 (FU-P3-102g)
+    generator: python3 tools/media/b13_demo.py --shot app-file-preview-zarr
+    outputs: [docs/assets/shots/app-file-preview-zarr_light.webp, docs/assets/shots/app-file-preview-zarr_dark.webp]
+  - id: app-file-preview-zarr-phone
+    kind: screenshot
+    # the same OME-Zarr on a phone, 390 x 844: the first plane flat (channel 1, level 512 x 384), Copy path, the line of facts (FU-P3-102i, batch P3-B16)
+    generator: python3 tools/media/b13_demo.py --shot app-file-preview-zarr-phone
+    outputs: [docs/assets/shots/app-file-preview-zarr-phone_light.webp, docs/assets/shots/app-file-preview-zarr-phone_dark.webp]
+  - id: app-run-engine-log
+    kind: screenshot
+    # a seeded run record whose launch directory holds a .nextflow.log: the Summary's engine log lines and Open the full engine log, at 1440 x 900; the facts are empty because no head ran (FU-P3-88a)
+    generator: python3 tools/media/b13_demo.py --shot app-run-engine-log
+    outputs: [docs/assets/shots/app-run-engine-log_light.webp, docs/assets/shots/app-run-engine-log_dark.webp]
+  - id: app-catalog
+    kind: screenshot
+    # the Catalog page on a seeded server: one card per saved pipeline (three: rnaseq-test, nf-core-rnaseq, liver-qc) with Edit and Delete, and Add pipeline, at 1440 x 900 (FU-P3-87d)
+    generator: python3 tools/media/b14_demo.py --shot app-catalog
+    outputs: [docs/assets/shots/app-catalog_light.webp, docs/assets/shots/app-catalog_dark.webp]
+  - id: app-catalog-entry
+    kind: screenshot
+    # the entry form of one saved entry (/catalog/rnaseq-test): name, label, engine, location, profile and params file, at 1440 x 900 (FU-P3-87d)
+    generator: python3 tools/media/b14_demo.py --shot app-catalog-entry
+    outputs: [docs/assets/shots/app-catalog-entry_light.webp, docs/assets/shots/app-catalog-entry_dark.webp]
+  - id: app-environments-table
+    kind: screenshot
+    # Environments as a table (?view=table): the kind icon, the built-in local and two seeded environments, the actions named per row, Duplicate to edit on the built-in, at 1440 x 900 (FU-P3-111)
+    generator: python3 tools/media/b14_demo.py --shot app-environments-table
+    outputs: [docs/assets/shots/app-environments-table_light.webp, docs/assets/shots/app-environments-table_dark.webp]
+  - id: app-environment-duplicate
+    kind: screenshot
+    # the form of a duplicate of the built-in local environment (/environments/new?from=local), filled in with a unique name, at 1440 x 900 (FU-P3-111)
+    generator: python3 tools/media/b14_demo.py --shot app-environment-duplicate
+    outputs: [docs/assets/shots/app-environment-duplicate_light.webp, docs/assets/shots/app-environment-duplicate_dark.webp]
+  - id: app-file-preview-ome-tiff
+    kind: screenshot
+    # results/imaging/cells.ome.tif (a hand-written tiled uncompressed OME-TIFF, three 16-bit channels DAPI, GFP, Actin) in the Viv viewer with the channel list; the breadcrumb ends with the file name; headless Chromium with its software WebGL 2, at 1440 x 1000 (FU-P3-102e, -102f, -104)
+    generator: python3 tools/media/b14_demo.py --shot app-file-preview-ome-tiff
+    outputs: [docs/assets/shots/app-file-preview-ome-tiff_light.webp, docs/assets/shots/app-file-preview-ome-tiff_dark.webp]
+  - id: app-profile
+    kind: screenshot
+    # the Profile page reached from the avatar on a seeded server run as alice (the UID reads 0: the demo patches the name, not the number), opened from the avatar (a direct visit is a 404, DW-P3B14-01), at 1440 x 900 (FU-P3-112)
+    generator: python3 tools/media/b14_demo.py --shot app-profile
+    outputs: [docs/assets/shots/app-profile_light.webp, docs/assets/shots/app-profile_dark.webp]
+  - id: app-profile-phone
+    kind: screenshot
+    # the Profile page at 390 x 844, opened from the avatar, the cards stacked and Sign out of this session full width (FU-P3-112)
+    generator: python3 tools/media/b14_demo.py --shot app-profile-phone
+    outputs: [docs/assets/shots/app-profile-phone_light.webp, docs/assets/shots/app-profile-phone_dark.webp]
+  - id: app-search
+    kind: screenshot
+    # the search dialog opened from the top bar with "rna" typed, on a seeded server: five runs by name prefix and two catalog pipelines, each result a button, at 1440 x 900 (FU-P3-89)
+    generator: python3 tools/media/b15_demo.py --shot app-search
+    outputs: [docs/assets/shots/app-search_light.webp, docs/assets/shots/app-search_dark.webp]
+  - id: app-notifications
+    kind: screenshot
+    # the notifications panel under the bell, "Notifications, 6 unread", retaken for UI-05b (batch P3-B16): All and Unread, day groups, a state tile, the engine mark and the time on each row, View all runs, at 1440 x 900 (FU-P3-113, UI-05b)
+    generator: python3 tools/media/b16_demo.py --shot app-notifications
+    outputs: [docs/assets/shots/app-notifications_light.webp, docs/assets/shots/app-notifications_dark.webp]
+  - id: app-notifications-phone
+    kind: screenshot
+    # the notifications panel on a phone, 390 x 844: a bottom sheet, Mark all as read as a button, three day groups (UI-05b, batch P3-B16)
+    generator: python3 tools/media/b16_demo.py --shot app-notifications-phone
+    outputs: [docs/assets/shots/app-notifications-phone_light.webp, docs/assets/shots/app-notifications-phone_dark.webp]
+  - id: app-launch-config-warning
+    kind: screenshot
+    # Launch with an extra config file writable by group: the refusal under the input and "Fix Extra config file" in Before Launch, before any click on Launch, at 1440 x 1500 (FU-P3-121, batch P3-B16)
+    generator: python3 tools/media/b16_demo.py --shot app-launch-config-warning
+    outputs: [docs/assets/shots/app-launch-config-warning_light.webp, docs/assets/shots/app-launch-config-warning_dark.webp]
+  - id: app-runs-actions
+    kind: screenshot
+    # the runs table with two rows selected: the bulk bar with Delete... and Clear selection, a pinned run first, a sort icon on Run, State, Started and Duration, at 1440 x 900 (FU-P3-115b, -116, -119)
+    generator: python3 tools/media/b15_demo.py --shot app-runs-actions
+    outputs: [docs/assets/shots/app-runs-actions_light.webp, docs/assets/shots/app-runs-actions_dark.webp]
+  - id: app-runs-delete
+    kind: screenshot
+    # the Delete sheet for two selected runs (a failed and a cancelled one): the list, "Spectio forgets these runs", the box Also delete their run directories off, at 1440 x 900 (FU-P3-115b)
+    generator: python3 tools/media/b15_demo.py --shot app-runs-delete
+    outputs: [docs/assets/shots/app-runs-delete_light.webp, docs/assets/shots/app-runs-delete_dark.webp]
+  - id: app-launch-resources
+    kind: screenshot
+    # Launch from a catalog entry with Resources (2 CPUs, 3 GiB, 1 h per task, in a Two cores environment capped at 2 CPUs and 4 GiB) and Extra config file opened, a path typed, the Summary beside them, at 1440 x 1500 (FU-P3-110d)
+    generator: python3 tools/media/b15_demo.py --shot app-launch-resources
+    outputs: [docs/assets/shots/app-launch-resources_light.webp, docs/assets/shots/app-launch-resources_dark.webp]
+  - id: app-run-resources
+    kind: screenshot
+    # a finished run's facts with Default resources (8 CPUs, 64 GiB, 12 h per task) and Extra config file (path, kept as extra.config, 167 B, SHA-256 start, View and Copy SHA-256), seeded by hand, at 1440 x 700 (FU-P3-110d)
+    generator: python3 tools/media/b15_demo.py --shot app-run-resources
+    outputs: [docs/assets/shots/app-run-resources_light.webp, docs/assets/shots/app-run-resources_dark.webp]
+  - id: app-run-config-file
+    kind: screenshot
+    # View extra.config opened in its sheet: the path and size, the kept copy as text, at 1440 x 800 (FU-P3-110d)
+    generator: python3 tools/media/b15_demo.py --shot app-run-config-file
+    outputs: [docs/assets/shots/app-run-config-file_light.webp, docs/assets/shots/app-run-config-file_dark.webp]
+  - id: app-workdir
+    kind: screenshot
+    # live, the COMPARE (treatA_vs_ctrl) task's work directory at 1440 x 1000, with SPECTIO_DEMO_TASK its task ID: the same explorer on a second root (batch P3-B09, FU-P3-85e)
+    generator: python3 tools/media/shots.py run --shot app-workdir --theme both
+    outputs: [docs/assets/shots/app-workdir_light.webp, docs/assets/shots/app-workdir_dark.webp]
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines
@@ -795,3 +1067,49 @@ media:
     # Snakemake 9; needs Java, Nextflow, uv and network for the Maven repositories; publishes nothing
     generator: python3 tools/media/cast.py tools/media/casts/spectio-bridges-release.yaml
     outputs: [docs/assets/casts/spectio-bridges-release.cast]
+  - id: native-slurm
+    kind: cast
+    # dev/slurm/native.sh up, status, one sbatch job and its sacct row, down, run for real as root in a
+    # throwaway container with the Ubuntu 24.04 packages slurm-wlm, slurmdbd, mariadb-server and munge
+    # already installed (a first `up` installs them with apt); the container's host name is shown as the
+    # demo name demo-hpc-node1 by `replace` in the cast script (host names are on the forbidden list)
+    generator: python3 tools/media/cast.py tools/media/casts/native-slurm.yaml
+    outputs: [docs/assets/casts/native-slurm.cast]
+  - id: spectio-cluster-checks
+    kind: cast
+    # the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines and a
+    # fake uv that prints 0.9.29; a 20 MB tmpfs (own mount namespace) holds the runs directory at 90%;
+    # SLURM_CONF set makes the host look shared, so serve listens on a Unix socket; the demo host name
+    # demo-hpc-login1 is set in the generator's own UTS namespace (root or user namespaces); the ticket
+    # is masked by a sed that the cast shows
+    generator: unshare --uts --mount sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-cluster-checks.yaml'
+    outputs: [docs/assets/casts/spectio-cluster-checks.cast]
+  - id: app-single-target-launch-module
+    kind: screenshot
+    # demo data with the API mocked, the checkout's web code on a vite dev server (no engine, no cluster), 1440 wide,
+    # full page; the PNG is 2-launch-module-loaded of the script (#161, ui-spec 4.15)
+    generator: "node tools/media/single_target_demo.js <out-dir>, then convert <png> -resize 1440x -define webp:lossless=true -define webp:method=6 2-launch-module-loaded.png app-single-target-launch-module_light.webp"
+    outputs: [docs/assets/shots/app-single-target-launch-module_light.webp]
+  - id: app-single-target-launch-rule
+    kind: screenshot
+    # as app-single-target-launch-module; the PNG is 3-launch-rule
+    generator: "node tools/media/single_target_demo.js <out-dir>, then convert <png> -resize 1440x -define webp:lossless=true -define webp:method=6 3-launch-rule.png app-single-target-launch-rule_light.webp"
+    outputs: [docs/assets/shots/app-single-target-launch-rule_light.webp]
+  - id: app-single-target-runs
+    kind: screenshot
+    # as app-single-target-launch-module, at 1440 x 1000; the PNG is 4-runs-list
+    generator: "node tools/media/single_target_demo.js <out-dir>, then convert <png> -resize 1440x -define webp:lossless=true -define webp:method=6 4-runs-list.png app-single-target-runs_light.webp"
+    outputs: [docs/assets/shots/app-single-target-runs_light.webp]
+  - id: app-single-target-run-rule
+    kind: screenshot
+    # as app-single-target-launch-module; the PNG is 6-run-rule
+    generator: "node tools/media/single_target_demo.js <out-dir>, then convert <png> -resize 1440x -define webp:lossless=true -define webp:method=6 6-run-rule.png app-single-target-run-rule_light.webp"
+    outputs: [docs/assets/shots/app-single-target-run-rule_light.webp]
+  - id: module-run-161
+    kind: diagram
+    generator: python3 tools/diagrams/module_run_161.py
+    outputs:
+      - docs/assets/diagrams/module-run-161_light.svg
+      - docs/assets/diagrams/module-run-161_dark.svg
+      - docs/assets/diagrams/module-run-161_light.png
+      - docs/assets/diagrams/module-run-161_dark.png

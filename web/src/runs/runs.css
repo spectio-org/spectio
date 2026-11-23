@@ -269,6 +269,7 @@
 }
 .sp-home-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* a long path never widens the page (FU-P3-109) */
   gap: 20px;
 }
 @media (min-width: 1200px) {
@@ -307,6 +308,15 @@
   margin-top: 8px;
   font-weight: 600;
   color: var(--sp-text-link);
+}
+/* a link in running text or beside a button: the app's link colour, as in Results (FU-P3-104) */
+.sp-text-link {
+  font-weight: 600;
+  color: var(--sp-text-link);
+  text-decoration: none;
+}
+.sp-text-link:hover {
+  text-decoration: underline;
 }
 
 .sp-counts {
@@ -366,15 +376,16 @@
   border-radius: 0 0 12px 12px;
   box-shadow: inset 0 1px 0 var(--sp-line-divider);
 }
+/* one mono size in the log viewer, 12/18 (UI-11) */
 .sp-log {
   max-height: min(60vh, 560px);
   overflow: auto;
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 14px;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-md);
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: var(--mantine-font-size-xs);
+  line-height: 18px;
   color: var(--sp-code-text);
   background: var(--sp-surface-code);
 }
@@ -511,6 +522,7 @@
 }
 .sp-quick {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   margin: 10px 0 0;
   padding: 0;
@@ -525,11 +537,14 @@
   border-radius: 12px;
   box-shadow: 0 0 0 1px var(--sp-line-border);
 }
+/* a path or a name with no space wraps anywhere, shown whole: no ellipsis to hover (FU-P3-109) */
+.sp-quick .sp-mono,
+.sp-quick .sp-pipeline span,
+.sp-where .sp-mono {
+  overflow-wrap: anywhere;
+}
 .sp-quick .sp-mono {
   font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .sp-where {
   display: grid;
@@ -556,9 +571,16 @@
 }
 .sp-run-top {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-start;
   gap: 12px 18px;
+}
+/* The name wraps beside the tile; the actions keep their width at the right (ui-spec §12.5). */
+.sp-run-top > .sp-grow {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sp-run-top > .sp-run-actions {
+  flex-shrink: 0;
 }
 .sp-mark-tile {
   width: 48px;
@@ -587,6 +609,10 @@
 .sp-run-head > .sp-foldsec {
   padding-top: 12px;
   border-top: 1px solid var(--sp-line-divider);
+}
+/* Folded, the Facts title keeps its width: the summary beside it takes the ellipsis (UI-09). */
+.sp-run-head .sp-fold-title {
+  flex-shrink: 0;
 }
 .sp-facts {
   display: grid;
@@ -767,14 +793,11 @@
   background: var(--sp-surface-subtle);
 }
 
-/* Phone (ui-spec §4.11): a smaller title, a full-width Cancel, and the process table keeps its
+/* Phone (ui-spec §4.11): a smaller title, and the process table keeps its
    name, state, done and failed columns. */
 @media (max-width: 767.98px) {
   .sp-head h1 {
     font-size: 24px;
-  }
-  .sp-head > .mantine-Button-root {
-    width: 100%;
   }
   .sp-table [data-narrow] {
     display: none;
@@ -884,6 +907,26 @@
     flex: 1 1 auto;
     max-width: none;
   }
+  /* The run card's box and the bulk bar's buttons: 44 px hit areas (UX-P3FU115B-02). */
+  .sp-row-hit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -12px 0 -12px -14px;
+  }
+  .sp-bulk .mantine-Button-root {
+    min-height: 44px;
+  }
+  /* the card's pin, beside its name: 44 px too (UX-P3FU115B-06) */
+  .sp-run-card .sp-pin {
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -8px -14px -8px auto;
+  }
   /* Home: count cards two by two. */
   .sp-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -907,46 +950,34 @@
   .sp-run-head {
     padding: 18px 16px 14px;
   }
-  /* The mark tile stays beside the pipeline's name (MLiteRunDetail). */
-  .sp-run-top > .sp-grow {
-    flex: 1 1 0;
-    min-width: 0;
+  /* More actions stays beside the name; the primary sits in the bar pinned above the tab bar,
+     full width, opaque (UI-09; ui-spec §4.11, §12.5). The shell's bottom padding leaves it room. */
+  .sp-run-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--sp-tabbar-h);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--sp-surface-page);
+    border-top: 1px solid var(--sp-line-border);
   }
-  /* Cancel and Copy side by side, full width (MLiteRunDetail); Resume and its reason above them,
-     full width (MLiteRunFailed). */
-  .sp-run-top > .sp-run-actions {
-    width: 100%;
-    flex-wrap: wrap;
+  .sp-run-menu .mantine-Menu-item {
+    min-height: 44px;
   }
-  .sp-run-top > .sp-run-actions > * {
-    flex: 1 1 0;
-    min-width: 0;
+  /* The title in the top bar's title row (a run's name): two lines at most, then an ellipsis;
+     the state line under it stays in view (ui-spec §4.11). */
+  .sp-mtitle .sp-page-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
   }
-  .sp-run-top > .sp-run-actions > .sp-resume,
-  .sp-run-top > .sp-run-actions > .sp-resume-why {
-    flex-basis: 100%;
-    order: -1;
-  }
-  /* Copy to a new launch takes the row, Copy its own width beside it (MLiteRunFailed). */
-  .sp-run-top > .sp-run-actions > .sp-copy-launch ~ .sp-copy,
-  .sp-run-top > .sp-run-actions > .sp-copy-launch ~ .sp-copy .mantine-Button-root {
-    flex: 0 0 auto;
-    width: auto;
-  }
-  .sp-run-actions .sp-copy {
-    width: 100%;
-  }
-  .sp-run-actions .mantine-Button-root {
-    width: 100%;
-    height: 44px;
-  }
-  /* Logs (MLiteRunLogs): the sources share the width, the file path wraps above its Copy. */
-  .sp-log-tools .sp-segments {
-    width: 100%;
-  }
-  .sp-log-tools .sp-segments button {
-    flex: 1 0 auto;
-  }
+  /* Logs (MLiteRunLogs): the file path wraps above its Copy. */
   .sp-log-file code {
     flex-basis: 100%;
     order: 1;
@@ -960,46 +991,19 @@
   }
 }
 
-/* P3-parC: the header's actions and Copy menu (LiteRunActions B). */
+/* P3-parC, UI-09: the header's actions: More actions, then the primary at the far right
+   (ui-spec §12.4). The Copy items' status shows under them. */
 .sp-run-actions {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
-.sp-copy {
-  position: relative;
-  display: inline-flex;
-  min-width: 0;
-}
-.sp-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 20;
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-  padding: 6px;
-  border-radius: 14px;
-  background: var(--sp-surface-raised);
-  box-shadow: 0 0 0 1px var(--sp-line-border), 0 16px 32px -16px rgba(15, 16, 32, 0.35);
-}
-.sp-menu button {
-  min-height: 38px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9px;
-  font: inherit;
-  font-size: 13.5px;
-  text-align: left;
-  color: var(--sp-text-primary);
-  background: none;
-  cursor: pointer;
-}
-.sp-menu button:hover,
-.sp-menu button:focus-visible {
-  background: var(--sp-surface-subtle);
+/* The menu's destructive item, last after a divider: its icon and text in the failed ink. */
+.sp-run-menu .sp-menu-danger {
+  color: var(--sp-state-failed-fg);
 }
 .sp-copy-status:empty {
   display: none;
@@ -1026,7 +1030,43 @@
   overflow-x: auto;
 }
 .sp-logs {
-  gap: 12px;
+  gap: var(--mantine-spacing-md);
+}
+/* the run tabs (ui-spec §12.9): 36 px, accent from the theme */
+.sp-run-tabs .mantine-Tabs-tab {
+  height: 36px;
+}
+/* the frame of an empty, failed or loading log (ui-spec §12.12), the viewer's place */
+.sp-log-frame {
+  padding: var(--mantine-spacing-lg);
+  border: 1px solid var(--sp-line-border);
+  border-radius: var(--mantine-radius-md);
+}
+/* the log toolbar holds many tools: the search keeps a usable width, the levels one row */
+.sp-logs .sp-toolbar-search,
+.sp-file-page .sp-toolbar-search {
+  flex: 1 1 160px;
+  min-width: 160px;
+}
+/* the run tabs' toolbars (UI-10, UI-11): segments keep one row, the Process select a fixed width */
+.sp-runs .sp-toolbar .sp-segments {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+.sp-task-group {
+  width: 200px;
+}
+@media (max-width: 767.98px) {
+  /* on the phone the segments scroll sideways as pills (ui-spec §12.6) */
+  .sp-runs .sp-toolbar .sp-segments {
+    flex: 0 1 auto;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+.sp-log-caption {
+  margin: 0;
+  font-size: var(--mantine-font-size-sm);
 }
 .sp-log-file {
   display: flex;
@@ -1103,18 +1143,47 @@
 }
 .sp-sheet {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-}
-.sp-sheet:focus {
-  outline: none;
+  padding-top: 16px;
 }
 .sp-sheet:focus-visible {
   outline: 2px solid var(--sp-line-focus);
   outline-offset: 4px;
 }
+/* UI-12: the sheet's head stays on top: title, a task's state, then Close at the right. */
+.sp-sheet-head {
+  gap: 12px;
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+/* Dialog and sheet titles, and their footer (ui-spec §12.4, UI-18): 16/600 in the display font;
+   Cancel then the confirm at the right, gap sm; stacked full width on the phone, confirm last. */
 .sp-sheet-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
+}
+.sp-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-lg);
+}
+.sp-dialog-foot[data-stack] {
+  flex-direction: column;
+}
+/* Only DetailSheet's title takes the free width and wraps (CR-P3UI12-01); its font is UI-18's. */
+.sp-sheet-head .sp-sheet-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sp-sheet-head .mantine-CloseButton-root {
+  flex-shrink: 0;
+}
+/* On the phone the sheet rises from the bottom, rounded on its free edge only. */
+.sp-sheet-bottom {
+  border-radius: 12px 12px 0 0;
 }
 .sp-sheet-name {
   margin: 0;
@@ -1126,8 +1195,10 @@
   margin: 0;
 }
 .sp-sheet-h {
-  margin: 8px 0 0;
-  font-size: 15px;
+  margin: 12px 0 0;
+  font-family: var(--sp-font-display);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 600;
 }
 .sp-sheet-list {
   display: grid;
@@ -1162,20 +1233,44 @@
   outline: 2px solid var(--sp-line-focus);
   outline-offset: -2px;
 }
-.sp-sheet-row .sp-chip {
-  margin: 0;
+/* A process's tasks (FU-P3-80): the same two columns on every row and in the header above them. */
+.sp-task-head,
+.sp-task-rows .sp-sheet-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 9.5rem;
+  gap: 10px;
 }
-.sp-sheet-facts {
-  grid-template-columns: 1fr 1fr;
+.sp-task-rows .sp-sheet-row > .sp-mono {
+  overflow-wrap: anywhere;
 }
-.sp-log-search {
-  margin-bottom: 8px;
+.sp-task-head {
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sp-text-secondary);
+}
+/* Facts in a sheet: two columns on every screen, one label style (xs/600 muted). */
+.sp-facts.sp-sheet-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.sp-sheet-facts > div {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+.sp-sheet-facts dt {
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  color: var(--sp-text-muted);
+}
+.sp-sheet-facts dd {
+  margin: 2px 0 0;
 }
 .sp-log-count {
-  min-width: 64px;
   font-variant-numeric: tabular-nums;
 }
-.sp-log-search .sp-segments button[data-tone] {
+.sp-log-levels button[data-tone] {
   color: var(--tone-fg);
 }
 /* the viewer is dark in both schemes: a match is dark text on the code palette's amber, the
@@ -1220,7 +1315,8 @@
 }
 .sp-files {
   display: grid;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
   min-width: 0;
 }
 .sp-file-tabs {
@@ -1230,26 +1326,31 @@
   gap: 4px 12px;
   border-bottom: 1px solid var(--sp-line-divider);
 }
+/* one row of file tabs, scrolled sideways when they do not fit (UI-12) */
 .sp-file-tabs [role="tablist"] {
   display: flex;
-  flex-wrap: wrap;
   gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 .sp-file-tabs [role="tab"] {
-  min-height: 36px;
-  padding: 0 10px;
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 12px;
+  white-space: nowrap;
   border: 0;
   border-bottom: 2px solid transparent;
   font-family: var(--sp-font-mono);
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--sp-text-secondary);
   background: none;
   cursor: pointer;
 }
 .sp-file-tabs [role="tab"][aria-selected="true"] {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--sp-text-primary);
-  border-bottom-color: var(--sp-state-running);
+  border-bottom-color: var(--sp-accent);
 }
 .sp-file-tabs [role="tab"]:focus-visible {
   outline: 2px solid var(--sp-line-focus);
@@ -1385,7 +1486,8 @@
   flex-shrink: 0;
   margin-top: 2px;
 }
-.sp-run-actions .mantine-Button-root[aria-disabled="true"] {
+.sp-run-actions .mantine-Button-root[aria-disabled="true"],
+.sp-run-bar .mantine-Button-root[aria-disabled="true"] {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -1399,6 +1501,10 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+/* The executor beside an environment's name (LiteRunDetail, LiteLaunch). */
+.sp-env-badge {
+  margin-left: 8px;
 }
 
 /* Results and reports (LiteRunDetail) and the results browser (LiteResults). */
@@ -1509,12 +1615,135 @@
 }
 .sp-result-name {
   display: inline-flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
 }
 .sp-result-name svg {
   flex-shrink: 0;
-  margin-top: 3px;
+  color: var(--sp-text-muted);
+}
+.sp-result-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The results explorer (ui-spec §4.4.1, Explorer; LiteResults, MLiteResults): one card, its head
+   with the counts, the filter and (phone) Sort by; Kind as a text badge with an icon; header sort
+   buttons; on the phone one 44 px link per row, the name wrapping anywhere. */
+.sp-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  padding: 0;
+  overflow: hidden;
+}
+.sp-explorer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+.sp-explorer > .sp-cardhead {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+.sp-explorer-body > .sp-note,
+.sp-explorer-body > .sp-emptystate,
+.sp-explorer .sp-toolbar {
+  margin: 0 var(--mantine-spacing-lg);
+}
+.sp-explorer-body > .sp-emptystate {
+  margin-bottom: var(--mantine-spacing-lg);
+}
+.sp-explorer .sp-note p {
+  margin: 0 0 4px;
+}
+/* one row height for files and folders, icon, name, size and date on one centre line (§12.8) */
+.sp-explorer-table tbody th,
+.sp-explorer-table tbody td {
+  height: 44px;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+.sp-explorer-table {
+  border-radius: 0;
+  box-shadow: none;
+}
+.sp-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-subtle);
+}
+.sp-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: -4px -6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  background: none;
+  cursor: pointer;
+}
+.sp-sort[data-on] {
+  color: var(--sp-text-link);
+}
+.sp-explorer-act {
+  width: 44px;
+  text-align: right;
+}
+.sp-explorer-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sp-explorer-rows li + li {
+  border-top: 1px solid var(--sp-line-divider);
+}
+.sp-explorer-row,
+.sp-explorer-rows .sp-explorer-link {
+  min-height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.sp-explorer-first {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.sp-explorer-first svg {
+  flex-shrink: 0;
+  /* centred on the name's first line, whatever its line height (UI-02) */
+  margin-top: calc(0.5lh - 8px);
+  color: var(--sp-text-muted);
+}
+.sp-explorer-first [data-name] {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.sp-explorer-rows .sp-explorer-link [data-name] {
+  color: var(--sp-text-link);
+}
+.sp-explorer-first + .sp-muted {
+  padding-left: 26px;
+  font-size: 12.5px;
 }
 
 /* Resume's question (LiteRunActions, MLiteResumeSheet): the launch directory in its own block, wrapped
@@ -1542,9 +1771,24 @@
   background: repeating-linear-gradient(135deg, var(--sp-surface-sunken) 0 3px, var(--sp-line-border) 3px 5px);
 }
 .sp-checkpoint {
-  display: block;
+  /* a light mark, not a filled chip (FU-P3-88a) */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--sp-text-muted);
+}
+.sp-table .sp-checkpoint,
+.sp-row-card .sp-checkpoint {
+  display: flex;
   width: max-content;
   margin-top: 3px;
+}
+.sp-log-tail[data-opens] {
+  cursor: pointer;
+}
+.sp-logs-back {
+  align-self: flex-start;
 }
 .sp-state-cell {
   max-width: 190px;
@@ -1561,6 +1805,25 @@
   color: var(--sp-text-primary);
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
+}
+.sp-order {
+  /* By process: Pipeline order / A to Z (ui-spec §4.4 note 2026-11-08) */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--sp-text-secondary);
+}
+.sp-order label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  cursor: pointer;
+}
+.sp-order input:focus-visible {
+  outline: 2px solid var(--sp-indigo-500);
+  outline-offset: 2px;
 }
 .sp-sort {
   padding: 0;
@@ -1584,4 +1847,552 @@
   /* the phone's process card: one label and value row per fact (MLiteRunEfficiency) */
   grid-template-columns: 1fr;
   gap: 0;
+}
+
+/* FU-P3-85c: the preview of one results file (ui-spec §4.4.1; boards LiteFilePreview,
+   MLiteFilePreview, LiteFilePreviewStates). Line numbers sit in a gutter that is not selected;
+   with Wrap on, each line is a grid row of number and text. */
+.sp-log[data-wrap] {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sp-log-row {
+  display: grid;
+  grid-template-columns: 6ch minmax(0, 1fr);
+  column-gap: 12px;
+}
+.sp-log-n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--sp-text-faint);
+  user-select: none;
+}
+.sp-file-page .sp-page-title,
+.sp-file-page .sp-pathbar [aria-current],
+.sp-file-page .sp-copy-line .sp-mono {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.sp-file-pair {
+  display: flex;
+  gap: var(--mantine-spacing-xs);
+}
+.sp-file-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  min-width: 0;
+  margin-top: var(--mantine-spacing-md);
+}
+.sp-file-card-body[hidden],
+.sp-explorer-body[hidden] {
+  display: none;
+}
+.sp-file-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.sp-file-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.sp-file-cut {
+  font-family: var(--sp-font-mono);
+}
+.sp-file-cap {
+  margin: 0;
+  font-weight: 600;
+}
+.sp-file-comments {
+  margin: 0;
+  font-family: var(--sp-font-mono);
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* The preview's grid (ui-spec §4.13): past 15 rows a fixed height, so AG Grid scrolls its rows
+   virtually; cells keep their spaces and line breaks. */
+.sp-file-table[data-scroll] {
+  height: min(70vh, 640px);
+}
+.sp-file-table[data-scroll] .sp-grid {
+  height: 100%;
+}
+.sp-file-table .ag-cell {
+  white-space: pre;
+}
+/* an image sits on a fixed light backdrop in both themes */
+.sp-file-backdrop {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f4f4f6;
+  color: #33364a;
+}
+.sp-file-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.sp-file-image[data-actual] {
+  max-width: none;
+}
+.sp-file-scroll {
+  max-width: 100%;
+  max-height: 70vh;
+  overflow: auto;
+}
+.sp-file-natural {
+  font-size: 12px;
+}
+/* the WebGL viewer: a black backdrop in both themes, the focus ring outside the canvas */
+.sp-ome-region {
+  position: relative; /* deck.gl places its canvas absolutely */
+  height: 60vh;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+  outline-offset: 2px;
+}
+.sp-ome-canvas {
+  width: 100%;
+  height: 100%;
+}
+/* the channel list beside the canvas (board LiteImageViewer); under it below 1024 px */
+.sp-ome-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 16px;
+}
+.sp-ome-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--sp-surface-subtle);
+}
+.sp-ome-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 70vh;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-ome-row {
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--sp-surface-raised);
+  box-shadow: 0 0 0 1px var(--sp-line-border);
+}
+.sp-ome-row > .sp-file-line {
+  justify-content: space-between;
+}
+.sp-ome-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere; /* a long name wraps */
+}
+.sp-ome-name small {
+  color: var(--sp-text-secondary);
+}
+.sp-ome-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+.sp-ome-switch {
+  width: 36px;
+  height: 22px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--sp-line-input);
+  cursor: pointer;
+}
+.sp-ome-switch::after {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin-left: 3px;
+  border-radius: 50%;
+  background: #fff;
+}
+.sp-ome-switch[aria-checked="true"] {
+  background: var(--sp-text-link);
+}
+.sp-ome-switch[aria-checked="true"]::after {
+  margin-left: 17px;
+}
+.sp-ome-switch:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+.sp-ome-range {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.sp-ome-range span {
+  font-family: var(--sp-font-mono);
+}
+.sp-ome-full {
+  margin: 0; /* a live region: kept in the page when empty, so its message is announced */
+  color: var(--sp-state-review-fg);
+}
+@media (max-width: 1023.98px) {
+  .sp-ome-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 767.98px) {
+  .sp-file-pager {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sp-file-pager .sp-file-more {
+    min-height: 44px;
+  }
+}
+
+/* The target of a run (ui-spec §4.15): one module or one rule, under the run's name and in the
+   runs list's name cell; it wraps on the phone. */
+.sp-target {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+/* The runs table actions (FU-P3-115b; ui-spec §4.3 note of 2026-11-10; board LiteRuns): the bulk
+   bar over the table, the pin beside a run's name, the Delete sheet's list and box. */
+.sp-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--sp-surface-subtle);
+}
+.sp-bulk .mantine-Button-root[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.sp-said:empty {
+  display: none;
+}
+.sp-said p {
+  margin: 0;
+}
+.sp-run-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sp-pin {
+  display: inline-flex;
+  /* a 25 px hit target around its 15 px icon, over WCAG 2.5.8's 24 px (UX-P3FU115B-05) */
+  padding: 5px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--sp-text-secondary);
+  background: none;
+  cursor: pointer;
+}
+.sp-pin[aria-pressed="true"] {
+  color: var(--sp-text-primary);
+}
+.sp-pin[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+.sp-pin:focus-visible,
+.sp-row-check:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+.sp-row-check {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--sp-line-focus);
+}
+.sp-delete-list {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+.sp-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+/* Run detail's Extra config file fact and its sheet (FU-P3-110d, LiteRunDetail). */
+.sp-extra-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.sp-extra-warn {
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  color: var(--sp-state-review-fg);
+}
+.sp-extra-text {
+  max-height: 60vh;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sp-surface-subtle);
+  font-family: var(--sp-font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* UI-08: the runs list (ui-spec §12.6, §12.8). The state filter sits in the toolbar row at the
+   search box's 36 px (2 + 32 + 2); on the phone its pills scroll sideways, 44 px high, with a fade
+   at the cut edge so a hidden pill reads as cut. */
+.sp-toolbar .sp-segments {
+  flex-wrap: nowrap;
+  padding: 2px;
+  border-radius: var(--mantine-radius-sm);
+}
+.sp-toolbar .sp-segments button {
+  min-height: 32px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+@media (max-width: 767.98px) {
+  .sp-toolbar .sp-segments {
+    flex: 1 1 100%;
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+  .sp-toolbar .sp-segments button {
+    min-height: 44px;
+  }
+}
+/* One padding and one top alignment for every cell; the header in sm/600, muted. */
+.sp-grid-runs .ag-header-cell,
+.sp-grid-runs .ag-cell {
+  padding-inline: var(--mantine-spacing-md);
+}
+.sp-grid-runs .ag-header-cell-text {
+  font-size: var(--mantine-font-size-sm);
+  color: var(--sp-text-muted);
+}
+.sp-grid-runs .sp-state {
+  line-height: 20px;
+}
+.sp-grid-runs .sp-state svg {
+  flex: none;
+}
+/* The name takes the free width and the pin a fixed slot at the column's right; a name wraps to
+   two lines at most, the full name in a tooltip on hover and focus. The workflow path is not
+   focusable, so it wraps in full, unclamped (CR-P3UI08-01). */
+.sp-grid-runs .sp-run-cell {
+  align-items: flex-start;
+}
+.sp-run-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sp-grid-runs .sp-pin {
+  flex: none;
+  margin-top: -2px;
+}
+.sp-grid-runs .sp-pipeline > span:last-child {
+  overflow-wrap: anywhere;
+}
+.sp-run-name .sp-run-link {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* The runs list's Scope badge (ui-spec §4.15): grey for a whole pipeline, the accent for a module,
+   the environments' sky for a rule or file; the cells repeat the colour's meaning. */
+.sp-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-sunken);
+}
+.sp-scope[data-scope="module"] {
+  color: var(--sp-accent);
+  background: var(--sp-accent-subtle);
+}
+.sp-scope[data-scope="rule"],
+.sp-scope[data-scope="file"] {
+  color: var(--sp-section-environments);
+  background: color-mix(in srgb, var(--sp-section-environments) 14%, transparent);
+}
+.sp-scope-cells {
+  display: inline-flex;
+  gap: 2px;
+}
+.sp-scope-cells i {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.3;
+}
+.sp-scope-cells i[data-on] {
+  opacity: 1;
+}
+.sp-what-ran {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.sp-target-to {
+  font-family: var(--sp-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sp-section-environments);
+  overflow-wrap: anywhere;
+}
+.sp-chip.sp-chip-warn {
+  color: var(--sp-state-review-fg);
+  background: var(--sp-state-review-bg);
+}
+
+/* The run header's target badge (ui-spec §4.15): its parts side by side, the kind first in the
+   Scope colours; a changed checksum is a warning box under it. */
+.sp-target-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  width: fit-content;
+  flex-wrap: wrap;
+  align-items: stretch;
+  max-width: 100%;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 13px;
+}
+.sp-target-badge > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-left: 1px solid var(--sp-line-divider);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sp-target-badge > span:first-child {
+  border-left: 0;
+}
+.sp-target-kind {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sp-accent);
+  background: var(--sp-accent-subtle);
+}
+.sp-target-kind[data-scope="rule"],
+.sp-target-kind[data-scope="file"] {
+  color: var(--sp-section-environments);
+  background: color-mix(in srgb, var(--sp-section-environments) 14%, transparent);
+}
+.sp-target-warn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--sp-state-review-fg);
+  background: var(--sp-state-review-bg);
+}
+/* A Snakemake target run's steps (ui-spec §4.15): the chain, then the rules it does not need. */
+.sp-target-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sp-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-steps > li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+  padding: 8px 12px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 8px;
+  background: var(--sp-surface-subtle);
+}
+ol.sp-steps > li + li::before {
+  content: "→" / "";
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sp-text-faint);
+}
+.sp-steps > li[data-tone="succeeded"] {
+  border-color: var(--sp-state-succeeded);
+  background: var(--sp-state-succeeded-bg);
+}
+.sp-steps > li[data-tone="running"] {
+  border-color: var(--sp-state-running);
+  background: var(--sp-state-running-bg);
+}
+.sp-steps > li[data-tone="failed"] {
+  border-color: var(--sp-state-failed);
+  background: var(--sp-state-failed-bg);
+}
+.sp-steps > li[data-target] {
+  border-width: 2px;
+}
+.sp-steps-out {
+  gap: 8px;
+}
+.sp-steps-out > li {
+  border-style: dashed;
+  background: none;
+  opacity: 0.6;
+}
+.sp-step-count {
+  font-size: 12px;
+  color: var(--sp-text-secondary);
 }

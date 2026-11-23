@@ -40,6 +40,7 @@ from spectio_server.failure import (
 )
 from spectio_server.files.taskfiles import launch_rel, log_kind, native_id
 from spectio_server.ids import new_id
+from spectio_server.projector import targets
 from spectio_server.projector.runs import (
     OPEN_ATTEMPT_STATES,
     TERMINAL,
@@ -72,6 +73,8 @@ def project(p: Projection, data: BaseModel, kind: str = "") -> None:
     if isinstance(data, SnakemakeWorkflowStarted):
         p.set_started()
         p.pin_engine_version(data.snakemake_version)
+        # before the freeze: a target run has no stages
+        targets.capture(p, data.target, "snakemake")
         freeze.freeze(p, data.snakefile_main)
     elif isinstance(data, SnakemakeRunInfo):
         freeze.plan_jobs(p, data.stats)

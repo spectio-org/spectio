@@ -19,7 +19,7 @@ import pytest
 
 from spectio.config import EngineOpts, Settings
 from spectio.runner import loop as loop_mod
-from spectio.runner.local import LocalLauncher
+from spectio.runner.local import LocalLauncher, read_head_exit
 from spectio.runner.loop import RunnerLoop
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import (
@@ -127,6 +127,16 @@ def test_local_launch_exit_file(runs_root: Path, launcher: LocalLauncher) -> Non
     pid, pgid, start, *_ = (spectio_dir / "head.pid").read_text().split()
     assert pid == pgid  # setsid: the head leads its own group
     assert native_id == f"{pid}.{start}"  # unique per process, not a bare PID (SEC-P3T09-04)
+
+
+@pytest.mark.usefixtures("term_in_tail")
+def test_term_while_head_exit_is_written(runs_root: Path, launcher: LocalLauncher) -> None:
+    # The group's SIGTERM in the head's tail leaves a head.exit that parses (FU-P3-77).
+    spec = spec_for(runs_root, stub_engine(runs_root.parent / "bin", "exit 3"))
+    native_id = launcher.submit(spec)
+    wait_for((spec.launch_dir / ".spectio" / "head.exit").exists)
+    assert read_head_exit(spec.launch_dir) == 3
+    assert ended(launcher, native_id).exit_code == 3
 
 
 def test_adopt_after_restart(runs_root: Path, launcher: LocalLauncher) -> None:
@@ -361,6 +371,22 @@ def test_cancel_term_then_kill(runs_root: Path, launcher: LocalLauncher) -> None
     launcher.cancel(native_id, grace_s=0)
     report = ended(launcher, native_id)  # TERM ignored by the engine: SIGKILL after the grace
     assert report.exit_code is None or report.exit_code != 0
+
+
+def test_cancel_just_before_the_engine_starts(runs_root: Path, launcher: LocalLauncher) -> None:
+    """FU-P3-108a: a Cancel (the marker, then SIGTERM to the group) that lands after the head's
+    marker check, while a shell that traps TERM is about to start the engine, still stops it.
+    The hook in front of the engine does what the loop's Cancel does, at that very point."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; exit 0")
+    spec = spec_for(runs_root, engine)
+    hook = runs_root.parent / "bin" / "cancel-now"
+    marker = shlex.quote(str(spec.launch_dir / ".spectio" / "cancel"))
+    hook.write_text(f"#!/bin/bash\necho '{{}}' > {marker}\nkill -TERM 0\n")
+    hook.chmod(0o755)
+    native_id = launcher.submit(replace(spec, engine_cmd=f"{hook}; {spec.engine_cmd}"))
+    report = ended(launcher, native_id)
+    assert not (spec.launch_dir / "started").exists()
+    assert report.exit_code == 143
 
 
 # --- The runner loop ------------------------------------------------------------------------
@@ -613,6 +639,58 @@ def test_cancel_with_a_stale_ref_after_the_launch(runs_root: Path, launcher: Loc
     assert not (ref.launch_dir / "started").exists()
 
 
+class FastHead(LocalLauncher):
+    """A launcher whose `submit` returns once the head has reached its engine, or ended: a head
+    as fast as one on an idle host, against a loop slowed down by load."""
+
+    def submit(self, spec: LaunchSpec) -> str:
+        native_id = super().submit(spec)
+        done = spec.launch_dir / ".spectio" / "head.exit"
+        wait_for(lambda: (spec.launch_dir / "started").exists() or done.exists())
+        return native_id
+
+
+def test_cancel_in_the_lease_of_its_launch_beats_a_fast_head(runs_root: Path) -> None:
+    """FU-P3-108a: the heads of a lease start once all of it is applied, so a cancel leased
+    after its launch stops a head before its engine however fast the head is."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; sleep 30")
+    sink = FakeSink()
+    launcher = FastHead()
+    try:
+        loop = make_loop(sink, runs_root, engine, launcher)
+        ref = sink.launch(runs_root, RUN_A)
+        sink.commands.append(Command("cmd_cancel", "cancel", ref))
+        run_until(loop, lambda: ref.launch_id not in sink.launches)
+        assert ("cmd_cancel", True, None) in sink.acks
+        assert sink.last(ref.launch_id).exit_code == 143
+        assert not (ref.launch_dir / "started").exists()
+    finally:
+        for native_id in list(launcher._dirs):
+            launcher.cancel(native_id, grace_s=0)
+            launcher.poll([native_id])
+
+
+def test_cancelled_head_end_skips_the_spool_grace(runs_root: Path, launcher: LocalLauncher) -> None:
+    """FU-P3-108a: with the default spool grace (60 s), a head that ends after a Cancel is
+    reported at the next poll, after one last spool read: the run reads cancelled then, not a
+    minute after head.exit with its head shown alive meanwhile."""
+    line = spool_line("RUN", 1, "onFlowCreate").replace('"RUN"', '"%s"')
+    spool = '"$SPECTIO_SPOOL_DIR/nf-spectio-1-0001.jsonl"'
+    last = f'umask 077; printf {shlex.quote(line + chr(10))} "$SPECTIO_RUN_ID" > {spool}; exit 143'
+    body = f"trap {shlex.quote(last)} TERM; touch started; while :; do sleep 0.05; done"
+    engine = stub_engine(runs_root.parent / "bin", body)
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher, end_grace_s=60)
+    ref = sink.launch(runs_root, RUN_A)
+    run_until(loop, (ref.launch_dir / "started").exists)
+    sink.commands.append(Command("cmd_cancel", "cancel", sink.launches[ref.launch_id]))
+    run_until(loop, lambda: ref.launch_id not in sink.launches, timeout=10)
+    assert ("cmd_cancel", True, None) in sink.acks
+    assert sink.last(ref.launch_id).exit_code == 143
+    events = [e for lid, b in sink.batches if lid == ref.launch_id for e in b.events]
+    assert len(events) == 1  # written as the engine ended: read before the end is reported
+
+
 def test_unreadable_head_logged_once(runs_root: Path, caplog: pytest.LogCaptureFixture) -> None:
     """SEC-P3T09-01: a refused head.pid is logged once per head, not at every poll."""
     spec = spec_for(runs_root, runs_root.parent / "unused")
@@ -690,6 +768,40 @@ def test_snakemake_end_skips_the_spool_grace(runs_root: Path, launcher: LocalLau
     report = sink.last(ref.launch_id)
     assert (report.ended, report.exit_code, report.failure) == (True, 0, None), report
     assert [len(b.events) for _, b in sink.batches if b.events] == [1]  # read before the end
+
+
+class LateEventLauncher(LocalLauncher):
+    """Writes a Nextflow spool event as it first sees the head ended: an event (`onFlowError`)
+    that came after the tick's spool read, and before its poll."""
+
+    def poll(self, ids: list[str]) -> dict[str, HeadReport]:
+        reports = super().poll(ids)
+        for native_id, report in reports.items():
+            spool = self._dirs[native_id] / ".spectio" / "events" / "nf-spectio-1-0001.jsonl"
+            if report.ended and not spool.exists():
+                fd = os.open(spool, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                os.write(fd, (spool_line(RUN_A, 1, "onFlowError") + "\n").encode())
+                os.close(fd)
+        return reports
+
+
+@pytest.mark.parametrize("code", [0, 1])
+def test_nextflow_end_after_its_end_event_skips_the_spool_grace(runs_root: Path, code: int) -> None:
+    """With the default spool grace (60 s), a Nextflow head that exits after its engine's end
+    event was ingested (`engine_ended`) is reported at the poll that sees it, with its exit code
+    and no failure (G7), after one last read of its spool: an event can follow `onFlowComplete`
+    (`onFlowError`), and is ingested before the end (CR-P3G7-07)."""
+    engine = stub_engine(runs_root.parent / "bin", f"exit {code}")
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, LateEventLauncher(), end_grace_s=60)
+    ref = sink.launch(runs_root, RUN_A)
+    sink.launches[ref.launch_id] = ref = replace(ref, engine_ended=True)
+    sink.commands[-1] = replace(sink.commands[-1], launch=ref)
+    run_until(loop, lambda: ref.launch_id not in sink.launches, timeout=10)
+    report = sink.last(ref.launch_id)
+    assert (report.ended, report.exit_code, report.failure) == (True, code, None), report
+    events = [e.type for _, b in sink.batches for e in b.events]
+    assert events == ["nextflow.onFlowError"]  # read before the end
 
 
 # --- Head files scoped by launch, and the Resume launch (P1 Task 30, CR-P3T09-11) -----------
@@ -860,3 +972,32 @@ def test_resume_launch_refused_while_a_process_runs_there(
     report = sink.last(ref.launch_id)
     assert report.failure is not None and report.failure.class_ == "launch_error"
     assert "runs in" in report.failure.message
+
+
+def test_launch_on_a_nearly_full_disk_warns_once_and_starts(
+    runs_root: Path,
+    launcher: LocalLauncher,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """FU-P3-74: a launch logs the `runs_disk` warning of `spectio doctor` once, and starts."""
+    full = shutil._ntuple_diskusage(100 * 2**30, 97 * 2**30, 3 * 2**30)
+    monkeypatch.setattr(shutil, "disk_usage", lambda path: full)
+    body = "while [ ! -e release ]; do sleep 0.05; done"
+    engine = stub_engine(runs_root.parent / "bin", body)
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher)
+    ref = sink.launch(runs_root, RUN_A)
+    command = sink.commands[0]
+    loop.tick()
+    sink.commands.append(command)  # delivered again: already started, no second warning
+    loop.tick()
+    assert sink.acks == [(command.id, True, None)] * 2
+    assert sink.reports[0][1].state == "starting"
+    warned = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+    assert warned == [
+        f"runs_disk {runs_root} is on a nearly full file system (3.0 GiB free, 97% used): point "
+        "SPECTIO_RUNS_ROOT (runs_root in spectio.toml, spectio init --runs-root) at a larger "
+        "scratch or group file system"
+    ]
+    (ref.launch_dir / "release").touch()

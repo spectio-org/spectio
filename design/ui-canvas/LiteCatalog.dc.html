@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — pipeline catalog</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+a:focus-visible,button:focus-visible,h1:focus-visible,h2:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.cat-eng{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px 0 6px;border-radius:7px;background:#F7F7FB;box-shadow:inset 0 0 0 1px #DFE1EA;font-size:12px;font-weight:600;color:#22253A}
+.cat-act{height:36px;padding:0 14px;border-radius:10px;border:none;background:#F1F2F6;color:#22253A;font:600 13px 'Inter',sans-serif;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
+.cat-act:hover{background:#E6E7EF;color:#0F1020}
+.cat-act.danger{background:#FDF0F0;color:#B02A2A}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12.5px}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="LiteTopbar" crumbs="Launch / Catalog" hint-size="100%,76px"></dc-import></div>
+  <!-- ui-spec §4.7.1: no Catalog item in NAV; on /catalog the sidebar marks Launch (aria-current). -->
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="LiteSidebar" active="launch" hint-size="236px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+
+      <a href="LiteLaunch.dc.html" style="align-self: flex-start; font-size: 13.5px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back to Launch</a>
+
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span style="width: 48px; height: 48px; border-radius: 15px; background: #FDF2F5; color: #A54666; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z M9 9h7 M9 13h7 M9 17h4"/></svg>
+        </span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <h1 id="cat-h1" tabindex="-1" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Catalog</h1>
+          <span style="font-size: 14px; color: #4D5065;">Pipelines saved under a name, to pick at Launch · 3 pipelines</span>
+        </div>
+        <a href="LiteCatalogEntry.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center;">Add pipeline</a>
+      </div>
+
+      <div role="status" aria-live="polite" class="sr"></div>
+
+      <ul aria-label="Your catalog, in name order" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px;">
+        <sc-for list="{{items}}" as="e" hint-placeholder-count="3">
+          <li style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+            <div style="display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+              <div style="flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                <h2 id="{{e.hid}}" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600;">{{e.label}}</h2>
+                <sc-if value="{{e.label !== e.name}}" hint-placeholder-val="{{true}}"><span class="mono" style="font-size: 12px; color: #4D5065;">{{e.name}}</span></sc-if>
+              </div>
+              <span class="cat-eng"><img src="{{e.logo}}" width="14" height="14" alt="" style="display: block; object-fit: contain;">{{e.engine}}</span>
+            </div>
+            <p class="mono" style="margin: 0; color: #22253A; overflow-wrap: anywhere; line-height: 1.45;">{{e.location}}<sc-if value="{{e.revision}}" hint-placeholder-val="{{true}}"><span style="color: #4D5065;"> @ {{e.revision}}</span></sc-if></p>
+            <sc-if value="{{e.extras}}" hint-placeholder-val="{{true}}"><p style="margin: 0; font-size: 12.5px; color: #4D5065;">{{e.extras}}</p></sc-if>
+            <div role="group" aria-label="Actions for {{e.name}}" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+              <a class="cat-act" href="LiteCatalogEntry.dc.html" aria-label="Edit {{e.name}}">Edit</a>
+              <button type="button" class="cat-act danger" aria-label="Delete {{e.name}}" aria-haspopup="dialog">Delete</button>
+            </div>
+          </li>
+        </sc-for>
+      </ul>
+
+      <p style="margin: 0; font-size: 12.5px; color: #6E7287;">Saved in <span class="mono" style="font-size: 12px;">~/.spectio/catalog.toml</span>. No Launch action here in 0.0.1: pick a pipeline in "From your catalog" on Launch.</p>
+
+      <section aria-labelledby="h-states" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
+        <h2 id="h-states" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">ON THIS BOARD, ALSO</h2>
+        <section aria-labelledby="s-empty-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; max-width: 760px;">
+          <h3 id="s-empty-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">An empty catalog (the file is missing, or has no entry)</h3>
+          <p role="status" style="margin: 0; font-size: 13.5px; color: #22253A; line-height: 1.45;">Your catalog is empty. Add pipeline saves a path or a repository under a name, to pick at Launch.</p>
+          <span style="font-size: 12px; color: #6E7287;">Only the head's Add pipeline: no second link in the empty state (UX-P3FU87C-05); the foot still names the file. The file states, loading, the 404 and the delete dialog are drawn on LiteCatalogStates; the form on LiteCatalogEntry.</span>
+        </section>
+        <section aria-labelledby="s-home-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; max-width: 760px;">
+          <h3 id="s-home-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">How this page is reached</h3>
+          <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">From Home's "Your pipelines", a link "Your catalog". At Launch the same list opens in the Manage catalog dialog (LiteLaunch), so the form is never left. After a delete, focus goes to the next row's heading, else the previous one, else the h1, and the polite region says "Deleted liver-qc" (§4.8.1).</span>
+        </section>
+        <span style="font-size: 11.5px; color: #6E7287;">Data: fixture entries on a SLURM server (login1). The fields and their rules are api §5.6's; the screen is ui-spec §4.7.1.</span>
+      </section>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const NF = '/_blob/636203cdee0bc09b61efe0fa351e239b', SM = '/_blob/7a35665829f51132cb3bcb9a4c3e638c';
+  // ui-spec §4.7.1: name order; the label (or the name) is the heading; the engine is a mark and its name, as text.
+  const entry = (o) => ({ label: o.name, revision: '', hid: 'cat-' + o.name,
+    extras: [o.profile && 'profile ' + o.profile, o.params && 'parameters from ' + o.params].filter(Boolean).join(' · '), ...o });
+  return { items: [
+    entry({ name: 'liver-qc', label: 'Liver time course QC', engine: 'Snakemake', logo: SM,
+      location: '/g/demo-lab/pipelines/liver-tc-qc', profile: 'slurm', params: 'config/liver.yaml' }),
+    entry({ name: 'rnaseq-test', engine: 'Nextflow', logo: NF, location: 'nf-core/rnaseq', revision: '3.27.0',
+      profile: 'test', params: 'conf/test.yaml' }),
+    entry({ name: 'strandseq-qc', label: 'Strand-seq QC', engine: 'Snakemake', logo: SM,
+      location: 'ssh://git@git.demo-lab.org/mylab/strandseq-qc.git', revision: 'v1.4.0' })
+  ] };
+}
+}
+</script>
+</body>
+</html>

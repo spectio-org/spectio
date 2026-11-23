@@ -38,11 +38,13 @@ from sqlalchemy import Row, func, insert, select, update
 
 from spectio.runner.rundir import private_dir, read_small
 from spectio_sdk.stages import SpectioFile, applies
+from spectio_sdk.targets import stages_note
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import git_url
 from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import IN_CHUNK, Projection
+from spectio_server.projector.targets import target_of
 from spectio_server.stages.assign import Overlap, StageDef, assign
 from spectio_server.stages.detect_nf import detect_nextflow
 from spectio_server.stages.detect_smk import (
@@ -315,8 +317,12 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
     row = _run_row(p)
     names = [] if row.engine == "snakemake" else _names(p)
     sources, run_id = p.sources, p.run_id
+    target = target_of(p.conn, p.run_id)
 
     def job() -> _Found:
+        if target is not None and target.kind == "module":  # no pipeline file to read
+            return names, [], None, None, []
+        # a rule target still reads its Snakefile: its rules and checkpoints
         return _sources(sources, run_id, row, names, snakefile_main)
 
     pool = None if sources is None else sources.pool
@@ -327,6 +333,8 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
         log.warning("run %s: stage sources not read: %s", p.run_id, exc)
         universe, stages, source, checkpoints = names, [], None, []
         note = "The stage sources were not read in time (the file system did not answer)."
+    if target is not None:  # one module or one rule: no stages, no gates (api §5.10)
+        stages, source, note = [], None, stages_note(target)
     for n, stage in enumerate(stages, 1):
         p.conn.execute(
             insert(run_stages).values(
@@ -478,7 +486,8 @@ def _meta(run: _Run, names: list[str]) -> dict[str, str]:
 def _snakemake(
     sources: StageSources | None, run_id: str, run: _Run, snakefile_main: str | None
 ) -> tuple[list[str], list[StageDef], list[str]]:
-    """The run's rules (from `rules.txt` when the head wrote it, else from the rule files), the
+    """The run's rules (those of `rules.txt` when the head wrote it, else of the rule files) in the
+    rule files' order (snakemake/workflow.py:734-740, 9.27.1, sorts `--list-rules`), the
     detected stages, and the rules the rule files declare with `checkpoint <name>:`."""
     defined = _rules_txt(sources, run_id)
     main = _main_snakefile(run, snakefile_main)
@@ -490,7 +499,11 @@ def _snakemake(
         files = rule_files(main)
     except Unsafe:
         files = []
-    universe += defined if defined is not None else [r for f in files for r in f.rules]
+    declared = [r for f in files for r in f.rules]
+    if defined is not None:  # `--list-rules` sorts by name: the rule files' order first
+        listed = set(defined)
+        declared = [r for r in declared if r in listed] + defined
+    universe += declared
     checkpoints = [r for f in files for r in f.checkpoints]
     return list(dict.fromkeys(universe)), detected, checkpoints
 

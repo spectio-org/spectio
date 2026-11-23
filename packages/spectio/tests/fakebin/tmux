@@ -107,6 +107,11 @@ def run(command: str, rest: list[str]) -> None:
         counter = state / "panes"
         n = int(counter.read_text()) + 1 if counter.exists() else 0
         counter.write_text(str(n))
+        # a pane gets SIGHUP and SIGINT at their defaults, as tmux 3.4 gives them even when
+        # started ignoring both (`nohup`, a background job): else `kill-session` and C-c do
+        # nothing in a detached test run (DW-P3B06-02)
+        for sig in (signal.SIGHUP, signal.SIGINT):
+            signal.signal(sig, signal.SIG_DFL)
         with (state / f"{name}.out").open("ab") as out:
             proc = subprocess.Popen(
                 words,

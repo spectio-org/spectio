@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — work directory</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.lr-card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);overflow:hidden;background:#FFFFFF}
+.lr-head{padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid #EEEFF5}
+.lr-filter{display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;border-radius:10px;box-shadow:inset 0 0 0 1px #DFE1EA;color:#6E7287;width:220px}
+.lr-filter input{border:none;outline:none;font:inherit;font-size:13px;color:#0F1020;min-width:0;flex-grow:1;background:transparent}
+.lr-table{width:100%;min-width:720px;border-collapse:collapse;font-size:13px}
+.lr-table thead tr{background:#F7F7FB;text-align:left;color:#33364A;font-size:12px}
+.lr-table th[scope="col"]{padding:4px 12px;font-weight:600}
+.lr-table tbody tr{border-top:1px solid #EEEFF5}
+.lr-table tbody th,.lr-table td{padding:6px 12px;text-align:left;font-weight:400}
+.lr-sort{height:28px;padding:0 6px;margin-left:-6px;border:none;border-radius:6px;background:transparent;font:600 12px 'Inter',sans-serif;color:#33364A;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.lr-sort[data-on]{color:#4D368B}
+.lr-name{display:inline-flex;gap:8px;align-items:center;min-width:0;overflow-wrap:anywhere}
+.lr-name a{font-weight:600}
+.lr-muted{font-size:12px;color:#6E7287}
+.lr-num{text-align:right !important;color:#33364A;font-variant-numeric:tabular-nums}
+.lr-act{width:44px;text-align:right !important}
+.lr-dl{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#33364A;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF}
+.lr-note{border-radius:12px;background:#F7F7FB;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.lr-state{border-radius:18px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.lr-cap{font-size:11.5px;font-weight:600;color:#6E7287;letter-spacing:0.02em}
+.lr-btn{height:32px;padding:0 12px;border-radius:8px;border:none;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font:600 12.5px 'Inter',sans-serif;color:#22253A;cursor:pointer;align-self:flex-start}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="LiteTopbar" crumbs="Runs / rnaseq-2026-10-25 / Work directory" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="LiteSidebar" active="runs" hint-size="236px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <a href="LiteTaskFiles.dc.html" style="font-size: 13px; font-weight: 600; text-decoration: none; align-self: flex-start;">← SUBREAD_FEATURECOUNTS (S19) · attempt 1</a>
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px; overflow-wrap: anywhere;">Work directory · SUBREAD_FEATURECOUNTS (S19) · attempt 1</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; border-radius: 12px; background: #F7F7FB; padding: 6px 10px;">
+        <nav aria-label="Folder" style="font-size: 13px; font-weight: 600; display: flex; gap: 6px;"><span aria-current="page">work directory</span></nav>
+        <span style="flex-grow: 1;"></span>
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065; overflow-wrap: anywhere;">/scratch/amartin/spectio-runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/work/9d/77c2140f5be3a1c96e04d2b88a7f13</code>
+        <button type="button" class="lr-btn" aria-label="Copy path">Copy path</button>
+      </div>
+      <section class="lr-card" aria-labelledby="lr-title">
+        <div class="lr-head">
+          <h2 id="lr-title" style="margin: 0; font-size: 15px; font-weight: 600; flex-grow: 1;">Work directory · 1 folder, 5 files</h2>
+          <label class="lr-filter"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg><span class="vh">Filter this folder</span><input type="search" placeholder="Filter this folder"></label>
+          <span role="status" aria-live="polite" class="vh"></span>
+        </div>
+        <div style="overflow-x: auto;">
+        <table class="lr-table" aria-label="work directory">
+          <caption class="vh">Contents of the work directory, read-only; folders first; names that start with a dot are not listed</caption>
+          <thead><tr>
+            <th scope="col" aria-sort="ascending"><button type="button" class="lr-sort" data-on="">Name <span aria-hidden="true">↑</span></button></th>
+            <th scope="col">Kind</th>
+            <th scope="col" style="text-align: right;"><button type="button" class="lr-sort">Size</button></th>
+            <th scope="col"><button type="button" class="lr-sort">Modified</button></th>
+            <th scope="col"><span class="vh">Download</span></th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <th scope="row"><span class="lr-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"/></svg><a href="LiteWorkdir.dc.html">S19_featurecounts</a></span></th>
+              <td><dc-import name="LiteKind" kind="folder" hint-size="160px,22px"></dc-import></td>
+              <td class="lr-num">—</td>
+              <td class="lr-muted">today 08:41</td>
+              <td class="lr-act"></td>
+            </tr>
+            <tr>
+              <th scope="row"><span class="lr-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><a href="LiteFilePreview.dc.html">S19.featureCounts.txt</a></span></th>
+              <td><dc-import name="LiteKind" kind="text" hint-size="160px,22px"></dc-import></td>
+              <td class="lr-num">2.1 MiB</td>
+              <td class="lr-muted">today 08:47</td>
+              <td class="lr-act"><a class="lr-dl" href="#" download aria-label="Download S19.featureCounts.txt"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7 10l5 5 5-5 M5 20h14"/></svg></a></td>
+            </tr>
+            <tr>
+              <th scope="row"><span class="lr-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><a href="LiteFilePreview.dc.html">S19.featureCounts.txt.summary</a></span></th>
+              <td><dc-import name="LiteKind" kind="file" hint-size="160px,22px"></dc-import></td>
+              <td class="lr-num">412 B</td>
+              <td class="lr-muted">today 08:47</td>
+              <td class="lr-act"><a class="lr-dl" href="#" download aria-label="Download S19.featureCounts.txt.summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7 10l5 5 5-5 M5 20h14"/></svg></a></td>
+            </tr>
+            <tr>
+              <th scope="row"><span class="lr-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><a href="LiteFilePreview.dc.html">S19.featureCounts.html</a></span></th>
+              <td><dc-import name="LiteKind" kind="htmlnot" hint-size="160px,22px"></dc-import></td>
+              <td class="lr-num">88 KiB</td>
+              <td class="lr-muted">today 08:47</td>
+              <td class="lr-act"><a class="lr-dl" href="#" download aria-label="Download S19.featureCounts.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7 10l5 5 5-5 M5 20h14"/></svg></a></td>
+            </tr>
+            <tr>
+              <th scope="row"><span class="lr-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><a href="LiteFilePreview.dc.html">genes.gtf</a></span></th>
+              <td><dc-import name="LiteKind" kind="text" hint-size="160px,22px"></dc-import></td>
+              <td class="lr-num">41.3 MiB</td>
+              <td class="lr-muted">today 08:40</td>
+              <td class="lr-act"><a class="lr-dl" href="#" download aria-label="Download genes.gtf"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7 10l5 5 5-5 M5 20h14"/></svg></a></td>
+            </tr>
+            <tr>
+              <th scope="row"><span class="lr-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><span style="font-weight: 500;">S19.markdup.sorted.bam</span> <span class="lr-muted">not followed</span></span></th>
+              <td><dc-import name="LiteKind" kind="link" hint-size="160px,22px"></dc-import></td>
+              <td class="lr-num">—</td>
+              <td class="lr-muted">—</td>
+              <td class="lr-act"></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+      <span style="font-size: 12.5px; color: #4D5065;">Read-only. A folder's size is not counted. Names that start with a dot are not listed: the job's own files are in the task sheet. A staged input copied here, or linked from another task of this run, reads like an output.</span>
+      <h2 style="margin: 8px 0 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">States</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px;">
+        <section aria-label="A · an HTML file" class="lr-state">
+          <span class="lr-cap">A · AN HTML FILE (PREVIEW PAGE)</span>
+          <strong style="font-size: 15px; font-weight: 600; overflow-wrap: anywhere;">S19.featureCounts.html</strong>
+          <span style="font-size: 12.5px; color: #33364A;">HTML (not opened) · 88 KiB · modified today 08:47</span>
+          <div role="note" class="lr-note"><strong style="font-size: 13.5px; font-weight: 600;">Spectio does not open HTML from a work directory. Download it to open it.</strong><a class="lr-btn" href="#" download aria-label="Download S19.featureCounts.html" style="display: inline-flex; align-items: center; text-decoration: none;">Download</a></div>
+        </section>
+        <section aria-label="B · the work directory was removed" class="lr-state">
+          <span class="lr-cap">B · REMOVED (410)</span>
+          <div role="note" class="lr-note"><strong style="font-size: 13.5px; font-weight: 600;">The work directory was removed</strong><span style="font-size: 12.5px; color: #33364A; line-height: 1.5;">Its files are gone, for example after nextflow clean or a scratch purge. The run's results and logs are not affected.</span></div>
+        </section>
+        <section aria-label="C · not visible yet" class="lr-state">
+          <span class="lr-cap">C · NOT VISIBLE YET (THE JOB RUNS)</span>
+          <div role="note" class="lr-note"><strong style="font-size: 13.5px; font-weight: 600;">The work directory is not there yet</strong><span style="font-size: 12.5px; color: #33364A; line-height: 1.5;">The job creates it when it starts; on a shared file system it may take a moment to appear. Spectio checks again when you reload.</span></div>
+        </section>
+        <section aria-label="D · a refused path" class="lr-state">
+          <span class="lr-cap">D · A REFUSED PATH (422)</span>
+          <div role="note" class="lr-note"><strong style="font-size: 13.5px; font-weight: 600;">Not a file of this job's work directory.</strong><span style="font-size: 12.5px; color: #33364A; line-height: 1.5;">A name that starts with a dot (<code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">.command.env</code>) is never served here, through a link neither.</span></div>
+        </section>
+        <section aria-label="E · not reachable" class="lr-state">
+          <span class="lr-cap">E · NOT REACHABLE (409)</span>
+          <div role="note" class="lr-note"><strong style="font-size: 13.5px; font-weight: 600;">The run's directory is not reachable</strong><span style="font-size: 12.5px; color: #33364A; line-height: 1.5;">the runs root /scratch/amartin/spectio-runs is not there: tried /scratch/amartin/spectio-runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/work</span><button type="button" class="lr-btn">Retry</button></div>
+        </section>
+      </div>
+      <span style="font-size: 11.5px; color: #6E7287;">Data: fixture listing of one SUBREAD_FEATURECOUNTS work directory of rnaseq-2026-10-25 (its .command.* files and .exitcode are there, not listed); fields from GET /tasks/{id}/attempts/{n}/workdir (api §5.3): root, path, exists, entries, truncated. The card, rows, kinds and Download are LiteResults' (ui-spec §4.4.1, Explorer); an HTML file is "HTML (not opened)" and opens the preview page, never the report viewer. The staged BAM links outside the run: not followed. The back link reopens the task sheet on that attempt (&amp;task=&amp;attempt=).</span>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>

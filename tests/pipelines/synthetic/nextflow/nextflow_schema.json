@@ -52,6 +52,13 @@
                     "type": "integer",
                     "default": 42,
                     "description": "Seed of the synthetic reads: the same seed gives the same reads and results."
+                },
+                "verbosity": {
+                    "type": "string",
+                    "default": "normal",
+                    "enum": ["quiet", "normal", "loud"],
+                    "description": "How many log lines each task writes to .command.out and .command.err; the results are the same.",
+                    "help_text": "normal: 5 to 20 INFO lines on stdout and one WARN line on stderr. loud: about 1000 lines on each, more than the 64 KiB a log view shows at first. quiet: nothing. A failing task adds ERROR lines on stderr at every level."
                 }
             }
         },
@@ -59,7 +66,7 @@
             "title": "Failure injection",
             "type": "object",
             "fa_icon": "fas fa-exclamation-triangle",
-            "description": "Make one process fail, to watch a failure, a retry or a resume.",
+            "description": "Make one process fail, to watch a failure, a retry or a resume. The fail_demo profile sets one: COMPARE for treatA exits 1.",
             "properties": {
                 "fail_mode": {
                     "type": "string",

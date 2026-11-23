@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from spectio.config import Settings, write_config
+from spectio_server import app as app_mod
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.store.db import open_db
 from spectio_server.store.writer import Writer
@@ -40,6 +41,9 @@ def settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
         data_dir=data_dir, db_dir=db_dir, runs_root=runs_root, port=free_port(), executor="local"
     )
     write_config(found)
+    # As on one person's machine, whatever the test host is: a SLURM install there would put
+    # the server behind a Unix socket (inbox #109 rule 5); the socket tests ask for it.
+    monkeypatch.setattr(app_mod, "shared_host", lambda: None)
     return found
 
 

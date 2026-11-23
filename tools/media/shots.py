@@ -50,18 +50,18 @@ class Shot:
 
 # P3 UI parity D: the pipeline is picked from "Try a test pipeline" (the server's recent runs), and the
 # copy's nextflow_schema.json builds the form; before, the path was typed and a parameter added by hand.
-APP_LAUNCH = ("wait:Try a test pipeline", "click:Use spectio/synthetic-scenarios, $SPECTIO_DEMO_PIPELINE",
+APP_LAUNCH = ("wait:Try a test pipeline", "click:Use Test pipeline (Nextflow), $SPECTIO_DEMO_PIPELINE",
               "wait:form from nextflow_schema.json")
 
 # P1 Task 32: Launch checks each value before sending. `scale` has "minimum": 1, so 0 shows its error.
 APP_LAUNCH_CHECKED = APP_LAUNCH + ("open:Scenario", "fill:scale=0", "wait:Must be at least 1", "view:Must be at least 1")
 
 # The synthetic Snakemake pipeline (tests/pipelines/synthetic/snakemake) copied to
-# $SPECTIO_DEMO_SMK_PIPELINE, with a config/config.yaml of the Snakefile's own defaults plus a nested
-# map `ref` (tools/media/README.md, live shots). Its two sections are opened, one dotted field is set.
-# Since UI parity C the Parameters card folds too, so its first group is named with its status.
+# $SPECTIO_DEMO_SMK_PIPELINE (tools/media/README.md, live shots). Its schema (workflow/schemas) names four
+# groups, each a folded section; two are opened and one value is set. The nested map `ref` of the demo
+# config.yaml is not in that schema, so the form no longer shows a dotted-key section (DW-P3B11-01 follow-up).
 APP_LAUNCH_SMK = ("fill:Pipeline=$SPECTIO_DEMO_SMK_PIPELINE", "click:Load", "wait:Config preview, as YAML",
-                  "open:Parameters defaults", "open:ref", "fill:outdir=results-smk", "fill:ref.release=114")
+                  "open:Input/output options", "open:Scenario", "fill:outdir=results-smk")
 
 # The report viewer, on the MultiQC fixture (tests/fixtures/results/multiqc-1.35_custom_content_report.html.gz).
 REPORT_VIEWER = ("wait:Untrusted report", "frame:/data/demo/mqc/in")
@@ -82,6 +82,9 @@ REGISTRY: dict[str, Shot] = {
         Shot("lite-launch", "LiteLaunch", 1440, 1180, "0.0.1: launching a pipeline from its directory, the form built from nextflow_schema.json, here prefilled from an earlier run"),
         Shot("lite-runs", "LiteRuns", 1440, 1180, "0.0.1: every run with its state, workflow, tasks, start and duration"),
         Shot("lite-run-detail-phone", "MLiteRunDetail", 390, 844, "0.0.1: the same run on a phone"),
+        Shot("run-graph", "RunGraph", 1440, 1180, "0.0.2 (graph_view): the Graph tab of a running synthetic run, ALIGN found by search, its sheet with parameters and live outputs, critical path, minimap and replay"),
+        Shot("run-graph-phone", "MRunGraph", 390, 844, "0.0.2 (graph_view): the graph on a phone, opening on the List view"),
+        Shot("launch-map", "LaunchMap", 1440, 1180, "0.0.2 (graph_view): the Launch workflow map of nf-core/fetchngs, a static estimate with a loop in its edges"),
         # Live: from a running `spectio serve` at $SPECTIO_URL, with the synthetic Nextflow pipeline
         # copied to $SPECTIO_DEMO_PIPELINE (a path free of forbidden terms, fixtures.yaml).
         Shot("app-launch", "/launch", 1440, 1000,
@@ -100,7 +103,7 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-runs-phone", "/runs", 390, 844, "0.0.1, live: the runs list on a phone, one card per run",
              live=("wait:Succeeded",)),
         Shot("app-launch-snakemake", "/launch", 1440, 1380,
-             "0.0.1, live: the launch form with the synthetic Snakemake pipeline loaded, its config as YAML",
+             "0.0.1, live: the launch form with the synthetic Snakemake pipeline loaded, its schema groups opened",
              live=APP_LAUNCH_SMK),
         Shot("app-run-detail", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
              "0.0.1, live: a finished run of the synthetic Nextflow pipeline, its processes and facts",
@@ -184,6 +187,146 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-run-task-efficiency", "/runs/$SPECTIO_DEMO_RUN?tab=tasks&process=FINAL_REPORT", 1440, 1000,
              "0.0.1, live: a Nextflow task's sheet: Efficiency from the engine's trace, with its source, and the 'low' flag",
              themes=("light", "dark"), live=("open:Files of", "wait:from the Nextflow trace")),
+        # Batch P3-B08 (FU-P3-80, 82, 83): the same runs as above, and a Nextflow run launched with the profile
+        # `fail_demo` ($SPECTIO_DEMO_FAILED_RUN; COMPARE for treatA exits 1). The order radios on a Snakemake run
+        # (By rule, pipeline order), the process sheet with its named columns, and a failed task's stderr.
+        Shot("app-run-by-rule-order", "/runs/$SPECTIO_DEMO_SMK_RUN?tab=tasks", 1440, 1000,
+             "0.0.1, live: Tasks, By rule, in pipeline order: the Order radio group, Pipeline order checked, and A to Z beside it",
+             themes=("light", "dark"), live=("tab:By rule", "wait:Pipeline order")),
+        Shot("app-run-by-rule-order-phone", "/runs/$SPECTIO_DEMO_SMK_RUN?tab=tasks", 390, 844,
+             "0.0.1, live: By rule on a phone: the Order radio group above the Sort by select, which also lists Pipeline order",
+             themes=("light", "dark"), live=("tab:By rule", "wait:Sort by", "view:Sort by")),
+        Shot("app-run-failed-synth", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
+             "0.0.1, live: a run launched with the profile fail_demo: Why it failed, and the job files of the failed COMPARE task, with its ERROR lines",
+             themes=("light", "dark"), live=("wait:Why it failed", "open:Open the job files of", "wait:Attempt")),
+        Shot("app-run-process-columns", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
+             "0.0.1, live: the sheet of one process, its tasks in two columns, Task and State, under a header",
+             themes=("light", "dark"), live=("wait:65 / 65 tasks", "open:Open process ALIGN", "wait:Open in Tasks")),
+        # Batch P3-B09 (FU-P3-85c, 85d, 85e): the file explorer and preview, on the finished Nextflow run
+        # ($SPECTIO_DEMO_RUN, launched from the UI with the profiles test,local) and the work directory of its
+        # COMPARE task for treatA_vs_ctrl ($SPECTIO_DEMO_TASK, attempt 1).
+        Shot("app-results-explorer", "/runs/$SPECTIO_DEMO_RUN/results", 1440, 1000,
+             "0.0.1, live: the results explorer at the top of the results directory: sort buttons, the filter, a Kind badge and a Download button per entry",
+             themes=("light", "dark"), live=("wait:final_report.html",)),
+        Shot("app-file-preview", "/runs/$SPECTIO_DEMO_RUN/results/file?path=quant/counts_matrix.tsv", 1440, 1000,
+             "0.0.1, live: the preview of a results file, a TSV shown as a table, with its path, size and the Download button",
+             themes=("light", "dark"), live=("wait:counts_matrix.tsv",)),
+        Shot("app-file-preview-phone", "/runs/$SPECTIO_DEMO_RUN/results/file?path=quant/counts_matrix.tsv", 390, 844,
+             "0.0.1, live: the same preview on a phone",
+             themes=("light", "dark"), live=("wait:counts_matrix.tsv",)),
+        # Batch P3-B12 (FU-P3-102d3): a TIFF in the results of a seeded run, from `tools/media/tiff_demo.py` (it sets the
+        # environment itself): one 16-bit grayscale plane of 512 by 384, so the page says "Contrast stretched for display".
+        Shot("app-file-preview-tiff", "/runs/$SPECTIO_DEMO_RUN/results/file?path=imaging/cells.tif", 1440, 1000,
+             "0.0.1, live: the preview of a TIFF, its first plane on a canvas with Actual size and the line of facts under it",
+             themes=("light", "dark"), live=("wait:Contrast stretched for display",)),
+        Shot("app-file-preview-tiff-phone", "/runs/$SPECTIO_DEMO_RUN/results/file?path=imaging/cells.tif", 390, 844,
+             "0.0.1, live: the same TIFF on a phone",
+             themes=("light", "dark"), live=("wait:Contrast stretched for display",)),
+        # Batch P3-B13 (FU-P3-87e, 101a, 102g), from `tools/media/b13_demo.py` (it sets the environment itself): a catalog
+        # of three entries, seven runs, and one run whose results hold a 30-row TSV and an OME-Zarr.
+        Shot("app-launch-catalog", "/launch", 1440, 1100,
+             "0.0.1, live: Launch with an entry chosen from the catalog picker and loaded: the entry line, the Loaded card with its catalog action",
+             themes=("light", "dark"), live=("wait:From your catalog", "select:From your catalog=RNA-seq test \u00b7 Nextflow", "click:Load", "wait:Loaded")),
+        Shot("app-launch-catalog-manage", "/launch", 1440, 900,
+             "0.0.1, live: Manage catalog opened from Launch, the list of the user's pipelines in a dialog",
+             themes=("light", "dark"), live=("wait:From your catalog", "open:Manage catalog", "wait:Add pipeline")),
+        Shot("app-runs-grid", "/runs", 1440, 900,
+             "0.0.1, live: the runs list as an AG Grid table, one row per run with a state rail, the filters above it",
+             themes=("light", "dark"), live=("wait:rnaseq-treatA-ctrl",)),
+        Shot("app-file-preview-grid", "/runs/$SPECTIO_DEMO_RUN/results/file?path=quant/counts_matrix.tsv", 1440, 1000,
+             "0.0.1, live: a TSV in the AG Grid preview table: sortable headers, a filter row, rows drawn as they scroll",
+             themes=("light", "dark"), live=("wait:counts_matrix.tsv", "wait:ctrl_1")),
+        Shot("app-file-preview-zarr", "/runs/$SPECTIO_DEMO_RUN/results/file?path=imaging/cells.ome.zarr", 1440, 1000,
+             "0.0.1, live: an OME-Zarr folder in the Viv viewer, read through the page's own capped Zarr store",
+             themes=("light", "dark"), live=("wait:Channels",)),
+        Shot("app-file-preview-zarr-phone", "/runs/$SPECTIO_DEMO_RUN/results/file?path=imaging/cells.ome.zarr", 390, 844,
+             "0.0.1, live: an OME-Zarr on a phone (FU-P3-102i, taken in batch P3-B16): the first plane flat, with the line of facts and Open on a larger screen",
+             themes=("light", "dark"), live=("wait:Open on a larger screen",)),
+        Shot("app-run-engine-log", "/runs/$SPECTIO_DEMO_LOGGED_RUN", 1440, 900,
+             "0.0.1, live: the Summary of a run with its engine log's last lines and the button Open the full engine log",
+             themes=("light", "dark"), live=("wait:Open the full engine log",)),
+        # Batch P3-B14 (FU-P3-87d, 102e/f, 104, 111, 112), from `tools/media/b14_demo.py` (it sets the environment itself):
+        # a catalog of three entries, environments.toml with two-cores (default) and eight-cores, and one run whose
+        # results hold imaging/cells.ome.tif (three 16-bit channels).
+        Shot("app-catalog", "/catalog", 1440, 900,
+             "0.0.1, live: the Catalog page, one card per saved pipeline with Edit and Delete, and Add pipeline",
+             themes=("light", "dark"), live=("wait:Liver QC",)),
+        Shot("app-catalog-entry", "/catalog/rnaseq-test", 1440, 900,
+             "0.0.1, live: the entry form of one catalog entry: name, label, engine, location, profile and params file",
+             themes=("light", "dark"), live=("wait:Params file",)),
+        Shot("app-environments-table", "/environments?view=table", 1440, 900,
+             "0.0.1, live: Environments as a table, with the kind icon and the actions named per row, Duplicate to edit on the built-in",
+             themes=("light", "dark"), live=("wait:Eight cores", "wait:Duplicate to edit")),
+        Shot("app-environment-duplicate", "/environments/new?from=local", 1440, 900,
+             "0.0.1, live: the form of a duplicate of the built-in local environment, filled in, with a unique name",
+             themes=("light", "dark"), live=("wait:Default profiles",)),
+        Shot("app-file-preview-ome-tiff", "/runs/$SPECTIO_DEMO_RUN/results/file?path=imaging/cells.ome.tif", 1440, 1000,
+             "0.0.1, live: an OME-TIFF of three channels in the Viv viewer with the channel list, headless Chromium with software WebGL 2; the breadcrumb ends with the file name",
+             themes=("light", "dark"), live=("wait:Channels", "wait:Reset contrast")),
+        Shot("app-profile", "/", 1440, 900,
+             "0.0.1, live: the Profile page in single-user mode, opened from the avatar (a direct visit to /profile is a 404, DW-P3B14-01): who the server runs as, this session, the config paths and the theme",
+             themes=("light", "dark"), live=("link:Profile", "wait:Config paths")),
+        Shot("app-profile-phone", "/", 390, 844,
+             "0.0.1, live: the Profile page on a phone, opened from the avatar",
+             themes=("light", "dark"), live=("link:Profile", "wait:Config paths")),
+        # Batch P3-B15 (FU-P3-89, 113, 115b, 110d), from `tools/media/b15_demo.py` (it sets the environment itself): a catalog
+        # of three entries, environments.toml with two-cores (the default, 2 CPUs and 4 GiB), seven run records (one pinned)
+        # and `rnaseq-tuned`, launched with default resources and an extra config file.
+        Shot("app-search", "/", 1440, 900,
+             "0.0.1, live: the search dialog opened from the top bar with rna typed: runs by name, and the catalog's pipelines, each result a button",
+             themes=("light", "dark"), live=("click:Search runs, pipelines and pages", "fill:Search runs, pipelines and pages=rna", "wait:RNA-seq test", "pause:600")),
+        Shot("app-notifications", "/", 1440, 900,
+             "0.0.1, live: the notifications panel under the bell (retaken for UI-05b, batch P3-B16, from `b16_demo.py`): All and Unread, items grouped by day, a state tile, the engine and the time on each row, an unread dot, View all runs",
+             themes=("light", "dark"), live=("click:Notifications, $SPECTIO_DEMO_UNREAD unread", "wait:View all runs", "pause:600")),
+        # Batch P3-B16 (UI-05b, FU-P3-121), from `tools/media/b16_demo.py` (the seeded server of b15_demo.py plus a config file in the catalog pipeline's directory that is writable by group).
+        Shot("app-notifications-phone", "/", 390, 844,
+             "0.0.1, live: the notifications panel on a phone, a bottom sheet with Mark all as read as a button, the same day groups and rows",
+             themes=("light", "dark"), live=("click:Notifications, $SPECTIO_DEMO_UNREAD unread", "wait:View all runs", "pause:600")),
+        Shot("app-launch-config-warning", "/launch", 1440, 1500,
+             "0.0.1, live: Launch with an extra config file that is writable by group: the input shows the refusal and Before Launch lists Fix Extra config file, before any click on Launch",
+             themes=("light", "dark"),
+             live=("wait:From your catalog", "select:From your catalog=RNA-seq test \u00b7 Nextflow", "click:Load", "wait:Loaded",
+                   "open:Extra config file", "fill:Extra config file=$SPECTIO_DEMO_SHARED", "wait:writable by group or others", "view:Extra config file (optional)")),
+        Shot("app-runs-actions", "/runs", 1440, 900,
+             "0.0.1, live: the runs table with two rows selected, the bulk bar with Delete and Clear selection, a pinned run first, sort icons on four headers",
+             themes=("light", "dark"), live=("check:Select run rnaseq-treatC-ctrl", "check:Select run rnaseq-pilot", "wait:2 selected")),
+        Shot("app-runs-delete", "/runs", 1440, 900,
+             "0.0.1, live: the Delete sheet for two selected runs, with the box Also delete their run directories off",
+             themes=("light", "dark"),
+             live=("check:Select run rnaseq-treatC-ctrl", "check:Select run rnaseq-pilot", "click:Delete\u2026", "wait:Also delete their run directories", "pause:600")),
+        Shot("app-launch-resources", "/launch", 1440, 1500,
+             "0.0.1, live: Launch with the Resources row (CPUs, memory and time per task) and the Extra config file row opened, values typed",
+             themes=("light", "dark"),
+             live=("wait:From your catalog", "select:From your catalog=RNA-seq test \u00b7 Nextflow", "click:Load", "wait:Loaded",
+                   "open:Resources The pipeline", "fill:CPUs per task=2", "fill:Memory per task=3", "fill:Time per task, hours=1",
+                   "open:Extra config file", "fill:Extra config file=$SPECTIO_DEMO_HOME/lab-tweaks.config", "view:Extra config file (optional)")),
+        Shot("app-run-resources", "/runs/$SPECTIO_DEMO_TUNED", 1440, 700,
+             "0.0.1, live: a run's facts with Default resources and Extra config file: the path, the kept name, the size and the SHA-256, View and Copy SHA-256",
+             themes=("light", "dark"), live=("wait:Default resources", "wait:kept as extra.config")),
+        Shot("app-run-config-file", "/runs/$SPECTIO_DEMO_TUNED", 1440, 800,
+             "0.0.1, live: View extra.config opened in its sheet: the kept copy as text, the path and size above it",
+             themes=("light", "dark"), live=("wait:Default resources", "click:View extra.config", "wait:errorStrategy", "pause:600")),
+        Shot("app-workdir", "/runs/$SPECTIO_DEMO_RUN/workdir?task=$SPECTIO_DEMO_TASK&attempt=1", 1440, 1000,
+             "0.0.1, live: the work directory of one Nextflow task attempt, in the same explorer, with the way back to the task's sheet",
+             themes=("light", "dark"), live=("wait:treatA_vs_ctrl.tsv",)),
+        # Batch P3-B11 (FU-P3-86f to -86h): a local server (`spectio init --local`) with `environments.toml` holding
+        # two-cores (2 CPUs, 4 GiB, made the default) and eight-cores (8 CPUs, 16 GiB). $SPECTIO_DEMO_RUN is a finished
+        # run of the synthetic Nextflow pipeline launched from the UI's body with `environment` eight-cores.
+        Shot("app-environments", "/environments", 1440, 900,
+             "0.0.1, live: Environments, the built-in and two of the user's, one of them the default",
+             themes=("light", "dark"), live=("wait:Eight cores",)),
+        Shot("app-environments-phone", "/environments", 390, 844,
+             "0.0.1, live: the same list on a phone, one card per environment, each a link to its page",
+             themes=("light", "dark"), live=("wait:Eight cores",)),
+        Shot("app-environment-edit", "/environments/two-cores", 1440, 900,
+             "0.0.1, live: one environment's form on a local server: the executor is fixed, the local caps and the default profiles",
+             themes=("light", "dark"), live=("wait:Default profiles",)),
+        Shot("app-launch-environment", "/launch", 1440, 1400,
+             "0.0.1, live: Launch with Where it runs (the environment as radio cards), and the aside: Summary and Before Launch, here with a field error",
+             themes=("light", "dark"), live=APP_LAUNCH_CHECKED + ("top:",)),
+        Shot("app-run-environment", "/runs/$SPECTIO_DEMO_RUN", 1440, 700,
+             "0.0.1, live: a run's Facts, with the Environment it ran with, from the copy stored at launch",
+             themes=("light", "dark"), live=("wait:65 / 65 tasks", "wait:eight-cores")),
     )
 }
 
@@ -207,8 +350,11 @@ def render(shot: Shot, theme: str) -> Path | None:
             # live.js reads $SPECTIO_URL and expands $VARS in the steps itself: no environment value goes into argv
             cmd = [*preload, str(Path(__file__).resolve().parent / "live.js"), shot.board,
                    str(shot.width), str(shot.height), str(png), *shot.live]
-        subprocess.run(cmd, check=True, capture_output=True, cwd=REPO,
-                       env={**os.environ, "SPECTIO_PAGE_TEXT": str(text), "SPECTIO_THEME": theme})
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=REPO,
+                           env={**os.environ, "SPECTIO_PAGE_TEXT": str(text), "SPECTIO_THEME": theme})
+        except subprocess.CalledProcessError as e:  # say which step failed, not only that one did
+            sys.exit(f"{shot.name} [{theme}]: {e.stderr.strip()[-1500:]}")
         found = sanitize.leaks(text.read_text(encoding="utf-8"))
         if found:
             sys.exit(f"{shot.name}: forbidden term visible in the rendered page: {found}")

@@ -1,21 +1,28 @@
-import { Button } from "@mantine/core";
-import { Link } from "@tanstack/react-router";
-import type { ReactNode, Ref } from "react";
-import type { Process, RunDetail, ServerVersion, Stage } from "../api";
-import { ICONS } from "../icons";
+import { ActionIcon, Button, Menu } from "@mantine/core";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { type ReactNode, type Ref, useRef, useState } from "react";
+import { type Process, type RunDetail, type ServerVersion, type Stage, setPinned } from "../api";
+import { runEnvName, summary as envSummary } from "../environments/fields";
+import { Icon } from "../icons";
 import { LiveStatus } from "../live";
 import { toYaml } from "../launch/schemaFields";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PhoneTitle, usePhone } from "../shell/layout";
-import { type CopyItem, CopyButton, CopyMenu } from "./CopyMenu";
+import { type CopyItem, CopyButton, useCopyStatus } from "./CopyMenu";
+import { DeleteRuns } from "./DeleteRuns";
+import { extrasFacts } from "./RunDetailExtras";
 import { ResumeAction } from "./ResumeDialog";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
+import { TargetLine } from "./target";
 import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
 // UX-PAR-19, 21 and 22): the state bar, the engine's mark tile, the name and short ID, the state
-// line, Cancel, Resume, Copy to a new launch and Copy, then the facts and the task counts.
+// line, the actions, then the facts and the task counts. The actions (UI-09; ui-spec §12.4, §12.5):
+// one primary chosen by the state (Cancel run, Resume, or Copy to a new launch), then a "More
+// actions" menu with the rest: Copy to a new launch, Pin or Unpin, the Copy items and, once ended,
+// Delete… last (FU-P3-115b). On the phone the primary sits in the bar pinned above the tab bar.
 
 /** The chips under the facts: the states with tasks, failed and retried always (UX-PAR-22). A chip
  * with a `filter` (a Tasks tab filter's label) opens the Tasks tab on it (P3-parD). */
@@ -44,17 +51,17 @@ export function runDirectory(run: RunDetail, server: ServerVersion | null): stri
  * engine reads it, its directory when known, its ID. */
 export function copyItems(run: RunDetail, server: ServerVersion | null): CopyItem[] {
   const items: CopyItem[] = [];
-  if (run.command) items.push({ label: "Command", what: "the command", text: run.command.text });
+  if (run.command) items.push({ label: "Copy command", what: "the command", text: run.command.text });
   if (Object.keys(run.params).length) {
     items.push(
       run.workflow.engine === "snakemake"
-        ? { label: "Config (config.yaml)", what: "the config", text: toYaml(run.params) }
-        : { label: "Config (params.json)", what: "the params", text: `${JSON.stringify(run.params, null, 2)}\n` },
+        ? { label: "Copy config (config.yaml)", what: "the config", text: toYaml(run.params) }
+        : { label: "Copy config (params.json)", what: "the params", text: `${JSON.stringify(run.params, null, 2)}\n` },
     );
   }
   const directory = runDirectory(run, server);
-  if (directory) items.push({ label: "Run directory", what: "the run directory", text: directory });
-  items.push({ label: "Run ID", what: "the run ID", text: run.id });
+  if (directory) items.push({ label: "Copy run directory", what: "the run directory", text: directory });
+  items.push({ label: "Copy run ID", what: "the run ID", text: run.id });
   return items;
 }
 
@@ -78,14 +85,54 @@ function engineSettings(run: RunDetail): [string, ReactNode][] {
   return said.length ? [["Engine settings", <span className="sp-lines">{said.map((t) => <span key={t}>{t}</span>)}</span>]] : [];
 }
 
+/** The run's environment, from its own snapshot (ui-spec §4.8.1, Run detail): no row for a run
+ * started from a terminal, and the Executor row reads the same snapshot, never `GET /version`. */
+function environmentFacts(run: RunDetail, server: ServerVersion | null): [string, ReactNode][] {
+  const env = run.environment;
+  const word = !env || env.state === "not_recorded" ? "not recorded" : env.state === "not_readable" ? "cannot be read" : null;
+  if (!env || word) return [...(env ? [["Environment", word] as [string, ReactNode]] : []), ["Executor", word]];
+  const profile = run.workflow.engine === "snakemake" && env.executor === "slurm" ? run.profiles[0] : undefined;
+  const sub = profile
+    ? `resources and partition from the profile ${profile} (this environment's are not passed)`
+    : envSummary({ executor: env.executor ?? "slurm", slurm: env.slurm, local: env.local }, run.head?.node ?? server?.node ?? "the server", server?.executor ?? "slurm");
+  const executor = executorLabel(env.executor ?? "");
+  const value = (
+    <span className="sp-lines">
+      <span>
+        {runEnvName(env)}
+        <span className="sp-chip sp-env-badge">
+          <span className="sp-sr"> · </span>
+          {executor}
+        </span>
+      </span>
+      <span className="sp-muted">{sub}</span>
+    </span>
+  );
+  return [["Environment", value], ["Executor", executor]];
+}
+
 function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
   const w = run.workflow;
   const ended = isTerminal(run.state);
   const engine = [engineName(w.engine), w.engine_version].filter(Boolean).join(" ");
   const pipeline = w.name ? (w.version ? `${w.name} ${w.version}` : `${w.name} (no version declared)`) : w.location;
+  // a module run names its module, and only a local one has a directory (ui-spec §4.15)
+  const module = run.target?.kind === "module" ? run.target : null;
+  const directory: [string, ReactNode][] =
+    module?.source === "registry"
+      ? []
+      : [
+          [
+            module ? "Module directory" : "Pipeline directory",
+            <span className="sp-copy-line">
+              <span className="sp-mono">{w.location}</span>
+              <CopyButton text={w.location} label="Copy" name={module ? "Copy the module directory" : "Copy the pipeline directory"} />
+            </span>,
+          ],
+        ];
   const facts: [string, ReactNode][] = [
     [
-      "Pipeline",
+      module ? "Module" : "Pipeline",
       // the pipeline's mark: nf-core for an nf-core/ name, else the engine's (inbox #91)
       <span className="sp-pipeline">
         <PipelineMark engine={w.engine} name={w.name} size={18} />
@@ -105,15 +152,10 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     ["Head", headWord(run)],
     ["Login node", run.head?.node ?? server?.node ?? "—"],
     ["Exit code", run.head?.exit_code != null ? String(run.head.exit_code) : ended ? "—" : "— (still running)"],
-    [
-      "Pipeline directory",
-      <span className="sp-copy-line">
-        <span className="sp-mono">{w.location}</span>
-        <CopyButton text={w.location} label="Copy" name="Copy the pipeline directory" />
-      </span>,
-    ],
+    ...directory,
     ["Run directory", <span className="sp-mono">{runDirectory(run, server) ?? "—"}</span>],
-    ["Executor", server ? executorLabel(server.executor) : "—"],
+    ...environmentFacts(run, server),
+    ...extrasFacts(run),
     ...engineSettings(run),
     ["Failure", run.state === "failed" ? failureText(run) : "—"],
   ];
@@ -121,7 +163,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
   if (run.parent_run_id) {
     facts.push([
       "Resume of",
-      <Link to="/runs/$id" params={{ id: run.parent_run_id }}>
+      <Link className="sp-text-link" to="/runs/$id" params={{ id: run.parent_run_id }}>
         run {shortId(run.parent_run_id)}
       </Link>,
     ]);
@@ -131,7 +173,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
       "Resumed as",
       <span className="sp-lines">
         {run.resumed_as.map((child) => (
-          <Link key={child.id} to="/runs/$id" params={{ id: child.id }}>
+          <Link key={child.id} className="sp-text-link" to="/runs/$id" params={{ id: child.id }}>
             {child.name ?? `run ${shortId(child.id)}`} · {runWord(child.state)}
           </Link>
         ))}
@@ -163,14 +205,45 @@ interface Props {
   cancelError: string | null;
   /** A count chip pressed: the Tasks tab filter it names. */
   onChip: (filter: string) => void;
+  /** The run as `PATCH /runs/{id}` answered it (Pin, Unpin). */
+  onRun: (run: RunDetail) => void;
+  /** The Summary tab is shown: Facts start open there, folded on the other tabs (ui-spec §12.7). */
+  summaryTab: boolean;
 }
 
-export function RunHeader({ run, stages, processes, server, titleRef, canCancel, onCancel, cancelError, onChip }: Props) {
+export function RunHeader({ run, stages, processes, server, titleRef, canCancel, onCancel, cancelError, onChip, onRun, summaryTab }: Props) {
   const phone = usePhone();
+  const navigate = useNavigate();
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [copied, copy] = useCopyStatus();
+  const more = useRef<HTMLButtonElement>(null);
+  const pin = () =>
+    setPinned(run.id, !run.pinned)
+      .then((r) => {
+        onRun(r);
+        setPinError(null);
+      })
+      .catch((e: Error) => setPinError(e.message));
   const ended = isTerminal(run.state);
   // Failed and Cancelled add Resume, every ended state Copy to a new launch; a run started from a
   // terminal has neither (ui-spec §4.4 run tools note, header actions)
   const launched = run.origin !== "cli-observed";
+  const resumable = launched && RESUMABLE.has(run.state);
+  const relaunch = launched && ended;
+  const relaunchLink = (props: Record<string, unknown>) => <Link to="/launch" search={{ from: run.id }} {...props} />;
+  // the one primary, by state (ui-spec §12.4); Cancel run is not filled: it stops the run
+  const primary = canCancel ? (
+    <Button variant="default" onClick={onCancel} fullWidth={phone}>
+      Cancel run
+    </Button>
+  ) : resumable ? (
+    <ResumeAction run={run} server={server} fullWidth={phone} />
+  ) : relaunch ? (
+    <Button renderRoot={relaunchLink} leftSection={<Icon name="launch" size="button" />} fullWidth={phone}>
+      Copy to a new launch
+    </Button>
+  ) : null;
   const { unit, units, Units } = words(run.workflow.engine);
   const line = stagesLine(stages);
   const failed = run.summary.tasks.failed;
@@ -208,6 +281,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
           <div className="sp-grow">
             <strong className="sp-run-pipeline">{pipeline}</strong>
             <span className="sp-muted">{[engine, ...run.profiles].join(" · ")}</span>
+            {run.target && <TargetLine target={run.target} />}
             <p className="sp-sub">
               <span>
                 Run <span className="sp-mono">{shortId(run.id)}</span>
@@ -223,6 +297,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
               </h1>
               <span className="sp-id">{shortId(run.id)}</span>
             </div>
+            {run.target && <TargetLine target={run.target} />}
             <p className="sp-sub sp-page-sub">
               {state}
               {progress}
@@ -230,22 +305,68 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
           </div>
         )}
         <div className="sp-run-actions">
-          {canCancel && (
-            <Button color="red" variant="outline" onClick={onCancel}>
-              Cancel run
-            </Button>
-          )}
-          {launched && RESUMABLE.has(run.state) && <ResumeAction run={run} server={server} fullWidth={phone} />}
-          {launched && ended && (
-            <Button renderRoot={(props) => <Link to="/launch" search={{ from: run.id }} {...props} />} variant="default" className="sp-copy-launch" fullWidth={phone}>
-              Copy to a new launch
-            </Button>
-          )}
-          <CopyMenu items={copyItems(run, server)} fullWidth={phone} />
+          <Menu position="bottom-end" withinPortal returnFocus middlewares={{ flip: true, shift: true }}>
+            <Menu.Target>
+              <ActionIcon ref={more} variant="default" size={phone ? "xl" : "lg"} aria-label="More actions">
+                <Icon name="more" size="button" />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown className="sp-run-menu">
+              {relaunch && resumable && (
+                <Menu.Item renderRoot={relaunchLink} leftSection={<Icon name="launch" size="button" />}>
+                  Copy to a new launch
+                </Menu.Item>
+              )}
+              <Menu.Item onClick={pin} leftSection={<Icon name="pin" size="button" />}>
+                {run.pinned ? "Unpin" : "Pin"}
+              </Menu.Item>
+              <Menu.Divider />
+              {copyItems(run, server).map((item) => (
+                <Menu.Item key={item.label} onClick={() => copy(item)} leftSection={<Icon name="copy" size="button" />}>
+                  {item.label}
+                </Menu.Item>
+              ))}
+              {ended && (
+                <>
+                  <Menu.Divider />
+                  <Menu.Item className="sp-menu-danger" onClick={() => setDeleting(true)} leftSection={<Icon name="trash" size="button" />}>
+                    Delete…
+                  </Menu.Item>
+                </>
+              )}
+            </Menu.Dropdown>
+          </Menu>
+          {!phone && primary}
+          <span role="status" className="sp-copy-status">
+            {copied}
+          </span>
         </div>
       </div>
+      {phone && primary && <div className="sp-run-bar">{primary}</div>}
+      {ended && (
+        <DeleteRuns
+          runs={[run]}
+          why={null}
+          opened={deleting}
+          onClose={() => {
+            setDeleting(false);
+            more.current?.focus();
+          }}
+          onDeleted={(said) => navigate({ to: "/runs", state: { said } })}
+        />
+      )}
       {cancelError && <p role="alert">Cancel failed: {cancelError}</p>}
-      <FoldSection id="facts" screen="run" icon={ICONS.info} title="Facts" summary={summary} defaultOpen={!phone}>
+      {pinError && <p role="alert">Pin failed: {pinError}</p>}
+      {/* folded on the tabs other than Summary; there a choice is not remembered (ui-spec §12.7) */}
+      <FoldSection
+        key={summaryTab ? "summary" : "tab"}
+        id="facts"
+        screen={summaryTab ? "run" : undefined}
+        icon="info"
+        title="Facts"
+        summary={summary}
+        defaultOpen={summaryTab && !phone}
+      >
         <Facts run={run} server={server} />
       </FoldSection>
       <div className="sp-chips-row">

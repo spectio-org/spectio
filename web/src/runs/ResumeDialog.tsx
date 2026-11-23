@@ -2,7 +2,8 @@ import { Button, Drawer, Modal } from "@mantine/core";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { ApiError, type RunDetail, type ServerVersion, resumeRun } from "../api";
-import { ICONS, Icon } from "../icons";
+import { runEnvName } from "../environments/fields";
+import { Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { engineName, isTerminal, runWord, words } from "./stateWord";
 
@@ -25,7 +26,7 @@ export function refusedWords(reason: string, run: RunDetail, server: ServerVersi
       return child ? (
         <>
           A resume of this run is already running:{" "}
-          <Link to="/runs/$id" params={{ id: child.id }}>
+          <Link className="sp-text-link" to="/runs/$id" params={{ id: child.id }}>
             {child.name ?? child.id}
           </Link>
           .
@@ -49,6 +50,27 @@ export function refusedWords(reason: string, run: RunDetail, server: ServerVersi
   }
 }
 
+/** Where the resume runs, from the run's snapshot (ui-spec §4.8.1 Resume, api §5.4); a run with
+ * no snapshot (started from a terminal) says nothing. */
+function whereWords(run: RunDetail, server: ServerVersion | null): string | null {
+  const env = run.environment;
+  if (!env || env.state === "not_readable") return null;
+  if (env.state === "not_recorded") return `This run has no recorded environment: it resumes on the server's default (${server?.executor ?? "slurm"}).`;
+  if (env.executor === "local" && server?.executor === "slurm" && !env.local?.cpus && !env.local?.mem_mib) {
+    return "It runs with the login node's limits (2 CPUs, 8 GiB).";
+  }
+  return `Runs on ${runEnvName(env)} as before.`;
+}
+
+/** What the resume reuses of the launch's default resources and kept config file (api §5.7). */
+function extrasWords(run: RunDetail): string | null {
+  const resources = run.default_resources?.state === "recorded";
+  const kept = run.config_file?.state === "recorded" ? run.config_file.kept_as : null;
+  if (resources && kept) return `Same resources and the same kept config file (${kept}) as before.`;
+  if (resources) return "Same resources as before.";
+  return kept ? `The same kept config file (${kept}) as before.` : null;
+}
+
 /** The dialog's text: where the new run starts and what the engine reuses. The launch directory
  * is named only for a run that is not itself a resume: a resume runs in its first run's. */
 function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
@@ -56,6 +78,8 @@ function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) 
   const { units } = words(run.workflow.engine);
   const where = server && !run.parent_run_id ? `${server.runs_root}/${run.id}/launch` : null;
   const head = run.head;
+  const runsOn = whereWords(run, server);
+  const extras = extrasWords(run);
   return (
     <>
       <p>
@@ -64,6 +88,8 @@ function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) 
         run stays {runWord(run.state)}.
       </p>
       {where && <code className="sp-resume-path">{where}</code>}
+      {runsOn && <p>{runsOn}</p>}
+      {extras && <p>{extras}</p>}
       {head && !head.alive && (
         <p className="sp-note">The head of this run has ended on {head.node} (checked): Spectio unlocks the directory first.</p>
       )}
@@ -77,8 +103,11 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
   const [asking, setAsking] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<ReactNode>(null);
-  const { allowed, reason } = run.actions.resume;
-  const why = allowed ? null : (refusedWords(reason ?? "", run, server) ?? "Resume is not possible now.");
+  const unreadable = run.environment?.state === "not_readable";
+  const allowed = run.actions.resume.allowed && !unreadable;
+  const why = unreadable
+    ? "Its recorded environment cannot be read."
+    : allowed ? null : (refusedWords(run.actions.resume.reason ?? "", run, server) ?? "Resume is not possible now.");
 
   const close = () => {
     setAsking(false);
@@ -91,7 +120,9 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
       .then((child) => navigate({ to: "/runs/$id", params: { id: child.id } }))
       .catch((e: Error) => {
         const words = e instanceof ApiError && e.reason ? refusedWords(e.reason, run, server) : null;
-        setError(words ?? e.message);
+        // a 422 (a changed kept file, api §5.7) in the server's words, without its field names
+        const fields = e instanceof ApiError && e.errors.length ? e.errors.map((f) => f.message).join("; ") : null;
+        setError(words ?? fields ?? e.message);
       })
       .finally(() => setSending(false));
   };
@@ -102,7 +133,7 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
     </Button>
   );
   const go = (
-    <Button onClick={confirm} loading={sending} leftSection={<Icon path={ICONS.reload} size={15} />} fullWidth={phone}>
+    <Button onClick={confirm} loading={sending} leftSection={<Icon name="reload" size="button" />} fullWidth={phone}>
       Resume
     </Button>
   );
@@ -114,10 +145,10 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
           Not resumed: {error}
         </p>
       )}
-      {/* the board's order: Resume above Cancel on the phone, Cancel then Resume on the desktop */}
-      <div className="sp-actions" data-stack={phone || undefined}>
-        {phone ? go : cancel}
-        {phone ? cancel : go}
+      {/* ui-spec §12.4: Cancel then Resume, the confirm last on the phone too */}
+      <div className="sp-dialog-foot" data-stack={phone || undefined}>
+        {cancel}
+        {go}
       </div>
     </>
   );
@@ -129,14 +160,14 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
         aria-disabled={allowed ? undefined : true}
         data-disabled={allowed ? undefined : true}
         aria-describedby={why ? "resume-why" : undefined}
-        leftSection={<Icon path={ICONS.reload} size={15} />}
+        leftSection={<Icon name="reload" size="button" />}
         fullWidth={fullWidth}
       >
         Resume
       </Button>
       {why && (
         <p id="resume-why" className="sp-resume-why">
-          <Icon path={ICONS.info} size={15} /> <span>{why}</span>
+          <Icon name="info" /> <span>{why}</span>
         </p>
       )}
       {phone ? (
@@ -151,7 +182,7 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
           {body}
         </Drawer>
       ) : (
-        <Modal opened={asking} onClose={close} title="Resume this run?" returnFocus centered>
+        <Modal opened={asking} onClose={close} title="Resume this run?" returnFocus centered classNames={{ title: "sp-sheet-title" }}>
           {body}
         </Modal>
       )}

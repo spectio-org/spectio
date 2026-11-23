@@ -3,6 +3,7 @@
 import base64
 import json
 import os
+import shutil
 import socket
 from datetime import UTC, datetime, timedelta
 from importlib.metadata import version
@@ -90,7 +91,9 @@ def test_run_detail_after_replay(authed_client: TestClient, replayed_flaky: str)
     assert sum(p["retries"] for p in processes) == 2  # two tasks retried once
     keys = {"process", "stage_id", "counts", "retries"}
     keys |= {"status", "is_checkpoint", "lower_bound", "efficiency"}  # P1 Task 34
+    keys |= {"pipeline_order"}  # FU-P3-82
     assert all(set(p) == keys for p in processes)
+    assert [p["pipeline_order"] for p in processes] == list(range(len(FLAKY_PROCESSES)))
     assert {p["status"] for p in processes} == {"done"}
 
 
@@ -163,6 +166,7 @@ def test_version_behind_session(
         "runs_root": str(settings.runs_root),
         "account": body["account"],
         "executor": "local",
+        "features": {"single_target": False},
     }
     assert body["account"]
 
@@ -175,7 +179,7 @@ def test_runs_sort_ended(authed_client: TestClient, writer: Writer, settings: Se
     assert [r["id"] for r in found["items"]] == [rid(1)]
     rest = authed_client.get(RUNS, params={"sort": "-ended_at", "cursor": found["next"]}).json()
     assert [r["id"] for r in rest["items"]] == [rid(3)]  # no run that has not ended
-    problem(authed_client.get(RUNS, params={"sort": "name"}), 422, "validation-failed")
+    problem(authed_client.get(RUNS, params={"sort": "workflow"}), 422, "validation-failed")
 
 
 def test_stages_ordered(authed_client: TestClient, seeded_stages: str) -> None:
@@ -364,6 +368,36 @@ def test_logs_tail_and_sources(
     )
 
 
+def test_detail_head_logs(
+    authed_client: TestClient, tmp_path: Path, writer: Writer, settings: Settings
+) -> None:
+    """`head_logs` names the head logs the launch directory holds (FU-P3-124): a head under tmux
+    writes no `head.err`, so the UI does not ask for it. A non-regular file is not one, as the
+    log route refuses it; a run with no launch directory, or from a terminal, has none."""
+    add_run(writer, settings, rid(1), "local", "failed")
+    add_run(writer, settings, rid(2), "tmux", "failed")
+    add_run(writer, settings, rid(3), "fifo", "failed")
+    add_run(writer, settings, rid(4), "gone", "failed")
+    add_run(writer, settings, rid(5), "terminal", "failed", origin="cli-observed")
+    local = launch_dir(settings, rid(1)) / ".spectio"
+    (local / "head.out").write_text("out\n")
+    (local / "head.err").write_text("")
+    (launch_dir(settings, rid(2)) / ".spectio" / "head.out").write_text("out\n")
+    os.mkfifo(launch_dir(settings, rid(3)) / ".spectio" / "head.err")
+    # A symlinked log or `.spectio` is never followed, as on the log route (SEC-P3FU124-02).
+    add_run(writer, settings, rid(6), "link", "failed")
+    add_run(writer, settings, rid(7), "linkdir", "failed")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "head.err").write_text("x\n")
+    (launch_dir(settings, rid(6)) / ".spectio" / "head.err").symlink_to(outside / "head.err")
+    linkdir = launch_dir(settings, rid(7)) / ".spectio"
+    shutil.rmtree(linkdir)
+    linkdir.symlink_to(outside)
+    found = {n: authed_client.get(f"{RUNS}/{rid(n)}").json()["head_logs"] for n in range(1, 8)}
+    assert found == {1: ["head-out", "head-err"], 2: ["head-out"]} | {n: [] for n in range(3, 8)}
+
+
 def test_logs_confined(
     authed_client: TestClient, tmp_path: Path, writer: Writer, settings: Settings
 ) -> None:
@@ -449,6 +483,58 @@ def test_logs_snakemake_lineage_own_log(
         lambda c: c.execute(update(runs).where(runs.c.id == parent).values(ended_at=None))
     ).result()
     problem(engine_log(parent), 404, "log-not-found")
+
+
+def serving(settings: Settings, writer: Writer, runs_root: Path) -> TestClient:
+    """The same index served with another runs root, as after a serve with another config."""
+    return client_for(settings.model_copy(update={"runs_root": runs_root}), writer)
+
+
+def engine_log_of(client: TestClient, run_id: str) -> Any:
+    return client.get(f"{RUNS}/{run_id}/logs", params={"source": "engine"})
+
+
+def test_logs_gone_only_when_the_runs_root_is_there(
+    authed_client: TestClient, writer: Writer, settings: Settings, tmp_path: Path
+) -> None:
+    """FU-P3-81: a missing run directory is `410 log-cleaned` only when the runs root exists and
+    is the one the run was recorded under; otherwise a distinct problem names what was tried."""
+    add_run(writer, settings, rid(1), "nf", "failed")
+    tried = run_paths(settings.runs_root, rid(1)).launch_dir
+    body = problem(engine_log_of(authed_client, rid(1)), 410, "log-cleaned")
+    assert "directory is gone" in str(body["detail"])
+
+    missing = tmp_path / "scratch" / "runs"  # its runs root is not there
+    body = problem(
+        engine_log_of(serving(settings, writer, missing), rid(1)), 409, "run-dir-unreachable"
+    )
+    assert str(missing / rid(1) / "launch") in str(body["detail"])
+    assert "directory is gone" not in str(body["detail"])
+
+    other = tmp_path / "other-runs"  # the index holds a run of an earlier serve's runs root
+    other.mkdir(mode=0o700)
+    body = problem(
+        engine_log_of(serving(settings, writer, other), rid(1)), 409, "run-dir-unreachable"
+    )
+    detail = str(body["detail"])
+    assert str(other / rid(1) / "launch") in detail
+    assert str(settings.runs_root) in detail
+    assert str(tried) not in detail and "directory is gone" not in detail
+
+
+def test_logs_runs_root_through_a_symlink(
+    writer: Writer, settings: Settings, tmp_path: Path
+) -> None:
+    """A runs root reached through a symlink (/scratch often is one): its logs are read, and a
+    run recorded under the link's target, its directory gone, is cleaned, not elsewhere."""
+    add_run(writer, settings, rid(1), "nf", "failed")
+    add_run(writer, settings, rid(2), "nf", "failed")
+    (launch_dir(settings, rid(1)) / ".nextflow.log").write_text("found\n")
+    link = tmp_path / "scratch"
+    link.symlink_to(settings.runs_root)
+    client = serving(settings, writer, link)
+    assert engine_log_of(client, rid(1)).text == "found\n"
+    problem(engine_log_of(client, rid(2)), 410, "log-cleaned")
 
 
 @pytest.mark.parametrize("bad", ["%00", "a" * 300])

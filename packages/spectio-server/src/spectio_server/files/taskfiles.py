@@ -15,25 +15,27 @@ the file system is meant to run in the file pool (`files.pool`).
 import os
 import re
 import stat
-from collections.abc import Iterator
-from contextlib import ExitStack, contextmanager
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Literal
+from typing import BinaryIO, Literal
 
 from spectio.runner.rundir import open_private, run_paths
 from spectio_server.files.confine import (
     MAX_READ,
     TAIL,
+    Entry,
     NotAllowed,
     NotFound,
     Root,
     open_confined,
+    open_dir,
     read_at,
     safe_rel,
+    servable_name,
     size_of,
     stat_confined,
-    tail,
 )
 from spectio_server.files.redact import redact_command_run, strip_escapes
 
@@ -63,6 +65,7 @@ NF_FILES: dict[str, Kind] = {
     ".command.begin": "marker",
     ".command.trace": "trace",
 }
+HEAD_FILES = {"head-out": "head.out", "head-err": "head.err"}  # a run log's head sources
 SPECTIO_SERVED = frozenset({"head.out", "head.err", "nextflow.log"})  # all else in .spectio/
 SLURM_LOGS = PurePosixPath(".snakemake/slurm_logs")
 OPEN_STATES = frozenset({"pending", "submitted", "running"})
@@ -87,6 +90,12 @@ class Cleaned(NotFound):
     """The work directory, or the launch directory, is gone."""
 
 
+class Unreachable(NotFound):
+    """The run's directory is not where this server looks (FU-P3-81): its runs root is not
+    there, or the run was recorded under another runs root (an index kept from a serve with
+    another one). Not a cleaned directory."""
+
+
 @dataclass(frozen=True)
 class AttemptFiles:
     """What the files of one attempt are found from: its run, engine and state, and the paths
@@ -100,6 +109,8 @@ class AttemptFiles:
     logs: tuple[tuple[str, str], ...]  # Snakemake: (path relative to the launch dir, kind)
     runs_root: Path
     outputs: tuple[str, ...] | None = None  # Snakemake: its `job_info` outputs (P1 Task 34)
+    recorded_root: str | None = None  # the runs root the run was recorded under (FU-P3-81)
+    observed: bool = False  # a run started from a terminal (origin `cli-observed`)
 
 
 @dataclass(frozen=True)
@@ -186,19 +197,60 @@ def log_kind(rel: PurePosixPath) -> Kind:
 
 
 @contextmanager
-def run_root(runs_root: Path, run_id: str, part: str) -> Iterator[Root]:
-    """The run's launch or work directory, private (req. 10); Cleaned when it is gone."""
+def run_root(
+    runs_root: Path, run_id: str, part: str, recorded_root: str | None = None
+) -> Iterator[Root]:
+    """The run's launch or work directory, private (req. 10). When it cannot be found: Cleaned
+    only when the runs root is there and is the one the run was recorded under
+    (`recorded_root`, when known), else Unreachable, naming the directory tried."""
     paths = run_paths(runs_root, run_id)
     try:
         fd = open_private(runs_root, (run_id, part))
     except FileNotFoundError:
-        raise Cleaned(f"the run's {part} directory is gone") from None
+        tried = paths.run_dir / part
+        if not runs_root.is_dir():
+            raise Unreachable(f"the runs root {runs_root} is not there: tried {tried}") from None
+        _check_recorded(runs_root, recorded_root, tried)
+        raise Cleaned(f"the run's {part} directory is gone: tried {tried}") from None
     except (OSError, ValueError) as exc:
         raise NotAllowed(f"the run's {part} directory is not private: {exc}") from None
     try:
         yield Root(fd, PurePosixPath(paths.launch_dir if part == "launch" else paths.work_dir))
     finally:
         os.close(fd)
+
+
+def head_logs(runs_root: Path, run_id: str) -> list[str]:
+    """The head sources whose file the run's `.spectio/` holds, a regular file of the user as
+    the log route reads it (FU-P3-124: a head under tmux writes no `head.err`)."""
+    found = []
+    with run_root(runs_root, run_id, "launch") as launch:
+        for source, name in HEAD_FILES.items():
+            try:
+                open_confined(launch, PurePosixPath(".spectio", name)).close()
+            except (NotFound, NotAllowed):
+                continue
+            found.append(source)
+    return found
+
+
+def recorded_root(launch_dir: str | None, origin: str | None) -> str | None:
+    """The runs root a run driven by Spectio was recorded under: its launch directory's
+    grandparent (`<root>/<run>/launch`). None for a run started in a terminal, whose launch
+    directory is the user's own project directory, not under a runs root (FU-P3-81)."""
+    if origin == "cli-observed" or not launch_dir:
+        return None
+    return str(PurePosixPath(launch_dir).parent.parent)
+
+
+def _check_recorded(runs_root: Path, recorded_root: str | None, tried: Path) -> None:
+    """Unreachable when the run was recorded under another runs root than this server's: the two
+    spellings are compared once resolved (/scratch is often a symlink), nothing opened."""
+    if recorded_root is not None and os.path.realpath(recorded_root) != os.path.realpath(runs_root):
+        raise Unreachable(
+            f"the run was recorded under the runs root {recorded_root}, not this server's "
+            f"{runs_root}: tried {tried}"
+        )
 
 
 def attempt_dir(attempt: AttemptFiles) -> str | None:
@@ -209,9 +261,19 @@ def attempt_dir(attempt: AttemptFiles) -> str | None:
 
 
 def _work_rel(attempt: AttemptFiles) -> PurePosixPath | None:
+    """The attempt's work directory relative to the run's; raises Unreachable when it does not
+    fit because the run was recorded under another runs root."""
     if attempt.work_dir is None:
         return None
-    return task_work_rel(run_paths(attempt.runs_root, attempt.run_id).work_dir, attempt.work_dir)
+    work = run_paths(attempt.runs_root, attempt.run_id).work_dir
+    rel = task_work_rel(work, attempt.work_dir)
+    if rel is None:
+        _check_recorded(attempt.runs_root, attempt.recorded_root, work)
+    return rel
+
+
+def _root(attempt: AttemptFiles, part: str) -> AbstractContextManager[Root]:
+    return run_root(attempt.runs_root, attempt.run_id, part, attempt.recorded_root)
 
 
 # --- Listing ------------------------------------------------------------------------------
@@ -269,10 +331,12 @@ def _nf_files(attempt: AttemptFiles) -> list[TaskFile]:
             return _all(attempt, NF_FILES, "not_yet", "No work directory yet.")
         return _all(attempt, NF_FILES, "absent", "No work directory recorded for this attempt.")
     try:
-        with run_root(attempt.runs_root, attempt.run_id, "work") as work:
+        with _root(attempt, "work") as work:
             if stat_confined(work, rel) is None:
                 raise NotFound(str(rel))
             return [_listed(attempt, work, rel / n, n, k) for n, k in NF_FILES.items()]
+    except Unreachable:
+        raise
     except NotFound:
         if attempt.state in OPEN_STATES:  # not visible yet on a shared file system
             return _all(attempt, NF_FILES, "not_yet", "The work directory is not visible yet.")
@@ -284,7 +348,7 @@ def _nf_files(attempt: AttemptFiles) -> list[TaskFile]:
 def _smk_files(attempt: AttemptFiles) -> list[TaskFile]:
     kinds: dict[str, Kind] = {p: log_kind(PurePosixPath(p)) for p, _ in attempt.logs}
     try:
-        with run_root(attempt.runs_root, attempt.run_id, "launch") as launch:
+        with _root(attempt, "launch") as launch:
             return [_listed(attempt, launch, safe_rel(p), p, k) for p, k in kinds.items()]
     except Cleaned:
         return _all(attempt, kinds, "cleaned", "The launch directory is gone.")
@@ -297,7 +361,7 @@ def output_states(attempt: AttemptFiles) -> dict[str, State]:
     yet (the job runs) or `absent`, found with no link followed (P1 Task 34)."""
     paths = [p for p in attempt.outputs or () if p != "<TBD>"]
     try:
-        with run_root(attempt.runs_root, attempt.run_id, "launch") as launch:
+        with _root(attempt, "launch") as launch:
             return {p: _output_state(attempt, launch, p) for p in paths}
     except NotFound:  # Cleaned: the launch directory is gone
         return dict.fromkeys(paths, "absent")
@@ -313,6 +377,64 @@ def _output_state(attempt: AttemptFiles, root: Root, path: str) -> State:
     if found is not None:
         return "present"
     return "not_yet" if attempt.state in OPEN_STATES else "absent"
+
+
+# --- The work directory as a root (FU-P3-85e) -------------------------------------------------
+
+
+@dataclass(frozen=True)
+class TaskDir:
+    """A Nextflow attempt's work directory as a root of the explorer (api §5.3): the reads of
+    `files.results` take it as they take a results directory. Its names that start with `.`
+    (the job files, `.command.*` and `.exitcode`) are never listed nor served here; a last-
+    component link is followed only into a task directory of the same run (req. 13 note of
+    2026-11-08), as a published result is."""
+
+    attempt: AttemptFiles
+
+    def roots(self) -> AbstractContextManager[tuple[Root | None, Root | None]]:
+        return _task_roots(self.attempt)
+
+    @staticmethod
+    def shown(entry: Entry) -> bool:
+        return not entry.name.startswith(".") and servable_name(entry.name)
+
+
+def check_work_rel(path: str) -> PurePosixPath | None:
+    """`path` as a relative path below a work directory, None for the directory itself (`""`);
+    raises NotAllowed as `safe_rel` does, and for a part that starts with `.`."""
+    if path == "":
+        return None
+    rel = safe_rel(path)
+    if any(part.startswith(".") for part in rel.parts):
+        raise NotAllowed("not served here: a name that starts with '.'")
+    return rel
+
+
+@contextmanager
+def _task_roots(attempt: AttemptFiles) -> Iterator[tuple[Root | None, Root | None]]:
+    """The attempt's work directory (None while a running attempt's is not visible yet) and the
+    run's, its links' only target. NotFound for a Snakemake attempt, one of a run started from
+    a terminal or with no work directory recorded; Cleaned once an ended attempt's is gone;
+    Unreachable as the Job files routes (FU-P3-81)."""
+    if attempt.engine != "nextflow" or attempt.observed:
+        raise NotFound("no work directory Spectio can show for this attempt")
+    rel = _work_rel(attempt)
+    if rel is None:
+        raise NotFound("no work directory recorded for this attempt")
+    with _root(attempt, "work") as work:
+        task: Root | None
+        try:
+            task = open_dir(work, rel)
+        except NotFound:
+            if attempt.state not in OPEN_STATES:
+                raise Cleaned(f"the work directory was cleaned: tried {attempt.work_dir}") from None
+            task = None  # not visible yet on a shared file system
+        try:
+            yield task, work
+        finally:
+            if task is not None:
+                os.close(task.fd)
 
 
 # --- Reading --------------------------------------------------------------------------------
@@ -346,13 +468,13 @@ def read_task_file(
     kind = check_name(attempt, name)
     with ExitStack() as stack:
         if attempt.engine == "snakemake":
-            root = stack.enter_context(run_root(attempt.runs_root, attempt.run_id, "launch"))
+            root = stack.enter_context(_root(attempt, "launch"))
             rel = safe_rel(name)
         else:
             dir_rel = _work_rel(attempt)
             if dir_rel is None:
                 raise NotFound("no work directory recorded for this attempt")
-            work = stack.enter_context(run_root(attempt.runs_root, attempt.run_id, "work"))
+            work = stack.enter_context(_root(attempt, "work"))
             root, rel = work, dir_rel / name
             if stat_confined(work, dir_rel) is None:
                 state = "not visible yet" if attempt.state in OPEN_STATES else "cleaned"
@@ -367,33 +489,66 @@ def read_task_file(
                 "deleted_after_success": "deleted by the SLURM executor plugin after success",
             }.get(missing.state, "not there")
             raise NotFound(f"{name}: {reason}") from None
-        if b"\x00" in read_at(f, 0, SNIFF):
-            raise Binary(name)
-        if kind == "wrapper":  # hidden from its start, so the lexer sees the whole file
-            hidden = redact_command_run(read_at(f, 0, MAX_READ).decode("utf-8", "replace"))
-            return _cut(hidden.encode(), max_bytes, byte_range)
-        size = size_of(f)
-        if byte_range is not None:
-            start, last = byte_range
-            if start >= size:
-                return Served("", size, size, size, True)
-            end = min(size, start + MAX_READ, size if last is None else last + 1)
-            data = read_at(f, start, end - start)
-            return Served(_text(data), start, start + len(data), size, True)
-        data = tail(f, max_bytes)
-        return Served(_text(data), size - len(data), size, size, False)
+        hide = redact_command_run if kind == "wrapper" else None
+        return read_text(f, name, max_bytes=max_bytes, byte_range=byte_range, hide=hide)
 
 
-def _cut(data: bytes, max_bytes: int, byte_range: tuple[int, int | None] | None) -> Served:
-    """The tail or the range of text already read whole (the hidden `.command.run`)."""
-    size = len(data)
-    if byte_range is not None:
-        start, last = byte_range
-        start = min(start, size)
-        end = min(size, start + MAX_READ, size if last is None else last + 1)
-        return Served(_text(data[start:end]), start, end, size, True)
-    start = max(0, size - min(max_bytes, MAX_READ))
-    return Served(_text(data[start:]), start, size, size, False)
+def read_text(
+    f: BinaryIO,
+    name: str,
+    *,
+    max_bytes: int = TAIL,
+    byte_range: tuple[int, int | None] | None = None,
+    hide: Callable[[str], str] | None = None,
+) -> Served:
+    """The one reader of the text routes, Job files and results (api §5.3): the last
+    `max_bytes` of an open file, or `byte_range` (start, last or None), at most MAX_READ bytes,
+    with escape sequences removed. A range read inside the file ends at its last whole UTF-8
+    sequence; an empty file is an empty read, never a range. `hide` is applied to the file's
+    first MAX_READ bytes before any cut (`.command.run`, whose offsets are then those of the
+    hidden text). Raises Binary for a NUL in the first SNIFF bytes."""
+    if b"\x00" in read_at(f, 0, SNIFF):
+        raise Binary(name)
+    if hide is None:
+        return _served(lambda at, n: read_at(f, at, n), size_of(f), max_bytes, byte_range)
+    hidden = hide(read_at(f, 0, MAX_READ).decode("utf-8", "replace")).encode()
+    return _served(lambda at, n: hidden[at : at + n], len(hidden), max_bytes, byte_range)
+
+
+def _served(
+    read: Callable[[int, int], bytes],
+    size: int,
+    max_bytes: int,
+    byte_range: tuple[int, int | None] | None,
+) -> Served:
+    if size == 0:
+        return Served("", 0, 0, 0, False)  # 200 with an empty body, a Range too
+    if byte_range is None:
+        start = max(0, size - min(max_bytes, MAX_READ))
+        data = read(start, size - start)
+        return Served(_text(data), start, start + len(data), size, False)
+    start, last = byte_range
+    if start >= size:
+        return Served("", start, start, size, True)  # refused by the route (422)
+    end = min(size, start + MAX_READ, size if last is None else last + 1)
+    data = read(start, end - start)
+    if start + len(data) < size:
+        data = data[: _whole_utf8(data)]
+    return Served(_text(data), start, start + len(data), size, True)
+
+
+def _whole_utf8(data: bytes) -> int:
+    """The length of `data` without a UTF-8 sequence cut at its end, so the next read starts on
+    a whole character; all of it when that would leave nothing, or the bytes are not UTF-8."""
+    for back in range(1, min(4, len(data)) + 1):
+        byte = data[-back]
+        if byte < 0x80:
+            return len(data)
+        if byte >= 0xC0:  # the lead byte of the last sequence
+            need = 2 if byte < 0xE0 else 3 if byte < 0xF0 else 4
+            cut = len(data) - back
+            return cut if need > back and cut > 0 else len(data)
+    return len(data)
 
 
 def _text(data: bytes) -> str:

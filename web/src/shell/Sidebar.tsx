@@ -1,17 +1,26 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { type ServerVersion, runsSummary } from "../api";
-import { ICONS, Icon } from "../icons";
+import { Icon } from "../icons";
 import { useFrames } from "../live";
 import { ACTIVE, executorLabel } from "../runs/stateWord";
 
-/** The 0.0.1 sections, with the icons and section colours of LiteSidebar and MLiteTabbar (G1).
+/** The 0.0.1 sections (Environments: ui-spec §4.8.1, FU-P3-86f), with the icons and section colours of LiteSidebar and MLiteTabbar (G1).
  * Home is active on `/` only; Runs and Launch also on the pages under them (UX-PAR-06). */
 export const NAV = [
-  { to: "/", label: "Home", section: "home", icon: ICONS.home, exact: true },
-  { to: "/runs", label: "Runs", section: "runs", icon: ICONS.runs, exact: false },
-  { to: "/launch", label: "Launch", section: "launch", icon: ICONS.launch, exact: false },
+  { to: "/", label: "Home", section: "home", icon: "home", exact: true },
+  { to: "/runs", label: "Runs", section: "runs", icon: "runs", exact: false },
+  { to: "/launch", label: "Launch", section: "launch", icon: "launch", exact: false },
+  { to: "/environments", label: "Environments", section: "environments", icon: "server", exact: false },
 ] as const;
+
+/** The `NAV` item marked on a page outside its path: the Catalog pages are Launch's (ui-spec §4.7.1). */
+export function useMarkedItem(): string | null {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return pathname === "/catalog" || pathname.startsWith("/catalog/") ? "/launch" : null;
+}
+/** The props that mark a `NAV` link as current, as the router does for its active link. */
+export const marked = (to: string, item: string | null) => (to === item ? { "aria-current": "page" as const, "data-status": "active" } : {});
 
 /** The number of active runs, from `GET /runs:summary`, refreshed on stream frames (UX-PAR-07). */
 function useActiveCount(): number {
@@ -26,8 +35,6 @@ function useActiveCount(): number {
   return count;
 }
 
-const FOLD = "M4 5h16v14H4z M9 5v14 M16 10l-2 2 2 2";
-const UNFOLD = "M4 5h16v14H4z M9 5v14 M14 10l2 2-2 2";
 
 interface Props {
   open: boolean;
@@ -40,6 +47,7 @@ interface Props {
  * it is the icon rail; labels stay in the accessibility tree, so no link loses its name. */
 export function Sidebar({ open, onFold, server, down }: Props) {
   const active = useActiveCount();
+  const mark = useMarkedItem();
   return (
     <nav className="sp-sidebar" data-open={open} aria-label="Main">
       <div className="sp-sidebar-head">
@@ -52,7 +60,7 @@ export function Sidebar({ open, onFold, server, down }: Props) {
           aria-label={open ? "Fold the sidebar" : "Unfold the sidebar"}
           onClick={onFold}
         >
-          <Icon path={open ? FOLD : UNFOLD} size={19} />
+          <Icon name={open ? "fold" : "unfold"} size="nav" />
         </button>
       </div>
       <div id="sp-nav-items" className="sp-nav-items">
@@ -63,8 +71,9 @@ export function Sidebar({ open, onFold, server, down }: Props) {
             activeOptions={{ exact: item.exact }}
             className="sp-nav-item"
             data-section={item.section}
+            {...marked(item.to, mark)}
           >
-            <Icon path={item.icon} />
+            <Icon name={item.icon} size="sidebar" />
             <span className={open ? undefined : "sp-sr"}>{item.label}</span>
             {item.to === "/runs" && active > 0 && (
               <>
@@ -79,7 +88,7 @@ export function Sidebar({ open, onFold, server, down }: Props) {
       </div>
       <div className="sp-sidebar-foot">
         <span className="sp-status" data-down={!!down || undefined}>
-          {server ? <Icon path={ICONS.check} size={14} stroke={2.2} /> : <span className="sp-dot" aria-hidden="true" />}
+          {server ? <Icon name="check" /> : <span className="sp-dot" aria-hidden="true" />}
           <span className={open ? undefined : "sp-sr"}>
             {server ? `Spectio ${server.version} · online` : down ? "Server not reached" : "Connecting…"}
           </span>

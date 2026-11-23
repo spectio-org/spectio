@@ -16,6 +16,7 @@ from typing import Any
 import pytest
 
 from spectio.config import EngineOpts, Settings
+from spectio.runner.local import read_head_exit
 from spectio.runner.loop import RunnerLoop
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import make_run_dirs
@@ -281,6 +282,18 @@ def test_adopt_with_no_session_reads_the_exit_file(runs_root: Path, fake_tmux: P
     wait_for((spec.launch_dir / ".spectio" / "head.exit").exists)
     report = TmuxLauncher(str(FAKE)).adopt(ref_for(spec, native_id))
     assert report.ended and report.exit_code == 4
+
+
+@pytest.mark.usefixtures("term_in_tail")
+def test_term_while_head_exit_is_written(runs_root: Path, fake_tmux: Path) -> None:
+    # The group's SIGTERM in the head's tail, as a cancel(grace_s=0) sends it, leaves a
+    # head.exit that parses: never a run that does not end (FU-P3-77, DW-P3B06-02).
+    spec = spec_for(runs_root, stub_engine(runs_root.parent / "bin", "exit 4"))
+    launcher = TmuxLauncher(str(FAKE))
+    native_id = launcher.submit(spec)
+    wait_for((spec.launch_dir / ".spectio" / "head.exit").exists)
+    assert read_head_exit(spec.launch_dir) == 4
+    assert ended(launcher, native_id).exit_code == 4
 
 
 def test_head_stopped_by_hand(runs_root: Path, fake_tmux: Path) -> None:

@@ -21,11 +21,20 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from spectio.config import Settings
+from spectio.environments import (
+    DefaultResources,
+    Snapshot,
+    as_snapshot,
+    check_on_server,
+    launch_fields,
+    server_builtin,
+    snapshot,
+)
 from spectio.runner.engines import EngineError, check_engine
 from spectio.runner.local import checkable, same_process
 from spectio.runner.observed import check_observed_launch_dir, end_pointer, scan_observed
@@ -37,11 +46,13 @@ from spectio.runner.rundir import (
     private_dir,
     read_small,
     run_paths,
+    runs_disk,
     write_file,
 )
 from spectio.runner.spool import SPOOL_REFUSED, SPOOL_STALLED, try_read_spool
 from spectio.runner.types import (
     Command,
+    ExtraFile,
     Failure,
     FileRunner,
     HeadReport,
@@ -53,6 +64,7 @@ from spectio.runner.types import (
     SpoolBatch,
     Stalled,
 )
+from spectio_sdk.targets import RunTarget, from_registry
 
 log = logging.getLogger(__name__)
 
@@ -81,8 +93,22 @@ class ResumePayload(BaseModel):
     inode: int
 
 
+class ConfigFilePayload(BaseModel):
+    """The launch command's extra config file (api §5.7): its bytes in `text`, set to null once
+    the command is answered (`sink.ack`), so no lasting row holds a possible secret."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    kept_as: Literal["extra.config", "extra.yaml", "extra.json"]
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    size: int = Field(ge=0, le=256 * 1024)
+    text: str | None
+
+
 class LaunchPayload(BaseModel):
-    """The payload of a `launch` command (written by P1 Tasks 17 and 30)."""
+    """The payload of a `launch` command (written by P1 Tasks 17 and 30). `environment` is the
+    run's snapshot (FU-P3-86c), checked again here with the routes' strict model; a command
+    written before it has none, and runs on the built-in of the server's kind (api §5.4)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -90,6 +116,15 @@ class LaunchPayload(BaseModel):
     profiles: list[str] = []
     params: dict[str, JsonValue] = {}
     resume_of: ResumePayload | None = None
+    environment: Snapshot | None = None
+    target: RunTarget | None = None  # one module or one rule (api §5.10)
+    default_resources: DefaultResources | None = None  # api §5.7 (FU-P3-110b)
+    config_file: ConfigFilePayload | None = None
+
+
+def extra_file(payload: LaunchPayload) -> ExtraFile | None:
+    kept = payload.config_file
+    return None if kept is None else ExtraFile(kept.kept_as, kept.sha256, kept.text)
 
 
 def _now() -> str:
@@ -143,6 +178,7 @@ class RunnerLoop:
         self._unadopted: set[str] = set()  # launches whose refused adopt is already logged
         self._last: dict[str, HeadReport] = {}
         self._ended_at: dict[str, float] = {}
+        self._starts: list[tuple[Command, LaunchSpec]] = []  # the heads of this lease, to start
 
     def run(self, stop: threading.Event) -> None:
         while not stop.is_set():
@@ -163,6 +199,11 @@ class RunnerLoop:
                 self._try_adopt(ref)  # after a restart
         for command in self.sink.lease_commands():
             self._command(command)
+        # the heads start once the whole lease is applied: a cancel leased after its launch has
+        # written its marker by then, so the head stops before its engine (FU-P3-108a)
+        starts, self._starts = self._starts, []
+        for command, spec in starts:
+            self._command(command, spec)
         launches = self.sink.active_launches()
         for ref in launches:
             self._each(self._read, ref)
@@ -209,13 +250,20 @@ class RunnerLoop:
 
     # --- Commands ------------------------------------------------------------------------
 
-    def _command(self, command: Command) -> None:
+    def _command(self, command: Command, start: LaunchSpec | None = None) -> None:
+        """Apply one command and ack it; a launch is acked once `start`, its head, is started."""
         try:
             if command.launch.terminal is not None:  # never a launcher call (req. 12)
                 self.sink.ack(command.id, False, "a run started from a terminal is monitor only")
                 return
-            if command.kind == "launch":
-                detail = self._launch(command)
+            if start is not None:
+                detail = self._start(command.launch, start)
+            elif command.kind == "launch":
+                found = self._launch(command)
+                if isinstance(found, LaunchSpec):
+                    self._starts.append((command, found))
+                    return
+                detail = found
             elif command.kind == "cancel":
                 detail = self._cancel(command.launch)
             else:
@@ -225,7 +273,8 @@ class RunnerLoop:
             detail = f"{type(exc).__name__}: {exc}"
         self.sink.ack(command.id, detail is None, detail)
 
-    def _launch(self, command: Command) -> str | None:
+    def _launch(self, command: Command) -> LaunchSpec | str | None:
+        """The head to start, or the ack's detail (None: nothing to start)."""
         ref = command.launch
         if ref.launch_id in self._known:
             return None  # delivered again: already started
@@ -263,8 +312,13 @@ class RunnerLoop:
             return None
         try:
             payload = LaunchPayload.model_validate(command.payload)
-            if not Path(payload.location).is_absolute():
+            registry = from_registry(payload.target, ref.engine)  # api §5.10
+            if not registry and not Path(payload.location).is_absolute():
                 raise ValueError(f"{payload.location!r} is not an absolute path")
+            environment = payload.environment or as_snapshot(
+                snapshot(server_builtin(self.settings).environment)
+            )
+            check_on_server(environment, self.settings)
             asked = payload.resume_of
             resume = None if asked is None else self._resume_source(ref, asked)
             engines = self.settings.engines
@@ -280,18 +334,34 @@ class RunnerLoop:
                 work_dir=paths.work_dir,
                 profiles=payload.profiles,
                 params=payload.params,
-                slurm=self.settings.slurm if self.settings.executor == "slurm" else None,
+                **launch_fields(environment),  # the run's own, never the server's (req. 18)
                 nxf_opts=engines.nxf_opts,
                 extra_args=engines.extra_args.get(ref.engine, []),
                 resume_of=resume,
+                target=payload.target,
+                default_resources=payload.default_resources,
+                config_file=extra_file(payload),
             )
-            native_id = self.launcher.submit(spec)
+            status, detail = runs_disk(self.settings.runs_root)
+            if status == "warn":  # never refused: the engine may still fit (FU-P3-74)
+                log.warning("runs_disk %s", detail)
         except EngineError as exc:
             return self._fail(ref, exc.class_, str(exc))
         except (OSError, ValueError) as exc:
             return self._fail(ref, "launch_error", str(exc))
+        return spec
+
+    def _start(self, ref: LaunchRef, spec: LaunchSpec) -> str | None:
+        if ref.launch_id in self._known:
+            return None  # leased twice: already started
+        try:
+            native_id = self.launcher.submit(spec)
+        except (OSError, ValueError) as exc:
+            return self._fail(ref, "launch_error", str(exc))
         self._known.add(ref.launch_id)
         self._report(ref, HeadReport("starting", native_id, None, None, False, None))
+        if self._cancel_asked(ref):  # cancelled in this lease: its marker first, then the signal
+            self.launcher.cancel(native_id)
         return None
 
     def _resume_source(self, ref: LaunchRef, asked: ResumePayload) -> ResumeSource:
@@ -357,19 +427,37 @@ class RunnerLoop:
 
     def _report(self, ref: LaunchRef, report: HeadReport) -> None:
         if report.ended and report.failure is None:
-            if ref.engine == "snakemake" and report.exit_code is not None:
-                # its exit code ends the launch (Assumption 16): the head is gone, so one more
-                # read drains its spool, with no grace to wait (FU-P3-14, CR-P3T09-04)
+            if (
+                ref.engine_ended
+                or (ref.engine == "snakemake" and report.exit_code is not None)
+                or self._cancel_asked(ref)
+            ):
+                # the engine's end event is in (G7), a Snakemake exit code ends the launch
+                # (Assumption 16), or it was cancelled, and the run ends cancelled whatever the
+                # engine says (FU-P3-108a): the head is gone, so one more read drains its
+                # spool, with no grace to wait (FU-P3-14, CR-P3T09-04, CR-P3G7-07)
                 self._read(ref)
             else:
                 first = self._ended_at.setdefault(ref.launch_id, time.monotonic())
                 if time.monotonic() - first < self.end_grace_s:
                     return  # its last events may still be in the spool (Assumption 15)
-            report = ended_failure(ref.engine, report)
+            if not ref.engine_ended:  # an engine that ended on its own event has no failure
+                report = ended_failure(ref.engine, report)
         if self._last.get(ref.launch_id) == report:
             return
         self._last[ref.launch_id] = report
         self.sink.head_report(ref.launch_id, report)
+
+    def _cancel_asked(self, ref: LaunchRef) -> bool:
+        """Whether this launch's `.spectio/cancel` marker is there (never for a run started
+        from a terminal, which is never cancelled from here); unreadable, the grace applies."""
+        if ref.terminal is not None:
+            return False
+        try:
+            with private_dir(self.settings.runs_root, ref.run_id, "launch", ".spectio") as fd:
+                return _exists(fd, CANCEL)
+        except (OSError, ValueError):
+            return False
 
     def _fs(self, key: str, fn: Callable[[], T]) -> T:
         """`fn()` in the file pool with its timeout when there is one; raises `Stalled`. A job

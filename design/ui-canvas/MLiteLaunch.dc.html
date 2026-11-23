@@ -26,14 +26,57 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
 .eng{flex:1 1 0;min-width:0;height:44px;padding:0 12px;border-radius:12px;border:1px solid #C4C7D4;background:#FFFFFF;color:#22253A;font:600 14px 'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
 .eng[aria-pressed="true"]{background:#F4F1FD;border-color:#7750D4;box-shadow:inset 0 0 0 1px #7750D4;color:#4D368B}
 .eng .tick{display:none}.eng[aria-pressed="true"] .tick{display:block}
+.env-r{display:flex;gap:10px;align-items:flex-start;min-height:44px;padding:10px 12px;border-radius:12px;box-shadow:inset 0 0 0 1px #DFE1EA;cursor:pointer;font-size:14px;box-sizing:border-box}
+.env-r:has(input:checked){box-shadow:inset 0 0 0 2px #0284C7;background:#F0F9FF}
+.env-r input{width:20px;height:20px;margin:1px 0 0;flex-shrink:0;accent-color:#0369A1}
+.env-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.env-b{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;font-size:11px;font-weight:600;margin-left:6px;vertical-align:1px}
+.btn-env{min-height:44px;padding:0 14px;border-radius:12px;border:none;background:#F0F9FF;color:#075985;font:600 14px 'Inter',sans-serif;cursor:pointer;width:100%}
+.btn-env[aria-disabled="true"]{background:#F1F2F6;color:#4D5065;cursor:not-allowed}
+/* FU-P3-86e3 layout: one column, Pipeline, Where it runs, Parameters, then the summary; Launch stays in the bar at the bottom. */
+.sum{margin:0;display:flex;flex-direction:column;gap:7px;font-size:13px}
+.sum > div{display:flex;gap:10px;align-items:baseline}
+.sum dt{flex:0 0 88px;color:#6E7287;font-size:12px}
+.sum dd{margin:0;font-weight:500;overflow-wrap:anywhere;min-width:0}
+/* ui-spec §4.7.1, FU-P3-87c: the catalog picker and its sheet; every control at least 44 px. */
+.mcat-sel{font:15px 'Inter',sans-serif;border-radius:12px;border:1px solid #C4C7D4;padding:10px 12px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%;min-height:44px}
+.mcat-btn{min-height:44px;width:100%;padding:0 14px;border-radius:12px;border:none;background:#F6F2FE;color:#4D368B;font:600 14px 'Inter',sans-serif;cursor:pointer}
+.mcat-mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:#4D5065;overflow-wrap:anywhere;line-height:1.4}
+.mcat-line{margin:0;font-size:12.5px;color:#33364A;background:#F7F7FB;border-radius:10px;padding:7px 10px;line-height:1.45;overflow-wrap:anywhere}
+.mcat-pnl{border-radius:16px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.07),0 1px 2px rgba(15,16,32,0.05);padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.mcat-card{min-height:44px;width:100%;box-sizing:border-box;text-align:left;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.11);padding:10px 12px;display:flex;flex-direction:column;gap:3px;font:inherit;color:inherit;cursor:pointer}
 .btn-load{height:44px;border-radius:12px;border:none;background:#F6F2FE;color:#4D368B;font:600 14px 'Inter',sans-serif;cursor:pointer}
+/* ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): Resources and Extra config file, full width, every control at least 44 px; api §5.7. */
+.xrow{border-radius:12px;box-shadow:inset 0 0 0 1px #DFE1EA;padding:2px 12px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.xrow h3{margin:0;font-size:14.5px;font-weight:600}
+.xrow-b{display:flex;flex-direction:column;gap:12px;min-width:0}
+.fld{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld > label,.fld > legend{padding:0;font-size:13.5px;font-weight:600}
+.fld > legend{margin-bottom:5px}
+.m-in{font:15px 'Inter',sans-serif;border-radius:12px;border:1px solid #C4C7D4;padding:10px 12px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%;min-height:44px;min-width:0}
+.m-in[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
+.unit{display:flex;gap:8px;align-items:center;min-width:0}
+.unit .m-in{flex:1 1 0}
+.unit select.m-in{flex:0 0 84px;width:84px}
+.unit > label,.unit > .u{font-size:13px;color:#4D5065;flex-shrink:0}
+.hint{font-size:12.5px;color:#4D5065;line-height:1.45}
+.ferr{font-size:12.5px;color:#B02A2A;font-weight:600;line-height:1.45}
+.keep{display:flex;gap:7px;align-items:baseline;font-size:12.5px;color:#33364A;background:#F7F7FB;border-radius:10px;padding:7px 10px;line-height:1.45;margin:0}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 </helmet>
-<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
-  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="Launch a workflow" hint-size="390px,104px"></dc-import></div>
+<div style="width: 100%; height: 100vh; min-height: 640px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="Launch a workflow" hint-size="100%,104px"></dc-import></div>
   <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 168px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
     <span style="font-size: 13.5px; color: #4D5065; padding: 2px 2px 0; line-height: 1.4;">A directory or a Git repository, then the engine.</span>
-    <section class="cx" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 8px 14px 12px;"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><span style="min-width: 0;">Pipeline</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">nf-core/rnaseq 3.27.0 · singularity</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+    <section class="cx" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 8px 14px 12px;"><h2 id="m-h-pipeline" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><span style="min-width: 0;">Pipeline</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">nf-core/rnaseq 3.27.0 · singularity</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+        <!-- ui-spec §4.7.1: the picker above the Pipeline field; None here (no entry has this location). -->
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="m-cat" style="font-size: 13.5px; font-weight: 600;">From your catalog</label>
+          <select id="m-cat" class="mcat-sel"><option selected>None</option><option>Liver time course QC · Snakemake</option><option>rnaseq-test · Nextflow</option><option>Strand-seq QC · Snakemake</option></select>
+        </div>
+        <button type="button" class="mcat-btn" aria-haspopup="dialog">Manage catalog</button>
         <div style="display: flex; flex-direction: column; gap: 5px;">
           <label for="m-location" style="font-size: 13.5px; font-weight: 600;">Pipeline</label>
           <input id="m-location" value="/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" aria-describedby="m-location-help" style="font: 15px 'Inter', sans-serif; border-radius: 12px; border: 1px solid #C4C7D4; padding: 10px 12px; background: #FFFFFF; color: #0F1020; box-sizing: border-box; width: 100%; min-height: 44px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
@@ -45,9 +88,9 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
           <span id="m-revision-help" style="font-size: 12px; color: #4D5065;">Read as a directory: no revision.</span>
         </div>
         <button type="button" class="btn-load">Load</button>
-        <div role="status" style="display: flex; align-items: center; gap: 10px; border-radius: 12px; background: #F7F7FB; padding: 9px 11px;">
-          <img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="20" height="20" alt="" style="display: block; flex-shrink: 0;">
-          <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">nf-core/rnaseq 3.27.0</span><span style="font-size: 12px; color: #4D5065;">A directory on this machine · form from nextflow_schema.json</span></span>
+        <div style="display: flex; flex-direction: column; gap: 8px; border-radius: 12px; background: #F7F7FB; padding: 9px 11px;">
+          <span style="display: flex; align-items: center; gap: 10px; min-width: 0;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="20" height="20" alt="" style="display: block; flex-shrink: 0;"><span role="status" style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">nf-core/rnaseq 3.27.0 <span style="color: #157A4B; font-size: 12.5px;">· Loaded</span></span><span style="font-size: 12px; color: #4D5065;">A directory on this machine · form from nextflow_schema.json</span></span></span>
+          <button type="button" class="mcat-btn" aria-haspopup="dialog">Save to catalog</button>
         </div>
         <div role="group" aria-labelledby="m-eng-l" style="display: flex; flex-direction: column; gap: 6px;">
           <span id="m-eng-l" style="font-size: 13.5px; font-weight: 600;">Engine</span>
@@ -64,7 +107,56 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
           <span style="font-size: 12px; color: #4D5065;">Left empty: the pipeline name and the date.</span>
         </div>
     </div></div></section>
-    <h2 style="margin: 6px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">PARAMETERS · 2 CHANGED</h2>
+    <section aria-labelledby="m-h-where" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 id="m-h-where" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;">Where it runs</h2>
+      <!-- ui-spec §4.8.1: the Environment choice, first row of "Where it runs"; drawn with local selected on a SLURM server. Phone: full width, each at least 44 px. -->
+      <fieldset style="margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
+        <legend style="padding: 0; margin-bottom: 6px; font-size: 13.5px; font-weight: 600;">Environment</legend>
+        <label class="env-r"><input type="radio" name="m-env" value="slurm" aria-labelledby="m-env-n-slurm" aria-describedby="m-env-d-slurm"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600;"><span id="m-env-n-slurm">SLURM (from spectio init)<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span></span><span id="m-env-d-slurm" style="font-size: 12.5px; color: #4D5065;">partition htc · SLURM account mylab</span></span></label>
+        <label class="env-r"><input type="radio" name="m-env" value="local" checked aria-labelledby="m-env-n-local" aria-describedby="m-env-d-local"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600;"><span id="m-env-n-local">Login node<span class="env-sr">,</span> <span class="env-b" style="background: #F1F2F6; color: #33364A;">Local</span></span></span><span id="m-env-d-local" style="font-size: 12.5px; color: #4D5065;">on login1 (the login node) · at most 2 CPUs and 8 GiB</span></span></label>
+        <label class="env-r"><input type="radio" name="m-env" value="mylab-long" aria-labelledby="m-env-n-long" aria-describedby="m-env-df-long m-env-d-long"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600;"><span id="m-env-n-long">Long jobs, mylab<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span><span id="m-env-df-long"><span class="env-b" style="background: #E8F6EF; color: #157A4B;">Default</span></span></span><span id="m-env-d-long" style="font-size: 12.5px; color: #4D5065;">partition long · SLURM account mylab · 48 h per job · 32 GiB per job</span></span></label>
+        <label class="env-r"><input type="radio" name="m-env" value="gpu-test" aria-labelledby="m-env-n-gpu" aria-describedby="m-env-d-gpu"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600;"><span id="m-env-n-gpu">gpu-test<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span></span><span id="m-env-d-gpu" style="font-size: 12.5px; color: #4D5065;">partition gpu · 16 GiB per job</span></span></label>
+        <button type="button" class="btn-env" aria-haspopup="dialog">New environment</button>
+      </fieldset>
+      <!-- ui-spec §4.6, note of 2026-11-10 (FU-P3-110c): the two rows after Environment, drawn open; Nextflow on Login node (caps 2 CPUs and 8 GiB). -->
+      <div class="xrow">
+        <h3 id="m-xr-res-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="m-xr-res" style="min-height: 44px;"><span>Run resources</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Defaults: 2 CPUs · 6 GiB · 2 h per task</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
+        <div id="m-xr-res" class="xrow-b">
+          <span id="m-res-hint" class="hint">Used by every process that does not set its own. A process that sets its own CPUs, memory or time keeps them. Replaces the pipeline's own default for all processes.</span>
+          <div class="fld">
+            <label for="m-res-cpus">CPUs per task</label>
+            <input id="m-res-cpus" class="m-in" inputmode="numeric" value="2" placeholder="the pipeline's default" aria-describedby="m-res-cpus-h m-res-hint">
+            <span id="m-res-cpus-h" class="hint">1 to 256 · at most 2 (Login node)</span>
+          </div>
+          <div class="fld">
+            <label for="m-res-mem">Memory per task</label>
+            <span class="unit"><input id="m-res-mem" class="m-in" inputmode="decimal" value="6" placeholder="the pipeline's default" aria-describedby="m-res-mem-h m-res-hint"><label class="sr" for="m-res-mem-u">Memory per task, unit</label><select id="m-res-mem-u" class="m-in"><option>MiB</option><option selected>GiB</option></select></span>
+            <span id="m-res-mem-h" class="hint">Rounded to MiB · at most 8 GiB (Login node)</span>
+          </div>
+          <fieldset class="fld">
+            <legend>Time per task</legend>
+            <span class="unit"><label class="sr" for="m-res-th">Time per task, hours</label><input id="m-res-th" class="m-in" inputmode="numeric" value="2" aria-describedby="m-res-time-h m-res-hint"><span class="u" aria-hidden="true">h</span><label class="sr" for="m-res-tm">Time per task, minutes</label><input id="m-res-tm" class="m-in" inputmode="numeric" value="0" aria-describedby="m-res-time-h m-res-hint"><span class="u" aria-hidden="true">min</span></span>
+            <span id="m-res-time-h" class="hint">1 min to 720 h (30 days)</span>
+          </fieldset>
+        </div>
+      </div>
+      <div class="xrow">
+        <h3 id="m-xr-cfg-h"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="m-xr-cfg" style="min-height: 44px;"><span>Extra config file</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">lab-tweaks.config</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h3>
+        <div id="m-xr-cfg" class="xrow-b fld">
+          <label for="m-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+          <input id="m-xcfg" class="m-in" value="/home/amartin/configs/lab-tweaks.config" placeholder="/home/amartin/…/my.config" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="m-xcfg-h m-xcfg-k" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+          <span id="m-xcfg-h" class="hint">A .config file, passed with -c after the pipeline's own. It runs as you, like the pipeline's nextflow.config. In your home directory or in the pipeline: type its absolute path.</span>
+          <span id="m-xcfg-k" class="keep"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; align-self: center;"><path d="M6 11h12v9H6z M9 11V8a3 3 0 0 1 6 0v3"/></svg><span>Read once at Launch and kept with the run as <span class="mono">extra.config</span>, readable by you only (0600), with its SHA-256 · at most 256 KiB.</span></span>
+        </div>
+      </div>
+      <dl class="sum">
+        <div><dt>Engine head</dt><dd>Nextflow 25.10.4, in a tmux session on login1</dd></div>
+        <div><dt>Tasks</dt><dd>run on login1 by Nextflow · at most 2 CPUs</dd></div>
+        <div><dt>Run directory</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400;">/scratch/amartin/spectio-runs/&lt;run ID&gt;</dd></div>
+      </dl>
+      <span style="font-size: 12px; color: #4D5065;">The login node and the run directory are fixed for this server.</span>
+    </section>
+    <h2 id="m-h-params" style="margin: 6px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">PARAMETERS · 2 CHANGED</h2>
     <details open style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05);">
       <summary style="min-height: 48px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; box-sizing: border-box;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Input/output options</span><span style="font-size: 12px; color: #157A4B; font-weight: 600;">2 required · filled</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></summary>
       <div style="padding: 0 14px 14px; display: flex; flex-direction: column; gap: 12px;">
@@ -123,7 +215,28 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
     <details style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05);">
       <summary style="min-height: 48px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; box-sizing: border-box;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg></span><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Generic options</span><span style="font-size: 12px; color: #6E7287;">4 parameters · 11 hidden · defaults</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></summary>
     </details>
-    <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">Starts the engine in a new tmux session on login1. Tasks go to SLURM. Run directory: /scratch/amartin/spectio-runs/&lt;run ID&gt;.</span>
+    <section aria-labelledby="m-h-sum" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 id="m-h-sum" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;">Summary</h2>
+      <dl class="sum">
+        <div><dt>Pipeline</dt><dd>nf-core/rnaseq 3.27.0 · profile singularity</dd></div>
+        <div><dt>Engine</dt><dd>Nextflow 25.10.4</dd></div>
+        <div><dt>Environment</dt><dd>Login node · Local</dd></div>
+        <div><dt>Run resources</dt><dd>2 CPUs · 6 GiB · 2 h per task; processes that set their own keep them</dd></div>
+        <div><dt>Extra config</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400;">/home/amartin/configs/lab-tweaks.config</dd></div>
+        <div><dt>Engine head</dt><dd>tmux session on login1</dd></div>
+        <div><dt>Tasks</dt><dd>run on login1 by Nextflow · at most 2 CPUs</dd></div>
+        <div><dt>Run directory</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400;">/scratch/amartin/spectio-runs/&lt;run ID&gt;</dd></div>
+      </dl>
+      <h3 id="m-h-missing" style="margin: 2px 0 0; font-size: 13.5px; font-weight: 600;">Before Launch</h3>
+      <span id="m-launch-missing" role="status" style="font-size: 13px; font-weight: 600; color: #157A4B; line-height: 1.4;">Nothing is missing: 2 required fields filled.</span>
+    </section>
+    <section class="cx" style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 4px 14px;"><h2 id="m-h-preview" style="margin: 0; font-size: 15px; font-weight: 600; color: #FFFFFF;"><button type="button" class="cx-btn" aria-expanded="false" aria-controls="m-cx-preview" style="min-height: 48px;"><span style="min-width: 0;">params.json preview</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #9A9EB0;">values you set</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9EB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="m-cx-preview" hidden><pre tabindex="0" style="margin: 0 0 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; white-space: pre-wrap;">{
+  "input": "/g/demo-lab/rnaseq/liver-tc/samplesheet.csv",
+  "outdir": "/g/demo-lab/rnaseq/2026-10-25",
+  "min_mapped_reads": 10,
+  "pseudo_aligner": "salmon"
+}</pre></div></section>
+    <span id="m-launch-what" style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">Launch, in the bar at the bottom, starts the engine in a new tmux session on login1 and opens the run page.</span>
     <h2 style="margin: 10px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">PIPELINE SECTION · OTHER STATES</h2>
     <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">Drawn for the review; the page shows one state at a time. Fixture data.</span>
     <section aria-labelledby="s1-h" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
@@ -154,15 +267,100 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
         </div>
         <button type="button" class="btn-load" aria-describedby="s2-h">Load</button>
     </section>
+    <h2 id="mc-h" style="margin: 10px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">PIPELINE SECTION · FROM YOUR CATALOG</h2>
+    <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">ui-spec §4.7.1, the states of LiteLaunch at phone width. Options stay short (label · engine); the location is the line under the select (UX-PRE-FU87-08). Choosing only fills the form; Load starts the inspect.</span>
+    <section aria-labelledby="mc1-h" class="mcat-pnl">
+        <h3 id="mc1-h" style="margin: 0; font-size: 14px; font-weight: 600;">An entry chosen, then Load</h3>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="mc1-cat" style="font-size: 13.5px; font-weight: 600;">From your catalog</label>
+          <select id="mc1-cat" class="mcat-sel" aria-describedby="mc1-cat-loc"><option>None</option><option>Liver time course QC · Snakemake</option><option selected>rnaseq-test · Nextflow</option><option>Strand-seq QC · Snakemake</option></select>
+          <span id="mc1-cat-loc" class="mcat-mono">nf-core/rnaseq @ 3.27.0</span>
+        </div>
+        <button type="button" class="mcat-btn" aria-haspopup="dialog">Manage catalog</button>
+        <p role="status" class="mcat-line">From the catalog: rnaseq-test · profile test · parameters from conf/test.yaml</p>
+        <div style="display: flex; flex-direction: column; gap: 6px; border-radius: 12px; background: #F7F7FB; padding: 9px 11px;">
+          <span role="status" style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">nf-core/rnaseq 3.27.0 <span style="color: #157A4B; font-size: 12.5px;">· Loaded</span></span><span style="font-size: 12px; color: #4D5065;">A Git repository, fetched at 3.27.0</span></span>
+          <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><span style="flex-grow: 1; font-size: 12.5px; color: #4D5065;">In your catalog as rnaseq-test</span><button type="button" class="mcat-btn" aria-haspopup="dialog" aria-label="Edit rnaseq-test" style="width: auto; padding: 0 16px;">Edit</button></span>
+        </div>
+        <span style="font-size: 12.5px; color: #4D5065;">Engine: Nextflow, from the catalog entry · Profile: test, from the catalog entry</span>
+        <p role="status" aria-live="polite" class="mcat-line" style="background: #FEF7EC; color: #5C3A05;">2 values of conf/test.yaml have no field in this form, and are not sent: config_profile_name, config_profile_description</p>
+    </section>
+    <section aria-labelledby="mc3-h" class="mcat-pnl">
+        <h3 id="mc3-h" style="margin: 0; font-size: 14px; font-weight: 600;">An entry whose pipeline is gone</h3>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="mc3-cat" style="font-size: 13.5px; font-weight: 600;">From your catalog</label>
+          <select id="mc3-cat" class="mcat-sel" aria-describedby="mc3-cat-loc"><option>None</option><option>rnaseq-test · Nextflow</option><option selected>wgs-2024 · Nextflow</option></select>
+          <span id="mc3-cat-loc" class="mcat-mono">/g/demo-lab/pipelines/wgs-2024</span>
+        </div>
+        <button type="button" class="mcat-btn" aria-haspopup="dialog">Manage catalog</button>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="mc3-location" style="font-size: 13.5px; font-weight: 600;">Pipeline</label>
+          <input id="mc3-location" value="/g/demo-lab/pipelines/wgs-2024" spellcheck="false" aria-invalid="true" aria-describedby="mc3-location-err" class="mcat-sel" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; border-color: #DC3B3B; box-shadow: 0 0 0 1px #DC3B3B;">
+          <span id="mc3-location-err" role="alert" style="font-size: 12.5px; font-weight: 600; color: #B02A2A; line-height: 1.4; overflow-wrap: anywhere;">/g/demo-lab/pipelines/wgs-2024 is not a directory this account can read. From your catalog entry wgs-2024: edit it in Manage catalog.</span>
+        </div>
+    </section>
+    <section aria-labelledby="mc2-h" class="mcat-pnl">
+        <h3 id="mc2-h" style="margin: 0; font-size: 14px; font-weight: 600;">Your catalog is empty</h3>
+        <p role="status" style="margin: 0; font-size: 13.5px; color: #33364A; line-height: 1.45;">Your catalog is empty. Load a pipeline, then Save to catalog.</p>
+        <button type="button" class="mcat-btn" aria-haspopup="dialog">Manage catalog</button>
+    </section>
+    <section aria-labelledby="mc5-h" class="mcat-pnl">
+        <h3 id="mc5-h" style="margin: 0; font-size: 14px; font-weight: 600;">Manage catalog, the full-height sheet</h3>
+        <div style="border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+          <section role="dialog" aria-modal="true" aria-labelledby="mc5-title" style="background: #FFFFFF; display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-bottom: 1px solid #ECEDF2;">
+              <h4 id="mc5-title" tabindex="-1" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px; outline: 2px solid #7750D4; outline-offset: 2px; border-radius: 4px;">Manage catalog</h4>
+              <span style="flex-grow: 1;"></span>
+              <button type="button" aria-label="Close Manage catalog" style="width: 44px; height: 44px; border: none; border-radius: 12px; background: #F1F2F6; color: #22253A; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg></button>
+            </div>
+            <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <button type="button" class="mcat-btn" style="background: #7750D4; color: #FFFFFF;">Add pipeline</button>
+              <button type="button" class="mcat-card" aria-labelledby="mc5-n1" aria-describedby="mc5-d1"><span id="mc5-n1" style="font-size: 15px; font-weight: 600;">Liver time course QC · Snakemake</span><span id="mc5-d1" class="mcat-mono">/g/demo-lab/pipelines/liver-tc-qc</span></button>
+              <button type="button" class="mcat-card" aria-labelledby="mc5-n2" aria-describedby="mc5-d2"><span id="mc5-n2" style="font-size: 15px; font-weight: 600;">rnaseq-test · Nextflow</span><span id="mc5-d2" class="mcat-mono">nf-core/rnaseq @ 3.27.0</span></button>
+              <button type="button" class="mcat-card" aria-labelledby="mc5-n3" aria-describedby="mc5-d3"><span id="mc5-n3" style="font-size: 15px; font-weight: 600;">Strand-seq QC · Snakemake</span><span id="mc5-d3" class="mcat-mono">ssh://git@git.demo-lab.org/mylab/strandseq-qc.git @ v1.4.0</span></button>
+              <span style="font-size: 12px; color: #6E7287; overflow-wrap: anywhere;">Saved in <span style="font-family: 'JetBrains Mono', monospace;">~/.spectio/catalog.toml</span></span>
+            </div>
+          </section>
+        </div>
+        <span style="font-size: 12px; color: #4D5065; line-height: 1.4;">Drawn inside this frame; on the page it covers the whole screen, the tab bar included. Focus on its heading (ring drawn), back to Manage catalog on Close or Escape. Each card opens the entry's form in the sheet, with Back, Save and Delete last (UX-PRE-FU87-09); the Launch form behind is kept.</span>
+    </section>
+    <h2 style="margin: 10px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">WHERE IT RUNS · THE ENVIRONMENTS FILE IS INVALID</h2>
+    <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">ui-spec §4.8.1 (UX-PRE-FU86-R1-04): only the built-ins are offered; New environment waits with its reason. The same state as LiteLaunch, full width.</span>
+    <section aria-labelledby="mei-h" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+        <h3 id="mei-h" style="margin: 0; font-size: 14px; font-weight: 600;">Where it runs</h3>
+        <fieldset aria-describedby="mei-why" style="margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
+          <legend style="padding: 0; margin-bottom: 6px; font-size: 13.5px; font-weight: 600;">Environment</legend>
+          <label class="env-r"><input type="radio" name="m-env-inv" value="slurm" checked aria-labelledby="mei-n-slurm" aria-describedby="mei-d-slurm"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600;"><span id="mei-n-slurm">SLURM (from spectio init)<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span></span><span id="mei-d-slurm" style="font-size: 12.5px; color: #4D5065;">partition htc · SLURM account mylab</span></span></label>
+          <label class="env-r"><input type="radio" name="m-env-inv" value="local" aria-labelledby="mei-n-local" aria-describedby="mei-d-local"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600;"><span id="mei-n-local">Login node<span class="env-sr">,</span> <span class="env-b" style="background: #F1F2F6; color: #33364A;">Local</span></span></span><span id="mei-d-local" style="font-size: 12.5px; color: #4D5065;">on login1 (the login node) · at most 2 CPUs and 8 GiB</span></span></label>
+          <span id="mei-why" style="font-size: 13px; color: #5C3A05; background: #FEF7EC; border-radius: 10px; padding: 8px 10px; line-height: 1.45;">Your environments file has a mistake: only the built-ins are offered. See <a href="MLiteEnvironments.dc.html">Environments</a></span>
+          <button type="button" class="btn-env" aria-disabled="true" aria-describedby="mei-why">New environment</button>
+        </fieldset>
+    </section>
+    <h2 style="margin: 10px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">WHERE IT RUNS · RESOURCES AND THE EXTRA FILE, ERRORS</h2>
+    <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">ui-spec §4.6 (FU-P3-110c): the states of LiteLaunch, full width. A cap is checked before Launch; the file's refusal comes back on the input after Launch, with focus on it. Reading the file and the 503 are drawn on LiteLaunch.</span>
+    <section aria-labelledby="mxr-h" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 12px;">
+        <h3 id="mxr-h" style="margin: 0; font-size: 14px; font-weight: 600;">Above the cap, and a refused file</h3>
+        <div class="fld">
+          <label for="mxr-cpus">CPUs per task</label>
+          <input id="mxr-cpus" class="m-in" inputmode="numeric" value="4" aria-invalid="true" aria-describedby="mxr-cpus-e mxr-cpus-h">
+          <span id="mxr-cpus-e" class="ferr">At most 2 CPUs in Login node</span>
+          <span id="mxr-cpus-h" class="hint">1 to 256 · at most 2 (Login node)</span>
+        </div>
+        <div class="fld">
+          <label for="mxr-xcfg">Extra config file <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+          <input id="mxr-xcfg" class="m-in" value="/tmp/lab-tweaks.config" spellcheck="false" autocapitalize="off" aria-invalid="true" aria-describedby="mxr-e" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+          <span id="mxr-e" role="alert" class="ferr">Choose a file in your home directory or in the pipeline.</span>
+        </div>
+    </section>
   </main>
   <div role="region" aria-label="Launch" style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; background: #FFFFFF; box-shadow: 0 -1px 0 rgba(15,16,32,0.08); padding: 10px 12px calc(84px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 12px; box-sizing: border-box;">
-    <span style="flex-grow: 1; min-width: 0; font-size: 12px; color: #4D5065; line-height: 1.35;">nf-core/rnaseq 3.27.0 · Nextflow · singularity · 2 values changed</span>
-    <button type="button" style="height: 48px; padding: 0 22px; border-radius: 14px; border: none; background: #7750D4; color: #FFFFFF; font: 600 15px 'Inter', sans-serif; cursor: pointer; flex-shrink: 0;">Launch</button>
+    <span style="flex-grow: 1; min-width: 0; font-size: 12px; color: #4D5065; line-height: 1.35;">nf-core/rnaseq 3.27.0 · Nextflow · Login node · 2 values changed</span>
+    <button type="button" aria-describedby="m-launch-missing m-launch-what" style="height: 48px; padding: 0 22px; border-radius: 14px; border: none; background: #7750D4; color: #FFFFFF; font: 600 15px 'Inter', sans-serif; cursor: pointer; flex-shrink: 0;">Launch</button>
   </div>
-  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="launch" hint-size="390px,72px"></dc-import></div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="launch" hint-size="100%,72px"></dc-import></div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
 class Component extends DCLogic {
 renderVals() {
   return {};

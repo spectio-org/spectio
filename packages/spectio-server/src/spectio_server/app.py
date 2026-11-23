@@ -1,11 +1,13 @@
 """The FastAPI app of `spectio serve` (P1 Tasks 11, 12, 17 and 18).
 
 Every request needs the session of the token link (dev-env §15.3 req. 2, `auth`, P1 Task 12).
-The API is served in local mode only (`spectio init --local`; inbox #86, and #109 rule 5 (a),
-Thomas 2026-11-07): on a SLURM environment, where other users share the login node and its
-loopback port, every `/api/v1` path answers 404 with the reason. In local mode too, the API is
-left unmounted on a machine that looks like a cluster node or a shared one (`shared_host`,
-SEC-P3T17-06): kind `local` is a configuration value, which can be set on a login node.
+On a TCP port the API is served in local mode only (`spectio init --local`; inbox #86), on a
+machine that does not look like a cluster node or a shared one (`shared_host`, SEC-P3T17-06:
+kind `local` is a configuration value, which can be set on a login node); elsewhere every
+`/api/v1` path answers 404 with the reason. On SLURM and shared hosts `spectio serve` listens
+on a Unix socket in its 0700 database directory instead (`on_socket`), where the kernel refuses
+other users at `connect`, and the API is mounted there (inbox #109 rule 5, Thomas 2026-11-08;
+FU-P3-72): another user can reach a loopback port of the same node, never that socket.
 The Host allow-list (dev-env §15.3 req. 4, `auth.host`),
 the cross-site check (`api.browser`), the session and the write checks (req. 7, `auth.writes`)
 run on every request, in that order. The generated docs stay off: the
@@ -25,19 +27,31 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
 
+from spectio import envfile
+from spectio.catalog import KIND as CATALOG
+from spectio.catalog import catalog_path
 from spectio.config import Settings
-from spectio_server import static
+from spectio.envfile import environments_path
+from spectio_server import static, targets
 from spectio_server.api import (
     browser,
     cancel,
+    catalog,
+    environments,
+    extras,
+    graph,
     logs,
+    me,
+    notifications,
     problems,
     relaunch,
     results,
+    runs_manage,
     runs_read,
     runs_write,
     stream,
     taskfiles,
+    workdir,
     workflows,
 )
 from spectio_server.auth import host, middleware, routes, writes
@@ -49,10 +63,11 @@ from spectio_server.store.writer import Writer
 PLACEHOLDER = "Spectio {version} is running.\n{why}\n"
 API = "/api/v1"
 API_VERSION = "0.0.1"  # the API document's version, not the package's: a release bump keeps it
-# inbox #109 rule 5 (a), Thomas 2026-11-07: unmounted on SLURM and shared hosts
+# inbox #109 rule 5, Thomas 2026-11-08: never on a TCP port on SLURM and shared hosts
 NO_API = (
-    "The API is served only in local mode (spectio init --local), on a machine only you use: "
-    "on a cluster or another shared host, other users could reach its port."
+    "The API is served on a TCP port only in local mode (spectio init --local), on a machine "
+    "only you use: on a cluster or another shared host, other users could reach its port, so "
+    "spectio serve serves it there on a Unix socket in its 0700 database directory."
 )
 
 SLURM_CONF_FILE = Path("/etc/slurm/slurm.conf")
@@ -92,7 +107,8 @@ def shared_host() -> str | None:
 
 
 def no_api_reason(settings: Settings) -> str | None:
-    """Why the `/api/v1` routers are not mounted, or None when they are."""
+    """Why the `/api/v1` routers may not be mounted on a TCP port here, or None when they may:
+    `spectio serve` then listens on a Unix socket instead."""
     if settings.executor != "local":
         return NO_API
     shared = shared_host()
@@ -108,10 +124,12 @@ def create_app(
     files: FilePool | None = None,
     accounting: Accounting | None = None,
     server_key: ServerKey | None = None,
+    on_socket: bool = False,
 ) -> FastAPI:
     """The app; `files` is the pool the routes read run files in, `accounting` the server's
     one gate to `sacct` (each made from the settings when None), `server_key` the key of
-    `auth/links` (one kept in memory only when None)."""
+    `auth/links` (one kept in memory only when None). `on_socket`: served on the Unix socket of
+    `spectio serve`, so the API is mounted; on TCP, `no_api_reason` decides."""
     app = FastAPI(
         title="Spectio",
         version=API_VERSION,
@@ -122,10 +140,13 @@ def create_app(
     app.state.settings = settings
     app.state.writer = writer
     app.state.files = FilePool() if files is None else files  # dev-env §15.3 req. 13
+    app.state.home = extras.home_roots()  # read once, from the password database (api §5.7)
+    app.state.imaging_slots = results.ImagingSlots(results.IMAGING_SLOTS)  # api §5.3.1
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
-    app.state.engine_versions = workflows.engine_versions(settings)
+    app.state.engine_versions = workflows.EngineVersions(settings)
+    app.state.target_engine = targets.login_engine(settings)  # api §5.10; replaced in tests
     app.state.server_key = server_key or ServerKey.new()
     app.state.tickets = TicketStore()
     app.state.sessions = SessionStore()
@@ -138,7 +159,8 @@ def create_app(
     app.include_router(routes.pages)
     app.include_router(routes.router, prefix=API)
 
-    reason = no_api_reason(settings)  # one scan: the start text reads it back (CR-P3T17-04)
+    # one scan, on TCP only: the start text reads it back (CR-P3T17-04)
+    reason = None if on_socket else no_api_reason(settings)
     app.state.no_api = reason
     if reason is None and static.built(web_dir):
         static.install(app, web_dir)
@@ -156,7 +178,28 @@ def create_app(
         # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`
         app.state.reports = {}  # the reports of ended runs (P1 Task 31)
         app.state.follows = logs.Follows()  # dev-env §15.3 req. 14
-        routers = (workflows, runs_write, relaunch, runs_read, logs, taskfiles, results, cancel)
+        app.state.environments = environments.Store(
+            environments_path(), envfile.ENVIRONMENTS, "environments"
+        )  # §15.3 req. 18
+        app.state.catalog = environments.Store(catalog_path(), CATALOG, "catalog")  # api §5.6
+        routers = (
+            graph,  # `/workflows:graph` before any `/workflows/{…}`
+            workflows,
+            runs_write,
+            runs_manage,
+            relaunch,
+            runs_read,
+            logs,
+            taskfiles,
+            results,
+            workdir,
+            cancel,
+            environments,
+            catalog,
+            targets,
+            me,
+            notifications,
+        )
         for module in (*routers, stream):
             app.include_router(module.router, prefix=API)
     else:

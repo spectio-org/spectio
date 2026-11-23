@@ -1,0 +1,66 @@
+/* The demo's floating controls (issue #160), in the app's own tokens where it has them. */
+.demo-bar,
+.demo-fab {
+  position: fixed;
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 400;
+  font: 13px/1.4 system-ui, sans-serif;
+  color: var(--mantine-color-text);
+  background: var(--mantine-color-body);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+}
+.demo-bar {
+  width: min(340px, calc(100vw - 24px));
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.demo-bar header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.demo-bar p,
+.demo-bar ul {
+  margin: 0;
+}
+.demo-bar ul {
+  padding-left: 18px;
+}
+.demo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.demo-bar button,
+.demo-fab {
+  font: inherit;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--mantine-color-default-border);
+  background: var(--mantine-color-default);
+  color: inherit;
+}
+.demo-bar button[aria-pressed="true"] {
+  background: var(--mantine-color-yellow-light);
+}
+.demo-bar .demo-x {
+  border: 0;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+}
+.demo-bar :focus-visible,
+.demo-fab:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+.demo-bar summary {
+  cursor: pointer;
+}

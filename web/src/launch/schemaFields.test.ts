@@ -127,6 +127,13 @@ describe("schemaFields", () => {
     expect(buildParams([], {}, [{ key: " outdir ", value: "r" }, { key: "", value: "x" }])).toEqual({ outdir: "r" });
   });
 
+  test("FU-P3-110d: with a Snakemake extra config file only the leaves set are sent, never a map's defaults", () => {
+    const schema = { type: "object", properties: { ref: { type: "object", properties: { build: { type: "string", default: "GRCh38" }, release: { type: "integer" } } } } };
+    const [ref] = schemaFields(schema, [], true);
+    expect(buildParams(ref.fields, { "ref.release": "114" }, [], true)).toEqual({ ref: { release: 114 } });
+    expect(buildParams(ref.fields, {}, [], true)).toEqual({});
+  });
+
   test("SEC-P3PARB-03: two fields with one dotted key keep the first, the second is named", () => {
     const skipped: string[] = [];
     const sections = schemaFields({ type: "object", properties: { "a.b": { type: "integer" }, a: { type: "object", default: { b: 2 } } } }, skipped, true);

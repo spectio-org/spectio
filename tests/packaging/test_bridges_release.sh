@@ -8,7 +8,7 @@
 # nf-spectio: builds the plugin zip with its Gradle wrapper (distributionSha256Sum, the
 # io.nextflow.nextflow-plugin version pinned) and a fresh, empty GRADLE_USER_HOME, from a copy of
 # the tracked files only; checks the zip's manifest (ID, version, requires, class) against
-# build.sh, then loads the zip into Nextflow ($NEXTFLOW) for the synthetic `happy`.
+# build.sh, then loads the zip into Nextflow ($NEXTFLOW), offline, for the synthetic `happy`.
 # snakemake-logger-plugin-spectio: `uv build` (the wheel is built from the sdist), `twine check
 # --strict`, the file lists of both, then the wheel installed with no PYTHONPATH into a fresh
 # venv holding the hash-locked Snakemake 9 of dev/snakemake.lock.txt, which runs the synthetic
@@ -40,6 +40,11 @@ while IFS= read -r -d '' kv; do
   case $name in
   *npr*api*key* | *npr_api* | twine_password | uv_publish_token | uv_publish_password | *pypi*token* | *pypi*password*)
     [ -z "$value" ] || { shopt -u nocasematch; fail "$name is set: a dry run holds no publishing secret"; } ;;
+  esac
+  # A key passed in a value reaches Gradle too, e.g. GRADLE_OPTS or JAVA_TOOL_OPTIONS holding
+  # -Dorg.gradle.project.npr.apiKey=... (CR-P3T26-03 (r1), SEC-P3T26-03 (r1)).
+  case $value in
+  *npr.api*key* | *npr_api*key*) shopt -u nocasematch; fail "$name names a registry key in its value" ;;
   esac
   shopt -u nocasematch
   if [[ $value =~ pypi-[A-Za-z0-9_-]{16,} ]]; then fail "$name holds a PyPI token"; fi
@@ -83,6 +88,17 @@ if git -C "$repo" ls-files -- engine-bridges/nf-spectio | grep -q 'gradle\.prope
 fi
 if grep -rqiE 'apiKey|registry *\{' "$nf_dir"/*.gradle; then fail "the Gradle build names a registry or a key"; fi
 
+echo "== nf-spectio: the registry README (dev-env §12 Publishing)"
+# A registry release needs README.md beside build.gradle with these four sections and no
+# placeholder text (nextflow-plugin-gradle README.md:81-96 at b388249, v1.0.0-beta.16).
+readme=$nf_dir/README.md
+git -C "$repo" ls-files --error-unmatch -- engine-bridges/nf-spectio/README.md >/dev/null 2>&1 ||
+  fail "engine-bridges/nf-spectio/README.md is not tracked"
+for section in Summary "Get Started" Examples License; do
+  grep -qx "## $section" "$readme" || fail "README.md has no '## $section' section"
+done
+if grep -qiwE 'TODO|TBD|lorem|ipsum' "$readme"; then fail "README.md holds placeholder text"; fi
+
 echo "== nf-spectio: gradlew packagePlugin (fresh GRADLE_USER_HOME, tracked files only)"
 mkdir -p "$tmp/nf"
 git -C "$repo" ls-files -z -- engine-bridges/nf-spectio | (cd "$repo" && xargs -0 cp --parents -t "$tmp/nf")
@@ -113,19 +129,23 @@ no_secrets "$zip"
 echo "== nf-spectio: the zip's manifest"
 manifest=$(unzip -p "$zip" classes/META-INF/MANIFEST.MF | tr -d '\r') || fail "no classes/META-INF/MANIFEST.MF in the zip"
 for want in "Plugin-Id: nf-spectio" "Plugin-Version: $version" "Plugin-Requires: $requires" \
-  "Plugin-Class: spectio.SpectioPlugin" "Plugin-Provider: spectio"; do
+  "Plugin-Class: spectio.SpectioPlugin" "Plugin-Provider: spectio-org"; do
   grep -qxF "$want" <<<"$manifest" || fail "the manifest lacks '$want': $manifest"
 done
 [ "$(unzip -p "$zip" classes/META-INF/extensions.idx | tr -d '\r')" = spectio.SpectioFactory ] ||
   fail "classes/META-INF/extensions.idx is not spectio.SpectioFactory"
 if unzip -Z1 "$zip" | grep -q '^lib/.'; then fail "the zip bundles libraries: $(unzip -Z1 "$zip" | grep '^lib/.')"; fi
 
-echo "== nf-spectio: Nextflow loads the zip (synthetic happy)"
+echo "== nf-spectio: Nextflow loads the zip, offline (synthetic happy)"
+# Offline, with a fresh NXF_HOME: a pinned version already in NXF_PLUGINS_DIR starts with no
+# registry contact (architecture §13.8), so the pass is about the local zip, never a registry
+# copy of the name (SEC-P3T26-02 (r1)).
 plugins=$tmp/nxf-plugins
 mkdir -p "$plugins/nf-spectio-$version" "$tmp/nf-run/.spectio"
 chmod 700 "$tmp/nf-run/.spectio"
 unzip -q "$zip" -d "$plugins/nf-spectio-$version"
-(cd "$tmp/nf-run" && env -u NXF_PLUGINS_DEFAULT NXF_PLUGINS_DIR="$plugins" NXF_ANSI_LOG=false \
+[ ! -e "$tmp/nxf-home" ] || fail "NXF_HOME $tmp/nxf-home is not fresh"
+(cd "$tmp/nf-run" && env -u NXF_PLUGINS_DEFAULT NXF_OFFLINE=true NXF_PLUGINS_DIR="$plugins" NXF_ANSI_LOG=false \
   NXF_HOME="$tmp/nxf-home" SPECTIO_RUN_ID=$RUN_ID SPECTIO_LAUNCH_N=1 \
   SPECTIO_SPOOL_DIR="$tmp/nf-run/.spectio/events" \
   "${NEXTFLOW:-nextflow}" -q run "$repo/tests/pipelines/synthetic/nextflow/main.nf" \

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — image viewer (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.fp-btn{min-height:44px;padding:0 14px;border-radius:12px;border:none;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font:600 14px 'Inter',sans-serif;color:#22253A;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;box-sizing:border-box}
+.fp-toggle[aria-pressed="true"]{box-shadow:inset 0 0 0 1px #7750D4;color:#4D368B;background:#F4F0FD}
+.iv-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.iv-flat{background:#F4F4F6;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.iv-flat img{display:block;width:100%;height:auto;border-radius:6px}
+.iv-line{font-size:12.5px;color:#4D5065;line-height:1.4;overflow-wrap:anywhere}
+.iv-larger{border-radius:12px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #E6E7EF;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.iv-tag{font:600 11px 'Inter',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#6E7287;margin-top:8px}
+</style>
+</helmet>
+<div style="width: 100%; min-width: 0; height: 100vh; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" hint-size="100%,48px"></dc-import></div>
+  <main style="position: absolute; top: 48px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 10px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <a href="MLiteResults.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none; min-height: 44px; display: flex; align-items: center;">← registration</a>
+    <h1 tabindex="-1" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px; line-height: 1.2; overflow-wrap: anywhere;">lunaphore_example.ome.tiff</h1>
+    <span style="font-size: 13px; color: #4D5065;">OME-TIFF · 1.84 GiB · modified 2 Nov 14:20</span>
+    <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #33364A; overflow-wrap: anywhere; background: #FFFFFF; border-radius: 10px; padding: 8px 10px; box-shadow: inset 0 0 0 1px #EEEFF5;">/g/demo-lab/mcmicro/2026-11-02/registration/lunaphore_example.ome.tiff</code>
+    <div class="iv-pair">
+      <button type="button" class="fp-btn">Copy path</button>
+      <a href="#" download class="fp-btn" aria-label="Download lunaphore_example.ome.tiff">Download</a>
+    </div>
+    <div><button type="button" class="fp-btn fp-toggle" aria-pressed="false">Actual size</button></div>
+    <div class="iv-flat">
+      <img src="/_blob/d1bdd816bbf05fc0dcd16ad21682772e" alt="lunaphore_example.ome.tiff, channel 1, first plane" style="filter: grayscale(1);">
+      <span class="iv-line">Shown: channel 1, first plane, 1,250 × 1,250 of 10,000 × 10,000 px · Contrast stretched for display</span>
+    </div>
+    <div class="iv-larger">
+      <span style="font-size: 13.5px; line-height: 1.4;"><strong>Open on a larger screen</strong> to see every channel, plane and time point: the viewer needs 768 px and WebGL 2.</span>
+      <button type="button" class="fp-btn" style="width: 100%;">Copy link</button>
+    </div>
+
+    <span class="iv-tag">Variant · a large TIFF without a pyramid</span>
+    <div class="iv-larger" role="note">
+      <strong style="font-size: 14px; overflow-wrap: anywhere;">gel_scan_2026-11-02_full.tif</strong>
+      <span style="font-size: 13px; color: #4D5065;">TIFF · 412.0 MiB · 18,400 × 12,800 px, 1 page</span>
+      <span style="font-size: 13.5px; line-height: 1.4;">This image is too large to show on a phone.</span>
+      <div class="iv-pair">
+        <button type="button" class="fp-btn">Copy link</button>
+        <a href="#" download class="fp-btn" aria-label="Download gel_scan_2026-11-02_full.tif">Download</a>
+      </div>
+    </div>
+
+    <span style="font-size: 11px; color: #6E7287; line-height: 1.4;">Drawn at 360 and 320 px. Below 768 px there is no WebGL viewer: the flat view shows channel 1, z 1, t 1 of the largest pyramid level whose sides are both at most 2,048 px, decoded to a 2D canvas on the light backdrop (the picture here is the board thumbnail of nf-core/test-datasets mcmicro lunaphore_example.ome.tiff; greyed here from its composite, where the screen draws channel 1 alone in grey; the sizes are fixture values). Copy link copies the page's URL with its view. A TIFF with no level that small gets the second card, with Copy link and Download (ui-spec §4.4.1, imaging note of 2026-11-09, Phone). Desktop: LiteImageViewer.</span>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="runs" hint-size="100%,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>

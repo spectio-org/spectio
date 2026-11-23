@@ -8,6 +8,7 @@ shared home holds it (dev-env §15.3, Where data lives), whatever `data_dir` say
 
 import json
 import os
+import re
 import shlex
 import stat
 import tomllib
@@ -27,7 +28,13 @@ from spectio.fsmodes import write_secret
 
 NF_SPECTIO_VERSION = "0.0.1"  # the nf-spectio the wheel carries (engine-bridges/nf-spectio)
 DEFAULT_PORT = 8080  # architecture §7.3
+# The oldest uv whose managed Pythons were seen to carry an SQLite with the WAL-reset fix: uv 0.9.29
+# gave SQLite 3.50.4, uv 0.13.7 with Python 3.13.14 gave 3.53.1 (login-node audit 2026-11-08 §8).
+MIN_UV = (0, 13, 7)
 LOOPBACK = "127.0.0.1"  # the only address 0.0.1 listens on (dev-env §15.3 req. 1)
+# A SLURM partition or account (api §5.4): no quote, backslash, `~`, `$`, comma or leading `-`,
+# matched in full, since Snakemake evaluates its resource values (SEC-PRE-FU86-01).
+SLURM_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
 
 
 class UnsafeConfig(ValueError):
@@ -72,7 +79,14 @@ def _absolute(path: Path) -> Path:
     return path
 
 
+def slurm_name(value: str) -> str:
+    if not SLURM_NAME.fullmatch(value):
+        raise ValueError(f"{value!r} is not a SLURM name")
+    return value
+
+
 AbsPath = Annotated[Path, AfterValidator(_absolute)]
+SlurmName = Annotated[str, AfterValidator(slurm_name)]
 Seconds = Annotated[float, Field(gt=0, allow_inf_nan=False)]
 
 
@@ -85,8 +99,8 @@ class SlurmOpts(_Model):
     failed jobs and job resources (dev-env §15.3 req. 15): its path, resolved once by `spectio
     init`, and `accounting = false` to never call it."""
 
-    partition: str | None = None
-    account: str | None = None
+    partition: SlurmName | None = None
+    account: SlurmName | None = None
     accounting: bool = True
     sacct: AbsPath | None = None
 
@@ -106,11 +120,23 @@ class ServerOpts(_Model):
     serve` aborts on it (dev-env §15.3 req. 1); there is no `--host` flag."""
 
     host: str = LOOPBACK
+    # Features off by default (dev-env §15.1); `graph_view`: the workflow graph (issue #160)
+    features: list[Literal["graph_view"]] = []
 
 
 class RunnerOpts(_Model):
     head_watch_s: Seconds = 5
     spool_s: Seconds = 2
+
+
+class FeatureOpts(_Model):
+    """Features behind a flag (dev-env §15.1). `single_target`: runs that target one module or
+    one rule (api §5.10); `module_namespaces`: the registry namespaces such a run may use."""
+
+    single_target: bool = False
+    module_namespaces: list[Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")]] = [
+        "nf-core"
+    ]
 
 
 # One flat name per setting, SPECTIO_<AREA>_<FIELD>, no `__` nesting (architecture §7.3).
@@ -121,6 +147,7 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_PORT": ("port",),
     "SPECTIO_EXECUTOR": ("executor",),
     "SPECTIO_SERVER_HOST": ("server", "host"),
+    "SPECTIO_SERVER_FEATURES": ("server", "features"),
     "SPECTIO_SLURM_PARTITION": ("slurm", "partition"),
     "SPECTIO_SLURM_ACCOUNT": ("slurm", "account"),
     "SPECTIO_SLURM_ACCOUNTING": ("slurm", "accounting"),
@@ -132,6 +159,8 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE": ("engines", "extra_args", "snakemake"),
     "SPECTIO_RUNNER_HEAD_WATCH_S": ("runner", "head_watch_s"),
     "SPECTIO_RUNNER_SPOOL_S": ("runner", "spool_s"),
+    "SPECTIO_FEATURES_SINGLE_TARGET": ("features", "single_target"),
+    "SPECTIO_FEATURES_MODULE_NAMESPACES": ("features", "module_namespaces"),
 }
 
 
@@ -150,7 +179,12 @@ class _FlatEnv(PydanticBaseSettingsSource):
             node = found
             for key in keys[:-1]:
                 node = node.setdefault(key, {})
-            node[keys[-1]] = shlex.split(value) if "extra_args" in keys else value
+            if "extra_args" in keys or keys[-1] == "module_namespaces":
+                node[keys[-1]] = shlex.split(value)
+            elif keys[-1] == "features":  # comma-separated
+                node[keys[-1]] = [v.strip() for v in value.split(",") if v.strip()]
+            else:
+                node[keys[-1]] = value
         return found
 
 
@@ -167,6 +201,7 @@ class Settings(BaseSettings):
     slurm: SlurmOpts = SlurmOpts()
     engines: EngineOpts = EngineOpts()
     runner: RunnerOpts = RunnerOpts()
+    features: FeatureOpts = FeatureOpts()
 
     @classmethod
     def settings_customise_sources(
@@ -204,6 +239,8 @@ def render_toml(settings: Settings) -> str:
     del data["server"]  # its one allowed value is the default (dev-env §15.3 req. 1)
     if settings.executor == "local":
         del data["slurm"]
+    if settings.features == FeatureOpts():
+        del data["features"]  # off by default: written only once someone turns one on
     top = [f"{k} = {_toml_value(v)}" for k, v in data.items() if not isinstance(v, dict)]
     tables = [
         "\n".join([f"[{name}]", *(f"{k} = {_toml_value(v)}" for k, v in table.items())])

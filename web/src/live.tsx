@@ -99,6 +99,13 @@ function useLive() {
   );
 }
 
+/** The stream's status, for the shell's server status (FU-P3-79): opens the stream if no screen
+ * has, so the shell follows it on every page. */
+export function useLiveStatus(): Status {
+  useEffect(() => open(), []);
+  return useLive().status;
+}
+
 /** "live, updated 4 s ago" or "Reconnecting…", with a word and never colour alone. */
 export function LiveStatus() {
   const { status, at } = useLive();

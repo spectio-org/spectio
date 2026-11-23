@@ -6,7 +6,7 @@ Each is 32 bytes from `secrets` (43 base64url characters) and compared in consta
   only `POST /api/v1/auth/links` accepts it;
 - the **link ticket**, single use, valid 15 minutes; only its SHA-256 is kept (auth §2.1);
 - the **session secret**, in memory only, so a restart ends every session; only its SHA-256 is
-  kept too.
+  kept too, with the time it started (the Profile page, FU-P3-112); Sign out revokes it.
 """
 
 import hashlib
@@ -16,6 +16,7 @@ import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from spectio.runner.rundir import private_dir, write_file
@@ -77,19 +78,32 @@ class TicketStore:
 
 
 class SessionStore:
-    """Session digests, until the server stops."""
+    """Session digests and when each started, until the server stops or the session signs out."""
 
     def __init__(self) -> None:
-        self._digests: list[bytes] = []
+        self._started: dict[bytes, datetime] = {}
         self._lock = threading.Lock()
 
     def create(self) -> str:
         secret = _new()
         with self._lock:
-            self._digests.append(_digest(secret))
+            self._started[_digest(secret)] = datetime.now(UTC)
         return secret
 
-    def valid(self, secret: str) -> bool:
+    def started(self, secret: str) -> datetime | None:
+        """When this session started; None for a secret that is not a session."""
         found = _digest(secret)
         with self._lock:
-            return any(hmac.compare_digest(found, d) for d in self._digests)
+            return next(
+                (t for d, t in self._started.items() if hmac.compare_digest(found, d)), None
+            )
+
+    def valid(self, secret: str) -> bool:
+        return self.started(secret) is not None
+
+    def revoke(self, secret: str) -> None:
+        found = _digest(secret)
+        with self._lock:
+            self._started = {
+                d: t for d, t in self._started.items() if not hmac.compare_digest(found, d)
+            }

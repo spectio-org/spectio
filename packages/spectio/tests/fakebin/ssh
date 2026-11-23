@@ -51,7 +51,7 @@ if (state / "down").exists():
     die(f"ssh: connect to host {dest} port 22: Connection refused")
 
 if "N" in opts:
-    bind, lport, _, _ = opts["L"].split(":")
+    bind, lport = opts["L"].split(":")[:2]  # then host:port, or a remote socket path
     sock = socket.socket()
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:

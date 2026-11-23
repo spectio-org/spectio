@@ -5,7 +5,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { app, fetched, run, serve, stubStream, viewport } from "../testing";
-import { recentPipelines } from "./TryPipelines";
+import { isSynthetic, recentPipelines } from "./TryPipelines";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -64,6 +64,27 @@ test("Launch lists the pipelines this server ran; one click fills the field and 
   expect(fetched(mock)).toContain("/api/v1/runs?limit=50");
 });
 
+test("FU-P3-109: the synthetic pipelines are named 'Test pipeline', and one line says what they are; never 'scenario'", async () => {
+  serve({
+    "/api/v1/runs": {
+      items: [
+        at("/opt/spectio/tests/pipelines/synthetic/nextflow", "spectio/synthetic-scenarios", "nextflow", 1),
+        at("/opt/spectio/tests/pipelines/synthetic/snakemake", null, "snakemake", 2),
+        at("/g/demo-lab/pipelines/nf-core-demo", "nf-core/demo", "nextflow", 3),
+      ],
+      next: null,
+    },
+  });
+  app("/launch");
+  const group = await screen.findByRole("group", { name: "Try a test pipeline" });
+  const nf = within(group).getByRole("button", { name: "Use Test pipeline (Nextflow), /opt/spectio/tests/pipelines/synthetic/nextflow" });
+  expect(within(nf).getByText("Test pipeline")).toBeInTheDocument();
+  within(group).getByRole("button", { name: "Use Test pipeline (Snakemake), /opt/spectio/tests/pipelines/synthetic/snakemake" });
+  within(group).getByRole("button", { name: "Use nf-core/demo, /g/demo-lab/pipelines/nf-core-demo" });
+  expect(within(group).getByText("Test pipelines are synthetic pipelines shipped with Spectio for trying it.")).toBeInTheDocument();
+  expect(group.textContent).not.toMatch(/scenario/i);
+});
+
 test("with no run on this server, Launch says how to get a test pipeline", async () => {
   serve({ "/api/v1/runs": { items: [], next: null } });
   app("/launch");
@@ -96,4 +117,11 @@ test("on the phone, the test pipelines are native buttons too", async () => {
   app("/launch");
   const group = await screen.findByRole("group", { name: "Try a test pipeline" });
   expect((await within(group).findByRole("button", { name: "Use a, /p/a" })).tagName).toBe("BUTTON");
+});
+
+test("CR-P3FU109-05: a synthetic pipeline's location matches with or without a trailing slash", () => {
+  const w = (location: string) => ({ ...run().workflow, name: null, location });
+  expect(isSynthetic(w("/opt/spectio/tests/pipelines/synthetic/snakemake/"))).toBe(true);
+  expect(isSynthetic(w("/opt/spectio/tests/pipelines/synthetic/snakemake"))).toBe(true);
+  expect(isSynthetic(w("/opt/spectio/tests/pipelines/synthetic/snakemake-x"))).toBe(false);
 });

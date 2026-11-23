@@ -4,6 +4,7 @@
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { MantineProvider } from "@mantine/core";
 import { LogViewer } from "./LogViewer";
 
 const LOG = [
@@ -36,7 +37,7 @@ const counter = () => screen.getByTestId("log-search-count");
 const settle = () => act(() => vi.advanceTimersByTime(150));
 
 function show(text: string | null = LOG) {
-  render(<LogViewer text={text} label="Engine log" />);
+  render(<LogViewer text={text} label="Engine log" />, { wrapper: MantineProvider });
 }
 
 test("the field has a label; the counter is a polite live region", () => {
@@ -138,9 +139,34 @@ test("the lines keep their level tints", () => {
   expect(screen.getByText(/retrying/).closest("[data-tone]")).toHaveAttribute("data-tone", "review");
 });
 
-test("while the log loads, the viewer says so", () => {
+test("while the log loads, the frame shows skeleton lines, announced once", () => {
   show(null);
-  expect(viewer()).toHaveTextContent("Loading…");
+  expect(screen.getByRole("status")).toHaveTextContent("Loading the engine log…");
+  expect(screen.queryByLabelText("Engine log", { selector: "pre" })).toBeNull();
+});
+
+test("UI-11: one toolbar: search, levels, then Wrap lines and Follow the end as toggles", async () => {
+  const u = user();
+  show();
+  const tools = screen.getByRole("group", { name: "Engine log tools" });
+  expect(within(tools).getByRole("searchbox", { name: "Search the engine log" })).toBeInTheDocument();
+  const wrap = within(tools).getByRole("button", { name: "Wrap lines" });
+  expect(wrap).toHaveAttribute("aria-pressed", "false");
+  expect(viewer()).not.toHaveAttribute("data-wrap");
+  await u.click(wrap);
+  expect(wrap).toHaveAttribute("aria-pressed", "true");
+  expect(viewer()).toHaveAttribute("data-wrap");
+  const follow = within(tools).getByRole("button", { name: "Follow the end" });
+  expect(follow).toHaveAttribute("aria-pressed", "true");
+  await u.click(follow);
+  expect(follow).toHaveAttribute("aria-pressed", "false");
+});
+
+test("UI-11: a file preview read from the top has neither toggle; its Wrap is the page's", () => {
+  render(<LogViewer text={LOG} label="Engine log" start="top" wrap />, { wrapper: MantineProvider });
+  expect(screen.queryByRole("button", { name: "Wrap lines" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Follow the end" })).toBeNull();
+  expect(viewer()).toHaveAttribute("data-wrap");
 });
 
 test("a search for a regular-expression character is literal", async () => {
@@ -157,4 +183,61 @@ test("a log that ends with a newline has no extra empty line (CR-P3PARD-04)", ()
   expect(within(levels).getByRole("button", { name: /All/ })).toHaveTextContent("2");
   expect(within(levels).getByRole("button", { name: /INFO/ })).toHaveTextContent("2");
   expect(viewer().children).toHaveLength(2);
+});
+
+// The props of the file preview (ui-spec §4.4.1): start, levels, gutterFrom and wrap.
+
+function heights(scrollHeight: number) {
+  Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, get: () => scrollHeight });
+}
+afterEach(() => Reflect.deleteProperty(HTMLElement.prototype, "scrollHeight"));
+
+test("a log opens at its end; start top keeps the first line in view", () => {
+  heights(900);
+  const { unmount } = render(<LogViewer text={LOG} label="Engine log" />, { wrapper: MantineProvider });
+  expect(viewer().scrollTop).toBe(900);
+  unmount();
+  render(<LogViewer text={LOG} label="Engine log" start="top" />, { wrapper: MantineProvider });
+  expect(viewer().scrollTop).toBe(0);
+});
+
+test("levels off: no tints and no level filter; the search stays", () => {
+  render(<LogViewer text={LOG} label="Engine log" levels={false} />, { wrapper: MantineProvider });
+  expect(screen.queryByRole("group", { name: "Show lines" })).toBeNull();
+  expect(viewer().querySelector("[data-tone]")).toBeNull();
+  expect(field()).toBeInTheDocument();
+});
+
+test("gutterFrom numbers the lines in an aria-hidden gutter, outside the line's text", () => {
+  render(<LogViewer text={"alpha\nbeta\n"} label="Engine log" gutterFrom={41} levels={false} />, { wrapper: MantineProvider });
+  const gutter = [...viewer().querySelectorAll("[data-gutter]")];
+  expect(gutter.map((g) => g.textContent)).toEqual(["41", "42"]);
+  for (const g of gutter) expect(g).toHaveAttribute("aria-hidden", "true");
+  expect(viewer().textContent).toContain("alpha");
+});
+
+test("without gutterFrom there is no gutter (an End read)", () => {
+  render(<LogViewer text={LOG} label="Engine log" />, { wrapper: MantineProvider });
+  expect(viewer().querySelector("[data-gutter]")).toBeNull();
+});
+
+test("wrap off keeps lines on one row; wrap on wraps them, numbers beside their line", () => {
+  const { unmount } = render(<LogViewer text={LOG} label="Engine log" />, { wrapper: MantineProvider });
+  expect(viewer()).toHaveClass("sp-nowrap");
+  unmount();
+  render(<LogViewer text={LOG} label="Engine log" wrap gutterFrom={1} />, { wrapper: MantineProvider });
+  expect(viewer()).not.toHaveClass("sp-nowrap");
+  expect(viewer()).toHaveAttribute("data-wrap");
+});
+
+test("across the 768 px breakpoint the search follows: field on a desktop, closed and unfocused on the phone (CR-P3FU85C-07)", () => {
+  const { rerender } = render(<LogViewer text={LOG} label="Engine log" searchButton />, { wrapper: MantineProvider }); // Search is a Mantine button (FU-P3-104)
+  expect(screen.queryByRole("searchbox")).toBeNull();
+  rerender(<LogViewer text={LOG} label="Engine log" />); // phone to desktop
+  expect(field()).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Search" })).toBeNull();
+  rerender(<LogViewer text={LOG} label="Engine log" searchButton />); // desktop to phone
+  expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("searchbox")).toBeNull();
+  expect(document.body).toHaveFocus();
 });

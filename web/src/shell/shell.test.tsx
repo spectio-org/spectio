@@ -4,7 +4,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createAppRouter } from "../routes";
-import { viewport } from "../testing";
+import { DETAIL, json, run, serve, viewport } from "../testing";
 import { THEME_KEY, providerProps } from "./theme";
 
 const VERSION = {
@@ -28,9 +28,14 @@ function app(path = "/") {
 beforeEach(() => {
   window.localStorage.clear();
   viewport(1440);
+  // VERSION for GET /version only: any other path (/launch reads /environments) is a 404 problem
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => new Response(JSON.stringify(VERSION), { status: 200 })),
+    vi.fn(async (input: RequestInfo | URL) =>
+      String(input).endsWith("/api/v1/version")
+        ? new Response(JSON.stringify(VERSION), { status: 200 })
+        : new Response(JSON.stringify({ title: "Not found", detail: "no such path" }), { status: 404 }),
+    ),
   );
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -65,7 +70,7 @@ test("sidebar folds with a button[aria-expanded]", async () => {
   expect(fold).toHaveAccessibleName("Unfold the sidebar");
   expect(within(sidebar).queryByText("Workspace")).toBeNull();
   // Folded to the rail, every link keeps its name.
-  for (const name of ["Home", "Runs", "Launch"]) {
+  for (const name of ["Home", "Runs", "Launch", "Environments"]) {
     expect(within(sidebar).getByRole("link", { name })).toBeInTheDocument();
   }
   // The server's node from GET /version stays in the sidebar's foot.
@@ -104,6 +109,31 @@ test("breadcrumbs follow the route", async () => {
   await router.navigate({ to: "/launch" });
   expect(await within(crumbs).findByText("Launch")).toHaveAttribute("aria-current", "page");
   expect(within(crumbs).queryByRole("link", { name: "Runs" })).toBeNull();
+});
+
+test.each([
+  ["/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/results/file?path=counts.tsv", "Results", "File"],
+  ["/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/workdir?task=tsk_19&attempt=2", "Work directory", null],
+  ["/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/workdir/file?task=tsk_19&attempt=2&path=a.txt", "Work directory", "File"],
+])("FU-P3-104: the breadcrumb of %s names the run once", async (path, page, last) => {
+  // the run's name loads; its files and tasks are not there (the page's own state does not matter here)
+  serve({ "/api/v1/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W": { ...run(), ...DETAIL }, "/api/v1/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/": () => json(404, { title: "Not found" }) });
+  app(path);
+  const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
+  await within(crumbs).findAllByText("rnaseq-a");
+  const items = within(crumbs).getAllByRole("listitem").map((li) => li.textContent);
+  expect(items).toEqual(["Home", "Runs", "rnaseq-a", page, ...(last ? [last] : [])]);
+});
+
+test("CR-P3FU104-01: a file page's breadcrumb ends with the name the server answered for, not the URL's", async () => {
+  const id = "run_01JBC6Q4ZK7M8N2P3R5S7T9V1W";
+  const stat = { root: "/g/demo-lab/rnaseq", path: "tables/counts.tsv", name: "counts.tsv", type: "file", size: 12, mtime: "2026-11-10T09:00:00Z" };
+  serve({ [`/api/v1/runs/${id}`]: { ...run(), ...DETAIL }, [`/api/v1/runs/${id}/`]: () => json(404, { title: "Not found" }), [`/api/v1/runs/${id}/results/stat/`]: stat });
+  app(`/runs/${id}/results/file?path=tables/counts.tsv`);
+  const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
+  expect(await within(crumbs).findByText("counts.tsv")).toHaveAttribute("aria-current", "page");
+  expect(within(crumbs).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["Home", "Runs", "rnaseq-a", "Results", "counts.tsv"]);
+  expect(within(crumbs).queryByText("tables/counts.tsv")).toBeNull();
 });
 
 test("a malformed percent sequence keeps the shell (CR-P3G4-01)", async () => {
@@ -153,4 +183,32 @@ test("UX-PAR-07: the Runs item counts the active runs, also for a screen reader"
   app("/");
   const sidebar = await screen.findByRole("navigation", { name: "Main" });
   expect(await within(sidebar).findByRole("link", { name: "Runs, 6 active runs" })).toBeInTheDocument();
+});
+
+test("UI-04: the top bar keys share one face and one 20 px icon", async () => {
+  app();
+  const bar = (await screen.findByRole("switch", { name: "Dark theme" })).closest("header")!;
+  const keys = [
+    within(bar).getByRole("button", { name: "Search runs, pipelines and pages" }),
+    within(bar).getByRole("button", { name: /notifications/i }),
+    within(bar).getByRole("switch", { name: "Dark theme" }),
+    within(bar).getByRole("link", { name: "Profile" }),
+  ];
+  for (const key of keys) {
+    const icons = key.querySelectorAll("svg");
+    expect(icons).toHaveLength(1);
+    expect(icons[0]).toHaveAttribute("width", "20");
+    expect(icons[0].parentElement).toHaveClass("sp-key-face");
+  }
+});
+
+test("UI-04: sidebar items share the 25 px icon, the fold key and status keep theirs", async () => {
+  app();
+  const sidebar = await screen.findByRole("navigation", { name: "Main" });
+  for (const link of within(sidebar).getAllByRole("link")) {
+    expect(link.querySelector("svg")).toHaveAttribute("width", "25");
+  }
+  const fold = within(sidebar).getByRole("button", { name: "Fold the sidebar" });
+  expect(fold.querySelector("svg")).toHaveAttribute("width", "20");
+  expect(sidebar.querySelector(".sp-status svg")).toHaveAttribute("width", "16");
 });

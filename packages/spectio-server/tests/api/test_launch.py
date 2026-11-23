@@ -4,7 +4,9 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -117,7 +119,10 @@ def test_inspect_detects_engines(authed_client: TestClient, synthetic: Path) -> 
     groups = [g["title"] for g in body["schema"]["$defs"].values()]
     assert groups == ["Input/output options", "Scenario", "Failure injection", "Resources"]
     assert (body["name"], body["version"]) == ("spectio/synthetic-scenarios", "0.1.0")
-    assert {"local", "slurm", "test"} <= set(body["profiles"])
+    assert {"local", "slurm", "test", "fail_demo"} <= set(body["profiles"])
+    # FU-P3-83: how many log lines each task writes, in both schemas
+    verbosity = body["schema"]["$defs"]["scenario_options"]["properties"]["verbosity"]
+    assert (verbosity["enum"], verbosity["default"]) == (["quiet", "normal", "loud"], "normal")
     assert body["engine_version"] == ENGINE_VERSIONS["nextflow"]
     assert body["engine_versions"] == ENGINE_VERSIONS  # UX-G2-04: the other engine's too
     assert (body["location"], body["revision"]) == (str(synthetic / "nextflow"), None)
@@ -125,10 +130,12 @@ def test_inspect_detects_engines(authed_client: TestClient, synthetic: Path) -> 
     smk = authed_client.get(INSPECT, params={"location": str(synthetic / "snakemake")}).json()
     assert smk["engine"] == "snakemake"
     assert smk["engine_files"] == ["workflow/Snakefile"]
-    assert smk["profiles"] == ["local", "slurm"]
+    assert smk["profiles"] == ["fail_demo", "local", "slurm"]
     assert smk["version"] is None  # Snakemake declares none [to be validated]
     assert smk["schema_source"] == "config.schema.yaml"  # workflow/schemas/ (P3-parD)
     assert [g["title"] for g in smk["schema"]["$defs"].values()] == groups
+    smk_verbosity = smk["schema"]["$defs"]["scenario_options"]["properties"]["verbosity"]
+    assert (smk_verbosity["enum"], smk_verbosity["default"]) == (verbosity["enum"], "normal")
     assert smk["engine_version"] == ENGINE_VERSIONS["snakemake"]
 
 
@@ -247,8 +254,9 @@ def test_launch_creates_run_and_command(
 
     (leased,) = StoreSink(writer, settings.runs_root).lease_commands()  # what the runner gets
     assert leased.launch.engine == "nextflow"
-    assert LaunchPayload.model_validate(leased.payload) == LaunchPayload(
-        location=location, profiles=["local"], params={"chunks": 2}
+    local = {"name": "local", "label": "This machine", "executor": "local"}
+    assert LaunchPayload.model_validate(leased.payload) == LaunchPayload.model_validate(
+        {"location": location, "profiles": ["local"], "params": {"chunks": 2}, "environment": local}
     )
 
 
@@ -669,3 +677,213 @@ def test_inspect_symlinked_profile_not_listed(authed_client: TestClient, tmp_pat
     response = authed_client.get(INSPECT, params={"location": str(root)})
     assert response.status_code == 200, response.text
     assert response.json()["profiles"] == ["local"]
+
+
+def _fake_checks(monkeypatch: pytest.MonkeyPatch, found: dict[str, str | None]) -> list[str]:
+    checks: list[str] = []
+
+    def check(engine: str, cmd: str | None = None) -> EngineInfo:
+        checks.append(engine)
+        version = found[engine]
+        if version is None:
+            raise OSError("not on PATH")
+        return EngineInfo(f"/bin/{engine}", version)
+
+    monkeypatch.setattr(wf, "check_engine", check)
+    return checks
+
+
+def test_engine_versions_are_checked_once_per_ttl_not_on_every_inspect(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FU-P3-109: each check is a login shell (and a JVM for Nextflow), about a second or more
+    per inspect; the versions are kept for `ttl_s`, then checked again (an engine upgrade shows)."""
+    checks = _fake_checks(monkeypatch, {"nextflow": "26.10.4", "snakemake": "9.1.0"})
+    now = [100.0]
+    versions = wf.EngineVersions(settings, ttl_s=60, clock=lambda: now[0], spawn=lambda f: f())
+    first = versions()
+    assert versions() == first == {"nextflow": "26.10.4", "snakemake": "9.1.0"}
+    assert sorted(checks) == ["nextflow", "snakemake"]
+    now[0] += 61
+    versions()
+    assert sorted(checks) == ["nextflow", "nextflow", "snakemake", "snakemake"]
+
+
+def test_stale_engine_versions_return_at_once_and_refresh_in_the_background(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3FU109-01: a stale answer is returned as is; the check runs off the request thread,
+    one refresh at a time. `warm` fills the answer at server start."""
+    checks = _fake_checks(monkeypatch, {"nextflow": "26.10.4", "snakemake": "9.1.0"})
+    now = [100.0]
+    spawned: list[Callable[[], None]] = []
+    versions = wf.EngineVersions(settings, ttl_s=60, clock=lambda: now[0], spawn=spawned.append)
+    versions.warm()
+    assert len(spawned) == 1 and checks == []
+    spawned.pop()()  # the warm-up thread
+    assert sorted(checks) == ["nextflow", "snakemake"]
+    now[0] += 61
+    checks.clear()
+    assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"}  # the old answer
+    assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"}
+    assert checks == [] and len(spawned) == 1  # no check on this thread, one refresh only
+    spawned.pop()()
+    assert sorted(checks) == ["nextflow", "snakemake"]
+    assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"} and spawned == []
+
+
+def test_engine_version_check_never_holds_the_process_exit() -> None:
+    """`spectio serve` stopped by SIGTERM while a check runs (a JVM or a login shell under load)
+    exits at once: the checks run on daemon threads, which the interpreter does not join, where
+    a ThreadPoolExecutor's workers held the exit until the check ended
+    (`test_sigterm_stops_cleanly`, FU-P3-108c)."""
+    script = (
+        "import os, sys, time\n"
+        "from spectio_server.api import workflows as wf\n"
+        # one write a line: two threads' print() calls interleave (CR-161S8-04)
+        "wf.EngineVersions._one = lambda self, e: (\n"
+        "    os.write(1, (e + '\\n').encode()), time.sleep(60))\n"
+        "wf.EngineVersions(None).warm()\n"
+        "sys.stdin.readline()\n"  # the parent saw both checks start
+    )
+    proc = subprocess.Popen(
+        [sys.executable, "-c", script], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
+    )
+    try:
+        assert proc.stdout is not None and proc.stdin is not None
+        assert sorted(proc.stdout.readline().strip() for _ in range(2)) == ["nextflow", "snakemake"]
+        proc.stdin.write("\n")
+        proc.stdin.flush()
+        assert proc.wait(10) == 0
+    finally:
+        proc.kill()
+        proc.wait()
+
+
+def test_a_failed_engine_check_is_kept_only_briefly(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3FU109-03: an engine not found (a timeout, a module not loaded yet) is checked again
+    after `failed_ttl_s`, not after the full `ttl_s`."""
+    found: dict[str, str | None] = {"nextflow": None, "snakemake": "9.1.0"}
+    checks = _fake_checks(monkeypatch, found)
+    now = [100.0]
+    versions = wf.EngineVersions(
+        settings, ttl_s=300, failed_ttl_s=10, clock=lambda: now[0], spawn=lambda f: f()
+    )
+    assert versions() == {"nextflow": None, "snakemake": "9.1.0"}
+    found["nextflow"] = "26.10.4"
+    now[0] += 11
+    versions()  # stale: the refresh runs (inline here)
+    assert versions() == {"nextflow": "26.10.4", "snakemake": "9.1.0"}
+    assert len(checks) == 4
+
+
+def test_inspect_error_quotes_no_file_content(authed_client: TestClient, tmp_path: Path) -> None:
+    """SEC-161S3-04: PyYAML's message quotes the failing line; the 422 does not."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config" / "config.yaml").write_text('token: "hunter2\n')
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422 and "not JSON or YAML" in response.text
+    assert "hunter2" not in response.text
+
+
+@pytest.mark.parametrize(
+    ("text", "said"),
+    [
+        ("a: !!timestamp foo\n", "a value this server does not read"),
+        ("a: !!bool foo\n", "a value this server does not read"),
+        ("a: !!int ''\n", "a value this server does not read"),
+        ("a: !!float '_'\n", "a value this server does not read"),
+        ('a: "\\ud800"\n', "a string escape that is not Unicode text"),
+        (
+            "a: !!int TOKEN-abc123\n",
+            "not JSON or YAML this server reads",
+        ),  # int()'s message quotes the value
+    ],
+)
+def test_inspect_refuses_bad_values_with_a_422(
+    authed_client: TestClient, tmp_path: Path, text: str, said: str
+) -> None:
+    """SEC-161S5-01, -02, -03: a bad explicit tag or a lone surrogate is a 422, never a 500,
+    and a constructor's message, which quotes the file, is not shown."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config" / "config.yaml").write_text(text)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422 and said in response.text
+    assert "TOKEN" not in response.text
+
+
+def test_inspect_refuses_a_lone_surrogate_in_a_json_schema(
+    authed_client: TestClient, tmp_path: Path
+) -> None:
+    """SEC-161S5-02: through JSON too, the response could not be encoded: a 422."""
+    root = tmp_path / "pipe"
+    root.mkdir()
+    (root / "main.nf").write_text("workflow {}\n")
+    (root / "nextflow_schema.json").write_text('{"title": "\\ud800"}')
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422 and "not Unicode text" in response.text
+
+
+def test_large_config_gives_no_form_but_launches(authed_client: TestClient, tmp_path: Path) -> None:
+    """CR-161S5-01, CR-161S6-01, -02, CR-161S7-01, -02: a config.yaml over 256 KiB, over 1 MiB,
+    not UTF-8 past 256 KiB, past the token budget or nested past 64 levels infers no form, as
+    with no config, and the pipeline launches; a schema that large is still refused."""
+    root = tmp_path / "pipe"
+    (root / "config").mkdir(parents=True)
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    config = root / "config" / "config.yaml"
+    deep = "".join("  " * i + f"k{i}:\n" for i in range(100)) + "  " * 100 + "1\n"
+    for raw in (
+        "".join(f"k{i}: {i}\n" for i in range(30000)).encode(),  # about 290 KiB
+        b"# padding\n" * 120000,  # about 1.2 MiB
+        b"\xff" * (300 * 1024),  # not UTF-8, checked for size first
+        ("samples: [" + "1," * 100000 + "1]\n").encode(),  # 200 KiB, past the token budget
+        deep.encode(),  # 100 levels
+    ):
+        config.write_bytes(raw)
+        body = authed_client.get(INSPECT, params={"location": str(root)}).json()
+        assert body["schema_source"] == "none" and body["engine"] == "snakemake"
+        assert launch(authed_client, str(root), "snakemake").status_code == 201
+    (root / "config.schema.yaml").write_text("# padding\n" * 30000)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422
+    assert "config.schema.yaml is larger than 262144 bytes" in response.text
+
+
+def test_token_budget_bounds_deep_bursts(authed_client: TestClient, tmp_path: Path) -> None:
+    """SEC-161S5-04: 63-deep flow bursts up to 256 KiB stop at the token budget, fast."""
+    burst = "[" * 63 + "1" + "]" * 63
+    root = tmp_path / "pipe"
+    root.mkdir()
+    (root / "Snakefile").write_text("rule all:\n    input: []\n")
+    (root / "config.schema.yaml").write_text(f"- {burst}\n" * 1900)
+    start = time.monotonic()
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert time.monotonic() - start < 4
+    assert response.status_code == 422 and "more than 131072 YAML tokens" in response.text
+
+
+@pytest.mark.parametrize(
+    "rel", ["nextflow_schema.json", "config.schema.yaml", "workflow/schemas/config.schema.yaml"]
+)
+def test_deep_schema_is_a_422(authed_client: TestClient, tmp_path: Path, rel: str) -> None:
+    """SEC-161S6-02: a schema nested past 64 levels is refused; the response encoder would
+    fail on it, a 500. A config that deep infers no form (above)."""
+    root = tmp_path / "pipe"
+    (root / "workflow" / "schemas").mkdir(parents=True)
+    if rel.endswith(".json"):
+        (root / "main.nf").write_text("\n")
+        text = '{"a":' * 300 + "1" + "}" * 300
+    else:
+        (root / "Snakefile").write_text("\n")
+        text = "".join("  " * i + f"k{i}:\n" for i in range(300)) + "  " * 300 + "1\n"
+    (root / rel).write_text(text)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 422, response.text
+    assert "nested deeper than 64 levels" in response.text

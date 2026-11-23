@@ -1,0 +1,10 @@
+# A run that errors out: compare for treatA exits 1 on every attempt (the local profile, plus the
+# failure). snakemake --workflow-profile profiles/fail_demo, or the profile fail_demo in Launch.
+cores: 2
+retries: 2
+rerun-incomplete: true
+printshellcmds: true
+config:
+  - fail_mode=exit
+  - fail_rule=compare
+  - fail_sample=treatA

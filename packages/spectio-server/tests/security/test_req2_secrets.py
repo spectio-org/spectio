@@ -279,7 +279,7 @@ def no_request(monkeypatch: pytest.MonkeyPatch) -> None:
     def refuse(*args: object, **kwargs: object) -> None:
         raise AssertionError("no request may be sent")
 
-    monkeypatch.setattr(login.DIRECT, "open", refuse)
+    monkeypatch.setattr(login, "_connection", refuse)
 
 
 @pytest.mark.usefixtures("no_request")

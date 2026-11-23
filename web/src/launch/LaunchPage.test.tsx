@@ -30,7 +30,15 @@ function json(status: number, body: unknown): Response {
 }
 
 const fetchMock = vi.fn<typeof fetch>();
-beforeEach(() => vi.stubGlobal("fetch", fetchMock));
+// The Environment row and the catalog picker read their lists on their own (LaunchEnvironment and
+// LaunchCatalog tests): they fail here, so the form sends no environment and the calls below are
+// the form's own.
+// /features too: the Workflow map (graph/features.ts) reads it on its own.
+beforeEach(() =>
+  vi.stubGlobal("fetch", (url: RequestInfo | URL, init?: RequestInit) =>
+    ["/api/v1/environments", "/api/v1/catalog", "/api/v1/features"].includes(String(url)) ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
+  ),
+);
 afterEach(() => {
   fetchMock.mockReset();
   vi.unstubAllGlobals();
@@ -193,7 +201,10 @@ test("both entry files: no guess, Launch says to choose the engine", async () =>
   page();
   await load({ ...INSPECTED, engine: null, engine_files: ["main.nf", "workflow/Snakefile"] });
   expect(screen.getByRole("button", { name: "Nextflow" })).toHaveAttribute("aria-pressed", "false");
-  expect(launch()).toHaveAccessibleDescription("Choose the engine");
+  // every reason, in order (FU-P3-86h)
+  expect(launch()).toHaveAccessibleDescription("Choose the engine Fill the required field: input");
+  await userEvent.click(screen.getByRole("link", { name: "Choose the engine" }));
+  expect(screen.getByRole("button", { name: "Nextflow" })).toHaveFocus();
 });
 
 // An nf-core schema with two groups (LiteLaunch): one with a required field, one without.
@@ -280,6 +291,7 @@ test("UX-PAR-31/32: a Snakemake nested map is a section of dotted keys, rebuilt 
   await userEvent.click(within(ref).getByRole("button", { name: /^ref/ }));
   const release = within(ref).getByRole("textbox", { name: "ref.release (optional)" });
   await userEvent.type(release, "114");
+  await userEvent.click(screen.getByRole("button", { name: /^Config preview, as YAML/ })); // folded by default
   const preview = screen.getByLabelText("Config preview, as YAML", { selector: "pre" });
   expect(preview.textContent).toBe("ref:\n  species: homo_sapiens\n  release: 114\n");
   fetchMock.mockResolvedValueOnce(json(422, { status: 422, errors: [{ field: "params.ref.release", message: "no such release" }] }));
@@ -297,6 +309,7 @@ test("UX-PAR-32: the params.json preview is exactly the params Launch sends", as
   await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
   await userEvent.click(toggle(/^Alignment options/));
   await userEvent.type(screen.getByRole("textbox", { name: /^min_mapped_reads/ }), "10");
+  await userEvent.click(screen.getByRole("button", { name: /^params.json preview/ })); // folded by default
   const preview = screen.getByLabelText("params.json preview", { selector: "pre" });
   fetchMock.mockResolvedValueOnce(json(201, { id: "run_1" }));
   await userEvent.click(launch());
@@ -311,11 +324,12 @@ test("UX-PAR-32: the params.json preview is exactly the params Launch sends", as
 test("UX-PAR-33: the Loaded card's status, and Where it runs names the engine and the tasks", async () => {
   page();
   await load(NF_CORE);
-  const card = screen.getByText("nf-core/rnaseq 3.27.0").closest("[data-loaded]")!;
+  const card = screen.getByText("nf-core/rnaseq 3.27.0", { selector: "[data-loaded] *" }).closest("[data-loaded]")!;
   expect(within(card as HTMLElement).getByText("Loaded")).toBeInTheDocument();
   // inbox #91 (b): a manifest name starting "nf-core/" shows the nf-core mark
   expect(within(card as HTMLElement).getByRole("img", { name: "nf-core" })).toBeInTheDocument();
-  const where = screen.getByRole("complementary", { name: "Where it runs and launch" });
+  // "Where it runs" is a section of the main column (ui-spec §4.6, FU-P3-86e3)
+  const where = screen.getByRole("region", { name: "Where it runs" });
   expect(within(where).getByText("Tasks")).toBeInTheDocument();
   expect(within(where).getByText(/fixed for this server/)).toBeInTheDocument();
 });
@@ -327,7 +341,7 @@ test("UX-PAR-34: on the phone the pinned bar says why Launch waits, then what it
   await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
   await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
   expect(launch()).not.toHaveAttribute("aria-disabled");
-  expect(launch()).toHaveAccessibleDescription("nf-core/rnaseq 3.27.0 · Nextflow · docker · 1 value changed");
+  expect(launch()).toHaveAccessibleDescription("Nothing is missing. nf-core/rnaseq 3.27.0 · Nextflow · docker · 1 value changed");
 });
 
 test("SEC-P3PARB-01: a schema key Launch refuses is named, not dropped silently", async () => {
@@ -382,15 +396,13 @@ test("P3-parC: Pipeline, Parameters, Where it runs and the preview are sections 
   expect(fold).toHaveAttribute("aria-expanded", "false");
 });
 
-test("P3-parC: Launch sits in the page head too, the same action with the same reason", async () => {
+test("UI-13: on the desktop Launch is the page head's only, with its reason (ui-spec §12.4)", async () => {
   const onLaunched = page();
-  const [head, side] = screen.getAllByRole("button", { name: "Launch" });
+  const [head, ...others] = screen.getAllByRole("button", { name: "Launch" });
+  expect(others).toEqual([]);
   expect(head.closest("header")).not.toBeNull();
-  expect(side.closest("header")).toBeNull();
-  for (const b of [head, side]) {
-    expect(b).toHaveAttribute("aria-disabled", "true");
-    expect(b).toHaveAccessibleDescription("Load a pipeline first");
-  }
+  expect(head).toHaveAttribute("aria-disabled", "true");
+  expect(head).toHaveAccessibleDescription("Load a pipeline first");
   await load();
   expect(head).toHaveAccessibleDescription("Fill the required field: input");
   await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
@@ -417,7 +429,7 @@ test("P3-parC: the engine buttons show the Nextflow and Snakemake marks", () => 
 test("P3-parC: a pipeline not named nf-core/ shows its engine's mark on the Loaded card", async () => {
   page();
   await load();
-  const card = screen.getByText("rnaseq 3.27.0").closest("[data-loaded]") as HTMLElement;
+  const card = screen.getByText("rnaseq 3.27.0", { selector: "[data-loaded] *" }).closest("[data-loaded]") as HTMLElement;
   expect(within(card).getByRole("img", { name: "Nextflow" })).toBeInTheDocument();
 });
 
@@ -511,4 +523,134 @@ test("the server still checks: a refusal of a value the client let through shows
   const input = screen.getByRole("textbox", { name: /^input/ });
   await waitFor(() => expect(input).toHaveAttribute("aria-invalid", "true"));
   expect(input).toHaveAccessibleDescription(expect.stringContaining("is not a file"));
+});
+
+// The aside (ui-spec §4.6 layout note, FU-P3-86h; boards LiteLaunch and MLiteLaunch): the summary,
+// "Before Launch" as the list of every reason, the preview folded, both Launch described by the list.
+const before = () => screen.getByRole("status", { name: "Before Launch" });
+
+test("FU-P3-86h: Before Launch lists every reason, each a link that moves focus to its field", async () => {
+  page();
+  await load(CHECKED);
+  await userEvent.type(screen.getByRole("textbox", { name: /^depth/ }), "12");
+  const links = within(before()).getAllByRole("link");
+  expect(links.map((a) => a.textContent)).toEqual(["Fill the required field: input", "Fix depth: Must be at most 9."]);
+  await userEvent.click(links[1]);
+  expect(screen.getByRole("textbox", { name: /^depth/ })).toHaveFocus();
+  await userEvent.click(links[0]);
+  expect(screen.getByRole("textbox", { name: /^input/ })).toHaveFocus();
+  // Launch is described by the whole list, and the reasons are the one link style (ui-spec §12.10)
+  for (const a of links) expect(a).toHaveClass("mantine-Anchor-root");
+  for (const b of screen.getAllByRole("button", { name: "Launch" })) {
+    expect(b).toHaveAttribute("aria-describedby", before().id);
+    expect(b).toHaveAccessibleDescription("Fill the required field: input Fix depth: Must be at most 9.");
+  }
+});
+
+test("FU-P3-86h: a reason's link opens the folded section of its field", async () => {
+  page();
+  await load(CHECKED);
+  await userEvent.click(screen.getByRole("button", { name: /^Parameters/ }));
+  expect(screen.queryByRole("textbox", { name: /^input/ })).toBeNull();
+  await userEvent.click(within(before()).getByRole("link", { name: "Fill the required field: input" }));
+  await waitFor(() => expect(screen.getByRole("textbox", { name: /^input/ })).toHaveFocus());
+});
+
+test("CR-P3FU86H-01: a reason's link opens a folded group that already has a server error", async () => {
+  page();
+  await load(NF_CORE);
+  const input = screen.getByRole("textbox", { name: /^input/ });
+  await userEvent.type(input, "/data/s.csv");
+  fetchMock.mockResolvedValueOnce(json(422, { status: 422, errors: [{ field: "params.outdir", message: "is not writable" }] }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(screen.getByRole("textbox", { name: /^outdir/ })).toHaveAttribute("aria-invalid", "true"));
+  await userEvent.clear(input);
+  const io = toggle(/^Input\/output options/);
+  await userEvent.click(io);
+  expect(io).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(within(before()).getByRole("link", { name: "Fill the required field: input" }));
+  await waitFor(() => expect(screen.getByRole("textbox", { name: /^input/ })).toHaveFocus());
+});
+
+test("FU-P3-86h: Load a pipeline first links the Pipeline field; nothing missing says so", async () => {
+  page();
+  await userEvent.click(within(before()).getByRole("link", { name: "Load a pipeline first" }));
+  expect(pipeline()).toHaveFocus();
+  await load();
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  expect(before()).toHaveTextContent("Nothing is missing.");
+  expect(within(before()).queryByRole("link")).toBeNull();
+  expect(launch()).toHaveAccessibleDescription("Nothing is missing.");
+});
+
+test("FU-P3-86h: the aside has the summary, then Before Launch, the preview folded (Launch is in the head, UI-13)", async () => {
+  page();
+  await load();
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  const aside = screen.getByRole("complementary", { name: "Launch" });
+  const summary = within(aside).getByRole("region", { name: "Summary" });
+  const facts = [...summary.querySelectorAll("dt")].map((dt) => [dt.textContent, dt.nextElementSibling?.textContent]);
+  expect(facts).toEqual([
+    ["Pipeline", "rnaseq 3.27.0 · profile docker"],
+    ["Engine", "Nextflow 26.10.4"],
+    ["Environment", "the server's default"],
+    ["Run resources", "from the environment"], // FU-P3-110d, ui-spec §4.6
+    ["Extra config", "none"],
+    ["Engine head", "…"],
+    ["Tasks", "by Nextflow, in the server's default environment"],
+    ["Run directory", "…"],
+  ]);
+  const preview = within(aside).getByRole("button", { name: /^params.json preview/ });
+  expect(preview).toHaveAttribute("aria-expanded", "false");
+  expect(within(aside).queryByRole("button", { name: "Launch" })).toBeNull();
+  // every section is a card, the summary's title a card title (ui-spec §12.7)
+  expect(screen.getByRole("region", { name: "Parameters" })).toHaveClass("sp-card");
+  expect(within(summary).getByRole("heading", { name: "Summary" }).tagName).toBe("H3");
+  const order = [summary, before(), preview];
+  for (let i = 1; i < order.length; i++) {
+    expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  }
+});
+
+test("FU-P3-86h: on the phone the summary comes after Parameters", async () => {
+  page(vi.fn(), true);
+  await load();
+  const params = screen.getByRole("region", { name: "Parameters" });
+  const summary = screen.getByRole("region", { name: "Summary" });
+  expect(params.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test("FU-P3-108b: a link to a field in a folded group moves focus to it once open, and scrolls it into view", async () => {
+  const scroll = vi.fn();
+  Element.prototype.scrollIntoView = scroll;
+  try {
+    page();
+    await load(NF_CORE);
+    const io = toggle(/^Input\/output options/);
+    await userEvent.click(io);
+    expect(io).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(within(before()).getByRole("link", { name: "Fill the required field: input" }));
+    const input = await screen.findByRole("textbox", { name: /^input/ });
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(scroll.mock.contexts).toContain(input);
+  } finally {
+    delete (Element.prototype as Partial<Element>).scrollIntoView;
+  }
+});
+
+test("FU-P3-108b: the Engine head reads the same in Where it runs and in the summary", () => {
+  page();
+  const heads = [...document.querySelectorAll("dt")].filter((dt) => dt.textContent === "Engine head");
+  expect(heads.map((dt) => dt.nextElementSibling?.textContent)).toEqual(["Not chosen yet", "Not chosen yet"]);
+});
+
+test("CR-P3UI13-03: on the desktop a launch error sits under Before Launch, and no pinned bar is drawn", async () => {
+  page();
+  await load();
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  fetchMock.mockResolvedValueOnce(json(500, { status: 500, title: "Server error" }));
+  await userEvent.click(launch());
+  const alert = await screen.findByText(/^Not launched: /);
+  expect(screen.getByRole("region", { name: "Summary" })).toContainElement(alert);
+  expect(document.querySelector(".launch-bar")).toBeNull();
 });

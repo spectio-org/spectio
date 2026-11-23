@@ -1,0 +1,66 @@
+/* The Profile page (FU-P3-112; boards LiteProfile, MLiteProfile): one column of cards, at most
+   760 px wide; paths wrap anywhere, so nothing overflows at 320 px. */
+.sp-prof {
+  max-width: 760px;
+}
+/* UI-16 (ui-spec §12.7): one card look, padding 16 (12 on the phone), radius md, a 1 px border. */
+.sp-prof-card {
+  padding: var(--mantine-spacing-lg);
+  border: 1px solid var(--sp-line-border);
+  border-radius: var(--mantine-radius-md);
+  box-shadow: none;
+}
+.sp-prof-body {
+  margin-top: var(--mantine-spacing-md);
+}
+.sp-prof-card .sp-sub {
+  margin: var(--mantine-spacing-sm) 0 0;
+}
+.sp-prof-paths {
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+  margin: 0;
+}
+.sp-prof-paths dt {
+  font-size: var(--mantine-font-size-xs);
+  color: var(--sp-text-muted);
+}
+.sp-prof-paths dd {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  margin: var(--mantine-spacing-xs) 0 0;
+}
+.sp-prof-paths code {
+  flex: 1;
+  min-width: 0;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  font-family: var(--sp-font-mono);
+  font-size: var(--mantine-font-size-sm);
+  background: var(--sp-surface-subtle);
+  overflow-wrap: anywhere;
+}
+.sp-prof-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-xl);
+}
+.sp-prof-themes .mantine-Radio-root {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+.sp-prof-out {
+  margin-top: var(--mantine-spacing-md);
+}
+/* On the phone (MLiteProfile, ui-spec §4.10.1): Copy keys are 44 px (ActionIcon xl), Sign out is
+   full width. */
+@media (max-width: 767.98px) {
+  .sp-prof-card {
+    padding: var(--mantine-spacing-md);
+  }
+  .sp-prof-out {
+    width: 100%;
+  }
+}
