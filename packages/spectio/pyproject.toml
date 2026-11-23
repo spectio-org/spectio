@@ -1,13 +1,13 @@
 [project]
 name = "spectio"
-version = "0.0.1"
+version = "0.0.1rc1"
 description = "Spectio's CLI and runner (no FastAPI, no SQLAlchemy: architecture §6)"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.7,<3",
     "pydantic-settings>=2.6,<3",
-    "spectio-sdk==0.0.1",
+    "spectio-sdk==0.0.1rc1",
     "typer>=0.15,<1",
 ]
 

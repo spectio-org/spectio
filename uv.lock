@@ -1250,7 +1250,7 @@ wheels = [
 
 [[package]]
 name = "spectio"
-version = "0.0.1"
+version = "0.0.1rc1"
 source = { editable = "packages/spectio" }
 dependencies = [
     { name = "pydantic" },
@@ -1269,7 +1269,7 @@ requires-dist = [
 
 [[package]]
 name = "spectio-sdk"
-version = "0.0.1"
+version = "0.0.1rc1"
 source = { editable = "packages/spectio-sdk" }
 dependencies = [
     { name = "pydantic" },
@@ -1280,7 +1280,7 @@ requires-dist = [{ name = "pydantic", specifier = ">=2.7,<3" }]
 
 [[package]]
 name = "spectio-server"
-version = "0.0.1"
+version = "0.0.1rc1"
 source = { editable = "packages/spectio-server" }
 dependencies = [
     { name = "alembic" },

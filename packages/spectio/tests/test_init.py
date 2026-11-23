@@ -9,6 +9,7 @@ import stat
 import sys
 import tomllib
 from collections.abc import Iterator
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
@@ -72,7 +73,7 @@ def test_init_creates_one_environment(home: Path, fakebin: Path) -> None:
     assert project.name == "default"
     assert env.kind == "slurm" and env.config == {"runs_root": str(runs_root)}
     assert runner.environment_id == env.id and runner.principal_id == user.id
-    assert runner.version == "0.0.1"
+    assert runner.version == version("spectio")  # the installed package, 0.0.1rc1 for the RC
 
 
 def test_runs_root_must_exist_and_be_absolute(home: Path, fakebin: Path) -> None:

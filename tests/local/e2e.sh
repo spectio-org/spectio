@@ -59,8 +59,8 @@ fi
 log "building the wheels and installing spectio with its server into $home/tools"
 (cd "$repo" && NEXTFLOW=$nextflow uv build --quiet --all-packages --python "$PYTHON_VERSION" --out-dir "$home/dist")
 UV_TOOL_DIR=$home/tools UV_TOOL_BIN_DIR=$home/bin uv tool install --quiet --python "$PYTHON_VERSION" \
-  "$home/dist/spectio-0.0.1-py3-none-any.whl" --with "$home/dist/spectio_server-0.0.1-py3-none-any.whl" \
-  --with "$home/dist/spectio_sdk-0.0.1-py3-none-any.whl"
+  "$home/dist"/spectio-*-py3-none-any.whl --with "$home/dist"/spectio_server-*-py3-none-any.whl \
+  --with "$home/dist"/spectio_sdk-*-py3-none-any.whl
 export PATH=$home/bin:$PATH
 spectio --version
 
