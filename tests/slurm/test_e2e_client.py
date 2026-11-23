@@ -1,8 +1,14 @@
 """The pure parts of e2e_client.py (P1 Task 22): the ticket line, the session cookie, the golden
-counts, the run's states, the expect lines of a scenario and the jobs of a run. No server and no
-cluster: tests/slurm/e2e.sh runs the client itself. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
+counts, the run's states, the expect lines of a scenario and the jobs of a run; and its transport, against a
+stand-in HTTP server on a Unix socket and on TCP. No Spectio server and no cluster: tests/slurm/e2e.sh runs the
+client itself. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
+import http.server
+import json
 import os
+import socketserver
 import sys
+import tempfile
+import threading
 import unittest
 from email.message import Message
 from unittest import mock
@@ -173,6 +179,104 @@ class Local(unittest.TestCase):
         self.assertIn(str(me), c.head_left((me, me, start)))
         self.assertIsNone(c.head_left((me, me, start + "0")))  # another process that reused the PID
         self.assertIsNone(c.head_left(None))
+
+
+class Echo(http.server.BaseHTTPRequestHandler):
+    """Answers each request with what it received; `/missing` answers 404 with a JSON problem."""
+
+    def do_POST(self):
+        body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        code = 404 if self.path == "/missing" else 200
+        doc = json.dumps({"path": self.path, "method": self.command, "host": self.headers["Host"],
+                          "origin": self.headers["Origin"], "cookie": self.headers["Cookie"],
+                          "type": self.headers["Content-Type"], "body": body.decode()}).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Set-Cookie", "spectio_session_8123=s3cr3t; HttpOnly; Path=/")
+        self.send_header("Content-Length", str(len(doc)))
+        self.end_headers()
+        self.wfile.write(doc)
+
+    def log_message(self, *args):  # quiet, and a Unix peer has no address to log
+        pass
+
+
+class UnixEcho(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
+    daemon_threads = True
+
+
+class TcpEcho(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+
+
+class Transport(unittest.TestCase):
+    """FU-P3-72: on SLURM and shared hosts the server listens only on `spectio.sock` in its database directory.
+    The client finds it in server.json and speaks HTTP over it, with the Host and Origin of the tunnel's end."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.data, self.db = os.path.join(tmp.name, "data"), os.path.join(tmp.name, "db")
+        os.mkdir(self.data, 0o700)
+        os.mkdir(self.db, 0o700)
+        self.sock = os.path.join(self.db, "spectio.sock")
+
+    def state(self, **record):
+        with open(os.path.join(self.data, "server.json"), "w") as f:
+            json.dump({"host": "n1", "port": 8123, "socket": self.sock, "pid": 1, "db_dir": self.db} | record, f)
+
+    def serve(self, server):
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+
+    def test_the_socket_of_server_json(self):
+        self.state()
+        self.assertEqual(c.server_address(self.data, self.db), (8123, self.sock))
+
+    def test_a_tcp_server_has_no_socket(self):
+        self.state(socket=None)
+        self.assertEqual(c.server_address(self.data, self.db), (8123, None))
+
+    def test_a_socket_elsewhere_or_a_bad_record_is_refused(self):
+        for record in ({"socket": "/srv/other/spectio.sock"}, {"socket": self.db + "/other.sock"},
+                       {"socket": 7}, {"port": 80}, {"port": "8123"}):
+            self.state(**record)
+            with self.assertRaises(c.Failed, msg=record):
+                c.server_address(self.data, self.db)
+
+    def test_no_server_json(self):
+        with self.assertRaisesRegex(c.Failed, "server.json"):
+            c.server_address(self.data, self.db)
+
+    def check_exchange(self, api):
+        api.cookie = "spectio_session_8123=s3cr3t"
+        doc, headers = api.expect(200, "POST", "/api/v1/runs", {"a": 1})
+        self.assertEqual(doc, {"path": "/api/v1/runs", "method": "POST", "host": "127.0.0.1:8123",
+                               "origin": "http://127.0.0.1:8123", "cookie": "spectio_session_8123=s3cr3t",
+                               "type": "application/json", "body": '{"a": 1}'})
+        self.assertEqual(c.session_cookie(headers, 8123), "spectio_session_8123=s3cr3t")
+        code, doc, _ = api.call("POST", "/missing", {})
+        self.assertEqual((code, doc["path"]), (404, "/missing"))
+        with self.assertRaisesRegex(c.Failed, "HTTP 404, not 200"):
+            api.expect(200, "POST", "/missing", {})
+
+    def test_http_over_the_unix_socket(self):
+        self.serve(UnixEcho(self.sock, Echo))
+        # A proxy in the environment is never used: the request goes to the socket.
+        with mock.patch.dict(os.environ, {"http_proxy": "http://192.0.2.1:9", "HTTP_PROXY": "http://192.0.2.1:9"}):
+            self.check_exchange(c.Api(8123, self.sock))
+
+    def test_http_over_tcp_without_a_socket(self):
+        server = TcpEcho(("127.0.0.1", 0), Echo)
+        self.serve(server)
+        api = c.Api(8123, None)
+        api.address = ("127.0.0.1", server.server_address[1])  # the stand-in's port; Host stays 127.0.0.1:8123
+        self.check_exchange(api)
+
+    def test_nothing_on_the_socket_is_a_failure(self):
+        with self.assertRaisesRegex(c.Failed, "spectio.sock"):
+            c.Api(8123, self.sock).call("GET", "/api/v1/runs")
 
 
 if __name__ == "__main__":
