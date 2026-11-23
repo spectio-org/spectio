@@ -1,6 +1,6 @@
 [project]
 name = "spectio-sdk"
-version = "0.0.1"
+version = "0.0.1rc1"
 description = "Spectio's interfaces and event schemas, shared by the runner, the server and plugins"
 license = "MIT"
 requires-python = ">=3.11"

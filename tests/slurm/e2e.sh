@@ -68,8 +68,8 @@ install() {
   (cd "$repo" && NEXTFLOW=$DATA/tools/bin/nextflow uv build --quiet --all-packages --python "$PYTHON_VERSION" --out-dir "$dist")
   log "installing spectio, its server and SDK into $DATA/tools"
   UV_TOOL_DIR=$DATA/tools/uv-tools UV_TOOL_BIN_DIR=$DATA/tools/bin uv tool install --quiet --force \
-    --python "$PYTHON_VERSION" "$dist/spectio-0.0.1-py3-none-any.whl" \
-    --with "$dist/spectio_server-0.0.1-py3-none-any.whl" --with "$dist/spectio_sdk-0.0.1-py3-none-any.whl"
+    --python "$PYTHON_VERSION" "$dist"/spectio-*-py3-none-any.whl \
+    --with "$dist"/spectio_server-*-py3-none-any.whl --with "$dist"/spectio_sdk-*-py3-none-any.whl
   "$DATA/tools/bin/spectio" --version
 }
 
