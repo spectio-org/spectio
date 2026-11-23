@@ -192,6 +192,8 @@ class CancelChecks(unittest.TestCase):
     def test_ready_once_running_with_a_task_running(self):
         self.assertTrue(c.tasks_running({"state": "running", "task_counts": {"running": 2, "succeeded": 1}}))
         self.assertFalse(c.tasks_running({"state": "running", "task_counts": {"succeeded": 3}}))
+        # a task submitted counts: on slurm-mini a job can start and end within one poll of the head
+        self.assertTrue(c.tasks_running({"state": "running", "task_counts": {"submitted": 3, "succeeded": 1}}))
         self.assertFalse(c.tasks_running({"state": "running", "task_counts": {}}))
         self.assertFalse(c.tasks_running({"state": "queued", "task_counts": {"running": 1}}))
 

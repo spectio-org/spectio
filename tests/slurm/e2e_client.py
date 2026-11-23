@@ -168,8 +168,12 @@ def states_problem(seen: list[str], want: tuple[str, ...] = SUCCEEDED_PATH) -> s
 
 
 def tasks_running(detail: dict) -> bool:
-    """The run is `running` with at least one task running: the moment to cancel it."""
-    return detail.get("state") == "running" and (detail.get("task_counts") or {}).get("running", 0) > 0
+    """The run is `running` with at least one task running or submitted: the moment to cancel it.
+    Submitted counts too: on slurm-mini a job can start and end within one poll of the head, so a run
+    of 245 tasks may never show one `running` to a client polling every POLL_S (CI, 2026-11-23)."""
+    counts = detail.get("task_counts") or {}
+    in_flight = counts.get("running", 0) + counts.get("submitted", 0)
+    return detail.get("state") == "running" and in_flight > 0
 
 
 def tasks_pending(detail: dict) -> bool:
@@ -549,7 +553,7 @@ def cancel(args: argparse.Namespace) -> int:
     tcp = tcp_listener(api.port)
     detail = poll_until(api, run, states, tasks_running, args.timeout)
     if not tasks_running(detail):
-        raise Failed(f"run {run_id} was never running with a task running: {detail['state']} {detail['task_counts']}")
+        raise Failed(f"run {run_id} was never running with a task running or submitted: {detail['state']} {detail['task_counts']}")
     asked = time.monotonic()
     detail, _ = api.expect(202, "POST", f"/api/v1/runs/{run_id}:cancel")
     print(f"  cancel asked: {detail['state']} tasks={detail['task_counts']}", flush=True)
