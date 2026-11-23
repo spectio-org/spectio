@@ -2429,3 +2429,28 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 
 
 
+
+### #158 · Your part: the PRs and checks left for 0.0.1-rc1 (2026-11-24)
+
+- **Covers:** the RC plan of 2026-11-23, steps 4 to 6; [RC1 acceptance](RC1-acceptance.md); [roadmap, 0.0.1-rc1](../roadmap/index.md#001-rc1-the-release-candidate).
+- **Why you:** each item changes `.github/workflows/`, publishes, or needs your own laptop and browser, all reserved by [triage-policy](../playbooks/triage-policy.md).
+- **To do:**
+  1. **PR #314** (`ci.yml`): CI's `e2e-local` job runs every spec in `tests/e2e`, on desktop and phone, with Snakemake. Its last run passed 107 tests, with 0 failures (run 45284629061).
+  2. **PR #324, then PR #332.** #324 is the real `pypi-publish.yml`. #332 sets the version `0.0.1rc1` in the four packages and is stacked on #324: after #324 is merged, retarget #332 to `autopilot/integration`. Without #332 the wheels would still say `0.0.1`.
+  3. **`cancel-pending` in the matrix of `pipelines-slurm.yml`.** The case exists in `tests/slurm/e2e.sh` (PR #331) and passed locally. CI runs it only once it is in the job matrix.
+  4. **login1 checks of [RC1 acceptance §17](RC1-acceptance.md#17-login1-checklist) that need your laptop:** item 2 with `spectio open` and your own browser, plus items 9 and 10. Everything else in §17 was run over ssh on 2026-11-23 and 24.
+  5. **The release-please PR for `0.0.1-rc1`:** merge it once the matrix has no FAIL. Before the later `Release-As: 0.0.1` commit, remove `"prerelease": true` from `release-please-config.json`, or 0.0.1 is marked as a pre-release too (dev-env §15.2).
+- **Not blocked meanwhile:** the promotion to `main` and the `Release-As: 0.0.1-rc1` commit.
+
+### #159 · Assumed: Snakemake SLURM runs need executor plugin 2.8.0; Spectio reports the floor and does not enforce it (2026-11-24)
+
+- **Covers:** the Snakemake run on EMBL login1 that finished with 2 of 67 jobs seen, and 12 `output_unknown` spool drops. The bisect over Snakemake 9.23.1 to 9.27.1 and the SLURM plugin's source are in [architecture §13.4](../specs/architecture-plugins-and-packaging.md#134-supported-engine-versions), the bullet on `snakemake-executor-plugin-slurm`.
+- **Cause.** The EMBL module `snakemake/9.23.1-foss-2025b` ships `snakemake-executor-plugin-slurm` 2.6.1. Versions before 2.8.0 never log `job_info`, so the bridge has no job to report. With Snakemake 9.27.1 and plugin 2.8.0, the same run matched its golden counts.
+- **Open choices:**
+  - (a) `spectio doctor` reports the plugin's version, with a `warn` under 2.8.0, and the install guide says how to install a recent Snakemake;
+  - (b) also refuse a Snakemake SLURM launch under 2.8.0;
+  - (c) ask the EMBL cluster team to update the module.
+
+  **Recommendation: (a), plus (c) from you.** (b) needs the plugin version at launch time, and the module can change under a running server.
+- **Assumed (2026-11-24, [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), built in the doctor-lines PR. Item (c) is yours: ask for a module with Snakemake 9.26 or later and the SLURM plugin 2.8.0 or later.
+- **Also found:** Snakemake 9.25.2 and earlier log each failed job's `job_error` twice when the run ends. Whether the projector counts it twice is **[to be validated]**. It is kept as a follow-up: de-duplicate `job_error` per job in the logger plugin, as `temp_removed` already is.

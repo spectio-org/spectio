@@ -40,7 +40,8 @@
       "release-type": "simple",
       "package-name": "spectio",
       "changelog-path": "CHANGELOG.md",
-      "extra-files": []
+      "extra-files": [],
+      "prerelease": true
     }
   },
   "bump-minor-pre-major": true,

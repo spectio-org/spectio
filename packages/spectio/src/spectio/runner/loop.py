@@ -344,7 +344,7 @@ class RunnerLoop:
                 default_resources=payload.default_resources,
                 config_file=extra_file(payload),
                 # Only the Snakemake SLURM plugin has a status command to set (FU-P3-106b);
-                # asked once per process, whatever the answer.
+                # a definite answer is kept for the process, a failure asked again later.
                 slurm_accounting=(
                     site_accounting(self.settings.slurm.sacct)
                     if ref.engine == "snakemake" and fields["slurm"] is not None
