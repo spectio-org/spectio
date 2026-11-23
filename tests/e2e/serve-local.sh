@@ -104,12 +104,19 @@ spectio() { uv run --locked --project "$repo" --python "$PYTHON_VERSION" spectio
 export SPECTIO_CONFIG=$home/data/spectio.toml
 
 mkdir -m 700 "$home/data" "$home/db" "$home/runs"
-# A checkout's editable install carries no bridges (only a wheel does, P1 Task 21): build nf-spectio
-# here when Nextflow is found.
+# A checkout's editable install carries no bridges (only a wheel does, P1 Task 21): put them here, as
+# the wheel's hatch_build.py does. nf-spectio is built when Nextflow is found; the Snakemake logger is
+# plain Python, copied without its caches.
 nextflow=${SPECTIO_ENGINES_NEXTFLOW_CMD:-$(command -v nextflow || true)}
-if [ -z "${SPECTIO_BRIDGES_DIR:-}" ] && [ -n "$nextflow" ]; then
-  echo "== Building nf-spectio with $nextflow"
-  NEXTFLOW=$nextflow bash "$repo/engine-bridges/nf-spectio/build.sh" "$home/bridges" >/dev/null
+if [ -z "${SPECTIO_BRIDGES_DIR:-}" ]; then
+  mkdir -p "$home/bridges"
+  if [ -n "$nextflow" ]; then
+    echo "== Building nf-spectio with $nextflow"
+    NEXTFLOW=$nextflow bash "$repo/engine-bridges/nf-spectio/build.sh" "$home/bridges" >/dev/null
+  fi
+  logger=$repo/engine-bridges/snakemake-logger-plugin-spectio/snakemake_logger_plugin_spectio
+  cp -R "$logger" "$home/bridges/"
+  find "$home/bridges/snakemake_logger_plugin_spectio" \( -name __pycache__ -o -name '*.pyc' \) -prune -exec rm -rf {} +
   export SPECTIO_BRIDGES_DIR=$home/bridges
 fi
 echo "== spectio init --local in $home"
