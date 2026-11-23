@@ -1478,3 +1478,9 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
 - **Out of scope for the RC:** `next-0.0.2`, #251 and #255 behind their flags, the #111 demo.
 - **Changed.** [inbox #121, #122, #157](../reviews/inbox.md); [roadmap](../roadmap/index.md) at the release step.
 
+
+## 2026-11-23 — Snakemake's SLURM status command from the site's accounting, in 0.0.1-rc1 (Thomas, #156)
+
+- **Context.** On a SLURM site without `slurmdbd`, the Snakemake SLURM plugin 2.8.0 still queries `sacct`, which fails, and the run hangs ([inbox #156](../reviews/inbox.md#156-assumed-a-slurm-site-without-accounting-and-a-run-whose-jobs-left-the-queue-task-22-2026-11-18)). Choice (1a) had been assumed for after 0.0.1.
+- **Decided (Thomas, 2026-11-23).** (1a) is in 0.0.1-rc1: the server reads `AccountingStorageType` from `scontrol show config` once per process and passes `--slurm-status-command squeue` (off) or `sacct` (on) to Snakemake SLURM launches; the user's own flag wins; unknown keeps the plugin's default. `spectio doctor` shows the result.
+- **Changed.** [schedulers-and-monitoring §3.8](../specs/schedulers-and-monitoring.md#38-slurm-query-budget); the `slurm-mini` e2e harness no longer passes `--slurm-status-command squeue` itself.

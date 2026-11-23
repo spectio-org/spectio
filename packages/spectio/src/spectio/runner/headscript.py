@@ -151,6 +151,14 @@ def _extra_bytes(kept: ExtraFile) -> bytes:
     return data
 
 
+def status_command(accounting: bool | None) -> str | None:
+    """The `--slurm-status-command` for what `site_accounting` found: `sacct` on a site with
+    accounting, `squeue` on one without, and None when unknown, so the plugin's default stands."""
+    if accounting is None:
+        return None
+    return "sacct" if accounting else "squeue"
+
+
 def engine_args(spec: LaunchSpec) -> list[str]:
     """The engine's arguments after `engine_cmd`, each one word."""
     spectio = _spectio(spec)
@@ -190,6 +198,15 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             # The SLURM plugin deletes a job's log when the job succeeds; kept, every job has
             # its log while the run directory exists (architecture §13.7, `slurm.py:209-243`).
             args += ["--executor", "slurm", "--slurm-keep-successful-logs"]
+            # The plugin 2.8.0 picks sacct as its status command whenever sacct is on PATH
+            # (`_get_status_command_default`, `__init__.py:76-95`); on a site without slurmdbd
+            # sacct exits 1, the executor drops its jobs and the run hangs (FU-P3-106b), so the
+            # site's accounting decides — and a user's own flag in extra_args is never doubled.
+            if (cmd := status_command(spec.slurm_accounting)) is not None and not any(
+                arg == "--slurm-status-command" or arg.startswith("--slurm-status-command=")
+                for arg in spec.extra_args
+            ):
+                args += ["--slurm-status-command", cmd]
         if profiles:
             # The profile owns resources and concurrency: `--default-resources` here would
             # replace its whole `default-resources` (CR-P3T09-06), so the environment's SLURM

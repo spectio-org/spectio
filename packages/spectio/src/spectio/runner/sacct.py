@@ -19,6 +19,11 @@ A window the site's `MaxQueryTimeRange` refuses is final for the jobs whose laun
 (FU-P3-106b, SEC-P3FU106B-01): read from the first `MAX_STDERR` bytes of its error text,
 `TOO_WIDE`.
 
+Whether the site keeps accounting at all is read once per process, from `scontrol show config`
+run beside the recorded `sacct` (`site_accounting`): a Snakemake launch then polls its SLURM
+jobs with `sacct` on a site with slurmdbd and `squeue` on one without, whose `sacct` would
+only exit 1 (FU-P3-106b, inbox #156 item 1).
+
 The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
 returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
 number with no unit is read as bytes, `K`, `M`, `G`, `T` as powers of 1024, and an older
@@ -31,6 +36,7 @@ job line printed just before it, with the same base ID, having an empty WorkDir 
 """
 
 import contextlib
+import functools
 import logging
 import os
 import re
@@ -242,6 +248,84 @@ def sacct_jobs(
 def _kill(proc: "subprocess.Popen[bytes]") -> None:
     with contextlib.suppress(ProcessLookupError):  # it ended just then
         os.killpg(proc.pid, signal.SIGKILL)
+
+
+# --- The site's accounting (FU-P3-106b, inbox #156 item 1) -----------------------------------
+
+_ACCOUNTING = re.compile(r"^AccountingStorageType[ \t]*=[ \t]*(.*?)[ \t]*$", re.MULTILINE)
+_CONFIG_LINE = re.compile(r"^[ \t]*[A-Za-z][A-Za-z0-9_]*[ \t]*=[ \t]*\S", re.MULTILINE)
+_ACCOUNTING_TYPE = re.compile(r"accounting_storage/([a-z0-9_]{1,32})")
+
+
+def parse_accounting(text: str) -> bool | None:
+    """The site's accounting from the `AccountingStorageType = <value>` line of a `scontrol
+    show config` dump: `accounting_storage/none` is off, any other `accounting_storage/<name>`
+    is on, the key absent from a dump, empty or `(null)` (unset, Slurm's default: no
+    accounting records) is off, and garbage, an empty text or a value of another shape is
+    None: unknown."""
+    found = _ACCOUNTING.search(text)
+    if found is None:
+        return False if _CONFIG_LINE.search(text) else None
+    if found[1] in ("", "(null)"):
+        return False
+    name = _ACCOUNTING_TYPE.fullmatch(found[1])
+    return None if name is None else name[1] != "none"
+
+
+def _gives_up(why: str) -> None:
+    """One warning for an unknown site: the head passes no `--slurm-status-command`, so
+    Snakemake's SLURM plugin keeps its own default."""
+    log.warning("%s: Snakemake keeps its SLURM plugin's default status command", why)
+
+
+@functools.cache
+def site_accounting(sacct: Path | None, timeout_s: float = TIMEOUT_S) -> bool | None:
+    """Whether the site's SLURM keeps accounting, from `scontrol show config`: `scontrol` is
+    the sibling of the `sacct` path `spectio init` recorded, since a site installs SLURM's
+    client commands in one directory ([to be validated] at EMBL). None when that could not be
+    told — no sacct recorded, a refused or missing `scontrol`, a non-zero exit, a timeout, too
+    much output, no config dump — and one warning then names why: `functools.cache` makes the
+    answer, and the warning, once per process. The call is `sacct_jobs`'s own, bounded the
+    same way."""
+    if sacct is None:
+        _gives_up("no sacct path was recorded by spectio init")
+        return None
+    scontrol = sacct.with_name("scontrol")
+    try:
+        check_tool(scontrol)
+        with (
+            tempfile.TemporaryFile() as err,  # a file, not a pipe: it never blocks the tool
+            subprocess.Popen(  # noqa: S603 - an argument list of checked values, no shell
+                [str(scontrol), "show", "config"],
+                env=sacct_env(sacct),
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=err,
+                start_new_session=True,
+            ) as proc,
+        ):
+            timer = threading.Timer(timeout_s, _kill, (proc,))
+            timer.start()
+            try:
+                data = proc.stdout.read(MAX_OUTPUT + 1) if proc.stdout else b""
+                if len(data) > MAX_OUTPUT:
+                    _kill(proc)
+                code = proc.wait()
+            finally:
+                timer.cancel()
+    except (Refused, OSError) as exc:  # a refused tool, its stat, or its exec: not for now
+        _gives_up(f"scontrol not run: {exc}")
+        return None
+    if len(data) > MAX_OUTPUT:
+        _gives_up(f"scontrol said over {MAX_OUTPUT} bytes")
+        return None
+    if code != 0:  # a timeout is the killed group's exit code
+        _gives_up(f"scontrol gave no answer (exit {code})")
+        return None
+    found = parse_accounting(data.decode("utf-8", "replace"))
+    if found is None:
+        _gives_up("scontrol's output was no config dump")
+    return found
 
 
 # --- Parsing, field by field --------------------------------------------------------------
