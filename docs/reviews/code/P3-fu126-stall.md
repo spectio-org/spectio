@@ -1,6 +1,6 @@
 # Code review · FU-P3-126, stall check for jobs gone from squeue and sacct
 
-`review-code` on `autopilot/P3-fu126-stall`, base `4124268d`, 2026-11-23. Two commits: the step `101abe7a` and the fix `df8012c4`. Behaviour is owned by [schedulers §3.9](../../specs/schedulers.md). Reviewers: `code-reviewer` and `security-reviewer`, independent, in parallel. Format: [`README.md`](../README.md).
+`review-code` on `autopilot/P3-fu126-stall`, base `4124268d`, 2026-11-23. Two commits: the step `101abe7a` and the fix `df8012c4`. Behaviour is owned by [schedulers §3.9](../../specs/schedulers-and-monitoring.md). Reviewers: `code-reviewer` and `security-reviewer`, independent, in parallel. Format: [`README.md`](../README.md).
 
 | Round | Head | code-reviewer | security-reviewer |
 |---|---|---|---|
