@@ -9,6 +9,8 @@
 #   bash tests/slurm/e2e.sh launch nextflow    the synthetic happy, -profile test,slurm
 #   bash tests/slurm/e2e.sh launch snakemake   the synthetic happy, workflow profile slurm
 #   bash tests/slurm/e2e.sh cancel <engine>    happy at scale 4, cancelled once a task runs
+#   bash tests/slurm/e2e.sh cancel-pending <engine>   happy at scale 4, the partition held down, cancelled
+#                                              while its jobs are PENDING (RC1 matrix gap X-12)
 #   bash tests/slurm/e2e.sh restart            Nextflow happy; its server SIGKILLed and started again
 #
 # CLUSTER=mini (the default) is sind's slurm-mini (`bash dev/slurm/cluster.sh up mini`): every command runs as
@@ -57,6 +59,17 @@ inc() {
   fi
 }
 
+# root CMD...: CMD as root on the cluster (mini: through sind, whose default user is root; native: this
+# shell, which native_prepare has checked to be root), where scontrol needs it. The run's user cannot:
+# `scontrol update` of a partition is root's alone.
+root() {
+  if [ "$CLUSTER" = mini ]; then
+    sind exec "$CLUSTER" -- "$@"
+  else
+    "$@"
+  fi
+}
+
 install() {
   local dist=$DATA/dist
   export UV_PYTHON_INSTALL_DIR=${UV_PYTHON_INSTALL_DIR:-$DATA/tools/python}
@@ -90,8 +103,9 @@ native_prepare() {
   chmod -R a+rX "$DATA/tools" "$DATA/synthetic" "$DATA/env.sh"
 }
 
-# The case under way, its directory and config: read by finish, the EXIT trap.
-CASE='' e='' cfg=''
+# The case under way, its directory and config, and the partition it holds DOWN: read by finish, the EXIT
+# trap, which restores the partition even when the case fails.
+CASE='' e='' cfg='' HELD=''
 
 # setup CASE ENGINE: new directories $DATA/e2e/CASE, the client and the golden there, the engines' wrappers
 # and the tmux shim, then `spectio init` and `spectio serve --detach` as the run's user.
@@ -150,6 +164,11 @@ finish() {
   local rc=$?
   [ -n "$CASE" ] || exit "$rc"
   set +e
+  # The held partition goes back up before anything else, pass or fail: best effort, like the steps below.
+  if [ -n "$HELD" ]; then
+    log "restoring partition $HELD up"
+    root scontrol update "PartitionName=$HELD" State=UP
+  fi
   if [ "$rc" != 0 ]; then
     echo "::group::server pane"; inc "$e/home" tmux capture-pane -p -S -200 -t =spectio-server:; echo "::endgroup::"
     echo "::group::server.json"; inc "$e/home" cat "$e/data/server.json"; echo; echo "::endgroup::"
@@ -192,6 +211,22 @@ cancel() { # nextflow|snakemake
   client cancel "$engine" --location "$DATA/synthetic/$engine" "${profiles[@]}" --timeout "$TIMEOUT"
 }
 
+# RC1 matrix gap X-12: the partition held DOWN from before the launch until the run is cancelled, so the
+# run's jobs stay PENDING and none ever runs; the run must end Cancelled with no job left. HELD makes
+# finish, the EXIT trap, restore the partition up, pass or fail; scale 4 as cancel, for pending jobs.
+cancel_pending() { # nextflow|snakemake
+  local engine=$1 profiles=()
+  case $engine in
+    nextflow) profiles=(--profile test --profile slurm --params '{"scale": 4}') ;;
+    snakemake) profiles=(--profile slurm --params '{"chunks": 2, "scale": 4}') ;;
+  esac
+  setup "cancel-pending-$engine" "$engine"
+  HELD=$PARTITION
+  log "holding partition $PARTITION down: the run's jobs will stay PENDING"
+  root scontrol update "PartitionName=$PARTITION" State=DOWN
+  client cancel-pending "$engine" --location "$DATA/synthetic/$engine" "${profiles[@]}" --timeout "$TIMEOUT"
+}
+
 restart() {
   setup restart nextflow
   client restart --location "$DATA/synthetic/nextflow" --golden "$e/golden.tsv" --profile test --profile slurm \
@@ -202,6 +237,7 @@ case "${1:-}:${2:-}" in
   install:) install ;;
   launch:nextflow | launch:snakemake) launch "$2" ;;
   cancel:nextflow | cancel:snakemake) cancel "$2" ;;
+  cancel-pending:nextflow | cancel-pending:snakemake) cancel_pending "$2" ;;
   restart:) restart ;;
-  *) sed -n '2,12p' "$0"; exit 2 ;;
+  *) sed -n '2,14p' "$0"; exit 2 ;;
 esac
