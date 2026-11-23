@@ -1058,3 +1058,19 @@ test("UI-11: a log not written yet is an empty state, a failed read an error wit
   await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
   await waitFor(() => expect(fetched(mock).filter((u) => u.endsWith("logs?source=engine")).length).toBe(before + 1));
 });
+
+test("D-09: a 409 run-dir-unreachable on the Logs tab names the directory it tried", async () => {
+  detail({}, {
+    [`${URL_}/logs?source=engine`]: () =>
+      json(409, {
+        type: "/problems/run-dir-unreachable",
+        title: "Run directory not reachable",
+        status: 409,
+        detail: "Run directory not reachable: /scratch/gone/run_x/launch",
+      }),
+  });
+  app(`/runs/${ID}?tab=logs`);
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent(/The engine log could not be read: Run directory not reachable: \/scratch\/gone\/run_x\/launch/);
+  expect(document.body.textContent).not.toMatch(/cleaned/i);
+});
