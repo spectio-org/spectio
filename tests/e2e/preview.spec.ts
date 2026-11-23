@@ -1,5 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
-import { resolveTarget } from './base-url';
+import { closeSync, ftruncateSync, mkdirSync, openSync, rmSync, writeFileSync, writeSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import { join } from 'node:path';
+import { isLocal, resolveTarget } from './base-url';
 
 // The file preview's image (FU-P3-85c; api §5.3 tests; ui-spec §4.4.1; dev-env §15.3 req. 14),
 // against a real `spectio serve` with the seeded run, whose results hold
@@ -9,6 +12,10 @@ import { resolveTarget } from './base-url';
 // The SVG has a <script>, an outside <image href> and a foreignObject <img onerror>: in an <img>
 // none of them may run or fetch; a top-level navigation to the same URL must download the file.
 // The seeded logs/big.log (200 KiB) checks that Load more keeps focus in a real browser.
+// The last test (RC1 P-12) writes its own files into the seeded run's results directory, so it runs
+// against a server on this machine only, and in the desktop project only: a PNG whose header says
+// 60000 x 60000, a truncated TIFF and a 50 MiB text file (sparse: only the parts a read can reach
+// are written). It removes them after.
 
 const target = resolveTarget(process.env);
 const SEEDED = 'run_01K8T27SEEDED0000000000000';
@@ -101,4 +108,140 @@ test('a TSV preview is an AG Grid under the CSP: no violation, sorts and moves f
   await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   expect(await page.evaluate(() => (window as unknown as { cspSeen: string[] }).cspSeen)).toEqual([]);
   expect(requests.filter((u) => !u.startsWith(new URL(page.url()).origin))).toEqual([]); // no font, licence or telemetry call
+});
+
+/** The CRC-32 of a PNG chunk (ISO 3309), so the header is a well-formed one. */
+function crc32(bytes: Buffer): number {
+  let crc = ~0;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+  }
+  return ~crc >>> 0;
+}
+
+/** A PNG signature and IHDR that declare 60000 x 60000 (3.6 gigapixels) and nothing after it: the
+ * server's image check refuses it from its first chunk, over its 50-megapixel cap. */
+function hugePng(): Buffer {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(60000, 0);
+  ihdr.writeUInt32BE(60000, 4);
+  ihdr.set([8, 2, 0, 0, 0], 8); // 8-bit RGB, no interlace
+  const body = Buffer.concat([Buffer.from('IHDR'), ihdr]);
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(ihdr.length);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), length, body, crc]);
+}
+
+/** A little-endian TIFF cut off inside its first IFD: the header, the entry count (9), and the
+ * first three entries of nine. The IFD's table would end 114 bytes after its start, past the end. */
+function truncatedTiff(): Buffer {
+  const head = Buffer.alloc(8 + 2 + 3 * 12);
+  head.write('II', 0);
+  head.writeUInt16LE(42, 2);
+  head.writeUInt32LE(8, 4);
+  head.writeUInt16LE(9, 8);
+  [[256, 4, 1, 64], [257, 4, 1, 48], [258, 3, 1, 8]].forEach(([tag, kind, count, value], i) => {
+    head.writeUInt16LE(tag, 10 + i * 12);
+    head.writeUInt16LE(kind, 12 + i * 12);
+    head.writeUInt32LE(count, 14 + i * 12);
+    head.writeUInt32LE(value, 18 + i * 12);
+  });
+  return head;
+}
+
+const TEXT_LINE = 64; // bytes: "line 000000 " + 51 x + "\n"
+const lines = (from: number, count: number) =>
+  Buffer.from(Array.from({ length: count }, (_, i) => `line ${String(from + i).padStart(6, '0')} ${'x'.repeat(51)}\n`).join(''));
+
+/** A 50 MiB text file written in two places only: its first 1088 KiB (what Start and Load more can
+ * reach, up to 1 MiB) and its last 128 KiB (End). Between them the file is a hole, never read. */
+function hugeText(path: string): void {
+  const total = 50 * 1024 * 1024;
+  const fd = openSync(path, 'w');
+  try {
+    ftruncateSync(fd, total);
+    const head = lines(0, (1088 * 1024) / TEXT_LINE);
+    writeSync(fd, head, 0, head.length, 0);
+    const tail = lines(900000, (128 * 1024) / TEXT_LINE);
+    writeSync(fd, tail, 0, tail.length, total - tail.length);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+test('a huge or corrupt file shows its state and the page stays responsive', async ({ page, request }, info) => {
+  test.skip(info.project.name === 'phone', 'P-12 is a desktop check: the 50 MiB file runs once');
+  test.skip(!isLocal(target.url), "writes files in the seeded run's results directory: a server on this machine only");
+  test.setTimeout(120_000);
+  const { runs_root: runsRoot } = await (await request.get('/api/v1/version')).json();
+  const folder = `p12-${randomBytes(4).toString('hex')}`;
+  const dir = join(runsRoot, SEEDED, 'launch', 'results', folder);
+  mkdirSync(dir, { recursive: true });
+  try {
+    writeFileSync(join(dir, 'huge.png'), hugePng());
+    writeFileSync(join(dir, 'truncated.tif'), truncatedTiff());
+    hugeText(join(dir, 'big.txt'));
+
+    await page.addInitScript(() => {
+      const seen: string[] = [];
+      (window as unknown as { cspSeen: string[] }).cspSeen = seen;
+      document.addEventListener('securitypolicyviolation', (e) => seen.push(`${e.violatedDirective} ${e.blockedURI}`));
+    });
+    const open = (name: string) => page.goto(`/runs/${SEEDED}/results/file?path=${encodeURIComponent(`${folder}/${name}`)}`);
+    const noViolation = async () =>
+      expect(await page.evaluate(() => (window as unknown as { cspSeen: string[] }).cspSeen)).toEqual([]);
+    // the page answers: the path bar's link to the folder opens the listing, which names the three files
+    const stillResponsive = async () => {
+      await page.getByRole('navigation', { name: 'Folder' }).getByRole('link', { name: folder, exact: true }).click();
+      for (const name of ['huge.png', 'truncated.tif', 'big.txt']) {
+        await expect(page.getByRole('link', { name: new RegExp(`^${name.replace('.', '\\.')}`) })).toBeVisible();
+      }
+    };
+
+    await test.step('a PNG that declares 60000 x 60000 is refused by the server: the image note, with Retry and Download', async () => {
+      await open('huge.png');
+      await expect(page.getByText('This image could not be shown here. Download it to open it.')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Download huge.png' }).first()).toBeVisible();
+      await expect(page.getByRole('img', { name: 'huge.png' })).toHaveCount(0); // the <img> is gone, not a broken one
+      await noViolation();
+      await stillResponsive();
+    });
+
+    await test.step('a TIFF cut off inside its first IFD: not an image Spectio can read, with Retry and Download', async () => {
+      await open('truncated.tif');
+      await expect(page.getByText('Not an image Spectio can read: an IFD at 8, past the end')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Download truncated.tif' }).first()).toBeVisible();
+      await expect(page.getByRole('img', { name: 'truncated.tif' })).toHaveCount(0); // no canvas
+      await page.getByRole('button', { name: 'Retry' }).click(); // asks again, gets the same answer, stays up
+      await expect(page.getByText('Not an image Spectio can read: an IFD at 8, past the end')).toBeVisible();
+      await noViolation();
+      await stillResponsive();
+    });
+
+    await test.step('a 50 MiB text file shows its first 64 KiB, loads up to 1 MiB and stops there; End shows its last 64 KiB', async () => {
+      await open('big.txt');
+      await expect(page.getByText('Text · 50 MiB')).toBeVisible();
+      await expect(page.getByText('64 KiB shown', { exact: true })).toBeVisible();
+      await expect(page.getByText('Search covers the 64 KiB shown')).toBeVisible();
+      const more = page.getByRole('button', { name: 'Load more' });
+      for (let read = 2; read <= 16; read++) {
+        await more.click();
+        await expect(page.getByText(`${read * 64} KiB shown`, { exact: true })).toBeVisible();
+      }
+      await expect(page.getByText('Showing the first 1 MiB of 50 MiB. Download to see the rest.')).toBeVisible();
+      await expect(more).toHaveCount(0);
+      await page.getByRole('button', { name: 'End', exact: true }).click();
+      await expect(page.getByText('Last 64 KiB of 50 MiB: line numbers not known')).toBeVisible();
+      await expect(page.getByText('Loading the file…')).toHaveCount(0);
+      await noViolation();
+      await stillResponsive();
+    });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
