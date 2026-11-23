@@ -122,15 +122,17 @@ def _newest_log(launch: Root, since: datetime, until: datetime | None) -> PurePo
 def _launch_root(runs_root: Path, row: Any, source: str) -> Iterator[Root]:
     """The directory that holds the log: the run's launch directory under the runs root, or a
     terminal run's own (its `.spectio/` holds no head log: Spectio did not start its head).
-    A queued run's launch directory is not made yet (the runner loop makes it): the missing
-    directory is `404 log-not-found`, not `410 log-cleaned`."""
+    A run not launched yet, queued or cancelled before the runner's next tick, has no launch
+    directory of its own (the runner loop makes it): that is `404 log-not-found`, not
+    `410 log-cleaned`. A directory it reads from its lineage (a Resume) can still be gone."""
     if row.origin != "cli-observed":
         recorded = recorded_root(row.launch_dir, row.origin)
+        owner = _launch_of(row, source)
         try:
-            with run_root(runs_root, _launch_of(row, source), "launch", recorded) as launch:
+            with run_root(runs_root, owner, "launch", recorded) as launch:
                 yield launch
         except Cleaned:
-            if row.state != "queued":
+            if row.state not in ("queued", "cancelling") or owner != row.id:
                 raise
             raise NotFound(f"the run has not launched yet: no {source} log") from None
         return
