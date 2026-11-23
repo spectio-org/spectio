@@ -3,6 +3,7 @@ counts, the run's states, the expect lines of a scenario and the jobs of a run, 
 and the teardown; and its transport, against a stand-in HTTP server on a Unix socket and on TCP. No Spectio
 server and no cluster: tests/slurm/e2e.sh runs the client itself. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
 import ast
+import errno
 import http.server
 import io
 import json
@@ -324,6 +325,23 @@ class Restart(unittest.TestCase):
         self.assertEqual(sent.call_args.args[1], c.signal.SIGKILL)
         with self.assertRaises(c.Failed):  # gone now
             c.kill_server(self.data)
+
+    def test_kill_server_without_pidfd_kills_through_os_kill(self):
+        """EL8's kernel (4.18) answers ENOSYS to os.pidfd_open, and a Python without the call
+        names no function at all: the SIGKILL then goes through os.kill, after the same checks."""
+        missing = (OSError(errno.ENOSYS, "Function not implemented"),
+                   AttributeError("os.pidfd_open"))
+        for gone in missing:
+            with self.subTest(gone=gone):
+                proc = self.fake_serve("-m", "spectio", "serve", "--pane")
+                self.state(pid=proc.pid)
+                with mock.patch.object(c.os, "pidfd_open", side_effect=gone, create=True), \
+                        mock.patch.object(c, "server_pid", return_value=proc.pid) as checked, \
+                        mock.patch.object(c.os, "kill", wraps=os.kill) as killed:
+                    self.assertEqual(c.kill_server(self.data), proc.pid)
+                self.assertEqual(killed.call_args.args, (proc.pid, c.signal.SIGKILL))
+                self.assertEqual(checked.call_args.args, (self.data,))
+                self.assertEqual(proc.wait(timeout=10), -9)
 
     def test_any_other_pid_is_refused(self):
         for record in ({"pid": os.getpid()}, {"pid": "1"}, {"pid": 1}, {"pid": None},
