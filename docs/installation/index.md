@@ -67,7 +67,7 @@ On that login node, uv 0.9.29 only offered Pythons with SQLite 3.50.4, which Spe
 
 ## Put the runs on a file system with room
 
-Each run's launch and work directories go under the runs directory, `~/spectio-runs` by default. On the EMBL login node that is `/home`, a shared file system that was 97% full on 2026-11-08. `spectio doctor` prints a `runs_disk` line with the free space and warns when the file system is 90% used or has less than 10 GiB free; a launch then logs the same warning and still starts.
+Each run's launch and work directories go under the runs directory, `~/spectio-runs` by default. On the EMBL login node that is `/home`, a shared file system that was 97% full on 2026-11-08. `spectio doctor` prints a `runs_disk` line with the free space and warns when the file system has less than 10 GiB free, or is 90% used with less than 1 TiB free; a launch then logs the same warning and still starts.
 
 To move it, set `SPECTIO_RUNS_ROOT`, `runs_root` in `~/.spectio/spectio.toml`, or `spectio init --runs-root`. Point it at a larger scratch or group file system that the compute nodes also see. A directory you choose must exist already, be yours, and not be writable by others.
 

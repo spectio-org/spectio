@@ -28,12 +28,15 @@ from spectio_sdk.targets import RunTarget
 RUN_ID = re.compile(r"run_[0-7][0-9A-HJKMNP-TV-Z]{25}")  # a ULID with its prefix (api §7)
 MAX_SMALL_FILE = 1048576  # a manifest, PID, exit or marker file is never larger
 
-# A runs directory is on a nearly full disk when its file system is 90% used, or has less than
-# 10 GiB free (FU-P3-74). The percentage catches a large shared file system that other people
-# fill, as the EMBL /home was, 97% used (login-node audit 2026-11-08 §6); the floor catches a
-# small disk whose percentage still looks fine, since one run's work directory can take GiBs.
+# A runs directory is on a nearly full disk when its file system has less than 10 GiB free, or
+# is 90% used with less than 1 TiB free (FU-P3-74). The percentage catches a large shared file
+# system that other people fill, as the EMBL /home was, 97% used (login-node audit 2026-11-08
+# §6); the 1 TiB spare keeps a huge file system that is merely mostly used quiet, as the EMBL
+# /scratch was, 93% used with 86 TiB free (2026-11-24); the floor catches a small disk whose
+# percentage still looks fine, since one run's work directory can take GiBs.
 FULL_PCT = 90
 MIN_FREE = 10 * 2**30
+MIN_FREE_IF_FULL = 2**40  # the free space that makes a FULL_PCT-used file system fine
 _RUNS_ROOT_FIX = (
     "point SPECTIO_RUNS_ROOT (runs_root in spectio.toml, spectio init --runs-root) at a larger "
     "scratch or group file system"
@@ -146,7 +149,8 @@ def runs_disk(runs_root: Path) -> tuple[str, str]:
         return "warn", f"cannot measure the free space of {runs_root}: {exc}"
     pct = -(-100 * usage.used // ((usage.used + usage.free) or 1))  # integer ceiling
     space = f"{usage.free / 2**30:.1f} GiB free, {pct}% used"
-    if pct < FULL_PCT and usage.free >= MIN_FREE:
+    nearly_full = usage.free < MIN_FREE or (pct >= FULL_PCT and usage.free < MIN_FREE_IF_FULL)
+    if not nearly_full:
         return "ok", f"{space} at {measured}"
     where = (
         f"{runs_root}"

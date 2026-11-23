@@ -43,10 +43,14 @@ def _engine(name: str, cmd: str | None, flag: str, pattern: re.Pattern[str]) -> 
     return "ok", name, f"{match.group(1)} {cmd}"
 
 
-def _java() -> Result:
+def _java(nextflow_ok: bool) -> Result:
+    """Java for Nextflow: fine when on the PATH, and also when only Nextflow works without it,
+    as a site's Nextflow wrapper or module loads its own Java."""
     out = run_login("java -version")
     match = _JAVA.search(out.stderr + out.stdout)
     if not match:
+        if nextflow_ok:
+            return "ok", "java", "not on PATH; Nextflow runs with its own"
         return "warn", "java", "not found on PATH: Nextflow needs Java"
     major = match.group(2) if match.group(1) == "1" else match.group(1)  # 1.8 is Java 8
     return "ok", "java", str(major)
@@ -62,7 +66,7 @@ def _uv(path: str | None) -> Result:
     """The uv on the login PATH: only installing Spectio needs it, so an old one is a warning
     and a missing one is fine (FU-P3-73)."""
     if not path:
-        return "ok", "uv", "not found on PATH: only installing Spectio needs it"
+        return "ok", "uv", "not found on the login shell's PATH: only installing Spectio needs it"
     out = run_login('"$1" --version', path)
     first = "".join((out.stderr or out.stdout).strip().splitlines()[:1])
     if out.returncode != 0:
@@ -249,9 +253,10 @@ def checks(
     else:
         results.append(("warn", "host", f"this is {here}; spectio init recorded {settings.host}"))
     engines = settings.engines
-    results.append(_engine("nextflow", engines.nextflow_cmd, "-version", NEXTFLOW_VERSION))
+    nextflow = _engine("nextflow", engines.nextflow_cmd, "-version", NEXTFLOW_VERSION)
+    results.append(nextflow)
     results.append(_engine("snakemake", engines.snakemake_cmd, "--version", SNAKEMAKE_VERSION))
-    results.append(_java())
+    results.append(_java(nextflow[0] == "ok"))
     paths = which("tmux", "sbatch", "uv")
     results += _tools(settings.executor == "local", paths)
     if settings.executor == "slurm":

@@ -86,6 +86,32 @@ def test_doctor_engine_command_fails(
     assert line(lines, "nextflow").startswith("fail nextflow `nextflow-gone -version` ")
 
 
+def test_doctor_java_missing_but_nextflow_ok(
+    home: Path, tools: Callable[..., Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A site's Nextflow wrapper or module loads its own Java: with a working Nextflow, a java
+    missing from the PATH is fine."""
+    fakebin = tools("nextflow", "tmux", "sbatch")
+    settings = configured(home, engines={"nextflow_cmd": str(fakebin / "nextflow")})
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "nextflow") == f"ok nextflow 26.10.4 {fakebin / 'nextflow'}"
+    assert line(lines, "java") == "ok java not on PATH; Nextflow runs with its own"
+
+
+@pytest.mark.parametrize(
+    "engines", [{}, {"nextflow_cmd": "nextflow-gone"}], ids=["missing", "failed"]
+)
+def test_doctor_java_missing_and_nextflow_not_ok(
+    home: Path, capsys: pytest.CaptureFixture[str], engines: dict[str, str]
+) -> None:
+    """Without a working Nextflow, a java missing from the PATH is a warning: Nextflow needs
+    Java."""
+    settings = configured(home, engines=engines)
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "nextflow").startswith("fail nextflow")
+    assert line(lines, "java") == "warn java not found on PATH: Nextflow needs Java"
+
+
 def test_doctor_reports_fs_and_sqlite(
     home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -292,10 +318,13 @@ def test_doctor_reports_uv(
 
 def test_doctor_without_uv(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _, lines = doctor(capsys, configured(home, executor="local"))
-    assert line(lines, "uv") == "ok uv not found on PATH: only installing Spectio needs it"
+    assert line(lines, "uv") == (
+        "ok uv not found on the login shell's PATH: only installing Spectio needs it"
+    )
 
 
 GIB = 2**30
+TIB = 2**40
 KIB = 1024
 FIX = (
     "point SPECTIO_RUNS_ROOT (runs_root in spectio.toml, spectio init --runs-root) at a larger "
@@ -320,11 +349,18 @@ def fake_disk(
     ("used", "free", "status", "text"),
     [
         (89 * GIB, 11 * GIB, "ok", "11.0 GiB free, 89% used"),  # just under both thresholds
-        (90 * GIB, 10 * GIB, "warn", "10.0 GiB free, 90% used"),  # 90% used
+        (90 * GIB, 10 * GIB, "warn", "10.0 GiB free, 90% used"),  # 90% used, under 1 TiB free
         (10 * GIB, 9 * GIB, "warn", "9.0 GiB free, 53% used"),  # under 10 GiB free
         (100 * GIB, 900 * GIB, "ok", "900.0 GiB free, 10% used"),
         # the EMBL /home of the login-node audit (2026-11-08 §6), `df` in KiB: 97% as df shows
         (24486338560 * KIB, 1015029760 * KIB, "warn", "968.0 GiB free, 97% used"),
+        # the EMBL /scratch of 2026-11-24: 93% used but 86 TiB free is fine, not nearly full
+        (1142 * TIB, 86 * TIB, "ok", "88064.0 GiB free, 93% used"),
+        # 90% used with less than 1 TiB free is nearly full; at exactly 1 TiB it is not
+        (9500 * GIB, 500 * GIB, "warn", "500.0 GiB free, 95% used"),
+        (15 * TIB, 1 * TIB, "ok", "1024.0 GiB free, 94% used"),
+        # under 10 GiB free is nearly full whatever the percentage
+        (5 * GIB, 5 * GIB, "warn", "5.0 GiB free, 50% used"),
     ],
 )
 def test_runs_disk_thresholds(
