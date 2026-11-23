@@ -745,7 +745,8 @@ test('the Logs tab of a real run shows the engine log and downloads it', async (
   await page.getByRole('tab', { name: 'Logs' }).click();
   const logs = page.getByRole('region', { name: 'Logs' });
   // the file the engine log is read from, then its lines (the last 64 KiB of .nextflow.log)
-  await expect(logs.getByRole('code', { name: 'File' })).toContainText(`/${id}/launch/.nextflow.log`);
+  // the <code> is labelled by "File" (aria-labelledby), but a code role takes no author name: find it by its label's id
+  await expect(logs.locator('code[aria-labelledby="log-file-label"]')).toContainText(`/${id}/launch/.nextflow.log`);
   const lines = logs.locator('pre[aria-label="Engine log"]');
   await expect(lines).toContainText(/nextflow/i);
   await expect(logs.getByRole('group', { name: 'Show lines' }).getByRole('button', { name: /^All/ })).toHaveAttribute('aria-pressed', 'true');
@@ -766,6 +767,8 @@ test('Ctrl+K finds a run by its short ID and Enter opens it', async ({ page, req
   test.setTimeout(180_000);
   const { id, name } = await endedRun(request);
   await page.goto('/runs');
+  // the shell must be mounted before the one-shot Ctrl+K, or its keydown listener misses the press
+  await page.getByRole('button', { name: 'Search runs, pipelines and pages' }).waitFor();
   await page.keyboard.press('Control+K');
   const dialog = page.getByRole('dialog', { name: 'Search' });
   await expect(dialog).toBeVisible();
@@ -855,7 +858,8 @@ test('resume a real failed run: the child caches the tasks that succeeded', asyn
   await dialog.getByRole('button', { name: 'Resume', exact: true }).click();
 
   // the child is a new run, Succeeded, and reused what the first run finished (cached_min 50 in the scenario)
-  await expect(page).toHaveURL(/\/runs\/run_[0-9A-Z]{26}$/);
+  // the parent's URL matches the run-id pattern too: wait until the page has left it for the child
+  await page.waitForURL((url) => /\/runs\/run_[0-9A-Z]{26}$/.test(url.pathname) && !url.pathname.endsWith(`/${failed}`));
   const child = new URL(page.url()).pathname.split('/').pop()!;
   expect(child).not.toBe(failed);
   await expect(page.locator('header .sp-state')).toHaveText('Succeeded', { timeout: 200_000 });
