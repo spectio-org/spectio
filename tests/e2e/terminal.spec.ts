@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmdirSync, rmSync, statSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
@@ -12,8 +12,10 @@ import { isLocal, resolveTarget } from './base-url';
 // The test runs the synthetic pipeline with engine-bridges/nf-spectio/tests/run_local.sh --terminal: no
 // SPECTIO_* variable, the bridge named by NXF_PLUGINS_DEFAULT, in a launch directory of its own. The
 // bridge writes its pointer to ~/.spectio/observed/ of the user, which the server scans: the server
-// and this test must share a home, so it is a server on this machine only. If ~/.spectio does not
-// exist the test makes it (mode 0700, as the bridge requires) and removes what it made.
+// and this test must share a home, so it is a server on this machine only, and its observed dir must
+// be that default one (checked against /api/v1/me). Any other `spectio serve` of the same user also
+// scans that folder and would index the run this test makes. If ~/.spectio does not exist the test
+// makes it (mode 0700, as the bridge requires) and removes what it made.
 
 const target = resolveTarget(process.env);
 const ENGINES = process.env.SPECTIO_E2E_ENGINES === '1';
@@ -40,7 +42,12 @@ function runIdOf(launchDir: string): string | null {
 }
 
 test('a Nextflow run started by hand appears with From a terminal and ends', async ({ page, request }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(480_000);
+  // the server must scan the folder the bridge writes to, the default one in this user's home
+  const me = (await (await request.get('/api/v1/me')).json()) as { paths?: { observed_dir?: string } };
+  const observed = join(homedir(), '.spectio', 'observed');
+  test.skip(me.paths?.observed_dir !== observed, `the server scans ${me.paths?.observed_dir ?? 'an unknown folder'}, not ${observed}: it would not find the pointer`);
+
   const spectioHome = join(homedir(), '.spectio');
   const madeHome = !existsSync(spectioHome);
   test.skip(!madeHome && (statSync(spectioHome).mode & 0o077) !== 0, `${spectioHome} is not private (mode 0700): the server would not read its pointers`);
@@ -51,24 +58,32 @@ test('a Nextflow run started by hand appears with From a terminal and ends', asy
   const launchDir = join(scratch, 'term-run');
   mkdirSync(launchDir, { mode: 0o700 });
   let runId: string | null = null;
+  let child: ChildProcess | null = null;
+  let exited: Promise<number | null> | null = null;
   try {
     const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('SPECTIO_')));
     env.NEXTFLOW = process.env.SPECTIO_ENGINES_NEXTFLOW_CMD || 'nextflow';
     let output = '';
-    const child = spawn('bash', [RUN_LOCAL, '--terminal', launchDir], { env: env as NodeJS.ProcessEnv, stdio: ['ignore', 'pipe', 'pipe'] });
-    child.stdout.on('data', (chunk) => (output += chunk));
-    child.stderr.on('data', (chunk) => (output += chunk));
-    const exited = new Promise<number | null>((done) => child.on('close', done));
+    // detached: its own process group, so the finally can stop bash and Nextflow together
+    const spawned = spawn('bash', [RUN_LOCAL, '--terminal', launchDir], {
+      env: env as NodeJS.ProcessEnv,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
+    });
+    child = spawned;
+    spawned.stdout.on('data', (chunk) => (output += chunk));
+    spawned.stderr.on('data', (chunk) => (output += chunk));
+    exited = new Promise<number | null>((done) => spawned.on('close', done));
 
     // the bridge made a run ID and wrote its spool; the server found the pointer and indexed the run
-    await expect.poll(() => (runId = runIdOf(launchDir)), { timeout: 120_000, message: 'the bridge wrote no spool' }).not.toBeNull();
+    await expect.poll(() => (runId = runIdOf(launchDir)), { timeout: 240_000, message: 'the bridge wrote no spool' }).not.toBeNull();
     await expect
       .poll(async () => (await request.get(`/api/v1/runs/${runId}`)).status(), { timeout: 60_000, message: 'the server did not find the pointer' })
       .toBe(200);
     const name = `${basename(launchDir)}-${runId!.slice(-6)}`; // the run is named after its launch directory
 
-    // the list: the run, with the chip
-    await page.goto('/runs');
+    // the list, narrowed to this run: whatever else the server has indexed cannot crowd it out
+    await page.goto(`/runs?q=${encodeURIComponent(name)}`);
     const link = page.getByRole('link', { name: `Open run ${name}`, exact: true });
     await expect(link).toBeVisible();
     const row = page.getByRole('row').filter({ has: link });
@@ -84,9 +99,19 @@ test('a Nextflow run started by hand appears with From a terminal and ends', asy
 
     expect(await exited, output.slice(-2000)).toBe(0);
   } finally {
+    // a timed-out poll can leave the spool written but runId unset: find it, to remove its pointer
+    runId ??= runIdOf(launchDir);
+    // the run must not outlive a failed test: stop the whole group, then let it drain before cleanup
+    if (child && child.exitCode === null && child.signalCode === null) {
+      try {
+        process.kill(-child.pid!, 'SIGTERM');
+      } catch {
+        // already gone, or not ours to signal
+      }
+      await Promise.race([exited!, new Promise<void>((done) => setTimeout(done, 10_000))]);
+    }
     rmSync(scratch, { recursive: true, force: true });
     // the pointer: moved to ended/ by the server when the run ended, or still in observed/
-    const observed = join(spectioHome, 'observed');
     for (const dir of [observed, join(observed, 'ended')]) {
       if (runId) rmSync(join(dir, `${runId}.json`), { force: true });
     }

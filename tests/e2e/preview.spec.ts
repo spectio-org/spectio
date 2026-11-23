@@ -13,8 +13,9 @@ import { isLocal, resolveTarget } from './base-url';
 // none of them may run or fetch; a top-level navigation to the same URL must download the file.
 // The seeded logs/big.log (200 KiB) checks that Load more keeps focus in a real browser.
 // The last test (RC1 P-12) writes its own files into the seeded run's results directory, so it runs
-// against a server on this machine only: a PNG whose header says 60000 x 60000, a truncated TIFF and
-// a 50 MiB text file (sparse: only the parts a read can reach are written). It removes them after.
+// against a server on this machine only, and in the desktop project only: a PNG whose header says
+// 60000 x 60000, a truncated TIFF and a 50 MiB text file (sparse: only the parts a read can reach
+// are written). It removes them after.
 
 const target = resolveTarget(process.env);
 const SEEDED = 'run_01K8T27SEEDED0000000000000';
@@ -171,7 +172,8 @@ function hugeText(path: string): void {
   }
 }
 
-test('a huge or corrupt file shows its state and the page stays responsive', async ({ page, request }) => {
+test('a huge or corrupt file shows its state and the page stays responsive', async ({ page, request }, info) => {
+  test.skip(info.project.name === 'phone', 'P-12 is a desktop check: the 50 MiB file runs once');
   test.skip(!isLocal(target.url), "writes files in the seeded run's results directory: a server on this machine only");
   test.setTimeout(120_000);
   const { runs_root: runsRoot } = await (await request.get('/api/v1/version')).json();
