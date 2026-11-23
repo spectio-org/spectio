@@ -15,7 +15,7 @@ Both are folding rows of **Where it runs**, under the environment: **Run resourc
 ![Launch from a catalog entry, with the resources row open (2 CPUs, 3 GiB, 1 h per task) and Extra config file open with a path typed; the Summary beside it lists the resources and Extra config](../assets/shots/app-launch-resources_light.webp#only-light)
 ![Launch with the resources row and Extra config file open, dark](../assets/shots/app-launch-resources_dark.webp#only-dark)
 
-*A seeded server with one environment, Two cores (at most 2 CPUs and 4 GiB). Launch was not pressed. The shot was taken before the row got its name: it reads "Resources" in it, and "Run resources" now, in the row and in the Summary.*
+*A seeded server with one environment, Two cores (at most 2 CPUs and 4 GiB). Launch was not pressed.*
 
 **Run resources**
 
