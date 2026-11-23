@@ -2411,6 +2411,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   2. (a) a stall check: a task Spectio holds as `running` whose SLURM job is in neither `squeue` nor `sacct` for longer than a grace period gets a warning on the run and in `spectio doctor`; (b) later. **(a)**, as a new follow-up FU-P3-126, after 0.0.1.
 - **Why a question:** both change what a 0.0.1 user sees on a site without accounting; Thomas decides whether one of them is a pre-0.0.1 item.
 - **Assumed (2026-11-18, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a) after 0.0.1, (2a) after 0.0.1.
+- **Decided (Thomas, 2026-11-23):** (1a) is in 0.0.1-rc1, not after 0.0.1. Built in FU-P3-106b, accounting part ([schedulers-and-monitoring §3.8](../specs/schedulers-and-monitoring.md#38-slurm-query-budget), status command); item 1 is closed. Item 2 stays as assumed.
 
 ### #157 · Your part: repository and PyPI settings before the 0.0.1-rc1 publish (2026-11-23)
 
@@ -2426,4 +2427,3 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Not blocked meanwhile:** the RC campaign, the promotion to `main` and the `Release-As` commit go on; only the publish waits on items 1 to 5.
 
 
-- **Decided (Thomas, 2026-11-23):** (1a) is in 0.0.1-rc1, not after 0.0.1. Built in FU-P3-106b, accounting part ([schedulers-and-monitoring §3.8](../specs/schedulers-and-monitoring.md#38-slurm-query-budget), status command); item 1 is closed. Item 2 stays as assumed.
