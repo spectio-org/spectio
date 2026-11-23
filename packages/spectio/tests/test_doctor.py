@@ -95,7 +95,7 @@ def test_doctor_java_missing_but_nextflow_ok(
     settings = configured(home, engines={"nextflow_cmd": str(fakebin / "nextflow")})
     _, lines = doctor(capsys, settings)
     assert line(lines, "nextflow") == f"ok nextflow 26.10.4 {fakebin / 'nextflow'}"
-    assert line(lines, "java") == "ok java not on PATH; Nextflow runs with its own"
+    assert line(lines, "java") == "ok java not on the login shell's PATH; Nextflow works without it"
 
 
 @pytest.mark.parametrize(
@@ -351,6 +351,7 @@ def fake_disk(
         (89 * GIB, 11 * GIB, "ok", "11.0 GiB free, 89% used"),  # just under both thresholds
         (90 * GIB, 10 * GIB, "warn", "10.0 GiB free, 90% used"),  # 90% used, under 1 TiB free
         (10 * GIB, 9 * GIB, "warn", "9.0 GiB free, 53% used"),  # under 10 GiB free
+        (40 * GIB, 10 * GIB, "ok", "10.0 GiB free, 80% used"),  # exactly MIN_FREE is enough
         (100 * GIB, 900 * GIB, "ok", "900.0 GiB free, 10% used"),
         # the EMBL /home of the login-node audit (2026-11-08 §6), `df` in KiB: 97% as df shows
         (24486338560 * KIB, 1015029760 * KIB, "warn", "968.0 GiB free, 97% used"),

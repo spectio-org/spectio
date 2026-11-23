@@ -50,7 +50,7 @@ def _java(nextflow_ok: bool) -> Result:
     match = _JAVA.search(out.stderr + out.stdout)
     if not match:
         if nextflow_ok:
-            return "ok", "java", "not on PATH; Nextflow runs with its own"
+            return "ok", "java", "not on the login shell's PATH; Nextflow works without it"
         return "warn", "java", "not found on PATH: Nextflow needs Java"
     major = match.group(2) if match.group(1) == "1" else match.group(1)  # 1.8 is Java 8
     return "ok", "java", str(major)
