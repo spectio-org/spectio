@@ -51,3 +51,11 @@ describe("shortFailure", () => {
     expect(shortFailure("  \n ")).toBe("");
   });
 });
+
+test("a Snakemake KeyError whose value is on the next line keeps it", () => {
+  const message =
+    'KeyError in file "/scratch/x/data/pipelines/github.com/org/repo/main/workflow/rules/common.smk", line 8:\n' +
+    "'sample_sheet'\n" +
+    '  File "/scratch/x/data/pipelines/github.com/org/repo/main/workflow/rules/common.smk", line 8, in <module>';
+  expect(shortFailure(message)).toBe("KeyError 'sample_sheet' · workflow/rules/common.smk:8");
+});

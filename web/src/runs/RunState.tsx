@@ -103,8 +103,13 @@ export function shortFailure(message: string, pipelineRoot?: string | readonly s
   const head = /\s+in\s+file\s+"?([^"\n,]+?)"?,\s+line\s+(\d+)\s*:?/.exec(out);
   // the first meaningful line: not blank, not the traceback's title, not itself a frame
   const lines = out.split("\n").map((l) => l.trim());
-  let what = lines.find((l) => l && l !== "Traceback (most recent call last):" && !/^File\s+"?[^"\n,]+?"?,\s+line\s+\d+/.test(l));
-  if (what === undefined) what = lines.find((l) => l) ?? "";
+  const isFrame = (l: string) => /^File\s+"?[^"\n,]+?"?,\s+line\s+\d+/.test(l);
+  const at = lines.findIndex((l) => l && l !== "Traceback (most recent call last):" && !isFrame(l));
+  let what = at >= 0 ? lines[at] : (lines.find((l) => l) ?? "");
+  // Snakemake puts the exception's value on the next line ("KeyError in file …, line 8:" then
+  // "'sample_sheet'"): a head line ending in ":" takes that line too
+  const next = at >= 0 ? lines.slice(at + 1).find((l) => l) : undefined;
+  if (next && what.endsWith(":") && !isFrame(next)) what = `${what} ${next}`;
   for (const f of frames) if (what.includes(f[0])) what = what.split(f[0]).join(" ");
   if (head && what.includes(head[0])) what = what.replace(head[0], " ");
   what = what.replace(/\s+/g, " ").trim().replace(/[.,;:]$/, "");
