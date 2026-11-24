@@ -263,14 +263,42 @@ def test_launch_creates_run_and_command(
 def test_launch_validates_params(
     authed_client: TestClient, tmp_path: Path, settings: Settings, writer: Writer
 ) -> None:
+    client = client_for(settings, writer)
+    client.app.state.target_engine = lambda name, argv: (  # type: ignore[attr-defined]
+        0,
+        '{"params": {}}',
+        "",
+    )  # the sources read: a `required` error stays a refusal (api §5.12)
     root = pipeline(tmp_path, "main.nf", schema="nf_schema_defs.json", to="nextflow_schema.json")
     bad = {"outdir": "results", "chunks": "x"}
-    response = launch(authed_client, str(root), "nextflow", params=bad)
+    response = launch(client, str(root), "nextflow", params=bad)
     assert fields(response)[0] == "params.chunks"
-    assert fields(launch(authed_client, str(root), "nextflow")) == ["params.outdir"]  # required
     assert table(writer, runs) == [] and list(settings.runs_root.iterdir()) == []
-    ok = launch(authed_client, str(root), "nextflow", params={"outdir": "out", "chunks": 3})
+    # `outdir` is required but has a schema default: the effective params carry it (api §5.12),
+    # so the empty form launches and params.json keeps only what the form sent
+    ok = launch(client, str(root), "nextflow")
     assert ok.status_code == 201, ok.text
+    assert ok.json()["params"] == {}
+    ok = launch(client, str(root), "nextflow", params={"outdir": "out", "chunks": 3})
+    assert ok.status_code == 201, ok.text
+
+
+def test_launch_required_errors_name_their_own_field(
+    authed_client: TestClient, tmp_path: Path
+) -> None:
+    """Api §5.12: the field of a `required` error is `params.<its own missing name>`, not the
+    first missing one."""
+    root = pipeline(tmp_path, "main.nf")
+    (root / "nextflow_schema.json").write_text(
+        json.dumps(
+            {"$schema": "https://json-schema.org/draft/2020-12/schema", "required": ["a", "b", "c"]}
+        )
+    )
+    response = launch(authed_client, str(root), "nextflow")
+    assert fields(response) == ["params.a", "params.b", "params.c"]
+    errors = {e["field"]: e["message"] for e in response.json()["errors"]}
+    assert errors["params.b"] == "'b' is a required property"
+    assert errors["params.c"] == "'c' is a required property"
 
 
 def test_launch_draft7_schema(authed_client: TestClient, tmp_path: Path) -> None:

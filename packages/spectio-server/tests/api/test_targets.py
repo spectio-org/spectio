@@ -140,6 +140,27 @@ def test_registry_module_is_pinned_and_allowed(on: TestClient, engine: FakeEngin
     assert ["-version", VERSION] == engine.calls[0][1][4:6]
 
 
+def test_module_launch_needs_every_declared_input(on: TestClient) -> None:
+    """Api §5.12: a module run that leaves a declared input out is refused under that input's
+    own name, the first missing one in declaration order; [] or null counts as given."""
+    response = module_launch(on, version=VERSION, params={"meta": {"id": "s1"}})
+    assert response.status_code == 422, response.text
+    [error] = response.json()["errors"]
+    assert (error["field"], error["message"]) == (
+        "params.reads",
+        "the module needs input reads; give [] to leave an optional one empty",
+    )
+    # the first missing input in declaration order (meta comes before reads in `module view`)
+    first = module_launch(on, version=VERSION, params={"reads": []})
+    assert first.status_code == 422, first.text
+    [error] = first.json()["errors"]
+    assert error["field"] == "params.meta"
+    given: list[str] | None
+    for given in ([], None):  # an input given as [] or null is given
+        empty = module_launch(on, version=VERSION, params={"meta": {"id": "s1"}, "reads": given})
+        assert empty.status_code == 201, empty.text
+
+
 def test_engine_failure_is_a_502(settings: Settings, writer: Writer) -> None:
     settings.features = FeatureOpts(single_target=True)
     client = client_for(settings, writer)
