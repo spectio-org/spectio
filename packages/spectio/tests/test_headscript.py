@@ -451,6 +451,23 @@ def test_snakemake_pipeline_config_symlink_or_fifo_not_copied(home: Path, bridge
     assert not (spec.engine_dir / "config").exists()
 
 
+def test_snakemake_pipeline_config_over_the_limit_leaves_nothing(
+    home: Path, bridges: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-07: a copy stopped at the limit removes what it wrote, so a Resume never keeps a
+    partial config/."""
+    from spectio.runner import headscript
+
+    config = _pipeline_with_config(home)
+    for i in range(3):
+        (config / f"t{i}.tsv").write_text("x\n")
+    monkeypatch.setattr(headscript, "MAX_CONFIG_ENTRIES", 2)
+    spec = snakemake_spec(home)
+    with pytest.raises(ValueError, match="config/"):
+        headscript.write_launch_files(spec)
+    assert not (spec.engine_dir / "config").exists()
+
+
 def test_snakemake_pipeline_config_copied_once(home: Path, bridges: Path) -> None:
     """A launch directory that has `config/` keeps its copy: writing the launch files again
     copies nothing, so the pipeline's later edit never changes a running launch's config."""

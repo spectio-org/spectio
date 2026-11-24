@@ -620,8 +620,11 @@ def _copy_pipeline_config(spec: LaunchSpec) -> None:
 
     try:
         shutil.copytree(source, target, ignore=skip)
-    except (OSError, shutil.Error) as e:
-        raise ValueError(f"the pipeline's config/ could not be copied: {e}") from e
+    except BaseException as e:  # no partial config/ that a Resume would keep (CR-07)
+        shutil.rmtree(target, ignore_errors=True)
+        if isinstance(e, (OSError, shutil.Error)):
+            raise ValueError(f"the pipeline's config/ could not be copied: {e}") from e
+        raise
 
 
 def write_launch_files(spec: LaunchSpec) -> Path:
@@ -648,8 +651,10 @@ def write_launch_files(spec: LaunchSpec) -> Path:
         else:
             _copy_pipeline_config(spec)  # the engine's config/ (inbox #161), before the head runs
             if spec.data_dir is not None:  # the shared caches, private whatever the umask
-                for tool in spec.software:  # (SEC-362-04)
-                    os.makedirs(spec.data_dir / "cache" / tool, mode=0o700, exist_ok=True)
+                for tool in spec.software:  # (SEC-362-04; chmod: makedirs sets only the leaf)
+                    os.makedirs(spec.data_dir / "cache" / tool, exist_ok=True)
+                    for d in (spec.data_dir / "cache", spec.data_dir / "cache" / tool):
+                        os.chmod(d, 0o700)
             pylib = _spectio(spec) / "pylib"
             shutil.rmtree(pylib, ignore_errors=True)
             os.mkdir("pylib", 0o700, dir_fd=fd)
