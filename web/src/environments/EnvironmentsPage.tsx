@@ -51,7 +51,8 @@ const PROBLEMS: Record<string, string> = {
   "412": "This environment changed in another tab.",
   "environments-file-changed": "The file changed on disk since this page read it.",
 };
-const problem = (e: Error) => (e instanceof ApiError ? (PROBLEMS[String(e.status)] ?? PROBLEMS[e.slug ?? ""]) : undefined) ?? e.message;
+/** An error as the page and the launch cards show it: the known 412s in words, else the message. */
+export const problem = (e: Error) => (e instanceof ApiError ? (PROBLEMS[String(e.status)] ?? PROBLEMS[e.slug ?? ""]) : undefined) ?? e.message;
 const headingId = (name: string) => `env-${name}`;
 const byLabel = (label: string) =>
   [...document.querySelectorAll<HTMLElement>("a, button")].find((el) => (el.getAttribute("aria-label") ?? el.textContent) === label);
@@ -66,8 +67,9 @@ function Waiting({ why, to, children, primary, ...rest }: { why: string | null; 
 }
 const waits = (why: string | null) => (why ? { "aria-disabled": true, "data-disabled": true, "aria-describedby": "env-waits" } : {});
 
-/** Delete asks first: a dialog, a bottom sheet on the phone; a 412 or a file change in place, with Reload. */
-function DeleteAsk({ env, onClose, onDeleted, onReload }: { env: EnvironmentItem | null; onClose: () => void; onDeleted: () => void; onReload: () => void }) {
+/** Delete asks first: a dialog, a bottom sheet on the phone; a 412 or a file change in place, with Reload.
+ * Launch's cards open it from their menu too (FU-P3-86g). */
+export function DeleteAsk({ env, onClose, onDeleted, onReload }: { env: EnvironmentItem | null; onClose: () => void; onDeleted: () => void; onReload: () => void }) {
   const server = useServer();
   const phone = usePhone();
   const [error, setError] = useState<string | null>(null);

@@ -1,10 +1,10 @@
 // The Environment row of Launch (FU-P3-86g; ui-spec §4.8.1 "At Launch"; boards LiteLaunch,
-// MLiteLaunch, LiteLaunchNewEnvironment): its states, the lines that follow the choice, the
-// profile prefill, New environment in a dialog, and Copy's environment.
+// MLiteLaunch, LiteLaunchNewEnvironment): its states, the cards and their menus, the lines that
+// follow the choice, the profile prefill, New environment in a dialog, and Copy's environment.
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { DETAIL, VERSION, app, json, run, serve, stubStream } from "../testing";
+import { DETAIL, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -61,17 +61,19 @@ async function load() {
 const where = () => screen.getByRole("region", { name: "Where it runs" });
 const tasksRow = () => within(where()).getByText("Tasks").nextElementSibling!;
 const launchButton = () => screen.getAllByRole("button", { name: "Launch" }).at(-1)!;
+/** The card of the radio named `name`: the whole card is the radio's label. */
+const card = (name: string | RegExp) => screen.getByRole("radio", { name }).closest("label")!;
 
 test("from two environments: radios named with their executor, the default checked, the Tasks row follows the choice", async () => {
   const posted = launchWith(list([...BUILTINS, item("broken", { usable: false, unusable_reason: "partition is not a valid name" })]));
   const group = await screen.findByRole("group", { name: "Environment" });
   const slurm = within(group).getByRole("radio", { name: "SLURM (from spectio init), SLURM" });
   expect(slurm).toBeChecked();
-  expect(slurm).toHaveAccessibleDescription("partition htc · SLURM account mylab");
+  expect(slurm).toHaveAccessibleDescription("SLURM · partition htc · SLURM account mylab");
   expect(within(group).queryByRole("radio", { name: /broken/ })).toBeNull();
   expect(screen.getByText("Not offered: broken (partition is not a valid name)")).toBeInTheDocument();
   await load();
-  // the Executor row is dropped: the radio's badge carries it
+  // the Executor row is dropped: the card's second line carries it
   expect(within(where()).queryByText("Executor")).toBeNull();
   expect(tasksRow()).toHaveTextContent("sent to SLURM by Nextflow · partition htc");
   expect(screen.getByText("The login node and the run directory are fixed for this server.")).toBeInTheDocument();
@@ -80,6 +82,101 @@ test("from two environments: radios named with their executor, the default check
   await userEvent.click(launchButton());
   await waitFor(() => expect(posted).toHaveLength(1));
   expect(posted[0]).toMatchObject({ environment: "local" });
+});
+
+test("the cards: the name and the Default badge on the first line, the kind and the details on the second", async () => {
+  launchWith(list([...BUILTINS, item("mylab", { label: "My lab" })]));
+  const group = await screen.findByRole("group", { name: "Environment" });
+  expect(within(group).getAllByRole("button", { name: /^Actions for / })).toHaveLength(3);
+  const slurm = card("SLURM (from spectio init), SLURM");
+  const badge = within(slurm).getByText("Default");
+  expect(badge.parentElement).toHaveTextContent("SLURM (from spectio init)"); // on the name's line, at its right end
+  expect(within(slurm).getByText("SLURM · partition htc · SLURM account mylab")).toBeInTheDocument(); // kind in words, then the details
+  const local = card("Login node, Local");
+  expect(within(local).queryByText("Default")).toBeNull(); // only the default one carries it
+  expect(within(local).getByText("Login node · on login1 (the login node) · at most 2 CPUs and 8 GiB")).toBeInTheDocument();
+});
+
+test("each card's menu: Edit, Set as default, Delete — the default's without Set as default and with Delete disabled", async () => {
+  launchWith(list([...BUILTINS, item("mylab", { label: "My lab" })]));
+  const group = await screen.findByRole("group", { name: "Environment" });
+  await userEvent.click(within(group).getByRole("button", { name: "Actions for SLURM (from spectio init)" }));
+  // the dropdown fades in (Mantine Transition): wait for it, as the other menu tests do
+  expect(await screen.findByRole("menuitem", { name: "Edit" })).toBeInTheDocument();
+  expect(screen.queryByRole("menuitem", { name: "Set as default" })).toBeNull();
+  expect(screen.getByRole("menuitem", { name: "Delete" })).toBeDisabled();
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("menu")).toBeNull()); // the fade-out finishes before the next menu opens
+  await userEvent.click(within(group).getByRole("button", { name: "Actions for My lab" }));
+  expect(await screen.findByRole("menuitem", { name: "Edit" })).toBeInTheDocument();
+  expect(screen.getByRole("menuitem", { name: "Set as default" })).toBeInTheDocument();
+  expect(screen.getByRole("menuitem", { name: "Delete" })).toBeEnabled();
+});
+
+test("Edit on a card's menu opens the shared form prefilled; on Save the list is read again and it is checked", async () => {
+  const mine = item("mylab", { label: "My lab" });
+  launchWith((_u: URL, init?: RequestInit) => {
+    if (init?.method === "PUT") {
+      expect(new Headers(init?.headers).get("if-match")).toBe('"mylab"');
+      return json(200, mine);
+    }
+    return json(200, list([...BUILTINS, mine]));
+  });
+  await userEvent.click(await screen.findByRole("button", { name: "Actions for My lab" }));
+  await userEvent.click(await screen.findByRole("menuitem", { name: "Edit" }));
+  const dialog = await screen.findByRole("dialog", { name: "Edit environment" });
+  const name = within(dialog).getByRole("textbox", { name: "Name" });
+  expect(name).toHaveAttribute("readonly"); // an edit's name cannot change
+  expect(name).toHaveValue("mylab");
+  expect(within(dialog).getByRole("textbox", { name: "Partition" })).toHaveValue("htc");
+  await userEvent.click(within(dialog).getByRole("button", { name: "Save and choose it" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(screen.getByRole("radio", { name: "My lab, SLURM" })).toBeChecked();
+});
+
+test("Set as default on a card's menu: the call, then the list again with the badge moved", async () => {
+  let def = "slurm";
+  const mine = item("mylab", { label: "My lab" });
+  const mock = serve({
+    "/api/v1/version": SLURM,
+    "/api/v1/workflows:inspect": { ...INSPECTED, engine_files: ["main.nf", "Snakefile"] },
+    "/api/v1/runs?": { items: [], next: null },
+    [API]: (_u: URL, init?: RequestInit) => {
+      if (init?.method === "POST") return (def = "mylab"), new Response(null, { status: 204 });
+      return json(200, list([...BUILTINS, mine].map((i) => ({ ...i, default: i.name === def }))));
+    },
+  });
+  app("/launch");
+  await userEvent.click(await screen.findByRole("button", { name: "Actions for My lab" }));
+  await userEvent.click(await screen.findByRole("menuitem", { name: "Set as default" }));
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/environments/mylab:make-default"));
+  await waitFor(() => expect(within(card("My lab, SLURM")).getByText("Default")).toBeInTheDocument());
+  expect(within(card("SLURM (from spectio init), SLURM")).queryByText("Default")).toBeNull();
+});
+
+test("Delete on a card's menu asks first; on confirm the call with the ETag, then the card is gone", async () => {
+  let items = [...BUILTINS, item("mylab", { label: "My lab" })];
+  const mock = serve({
+    "/api/v1/version": SLURM,
+    "/api/v1/workflows:inspect": { ...INSPECTED, engine_files: ["main.nf", "Snakefile"] },
+    "/api/v1/runs?": { items: [], next: null },
+    [API]: (_u: URL, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        expect(new Headers(init?.headers).get("if-match")).toBe('"mylab"');
+        items = items.filter((i) => i.name !== "mylab");
+        return new Response(null, { status: 204 });
+      }
+      return json(200, list(items));
+    },
+  });
+  app("/launch");
+  await userEvent.click(await screen.findByRole("button", { name: "Actions for My lab" }));
+  await userEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
+  const dialog = await screen.findByRole("dialog", { name: "Delete mylab?" });
+  expect(dialog).toHaveTextContent("Runs that used it keep their settings");
+  await userEvent.click(within(dialog).getByRole("button", { name: "Delete mylab" }));
+  await waitFor(() => expect(screen.queryByRole("radio", { name: "My lab, SLURM" })).toBeNull());
+  expect(fetched(mock)).toContain("/api/v1/environments/mylab");
 });
 
 test("one usable environment is a text row, with New environment beside it", async () => {
@@ -121,7 +218,7 @@ test("the file has a mistake: built-ins only, a link to Environments, New enviro
   launchWith(list(BUILTINS, "invalid"));
   const line = await screen.findByText(/Your environments file has a mistake: only the built-ins are offered/);
   expect(within(line).getByRole("link", { name: "See Environments" })).toHaveAttribute("href", "/environments");
-  const add = screen.getByRole("button", { name: "New environment" });
+  const add = screen.getByRole("button", { name: "+ New environment" });
   expect(add).toHaveAttribute("aria-disabled", "true");
   expect(add).toHaveAccessibleDescription(/Your environments file has a mistake/);
 });
@@ -161,7 +258,7 @@ test("the environment's profile is preselected when the pipeline has it, until P
   expect(profile).toHaveValue("docker"); // changed by the user: kept
 });
 
-test("New environment opens the form in a dialog; on Save it is listed and checked", async () => {
+test("the last card, + New environment, opens the form in a dialog; on Save it is listed and checked", async () => {
   let items = [...BUILTINS];
   const created = item("mylab-long", { label: "Long jobs" });
   // POST /environments answers the new item, and the next list has it
@@ -169,7 +266,8 @@ test("New environment opens the form in a dialog; on Save it is listed and check
     if (init?.method === "POST") return (items = [...items, created]), json(201, created);
     return json(200, list(items));
   });
-  const add = await screen.findByRole("button", { name: "New environment" });
+  // the add card sits in the same grid as the environments
+  const add = await within(await screen.findByRole("group", { name: "Environment" })).findByRole("button", { name: "+ New environment" });
   await userEvent.click(add);
   const dialog = await screen.findByRole("dialog", { name: "New environment" });
   expect(dialog).toHaveAttribute("aria-modal", "true");
@@ -187,7 +285,7 @@ test("a Reload that fails keeps the dialog and its values (CR-P3FU86G-03)", asyn
     if (init?.method === "POST") return json(409, { type: "/problems/environments-file-changed", title: "Changed", detail: "x" });
     return ++reads === 1 ? json(200, list(BUILTINS)) : json(500, { title: "boom", detail: "boom" });
   });
-  await userEvent.click(await screen.findByRole("button", { name: "New environment" }));
+  await userEvent.click(await screen.findByRole("button", { name: "+ New environment" }));
   const dialog = await screen.findByRole("dialog", { name: "New environment" });
   await userEvent.type(within(dialog).getByRole("textbox", { name: "Name" }), "mylab-long");
   await userEvent.click(within(dialog).getByRole("button", { name: "Save and choose it" }));
@@ -197,9 +295,9 @@ test("a Reload that fails keeps the dialog and its values (CR-P3FU86G-03)", asyn
   expect(within(screen.getByRole("dialog")).getByRole("textbox", { name: "Name" })).toHaveValue("mylab-long");
 });
 
-test("Cancel closes the dialog and gives focus back to New environment", async () => {
+test("Cancel closes the dialog and gives focus back to the + New environment card", async () => {
   launchWith(list(BUILTINS));
-  const add = await screen.findByRole("button", { name: "New environment" });
+  const add = await screen.findByRole("button", { name: "+ New environment" });
   await userEvent.click(add);
   const dialog = await screen.findByRole("dialog", { name: "New environment" });
   await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
