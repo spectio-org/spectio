@@ -30,6 +30,11 @@ Known limits of the release candidate:
 ## Before 0.0.1 is released
 
 - **Feedback on the release candidate,** and the fixes it calls for.
+- **What the owner's first test found** ([inbox #161](../reviews/inbox.md#161-decided-what-blocks-sharing-001-from-thomass-own-test-on-the-embl-login-node-thomas-2026-11-24)):
+    - a new design of the Manage catalog screen;
+    - the same alignment on Home and Launch;
+    - a new structure for the "Where it runs" badges, and a menu there;
+    - validation with more pipelines: from nf-core, the Snakemake Workflow Catalog and WorkflowHub, and Nextflow modules run directly.
 - **The publish setup** that the owner does on PyPI and GitHub: the trusted publisher and the protected release environment.
 - **The owner's own checks on the EMBL login node:** opening Spectio from a laptop through the SSH tunnel, in a browser.
 - **Decisions** the owner still has to confirm on a few open choices.
