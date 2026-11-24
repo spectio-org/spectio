@@ -290,6 +290,11 @@ function StagesOrProcesses({
   const listed = outside.length ? processes.filter((p) => p.status !== "not_needed") : processes;
   const note = (
     <>
+      {run.stall && (
+        <p role="status" className="sp-note">
+          {`${run.stall.tasks === 1 ? "1 task is" : `${run.stall.tasks} tasks are`} running but their SLURM jobs are gone from squeue and sacct since ${new Date(run.stall.since).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+        </p>
+      )}
       {run.stages_note && (
         <p role="note" className="sp-muted">
           {run.stages_note}

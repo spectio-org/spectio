@@ -14,6 +14,7 @@ import sys
 import threading
 import time
 from collections import Counter
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -827,3 +828,121 @@ def test_sacct_site_time_range_limit_is_final(
     assert limiter.run_once() == (["8812477", "8812478"], expected)
     assert limiter.run_once() is None  # the caller puts back only a failed call's (None) IDs
     assert (fakebin.dir / "count").read_text() == "x\n"
+
+
+# --- The site's accounting, from `scontrol show config` (FU-P3-106b, inbox #156 item 1) ------
+
+DB_ON = (
+    "AccountingStorageType   = accounting_storage/slurmdbd\n"
+    "JobAcctGatherType = jobacct_gather/linux\n"
+)
+DB_OFF = (
+    "AccountingStorageType = accounting_storage/none\nJobAcctGatherType = jobacct_gather/linux\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (DB_ON, True),
+        (DB_OFF, False),
+        ("JobAcctGatherType = jobacct_gather/linux\n", False),  # a config dump without the key
+        # Unset: "Unset by default, which indicates that accounting records are not
+        # maintained" (slurm.conf(5), slurm.schedmd.com, read 2026-11-23); `scontrol show
+        # config` prints an unset key as `(null)` (EMBL login-node audit, 2026-11-08, §1).
+        ("AccountingStorageType   = (null)\nJobAcctGatherType = jobacct_gather/linux\n", False),
+        ("AccountingStorageType =\nJobAcctGatherType = jobacct_gather/linux\n", False),
+        ("segmentation fault\n", None),
+        ("", None),
+        ("AccountingStorageType = $(rm -rf /)\n", None),  # a value of another shape
+        ("AccountingStorageType = accounting_storage/no?pe\n", None),
+    ],
+)
+def test_parse_accounting(text: str, expected: bool | None) -> None:
+    """The site's accounting from one line of `scontrol show config`: slurmdbd on, `none` off,
+    the key absent from a config dump, empty or `(null)` off, and garbage or a foreign value
+    unknown."""
+    assert sacct.parse_accounting(text) is expected
+
+
+def fake_site(root: Path, scontrol: str) -> Path:
+    """A fake `scontrol` running `scontrol`'s body, beside a fake `sacct` (both 0755, the
+    user's own) in `root`; returns the sacct path, as `spectio init` records it. Every call
+    appends a line to `count` (builtins only: PATH is the tools' own directory)."""
+    root.mkdir(parents=True, exist_ok=True)
+    for name, body in (
+        ("sacct", "#!/bin/sh\nexit 0\n"),
+        ("scontrol", f'#!/bin/sh\necho x >> "${{0%/*}}/count"\n{scontrol}\n'),
+    ):
+        path = root / name
+        path.write_text(body)
+        path.chmod(0o755)
+    return root / "sacct"
+
+
+@pytest.fixture
+def site(tmp_path: Path) -> Iterator[Path]:
+    """A bin directory of the fake pair, and `site_accounting`'s answers and warned reasons
+    cleared before and after the test: its definite answer is once per process, so no test
+    may see another's."""
+    sacct._ask_site.cache_clear()
+    sacct._WARNED.clear()
+    sacct._FAILED_AT.clear()
+    root = tmp_path / "slurm" / "bin"
+    root.mkdir(parents=True)
+    yield root
+    sacct._ask_site.cache_clear()
+    sacct._WARNED.clear()
+    sacct._FAILED_AT.clear()
+
+
+@pytest.mark.parametrize(("config", "expected"), [(DB_ON, True), (DB_OFF, False)])
+def test_site_accounting_from_the_sibling_scontrol(site: Path, config: str, expected: bool) -> None:
+    """`scontrol`, the sibling of the recorded sacct path, says whether the site keeps
+    accounting; the answer is cached: the fake runs once for two calls."""
+    path = fake_site(site, f"printf '{config}'")
+    assert sacct.site_accounting(path) is expected
+    assert sacct.site_accounting(path) is expected  # the cached answer
+    assert (site / "count").read_text() == "x\n"
+
+
+def test_site_accounting_retries_a_failed_scontrol(
+    site: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A failed `scontrol` answer is not kept for the server's life (login1: one transient
+    "scontrol gave no answer (exit 1)" left every later launch without --slurm-status-command):
+    the next call asks again, and the definite answer it then gets is the cached one, with the
+    one warning of the failure, not one per call."""
+    tried = (
+        f"if [ -f \"${{0%/*}}/tried\" ]; then printf '{DB_ON}'; "
+        f'else : > "${{0%/*}}/tried"; exit 1; fi'
+    )
+    path = fake_site(site, tried)
+    with caplog.at_level(logging.WARNING, logger="spectio.runner.sacct"):
+        assert sacct.site_accounting(path) is None  # the transient failure
+        assert sacct.site_accounting(path) is None  # within RETRY_S: not asked again
+    assert (site / "count").read_text() == "x\n"
+    sacct._FAILED_AT[path] -= sacct.RETRY_S  # RETRY_S later
+    assert sacct.site_accounting(path) is True  # asked again, and answered
+    assert sacct.site_accounting(path) is True  # the cached answer
+    assert (site / "count").read_text() == "x\nx\n"  # scontrol ran twice, not three times
+    assert [r.levelno for r in caplog.records] == [logging.WARNING]
+
+
+def test_site_accounting_unknown(site: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """No sacct recorded, a missing `scontrol`, a failing one, a hanging one: unknown, one
+    warning per reason however often it comes back (a repeated failure is asked again, not
+    warned of again), and a timeout is killed, never waited out."""
+    with caplog.at_level(logging.WARNING, logger="spectio.runner.sacct"):
+        assert sacct.site_accounting(None) is None  # `spectio init` found no sacct
+        (site / "sacct").write_text("#!/bin/sh\nexit 0\n")
+        (site / "sacct").chmod(0o755)
+        assert sacct.site_accounting(site / "sacct") is None  # no scontrol beside it
+        for n, (body, timeout_s) in enumerate((("exit 1", sacct.TIMEOUT_S), ("/bin/sleep 5", 0.5))):
+            started = time.monotonic()
+            path = fake_site(site / f"bin{n}", body)
+            assert sacct.site_accounting(path, timeout_s) is None
+            assert sacct.site_accounting(path, timeout_s) is None  # asked again, warned once
+            assert time.monotonic() - started < 5
+    assert [r.levelno for r in caplog.records] == [logging.WARNING] * 4
+    assert all("default status command" in r.getMessage() for r in caplog.records)

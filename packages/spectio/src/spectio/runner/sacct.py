@@ -19,6 +19,13 @@ A window the site's `MaxQueryTimeRange` refuses is final for the jobs whose laun
 (FU-P3-106b, SEC-P3FU106B-01): read from the first `MAX_STDERR` bytes of its error text,
 `TOO_WIDE`.
 
+Whether the site keeps accounting at all is read from `scontrol show config` run beside the
+recorded `sacct` (`site_accounting`): a definite answer is kept for the process, a failure is
+asked again on the next call (login1: one transient scontrol error must not stick), with one
+warning per reason. A Snakemake launch then polls its SLURM jobs with `sacct` on a site with
+slurmdbd and `squeue` on one without, whose `sacct` would only exit 1 (FU-P3-106b, inbox #156
+item 1).
+
 The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
 returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
 number with no unit is read as bytes, `K`, `M`, `G`, `T` as powers of 1024, and an older
@@ -31,6 +38,7 @@ job line printed just before it, with the same base ID, having an empty WorkDir 
 """
 
 import contextlib
+import functools
 import logging
 import os
 import re
@@ -148,17 +156,17 @@ def check_ids(ids: Iterable[str]) -> list[str]:
     return found
 
 
-def check_tool(path: Path) -> None:
-    """The stored `sacct`: an absolute path to a regular file that only its owner (root or the
-    user) can write. An OSError of the stat itself (ENOENT, EIO, ESTALE) may pass, so it is
-    raised as is, not Refused: the call is retried (CR-P3FU106A-04)."""
+def check_tool(path: Path, tool: str = "sacct") -> None:
+    """The stored `sacct` (or `squeue`, FU-P3-126): an absolute path to a regular file that
+    only its owner (root or the user) can write. An OSError of the stat itself (ENOENT, EIO,
+    ESTALE) may pass, so it is raised as is, not Refused: the call is retried (CR-P3FU106A-04)."""
     if not path.is_absolute():
-        raise Refused(f"the sacct path {path} is not absolute")
+        raise Refused(f"the {tool} path {path} is not absolute")
     st = os.stat(path)
     if not stat.S_ISREG(st.st_mode) or st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
-        raise Refused(f"sacct at {path} is not a regular file, or others can write it")
+        raise Refused(f"{tool} at {path} is not a regular file, or others can write it")
     if st.st_uid not in (0, os.geteuid()):
-        raise Refused(f"sacct at {path} belongs to uid {st.st_uid}")
+        raise Refused(f"{tool} at {path} belongs to uid {st.st_uid}")
 
 
 def sacct_env(path: Path) -> dict[str, str]:
@@ -242,6 +250,110 @@ def sacct_jobs(
 def _kill(proc: "subprocess.Popen[bytes]") -> None:
     with contextlib.suppress(ProcessLookupError):  # it ended just then
         os.killpg(proc.pid, signal.SIGKILL)
+
+
+# --- The site's accounting (FU-P3-106b, inbox #156 item 1) -----------------------------------
+
+_ACCOUNTING = re.compile(r"^AccountingStorageType[ \t]*=[ \t]*(.*?)[ \t]*$", re.MULTILINE)
+_CONFIG_LINE = re.compile(r"^[ \t]*[A-Za-z][A-Za-z0-9_]*[ \t]*=[ \t]*\S", re.MULTILINE)
+_ACCOUNTING_TYPE = re.compile(r"accounting_storage/([a-z0-9_]{1,32})")
+
+
+def parse_accounting(text: str) -> bool | None:
+    """The site's accounting from the `AccountingStorageType = <value>` line of a `scontrol
+    show config` dump: `accounting_storage/none` is off, any other `accounting_storage/<name>`
+    is on, the key absent from a dump, empty or `(null)` (unset, Slurm's default: no
+    accounting records) is off, and garbage, an empty text or a value of another shape is
+    None: unknown."""
+    found = _ACCOUNTING.search(text)
+    if found is None:
+        return False if _CONFIG_LINE.search(text) else None
+    if found[1] in ("", "(null)"):
+        return False
+    name = _ACCOUNTING_TYPE.fullmatch(found[1])
+    return None if name is None else name[1] != "none"
+
+
+class _GaveUp(Exception):
+    """`scontrol` could not be asked; the message is the reason to warn of."""
+
+
+_WARNED: set[str] = set()  # the reasons already warned of: a retried failure does not warn again
+RETRY_S = 300.0  # after a failure, scontrol is not asked again for this long
+_FAILED_AT: dict[Path, float] = {}  # sacct path -> time.monotonic() of its last failure
+
+
+def _gives_up(why: str) -> None:
+    """One warning per reason, however many calls retry it: the head passes no
+    `--slurm-status-command`, so Snakemake's SLURM plugin keeps its own default."""
+    if why in _WARNED:
+        return
+    _WARNED.add(why)
+    log.warning("%s: Snakemake keeps its SLURM plugin's default status command", why)
+
+
+@functools.cache  # definite answers only: a raised _GaveUp is not cached, so a failure is retried
+def _ask_site(sacct: Path, timeout_s: float = TIMEOUT_S) -> bool:
+    """The `scontrol` call behind `site_accounting`, which keeps this function's contract with
+    the caller. Raises `_GaveUp` with the reason when the site's accounting could not be told."""
+    scontrol = sacct.with_name("scontrol")
+    try:
+        check_tool(scontrol)
+        with (
+            tempfile.TemporaryFile() as err,  # a file, not a pipe: it never blocks the tool
+            subprocess.Popen(  # noqa: S603 - an argument list of checked values, no shell
+                [str(scontrol), "show", "config"],
+                env=sacct_env(sacct),
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=err,
+                start_new_session=True,
+            ) as proc,
+        ):
+            timer = threading.Timer(timeout_s, _kill, (proc,))
+            timer.start()
+            try:
+                data = proc.stdout.read(MAX_OUTPUT + 1) if proc.stdout else b""
+                if len(data) > MAX_OUTPUT:
+                    _kill(proc)
+                code = proc.wait()
+            finally:
+                timer.cancel()
+    except (Refused, OSError) as exc:  # a refused tool, its stat, or its exec: not for now
+        raise _GaveUp(f"scontrol not run: {exc}") from exc
+    if len(data) > MAX_OUTPUT:
+        raise _GaveUp(f"scontrol said over {MAX_OUTPUT} bytes")
+    if code != 0:  # a timeout is the killed group's exit code
+        raise _GaveUp(f"scontrol gave no answer (exit {code})")
+    found = parse_accounting(data.decode("utf-8", "replace"))
+    if found is None:
+        raise _GaveUp("scontrol's output was no config dump")
+    return found
+
+
+def site_accounting(sacct: Path | None, timeout_s: float = TIMEOUT_S) -> bool | None:
+    """Whether the site's SLURM keeps accounting, from `scontrol show config`: `scontrol` is
+    the sibling of the `sacct` path `spectio init` recorded, since a site installs SLURM's
+    client commands in one directory ([to be validated] at EMBL). None when that could not be
+    told — no sacct recorded, a refused or missing `scontrol`, a non-zero exit, a timeout, too
+    much output, no config dump — and one warning per reason then names why. A definite answer
+    is cached once per process; a failure is not (login1: one transient scontrol error must
+    not leave every later launch without `--slurm-status-command`), but it is asked again only
+    `RETRY_S` later, so a hung scontrol does not hold every launch for `timeout_s`, and its
+    reason warns once however often it comes back. The call is `sacct_jobs`'s own, bounded the
+    same way."""
+    if sacct is None:
+        _gives_up("no sacct path was recorded by spectio init")
+        return None
+    failed_at = _FAILED_AT.get(sacct)
+    if failed_at is not None and time.monotonic() - failed_at < RETRY_S:
+        return None  # its reason was warned of when it failed
+    try:
+        return _ask_site(sacct, timeout_s)
+    except _GaveUp as exc:
+        _FAILED_AT[sacct] = time.monotonic()
+        _gives_up(str(exc))
+        return None
 
 
 # --- Parsing, field by field --------------------------------------------------------------

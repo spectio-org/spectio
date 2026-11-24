@@ -39,6 +39,9 @@ test('define an environment from Launch, launch with it, and read it on the run'
     expect((await posted).postDataJSON()).toMatchObject({ environment: name });
 
     await expect(page).toHaveURL(/\/runs\/run_/);
+    // Facts starts folded on the phone (ui-spec §12.7, RunHeader.tsx): open it there
+    const facts = page.getByRole('button', { name: /^Facts/ });
+    if ((await facts.getAttribute('aria-expanded')) === 'false') await facts.click();
     const fact = page.locator('dt', { hasText: /^Environment$/ }).locator('xpath=following-sibling::dd[1]');
     await expect(fact).toContainText(`${name} · Local`);
     await expect(fact).toContainText(/at most 1 CPU(?!s)/);
@@ -83,9 +86,10 @@ test('launch from a catalog entry', async ({ page, request }) => {
 
 // FU-P3-121 (login1 retest h): an extra config file Launch would refuse (group-writable) is said in
 // "Before Launch" first, and checked again when the window comes back; then a pointer click (the
-// mouse at the aside button's centre, not Enter or a DOM click) on the aside's Launch sends it.
+// mouse at the button's centre, not Enter or a DOM click) on Launch sends it. Since UI-13 the one Launch
+// of a desktop is the page head's; the aside holds none.
 // It writes a file in the server's home: this machine's server only (SEC-P3FU86F-01).
-test('an extra config file Launch would refuse is said before Launch; a pointer click on the aside Launch sends it', async ({ page }) => {
+test('an extra config file Launch would refuse is said before Launch; a pointer click on Launch sends it', async ({ page }) => {
   test.skip(!isLocal(target.url), "writes a file in the server's home");
   const dir = mkdtempSync(join(homedir(), 'spectio-e2e-'));
   const file = join(dir, 'extra.config');
@@ -107,9 +111,10 @@ test('an extra config file Launch would refuse is said before Launch; a pointer 
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await expect(before).toContainText('Nothing is missing');
 
-    const aside = page.getByRole('complementary', { name: 'Launch' }).getByRole('button', { name: 'Launch' });
-    await aside.scrollIntoViewIfNeeded();
-    const box = (await aside.boundingBox())!;
+    // one Launch at 1440 px: the page head's (ui-spec §12.4, UI-13); the aside has none on a desktop
+    const launch = page.getByRole('button', { name: 'Launch', exact: true });
+    await launch.scrollIntoViewIfNeeded();
+    const box = (await launch.boundingBox())!;
     const posted = page.waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/v1/runs');
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     expect((await posted).postDataJSON()).toMatchObject({ config_file: file });

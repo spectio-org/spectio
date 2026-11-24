@@ -4,7 +4,7 @@ hide: [navigation]
 ---
 # Roadmap
 
-**0.0.1 is built and not released yet.** This page says what it contains, what is left before the release, and what comes after. Spectio stays below 1.0 until it has been checked with several use cases and several groups.
+**0.0.1 is built; its release candidate, 0.0.1-rc1, is being prepared.** This page says what it contains, what is left before the release, and what comes after. Spectio stays below 1.0 until it has been checked with several use cases and several groups.
 
 ## Built for 0.0.1
 
@@ -16,13 +16,22 @@ hide: [navigation]
 - **REST API** under `/api/v1`, with live events over SSE ([API and CLI](../api/index.md)).
 - **Sign-in** with a single-use link, for one user per server.
 
+## 0.0.1-rc1, the release candidate
+
+The first tag is a release candidate, `v0.0.1-rc1` (`0.0.1rc1` on PyPI), so that people outside the project can install it from PyPI and try it before `0.0.1`. Its test campaign is the [RC1 acceptance matrix](../reviews/RC1-acceptance.md): unit tests, the browser tests against a real server, the SLURM test cluster, and the EMBL login node. It is tagged only when no cell of that matrix is a FAIL, and every cell left UNTESTED has a reason the owner accepted.
+
+Known limits of the release candidate:
+
+- **Snakemake on SLURM needs `snakemake-executor-plugin-slurm` 2.8.0 or later.** With an older plugin Spectio sees none of the run's jobs. The EMBL module `snakemake/9.23.1-foss-2025b` ships 2.6.1, so install Snakemake yourself there ([Installation](../installation/index.md#what-001-is-made-of)). `spectio doctor` prints the plugin's version.
+- **The Nextflow bridge is not in the Nextflow plugin registry.** It ships inside the `spectio` package and `spectio init` puts it in place ([architecture §7.3](../specs/architecture-plugins-and-packaging.md#73-python-bundle)), so nothing is missing for a run Spectio launches.
+- **One user per server,** signed in with a single-use link.
+- **0.0.1 targets the EMBL cluster.** Other SLURM sites are not checked.
+
 ## Before 0.0.1 is released
 
-- **End-to-end checks on a SLURM test cluster,** including cancelling a run and restarting the server.
-- **The publish workflow,** so the packages go to PyPI and the Nextflow bridge to its plugin registry.
-- **The release setup on GitHub** (a release bot, a protected release environment, version tags).
-- **A last clean-up of the interface styles.**
-- **The owner's checks on the EMBL login node:** opening Spectio from a laptop, and deleting a run there.
+- **Feedback on the release candidate,** and the fixes it calls for.
+- **The publish setup** that the owner does on PyPI and GitHub: the trusted publisher and the protected release environment.
+- **The owner's own checks on the EMBL login node:** opening Spectio from a laptop through the SSH tunnel, in a browser.
 - **Decisions** the owner still has to confirm on a few open choices.
 
 Until it is released, [install it from a checkout](../installation/index.md).

@@ -522,6 +522,25 @@ def test_logs_gone_only_when_the_runs_root_is_there(
     assert str(tried) not in detail and "directory is gone" not in detail
 
 
+@pytest.mark.parametrize("state", ["queued", "cancelling"])
+def test_logs_of_a_run_not_launched_answer_not_found(
+    authed_client: TestClient, writer: Writer, settings: Settings, tmp_path: Path, state: str
+) -> None:
+    """A queued run's launch directory is not made yet (the runner loop makes it), nor is a
+    queued run's that was cancelled before the next tick: every source answers
+    `404 log-not-found`, never `410 log-cleaned`; a runs root that is not there stays a 409."""
+    add_run(writer, settings, rid(1), "nf", state)
+    for source in ("engine", "head-out", "head-err"):
+        body = problem(
+            authed_client.get(f"{RUNS}/{rid(1)}/logs", params={"source": source}),
+            404,
+            "log-not-found",
+        )
+        assert "gone" not in str(body["detail"])
+    missing = tmp_path / "scratch" / "runs"
+    problem(engine_log_of(serving(settings, writer, missing), rid(1)), 409, "run-dir-unreachable")
+
+
 def test_logs_runs_root_through_a_symlink(
     writer: Writer, settings: Settings, tmp_path: Path
 ) -> None:

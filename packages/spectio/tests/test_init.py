@@ -168,6 +168,23 @@ def test_init_local_environment(home: Path, fakebin: Path) -> None:
     assert "SLURM" in result.output
 
 
+def test_init_stores_the_squeue_path(home: Path, tools: Any, login: Any) -> None:
+    """`spectio init` resolves `squeue` once, through the login shell, and records it (FU-P3-126),
+    also without a sacct: the stall check needs no accounting."""
+    fakes = tools("nextflow", "snakemake", "sbatch")
+    (fakes / "squeue").write_text("#!/bin/sh\nexit 0\n")
+    (fakes / "squeue").chmod(0o755)
+    result = init()
+    assert result.exit_code == 0, result.output
+    assert "sacct not found" in result.output  # no sacct: squeue is still recorded
+    assert Settings().slurm.squeue == fakes / "squeue"
+    assert "squeue = " in config_path().read_text()
+    assert Settings().slurm.sacct is None
+    login(home.parent / "empty")  # squeue no longer on the PATH: the recorded one stays
+    assert init().exit_code == 0
+    assert Settings().slurm.squeue == fakes / "squeue"
+
+
 def test_init_local_refused_off_linux(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "platform", "darwin")
     result = init("--local")

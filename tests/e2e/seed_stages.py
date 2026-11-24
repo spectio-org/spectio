@@ -15,7 +15,8 @@ at `hostile/hostile_image.svg` for the file preview's check (FU-P3-85c, api §5.
 `logs/big.log`, over one 64 KiB read, for its Load more focus check; and `imaging/cells.ome.tif`,
 a small OME-TIFF (2 channels, 3 Z planes, 64 x 48 px) for the WebGL viewer's CSP check (FU-P3-102e);
 and `imaging/cells.ome.zarr`, a Zarr v2 OME-Zarr (2 channels, 64 x 48 px, a raw level and a zlib
-level) for the same check through the page's Zarr store (FU-P3-102g).
+level) for the same check through the page's Zarr store (FU-P3-102g); and `imaging/plain.tif`, a
+plain TIFF (one 8-bit grey 64 x 48 px plane, no OME-XML) for the flat view's check (RC1 P-06).
 """
 
 import gzip
@@ -128,6 +129,23 @@ def ome_tiff(width: int = 64, height: int = 48, channels: int = 2, planes: int =
     return bytes(out + xml)
 
 
+def plain_tiff(width: int = 64, height: int = 48) -> bytes:
+    """A little-endian TIFF with no OME-XML: one uncompressed 8-bit grey strip. The pixel at
+    (x, y) is (4x + 2y) mod 256, so the view's check can read two pixels back."""
+    pixels = width * height
+    data_at = 8 + 2 + 9 * 12 + 4
+    tags = [(256, 4, 1, width), (257, 4, 1, height), (258, 3, 1, 8), (259, 3, 1, 1)]
+    tags += [(262, 3, 1, 1), (273, 4, 1, data_at), (277, 3, 1, 1), (278, 4, 1, height)]
+    tags += [(279, 4, 1, pixels)]
+    out = bytearray(b"II*\0" + struct.pack("<I", 8) + struct.pack("<H", len(tags)))
+    for tag, kind, n, value in tags:
+        out += struct.pack("<HHI", tag, kind, n)
+        out += struct.pack("<I" if kind == 4 else "<Hxx", value)
+    out += struct.pack("<I", 0)
+    out += bytes((x * 4 + y * 2) % 256 for y in range(height) for x in range(width))
+    return bytes(out)
+
+
 def main(runs_root: Path) -> None:
     paths = make_run_dirs(runs_root, SEEDED)
     manifest = RunManifest(
@@ -164,6 +182,7 @@ def main(runs_root: Path) -> None:
     (results / "logs" / "big.log").write_text(big)
     (results / "imaging").mkdir()
     (results / "imaging" / "cells.ome.tif").write_bytes(ome_tiff())
+    (results / "imaging" / "plain.tif").write_bytes(plain_tiff())
     ome_zarr(results / "imaging" / "cells.ome.zarr")
     print(SEEDED)
 

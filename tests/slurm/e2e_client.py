@@ -4,6 +4,8 @@ sind submitter, or this host in native mode) as the user that runs `spectio serv
     python3 e2e_client.py launch ENGINE --config TOML --location DIR --golden TSV
                           [--profile P]... [--params JSON] [--scenario YAML] [--timeout S]
     python3 e2e_client.py cancel ENGINE --config TOML --location DIR [--profile P]... [--params JSON] [--timeout S]
+    python3 e2e_client.py cancel-pending ENGINE --config TOML --location DIR
+                          [--profile P]... [--params JSON] [--timeout S]
     python3 e2e_client.py restart --config TOML --location DIR --golden TSV --tmux-log FILE
                           [--profile P]... [--params JSON] [--timeout S]
     python3 e2e_client.py teardown --config TOML
@@ -16,6 +18,10 @@ is `local` (tests/local/e2e.sh, P2 §10.8), the head runs in its own session (se
 there is no squeue: LOCAL_CHECKS replace the two cluster checks.
 
 `cancel` (CANCEL_CHECKS) waits until the run is `running` with a task running, then `POST :cancel`s it.
+`cancel-pending` (CANCEL_PENDING_CHECKS) does not wait for a running task: e2e.sh's `cancel-pending`
+case holds the partition DOWN, so the run's jobs stay PENDING; it cancels once the run is `running`
+with a task pending or submitted, then checks that it ended cancelled and that none of its jobs is
+left in `squeue -h -u <user>`.
 `restart` (RESTART_CHECKS) SIGKILLs the server at the first succeeded task, waits RESTART_WAIT_S, starts it
 again with `spectio serve --detach`, and checks that the head was adopted, not started again: the tmux
 calls of the server go through the shim of e2e.sh, which logs them to --tmux-log. `teardown` kills the
@@ -28,6 +34,7 @@ browser at the laptop's end of the tunnel does. With no socket in server.json (l
 the user uses) it uses 127.0.0.1 and the port. Never a proxy.
 """
 import argparse
+import errno
 import http.client
 import itertools
 import json
@@ -70,6 +77,11 @@ CANCEL_CHECKS = (
     "run cancelled in time",
     "no job or session left",
     "no attempt left pending, submitted or running",
+    "socket only, no TCP port",
+)
+CANCEL_PENDING_CHECKS = (
+    "run cancelled in time",
+    "no job or session left",
     "socket only, no TCP port",
 )
 RESTART_CHECKS = (
@@ -157,8 +169,20 @@ def states_problem(seen: list[str], want: tuple[str, ...] = SUCCEEDED_PATH) -> s
 
 
 def tasks_running(detail: dict) -> bool:
-    """The run is `running` with at least one task running: the moment to cancel it."""
-    return detail.get("state") == "running" and (detail.get("task_counts") or {}).get("running", 0) > 0
+    """The run is `running` with at least one task running or submitted: the moment to cancel it.
+    Submitted counts too: on slurm-mini a job can start and end within one poll of the head, so a run
+    of 245 tasks may never show one `running` to a client polling every POLL_S (CI, 2026-11-23)."""
+    counts = detail.get("task_counts") or {}
+    in_flight = counts.get("running", 0) + counts.get("submitted", 0)
+    return detail.get("state") == "running" and in_flight > 0
+
+
+def tasks_pending(detail: dict) -> bool:
+    """The run is `running` with at least one task pending or submitted, none running: the moment to
+    cancel it while the partition is held DOWN and its jobs stay PENDING."""
+    counts = detail.get("task_counts") or {}
+    waiting = sum(counts.get(s, 0) for s in ("pending", "submitted"))
+    return detail.get("state") == "running" and waiting > 0
 
 
 def new_sessions(log: str, session: str) -> int:
@@ -294,21 +318,40 @@ def server_pid(data_dir: str) -> int:
     return pid
 
 
+def _pidfd(pid: object) -> int | None:
+    """A pidfd of `pid`, or None on a kernel without pidfd_open: EL8's 4.18 answers ENOSYS to the
+    call, and a Python without it names no function at all. Any other error is raised."""
+    try:
+        return os.pidfd_open(pid)
+    except AttributeError:
+        return None
+    except OSError as exc:
+        if exc.errno != errno.ENOSYS:
+            raise
+        return None
+
+
 def kill_server(data_dir: str) -> int:
     """SIGKILL to the server of server.json, through a pidfd opened before the checks, so that a process
-    that took its PID meanwhile is never signalled (SEC-P3T23-03). Its PID."""
+    that took its PID meanwhile is never signalled (SEC-P3T23-03). On a kernel without pidfd_open
+    (EL8's 4.18) the signal goes through os.kill after the same checks, which leaves a short race: a
+    process that takes the PID between the checks and the kill would get the signal. Its PID."""
     try:
         record = json.loads(Path(data_dir, "server.json").read_text())
-        fd = os.pidfd_open(record["pid"])
+        fd = _pidfd(record["pid"])
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise Failed(f"the server of {data_dir}/server.json cannot be signalled: {exc!r}") from exc
     try:
         pid = server_pid(data_dir)
         if pid != record["pid"]:
             raise Failed(f"server.json changed while it was read: PID {record['pid']}, then {pid}")
-        signal.pidfd_send_signal(fd, signal.SIGKILL)
+        if fd is None:
+            os.kill(pid, signal.SIGKILL)  # the pidfd-less fallback, after the same checks
+        else:
+            signal.pidfd_send_signal(fd, signal.SIGKILL)
     finally:
-        os.close(fd)
+        if fd is not None:
+            os.close(fd)
     return pid
 
 
@@ -530,7 +573,7 @@ def cancel(args: argparse.Namespace) -> int:
     tcp = tcp_listener(api.port)
     detail = poll_until(api, run, states, tasks_running, args.timeout)
     if not tasks_running(detail):
-        raise Failed(f"run {run_id} was never running with a task running: {detail['state']} {detail['task_counts']}")
+        raise Failed(f"run {run_id} was never running with a task running or submitted: {detail['state']} {detail['task_counts']}")
     asked = time.monotonic()
     detail, _ = api.expect(202, "POST", f"/api/v1/runs/{run_id}:cancel")
     print(f"  cancel asked: {detail['state']} tasks={detail['task_counts']}", flush=True)
@@ -551,6 +594,45 @@ def cancel(args: argparse.Namespace) -> int:
     left = attempts_in(str(Path(config["db_dir"]) / "spectio.db"), run_id, OPEN_ATTEMPTS)
     checks["no attempt left pending, submitted or running"] = "; ".join(left) or None
     return report(CANCEL_CHECKS, checks, detail)
+
+
+def cancel_pending(args: argparse.Namespace) -> int:
+    """RC1 matrix gap X-12 (e2e.sh): the partition is held DOWN, so the run's jobs stay PENDING
+    and none ever runs; the cancel catches them there."""
+    config = tomllib.loads(Path(args.config).read_text())
+    api = signed_in(config)
+    run = start(api, args)
+    run_id, states = run["id"], [run["state"]]
+    session, run_dir = f"spectio-{run_id}", f"{config['runs_root']}/{run_id}"
+    tcp = tcp_listener(api.port)
+    detail = poll_until(api, run, states, tasks_pending, args.timeout)
+    if not tasks_pending(detail):
+        raise Failed(
+            f"run {run_id} was never running with a task pending: {detail['state']} "
+            f"{detail['task_counts']}"
+        )
+    asked = time.monotonic()
+    detail, _ = api.expect(202, "POST", f"/api/v1/runs/{run_id}:cancel")
+    print(f"  cancel asked: {detail['state']} tasks={detail['task_counts']}", flush=True)
+    states.append(detail["state"])
+    detail = poll_until(api, detail, states, lambda d: False, CANCEL_WINDOW_S)
+    took = time.monotonic() - asked
+    checks: dict[str, str | None] = dict.fromkeys(CANCEL_PENDING_CHECKS)
+    checks["socket only, no TCP port"] = tcp
+    too_late = took > CANCEL_WINDOW_S
+    checks["run cancelled in time"] = states_problem(states, CANCELLED_PATH) or (
+        f"cancelled after {took:.0f} s, not within {CANCEL_WINDOW_S} s" if too_late else None
+    )
+    # Whether the engine's abort cancels its PENDING jobs is shown, not checked: the check is below.
+    try:
+        lines = lines_of("squeue", "--me", "-h", "--states=all", "-o", "%i|%j|%T|%Z")
+        jobs = job_states(lines, run_dir)
+        print(f"info: the run's jobs in squeue --states=all, by state: {jobs}", flush=True)
+    except Failed as exc:
+        print(f"info: squeue --states=all failed: {exc}", flush=True)
+    # squeue() is `squeue -h -u <user>` for the run's user (--me): none of its jobs must be left.
+    checks["no job or session left"] = wait_left_over(run_dir, session)
+    return report(CANCEL_PENDING_CHECKS, checks, detail)
 
 
 def restart(args: argparse.Namespace) -> int:
@@ -730,11 +812,13 @@ def main(argv: list[str]) -> int:
     lp.add_argument("--timeout", type=float, default=1800)
     cp = sub.add_parser("cancel")
     cp.add_argument("engine", choices=["nextflow", "snakemake"])
+    cpp = sub.add_parser("cancel-pending")
+    cpp.add_argument("engine", choices=["nextflow", "snakemake"])
     rp = sub.add_parser("restart")
     rp.set_defaults(engine="nextflow")
     rp.add_argument("--golden", required=True)
     rp.add_argument("--tmux-log", required=True)
-    for sp in (cp, rp):
+    for sp in (cp, cpp, rp):
         sp.add_argument("--config", required=True)
         sp.add_argument("--location", required=True)
         sp.add_argument("--profile", action="append", default=[])
@@ -744,7 +828,8 @@ def main(argv: list[str]) -> int:
     tp.add_argument("--config", required=True)
     args = p.parse_args(argv)
     try:
-        return {"launch": launch, "cancel": cancel, "restart": restart, "teardown": teardown}[args.cmd](args)
+        return {"launch": launch, "cancel": cancel, "cancel-pending": cancel_pending,
+                "restart": restart, "teardown": teardown}[args.cmd](args)
     except (Failed, OSError, subprocess.SubprocessError) as exc:  # a FAIL line, never a traceback
         print(f"FAIL {exc}")
         return 1

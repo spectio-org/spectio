@@ -952,3 +952,52 @@ FU-P3-104 built the breadcrumb (a file page ends with the name from `stat`) and 
 - **Task 23** (cancel and restart on slurm-mini) built on `autopilot/P3-t23` from `autopilot/P3-t22`: `e2e.sh cancel nextflow|snakemake` and `e2e.sh restart`, a tmux shim on `PATH` to count `new-session` calls, teardown after every case, FU-P3-68 minors CR-P3T22-02/-03/-06/-08 and part of SEC-P3T22-01. Not run on a cluster here (no Docker); code-reviewer and security-reviewer running. It also touches the workflow: Thomas merges it.
 - **Costs** (subagent tokens): Task 23 build ~255k.
 - **Next:** Task 23 review, PR and CI; Thomas: merge #164 then the Task 23 PR, DRAWINGS (#303), FU-P3-75, the 0.0.1 release notes, inbox #156; then a batch close (UI-19c, #310, #311, Task 22, Task 23) and the promotion.
+
+## 2026-11-24 — 0.0.1-rc1 campaign: #156 built, e2e gaps filled, login1, RC prep
+
+- **Plan.** Thomas's RC plan of 2026-11-23 (`Release-As: 0.0.1-rc1`), run unattended. The token-heavy lots went to Refract GLM workers (`refract-dispatch`); Opus kept git, review and merges.
+- **Merged into autopilot/integration.**
+  - #164 and #313: SLURM launch, cancel and restart on slurm-mini.
+  - #317 and #322: batch P3-B18 and its promotion, done by the cloud session.
+  - #315 and #321: inbox decisions, and the evaluation notes from issues #318, #319 and #320.
+  - #323 (FU-P3-106b) and #325 (FU-P3-126): inbox #156, now in rc1.
+  - RC gap fills #326, #328, #329, #330, #331 and #333.
+  - #334: scontrol is asked again after 5 minutes; `kill_server` works on EL8.
+  - #335: a queued run's logs answer 404, not "launch directory is gone".
+  - #336: release-please marks the rc1 release as a pre-release; the roadmap gets an RC section; inbox #158 and #159.
+- **CI evidence.**
+  - slurm-mini, run 45283394396 at 7fa8dfb0: launch, cancel and restart, both engines. Snakemake runs without the harness flag.
+  - e2e-local, every spec on desktop and phone with Snakemake, run 45284629061 on #314: 107 passed, 0 failed.
+- **login1** (over ssh, private `/tmp` and `/scratch` dirs, cleaned).
+  - PASS: install, doctor, Nextflow run, cancel (both engines), restart on EL8 after the pidfd fix, confirmed Delete, #125 checks, accounting (`slurmdbd`).
+  - FAIL, explained: Snakemake with the EMBL module 9.23.1. It ships `snakemake-executor-plugin-slurm` 2.6.1, and plugins before 2.8.0 never log `job_info` (plugin CHANGELOG 2.8.0, #478; source read at v2.6.1, v2.7.1 and v2.8.0). With Snakemake 9.27.1 and plugin 2.8.0 the run matched its golden. Fix: the doctor line and the install guide (#337); inbox #159 (assumed).
+- **Refract lots.** All done on the first try, each "Done when" re-run here:
+  - d09 and x12;
+  - two fix lots;
+  - two digests;
+  - login1-fixes;
+  - smk-bisect, which found the plugin cause;
+  - doctor;
+  - livegone (read-only), which found the #335 bug;
+  - queued-log;
+  - slurm-plugin, resumed once, because its first design (reading the shebang) was wrong for module wrappers.
+- **Process.**
+  - #330 was merged before its checks finished. CI passed afterwards. From now on, `gh pr checks` must show no pending check before a merge, and the merge never runs in the same command as the check.
+  - A duplicate orchestrator ran in the cloud; it closed #327 and stopped.
+  - The flaky `cancel:nextflow` case was fixed by counting submitted tasks.
+  - A worker wrote outside its worktree (`.bisect/run_tests.sh`); it was removed.
+- **Acceptance matrix** (`docs/reviews/RC1-acceptance.md`): results recorded; no FAIL open. Plain UNTESTED left: Thomas's laptop checks (S-10 item 2, F-09, T-05), the efficiency compare (D-17), the stall check on a cluster (E-09), `cancel-pending` (X-12), and rows no evidence covers yet (S-08, R-07, L-05, D-09, K-04).
+- **Open minors.**
+  - CR-RC1SP-05 and CR-RC1SP-07.
+  - The tmux session-name clash between two configs.
+  - The #327 follow-ups.
+  - Snakemake ≤ 9.25.2 logs `job_error` twice (inbox #159).
+  - The serve.log sign-in link in the CI artifact.
+  - CR-RC1GAP-10 and CR-RC1GAP-11.
+- **Waiting on Thomas** (inbox #157, #158):
+  - #314 (ci.yml);
+  - #324, then #332;
+  - `cancel-pending` in the SLURM matrix;
+  - the PyPI and GitHub release settings;
+  - the login1 checks that need his laptop;
+  - the release-please PR.
