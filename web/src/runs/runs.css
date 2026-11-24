@@ -750,6 +750,26 @@
   color: var(--sp-text-secondary);
   overflow-wrap: anywhere;
 }
+/* What to do next, beside the title line (inbox #161). */
+.sp-why-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  margin: var(--mantine-spacing-sm) 0 0;
+}
+/* A long text behind one button: "Show full message", "What the states mean" (inbox #161). The
+   button's chevron turns with its aria-expanded. */
+.sp-disclosure {
+  margin: var(--mantine-spacing-sm) 0 0;
+}
+.sp-disclosure [aria-expanded] .sp-icon {
+  transform: rotate(0deg);
+  transition: transform 0.15s ease;
+}
+.sp-disclosure [aria-expanded="true"] .sp-icon {
+  transform: rotate(180deg);
+}
 
 /* Tasks and Logs tabs (LiteRunTasks, LiteRunLogs; UX-PAR-26, 27). */
 .sp-select {

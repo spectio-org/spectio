@@ -13,7 +13,7 @@ import { type CopyItem, CopyButton, useCopyStatus } from "./CopyMenu";
 import { DeleteRuns } from "./DeleteRuns";
 import { extrasFacts } from "./RunDetailExtras";
 import { ResumeAction } from "./ResumeDialog";
-import { StateWord, failureText, runName, tasksText } from "./RunState";
+import { StateWord, runName, tasksText } from "./RunState";
 import { TargetLine } from "./target";
 import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
@@ -157,7 +157,6 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     ...environmentFacts(run, server),
     ...extrasFacts(run),
     ...engineSettings(run),
-    ["Failure", run.state === "failed" ? failureText(run) : "—"],
   ];
   // a Resume and its parent link to each other (LiteRunActions G); the parent is named by its short ID
   if (run.parent_run_id) {
@@ -357,15 +356,18 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
       )}
       {cancelError && <p role="alert">Cancel failed: {cancelError}</p>}
       {pinError && <p role="alert">Pin failed: {pinError}</p>}
-      {/* folded on the tabs other than Summary; there a choice is not remembered (ui-spec §12.7) */}
+      {/* folded on the tabs other than Summary; there a choice is not remembered (ui-spec §12.7).
+          A failed run starts folded too: the failure has its own place, "Why it failed", and the
+          facts are the second question, not the first (inbox #161) — and no remembered choice
+          overrides it, so it is folded every time the run is opened. */}
       <FoldSection
         key={summaryTab ? "summary" : "tab"}
         id="facts"
-        screen={summaryTab ? "run" : undefined}
+        screen={summaryTab && run.state !== "failed" ? "run" : undefined}
         icon="info"
         title="Facts"
         summary={summary}
-        defaultOpen={summaryTab && !phone}
+        defaultOpen={summaryTab && !phone && run.state !== "failed"}
       >
         <Facts run={run} server={server} />
       </FoldSection>

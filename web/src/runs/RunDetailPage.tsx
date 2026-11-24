@@ -1,6 +1,6 @@
 import { Button, Modal, SegmentedControl, Select, Tabs } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { type KeyboardEvent, type Ref, Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, type Ref, Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   type LogSource,
@@ -41,8 +41,9 @@ import { LogLines, LogViewer, ToolButton } from "./LogViewer";
 import { ByProcess } from "./ByProcess";
 import { bytes, isLow, isNear, nearLimit, percent, resourcesLine, seconds } from "./resources";
 import { ResultsSection } from "./ResultsSection";
+import { ResumeAction } from "./ResumeDialog";
 import { RunHeader, runDirectory } from "./RunHeader";
-import { CheckpointMark, Low, NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
+import { CheckpointMark, Low, NearLimit, ProcessName, Word, runName, shortFailure, taskLabel } from "./RunState";
 import {
   classWord,
   engineName,
@@ -173,8 +174,27 @@ function ProcessCards({ processes, ended, open, label, w, onOpen }: Rows) {
   );
 }
 
+/** A long text behind one button, collapsed until asked for (inbox #161): "Show full message" of
+ * the why card, "What the states mean" of the processes legend. A plain button (aria-expanded,
+ * aria-controls), so it works by keyboard; the body is mounted only while open. */
+function Disclosure({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <div className="sp-disclosure">
+      <button type="button" className="sp-link-button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
+        {label} <Icon name="chevronDown" />
+      </button>
+      <div id={id} data-open={open} hidden={!open}>
+        {open && children}
+      </div>
+    </div>
+  );
+}
+
 function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
   const phone = usePhone();
+  if (!processes.length) return <p className="sp-muted">No {w.unit} started.</p>;
   if (phone) return <ProcessCards processes={processes} ended={ended} open={open} label={label} w={w} onOpen={onOpen} />;
   return (
     <div className="sp-table-wrap">
@@ -331,6 +351,8 @@ function StagesOrProcesses({
         : "No task (condition or empty input): a when: condition was false, or its input was empty. Processes the script does not call in this run are not listed."}
     </p>
   );
+  // the long legend waits behind its button (inbox #161)
+  const legendBox = <Disclosure label="What the states mean">{legend}</Disclosure>;
   if (!stages.length) {
     return (
       <FoldSection id="processes" screen="run" icon="list" title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
@@ -340,7 +362,7 @@ function StagesOrProcesses({
           <TargetSteps run={run} steps={listed} outside={outside} ended={ended} open={open} />
         )}
         <ProcessTable processes={listed} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
-        {legend}
+        {legendBox}
       </FoldSection>
     );
   }
@@ -402,19 +424,33 @@ function StagesOrProcesses({
           <ProcessTable processes={loose} ended={ended} open={open} label={`${w.Groups} not in a stage`} w={w} onOpen={onOpen} />
         </details>
       )}
-      {legend}
+      {legendBox}
     </FoldSection>
   );
 }
-
 /** "Why it failed", open first on a failed run (ui-spec §4.4, UX-PAR-25): the run-level part, then
- * one card per job that failed on its last attempt (FailureSummary, P1 Task 32). */
-function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; processes: Process[]; onTasks: () => void; onOpen: (d: Detail) => void }) {
+ * one card per job that failed on its last attempt (FailureSummary, P1 Task 32). The run's own
+ * message is said once, short: `shortFailure` as the title line, the full text behind the
+ * "Show full message" button (inbox #161). */
+function WhyItFailed({
+  run,
+  processes,
+  server,
+  onTasks,
+  onLogs,
+  onOpen,
+}: { run: RunDetail; processes: Process[]; server: ServerVersion | null; onTasks: () => void; onLogs: () => void; onOpen: (d: Detail) => void }) {
   const failure = run.failure as { class?: unknown; message?: unknown; task_id?: unknown } | null;
   const kind = typeof failure?.class === "string" ? failure.class : null;
-  // left out when a job's card already shows it unchanged (CR-P3T32-04)
   const said = typeof failure?.message === "string" ? failure.message.trim() : "";
+  // left out when a job's card already shows it unchanged (CR-P3T32-04)
   const message = run.failures.some((f) => f.message?.trim() === said) ? "" : said;
+  // the message short: its paths relative to the pipeline (or the run's launch directory, where
+  // the engine works); the title line: the short form where this card is the message's only
+  // place, else what the counts still say (a job's card below shows the message unchanged)
+  const dir = runDirectory(run, server);
+  const short = said ? shortFailure(said, [run.workflow.location, dir ? `${dir}/launch` : null].filter((r): r is string => !!r)) : "";
+  const title = message ? short : "";
   const culpritId = typeof failure?.task_id === "string" ? failure.task_id : null;
   const w = words(run.workflow.engine);
   const { unit, units, Units } = w;
@@ -440,7 +476,7 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
   const failed = run.summary.tasks.failed;
   const headline = failed > 0 ? `${plural(failed, unit, units)} failed, and the run stopped` : kind ? `The run stopped: ${classWord(kind)}` : "The run stopped";
   return (
-    <FoldSection id="why" screen="run" icon="alert" title="Why it failed" summary={kind ? classWord(kind) : undefined}>
+    <FoldSection id="why" screen="run" icon="alert" title="Why it failed" summary={short || (kind ? classWord(kind) : undefined)}>
       {failed > 0 && (
         <p className="sp-link-end">
           <button type="button" className="sp-link-button" onClick={onTasks}>
@@ -452,12 +488,11 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
         <p className="sp-why-head">
           {kind && (
             <span className="sp-chip" data-tone="failed">
-              {kind}
+              {classWord(kind)}
             </span>
           )}
-          <strong>{headline}</strong>
+          <strong>{title || headline}</strong>
         </p>
-        {message && <p className="sp-why-message">{message}</p>}
         {culprit && (
           <p className="sp-why-first">
             First to fail: <span className="sp-mono">{taskLabel(culprit)}</span>
@@ -475,6 +510,19 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
               </>
             )}
           </p>
+        )}
+        <div className="sp-why-actions">
+          <Button variant="default" size="xs" leftSection={<Icon name="file" size="button" />} onClick={onLogs}>
+            Open the engine log
+          </Button>
+          {/* the Resume the header also offers, here where the question is; a run watched from a
+            terminal is resumed there (RESUMABLE) */}
+          {run.origin !== "cli-observed" && <ResumeAction run={run} server={server} />}
+        </div>
+        {message && (
+          <Disclosure label="Show full message">
+            <pre className="sp-code">{message}</pre>
+          </Disclosure>
         )}
       </div>
       <FailureSummary run={run} processes={processes} onOpen={onOpen} />
@@ -1334,7 +1382,16 @@ export function RunDetailPage({ id }: { id: string }) {
         <Tabs.Panel value="summary" pt="md">
           <div className="sp-detail-grid">
             <div className="sp-runs">
-              {run.state === "failed" && <WhyItFailed run={run} processes={processes} onTasks={() => showTasks("Failed")} onOpen={(view) => setViews([view])} />}
+              {run.state === "failed" && (
+                <WhyItFailed
+                  run={run}
+                  processes={processes}
+                  server={server}
+                  onTasks={() => showTasks("Failed")}
+                  onLogs={() => showLogs("engine")}
+                  onOpen={(view) => setViews([view])}
+                />
+              )}
               <StagesOrProcesses run={run} stages={stages} processes={processes} onTasks={() => go("tasks")} onOpen={(view) => setViews([view])} />
             </div>
             <SummaryAside run={run} server={server} onLogs={showLogs} logOpener={logOpener} />
