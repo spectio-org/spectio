@@ -1497,3 +1497,13 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
 
 - **Decision.** `POST /runs` validates the pipeline's parameters merged from every source (schema defaults, the pipeline's config or chosen profiles, the extra config file, the params file, the form), and the Launch form shows those values with their source. A `required` value that no source gives is refused only when every source could be read; otherwise the run starts with a warning. A module run must name each of its inputs. Owner: [api §5.12](../specs/api-and-data-model.md#512-effective-parameters-sources-prefill-and-validation-001).
 - **Why.** On the EMBL login node, `nf-core/demo` with its `test` profile and the Snakemake Workflow Catalog's template were refused for values that the profile and the pipeline's `config/config.yaml` set (Thomas, 2026-11-24: "c'est très important comme problème, il faut régler ceci, à la fois pour smk & nf et pour les modules").
+
+## 2026-11-24 — Snakemake deploys its software through conda and Apptainer, and runs with the pipeline's config (Thomas, inbox #161)
+
+- **Decision.** Before 0.0.1 is shared, a Snakemake run launched by Spectio can use conda and Apptainer (`--software-deployment-method`, set per environment, with caches shared by every run), and finds the pipeline's own `config/` from its launch directory. Thomas: software deployment is "impératif".
+- **Why.** On the EMBL login node, the Snakemake Workflow Catalog's template failed on a tool its `conda:` directive provides, and on a config key of its `config/config.yaml`, which was looked up in the launch directory.
+
+## 2026-11-24 — A central UI for every user, one runner per user on the login node (Thomas, inbox #162)
+
+- **Decision.** The next deployment after 0.0.1 is one central UI for all users, with sign-in through OIDC later (reusing depictio's code). Each user keeps a runner of their own on the login node. Jobs are not launched on Kubernetes for now. Both deployments must work: the server each user runs on the login node (0.0.1) stays.
+- **Why.** Users should not have to deploy the server themselves, while their jobs keep running under their own account on the cluster.
