@@ -44,6 +44,12 @@ export function Scope({ target }: { target: RunTarget | null | undefined }) {
   );
 }
 
+/** The runs list's Scope cell as plain muted text (#161, inbox Thomas): "Pipeline" or "Single
+ * step", the same size as the other cells — the badge stays on the phone's card. */
+export function ScopeText({ target }: { target: RunTarget | null | undefined }) {
+  return <span className="sp-scope-text">{target ? "Single step" : "Pipeline"}</span>;
+}
+
 /** The runs list's "What ran" (ui-spec §4.15): a rule run names its rule after the pipeline, and a
  * changed checksum shows without opening the run. */
 export function TargetTail({ target }: { target: RunTarget | null | undefined }) {

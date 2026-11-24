@@ -56,7 +56,7 @@ test("UI-02: the markup for a string-only host (AG Grid) is the same icon", () =
 // Every icon path and stroke lives in icons.tsx (ui-audit D). The only other drawings allowed are
 // brand marks, listed here by file and reason; the engine marks are PNGs and charts are HTML.
 const EXCEPTIONS: Record<string, string> = {
-  "./shell/TopBar.tsx": "the Spectio logo (SpectioMark), four filled brand paths",
+  "./shell/TopBar.tsx": "the Spectio logo: the emblem's four filled brand paths and the wordmark",
 };
 // Drawings that are not icons: they may hold an <svg>, a <path d=…> and a stroke width, but still
 // no <Icon path=…> and no path string outside a d= attribute.

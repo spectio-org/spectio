@@ -212,3 +212,26 @@ test("UI-04: sidebar items share the 25 px icon, the fold key and status keep th
   expect(fold.querySelector("svg")).toHaveAttribute("width", "20");
   expect(sidebar.querySelector(".sp-status svg")).toHaveAttribute("width", "16");
 });
+
+test("#161 (inbox Thomas): the home link is the official logo, 28 px, its wordmark in the theme's colour", async () => {
+  app();
+  const bar = (await screen.findByRole("switch", { name: "Dark theme" })).closest("header")!;
+  const home = within(bar).getByRole("link", { name: "Spectio, home" });
+  const logo = home.querySelector("svg")!;
+  expect(logo).toHaveAttribute("height", "28");
+  expect(logo.getAttribute("width")).toBe(String(Math.round(28 * (130.09 / 31.65))));
+  // the emblem keeps its four brand colours
+  const brand = logo.querySelectorAll('path[fill="#5A4FCF"], path[fill="#8B5CF6"], path[fill="#EC5F87"], path[fill="#F9A947"]');
+  expect(brand).toHaveLength(4);
+  // the wordmark follows the theme's text colour instead of the light scheme's fixed hex
+  expect(logo.querySelector('path[fill="currentColor"]')).not.toBeNull();
+  expect(home.querySelector(".sp-word")).toBeNull();
+});
+
+test("#161 (inbox Thomas): on the phone the logo reads at 24 px", async () => {
+  viewport(390);
+  app("/launch");
+  const bar = (await screen.findByRole("img", { name: "Server on login1, online" })).closest("header")!;
+  const logo = within(bar).getByRole("link", { name: "Spectio, home" }).querySelector("svg")!;
+  expect(logo).toHaveAttribute("height", "24");
+});

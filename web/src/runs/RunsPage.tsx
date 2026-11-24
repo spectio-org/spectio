@@ -1,13 +1,13 @@
-import { Button, Tooltip } from "@mantine/core";
+import { Button, SegmentedControl, Tooltip, VisuallyHidden } from "@mantine/core";
 import { Link, useNavigate, useRouterState, useSearch } from "@tanstack/react-router";
 import { useMediaQuery } from "@mantine/hooks";
 import type { CellKeyDownEvent, ColDef, FullWidthCellKeyDownEvent, SortChangedEvent } from "ag-grid-community";
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { type Page, type Run, type RunsSort, type ServerVersion, type Summary, listRuns, runsSummary, setPinned } from "../api";
-import { Icon } from "../icons";
+import { type IconName, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
-import { Scope, TargetTail } from "./target";
+import { Scope, ScopeText, TargetTail } from "./target";
 import { usePhone } from "../shell/layout";
 import { ago } from "../shell/NotificationsBell";
 import { PageHead } from "../shell/PageHead";
@@ -31,13 +31,14 @@ function Started({ run }: { run: Run }) {
   );
 }
 
-/** The state filters; `key` is the `?state=` of the URL, so Home's cards link to one (UX-PAR-12). */
-export const FILTERS: { key: string; label: string; states: string[] | null }[] = [
-  { key: "all", label: "All", states: null },
-  { key: "active", label: "Active", states: ACTIVE },
-  { key: "failed", label: "Failed", states: ["failed"] },
-  { key: "succeeded", label: "Succeeded", states: ["succeeded"] },
-  { key: "cancelled", label: "Cancelled", states: ["cancelled"] },
+/** The state filters; `key` is the `?state=` of the URL, so Home's cards link to one (UX-PAR-12).
+ * Each item's icon is the one its states' words wear (`TONE_ICONS`, #161, inbox Thomas). */
+export const FILTERS: { key: string; label: string; states: string[] | null; icon: IconName }[] = [
+  { key: "all", label: "All", states: null, icon: "list" },
+  { key: "active", label: "Active", states: ACTIVE, icon: "play" },
+  { key: "failed", label: "Failed", states: ["failed"], icon: "cross" },
+  { key: "succeeded", label: "Succeeded", states: ["succeeded"], icon: "check" },
+  { key: "cancelled", label: "Cancelled", states: ["cancelled"], icon: "slash" },
 ];
 
 /** The list's orders (`?sort=`, FU-P3-115b) and the footer's words for each; none is newest first. */
@@ -52,12 +53,13 @@ const SORTS: Partial<Record<RunsSort, string>> = {
   "-duration": "longest first",
 };
 
-/** The Scope buttons (ui-spec §4.15): every run, the runs that target one module or rule, or the
- * whole-pipeline runs; `key` is the `?target=` of the URL and of `GET /runs` (api §5.10). */
-const TARGETS: { key?: "any" | "none"; label: string }[] = [
-  { label: "Any scope" },
-  { key: "none", label: "Pipelines" },
-  { key: "any", label: "Single steps" },
+/** The Scope filter (ui-spec §4.15): every run, the runs that target one module or rule, or the
+ * whole-pipeline runs; `key` is the `?target=` of the URL and of `GET /runs` (api §5.10). The first
+ * item has no key ("Any scope"), so its control value is "all". */
+const TARGETS: { key?: "any" | "none"; label: string; icon: IconName }[] = [
+  { label: "Any scope", icon: "list" },
+  { key: "none", label: "Pipelines", icon: "pipeline" },
+  { key: "any", label: "Single steps", icon: "step" },
 ];
 
 type RunsSearch = { state?: string; q?: string; sort?: RunsSort; target?: "any" | "none" };
@@ -261,18 +263,15 @@ const COLUMNS: ColDef<Run>[] = [
       </>
     ),
   },
+  // One line: the state's icon and word only — why it failed is the run's page (#161, inbox Thomas).
   {
     headerName: "State",
     colId: "state",
     flex: 1.6,
-    cellRenderer: ({ data: run }: { data: Run }) => (
-      <>
-        <StateWord state={run.state} />
-        <span className="sp-muted">{stateContext(run)}</span>
-      </>
-    ),
+    cellRenderer: ({ data: run }: { data: Run }) => <StateWord state={run.state} />,
   },
-  { headerName: "Scope", colId: "scope", flex: 0.8, minWidth: 140, cellRenderer: ({ data: run }: { data: Run }) => <Scope target={run.target} /> },
+  // Plain muted text, the size of the other cells — the badge stays on the phone's card (#161).
+  { headerName: "Scope", colId: "scope", flex: 0.8, minWidth: 140, cellRenderer: ({ data: run }: { data: Run }) => <ScopeText target={run.target} /> },
   {
     headerName: "Workflow",
     colId: "workflow",
@@ -356,9 +355,9 @@ export function RunsPage() {
   // Each change keeps the other param: the name filter lands 250 ms after typing, a click may come between.
   const setSearch = (change: RunsSearch) =>
     navigate({ search: (prev) => runsSearch({ ...prev, ...change }), replace: true });
-  const setFilter = (i: number) => {
+  const setFilter = (key: string) => {
     setSaid([]);
-    setSearch({ state: FILTERS[i].states ? FILTERS[i].key : undefined });
+    setSearch({ state: FILTERS.find((f) => f.key === key)?.states ? key : undefined });
   };
   const server = useServer();
   const phone = usePhone();
@@ -384,10 +383,10 @@ export function RunsPage() {
     if (arrived?.length) saidLine.current?.focus();
   }, [arrived]);
   useEffect(() => setSelected(new Set()), [states, q]);
-  // the chosen pill stays in view where the pills scroll sideways (the phone, ui-spec §12.6)
+  // the chosen item stays in view where the control scrolls sideways (the phone, ui-spec §12.6)
   useEffect(() => {
-    document.querySelector('.sp-runs .sp-segments [aria-pressed="true"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
-  }, [filter]);
+    document.querySelector(".sp-runs .sp-seg input:checked")?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [filter, target]);
 
   useEffect(() => {
     document.title = "Runs · Spectio";
@@ -563,22 +562,46 @@ export function RunsPage() {
         }
         filters={
           <>
-            <div className="sp-segments" role="group" aria-label="Show runs">
-              {FILTERS.map((f, i) => (
-                <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
-                  {f.label}
-                  <span className="sp-count">{count(summary, f.states)}</span>
-                </button>
-              ))}
-            </div>
+            {/* One item per filter, its icon and its count muted (#161, inbox Thomas); the count is
+                part of the item's name, as the pill's was. */}
+            <SegmentedControl
+              className="sp-seg"
+              size="sm"
+              aria-label="Show runs"
+              value={FILTERS[filter].key}
+              onChange={setFilter}
+              data={FILTERS.map((f) => ({
+                value: f.key,
+                label: (
+                  <>
+                    {/* One name with a separator ("Failed, 5"): spans would join it as "Failed5". */}
+                    <span className="sp-segment" aria-hidden="true">
+                      <Icon name={f.icon} />
+                      {f.label}
+                      <span className="sp-seg-count">{count(summary, f.states)}</span>
+                    </span>
+                    <VisuallyHidden>{`${f.label}, ${count(summary, f.states)}`}</VisuallyHidden>
+                  </>
+                ),
+              }))}
+            />
             {scoped && (
-              <div className="sp-segments" role="group" aria-label="Scope">
-                {TARGETS.map((t) => (
-                  <button key={t.label} type="button" aria-pressed={target === t.key} onClick={() => setSearch({ target: t.key })}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                className="sp-seg"
+                size="sm"
+                aria-label="Scope"
+                value={target ?? "all"}
+                onChange={(value) => setSearch({ target: value === "all" ? undefined : (value as "any" | "none") })}
+                data={TARGETS.map((t) => ({
+                  value: t.key ?? "all",
+                  label: (
+                    <span className="sp-segment">
+                      <Icon name={t.icon} />
+                      {t.label}
+                    </span>
+                  ),
+                }))}
+              />
             )}
           </>
         }

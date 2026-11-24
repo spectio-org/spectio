@@ -32,26 +32,18 @@ body {
   margin-inline-start: var(--mantine-spacing-sm);
 }
 
-/* Brand */
+/* Brand: the official logo, its wordmark reading the theme's text colour (#161, inbox Thomas). */
 .sp-home {
   display: flex;
-  align-items: flex-end;
-  gap: var(--mantine-spacing-sm);
+  align-items: center;
   flex-shrink: 0;
   border-radius: var(--mantine-radius-sm);
   color: var(--sp-text-primary);
   text-decoration: none;
 }
-.sp-word {
-  font-family: var(--sp-font-display);
-  font-weight: 600;
-  font-size: var(--mantine-font-size-xl);
-  line-height: 0.74;
-  letter-spacing: -0.035em;
-}
-.sp-mark {
+.sp-logo {
+  display: block;
   overflow: visible;
-  margin-bottom: 1px;
 }
 
 /* Keys: 40 px on desktop, 44 px on the phone (touch targets, ui-spec §4.11). */
@@ -388,12 +380,8 @@ body {
   padding: 0 var(--mantine-spacing-md);
 }
 .sp-mtopbar .sp-home {
-  gap: var(--mantine-spacing-sm);
   min-height: 44px;
   align-items: center;
-}
-.sp-mtopbar .sp-word {
-  font-size: var(--mantine-font-size-xl);
 }
 .sp-mtopbar .sp-key {
   width: 44px;
@@ -855,11 +843,16 @@ body {
   box-sizing: border-box;
   border-radius: var(--mantine-radius-xl);
   background: var(--sp-accent);
-  color: var(--sp-accent-on);
+  /* The accent has no paired text token: white reads on the light scheme's violet (5.4:1), and the
+     dark scheme's lighter violet takes the darkest ink (6.5:1) — bold and centred (#161, Thomas). */
+  color: var(--mantine-color-white);
   font-size: var(--mantine-font-size-xs);
-  font-weight: 600;
+  font-weight: 700;
   line-height: 18px;
   text-align: center;
+}
+[data-mantine-color-scheme="dark"] .sp-bell-count {
+  color: var(--sp-ink-900);
 }
 .sp-link-button {
   padding: 0;
