@@ -2455,3 +2455,19 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Install recipe checked:** on login1 on 2026-11-24, `uv tool install snakemake==9.27.1 --with snakemake-executor-plugin-slurm==2.8.0` (uv 0.9.29, in a private temporary tool directory) installed Snakemake 9.27.1 with plugin 2.8.0.
 - **Assumed (2026-11-24, [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), built in PR #337. Item (c) is yours: ask for a module with Snakemake 9.26 or later and the SLURM plugin 2.8.0 or later.
 - **Also found:** Snakemake 9.25.2 and earlier log each failed job's `job_error` twice when the run ends. Whether the projector counts it twice is **[to be validated]**. It is kept as a follow-up: de-duplicate `job_error` per job in the logger plugin, as `temp_removed` already is.
+
+### #160 · Question: a workflow's parameters, and registering a workflow, through the API (Thomas, 2026-11-24)
+
+- **Asked by Thomas (2026-11-24):** can a script easily export the list of parameters of a given workflow through the API? Can a script register a workflow through the API?
+- **What exists in 0.0.1** ([api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), the note of 2026-10-30 and FU-P3-87):
+  1. **Parameters.** `GET /api/v1/workflows:inspect?location=&revision=` (`spectio_server/api/workflows.py:673`) reads a pipeline without running it and returns its parameter `schema`: `nextflow_schema.json` for Nextflow, `config.schema.yaml` for Snakemake, or `inferred`. It also returns `schema_source`, the profiles and the versions. With `params_file=` it also returns the values of a params file. `GET /api/v1/runs/{id}` returns the parameters a run was launched with.
+  2. **Registering.** `POST /api/v1/catalog` (`spectio_server/api/catalog.py:95`) saves an entry `{name, label, engine, location, revision, profile, params_file}` in the user's catalog. `PUT` and `DELETE` work with `If-Match`. Saving fetches nothing: a wrong location shows only when Launch inspects it. There is no `POST /workflows` in 0.0.1.
+- **What is missing for "easily, from a script":**
+  - **A token.** Every route needs the session cookie of the single-use sign-in link. Tokens for scripts are on the roadmap under "Later" ("Webhooks and tokens for robots"). Whether a script can use `spectio login --print-link` and exchange the link for a cookie is **[to be validated]**.
+  - **By catalog name.** Inspect takes a location and a revision, not a catalog entry. A script reads `GET /catalog/{name}` first, then calls inspect.
+  - **A flat list.** Inspect returns the JSON Schema as it is (groups, `definitions`, `allOf`). Nothing returns "name, type, default, required" per parameter, nor a ready-to-fill params file.
+- **Open choices, with the recommendation:**
+  1. (a) document the two calls above as they are, with an example in the API guide; (b) also add `GET /catalog/{name}:params` (or `?catalog=` on inspect) that returns a flat list and a template params file with the defaults; (c) both, after 0.0.1. **Recommendation: (a) now, a docs-only change, then (b) in 0.0.2 with the tokens.** A flat list is easy to derive from the schema the launch form already walks.
+  2. Registering by script needs a token first. **Recommendation:** bring "tokens for scripts" forward from "Later" into 0.0.2, with the scopes `catalog:write` and `runs:read`, and nothing that launches, until the authorization design covers it ([authentication-and-access](../specs/authentication-and-access.md)).
+- **Why a question:** it changes the 0.0.2 scope and the authentication design, which are Thomas's decisions (triage-policy, scope).
+- **Not assumed:** it is a scope question asked by Thomas, so it waits for his answer. Nothing was built.
