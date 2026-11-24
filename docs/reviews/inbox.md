@@ -2515,9 +2515,10 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   18. **A private GitLab reached over SSH** as the pipeline's source.
   19. **A watcher as an API client:** it keeps detecting and preparing the data, and launches through `POST /runs` with the sequencing run's ID as its `Idempotency-Key`, so its runs show in Spectio. It needs a token for a script rather than a sign-in link (#160).
 
-### #162 · Decided: a central UI for every user, one runner per user on the login node (Thomas, 2026-11-24)
+### #162 · Decided: a central UI for every user, one runner per user on the login node, beside the per-user server (Thomas, 2026-11-24)
 
 - **Thomas (2026-11-24):** one central, hosted UI for all users, so that nobody deploys the server; sign-in through OIDC later, reusing depictio's code. Jobs are not launched on Kubernetes for now. In every case each user has their own runner on the login node.
+- **Thomas (2026-11-24, same day):** both deployments must work in Spectio: the server each user runs on the login node (0.0.1), and the central UI with a runner per user.
 - **What exists:** the shared server, remote runners that pull their commands over outgoing HTTPS ([admin-and-operations §3.2](../specs/admin-and-operations.md)), the Helm chart ([architecture §7.5](../specs/architecture-plugins-and-packaging.md)), background tasks in SQL ([architecture §7.6](../specs/architecture-plugins-and-packaging.md)) and the sign-in methods ([authentication-and-access §2](../specs/authentication-and-access.md)) are specified as "later (open)" in [dev-environment-and-testing §15.1](../specs/dev-environment-and-testing.md). The data model is already multi-user ready.
 - **Open:** how a user's runner proves who it is and is paired to their account (#12–#14); how the central server reaches files that only the login node sees (logs, results, previews: through the runner); Postgres; what 0.0.1's token link becomes.
 - **Recommendation:** after 0.0.1 is shared, one planning step: a spec review focused on "central server, runner per user", then a spike with the server on a local Kubernetes cluster and one runner on the login node.

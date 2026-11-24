@@ -1505,5 +1505,5 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
 
 ## 2026-11-24 — A central UI for every user, one runner per user on the login node (Thomas, inbox #162)
 
-- **Decision.** The next deployment after 0.0.1 is one central UI for all users, with sign-in through OIDC later (reusing depictio's code). Each user keeps a runner of their own on the login node. Jobs are not launched on Kubernetes for now.
+- **Decision.** The next deployment after 0.0.1 is one central UI for all users, with sign-in through OIDC later (reusing depictio's code). Each user keeps a runner of their own on the login node. Jobs are not launched on Kubernetes for now. Both deployments must work: the server each user runs on the login node (0.0.1) stays.
 - **Why.** Users should not have to deploy the server themselves, while their jobs keep running under their own account on the cluster.
