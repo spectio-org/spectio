@@ -273,6 +273,24 @@ def test_launch_validates_params(
     assert ok.status_code == 201, ok.text
 
 
+def test_launch_required_errors_name_their_own_field(
+    authed_client: TestClient, tmp_path: Path
+) -> None:
+    """Api §5.12: the field of a `required` error is `params.<its own missing name>`, not the
+    first missing one."""
+    root = pipeline(tmp_path, "main.nf")
+    (root / "nextflow_schema.json").write_text(
+        json.dumps(
+            {"$schema": "https://json-schema.org/draft/2020-12/schema", "required": ["a", "b", "c"]}
+        )
+    )
+    response = launch(authed_client, str(root), "nextflow")
+    assert fields(response) == ["params.a", "params.b", "params.c"]
+    errors = {e["field"]: e["message"] for e in response.json()["errors"]}
+    assert errors["params.b"] == "'b' is a required property"
+    assert errors["params.c"] == "'c' is a required property"
+
+
 def test_launch_draft7_schema(authed_client: TestClient, tmp_path: Path) -> None:
     root = pipeline(
         tmp_path, "main.nf", schema="nf_schema_definitions.json", to="nextflow_schema.json"

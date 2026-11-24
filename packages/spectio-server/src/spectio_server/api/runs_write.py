@@ -11,6 +11,7 @@ which the runner leases (P1 Task 9). The runner launches the directory read here
 a Git location; the run keeps the location as given, the repository's URL for Git.
 """
 
+import re
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
@@ -49,6 +50,9 @@ from spectio_server.store.writer import Writer
 from spectio_server.targets import TargetIn, launch_module, launch_rule, require_flag
 
 router = APIRouter()
+
+# "'x' is a required property": the missing name is in the message only (api §5.12).
+_REQUIRED_NAME = re.compile(r"^['\"](.+)['\"] is a required property$")
 
 
 class WorkflowIn(BaseModel):
@@ -111,10 +115,14 @@ def _check_params(found: Found, params: dict[str, Any]) -> None:
     found_errors = []
     for error in errors:
         path = [str(p) for p in error.absolute_path]
-        if error.validator == "required":  # the missing name is in the message only
-            required = cast(list[str], error.validator_value)
-            missing = [k for k in required if k not in cast(dict[str, Any], error.instance)]
-            path += missing[:1]
+        if error.validator == "required":  # one error per missing name, in the message only
+            quoted = _REQUIRED_NAME.match(error.message)
+            if quoted is not None:  # the error's own name, not the first missing one (§5.12)
+                path.append(quoted.group(1))
+            else:  # a message jsonschema no longer writes: the first missing name
+                required = cast(list[str], error.validator_value)
+                missing = [k for k in required if k not in cast(dict[str, Any], error.instance)]
+                path += missing[:1]
         found_errors.append({"field": ".".join(["params", *path]), "message": error.message})
     if found_errors:
         raise Invalid.many(found_errors)

@@ -266,10 +266,17 @@ def launch_module(
         if given.version is None:
             raise Invalid("target.version", "a registry module runs at a pinned version")
         module = inspect_module(settings, engine, files, location, given.version)
-    names = {i["name"] for i in module.inputs}
-    unknown = sorted(set(params) - names)
+    names = [i["name"] for i in module.inputs]
+    unknown = sorted(set(params) - set(names))
     if unknown:
         raise Invalid(f"params.{unknown[0]}", f"the module has no input {unknown[0]}")
+    # an input given as [] or null is given: only one left out counts as missing (api §5.12)
+    missing = next((name for name in names if name not in params), None)
+    if missing is not None:
+        raise Invalid(
+            f"params.{missing}",
+            f"the module needs input {missing}; give [] to leave an optional one empty",
+        )
     return module
 
 
