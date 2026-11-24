@@ -776,6 +776,42 @@ The run graph adds a runtime overlay to each node. It holds `status`, `counts`, 
 
 **Untrusted text.** Names, conditions and paths come from pipeline code. Clients render them as text only.
 
+### 5.12 Effective parameters: sources, prefill and validation (0.0.1)
+
+*Added 2026-11-24 (Thomas: "c'est très important comme problème, il faut régler ceci, à la fois pour smk & nf et pour les modules", [inbox #161](../reviews/inbox.md#161-decided-what-blocks-sharing-001-from-thomass-own-test-on-the-embl-login-node-thomas-2026-11-24)).*
+
+**Problem, seen on the EMBL login node on 2026-11-24.** `POST /runs` validated the form's `params` alone against the pipeline's schema (`_check_params`, `api/runs_write.py`). A value that the pipeline itself supplies counted as missing:
+
+- `nf-core/demo` 1.2.0 with `profiles: ["test", "apptainer"]` and `params: {"outdir": "results"}` got `422 params.input: 'input' is a required property`, although its `conf/test.config` sets `input`.
+- `snakemake-workflow-template` with `params: {}` got three `required` errors, although its `config/config.yaml`, which its Snakefile loads (`configfile: "config/config.yaml"`), sets all three. All three were reported under `params.sample_sheet`: the field of a `required` error was the first missing name, not the error's own.
+
+Not every pipeline sets every value: an nf-core pipeline leaves `outdir` and `input` unset outside its `test` profile. A parameter is therefore missing only when no source gives it.
+
+**Sources, lowest precedence first.** The *effective parameters* are these sources merged, each one's keys over the previous ones':
+
+| Run | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| Nextflow pipeline | the schema's `default`s | the pipeline's config with the chosen profiles: `params` of `nextflow config -profile <p1,p2> -o json <dir>` | the run's extra config file (§5.7), when the same command reads it **[to be validated]** | the params file | the form |
+| Snakemake pipeline or rule | the schema's `default`s | the pipeline's config file: the path of a literal `configfile: "<path>"` line of the Snakefile, relative to the pipeline's root, else `config/config.yaml` | the run's extra config file (§5.7) | the params file | the form |
+| Nextflow module (§5.10) | none | none | none | none | the form |
+
+- `nextflow config -profile test -o json <dir>` printed `params.input` for `nf-core/demo` 1.2.0, and `null` without the profile (Nextflow 26.04.4, login node, 2026-11-24). Values set only in `main.nf` (`params.x = …`) are not in its output **[to be validated]**.
+- The command runs through the login shell in an empty temporary directory, as the module and rule commands do (§5.10), with the same timeout. Its answer is cached per pipeline commit and profile list.
+- **Complete or not.** The sources are *complete* when every one that applies was read. They are not when `nextflow config` failed or timed out, or when the Snakefile's `configfile:` is not a literal line (a variable, a function call).
+
+**Inspect.** `GET /workflows:inspect` takes `profiles=<p1,p2>` and answers, beside `schema`, `defaults: {<name>: {"value": …, "source": "schema" | "config" | "profile" | "params_file"}}` (top-level names only) and `defaults_complete: bool`. `source: "config"` is the pipeline's own config file (Snakemake) or its config without a profile (Nextflow); `"profile"` a value a chosen profile changed.
+
+**Validation in `POST /runs`.** The effective parameters are validated against the schema, not the form alone.
+
+- A wrong type, enum or pattern is a `422` as before.
+- A `required` error is a `422` only when the sources are complete. When they are not, the run is created and the `201` answer carries `warnings: [{"field", "message"}]`; the engine's own check (nf-schema, Snakemake's `validate`) has the last word.
+- The field of a `required` error is `params.<the missing name>`, the name of that error, not the first missing one.
+- `params.json` holds the form's values only (§5.2). The other sources stay where they are, so a value that a profile or the pipeline's config sets keeps coming from it.
+
+**Modules.** A module's inputs come from `nextflow module view -o json` or `meta.yml` (§5.10), which mark none as optional. `POST /runs` refuses a module run that leaves an input out, with `422 params.<input>: "the module needs input <input>; give [] to leave an optional one empty"`. Test inputs for a module (its `tests/main.nf.test`) are **not** read in 0.0.1.
+
+**Launch form.** It shows the effective defaults as each field's value, with the source under it ("from profile test", "from config/config.yaml", "schema default"). Choosing other profiles asks inspect again. It sends only the values the user changed. A required field that no source fills is an error that disables Launch when `defaults_complete`; otherwise "Before Launch" lists it as a warning and Launch stays enabled. Owned by [ui-spec](ui-spec.md) for the look; this section owns the rules.
+
 ## 6. Identity, tenancy and permissions
 
 Sign-in methods, sessions, tokens, magic links, share links and pipeline provisioning are specified in [`authentication-and-access.md`](authentication-and-access.md). This section owns principals, tenancy and roles.
