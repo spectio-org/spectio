@@ -446,6 +446,11 @@
         "additionalProperties": false,
         "description": "A definition: a snapshot's fields and the default profile of each engine.",
         "properties": {
+          "apptainer_args": {
+            "default": "",
+            "title": "Apptainer Args",
+            "type": "string"
+          },
           "executor": {
             "enum": [
               "local",
@@ -492,6 +497,21 @@
                 "type": "null"
               }
             ]
+          },
+          "software": {
+            "default": [
+              "conda",
+              "apptainer"
+            ],
+            "items": {
+              "enum": [
+                "conda",
+                "apptainer"
+              ],
+              "type": "string"
+            },
+            "title": "Software",
+            "type": "array"
           }
         },
         "required": [
@@ -504,6 +524,10 @@
       "EnvironmentItem": {
         "description": "One environment of `GET /environments` (FU-P3-86d, api \u00a75.4): a built-in or one of the\nfile's; `usable: false` with its reason, such as a SLURM one on a local server.",
         "properties": {
+          "apptainer_args": {
+            "title": "Apptainer Args",
+            "type": "string"
+          },
           "builtin": {
             "title": "Builtin",
             "type": "boolean"
@@ -562,6 +586,17 @@
               }
             ]
           },
+          "software": {
+            "items": {
+              "enum": [
+                "conda",
+                "apptainer"
+              ],
+              "type": "string"
+            },
+            "title": "Software",
+            "type": "array"
+          },
           "unusable_reason": {
             "anyOf": [
               {
@@ -588,6 +623,8 @@
           "unusable_reason",
           "slurm",
           "local",
+          "software",
+          "apptainer_args",
           "profiles",
           "etag"
         ],
@@ -3293,6 +3330,17 @@
       "RunEnvironment": {
         "description": "The run's own environment, as resolved at launch (FU-P3-86a, api \u00a75.4); its fields are\nnull unless `state` is `recorded`.",
         "properties": {
+          "apptainer_args": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apptainer Args"
+          },
           "executor": {
             "anyOf": [
               {
@@ -3349,6 +3397,24 @@
                 "type": "null"
               }
             ]
+          },
+          "software": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "conda",
+                    "apptainer"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Software"
           },
           "state": {
             "enum": [

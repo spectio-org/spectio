@@ -93,8 +93,9 @@ class RunEnvironment(BaseModel):
     executor: Literal["local", "slurm"] | None
     slurm: EnvironmentSlurm | None
     local: EnvironmentLocal | None
-    software: list[Literal["conda", "apptainer"]] | None  # null unless `recorded` (inbox #161)
-    apptainer_args: str | None
+    # null unless `recorded` (inbox #161); a run recorded before the field has neither (CR-01)
+    software: list[Literal["conda", "apptainer"]] | None = None
+    apptainer_args: str | None = None
     state: Literal["recorded", "not_recorded", "not_readable"]
 
 

@@ -32,6 +32,7 @@ LOCAL_CAPS = {"cpus": 2, "mem_mib": 8192}  # the built-in `local` on a login nod
 # user's order. A Nextflow environment keeps the field; its profiles own its software.
 SOFTWARE_TOOLS = ("conda", "apptainer")
 MAX_APPTAINER_ARGS = 500
+APPTAINER_WORDS = re.compile(r"[A-Za-z0-9_./:,=@+% -]*")
 SnapshotState = Literal["recorded", "not_recorded", "not_readable"]
 
 
@@ -60,13 +61,14 @@ def _software(values: list[str]) -> list[str]:
 
 
 def _apptainer_args(value: str) -> str:
-    """At most MAX_APPTAINER_ARGS characters, no control character (SEC-05/CR-02): the words go
-    to Apptainer as one argument of the command list, never as shell text, but a control
-    character has no place in an argument."""
-    if len(value) > MAX_APPTAINER_ARGS or any(unicodedata.category(c) == "Cc" for c in value):
+    """At most MAX_APPTAINER_ARGS characters of APPTAINER_WORDS only (SEC-362-01): Snakemake
+    pastes the value unquoted into the shell command of every container job
+    (`deployment/singularity.py` `shellcmd`, 9.27.1), so a quote, `;`, `$`, a backtick or a
+    control character would become shell syntax there."""
+    if len(value) > MAX_APPTAINER_ARGS or not APPTAINER_WORDS.fullmatch(value):
         raise ValueError(
-            f"the Apptainer arguments are at most {MAX_APPTAINER_ARGS} characters,"
-            " with no control character"
+            f"the Apptainer arguments are at most {MAX_APPTAINER_ARGS} characters of letters,"
+            " digits, spaces and _ . / : , = @ + % -"
         )
     return value
 

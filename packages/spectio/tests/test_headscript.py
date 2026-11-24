@@ -306,8 +306,8 @@ def test_snakemake_deploys_the_environment_software(home: Path, bridges: Path) -
     assert args[at + 1 : at + 3] == ["conda", "apptainer"]
     assert args[args.index("--conda-prefix") + 1] == str(home / "data" / "cache" / "conda")
     assert args[args.index("--apptainer-prefix") + 1] == str(home / "data" / "cache" / "apptainer")
-    assert args[args.index("--apptainer-args") + 1] == "--bind /g,/scratch"
-    assert args.index("--touch") > args.index("--apptainer-args") + 1  # before extra_args
+    assert "--apptainer-args=--bind /g,/scratch" in args  # one word (CR-02)
+    assert args.index("--touch") > args.index("--logger")  # before extra_args
     plain = engine_args(replace(spec, software=[], apptainer_args=""))
     assert not set(SOFTWARE_FLAGS) & set(plain)
     kept = [
@@ -318,12 +318,30 @@ def test_snakemake_deploys_the_environment_software(home: Path, bridges: Path) -
             *SOFTWARE_FLAGS,
             "conda",
             "apptainer",
-            "--bind /g,/scratch",
+            "--apptainer-args=--bind /g,/scratch",
             str(home / "data" / "cache" / "conda"),
             str(home / "data" / "cache" / "apptainer"),
         )
     ]
     assert plain == kept
+
+
+def test_snakemake_software_flags_parse_as_snakemake_reads_them(home: Path, bridges: Path) -> None:
+    """CR-02, CR-03: an Apptainer value starting with `-` stays one word, and the method's
+    values end at a flag Spectio always writes, even when extra_args starts with a target."""
+    spec = snakemake_spec(
+        home,
+        data_dir=None,
+        software=["conda", "apptainer"],
+        apptainer_args="--nv",
+        extra_args=["all"],
+    )
+    args = engine_args(spec)
+    at = args.index("--software-deployment-method")
+    assert args[at + 1 : at + 4] == ["conda", "apptainer", "--apptainer-args=--nv"]
+    bare = engine_args(replace(spec, apptainer_args=""))
+    at = bare.index("--software-deployment-method")
+    assert bare[at + 1 : at + 4] == ["conda", "apptainer", "--logger"]
 
 
 def test_snakemake_software_without_a_data_dir_keeps_its_method(home: Path, bridges: Path) -> None:
@@ -332,7 +350,7 @@ def test_snakemake_software_without_a_data_dir_keeps_its_method(home: Path, brid
     spec = snakemake_spec(home, software=["conda"], apptainer_args="--bind /g")
     args = engine_args(spec)
     assert args[args.index("--software-deployment-method") + 1] == "conda"
-    assert args[args.index("--apptainer-args") + 1] == "--bind /g"
+    assert "--apptainer-args=--bind /g" in args
     assert "--conda-prefix" not in args and "--apptainer-prefix" not in args
 
 
@@ -412,6 +430,25 @@ def test_snakemake_pipeline_config_is_copied(home: Path, bridges: Path) -> None:
     assert (copied / "samples.tsv").read_text() == "sample\nA\n"
     assert not (copied / "link.yaml").exists() and not (copied / "link.yaml").is_symlink()
     assert not (copied / "big.tsv").exists()
+
+
+def test_snakemake_pipeline_config_symlink_or_fifo_not_copied(home: Path, bridges: Path) -> None:
+    """SEC-362-02, -03: a `config` that is a symbolic link is not followed, and a FIFO inside
+    is skipped rather than failing the copy."""
+    config = _pipeline_with_config(home)
+    os.mkfifo(config / "pipe")
+    spec = snakemake_spec(home)
+    assert run_head(spec).returncode == 0
+    assert (spec.engine_dir / "config" / "config.yaml").exists()
+    assert not (spec.engine_dir / "config" / "pipe").exists()
+
+    elsewhere = home / "elsewhere"
+    shutil.rmtree(config)
+    shutil.copytree(spec.engine_dir / "config", elsewhere)
+    config.symlink_to(elsewhere)
+    shutil.rmtree(spec.engine_dir / "config")
+    assert run_head(spec).returncode == 0
+    assert not (spec.engine_dir / "config").exists()
 
 
 def test_snakemake_pipeline_config_copied_once(home: Path, bridges: Path) -> None:

