@@ -108,7 +108,10 @@ class LaunchSpec:
     which runs in `resume_of`'s directories. `target` limits the run to one module or one rule
     (api §5.10); a registry module's `location` is its name, every other one a directory.
     `slurm_accounting` is the site's accounting as `site_accounting` found it (FU-P3-106b),
-    None when unknown or not a SLURM Snakemake launch.
+    None when unknown or not a SLURM Snakemake launch. `software` and `apptainer_args` are the
+    environment's Snakemake software deployment (inbox #161), and `data_dir` the server's data
+    directory, under whose `cache/` the conda environments and Apptainer images are kept, shared
+    by the runs.
     """
 
     run_id: str
@@ -131,6 +134,9 @@ class LaunchSpec:
     default_resources: DefaultResources | None = None
     config_file: ExtraFile | None = None
     slurm_accounting: bool | None = None
+    software: list[str] = field(default_factory=list)
+    apptainer_args: str = ""
+    data_dir: Path | None = None
 
     @property
     def engine_dir(self) -> Path:

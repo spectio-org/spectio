@@ -15,6 +15,7 @@ import os
 import re
 import shlex
 import shutil
+import stat
 from pathlib import Path
 
 from spectio.config import NF_SPECTIO_VERSION, slurm_name
@@ -222,6 +223,9 @@ def engine_args(spec: LaunchSpec) -> list[str]:
                     args += ["--jobs", str(SLURM_JOBS)]
                 elif _cap(spec.local, "cpus") is None:
                     args += ["--cores", "all"]
+            # The software deploys, as a profile would ask it (inbox #161): before extra_args,
+            # which is never doubled a flag.
+            args += _software_args(spec)
     args += spec.extra_args
     if spec.engine == "snakemake":
         # Last, after `extra_args` and a workflow profile, so that none lifts them (api §5.4,
@@ -267,6 +271,48 @@ def _cap(local: LocalValues | None, key: str) -> int | None:
     if value is None:
         return None
     return _int(value, *((1, 256) if key == "cpus" else MEM_MIB))
+
+
+# The `--software-*` flags of a Snakemake launch without a workflow profile (inbox #161): a
+# profile owns its software settings, as it owns its resources (CR-P3T09-06).
+SOFTWARE_METHOD = "--software-deployment-method"
+SOFTWARE_PREFIXES = {"conda": "--conda-prefix", "apptainer": "--apptainer-prefix"}
+APPTAINER_ARGS = "--apptainer-args"
+
+
+def _sets_software(arg: str, flag: str) -> bool:
+    """`arg` is the flag, with or without its value attached."""
+    return arg == flag or arg.startswith(flag + "=")
+
+
+def _software_args(spec: LaunchSpec) -> list[str]:
+    """The software the environment's snapshot asks a Snakemake launch to deploy with (inbox
+    #161): `--software-deployment-method` with each tool in the user's order, then each tool's
+    prefix under the server's data directory, so the conda environments and Apptainer images are
+    built once and found by every run, a resume's too; then the environment's Apptainer
+    arguments. A flag the user already gives in extra_args is never doubled, as with
+    `--slurm-status-command`; checked again here, as the SLURM names are (SEC-PRE-FU86-R1-06)."""
+    values = spec.software
+    if not values:
+        return []
+    if any(not isinstance(v, str) or v not in SOFTWARE_PREFIXES for v in values):
+        raise ValueError("software is each tool named at most once: conda, apptainer")
+    if len(set(values)) != len(values):
+        raise ValueError(f"software names a tool twice: {values[:5]}")
+    given = spec.extra_args
+    args = []
+    if not any(_sets_software(arg, SOFTWARE_METHOD) for arg in given):
+        args += [SOFTWARE_METHOD, *values]
+    for tool, prefix in SOFTWARE_PREFIXES.items():
+        if (
+            tool in values
+            and spec.data_dir is not None
+            and not any(_sets_software(arg, prefix) for arg in given)
+        ):
+            args += [prefix, str(spec.data_dir / "cache" / tool)]
+    if spec.apptainer_args and not any(_sets_software(arg, APPTAINER_ARGS) for arg in given):
+        args += [APPTAINER_ARGS, spec.apptainer_args]
+    return args
 
 
 def _slurm_resources(slurm: SlurmValues, run: dict[str, int]) -> list[str]:
@@ -518,6 +564,40 @@ def _environment_text(spec: LaunchSpec) -> str:
     return f"environment {spec.environment} ({values_text})"
 
 
+# A file of the pipeline's `config/` bigger than this is not copied into the launch directory:
+# the config files and tables of a pipeline are small; a 10 MiB one is data, not configuration.
+MAX_CONFIG_FILE = 10 * 1024 * 1024
+
+
+def _copy_pipeline_config(spec: LaunchSpec) -> None:
+    """The pipeline directory's `config/` into the engine's launch directory (inbox #161,
+    Snakedeploy-style), so that `configfile: "config/config.yaml"` and `config/samples.tsv`
+    resolve as they do from the repository root: the engine runs in the launch directory
+    (`--directory`, `_snakemake_base`). A launch directory that has one already keeps it — a
+    Resume of a launch this feature made copies nothing. Never a symbolic link followed (no
+    reading outside through a link), and never a file over MAX_CONFIG_FILE."""
+    source = spec.location / "config"
+    target = spec.engine_dir / "config"
+    if not source.is_dir() or os.path.lexists(target):
+        return
+
+    def skip(directory: str, names: list[str]) -> list[str]:
+        out = []
+        for name in names:
+            try:
+                st = os.lstat(os.path.join(directory, name))
+            except OSError:  # unreadable: copytree would fail on it too
+                out.append(name)
+                continue
+            if stat.S_ISLNK(st.st_mode) or (
+                stat.S_ISREG(st.st_mode) and st.st_size > MAX_CONFIG_FILE
+            ):
+                out.append(name)
+        return out
+
+    shutil.copytree(source, target, ignore=skip)
+
+
 def write_launch_files(spec: LaunchSpec) -> Path:
     """Write `.spectio/{params.json, spectio.config, head.sh}` and deliver the bridge: unpack
     nf-spectio, or copy the Snakemake logger to `.spectio/pylib/`. Returns the head script.
@@ -540,6 +620,7 @@ def write_launch_files(spec: LaunchSpec) -> Path:
             write_file(fd, "spectio.config", nextflow_config(spec).encode())
             unpack_nf_spectio({**os.environ, **spec.env})
         else:
+            _copy_pipeline_config(spec)  # the engine's config/ (inbox #161), before the head runs
             pylib = _spectio(spec) / "pylib"
             shutil.rmtree(pylib, ignore_errors=True)
             os.mkdir("pylib", 0o700, dir_fd=fd)

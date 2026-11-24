@@ -4,7 +4,8 @@
 The sources, each one's keys over the previous one's: the schema's `default`s; the pipeline's
 own config — the `params` of `nextflow config -o json <dir>` (with `-profile <p1,p2>` for the
 chosen profiles), or, for Snakemake, the file a literal `configfile: "<path>"` line of the
-Snakefile names, relative to the pipeline's root, else `config/config.yaml`; the params file.
+Snakefile names, or the literal of a variable the line names, assigned on an earlier top-level
+line (inbox #161), relative to the pipeline's root, else `config/config.yaml`; the params file.
 `nextflow config` runs through the login shell, as the module and rule commands do (§5.10): an
 argument list in an empty temporary directory, with that helper's timeout and output cap. Its
 answer is kept in memory per directory and profile list, and per the mtime_ns of the files the
@@ -17,6 +18,7 @@ gives it, and the engine's own check has the last word.
 """
 
 import json
+import keyword
 import os
 import re
 import threading
@@ -37,8 +39,17 @@ from spectio_server.api.workflows import (
 from spectio_server.targets import Engine, bounded, snakefile_of
 
 # A literal `configfile: "<path>"` line of a Snakefile, double or single quoted; any other
-# `configfile:` (a variable, a call) names no file this server can read (§5.12)
+# `configfile:` (a variable, a call) names no file this server can read (§5.12) — except a
+# variable assigned a literal on an earlier top-level line (inbox #161): `CONFIGFILE_NAME`
+# names it, `ASSIGNMENT` is the last such assignment above the line, and the literal goes
+# through the same checks as a written-out path
 CONFIGFILE = re.compile(r"^[ \t]*configfile[ \t]*:[ \t]*(?:\"([^\"\r\n]+)\"|'([^'\r\n]+)')", re.M)
+CONFIGFILE_NAME = re.compile(
+    r"^[ \t]*configfile[ \t]*:[ \t]*([A-Za-z_][A-Za-z0-9_]*)[ \t]*(?:#.*)?$", re.M
+)
+ASSIGNMENT = re.compile(
+    r"^([A-Za-z_][A-Za-z0-9_]*)[ \t]*=[ \t]*(?:\"([^\"\r\n]+)\"|'([^'\r\n]+)')", re.M
+)
 CONFIGFILE_LINE = re.compile(r"^[ \t]*configfile[ \t]*:", re.M)
 
 # A path with a control character (SEC-05/CR-02) names no file this server reads: os.open would
@@ -198,21 +209,31 @@ class DefaultsCache:
 
 def _config_file(directory: Path) -> tuple[Path, str | None, bool]:
     """The Snakefile, the config file it loads relative to the pipeline's root, and whether the
-    Snakefile names it (§5.12): a literal `configfile: "<path>"` line's path, else
+    Snakefile names it (§5.12): a literal `configfile: "<path>"` line's path, else the literal
+    of a variable that an earlier top-level line assigns and the line names (inbox #161), else
     `config/config.yaml`. None when no file can be named: the Snakefile cannot be read, the line
-    is not a literal (a variable, a call), or the path leaves the root or holds a control
-    character (SEC-05/CR-02). The one place the cache key and the read both take it from."""
+    names anything else (a call, a keyword, an unassigned variable), or the path leaves the root
+    or holds a control character (SEC-05/CR-02). The one place the cache key and the read both
+    take it from."""
     snakefile = snakefile_of(directory)
     try:
         text = _read(directory, *snakefile.relative_to(directory).parts) or ""
     except (Unreadable, UnicodeDecodeError):
         return snakefile, None, True
-    literal = CONFIGFILE.search(text)
-    if literal is None:
+    rel: str | None = None
+    if (literal := CONFIGFILE.search(text)) is not None:
+        rel = literal.group(1) or literal.group(2)
+    elif (named := CONFIGFILE_NAME.search(text)) is not None and not keyword.iskeyword(
+        named.group(1)
+    ):
+        for assign in reversed(list(ASSIGNMENT.finditer(text))):
+            if assign.start() < named.start() and assign.group(1) == named.group(1):
+                rel = assign.group(2) or assign.group(3)
+                break
+    if rel is None:
         if CONFIGFILE_LINE.search(text):
             return snakefile, None, True
         return snakefile, "config/config.yaml", False
-    rel = literal.group(1) or literal.group(2)
     if (
         rel.startswith("/")
         or CONTROL.search(rel)

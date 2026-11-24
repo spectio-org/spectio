@@ -174,6 +174,32 @@ test("the form: 0 h 0 min is refused before sending, and Save says why", async (
   expect(save).toHaveAccessibleDescription("Fix Time per job first");
 });
 
+test("the form posts the software checkboxes and the Apptainer arguments (inbox #161)", async () => {
+  const bodies: unknown[] = [];
+  const saved = item("mylab", { software: ["apptainer"], apptainer_args: "--bind /g,/scratch" });
+  serve({
+    "/api/v1/version": SLURM,
+    [API]: (_u: URL, init?: RequestInit) => {
+      if (init?.method !== "POST") return json(200, list([...BUILTINS, saved]));
+      bodies.push(JSON.parse(String(init.body)));
+      return json(201, saved);
+    },
+  });
+  app("/environments/new");
+  await userEvent.type(await screen.findByLabelText("Name"), "mylab");
+  const group = screen.getByRole("group", { name: "Software (Snakemake)" });
+  expect(within(group).getByRole("checkbox", { name: "Conda" })).toBeChecked(); // both by default
+  expect(within(group).getByRole("checkbox", { name: "Apptainer" })).toBeChecked();
+  await userEvent.click(within(group).getByRole("checkbox", { name: "Conda" }));
+  await userEvent.type(screen.getByLabelText("Apptainer arguments"), "--bind /g,/scratch");
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(bodies).toHaveLength(1));
+  expect(bodies[0]).toMatchObject({ name: "mylab", software: ["apptainer"], apptainer_args: "--bind /g,/scratch" });
+  // the saved item reads back into the list as it was saved
+  const card = (await screen.findByRole("heading", { name: "mylab" })).closest("article")!;
+  expect(within(card).getByText(/deploys with apptainer/)).toBeInTheDocument();
+});
+
 test("editing: 412 says the environment changed, with Reload; after Save, the list with focus", async () => {
   let status = 412;
   serve({

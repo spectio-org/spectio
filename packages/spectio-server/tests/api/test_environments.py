@@ -177,6 +177,11 @@ def stat_mode(p: Path) -> int:
         ({**MYLAB, "label": "a‮b"}, "label"),
         ({**MYLAB, "profiles": {"nextflow": "../x"}}, "profiles.nextflow"),
         ({**MYLAB, "slurm": {"partition": "htc"}}, "body"),  # slurm values on a local one
+        ({**MYLAB, "software": ["npm"]}, "software.0"),
+        ({**MYLAB, "software": ["conda", "conda"]}, "software"),
+        ({**MYLAB, "software": "conda"}, "software"),
+        ({**MYLAB, "apptainer_args": "--bind\rtouch x"}, "apptainer_args"),
+        ({**MYLAB, "apptainer_args": "a" * 501}, "apptainer_args"),
     ],
 )
 def test_req18_routes_refusals(authed_client: TestClient, body: dict[str, Any], field: str) -> None:
@@ -430,6 +435,8 @@ def test_req18_snapshot_launch_with_environment(
         "executor": "local",
         "slurm": None,
         "local": {"cpus": 4, "mem_mib": None},
+        "software": ["conda", "apptainer"],
+        "apptainer_args": "",
     }
     assert column(writer, rid) == {**want, "state": "recorded"}
     assert read_run_manifest(run_paths(settings.runs_root, rid).run_dir).environment == want
@@ -445,6 +452,42 @@ def test_req18_snapshot_launch_with_environment(
     (spec,) = launcher.specs
     assert (spec.environment, spec.slurm) == ("mylab", None)
     assert spec.local == envs.LocalValues(cpus=4)
+    # The software of the snapshot, and the server's data directory for its prefixes (inbox #161)
+    assert (spec.software, spec.apptainer_args) == (["conda", "apptainer"], "")
+    assert spec.data_dir == settings.data_dir
+
+
+def test_software_round_trip(authed_client: TestClient, synthetic: Path, writer: Writer) -> None:
+    """inbox #161: the software and the Apptainer arguments are part of an environment: the
+    routes give them back, the file holds them — an empty list and empty arguments too — and a
+    launch keeps the chosen ones in its snapshot and its spec."""
+    item = create(
+        authed_client,
+        {
+            **MYLAB,
+            "software": ["apptainer", "conda"],
+            "apptainer_args": "--bind /g,/scratch",
+        },
+    ).json()
+    assert (item["software"], item["apptainer_args"]) == (
+        ["apptainer", "conda"],
+        "--bind /g,/scratch",
+    )
+    text = path().read_text()
+    assert 'software = ["apptainer", "conda"]' in text
+    assert 'apptainer_args = "--bind /g,/scratch"' in text
+    tag = {"If-Match": item["etag"]}
+    changed = {**MYLAB, "software": [], "apptainer_args": ""}
+    put = authed_client.put(f"{ENVS}/mylab", json=changed, headers=tag)
+    assert put.status_code == 200, put.text
+    assert (put.json()["software"], put.json()["apptainer_args"]) == ([], "")
+    # an empty list and empty arguments survive the file round-trip, not folded into a default
+    hand_read = envfile.read_file(path(), ["local"]).environments
+    assert [(e.software, e.apptainer_args) for e in hand_read] == [([], "")]
+    rid = launched(authed_client, synthetic, environment="mylab")
+    assert column(writer, rid)["software"] == []
+    run = authed_client.get(f"{API}/runs/{rid}").json()["environment"]
+    assert (run["software"], run["apptainer_args"]) == ([], "")
 
 
 def test_req18_snapshot_launch_default(

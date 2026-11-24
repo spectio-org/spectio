@@ -93,6 +93,8 @@ class RunEnvironment(BaseModel):
     executor: Literal["local", "slurm"] | None
     slurm: EnvironmentSlurm | None
     local: EnvironmentLocal | None
+    software: list[Literal["conda", "apptainer"]] | None  # null unless `recorded` (inbox #161)
+    apptainer_args: str | None
     state: Literal["recorded", "not_recorded", "not_readable"]
 
 
@@ -137,6 +139,8 @@ class EnvironmentItem(BaseModel):
     unusable_reason: str | None
     slurm: EnvironmentSlurm | None
     local: EnvironmentLocal | None
+    software: list[Literal["conda", "apptainer"]]  # the software a Snakemake launch deploys with
+    apptainer_args: str  # (inbox #161); a Nextflow environment keeps them: its profiles decide
     profiles: EnvironmentProfiles
     etag: str
 

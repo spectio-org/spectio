@@ -94,6 +94,49 @@ def test_req18_snapshot_reserved_names() -> None:
         assert envs.NAME.fullmatch(name)
 
 
+def test_software_default_and_order_kept() -> None:
+    """inbox #161: a new or built-in environment deploys with both tools, and the user's order
+    is kept; an empty list deploys nothing."""
+    assert envs.Environment.model_validate(slurm_env()).software == ["conda", "apptainer"]
+    ordered = envs.Environment.model_validate({**slurm_env(), "software": ["apptainer", "conda"]})
+    assert ordered.software == ["apptainer", "conda"]
+    assert envs.Environment.model_validate({**slurm_env(), "software": []}).software == []
+    builtins = envs.builtins(settings_of("slurm", partition="htc"))
+    assert [b.environment.software for b in builtins] == [["conda", "apptainer"]] * 2
+
+
+@pytest.mark.parametrize(
+    "software",
+    [["npm"], ["conda", "conda"], ["conda", 1], [True], "conda", {"conda": True}],
+)
+def test_software_refuses_unknown_or_double(software: object) -> None:
+    with pytest.raises(ValidationError):
+        envs.Environment.model_validate({**slurm_env(), "software": software})
+
+
+def test_apptainer_args_default_and_checks() -> None:
+    env = envs.Environment.model_validate({**slurm_env(), "apptainer_args": "--bind /g,/scratch"})
+    assert env.apptainer_args == "--bind /g,/scratch"
+    assert envs.Environment.model_validate(slurm_env()).apptainer_args == ""
+    for bad in ("--bind\r\ntouch x", "\x00", "a" * 501):
+        with pytest.raises(ValidationError):
+            envs.Environment.model_validate({**slurm_env(), "apptainer_args": bad})
+
+
+def test_software_reaches_the_run_column_and_the_launch() -> None:
+    """The snapshot a run keeps carries the software, and `launch_fields` hands it to the spec."""
+    env = envs.Environment.model_validate(
+        {**slurm_env(partition="htc"), "software": ["apptainer"], "apptainer_args": "--bind /g"}
+    )
+    recorded = envs.run_column(envs.snapshot(env))
+    assert recorded["software"] == ["apptainer"]
+    assert recorded["apptainer_args"] == "--bind /g"
+    fields = envs.launch_fields(envs.as_snapshot(recorded))
+    assert fields["software"] == ["apptainer"] and fields["apptainer_args"] == "--bind /g"
+    none = envs.run_column(None)
+    assert none["software"] is None and none["apptainer_args"] is None
+
+
 def settings_of(executor: Literal["slurm", "local"], **slurm: Any) -> Settings:
     return Settings.model_construct(executor=executor, slurm=SlurmOpts.model_construct(**slurm))
 
@@ -143,6 +186,8 @@ def test_req18_snapshot_column_states() -> None:
         "executor": "slurm",
         "slurm": {"partition": "htc", "account": None, "time_min": None, "mem_mib": None},
         "local": None,
+        "software": ["conda", "apptainer"],
+        "apptainer_args": "",
         "state": "recorded",
     }
     assert envs.run_column(None)["state"] == "not_recorded"
