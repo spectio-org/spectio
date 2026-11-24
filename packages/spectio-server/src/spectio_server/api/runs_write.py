@@ -43,6 +43,7 @@ from spectio_server.api.workflows import (
     resolve,
     schema_defaults,
 )
+from spectio_server.defaults import effective_defaults
 from spectio_server.ids import new_id
 from spectio_server.store.runs import EngineConflict, first, insert_run, module_source
 from spectio_server.store.schema import principals, runner_commands
@@ -95,12 +96,17 @@ def _check(body: LaunchIn) -> None:
         raise Invalid("profiles", "a Snakemake launch takes one profile")
 
 
-def _check_params(found: Found, params: dict[str, Any]) -> None:
+def _check_params(
+    found: Found, params: dict[str, Any], complete: bool = True
+) -> list[dict[str, str]]:
     """Validate against the pipeline's own schema (draft 7 or 2020-12, from its `$schema`).
-    No `$ref` is retrieved (no file, no URL: api §5, Imports are untrusted input): an empty
-    registry replaces jsonschema's default one, which fetches; one that cannot resolve is a 422."""
+    `params` are the *effective* ones (api §5.12): the sources' defaults under the form's
+    values. When the sources are not complete, a `required` error is returned as a warning
+    instead of raised: the engine's own check has the last word. No `$ref` is retrieved (no
+    file, no URL: api §5, Imports are untrusted input): an empty registry replaces jsonschema's
+    default one, which fetches; one that cannot resolve is a 422."""
     if found.schema is None or found.schema_source == "inferred":
-        return
+        return []
     if not isinstance(found.schema.get("$schema", ""), str):
         raise Invalid("params", "the pipeline's schema cannot be used: $schema is not a URI")
     cls = validators.validator_for(found.schema, default=validators.Draft7Validator)
@@ -124,8 +130,16 @@ def _check_params(found: Found, params: dict[str, Any]) -> None:
                 missing = [k for k in required if k not in cast(dict[str, Any], error.instance)]
                 path += missing[:1]
         found_errors.append({"field": ".".join(["params", *path]), "message": error.message})
-    if found_errors:
+    if not found_errors:
+        return []
+    if complete:
         raise Invalid.many(found_errors)
+    # api §5.12: with a source unread, a `required` error is a warning; every other one —
+    # a type, an enum, a pattern — stays a refusal. jsonschema's own message names the miss.
+    hard = [e for e in found_errors if not e["message"].endswith("is a required property")]
+    if hard:
+        raise Invalid.many(hard)
+    return found_errors
 
 
 @router.post("/runs", status_code=201)
@@ -152,7 +166,17 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         found = inspect_dir(resolved.directory, resolved.default_name)
     except Invalid as exc:
         raise exc.under("workflow") from None
-    _check_params(found, body.params)
+    # the effective parameters (api §5.12): the sources' defaults under the form's values; the
+    # 0.0.1 body carries no params file, whose values the form sends within `params` (§5.6)
+    defaults, complete = effective_defaults(
+        resolved.directory,
+        request.app.state.target_engine,
+        engine,
+        body.profiles,
+        found.schema,
+    )
+    merged = {name: given["value"] for name, given in defaults.items()} | body.params
+    param_warnings = _check_params(found, merged, complete)
     # the values as resolved now: the run keeps them whatever the file says later (req. 18)
     chosen = choose(request, body.environment)
     environment = snapshot(chosen)
@@ -171,6 +195,7 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         environment,
         target,
         (resources, config_file, config_bytes),
+        param_warnings,
     )
 
 
@@ -212,6 +237,7 @@ def _create(
     environment: dict[str, Any],
     target: RunTarget | None,
     extras: tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None],
+    warnings: list[dict[str, str]] | None = None,  # the `201` answer's (api §5.12)
 ) -> dict[str, Any]:
     resources, config_file, config_bytes = extras
     runs_root = request.app.state.settings.runs_root
@@ -251,7 +277,7 @@ def _create(
         shutil.rmtree(paths.run_dir, ignore_errors=True)  # no run directory without its row
         raise
     response.headers["Location"] = f"/api/v1/runs/{run_id}"
-    return {
+    answer: dict[str, Any] = {
         "id": run_id,
         "name": name,
         "state": "queued",
@@ -268,6 +294,9 @@ def _create(
         "params": body.params,
         "target": None if target is None else target.model_dump(),
     }
+    if warnings:  # a `required` error with the sources not complete (api §5.12)
+        answer["warnings"] = warnings
+    return answer
 
 
 def _resources(body: LaunchIn, env: Environment) -> dict[str, Any] | None:

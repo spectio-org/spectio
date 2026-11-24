@@ -39,6 +39,7 @@ from fastapi import APIRouter, Request
 
 from spectio import envfile, locations
 from spectio.config import Settings
+from spectio.environments import PROFILE
 from spectio.runner.engines import EngineError, check_engine
 from spectio.runner.rundir import private_dir
 from spectio_server.api.problems import Invalid, Problem
@@ -670,6 +671,15 @@ def _config_check(request: Request, resolved: Resolved, path: str, engine: str |
     return {"path": path, "error": None}
 
 
+def _profiles(given: str | None) -> list[str]:
+    """Inspect's `profiles` (api §5.12): a comma list, each name as `POST /runs` takes it."""
+    found = [] if given is None else [p for p in given.split(",") if p]
+    for profile in found:
+        if not PROFILE.fullmatch(profile):
+            raise Invalid("profiles", "profile names: letters, digits, '.', '_' and '-'")
+    return found
+
+
 @router.get("/workflows:inspect")
 def inspect(
     request: Request,
@@ -678,14 +688,28 @@ def inspect(
     params_file: str | None = None,
     config_file: str | None = None,
     engine: Literal["nextflow", "snakemake"] | None = None,
+    profiles: str | None = None,
 ) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
+    chosen = _profiles(profiles)  # checked before anything is fetched, as params_file is
     if params_file is not None:  # before anything is fetched (SEC-PRE-FU87-04)
         with _as_invalid("params_file"):
             locations.check_params_file(params_file)
     resolved = resolve(settings.data_dir, location, revision)
     found = inspect_dir(resolved.directory, resolved.default_name)
     params = None if params_file is None else _params(request, resolved, found.engine, params_file)
+    # defaults imports targets, which imports this module
+    from spectio_server.defaults import effective_defaults
+
+    file_values = None if params is None else params.get("values")
+    defaults, complete = effective_defaults(
+        resolved.directory,
+        request.app.state.target_engine,
+        found.engine,
+        chosen,
+        found.schema,
+        file_values if isinstance(file_values, dict) else None,
+    )
     config = None
     if config_file is not None:
         config = _config_check(request, resolved, config_file, engine or found.engine)
@@ -701,6 +725,8 @@ def inspect(
         "engine_versions": versions,
         "schema": found.schema,
         "schema_source": found.schema_source,
+        "defaults": defaults,  # api §5.12: each parameter's value and where it comes from
+        "defaults_complete": complete,
         "profiles": found.profiles,
         "params_file": params,
         "config_file": config,
