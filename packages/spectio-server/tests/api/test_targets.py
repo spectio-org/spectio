@@ -155,6 +155,7 @@ def test_module_launch_needs_every_declared_input(on: TestClient) -> None:
     assert first.status_code == 422, first.text
     [error] = first.json()["errors"]
     assert error["field"] == "params.meta"
+    given: list[str] | None
     for given in ([], None):  # an input given as [] or null is given
         empty = module_launch(on, version=VERSION, params={"meta": {"id": "s1"}, "reads": given})
         assert empty.status_code == 201, empty.text
