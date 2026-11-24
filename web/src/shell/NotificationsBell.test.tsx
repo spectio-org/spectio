@@ -48,6 +48,20 @@ test("the bell names and shows the unread count", async () => {
   expect(screen.getByRole("button", { name: "Search runs, pipelines and pages" })).toBeInTheDocument();
 });
 
+// Vitest loads no CSS, so the stylesheet is read as text (the suite runs from web/).
+test("#161 (inbox Thomas): the badge's count is bold, centred, and readable in both schemes", () => {
+  const css = readFileSync("src/shell/shell.css", "utf8");
+  const rule = (selector: string) => css.match(new RegExp(`\\n${selector.replace(/\./g, "\\.")} \\{([^}]*)\\}`))?.[1] ?? "";
+  expect(rule(".sp-bell-count")).toMatch(/background: var\(--sp-accent\)/);
+  // white on the light scheme's violet; the dark scheme's lighter violet takes the darkest ink
+  expect(rule(".sp-bell-count")).toMatch(/color: var\(--mantine-color-white\)/);
+  expect(rule(".sp-bell-count")).toMatch(/font-weight: 700/);
+  expect(rule(".sp-bell-count")).toMatch(/text-align: center/);
+  expect(css).toContain('[data-mantine-color-scheme="dark"] .sp-bell-count');
+  // the paired token that does not exist is gone for good
+  expect(css).not.toMatch(/--sp-accent-on/);
+});
+
 test("desktop: a non-modal popover, focus on its first control, Escape closes it and focus goes back to the bell", async () => {
   serve({ "/api/v1/me/notifications": LIST });
   app("/environments");

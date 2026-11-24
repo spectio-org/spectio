@@ -750,6 +750,26 @@
   color: var(--sp-text-secondary);
   overflow-wrap: anywhere;
 }
+/* What to do next, beside the title line (inbox #161). */
+.sp-why-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  margin: var(--mantine-spacing-sm) 0 0;
+}
+/* A long text behind one button: "Show full message", "What the states mean" (inbox #161). The
+   button's chevron turns with its aria-expanded. */
+.sp-disclosure {
+  margin: var(--mantine-spacing-sm) 0 0;
+}
+.sp-disclosure [aria-expanded] .sp-icon {
+  transform: rotate(0deg);
+  transition: transform 0.15s ease;
+}
+.sp-disclosure [aria-expanded="true"] .sp-icon {
+  transform: rotate(180deg);
+}
 
 /* Tasks and Logs tabs (LiteRunTasks, LiteRunLogs; UX-PAR-26, 27). */
 .sp-select {
@@ -2165,9 +2185,10 @@
   overflow-wrap: anywhere;
 }
 
-/* UI-08: the runs list (ui-spec §12.6, §12.8). The state filter sits in the toolbar row at the
-   search box's 36 px (2 + 32 + 2); on the phone its pills scroll sideways, 44 px high, with a fade
-   at the cut edge so a hidden pill reads as cut. */
+/* UI-08: the run pages' toolbar segments (ui-spec §12.6, §12.8) — the run's task filters and the
+   log levels. They sit in the toolbar row at the search box's 36 px (2 + 32 + 2); on the phone
+   their pills scroll sideways, 44 px high, with a fade at the cut edge so a hidden pill reads
+   as cut. */
 .sp-toolbar .sp-segments {
   flex-wrap: nowrap;
   padding: var(--mantine-spacing-xs);
@@ -2185,6 +2206,35 @@
   }
   .sp-toolbar .sp-segments button {
     min-height: 44px;
+  }
+}
+
+/* #161 (inbox Thomas): the runs list's filters are one SegmentedControl each — an icon before
+   the word, the status counts muted — sitting in the toolbar row at the search box's height. On
+   the phone a control takes its own row, scrolls sideways with the pills' fade at the cut edge,
+   and its items keep the keys' 44 px touch height (ui-spec §4.11). */
+.sp-seg {
+  flex: 0 0 auto;
+}
+.sp-seg .sp-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  white-space: nowrap;
+}
+.sp-seg .sp-seg-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.72;
+}
+@media (max-width: 767.98px) {
+  .sp-seg {
+    flex: 1 1 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+  .sp-seg .mantine-SegmentedControl-label {
+    padding-block: var(--mantine-spacing-md);
   }
 }
 /* One padding and one top alignment for every cell; the header in sm/600, muted. */
@@ -2266,6 +2316,11 @@
 }
 .sp-scope-cells i[data-on] {
   opacity: 1;
+}
+/* #161 (inbox Thomas): the table's Scope cell is plain muted text, the other cells' size — the
+   badge above stays on the phone's card. */
+.sp-scope-text {
+  color: var(--sp-text-muted);
 }
 .sp-what-ran {
   display: inline-flex;

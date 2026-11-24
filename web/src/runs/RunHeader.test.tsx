@@ -149,8 +149,9 @@ test("on the phone the primary sits in the pinned action bar, More actions stays
   viewport(390);
   detail({ state: "failed", ...ENDED });
   app(`/runs/${ID}`);
-  const resume = await screen.findByRole("button", { name: "Resume" });
-  expect(resume.closest(".sp-run-bar")).not.toBeNull();
+  // the why card offers a Resume too; the header's own one is the pinned bar's
+  const resumes = await screen.findAllByRole("button", { name: "Resume" });
+  expect(resumes.find((b) => b.closest(".sp-run-bar"))).toBeDefined();
   expect(screen.getByRole("button", { name: "More actions" }).closest(".sp-run-bar")).toBeNull();
 });
 
@@ -161,4 +162,25 @@ test("Facts are open on Summary and folded on the other tabs", async () => {
   expect(await facts()).toHaveAttribute("aria-expanded", "false");
   await userEvent.click(screen.getByRole("tab", { name: "Summary" }));
   await waitFor(async () => expect(await facts()).toHaveAttribute("aria-expanded", "true"));
+});
+
+test("#161: a failed run's Facts start collapsed, without their Failure row", async () => {
+  detail({
+    state: "failed",
+    ...ENDED,
+    failure: { class: "tool_error", message: "KeyError 'sample_sheet'", task_id: null, attempt_n: 1 },
+    summary: { tasks: { done: 24, total: 32, failed: 2, cached: 0 }, last_failure: null, stage_mode: "quarters" },
+  });
+  app(`/runs/${ID}`);
+  const region = await screen.findByRole("region", { name: "Facts" });
+  const facts = within(region).getByRole("button", { name: /^Facts/ });
+  expect(facts.tagName).toBe("BUTTON"); // expandable by keyboard
+  expect(facts).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(facts);
+  expect(facts).toHaveAttribute("aria-expanded", "true");
+  const dl = region.querySelector(".sp-facts")!;
+  expect(dl).not.toBeNull();
+  expect(within(dl as HTMLElement).queryByText("Failure")).toBeNull();
+  // the failure is said in the why card instead, never in the header
+  expect(within(await header()).queryByText(/KeyError/)).toBeNull();
 });

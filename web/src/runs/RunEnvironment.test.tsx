@@ -69,24 +69,26 @@ test("a run started from a terminal has no Environment row", async () => {
 
 const failed = { state: "failed", ended_at: "2026-10-31T08:00:00+00:00", actions: { resume: { allowed: true, reason: null } } };
 const head = { session: "s", node: "login1", alive: false, exit_code: 1, checked: true };
+/** The why card offers a Resume too (inbox #161); these tests ask either one. */
+const resumeButton = async () => (await screen.findAllByRole("button", { name: "Resume" }))[0];
 
 test("Resume says where it runs: as before, or on the server's default", async () => {
   show(MYLAB, { ...failed, head });
-  await userEvent.click(await screen.findByRole("button", { name: "Resume" }));
+  await userEvent.click(await resumeButton());
   const dialog = await screen.findByRole("dialog", { name: "Resume this run?" });
   expect(within(dialog).getByText("Runs on mylab-long as before.")).toBeInTheDocument();
 });
 
 test("Resume of a run with no recorded environment names the server's default", async () => {
   show({ ...NONE, state: "not_recorded" }, { ...failed, head });
-  await userEvent.click(await screen.findByRole("button", { name: "Resume" }));
+  await userEvent.click(await resumeButton());
   const dialog = await screen.findByRole("dialog", { name: "Resume this run?" });
   expect(within(dialog).getByText("This run has no recorded environment: it resumes on the server's default (local).")).toBeInTheDocument();
 });
 
 test("Resume of a run whose environment cannot be read waits, with why", async () => {
   show({ ...NONE, state: "not_readable" }, { ...failed, head });
-  const resume = await screen.findByRole("button", { name: "Resume" });
+  const resume = await resumeButton();
   expect(resume).toHaveAttribute("aria-disabled", "true");
   expect(resume).toHaveAccessibleDescription("Its recorded environment cannot be read.");
 });
@@ -94,7 +96,7 @@ test("Resume of a run whose environment cannot be read waits, with why", async (
 test("Resume of an uncapped local run on a SLURM server says it gets the login node's limits", async () => {
   const uncapped = { ...NONE, name: "local", label: "This machine", executor: "local", local: { cpus: null, mem_mib: null }, state: "recorded" };
   show(uncapped, { ...failed, head }, "slurm");
-  await userEvent.click(await screen.findByRole("button", { name: "Resume" }));
+  await userEvent.click(await resumeButton());
   const dialog = await screen.findByRole("dialog", { name: "Resume this run?" });
   expect(within(dialog).getByText("It runs with the login node's limits (2 CPUs, 8 GiB).")).toBeInTheDocument();
 });

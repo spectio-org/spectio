@@ -2455,3 +2455,71 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Install recipe checked:** on login1 on 2026-11-24, `uv tool install snakemake==9.27.1 --with snakemake-executor-plugin-slurm==2.8.0` (uv 0.9.29, in a private temporary tool directory) installed Snakemake 9.27.1 with plugin 2.8.0.
 - **Assumed (2026-11-24, [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), built in PR #337. Item (c) is yours: ask for a module with Snakemake 9.26 or later and the SLURM plugin 2.8.0 or later.
 - **Also found:** Snakemake 9.25.2 and earlier log each failed job's `job_error` twice when the run ends. Whether the projector counts it twice is **[to be validated]**. It is kept as a follow-up: de-duplicate `job_error` per job in the logger plugin, as `temp_removed` already is.
+
+### #160 · Question: a workflow's parameters, and registering a workflow, through the API (Thomas, 2026-11-24)
+
+- **Asked by Thomas (2026-11-24):** can a script easily export the list of parameters of a given workflow through the API? Can a script register a workflow through the API?
+- **What exists in 0.0.1** ([api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), the note of 2026-10-30 and FU-P3-87):
+  1. **Parameters.** `GET /api/v1/workflows:inspect?location=&revision=` (`spectio_server/api/workflows.py:673`) reads a pipeline without running it and returns its parameter `schema`: `nextflow_schema.json` for Nextflow, `config.schema.yaml` for Snakemake, or `inferred`. It also returns `schema_source`, the profiles and the versions. With `params_file=` it also returns the values of a params file. `GET /api/v1/runs/{id}` returns the parameters a run was launched with.
+  2. **Registering.** `POST /api/v1/catalog` (`spectio_server/api/catalog.py:95`) saves an entry `{name, label, engine, location, revision, profile, params_file}` in the user's catalog. `PUT` and `DELETE` work with `If-Match`. Saving fetches nothing: a wrong location shows only when Launch inspects it. There is no `POST /workflows` in 0.0.1.
+- **What is missing for "easily, from a script":**
+  - **A token.** Every route needs the session cookie of the single-use sign-in link. Tokens for scripts are on the roadmap under "Later" ("Webhooks and tokens for robots"). Whether a script can use `spectio login --print-link` and exchange the link for a cookie is **[to be validated]**.
+  - **By catalog name.** Inspect takes a location and a revision, not a catalog entry. A script reads `GET /catalog/{name}` first, then calls inspect.
+  - **A flat list.** Inspect returns the JSON Schema as it is (groups, `definitions`, `allOf`). Nothing returns "name, type, default, required" per parameter, nor a ready-to-fill params file.
+- **Open choices, with the recommendation:**
+  1. (a) document the two calls above as they are, with an example in the API guide; (b) also add `GET /catalog/{name}:params` (or `?catalog=` on inspect) that returns a flat list and a template params file with the defaults; (c) both, after 0.0.1. **Recommendation: (a) now, a docs-only change, then (b) in 0.0.2 with the tokens.** A flat list is easy to derive from the schema the launch form already walks.
+  2. Registering by script needs a token first. **Recommendation:** bring "tokens for scripts" forward from "Later" into 0.0.2, with the scopes `catalog:write` and `runs:read`, and nothing that launches, until the authorization design covers it ([authentication-and-access](../specs/authentication-and-access.md)).
+- **Why a question:** it changes the 0.0.2 scope and the authentication design, which are Thomas's decisions (triage-policy, scope).
+- **Not assumed:** it is a scope question asked by Thomas, so it waits for his answer. Nothing was built.
+
+### #161 · Decided: what blocks sharing 0.0.1, from Thomas's own test on the EMBL login node (Thomas, 2026-11-24)
+
+- **Thomas, after trying 0.0.1-rc1 on the login node through the SSH tunnel (2026-11-24):** "pas encore partageable en l'état" (not shareable as it is). These items come first:
+  1. **Manage catalog.** The screen is not good enough and cannot stay as it is. It needs a new design, starting from the boards `design/ui-canvas/LiteCatalog.dc.html` and `LiteCatalogEntry.dc.html`.
+  2. **Alignment between Home and Launch.** The two screens do not line up the same way. Make the page grid, margins and headers match.
+  3. **"Where it runs" badges.** Their structure has to be reworked.
+  4. **A menu in "Where it runs".**
+  5. **Validation with more pipelines,** beyond the synthetic scenarios:
+     - from nf-core;
+     - from the Snakemake Workflow Catalog;
+     - from WorkflowHub;
+     - Nextflow modules run directly. Runs that target one module are planned for 0.0.2, behind a flag ([roadmap](../roadmap/index.md#after-001)).
+- **Recommendation (not assumed: Thomas sets the order):**
+  - UI items 1 to 4: one ux-reviewer pass on the three screens against [ui-spec](../specs/ui-spec.md); the boards are fixed first, then the code.
+  - Item 5: a pipeline matrix in [RC1-acceptance](RC1-acceptance.md), a few pipelines per source, each launched on the login node. Every pipeline that fails gets its own follow-up.
+- **State:** open. 0.0.1 is not announced while these are open.
+- **Found while validating with real pipelines on the login node (2026-11-24):**
+  1. **Values a pipeline sets were refused as missing.** nf-core `test` profile (`input`), Snakemake `config/config.yaml`. *Decided (Thomas, 2026-11-24): fix it for Nextflow, Snakemake and modules*, [api §5.12](../specs/api-and-data-model.md#512-effective-parameters-sources-prefill-and-validation-001).
+  2. **Snakemake runs in the run's directory, not the pipeline's root.** A relative path of the repository (`.test/config/samples.tsv`) is not found.
+  3. **A WorkflowHub URL is cloned as Git** and fails. WorkflowHub needs its own resolver, to the entry's source repository or its RO-Crate.
+  4. **The pipeline cache must be on a file system the compute nodes see.** With `data_dir` on the login node's `/tmp`, Apptainer and the Snakemake SLURM jobs failed on the compute node. `spectio doctor` does not check it.
+  5. **The failure summary was empty** (`engine_fault`, no message) while `head.out` named the Apptainer error.
+  6. **A `data_dir/pipelines` symlink gives a bare 500** (`NotADirectoryError`) instead of a clear refusal.
+  7. **No software deployment for Snakemake** (`--software-deployment-method conda` or `apptainer`) outside a profile, while the catalog's workflows use `conda:` and `wrapper:`.
+  8. **A server restart signs every browser out**; running runs were adopted again.
+  9. **Works:** a script signs in with `spectio login --print-link` and `POST /api/v1/auth/magic-links:exchange` (the open point of #160).
+- **Decided (Thomas, 2026-11-24):** findings 2 and 7 are fixed before 0.0.1 is shared. Software deployment is "impératif": a Snakemake run must be able to use conda and Apptainer. The approach (assumed — pending Thomas's review of the PR):
+  - each environment carries `software` (`conda`, `apptainer`, both by default) and optional Apptainer arguments, passed as `--software-deployment-method`, with conda and Apptainer caches under `data_dir`, shared by every run; a chosen workflow profile keeps its own settings;
+  - the pipeline's `config/` directory is copied into the launch directory, as Snakedeploy lays out a deployed workflow **[to be validated]**, so `configfile:` and the config's relative paths resolve as from the repository's root;
+  - `spectio doctor` reports `conda --version` and `apptainer --version` for the environments that use them.
+- **Thomas's UI feedback on the login node (2026-11-24, second pass):**
+  10. **Runs list:** the State cell was far too long (the whole failure message). One line per state, a more visual status filter with light icons.
+  11. **The notification count** was dark on the accent colour and not readable.
+  12. **The top bar** did not draw the brand logo: the word was set in another font.
+  13. **A failed run** said the same long message four times. It must be much simpler when the user arrives: the failure once, short, with its actions.
+- **Found while reading three demonstrator pipelines (2026-11-24):** a Strand-seq Snakemake pipeline with a watcher that launches a run for each new sequencing run, an nf-core fork, and an imaging Nextflow repository.
+  14. **`configfile:` through a variable** (`NAME = "config/config.yaml"` then `configfile: NAME`) is not read as a literal; the defaults are then incomplete.
+  15. **A pipeline's own parameter description** (a YAML with `desc`, `type`, `required`, `default`, `category` per key) is not JSON Schema; Spectio infers a flat form of every config key instead.
+  16. **Workflow profiles outside `profiles/`** (for example `workflow/snakemake_profiles/<version>/<site>`) are not offered.
+  17. **Several entry scripts in one Nextflow repository** (`main_<name>.nf`, no `main.nf`): a catalog entry cannot name its entry script.
+  18. **A private GitLab reached over SSH** as the pipeline's source.
+  19. **A watcher as an API client:** it keeps detecting and preparing the data, and launches through `POST /runs` with the sequencing run's ID as its `Idempotency-Key`, so its runs show in Spectio. It needs a token for a script rather than a sign-in link (#160).
+
+### #162 · Decided: a central UI for every user, one runner per user on the login node, beside the per-user server (Thomas, 2026-11-24)
+
+- **Thomas (2026-11-24):** one central, hosted UI for all users, so that nobody deploys the server; sign-in through OIDC later, reusing depictio's code. Jobs are not launched on Kubernetes for now. In every case each user has their own runner on the login node.
+- **Thomas (2026-11-24, same day):** both deployments must work in Spectio: the server each user runs on the login node (0.0.1), and the central UI with a runner per user.
+- **What exists:** the shared server, remote runners that pull their commands over outgoing HTTPS ([admin-and-operations §3.2](../specs/admin-and-operations.md)), the Helm chart ([architecture §7.5](../specs/architecture-plugins-and-packaging.md)), background tasks in SQL ([architecture §7.6](../specs/architecture-plugins-and-packaging.md)) and the sign-in methods ([authentication-and-access §2](../specs/authentication-and-access.md)) are specified as "later (open)" in [dev-environment-and-testing §15.1](../specs/dev-environment-and-testing.md). The data model is already multi-user ready.
+- **Open:** how a user's runner proves who it is and is paired to their account (#12–#14); how the central server reaches files that only the login node sees (logs, results, previews: through the runner); Postgres; what 0.0.1's token link becomes.
+- **Recommendation:** after 0.0.1 is shared, one planning step: a spec review focused on "central server, runner per user", then a spike with the server on a local Kubernetes cluster and one runner on the login node.
+- **State:** decided direction; the planning step is not scheduled yet.

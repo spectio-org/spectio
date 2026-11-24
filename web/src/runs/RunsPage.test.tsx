@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { FakeEventSource, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
+import { ICONS } from "../icons";
 
 // The runs page renders AG Grid and these tests type with userEvent: several take 3 to 4.5 s
 // here and went past the default 5 s on CI once FU-P3-115b added its columns (#248).
@@ -51,18 +52,37 @@ test("the table shows each run with its state word, a row label and the terminal
   expect(within(hand).getByText("From a terminal")).toBeInTheDocument();
   const bad = within(table).getByRole("link", { name: "Open run sarek-c" }).closest('[role="row"]') as HTMLElement;
   expect(within(bad).getByText("Failed")).toBeInTheDocument();
-  expect(within(bad).getByText("task failed · exit 1 · DEEPVARIANT (NA12878)")).toBeInTheDocument();
+  // #161 (inbox Thomas): the State cell is the icon and the word on one line — why it failed is
+  // the run's page, not a second line under the word
+  const state = within(bad).getByText("Failed").closest('[role="gridcell"]') as HTMLElement;
+  expect(state.textContent).toBe("Failed");
 });
 
-test("state filters are pressed buttons and the name filter asks for a prefix", async () => {
+test("#161: the state filter's items are radios with their icon and their count; the name filter asks for a prefix", async () => {
   const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
   app("/runs");
-  const all = await screen.findByRole("button", { name: /^All/ });
-  expect(all).toHaveAttribute("aria-pressed", "true");
-  await userEvent.click(screen.getByRole("button", { name: /^Failed/ }));
-  expect(screen.getByRole("button", { name: /^Failed/ })).toHaveAttribute("aria-pressed", "true");
+  const group = await screen.findByRole("radiogroup", { name: "Show runs" });
+  // each item carries its word, the icon its states' words wear, and its count (the count follows
+  // the word inside the name, as the pills' did)
+  const items: [RegExp, keyof typeof ICONS, string][] = [
+    [/^All/, "list", "2"],
+    [/^Active/, "play", "1"],
+    [/^Failed/, "cross", "1"],
+    [/^Succeeded/, "check", "0"],
+    [/^Cancelled/, "slash", "0"],
+  ];
+  for (const [name, icon, n] of items) {
+    const input = within(group).getByRole("radio", { name });
+    // Mantine's item label is the input's sibling, pointing at it with htmlFor
+    const item = group.querySelector(`label[for="${input.id}"]`) as HTMLElement;
+    expect(item.querySelector("svg path")).toHaveAttribute("d", ICONS[icon]);
+    expect(item.querySelector(".sp-seg-count")?.textContent).toBe(n);
+  }
+  expect(within(group).getByRole("radio", { name: /^All/ })).toBeChecked();
+  await userEvent.click(within(group).getByRole("radio", { name: /^Failed/ }));
+  expect(screen.getByRole("radio", { name: /^Failed/ })).toBeChecked();
   await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?state=failed&limit=50"));
-  await userEvent.click(screen.getByRole("button", { name: /^Active/ }));
+  await userEvent.click(screen.getByRole("radio", { name: /^Active/ }));
   await waitFor(() =>
     expect(fetched(mock)).toContain("/api/v1/runs?state=queued,running,pausing,paused,awaiting_review,cancelling&limit=50"),
   );
@@ -109,7 +129,7 @@ test("an older response that lands last does not overwrite the list of the press
     "/api/v1/runs": () => new Promise<Response>((done) => (release = () => done(json(200, { items: [run()], next: null })))),
   });
   app("/runs");
-  await userEvent.click(await screen.findByRole("button", { name: /^Failed/ }));
+  await userEvent.click(await screen.findByRole("radio", { name: /^Failed/ }));
   expect(await screen.findByRole("link", { name: "Open run sarek-c" })).toBeInTheDocument();
   release();
   await new Promise((r) => setTimeout(r, 50));
@@ -162,17 +182,18 @@ test("UX-PAR-01, inbox #91 (b): each row shows its pipeline's mark: nf-core for 
   const sm = within(table).getByRole("link", { name: "Open run plate-qc-a" }).closest('[role="row"]') as HTMLElement;
   expect(within(sm).getByRole("img", { name: "Snakemake" }).getAttribute("src")).toMatch(/logo-snakemake/);
   expect(within(sm).getByText("jobs")).toBeInTheDocument(); // UX-PAR-20
-  expect(within(sm).getByText("3 jobs running")).toBeInTheDocument();
+  // the "3 jobs running" context left the table with the State column's second line (#161, inbox Thomas)
+  expect(within(sm).queryByText("3 jobs running")).toBeNull();
 });
 
 test("UX-PAR-12: the state filter lives in the URL, so Home's cards can link to it", async () => {
   const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [failed], next: null } });
   const router = app("/runs?state=failed");
-  expect(await screen.findByRole("button", { name: /^Failed/ })).toHaveAttribute("aria-pressed", "true");
+  expect(await screen.findByRole("radio", { name: /^Failed/ })).toBeChecked();
   await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?state=failed&limit=50"));
-  await userEvent.click(screen.getByRole("button", { name: /^All/ }));
+  await userEvent.click(screen.getByRole("radio", { name: /^All/ }));
   await waitFor(() => expect(router.state.location.search).toEqual({}));
-  await userEvent.click(screen.getByRole("button", { name: /^Active/ }));
+  await userEvent.click(screen.getByRole("radio", { name: /^Active/ }));
   await waitFor(() => expect(router.state.location.search).toEqual({ state: "active" }));
 });
 
@@ -183,7 +204,7 @@ test("UX-PAR-12: the name filter lives in the URL too, next to the state filter"
   await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?state=failed&q=sar&limit=50"));
   await userEvent.type(screen.getByRole("searchbox", { name: "Filter by run name" }), "ek");
   await waitFor(() => expect(router.state.location.search).toEqual({ state: "failed", q: "sarek" }));
-  await userEvent.click(screen.getByRole("button", { name: /^All/ }));
+  await userEvent.click(screen.getByRole("radio", { name: /^All/ }));
   await waitFor(() => expect(router.state.location.search).toEqual({ q: "sarek" }));
   await userEvent.clear(screen.getByRole("searchbox", { name: "Filter by run name" }));
   await waitFor(() => expect(router.state.location.search).toEqual({}));
@@ -269,7 +290,7 @@ const moduleRun = run({
   },
 });
 
-test("#161: the Scope column names each run's scope, and the Scope buttons filter, kept in the URL", async () => {
+test("#161: the Scope column names each run's scope in plain text, and the Scope radios filter, kept in the URL", async () => {
   const ruleRun = run({
     id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V5Z",
     name: "qc-one",
@@ -285,39 +306,40 @@ test("#161: the Scope column names each run's scope, and the Scope buttons filte
   const table = await screen.findByRole("grid", { name: "Runs" });
   expect(within(table).getByRole("columnheader", { name: "Scope" })).toBeInTheDocument();
   const rowOf = (name: string) => within(table).getByRole("link", { name: `Open run ${name}` }).closest("[role=row]") as HTMLElement;
-  expect(within(rowOf("fastqc-one")).getByText("Module")).toBeInTheDocument();
-  expect(within(rowOf("qc-one")).getByText("Rule")).toBeInTheDocument();
+  // plain muted text (#161, inbox Thomas): a step run is "Single step", the whole pipeline "Pipeline"
+  expect(within(rowOf("fastqc-one")).getByText("Single step")).toBeInTheDocument();
+  expect(within(rowOf("qc-one")).getByText("Single step")).toBeInTheDocument();
+  expect(within(rowOf("rnaseq-a")).getByText("Pipeline")).toBeInTheDocument();
   // the rule follows the pipeline in "What ran", named for a screen reader as the target
   expect(within(rowOf("qc-one")).getByText("qc_report").closest(".sp-target-to")).toHaveTextContent("→ target qc_report");
   expect(within(rowOf("fastqc-two")).getByText("checksum changed")).toBeInTheDocument();
-  expect(within(rowOf("rnaseq-a")).getByText("Pipeline")).toBeInTheDocument();
-  const scope = screen.getByRole("group", { name: "Scope" });
-  expect(within(scope).getAllByRole("button").map((b) => b.textContent)).toEqual(["Any scope", "Pipelines", "Single steps"]);
-  expect(within(scope).getByRole("button", { name: "Any scope" })).toHaveAttribute("aria-pressed", "true");
-  await userEvent.click(within(scope).getByRole("button", { name: "Single steps" }));
+  const scope = screen.getByRole("radiogroup", { name: "Scope" });
+  expect(within(scope).getAllByRole("radio").map((r) => r.getAttribute("value"))).toEqual(["all", "none", "any"]);
+  expect(within(scope).getByRole("radio", { name: "Any scope" })).toBeChecked();
+  await userEvent.click(within(scope).getByRole("radio", { name: "Single steps" }));
   await waitFor(() => expect(router.state.location.search).toEqual({ target: "any" }));
   await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?target=any&limit=50"));
-  expect(within(scope).getByRole("button", { name: "Single steps" })).toHaveAttribute("aria-pressed", "true");
+  expect(within(scope).getByRole("radio", { name: "Single steps" })).toBeChecked();
   // the summary counts by state, not by target: no "of N" while a target filter is set
   expect(screen.queryByText(/ of \d+ runs/)).not.toBeInTheDocument();
-  await userEvent.click(within(scope).getByRole("button", { name: "Any scope" }));
+  await userEvent.click(within(scope).getByRole("radio", { name: "Any scope" }));
   await waitFor(() => expect(router.state.location.search).toEqual({}));
 });
 
-test("#161: with the flag off and no target run, there is no Scope column or buttons", async () => {
+test("#161: with the flag off and no target run, there is no Scope column or filter", async () => {
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
   expect(within(table).queryByRole("columnheader", { name: "Scope" })).toBeNull();
-  expect(screen.queryByRole("group", { name: "Scope" })).toBeNull();
+  expect(screen.queryByRole("radiogroup", { name: "Scope" })).toBeNull();
 });
 
 test("#161: an unknown ?target= is dropped", async () => {
   const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [moduleRun], next: null } });
   app("/runs?target=bogus&state=failed");
-  const scope = await screen.findByRole("group", { name: "Scope" });
+  const scope = await screen.findByRole("radiogroup", { name: "Scope" });
   await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?state=failed&limit=50"));
-  expect(within(scope).getByRole("button", { name: "Any scope" })).toHaveAttribute("aria-pressed", "true");
+  expect(within(scope).getByRole("radio", { name: "Any scope" })).toBeChecked();
 });
 
 // FU-P3-115b: selection, the bulk bar and its Delete sheet, the pin button, sortable headers.
@@ -693,7 +715,7 @@ test("UX-P3FU115B-11: what a delete said goes once the list is filtered or a run
   await userEvent.click(screen.getByRole("button", { name: "Delete…" }));
   await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Delete" }));
   expect(await screen.findByText("1 run deleted")).toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: /^Failed/ }));
+  await userEvent.click(screen.getByRole("radio", { name: /^Failed/ }));
   expect(screen.queryByText("1 run deleted")).toBeNull();
 });
 
@@ -703,7 +725,7 @@ test("UI-08: the search and the state filter share the toolbar row of ui-spec §
   const bar = await screen.findByRole("group", { name: "Filter runs" });
   expect(bar).toHaveClass("sp-toolbar");
   expect(within(bar).getByRole("searchbox", { name: "Filter by run name" })).toBeInTheDocument();
-  expect(within(bar).getByRole("group", { name: "Show runs" })).toBeInTheDocument();
+  expect(within(bar).getByRole("radiogroup", { name: "Show runs" })).toBeInTheDocument();
 });
 
 test("UI-08: Started is a §12.8 date in a <time>, the exact time in its name; the pin has its own slot", async () => {

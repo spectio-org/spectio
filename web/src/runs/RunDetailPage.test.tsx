@@ -295,7 +295,7 @@ test("UX-PAR-25/16: a failed run opens on Why it failed, never blank, with a way
   app(`/runs/${ID}`);
   const why = await screen.findByRole("region", { name: "Why it failed" });
   expect(within(why).getByRole("button", { name: /^Why it failed/ })).toHaveAttribute("aria-expanded", "true");
-  expect(within(why).getByText("tool_error")).toBeInTheDocument();
+  expect(within(why).getByText("tool error")).toBeInTheDocument();
   expect(within(why).getByText("2 tasks failed, and the run stopped")).toBeInTheDocument();
   expect(within(await runHeader()).getByText(/^ended /)).toBeInTheDocument();
   // The head has ended: folded, with its exit code as the summary.
@@ -304,6 +304,32 @@ test("UX-PAR-25/16: a failed run opens on Why it failed, never blank, with a way
   await userEvent.click(within(why).getByRole("button", { name: "Tasks, filtered to Failed" }));
   expect(screen.getByRole("tab", { name: "Tasks" })).toHaveAttribute("aria-selected", "true");
   await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/tasks?state=failed&limit=50`));
+});
+
+test("a failed run says its failure once: short in the card, the full message only behind the button (inbox #161)", async () => {
+  const message = `KeyError in file "/scratch/x/data/pipelines/github.com/org/repo/main/workflow/rules/common.smk", line 8: 'sample_sheet'\nFile "/scratch/x/data/pipelines/github.com/org/repo/main/workflow/rules/common.smk", line 8, in <module>`;
+  detail({
+    state: "failed",
+    ended_at: "2026-10-31T08:00:00+00:00",
+    failure: { class: "tool_error", message, task_id: null, attempt_n: 1 },
+    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1, checked: true },
+    summary: { tasks: { done: 24, total: 32, failed: 2, cached: 0 }, last_failure: null, stage_mode: "quarters" },
+  });
+  app(`/runs/${ID}`);
+  const why = await screen.findByRole("region", { name: "Why it failed" });
+  // the short form, once, as the title line
+  expect(within(why).getAllByText("KeyError 'sample_sheet' · workflow/rules/common.smk:8")).toHaveLength(1);
+  // the long message is nowhere while the button is folded — not in the header either
+  expect(within(why).queryByText(/KeyError in file/)).toBeNull();
+  expect(within(await runHeader()).queryByText(/KeyError/)).toBeNull();
+  const toggle = within(why).getByRole("button", { name: "Show full message" });
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(toggle);
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(within(why).getAllByText(/KeyError in file/)).toHaveLength(1);
+  // the way to the engine log sits with it, and the resume of the header is offered here too
+  expect(within(why).getByRole("button", { name: "Open the engine log" })).toBeInTheDocument();
+  expect(within(why).getByRole("button", { name: "Resume" })).toBeInTheDocument();
 });
 
 test("UX-PAR-23: the Summary aside opens the head by hand and tails the engine log", async () => {
@@ -864,6 +890,20 @@ test("the header reads 'at least n jobs' while a checkpoint is open", async () =
   expect(screen.getByText(/^DAG updated after a checkpoint/)).toBeInTheDocument();
 });
 
+test("#161: rules that never started read one muted line, and the legend waits behind its button", async () => {
+  detail(
+    { workflow: SNAKEMAKE, state: "failed", ended_at: "2026-10-31T08:00:00+00:00" },
+    { [`${URL_}/processes`]: { items: [] } },
+  );
+  app(`/runs/${ID}`);
+  expect(await screen.findByText("No job started.")).toBeInTheDocument();
+  expect(screen.queryByRole("table", { name: "Rules" })).toBeNull();
+  const what = screen.getByRole("button", { name: "What the states mean" });
+  expect(what).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(what);
+  expect(screen.getByText(/^Pending: no job has started\./)).toBeInTheDocument();
+});
+
 test("a Nextflow process with no task reads 'No task (condition or empty input)'", async () => {
   detail(
     { state: "succeeded", ended_at: "2026-10-31T09:00:00+00:00", engine_settings: { cleanup: true, notemp: null } },
@@ -881,6 +921,8 @@ test("a Nextflow process with no task reads 'No task (condition or empty input)'
   const row = within(table).getByRole("button", { name: "Open process NFCORE:RNASEQ:UMITOOLS_DEDUP" }).closest("tr")!;
   expect(within(row).getByText("No task (condition or empty input)")).toBeInTheDocument();
   expect(within(row).queryByText("Not run")).toBeNull();
+  // the legend waits behind its button (inbox #161)
+  await userEvent.click(screen.getByRole("button", { name: "What the states mean" }));
   expect(screen.getByText(/Processes the script does not call in this run are not listed\./)).toBeInTheDocument();
   expect(within(await runHeader()).getByText("Work directory cleaned after success (cleanup = true)")).toBeInTheDocument();
 });
@@ -917,6 +959,8 @@ test("#161: a rule target run shows its steps to the target, and the rules it do
   ]);
   const list = screen.getByRole("list", { name: "Rules outside the target" });
   expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["mergenot needed", "alignnot needed"]);
+  // the legend waits behind its button (inbox #161)
+  await userEvent.click(screen.getByRole("button", { name: "What the states mean" }));
   expect(screen.getByText(/Outside the target: the rule is not needed to make the target\./)).toBeInTheDocument();
   expect(screen.queryByText(/Not needed in this run:/)).toBeNull();
 });

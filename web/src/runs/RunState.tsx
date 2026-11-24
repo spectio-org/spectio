@@ -64,6 +64,60 @@ export function failureText(run: Run): string {
   return [kind, detail].filter(Boolean).join(" · ") || "failed";
 }
 
+/** A path of an engine message, short: under one of `roots` (the pipeline directory, the run's
+ * launch directory) relative to it; under a pipelines store (`…/pipelines/<forge>/<org>/<repo>/
+ * <ref>/…`) relative to the pipeline there; anything else as it is. */
+function relativeTo(path: string, roots: readonly string[]): string {
+  const p = path.replace(/[.,;:]+$/, "");
+  for (const root of [...roots].sort((a, b) => b.length - a.length).map((r) => r.replace(/\/+$/, ""))) {
+    if (root && p.startsWith(`${root}/`)) return p.slice(root.length + 1);
+  }
+  const at = p.indexOf("/pipelines/");
+  if (at >= 0) {
+    const parts = p.slice(at + "/pipelines/".length).split("/").filter(Boolean);
+    if (parts.length > 4) return parts.slice(4).join("/");
+  }
+  return p;
+}
+
+/** A failed run's message, short and actionable (inbox #161): the first meaningful line, its
+ * absolute paths under the pipeline (or the run directory) made relative, a repeated
+ * "File …, line N" trace collapsed to one "file:line", the whole capped at about 160 characters.
+ * Example: `KeyError in file "…/pipelines/github.com/org/repo/main/workflow/rules/common.smk",
+ * line 8: 'sample_sheet' File "…/common.smk", line 8, in <module>` reads
+ * `KeyError 'sample_sheet' · workflow/rules/common.smk:8`. */
+export function shortFailure(message: string, pipelineRoot?: string | readonly string[] | null): string {
+  const text = (message ?? "").trim();
+  if (!text) return "";
+  const roots = (Array.isArray(pipelineRoot) ? pipelineRoot : pipelineRoot ? [pipelineRoot] : []).filter(
+    (r): r is string => typeof r === "string" && !!r,
+  );
+  // the absolute paths, longest first so a shorter one never eats a longer one's place
+  let out = text;
+  for (const p of [...new Set(text.match(/\/[^\s"'`,:()[\]]+/g) ?? [])].sort((a, b) => b.length - a.length)) {
+    const r = relativeTo(p, roots);
+    if (r !== p) out = out.split(p).join(r);
+  }
+  // the engine's own " in file …, line N:" of the head, and the traceback's frames
+  const frames = [...out.matchAll(/File\s+"?([^"\n,]+?)"?,\s*line\s+(\d+)(?:,\s*in\s+\S+)?/g)];
+  const head = /\s+in\s+file\s+"?([^"\n,]+?)"?,\s+line\s+(\d+)\s*:?/.exec(out);
+  // the first meaningful line: not blank, not the traceback's title, not itself a frame
+  const lines = out.split("\n").map((l) => l.trim());
+  const isFrame = (l: string) => /^File\s+"?[^"\n,]+?"?,\s+line\s+\d+/.test(l);
+  const at = lines.findIndex((l) => l && l !== "Traceback (most recent call last):" && !isFrame(l));
+  let what = at >= 0 ? lines[at] : (lines.find((l) => l) ?? "");
+  // Snakemake puts the exception's value on the next line ("KeyError in file …, line 8:" then
+  // "'sample_sheet'"): a head line ending in ":" takes that line too
+  const next = at >= 0 ? lines.slice(at + 1).find((l) => l) : undefined;
+  if (next && what.endsWith(":") && !isFrame(next)) what = `${what} ${next}`;
+  for (const f of frames) if (what.includes(f[0])) what = what.split(f[0]).join(" ");
+  if (head && what.includes(head[0])) what = what.replace(head[0], " ");
+  what = what.replace(/\s+/g, " ").trim().replace(/[.,;:]$/, "");
+  const place = frames[0] ? `${frames[0][1]}:${frames[0][2]}` : head ? `${head[1]}:${head[2]}` : "";
+  const said = [what, place].filter(Boolean).join(" · ");
+  return said.length > 160 ? `${said.slice(0, 159).trimEnd()}…` : said;
+}
+
 /** The context line under the state word in a table (ui-spec §3.1). */
 export function stateContext(run: Run): string {
   const { unit, units } = words(run.workflow.engine);

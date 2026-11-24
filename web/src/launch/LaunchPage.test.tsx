@@ -654,3 +654,135 @@ test("CR-P3UI13-03: on the desktop a launch error sits under Before Launch, and 
   expect(screen.getByRole("region", { name: "Summary" })).toContainElement(alert);
   expect(document.querySelector(".launch-bar")).toBeNull();
 });
+
+// --- Effective parameters (api §5.12): each field shows its effective default as its value with
+// the source under it; another profile asks inspect again; only the values the user changed are
+// sent; a required field no source fills blocks only when the sources are complete, and a launch
+// whose answer carries warnings shows them. ---------------------------------------------
+
+const EFFECTIVE = {
+  ...INSPECTED,
+  defaults: { depth: { value: 7, source: "config" } },
+  defaults_complete: true,
+};
+
+test("§5.12: each field shows its effective default as its value, with the source under it", async () => {
+  page();
+  await load(EFFECTIVE);
+  const depth = screen.getByRole("textbox", { name: /^depth/ });
+  expect(depth).toHaveValue("7");
+  expect(depth.closest(".launch-param")).toHaveTextContent("from the pipeline's config");
+  // a required field no source fills still blocks Launch (sources complete)
+  expect(screen.getByRole("textbox", { name: /^input/ })).toHaveValue("");
+  expect(launch()).toHaveAttribute("aria-disabled", "true");
+  expect(launch()).toHaveAccessibleDescription("Fill the required field: input");
+});
+
+test("§5.12: choosing another profile asks inspect again, and its defaults fill the form", async () => {
+  const onLaunched = page();
+  await load(EFFECTIVE);
+  fetchMock.mockResolvedValueOnce(
+    json(200, {
+      ...INSPECTED,
+      defaults: {
+        input: { value: "/data/samples.csv", source: "profile" },
+        depth: { value: 7, source: "config" },
+      },
+      defaults_complete: true,
+    }),
+  );
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  const input = await screen.findByRole("textbox", { name: /^input/ });
+  await waitFor(() => expect(input).toHaveValue("/data/samples.csv"));
+  expect(fetchMock.mock.calls[1][0]).toBe("/api/v1/workflows:inspect?location=%2Fdata%2Frnaseq&profiles=docker");
+  expect(input.closest(".launch-param")).toHaveTextContent("from profile docker");
+  expect(launch()).not.toHaveAttribute("aria-disabled"); // the profile's default fills the required field
+  // the prefilled defaults are not sent: only what the user changes (§5.12)
+  fetchMock.mockResolvedValueOnce(json(201, { id: "run_1", name: "rnaseq-x", state: "queued" }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+  expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body)).params).toEqual({});
+});
+
+test("§5.12: a failed re-ask after a profile change says so; the form keeps the previous values", async () => {
+  page();
+  await load(EFFECTIVE);
+  fetchMock.mockResolvedValueOnce(json(500, { title: "x" })); // the re-ask fails
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  // the re-ask names the chosen profile (CR-07)
+  expect(fetchMock.mock.calls[1][0]).toBe("/api/v1/workflows:inspect?location=%2Fdata%2Frnaseq&profiles=docker");
+  expect(
+    await screen.findByText("Could not read the profile's values: the form shows the previous ones"),
+  ).toBeInTheDocument();
+  const depth = screen.getByRole("textbox", { name: /^depth/ }); // the previous values stay
+  expect(depth).toHaveValue("7");
+  expect(depth.closest(".launch-param")).toHaveTextContent("from the pipeline's config");
+  // a later answer clears the note (CR-06)
+  fetchMock.mockResolvedValueOnce(json(200, EFFECTIVE));
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "test");
+  await waitFor(() =>
+    expect(screen.queryByText("Could not read the profile's values: the form shows the previous ones")).toBeNull(),
+  );
+});
+
+test("§5.12: the form sends only the values the user changed, not the prefilled defaults", async () => {
+  const onLaunched = page();
+  await load({
+    ...EFFECTIVE,
+    defaults: {
+      input: { value: "/data/samples.csv", source: "config" },
+      depth: { value: 7, source: "config" },
+    },
+  });
+  const depth = screen.getByRole("textbox", { name: /^depth/ });
+  await userEvent.clear(depth);
+  await userEvent.type(depth, "9");
+  fetchMock.mockResolvedValueOnce(json(201, { id: "run_1" }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+  expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).params).toEqual({ depth: 9 });
+});
+
+test("§5.12: sources not complete: a required field no source fills is a warning, and Launch stays enabled", async () => {
+  const onLaunched = page();
+  await load({ ...EFFECTIVE, defaults_complete: false });
+  expect(screen.getByRole("textbox", { name: /^input/ })).toHaveValue("");
+  expect(launch()).not.toHaveAttribute("aria-disabled");
+  expect(
+    within(before()).getByRole("link", {
+      name: "Warning, not a blocker: the required field input has no value; the engine's own check has the last word",
+    }),
+  ).toBeInTheDocument();
+  fetchMock.mockResolvedValueOnce(json(201, { id: "run_1" }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+  expect(screen.getByRole("textbox", { name: /^input/ })).toHaveAttribute("aria-invalid", "false");
+});
+
+test("§5.12: a 201 with warnings shows them, one line each, after Launch", async () => {
+  const onLaunched = page();
+  await load({
+    ...EFFECTIVE,
+    defaults: {
+      input: { value: "/data/samples.csv", source: "config" },
+      depth: { value: 7, source: "config" },
+    },
+  });
+  fetchMock.mockResolvedValueOnce(
+    json(201, {
+      id: "run_1",
+      name: "rnaseq-x",
+      state: "queued",
+      warnings: [
+        { field: "params.input", message: "'input' is a required property" },
+        { field: "params.depth", message: "'depth' is a required property" },
+      ],
+    }),
+  );
+  await userEvent.click(launch());
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+  const banner = screen.getByRole("status", { name: "Launched with warnings" });
+  expect(within(banner).getAllByRole("listitem")).toHaveLength(2);
+  expect(within(banner).getByText("params.input: 'input' is a required property")).toBeInTheDocument();
+  expect(within(banner).getByText("params.depth: 'depth' is a required property")).toBeInTheDocument();
+});
