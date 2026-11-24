@@ -284,6 +284,10 @@
     top: 8px;
     max-height: calc(100vh - 16px);
     overflow-y: auto;
+    /* overflow makes the aside a scrollport that clips at its padding box, which cut the cards'
+       --sp-shadow 1 px ring (their border) where they touched its edge (the Summary card's
+       corners); 1 px of padding gives the ring room to paint (UX-G2-17 keeps the own scroll). */
+    padding: 1px;
   }
 }
 
