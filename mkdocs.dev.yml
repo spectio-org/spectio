@@ -115,6 +115,7 @@ nav:
           - "Spike: stage detection": research/spike-stage-detection-2026-10-28.md
           - "Checkpoints, temp outputs and SLURM efficiency": research/dag-temp-slurm-efficiency-2026-11-07.md
           - EMBL login node audit: research/2026-11-08-embl-login-node-audit.md
+          - "Galaxy as Spectio's UI": research/galaxy-as-ui-2026-11-08.md
           - "Spike: MetroFlow graph": research/spike-metroflow-2026-11-10.md
           - MetroFlow gap: research/metroflow-gap-2026-11-11.md
           - "Spike: module run": research/spike-module-run-2026-11-10.md
