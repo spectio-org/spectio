@@ -2471,3 +2471,20 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   2. Registering by script needs a token first. **Recommendation:** bring "tokens for scripts" forward from "Later" into 0.0.2, with the scopes `catalog:write` and `runs:read`, and nothing that launches, until the authorization design covers it ([authentication-and-access](../specs/authentication-and-access.md)).
 - **Why a question:** it changes the 0.0.2 scope and the authentication design, which are Thomas's decisions (triage-policy, scope).
 - **Not assumed:** it is a scope question asked by Thomas, so it waits for his answer. Nothing was built.
+
+### #161 · Decided: what blocks sharing 0.0.1, from Thomas's own test on the EMBL login node (Thomas, 2026-11-24)
+
+- **Thomas, after trying 0.0.1-rc1 on the login node through the SSH tunnel (2026-11-24):** "pas encore partageable en l'état" (not shareable as it is). These items come first:
+  1. **Manage catalog.** The screen is not good enough and cannot stay as it is. It needs a new design, starting from the boards `design/ui-canvas/LiteCatalog.dc.html` and `LiteCatalogEntry.dc.html`.
+  2. **Alignment between Home and Launch.** The two screens do not line up the same way. Make the page grid, margins and headers match.
+  3. **"Where it runs" badges.** Their structure has to be reworked.
+  4. **A menu in "Where it runs".**
+  5. **Validation with more pipelines,** beyond the synthetic scenarios:
+     - from nf-core;
+     - from the Snakemake Workflow Catalog;
+     - from WorkflowHub;
+     - Nextflow modules run directly. Runs that target one module are planned for 0.0.2, behind a flag ([roadmap](../roadmap/index.md#after-001)).
+- **Recommendation (not assumed: Thomas sets the order):**
+  - UI items 1 to 4: one ux-reviewer pass on the three screens against [ui-spec](../specs/ui-spec.md); the boards are fixed first, then the code.
+  - Item 5: a pipeline matrix in [RC1-acceptance](RC1-acceptance.md), a few pipelines per source, each launched on the login node. Every pipeline that fails gets its own follow-up.
+- **State:** open. 0.0.1 is not announced while these are open.
