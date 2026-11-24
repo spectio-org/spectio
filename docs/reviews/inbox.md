@@ -2488,3 +2488,13 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - UI items 1 to 4: one ux-reviewer pass on the three screens against [ui-spec](../specs/ui-spec.md); the boards are fixed first, then the code.
   - Item 5: a pipeline matrix in [RC1-acceptance](RC1-acceptance.md), a few pipelines per source, each launched on the login node. Every pipeline that fails gets its own follow-up.
 - **State:** open. 0.0.1 is not announced while these are open.
+- **Found while validating with real pipelines on the login node (2026-11-24):**
+  1. **Values a pipeline sets were refused as missing.** nf-core `test` profile (`input`), Snakemake `config/config.yaml`. *Decided (Thomas, 2026-11-24): fix it for Nextflow, Snakemake and modules*, [api §5.12](../specs/api-and-data-model.md#512-effective-parameters-sources-prefill-and-validation-001).
+  2. **Snakemake runs in the run's directory, not the pipeline's root.** A relative path of the repository (`.test/config/samples.tsv`) is not found.
+  3. **A WorkflowHub URL is cloned as Git** and fails. WorkflowHub needs its own resolver, to the entry's source repository or its RO-Crate.
+  4. **The pipeline cache must be on a file system the compute nodes see.** With `data_dir` on the login node's `/tmp`, Apptainer and the Snakemake SLURM jobs failed on the compute node. `spectio doctor` does not check it.
+  5. **The failure summary was empty** (`engine_fault`, no message) while `head.out` named the Apptainer error.
+  6. **A `data_dir/pipelines` symlink gives a bare 500** (`NotADirectoryError`) instead of a clear refusal.
+  7. **No software deployment for Snakemake** (`--software-deployment-method conda` or `apptainer`) outside a profile, while the catalog's workflows use `conda:` and `wrapper:`.
+  8. **A server restart signs every browser out**; running runs were adopted again.
+  9. **Works:** a script signs in with `spectio login --print-link` and `POST /api/v1/auth/magic-links:exchange` (the open point of #160).
