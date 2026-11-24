@@ -2498,3 +2498,28 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   7. **No software deployment for Snakemake** (`--software-deployment-method conda` or `apptainer`) outside a profile, while the catalog's workflows use `conda:` and `wrapper:`.
   8. **A server restart signs every browser out**; running runs were adopted again.
   9. **Works:** a script signs in with `spectio login --print-link` and `POST /api/v1/auth/magic-links:exchange` (the open point of #160).
+- **Decided (Thomas, 2026-11-24):** findings 2 and 7 are fixed before 0.0.1 is shared. Software deployment is "impératif": a Snakemake run must be able to use conda and Apptainer. The approach (assumed — pending Thomas's review of the PR):
+  - each environment carries `software` (`conda`, `apptainer`, both by default) and optional Apptainer arguments, passed as `--software-deployment-method`, with conda and Apptainer caches under `data_dir`, shared by every run; a chosen workflow profile keeps its own settings;
+  - the pipeline's `config/` directory is copied into the launch directory, as Snakedeploy lays out a deployed workflow **[to be validated]**, so `configfile:` and the config's relative paths resolve as from the repository's root;
+  - `spectio doctor` reports `conda --version` and `apptainer --version` for the environments that use them.
+- **Thomas's UI feedback on the login node (2026-11-24, second pass):**
+  10. **Runs list:** the State cell was far too long (the whole failure message). One line per state, a more visual status filter with light icons.
+  11. **The notification count** was dark on the accent colour and not readable.
+  12. **The top bar** did not draw the brand logo: the word was set in another font.
+  13. **A failed run** said the same long message four times. It must be much simpler when the user arrives: the failure once, short, with its actions.
+- **Found while reading three demonstrator pipelines (2026-11-24):** a Strand-seq Snakemake pipeline with a watcher that launches a run for each new sequencing run, an nf-core fork, and an imaging Nextflow repository.
+  14. **`configfile:` through a variable** (`NAME = "config/config.yaml"` then `configfile: NAME`) is not read as a literal; the defaults are then incomplete.
+  15. **A pipeline's own parameter description** (a YAML with `desc`, `type`, `required`, `default`, `category` per key) is not JSON Schema; Spectio infers a flat form of every config key instead.
+  16. **Workflow profiles outside `profiles/`** (for example `workflow/snakemake_profiles/<version>/<site>`) are not offered.
+  17. **Several entry scripts in one Nextflow repository** (`main_<name>.nf`, no `main.nf`): a catalog entry cannot name its entry script.
+  18. **A private GitLab reached over SSH** as the pipeline's source.
+  19. **A watcher as an API client:** it keeps detecting and preparing the data, and launches through `POST /runs` with the sequencing run's ID as its `Idempotency-Key`, so its runs show in Spectio. It needs a token for a script rather than a sign-in link (#160).
+
+### #162 · Decided: a central UI for every user, one runner per user on the login node, beside the per-user server (Thomas, 2026-11-24)
+
+- **Thomas (2026-11-24):** one central, hosted UI for all users, so that nobody deploys the server; sign-in through OIDC later, reusing depictio's code. Jobs are not launched on Kubernetes for now. In every case each user has their own runner on the login node.
+- **Thomas (2026-11-24, same day):** both deployments must work in Spectio: the server each user runs on the login node (0.0.1), and the central UI with a runner per user.
+- **What exists:** the shared server, remote runners that pull their commands over outgoing HTTPS ([admin-and-operations §3.2](../specs/admin-and-operations.md)), the Helm chart ([architecture §7.5](../specs/architecture-plugins-and-packaging.md)), background tasks in SQL ([architecture §7.6](../specs/architecture-plugins-and-packaging.md)) and the sign-in methods ([authentication-and-access §2](../specs/authentication-and-access.md)) are specified as "later (open)" in [dev-environment-and-testing §15.1](../specs/dev-environment-and-testing.md). The data model is already multi-user ready.
+- **Open:** how a user's runner proves who it is and is paired to their account (#12–#14); how the central server reaches files that only the login node sees (logs, results, previews: through the runner); Postgres; what 0.0.1's token link becomes.
+- **Recommendation:** after 0.0.1 is shared, one planning step: a spec review focused on "central server, runner per user", then a spike with the server on a local Kubernetes cluster and one runner on the login node.
+- **State:** decided direction; the planning step is not scheduled yet.

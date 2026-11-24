@@ -142,6 +142,8 @@ test("the facts link a resumed run and its parent both ways", async () => {
   detail(failedRun({ resumed_as: [{ id: CHILD, name: "wgs-cohort-12-T9C2D", state: "succeeded" }] }));
   app(`/runs/${ID}`);
   const facts = await screen.findByRole("region", { name: "Facts" });
+  // a failed run's Facts start folded (inbox #161): open them
+  await userEvent.click(within(facts).getByRole("button", { name: /^Facts/ }));
   const child = within(facts).getByRole("link", { name: "wgs-cohort-12-T9C2D Â· Succeeded" });
   expect(child.getAttribute("href")).toBe(`/runs/${CHILD}`);
   expect(getComputedStyle(child).color).toBe("var(--sp-text-link)"); // FU-P3-104: the app's link style
@@ -159,6 +161,8 @@ test("a resumed run's facts say Resume of its parent", async () => {
   });
   app(`/runs/${CHILD}`);
   const facts = await screen.findByRole("region", { name: "Facts" });
+  // a failed run's Facts start folded (inbox #161): open them
+  await userEvent.click(within(facts).getByRole("button", { name: /^Facts/ }));
   const parent = within(facts).getByRole("link", { name: "run 7T9V1W" });
   expect(parent.getAttribute("href")).toBe(`/runs/${ID}`);
   expect(getComputedStyle(parent).color).toBe("var(--sp-text-link)"); // FU-P3-104: the app's link style
@@ -209,7 +213,9 @@ test("on the phone, Resume asks in a bottom sheet, Cancel then Resume (ui-spec Â
   viewport(390);
   detail(failedRun({ workflow: { ...run().workflow, engine: "snakemake" } }));
   app(`/runs/${ID}`);
-  await userEvent.click(await screen.findByRole("button", { name: "Resume" }));
+  // the why card offers a Resume too (inbox #161); this test asks the pinned bar's own one
+  const resumes = await screen.findAllByRole("button", { name: "Resume" });
+  await userEvent.click(resumes.find((b) => b.closest(".sp-run-bar"))!);
   const sheet = await screen.findByRole("dialog", { name: "Resume this run?" });
   expect(sheet).toHaveAttribute("aria-modal", "true");
   expect(sheet).toHaveTextContent("Snakemake runs again with --rerun-incomplete and reuses the 143 jobs that finished.");
