@@ -15,7 +15,7 @@ import re
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from fastapi import APIRouter, Request, Response
 from jsonschema import validators
@@ -118,28 +118,27 @@ def _check_params(
     except (SchemaError, Unresolvable, RecursionError) as exc:  # `{"$ref": "#"}` recurses
         reason = exc.message if isinstance(exc, SchemaError) else type(exc).__name__
         raise Invalid("params", f"the pipeline's schema cannot be used: {reason}") from None
-    found_errors = []
+    found_errors: list[tuple[dict[str, str], bool]] = []
     for error in errors:
         path = [str(p) for p in error.absolute_path]
-        if error.validator == "required":  # one error per missing name, in the message only
+        # soft/hard by the validator, not the words of the message (CR-04)
+        required = error.validator == "required"
+        if required:  # one error per missing name, in the message only
             quoted = _REQUIRED_NAME.match(error.message)
             if quoted is not None:  # the error's own name, not the first missing one (§5.12)
                 path.append(quoted.group(1))
-            else:  # a message jsonschema no longer writes: the first missing name
-                required = cast(list[str], error.validator_value)
-                missing = [k for k in required if k not in cast(dict[str, Any], error.instance)]
-                path += missing[:1]
-        found_errors.append({"field": ".".join(["params", *path]), "message": error.message})
+        entry = {"field": ".".join(["params", *path]), "message": error.message}
+        found_errors.append((entry, required))
     if not found_errors:
         return []
     if complete:
-        raise Invalid.many(found_errors)
+        raise Invalid.many([entry for entry, _ in found_errors])
     # api §5.12: with a source unread, a `required` error is a warning; every other one —
     # a type, an enum, a pattern — stays a refusal. jsonschema's own message names the miss.
-    hard = [e for e in found_errors if not e["message"].endswith("is a required property")]
+    hard = [entry for entry, soft in found_errors if not soft]
     if hard:
         raise Invalid.many(hard)
-    return found_errors
+    return [entry for entry, soft in found_errors if soft]
 
 
 @router.post("/runs", status_code=201)
@@ -167,16 +166,21 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     except Invalid as exc:
         raise exc.under("workflow") from None
     # the effective parameters (api §5.12): the sources' defaults under the form's values; the
-    # 0.0.1 body carries no params file, whose values the form sends within `params` (§5.6)
-    defaults, complete = effective_defaults(
-        resolved.directory,
-        request.app.state.target_engine,
-        engine,
-        body.profiles,
-        found.schema,
-    )
-    merged = {name: given["value"] for name, given in defaults.items()} | body.params
-    param_warnings = _check_params(found, merged, complete)
+    # 0.0.1 body carries no params file, whose values the form sends within `params` (§5.6).
+    # Only when the schema is usable: `_check_params` has nothing to validate against otherwise,
+    # and `nextflow config` would start the JVM for nothing (CR-03).
+    if found.schema is None or found.schema_source == "inferred":
+        param_warnings = None
+    else:
+        defaults, complete = effective_defaults(
+            resolved.directory,
+            request.app.state.target_engine,
+            engine,
+            body.profiles,
+            found.schema,
+        )
+        merged = {name: given["value"] for name, given in defaults.items()} | body.params
+        param_warnings = _check_params(found, merged, complete) or None
     # the values as resolved now: the run keeps them whatever the file says later (req. 18)
     chosen = choose(request, body.environment)
     environment = snapshot(chosen)

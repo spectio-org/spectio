@@ -246,6 +246,9 @@ export function LaunchPage({
   // kept with what it was asked for (pipeline, engine, path), so a change drops it (CR-P3FU121-02)
   const [configCheck, setConfigCheck] = useState<{ asked: string; found: Inspected["config_file"] } | null>(null);
   const [recheck, setRecheck] = useState(0);
+  // A re-ask of the profile's values that failed (api §5.12, CR-06): one muted line says so; the
+  // form keeps the previous answer, and Launch's own errors still say what is wrong
+  const [profilesDown, setProfilesDown] = useState(false);
   const inFlight = useRef<AbortController | null>(null);
   // What to run (ui-spec §4.15, api §5.10): the whole pipeline, or one module or one rule when the
   // server has single targets on. A module loads as a form of its inputs; a Snakemake pipeline
@@ -334,7 +337,7 @@ export function LaunchPage({
   const fields = sections.flatMap((s) => s.fields);
   const keys = fields.map((f) => f.key);
   const hints: Record<string, string> = {};
-  if (defaultsMode) for (const [key, found] of Object.entries(effective)) hints[key] = sourceHint(found.source, profile);
+  if (defaultsMode) for (const [key, found] of Object.entries(effective)) hints[key] = sourceHint(found.source, profile ? [profile] : []);
   const grouped = !!loaded?.schema && ("$defs" in loaded.schema || "definitions" in loaded.schema);
   // with the effective parameters, only the values the user typed are sent: a nested map is never
   // sent whole at its schema defaults, which would put back what the pipeline's config set (§5.12)
@@ -467,6 +470,7 @@ export function LaunchPage({
         : await inspect(where, isRepo ? rev.trim() : null, controller.signal, from?.params_file);
       setLoaded(found);
       setTried(false);
+      setProfilesDown(false); // a fresh Load answers for itself (CR-06)
       setFromName(from?.name ?? null);
       setParamsFile(from ? found.params_file : null);
       if (copy) {
@@ -584,8 +588,11 @@ export function LaunchPage({
         if (inFlight.current === controller) inFlight.current = null;
         setLoaded(found);
         setParamsFile(found.params_file ?? null);
+        setProfilesDown(false);
       },
-      () => {},
+      () => {
+        if (!controller.signal.aborted) setProfilesDown(true); // CR-06: the form keeps the previous answer
+      },
     );
   }
 
@@ -1142,6 +1149,12 @@ export function LaunchPage({
                         <>
                           <br />
                           <span>{profileNote}</span>
+                        </>
+                      )}
+                      {profilesDown && (
+                        <>
+                          <br />
+                          <span>Could not read the profile's values: the form shows the previous ones</span>
                         </>
                       )}
                     </>

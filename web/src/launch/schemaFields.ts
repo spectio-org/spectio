@@ -178,9 +178,10 @@ export function effectiveDefault(field: Field, defaults: Record<string, Effectiv
   return field.default === undefined ? null : { value: field.default, source: "schema" };
 }
 
-/** The source's words under the field, as the spec writes them ("from profile test", …). */
-export function sourceHint(source: DefaultSource, profile: string): string {
-  return source === "profile" ? `from profile ${profile}`
+/** The source's words under the field, as the spec writes them ("from profile test", or "from
+ * the chosen profile" with several profiles, api §5.12). */
+export function sourceHint(source: DefaultSource, profiles: string[]): string {
+  return source === "profile" ? (profiles.length === 1 ? `from profile ${profiles[0]}` : "from the chosen profile")
     : source === "config" ? "from the pipeline's config"
     : source === "params_file" ? "from the params file"
     : "schema default";

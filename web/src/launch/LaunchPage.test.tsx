@@ -704,6 +704,27 @@ test("§5.12: choosing another profile asks inspect again, and its defaults fill
   expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body)).params).toEqual({});
 });
 
+test("§5.12: a failed re-ask after a profile change says so; the form keeps the previous values", async () => {
+  page();
+  await load(EFFECTIVE);
+  fetchMock.mockResolvedValueOnce(json(500, { title: "x" })); // the re-ask fails
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  // the re-ask names the chosen profile (CR-07)
+  expect(fetchMock.mock.calls[1][0]).toBe("/api/v1/workflows:inspect?location=%2Fdata%2Frnaseq&profiles=docker");
+  expect(
+    await screen.findByText("Could not read the profile's values: the form shows the previous ones"),
+  ).toBeInTheDocument();
+  const depth = screen.getByRole("textbox", { name: /^depth/ }); // the previous values stay
+  expect(depth).toHaveValue("7");
+  expect(depth.closest(".launch-param")).toHaveTextContent("from the pipeline's config");
+  // a later answer clears the note (CR-06)
+  fetchMock.mockResolvedValueOnce(json(200, EFFECTIVE));
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "test");
+  await waitFor(() =>
+    expect(screen.queryByText("Could not read the profile's values: the form shows the previous ones")).toBeNull(),
+  );
+});
+
 test("§5.12: the form sends only the values the user changed, not the prefilled defaults", async () => {
   const onLaunched = page();
   await load({

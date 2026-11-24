@@ -327,9 +327,12 @@ describe("effective defaults", () => {
   });
 
   test("the hint of each source, in the spec's words", () => {
-    expect(sourceHint("schema", "test")).toBe("schema default");
-    expect(sourceHint("config", "test")).toBe("from the pipeline's config");
-    expect(sourceHint("profile", "test")).toBe("from profile test");
-    expect(sourceHint("params_file", "test")).toBe("from the params file");
+    expect(sourceHint("schema", ["test"])).toBe("schema default");
+    expect(sourceHint("config", ["test"])).toBe("from the pipeline's config");
+    expect(sourceHint("params_file", ["test"])).toBe("from the params file");
+    // one chosen profile is named; several, or none known, are not (CR-06)
+    expect(sourceHint("profile", ["test"])).toBe("from profile test");
+    expect(sourceHint("profile", ["docker", "test"])).toBe("from the chosen profile");
+    expect(sourceHint("profile", [])).toBe("from the chosen profile");
   });
 });

@@ -2,6 +2,7 @@
 each, what inspect answers, and what `POST /runs` validates — never a real engine command."""
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,7 @@ from spectio.runner.rundir import read_run_manifest, run_paths
 from spectio_server.defaults import DefaultsCache, effective_defaults
 from spectio_server.store.schema import runs
 from spectio_server.store.writer import Writer
+from spectio_server.targets import INSPECTIONS
 
 from .conftest import client_for
 from .test_launch import table
@@ -93,8 +95,9 @@ def defaults_of(
     profiles: list[str],
     root: Path,
     schema: dict[str, Any] | None = SCHEMA,
+    cache: DefaultsCache | None = None,
 ) -> Any:
-    return effective_defaults(root, engine, name, profiles, schema, cache=DefaultsCache())
+    return effective_defaults(root, engine, name, profiles, schema, cache=cache or DefaultsCache())
 
 
 # --- The function -----------------------------------------------------------------------------
@@ -160,6 +163,107 @@ def test_nextflow_cached_per_dir_and_profiles(tmp_path: Path) -> None:
     # the no-profile answer is kept: only the profile command ran again
     assert engine.calls[-1][1] == ["config", "-profile", "other", "-o", "json", str(root)]
     assert len(engine.calls) == 3
+
+
+def test_nextflow_failure_is_not_cached(tmp_path: Path) -> None:
+    """SEC-03/CR-02: a failed `nextflow config` is not kept: the next read runs it again, so a
+    later success is seen."""
+    engine = ConfigEngine(rc=1)
+    cache = DefaultsCache()
+    root = nf_root(tmp_path)
+    values, complete = defaults_of(engine, "nextflow", [], root, cache=cache)
+    assert not complete and values == {"chunks": {"value": 0, "source": "schema"}}
+    engine.rc, engine.base = 0, {"outdir": "results"}
+    values, complete = defaults_of(engine, "nextflow", [], root, cache=cache)
+    assert complete
+    assert values["outdir"] == {"value": "results", "source": "config"}
+    assert len(engine.calls) == 2
+
+
+def test_snakemake_unreadable_config_is_not_cached(tmp_path: Path) -> None:
+    """SEC-03/CR-02: an unreadable Snakemake source is not kept either: once the file reads, the
+    next read sees it."""
+    engine = ConfigEngine()
+    cache = DefaultsCache()
+    root = smk_root(tmp_path, config="{outdir: results\n")  # not YAML this server reads
+    values, complete = defaults_of(engine, "snakemake", [], root, schema=None, cache=cache)
+    assert not complete and values == {}
+    (root / "config" / "config.yaml").write_text("outdir: results\n")
+    values, complete = defaults_of(engine, "snakemake", [], root, schema=None, cache=cache)
+    assert complete
+    assert values["outdir"] == {"value": "results", "source": "config"}
+
+
+def test_nextflow_config_edit_is_seen(tmp_path: Path) -> None:
+    """SEC-04/CR-02: the cache key keeps the mtime_ns of `nextflow.config` and of `conf/` (0
+    when missing): an edited nextflow.config is read again."""
+    cache = DefaultsCache()
+    root = nf_root(tmp_path)
+    (root / "nextflow.config").write_text("params.outdir = 'results'\n")
+    engine = ConfigEngine(base={"outdir": "results"})
+    values, complete = defaults_of(engine, "nextflow", [], root, cache=cache)
+    assert complete and values["outdir"] == {"value": "results", "source": "config"}
+    engine.base = {"outdir": "other"}
+    (root / "nextflow.config").write_text("params.outdir = 'other'\n")
+    os.utime(root / "nextflow.config", ns=(2_000_000_000, 2_000_000_000))  # a later mtime_ns
+    values, complete = defaults_of(engine, "nextflow", [], root, cache=cache)
+    assert complete and values["outdir"] == {"value": "other", "source": "config"}
+    assert len(engine.calls) == 2
+
+
+def test_cache_keeps_at_most_128_entries(tmp_path: Path) -> None:
+    """SEC-02/CR-08: at most 128 entries per map of the cache, the least recently used evicted:
+    the 129th directory drops the first, which is read again; a hit is kept."""
+    cache = DefaultsCache()
+    engine = ConfigEngine(base={"outdir": "results"})
+    roots = [nf_root(tmp_path, f"p{i}") for i in range(129)]
+    for root in roots:
+        effective_defaults(root, engine, "nextflow", [], SCHEMA, cache=cache)
+    assert len(engine.calls) == 129
+    assert len(cache._kept) == 128 and len(cache._base) == 128
+    effective_defaults(roots[0], engine, "nextflow", [], SCHEMA, cache=cache)
+    assert len(engine.calls) == 130  # roots[0] was the least recently used: read again
+    effective_defaults(roots[128], engine, "nextflow", [], SCHEMA, cache=cache)
+    assert len(engine.calls) == 130  # the latest answer is still kept
+    assert len(cache._kept) == 128
+
+
+def test_busy_pool_reads_nothing(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """With no free inspection slot, the source counts as not read (`defaults_complete` false):
+    inspect and `POST /runs` answer, they do not raise (§5.12)."""
+    client = client_for(settings, writer)
+    engine = ConfigEngine(base={"outdir": "results"})
+    client.app.state.target_engine = engine  # type: ignore[attr-defined]
+    root = nf_root(tmp_path)
+    taken = [INSPECTIONS.acquire(blocking=False) for _ in range(2)]
+    try:
+        assert all(taken)
+        body = client.get(INSPECT, params={"location": str(root)}).json()
+        assert body["defaults"] == {"chunks": {"value": 0, "source": "schema"}}
+        assert body["defaults_complete"] is False
+        assert engine.calls == []  # the busy check answers before the engine is asked
+        response = launch(client, root, "nextflow")  # no source gives the required names
+        assert response.status_code == 201, response.text
+        warnings = response.json()["warnings"]
+        assert {w["field"] for w in warnings} == {"params.input", "params.outdir"}
+    finally:
+        for slot in taken:
+            if slot:
+                INSPECTIONS.release()
+    body = client.get(INSPECT, params={"location": str(root)}).json()  # a slot free again
+    assert body["defaults_complete"] is True
+    assert body["defaults"]["outdir"] == {"value": "results", "source": "config"}
+
+
+def test_configfile_control_character_is_not_read(tmp_path: Path) -> None:
+    """SEC-05/CR-02: a `configfile:` path with a control character is not read: the source counts
+    as not read, never a 500."""
+    for i, line in enumerate(
+        ('configfile: "con\x00fig.yaml"\n', 'configfile: "conf\x1b[2Jig.yaml"\n')
+    ):
+        root = smk_root(tmp_path, line, config=None, name=f"smk{i}")
+        values, complete = defaults_of(ConfigEngine(), "snakemake", [], root, schema=None)
+        assert not complete and values == {}, line
 
 
 def test_snakemake_configfile_literal(tmp_path: Path) -> None:
@@ -311,9 +415,7 @@ def test_launch_required_is_a_warning_when_incomplete(
     assert response.status_code == 201, response.text
     body = response.json()
     warnings = body["warnings"]
-    assert {w["field"].split(".", 1)[0] for w in warnings} == {"params"}
-    # both missing names are named, whatever field the error carries (§5.12 fixes it in parallel)
-    assert {w["message"].split("'")[1] for w in warnings} == {"input", "outdir"}
+    assert {w["field"] for w in warnings} == {"params.input", "params.outdir"}
     assert all(w["message"].endswith("is a required property") for w in warnings)
     assert len(table(writer, runs)) == 1  # the run was created; the engine has the last word
 
@@ -363,3 +465,24 @@ def test_launch_snakemake_not_a_literal_warns(
     warnings = response.json()["warnings"]
     assert warnings and warnings[0]["field"].startswith("params.")
     assert warnings[0]["message"].endswith("is a required property")
+
+
+def test_launch_without_a_usable_schema_runs_no_engine(
+    settings: Settings, writer: Writer, tmp_path: Path
+) -> None:
+    """CR-03: the effective parameters are asked only when the schema can be checked against:
+    with no schema, or one inferred from config/config.yaml, no `nextflow config` runs (the JVM
+    does not start for nothing)."""
+    client = client_for(settings, writer)
+    engine = ConfigEngine(base={"outdir": "results"})
+    client.app.state.target_engine = engine  # type: ignore[attr-defined]
+    root = nf_root(tmp_path)
+    (root / "nextflow_schema.json").unlink()  # no schema at all: nothing to validate against
+    # even a type error goes unchecked: there is nothing to validate against
+    response = launch(client, root, "nextflow", params={"outdir": 3})
+    assert response.status_code == 201, response.text
+    (root / "config").mkdir()
+    (root / "config" / "config.yaml").write_text("outdir: results\n")  # a schema inferred from it
+    response = launch(client, root, "nextflow")
+    assert response.status_code == 201, response.text
+    assert engine.calls == []

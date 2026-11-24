@@ -40,6 +40,20 @@ FLAKY_RUN = "run_01K8T2F1XTVRES000000000000"  # the run of every converted T2 fi
 ENGINE_VERSIONS = {"nextflow": "26.10.4", "snakemake": "9.27.1"}
 
 
+class QuietEngine:
+    """The default target engine of every test client (CR-01): a `nextflow config` that answers
+    `{"params": {}}` and exits 0, so no test starts the JVM and every launch sees complete
+    sources. A test that needs another answer replaces `client.app.state.target_engine` (the
+    `ConfigEngine` of test_defaults, the `FakeEngine` of test_targets)."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, list[str]]] = []
+
+    def __call__(self, engine: str, argv: list[str]) -> tuple[int, str, str]:
+        self.calls.append((engine, list(argv)))
+        return 0, '{"params": {}}', ""
+
+
 def client_for(
     settings: Settings, writer: Writer, web_dir: Path | None = None, *, signed_in: bool = True
 ) -> TestClient:
@@ -47,6 +61,7 @@ def client_for(
     `signed_in`: the client holds a session cookie, as after the link exchange (P1 Task 12)."""
     app = create_app(settings, writer, web_dir=web_dir or Path("/nonexistent/web/dist"))
     app.state.engine_versions = lambda: dict(ENGINE_VERSIONS)  # no login shell in the tests
+    app.state.target_engine = QuietEngine()  # CR-01: no real nextflow behind a test launch
     origin = f"http://127.0.0.1:{settings.port}"  # what a browser on the loopback sends (req. 4, 7)
     client = TestClient(app, base_url=origin, headers={"Origin": origin})
     if signed_in:
