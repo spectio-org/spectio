@@ -1,5 +1,7 @@
 /* Home (UI-07): ui-spec §12.7 cards, §12.8 rows. One card padding (16, 12 on the phone) and one
-   gap between cards (16); sections 24 apart. Loaded after runs.css, so these win at equal weight. */
+   gap between cards (16); sections 24 apart. Loaded after runs.css, so these win at equal weight.
+   The cards are the shell's one card look (sp-card: raised surface, --sp-shadow, radius md), as
+   Launch's, not a border of their own. */
 .sp-homepage {
   gap: var(--mantine-spacing-xl);
 }
@@ -7,12 +9,6 @@
 .sp-home-grid > .sp-runs,
 .sp-homepage .sp-cards {
   gap: var(--mantine-spacing-lg);
-}
-.sp-home-card,
-.sp-homepage .sp-cards li {
-  border: 1px solid var(--sp-line-border);
-  border-radius: var(--mantine-radius-md);
-  box-shadow: none;
 }
 @media (min-width: 1200px) {
   .sp-home-grid {
@@ -40,12 +36,20 @@
   margin: 0;
 }
 
-/* Stat tiles: one height, the rail only (§3.1). */
+/* The empty state ("No runs yet.") is a card like the sections (the shell's sp-card look), not
+   the grey block the runs list uses. */
+.sp-homepage .sp-empty {
+  padding: var(--mantine-spacing-lg);
+  background: var(--sp-surface-raised);
+  box-shadow: var(--sp-shadow);
+}
+
+/* Stat tiles: one height, the tone rail beside the card's own shadow (§3.1). */
 .sp-homepage .sp-cards {
   grid-auto-rows: 1fr;
 }
 .sp-homepage .sp-cards li[data-rail] {
-  box-shadow: inset 4px 0 0 var(--tone);
+  box-shadow: inset 4px 0 0 var(--tone), var(--sp-shadow);
 }
 .sp-homepage .sp-cards li > a {
   height: 100%;

@@ -113,8 +113,10 @@ export function fromItem(item: EnvironmentItem): Draft {
 const memWords = (n: number) => (n % 1024 === 0 ? `${n / 1024} GiB` : `${n} MiB`);
 const timeWords = (t: number) => [t >= 60 ? `${Math.floor(t / 60)} h` : "", t % 60 ? `${t % 60} min` : ""].filter(Boolean).join(" ");
 
-/** The card's summary line, in words; an unset value is left out. Also a run's snapshot's. */
-export function summary(item: Pick<EnvironmentItem, "executor" | "slurm" | "local">, node: string, serverExecutor: string): string {
+/** The card's summary line, in words; an unset value is left out. Also a run's snapshot's.
+ * `kindSaid`: the line already names the kind (a Launch card's second line says "Login node"),
+ * so the where clause leaves "(the login node)" out. */
+export function summary(item: Pick<EnvironmentItem, "executor" | "slurm" | "local">, node: string, serverExecutor: string, kindSaid = false): string {
   if (item.executor === "slurm") {
     const s = item.slurm;
     const parts = [
@@ -125,7 +127,7 @@ export function summary(item: Pick<EnvironmentItem, "executor" | "slurm" | "loca
     ].filter(Boolean);
     return parts.length ? parts.join(" · ") : "SLURM's defaults for your account";
   }
-  const where = serverExecutor === "slurm" ? `on ${node} (the login node)` : "this machine";
+  const where = serverExecutor === "slurm" ? `on ${node}${kindSaid ? "" : " (the login node)"}` : "this machine";
   const caps = [item.local?.cpus && plural(item.local.cpus, "CPU", "CPUs"), item.local?.mem_mib && memWords(item.local.mem_mib)].filter(Boolean);
   return `${where} · ${caps.length ? `at most ${caps.join(" and ")}` : "no limit"}`;
 }

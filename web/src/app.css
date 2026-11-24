@@ -250,14 +250,61 @@
 .launch-env-option input {
   margin-top: var(--mantine-spacing-xs);
 }
+/* Line 1: the name, then a group at its right end holding the Default badge and the menu.
+   The group never wraps or shrinks (the badge stays with the menu); the name wraps instead. */
+.launch-env-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  min-width: 0;
+}
+.launch-env-top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-sm);
+}
 .launch-env-name {
+  flex: 1;
+  min-width: 0;
   font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.launch-env-side {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  white-space: nowrap;
+}
+.launch-env-side .sp-chip {
+  margin: 0;
 }
 .launch-env-sum {
-  display: block;
-  margin-top: var(--mantine-spacing-xs);
   font-size: var(--mantine-font-size-sm);
   color: var(--sp-text-muted);
+}
+/* The + New environment card: an unselected environment card's border, radius and background,
+   but dashed and centred; as a grid item it stretches to its neighbours' height. */
+.launch-env-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--mantine-spacing-md);
+  border: 1px dashed var(--sp-line-border);
+  border-radius: var(--mantine-radius-md);
+  background: transparent;
+  color: var(--sp-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+.launch-env-add[data-disabled] {
+  color: var(--sp-text-muted);
+  cursor: default;
+}
+.launch-env-add:hover:not([data-disabled]) {
+  border-color: var(--sp-section-environments);
 }
 @media (max-width: 767.98px) {
   .launch-envs {
@@ -284,6 +331,10 @@
     top: 8px;
     max-height: calc(100vh - 16px);
     overflow-y: auto;
+    /* overflow makes the aside a scrollport that clips at its padding box, which cut the cards'
+       --sp-shadow 1 px ring (their border) where they touched its edge (the Summary card's
+       corners); 1 px of padding gives the ring room to paint (UX-G2-17 keeps the own scroll). */
+    padding: 1px;
   }
 }
 
