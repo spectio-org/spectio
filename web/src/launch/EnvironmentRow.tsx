@@ -243,8 +243,8 @@ function Choice({
       )}
       {left.length > 0 && <p className="sp-muted">{`Not offered: ${left.map((e) => `${e.name} (${e.unusable_reason})`).join("; ")}`}</p>}
       {/* The text row and the select keep the button; the cards' grid carries the + card instead. */}
-      {!cards && !waits["aria-disabled"] && (
-        <Button variant="light" onClick={onAdd} fullWidth={phone}>
+      {!cards && (
+        <Button variant="light" {...waits} onClick={() => !file && onAdd()} fullWidth={phone}>
           New environment
         </Button>
       )}
