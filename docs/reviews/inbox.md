@@ -2452,5 +2452,6 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - (c) ask the EMBL cluster team to update the module.
 
   **Recommendation: (a), plus (c) from you.** (b) needs the plugin version at launch time, and the module can change under a running server.
-- **Assumed (2026-11-24, [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), built in the doctor-lines PR. Item (c) is yours: ask for a module with Snakemake 9.26 or later and the SLURM plugin 2.8.0 or later.
+- **Install recipe checked:** on login1 on 2026-11-24, `uv tool install snakemake==9.27.1 --with snakemake-executor-plugin-slurm==2.8.0` (uv 0.9.29, in a private temporary tool directory) installed Snakemake 9.27.1 with plugin 2.8.0.
+- **Assumed (2026-11-24, [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), built in PR #337. Item (c) is yours: ask for a module with Snakemake 9.26 or later and the SLURM plugin 2.8.0 or later.
 - **Also found:** Snakemake 9.25.2 and earlier log each failed job's `job_error` twice when the run ends. Whether the projector counts it twice is **[to be validated]**. It is kept as a follow-up: de-duplicate `job_error` per job in the logger plugin, as `temp_removed` already is.

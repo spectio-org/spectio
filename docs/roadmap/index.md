@@ -18,12 +18,12 @@ hide: [navigation]
 
 ## 0.0.1-rc1, the release candidate
 
-The first tag is a release candidate, `v0.0.1-rc1` (`0.0.1rc1` on PyPI), so that people outside the project can install it from PyPI and try it before `0.0.1`. Its test campaign is the [RC1 acceptance matrix](../reviews/RC1-acceptance.md): unit tests, the browser tests against a real server, the SLURM test cluster, and the EMBL login node. It is tagged only when no cell of that matrix is a FAIL.
+The first tag is a release candidate, `v0.0.1-rc1` (`0.0.1rc1` on PyPI), so that people outside the project can install it from PyPI and try it before `0.0.1`. Its test campaign is the [RC1 acceptance matrix](../reviews/RC1-acceptance.md): unit tests, the browser tests against a real server, the SLURM test cluster, and the EMBL login node. It is tagged only when no cell of that matrix is a FAIL, and every cell left UNTESTED has a reason the owner accepted.
 
 Known limits of the release candidate:
 
 - **Snakemake on SLURM needs `snakemake-executor-plugin-slurm` 2.8.0 or later.** With an older plugin Spectio sees none of the run's jobs. The EMBL module `snakemake/9.23.1-foss-2025b` ships 2.6.1, so install Snakemake yourself there ([Installation](../installation/index.md#what-001-is-made-of)). `spectio doctor` prints the plugin's version.
-- **The Nextflow bridge is not in the Nextflow plugin registry.** It ships inside the `spectio` package and `spectio init` puts it in place, so nothing is missing for a run Spectio launches.
+- **The Nextflow bridge is not in the Nextflow plugin registry.** It ships inside the `spectio` package and `spectio init` puts it in place ([architecture §7.3](../specs/architecture-plugins-and-packaging.md#73-python-bundle)), so nothing is missing for a run Spectio launches.
 - **One user per server,** signed in with a single-use link.
 - **0.0.1 targets the EMBL cluster.** Other SLURM sites are not checked.
 
