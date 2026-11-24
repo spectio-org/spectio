@@ -1,0 +1,62 @@
+# Spike only (spike/runner-channel): one pod, standard-library Python, no image build.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runner-channel-spike
+  labels: {app: runner-channel-spike}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: runner-channel-spike}}
+  template:
+    metadata: {labels: {app: runner-channel-spike}}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: server
+          image: python:3.13-slim
+          imagePullPolicy: Always
+          command: ["python3", "-u", "/spike/server.py"]
+          env:
+            - {name: PORT, value: "8080"}
+            - name: SPIKE_TOKEN
+              valueFrom: {secretKeyRef: {name: runner-channel-spike, key: token}}
+          ports: [{name: http, containerPort: 8080}]
+          readinessProbe: {httpGet: {path: /health, port: http}, periodSeconds: 10}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          volumeMounts: [{name: code, mountPath: /spike, readOnly: true}]
+      volumes:
+        - name: code
+          configMap: {name: runner-channel-spike}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: runner-channel-spike
+spec:
+  selector: {app: runner-channel-spike}
+  ports: [{name: http, port: 80, targetPort: http}]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: runner-channel-spike
+spec:
+  ingressClassName: internal-users
+  rules:
+    - host: runner-channel-spike.spectio.invalid
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: runner-channel-spike, port: {name: http}}}

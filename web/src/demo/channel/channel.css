@@ -1,0 +1,39 @@
+/* The runner-channel demo page (spikes/runner-channel). Only the theme's own tokens
+   (web/src/shell/theme.ts) and Mantine's variables: no raw colour, font, spacing or radius. */
+.channel-page {
+  display: grid;
+  gap: var(--sp-space-3xl);
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--mantine-spacing-xl) var(--mantine-spacing-lg);
+}
+
+.channel-head {
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+}
+
+.channel-section {
+  display: grid;
+  gap: var(--mantine-spacing-md);
+}
+
+.channel-note {
+  color: var(--sp-text-secondary);
+  max-width: 60ch;
+}
+
+.channel-frame {
+  width: 100%;
+  height: 40rem;
+  border: 1px solid var(--sp-line-border);
+  border-radius: var(--mantine-radius-md);
+  background: var(--sp-surface-sunken);
+}
+
+.channel-list {
+  display: grid;
+  gap: var(--mantine-spacing-xs);
+  margin: 0;
+  padding-left: var(--mantine-spacing-lg);
+}
