@@ -5,6 +5,7 @@ import json
 import os
 import re
 import socket
+import tempfile
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,6 +31,31 @@ Result = tuple[str, str, str]  # status, check, detail
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
 _UV = re.compile(r"^uv ([0-9]+)\.([0-9]+)\.([0-9]+)\b", re.MULTILINE)
 _PLUGINS_BLOCK = re.compile(r"\bplugins\s*\{[^}]*nf-spectio", re.DOTALL)
+# 2.8.0 is the first Snakemake SLURM executor plugin that logs job events (its #478: run_job_pre);
+# older ones never do, and Spectio then shows no task of a Snakemake SLURM run.
+MIN_SLURM_PLUGIN = (2, 8, 0)
+_PLUGIN_VERSION = re.compile(r"([0-9]+)\.([0-9]+)(?:\.([0-9]+))?")
+_PLUGIN_PROBE = """\
+import importlib.metadata as m, os, sys
+me = sys.modules.pop("sitecustomize")
+sys.path[:] = [p for p in sys.path if os.path.abspath(p or ".") != os.path.dirname(__file__)]
+try:  # the site's own sitecustomize still runs: EasyBuild's sets the module's search path
+    import sitecustomize  # noqa: F401
+except Exception:
+    sys.modules["sitecustomize"] = me
+try:
+    version = m.version("snakemake-executor-plugin-slurm")
+except m.PackageNotFoundError:
+    version = "none"
+path = os.environ["SPECTIO_PROBE_OUT"]
+try:  # only into this user's own directory, never through a link
+    if os.stat(os.path.dirname(path)).st_uid == os.getuid():
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW
+        with os.fdopen(os.open(path, flags, 0o600), "w") as out:
+            out.write(version)
+except OSError:
+    pass
+"""
 
 
 def _engine(name: str, cmd: str | None, flag: str, pattern: re.Pattern[str]) -> Result:
@@ -43,10 +69,14 @@ def _engine(name: str, cmd: str | None, flag: str, pattern: re.Pattern[str]) -> 
     return "ok", name, f"{match.group(1)} {cmd}"
 
 
-def _java() -> Result:
+def _java(nextflow_ok: bool) -> Result:
+    """Java for Nextflow: fine when on the PATH, and also when only Nextflow works without it,
+    as a site's Nextflow wrapper or module loads its own Java."""
     out = run_login("java -version")
     match = _JAVA.search(out.stderr + out.stdout)
     if not match:
+        if nextflow_ok:
+            return "ok", "java", "not on the login shell's PATH; Nextflow works without it"
         return "warn", "java", "not found on PATH: Nextflow needs Java"
     major = match.group(2) if match.group(1) == "1" else match.group(1)  # 1.8 is Java 8
     return "ok", "java", str(major)
@@ -62,7 +92,7 @@ def _uv(path: str | None) -> Result:
     """The uv on the login PATH: only installing Spectio needs it, so an old one is a warning
     and a missing one is fine (FU-P3-73)."""
     if not path:
-        return "ok", "uv", "not found on PATH: only installing Spectio needs it"
+        return "ok", "uv", "not found on the login shell's PATH: only installing Spectio needs it"
     out = run_login('"$1" --version', path)
     first = "".join((out.stderr or out.stdout).strip().splitlines()[:1])
     if out.returncode != 0:
@@ -217,6 +247,52 @@ def _slurm_accounting(settings: Settings) -> Result:
     )
 
 
+def _slurm_plugin(cmd: str) -> Result:
+    """The version of Snakemake's SLURM executor plugin, asked through PYTHONPATH, the way the
+    head script gives Snakemake the Spectio logger plugin: a sitecustomize.py there makes the
+    Python that the configured command itself runs answer — also when a wrapper script loads a
+    module first, or the command is a line like `pixi run snakemake`. MIN_SLURM_PLUGIN is the
+    first that logs job events, without which Spectio shows no task of a Snakemake SLURM run;
+    whatever stands in the way is a warning, so the line never fails a doctor run."""
+    check, want = "snakemake_slurm_plugin", ".".join(map(str, MIN_SLURM_PLUGIN))
+    need = f"Snakemake SLURM runs need snakemake-executor-plugin-slurm {want} or later"
+
+    def unknown(reason: str) -> Result:
+        return "warn", check, f"version unknown ({reason}): {need}"
+
+    with tempfile.TemporaryDirectory() as tmp:  # the probe, private and gone after the run
+        (Path(tmp) / "sitecustomize.py").write_text(_PLUGIN_PROBE, encoding="utf-8")
+        answer_file = Path(tmp) / "plugin-version"
+        out = run_login(
+            'export PYTHONPATH="$1${PYTHONPATH:+:$PYTHONPATH}" SPECTIO_PROBE_OUT="$2"; '
+            f"{cmd} --version",
+            tmp,
+            str(answer_file),
+        )
+        try:
+            with answer_file.open("rb") as file:
+                answer = file.read(100).decode(errors="replace").strip()
+        except OSError:
+            answer = None
+    if out.returncode == 124:
+        return unknown("timed out")
+    if answer is None:
+        return unknown("Snakemake's Python did not load the probe")
+    if answer == "none":
+        return unknown("not installed")
+    found = _PLUGIN_VERSION.search(answer)
+    if found is None:
+        return unknown("printed no version")
+    if (int(found[1]), int(found[2]), int(found[3] or 0)) < MIN_SLURM_PLUGIN:
+        return (
+            "warn",
+            check,
+            f"{found[0]}: older than {want}, which Spectio needs to see the jobs of a Snakemake "
+            f"SLURM run; install snakemake-executor-plugin-slurm>={want}",
+        )
+    return "ok", check, found[0]
+
+
 def checks(
     settings: Settings, env: Mapping[str, str], mountinfo: Path | None = None
 ) -> list[Result]:
@@ -249,13 +325,17 @@ def checks(
     else:
         results.append(("warn", "host", f"this is {here}; spectio init recorded {settings.host}"))
     engines = settings.engines
-    results.append(_engine("nextflow", engines.nextflow_cmd, "-version", NEXTFLOW_VERSION))
-    results.append(_engine("snakemake", engines.snakemake_cmd, "--version", SNAKEMAKE_VERSION))
-    results.append(_java())
+    nextflow = _engine("nextflow", engines.nextflow_cmd, "-version", NEXTFLOW_VERSION)
+    results.append(nextflow)
+    snakemake = _engine("snakemake", engines.snakemake_cmd, "--version", SNAKEMAKE_VERSION)
+    results.append(snakemake)
+    results.append(_java(nextflow[0] == "ok"))
     paths = which("tmux", "sbatch", "uv")
     results += _tools(settings.executor == "local", paths)
     if settings.executor == "slurm":
         results.append(_slurm_accounting(settings))
+        if snakemake[0] == "ok" and (cmd := engines.snakemake_cmd) is not None:
+            results.append(_slurm_plugin(cmd))
     results.append(_uv(paths["uv"]))
     results.append(_nxf_plugins(env))
     return results

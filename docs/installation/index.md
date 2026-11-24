@@ -18,7 +18,7 @@ icon: material/download
 | `snakemake-logger-plugin-spectio` | the Snakemake bridge, for runs you start by hand ([details](../usage/runs-from-a-terminal.md)) |
 | `nf-spectio` | the Nextflow bridge. `spectio init` unpacks it from the `spectio` wheel |
 
-You also need Python 3.11 or later, [uv](https://docs.astral.sh/uv/), tmux 2.1 or later on the machine that runs the server, and Nextflow or Snakemake for the engine you use. Source: `requires-python` in `packages/*/pyproject.toml`; the tmux floor is the check of `spectio serve --detach`.
+You also need Python 3.11 or later, [uv](https://docs.astral.sh/uv/), tmux 2.1 or later on the machine that runs the server, and Nextflow or Snakemake for the engine you use. On SLURM, Snakemake also needs `snakemake-executor-plugin-slurm` 2.8.0 or later: with an older one Spectio sees none of the run's jobs ([why](../specs/architecture-plugins-and-packaging.md#134-supported-engine-versions)). The EMBL module `snakemake/9.23.1-foss-2025b` ships 2.6.1, so install Snakemake yourself there, for example `uv tool install snakemake==9.27.1 --with snakemake-executor-plugin-slurm==2.8.0` (run on that login node on 2026-11-24), and give `spectio init --snakemake` its path. `spectio doctor` prints the plugin's version. Source: `requires-python` in `packages/*/pyproject.toml`; the tmux floor is the check of `spectio serve --detach`.
 
 0.0.1 targets the EMBL cluster first. Other sites are not checked.
 
@@ -67,7 +67,7 @@ On that login node, uv 0.9.29 only offered Pythons with SQLite 3.50.4, which Spe
 
 ## Put the runs on a file system with room
 
-Each run's launch and work directories go under the runs directory, `~/spectio-runs` by default. On the EMBL login node that is `/home`, a shared file system that was 97% full on 2026-11-08. `spectio doctor` prints a `runs_disk` line with the free space and warns when the file system is 90% used or has less than 10 GiB free; a launch then logs the same warning and still starts.
+Each run's launch and work directories go under the runs directory, `~/spectio-runs` by default. On the EMBL login node that is `/home`, a shared file system that was 97% full on 2026-11-08. `spectio doctor` prints a `runs_disk` line with the free space and warns when the file system has less than 10 GiB free, or is 90% used with less than 1 TiB free; a launch then logs the same warning and still starts.
 
 To move it, set `SPECTIO_RUNS_ROOT`, `runs_root` in `~/.spectio/spectio.toml`, or `spectio init --runs-root`. Point it at a larger scratch or group file system that the compute nodes also see. A directory you choose must exist already, be yours, and not be writable by others.
 
