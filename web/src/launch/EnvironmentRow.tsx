@@ -158,7 +158,12 @@ function Choice({
       </div>
     );
   }
-  const line = (e: EnvironmentItem) => summary(e, server?.node ?? "the server", server?.executor ?? "slurm");
+  const node = server?.node ?? "the server";
+  const executor = server?.executor ?? "slurm";
+  const line = (e: EnvironmentItem) => summary(e, node, executor);
+  // The card's second line names the kind (SLURM, Login node) already: its details leave
+  // "(the login node)" out, or the Login node card would say it twice.
+  const details = (e: EnvironmentItem) => summary(e, node, executor, true);
   const named = (e: EnvironmentItem) => `${label(e)}, ${executorLabel(e.executor)}`;
   const offered = list.items.filter((e) => e.usable);
   const left = list.items.filter((e) => !e.usable);
@@ -191,13 +196,15 @@ function Choice({
             <span className="launch-env-body">
               <span className="launch-env-top">
                 <span className="launch-env-name">{label(e)}</span>
-                {e.default && <span className="sp-chip" data-tone="succeeded">Default</span>}
+                <span className="launch-env-side">
+                  {e.default && <span className="sp-chip" data-tone="succeeded">Default</span>}
+                  <CardMenu env={e} onEdit={() => onEdit(e)} onDefault={() => onDefault(e)} onDelete={() => onDelete(e)} />
+                </span>
               </span>
               <span id={`env-sum-${e.name}`} className="launch-env-sum">
-                <Icon name={KIND_ICONS[e.executor] ?? "server"} /> {KIND_WORDS[e.executor] ?? e.executor} · {line(e)}
+                <Icon name={KIND_ICONS[e.executor] ?? "server"} /> {KIND_WORDS[e.executor] ?? e.executor} · {details(e)}
               </span>
             </span>
-            <CardMenu env={e} onEdit={() => onEdit(e)} onDefault={() => onDefault(e)} onDelete={() => onDelete(e)} />
           </label>
         ))}
         {/* New environment as the last card of the grid (FU-P3-86g). */}
@@ -235,7 +242,8 @@ function Choice({
         </div>
       )}
       {left.length > 0 && <p className="sp-muted">{`Not offered: ${left.map((e) => `${e.name} (${e.unusable_reason})`).join("; ")}`}</p>}
-      {!waits["aria-disabled"] && (
+      {/* The text row and the select keep the button; the cards' grid carries the + card instead. */}
+      {!cards && !waits["aria-disabled"] && (
         <Button variant="light" onClick={onAdd} fullWidth={phone}>
           New environment
         </Button>

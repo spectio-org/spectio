@@ -90,11 +90,13 @@ test("the cards: the name and the Default badge on the first line, the kind and 
   expect(within(group).getAllByRole("button", { name: /^Actions for / })).toHaveLength(3);
   const slurm = card("SLURM (from spectio init), SLURM");
   const badge = within(slurm).getByText("Default");
-  expect(badge.parentElement).toHaveTextContent("SLURM (from spectio init)"); // on the name's line, at its right end
+  // on the name's line, in the group at its right end together with the menu button
+  expect(badge.closest(".launch-env-top")).toHaveTextContent("SLURM (from spectio init)");
+  expect(within(badge.parentElement!).getByRole("button", { name: "Actions for SLURM (from spectio init)" })).toBeInTheDocument();
   expect(within(slurm).getByText("SLURM · partition htc · SLURM account mylab")).toBeInTheDocument(); // kind in words, then the details
   const local = card("Login node, Local");
   expect(within(local).queryByText("Default")).toBeNull(); // only the default one carries it
-  expect(within(local).getByText("Login node · on login1 (the login node) · at most 2 CPUs and 8 GiB")).toBeInTheDocument();
+  expect(within(local).getByText("Login node · on login1 · at most 2 CPUs and 8 GiB")).toBeInTheDocument(); // the kind is said once, the details leave "(the login node)" out
 });
 
 test("each card's menu: Edit, Set as default, Delete — the default's without Set as default and with Delete disabled", async () => {
@@ -266,8 +268,9 @@ test("the last card, + New environment, opens the form in a dialog; on Save it i
     if (init?.method === "POST") return (items = [...items, created]), json(201, created);
     return json(200, list(items));
   });
-  // the add card sits in the same grid as the environments
+  // the add card sits in the same grid as the environments, and the old button under the grid is gone
   const add = await within(await screen.findByRole("group", { name: "Environment" })).findByRole("button", { name: "+ New environment" });
+  expect(screen.queryByRole("button", { name: "New environment" })).toBeNull();
   await userEvent.click(add);
   const dialog = await screen.findByRole("dialog", { name: "New environment" });
   expect(dialog).toHaveAttribute("aria-modal", "true");
