@@ -1,5 +1,16 @@
 import { describe, expect, test } from "vitest";
-import { type Field, buildParams, checkValue, isChanged, own, schemaFields, toYaml } from "./schemaFields";
+import {
+  type EffectiveDefault,
+  type Field,
+  buildParams,
+  checkValue,
+  effectiveDefault,
+  isChanged,
+  own,
+  schemaFields,
+  sourceHint,
+  toYaml,
+} from "./schemaFields";
 
 // The nf-core shape: groups under $defs (draft 2020-12) or definitions (draft 7), in allOf order.
 const nfDefs = {
@@ -278,5 +289,47 @@ describe("constraints and required from the schema", () => {
     expect([by.input.required, by.outdir.required, by.depth.required]).toEqual([true, true, false]);
     expect(by.input.pattern).toBe("\\.csv$");
     expect([by.depth.minimum, by.depth.maximum]).toEqual([1, 9]);
+  });
+});
+
+// The effective defaults (api §5.12): `defaults` holds the top-level names and their source; a
+// field takes the value at its path in its map, else its own schema default.
+describe("effective defaults", () => {
+  const schema = {
+    type: "object",
+    required: ["input"],
+    properties: {
+      input: { type: "string" },
+      depth: { type: "integer", default: 3 },
+      ref: {
+        type: "object",
+        properties: {
+          species: { type: "string", default: "homo_sapiens" },
+          release: { type: "integer" },
+          build: { type: "string", default: "GRCh38" },
+        },
+      },
+    },
+  };
+  const by = Object.fromEntries(schemaFields(schema, [], true).flatMap((s) => s.fields).map((f) => [f.key, f]));
+  const defaults: Record<string, EffectiveDefault> = { ref: { value: { species: "mouse" }, source: "config" }, depth: { value: 9, source: "profile" } };
+
+  test("a field's effective default is the sources' value at its path, else its schema default", () => {
+    expect(effectiveDefault(by.depth, defaults)).toEqual({ value: 9, source: "profile" });
+    expect(effectiveDefault(by["ref.species"], defaults)).toEqual({ value: "mouse", source: "config" });
+    // the map's source does not reach a leaf it does not set: the schema default is left
+    expect(effectiveDefault(by["ref.build"], defaults)).toEqual({ value: "GRCh38", source: "schema" });
+    expect(effectiveDefault(by["ref.release"], defaults)).toBeNull();
+    expect(effectiveDefault(by.input, defaults)).toBeNull(); // required, and no source fills it
+    // without the new member, every schema default is a schema default
+    expect(effectiveDefault(by.depth, undefined)).toEqual({ value: 3, source: "schema" });
+    expect(effectiveDefault(by.input, undefined)).toBeNull();
+  });
+
+  test("the hint of each source, in the spec's words", () => {
+    expect(sourceHint("schema", "test")).toBe("schema default");
+    expect(sourceHint("config", "test")).toBe("from the pipeline's config");
+    expect(sourceHint("profile", "test")).toBe("from profile test");
+    expect(sourceHint("params_file", "test")).toBe("from the params file");
   });
 });

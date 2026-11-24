@@ -109,6 +109,12 @@
   line-height: 1.45;
   color: var(--sp-text-secondary);
 }
+/* The effective default's source, in words, under the input (api §5.12). */
+.launch-param-source {
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.45;
+  color: var(--sp-text-secondary);
+}
 /* Launch in the page head, with its reason beside it (LiteLaunchSnakemake). */
 .launch-head {
   display: flex;

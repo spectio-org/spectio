@@ -52,6 +52,7 @@ import { ConfigFileRow, type Draft, NO_DRAFT, RESOURCE_LABELS, ResourcesRow, dra
 import { TryPipelines } from "./TryPipelines";
 import { REGISTRY_NAME, TRY_MODULES, moduleInspected } from "./target";
 import {
+  type EffectiveDefault,
   type Field,
   type Row,
   type Section,
@@ -59,9 +60,12 @@ import {
   REQUIRED,
   buildParams,
   checkValue,
+  effectiveDefault,
   isChanged,
   own,
   schemaFields,
+  shownValue,
+  sourceHint,
   toYaml,
   valuesFrom,
 } from "./schemaFields";
@@ -216,6 +220,8 @@ export function LaunchPage({
   const [sending, setSending] = useState(false);
   // Launch pressed while a field is wrong: empty required fields then say so on the field too
   const [tried, setTried] = useState(false);
+  // The 201 answer's warnings (api §5.12), shown after Launch; the engine's own check has the last word
+  const [launchedWarnings, setLaunchedWarnings] = useState<FieldError[]>([]);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [prefillError, setPrefillError] = useState<string | null>(null);
   const [envs, setEnvs] = useState<EnvironmentList | null>(null);
@@ -300,18 +306,39 @@ export function LaunchPage({
   const moduleName = oneModule && REGISTRY_NAME.test(location.trim());
   const extras = { engine, profile, env: chosen };
   const res = readResources(resources, extras);
-  // with a Snakemake extra file, only the keys set: the file's other keys stay (api §5.7)
-  const leaves = engine === "snakemake" && configFile.trim() !== "";
 
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
   const skipped: string[] = [];
   // the form's shape follows the engine (guessed at load, then chosen): Snakemake maps become dotted
   // sections (CR-P3PARB-02). Values typed under the other shape stay, unsent, until the engine goes back.
-  const sections = schemaFields(loaded?.schema ?? null, skipped, engine === "snakemake");
+  const rawSections = schemaFields(loaded?.schema ?? null, skipped, engine === "snakemake");
+  // The effective defaults (api §5.12): each field's default becomes the sources' value at its
+  // path, and the form names the source under the field. The form's `values` keep only what the
+  // user typed, so a prefilled default is shown but not sent (§5.12).
+  const defaultsMode = !!loaded?.defaults;
+  const incomplete = defaultsMode && loaded!.defaults_complete === false;
+  const effective: Record<string, EffectiveDefault> = {};
+  if (defaultsMode) {
+    for (const f of rawSections.flatMap((s) => s.fields)) {
+      const found = effectiveDefault(f, loaded!.defaults);
+      if (found) effective[f.key] = found;
+    }
+  }
+  const sections = defaultsMode
+    ? rawSections.map((s) => ({
+        ...s,
+        fields: s.fields.map((f) => (own(effective, f.key) ? { ...f, default: own(effective, f.key)!.value, source: own(effective, f.key)!.source } : f)),
+      }))
+    : rawSections;
   const fields = sections.flatMap((s) => s.fields);
   const keys = fields.map((f) => f.key);
+  const hints: Record<string, string> = {};
+  if (defaultsMode) for (const [key, found] of Object.entries(effective)) hints[key] = sourceHint(found.source, profile);
   const grouped = !!loaded?.schema && ("$defs" in loaded.schema || "definitions" in loaded.schema);
+  // with the effective parameters, only the values the user typed are sent: a nested map is never
+  // sent whole at its schema defaults, which would put back what the pipeline's config set (§5.12)
+  const leaves = (engine === "snakemake" && configFile.trim() !== "") || defaultsMode;
   const changed = fields.filter((f) => isChanged(f, own(values, f.key))).length + rows.filter((r) => r.key.trim()).length;
 
   /** An edit of a resource or of the extra config file forgets the server's error on it. */
@@ -326,6 +353,7 @@ export function LaunchPage({
     setLoaded(null);
     setEngine(null);
     setErrors({});
+    setLaunchedWarnings([]);
     setEntryName(null); // the picker goes back to None, and the entry's prefill is forgotten
     setFromName(null);
     setParamsFile(null);
@@ -457,13 +485,14 @@ export function LaunchPage({
         setPrefill({ ...copy, left });
       } else {
         // one step's engine is its kind's; else the entry's engine and params file (§4.7.1); every
-        // value the form does not place is listed
+        // value the form does not place is listed. With the effective defaults (api §5.12) the
+        // params file's values are defaults the form shows, not values it sends.
         const was = wantSingle ? KINDS[want].engine : (from?.engine ?? guessEngine(found.engine_files));
         const shape = schemaFields(found.schema, [], was === "snakemake").flatMap((s) => s.fields);
         const params = found.params_file?.values ?? {};
         setEngine(was);
         setPicked(null);
-        setValues(shape.length ? valuesFrom(shape, params).values : {});
+        setValues(shape.length && found.defaults === undefined ? valuesFrom(shape, params).values : {});
         setRows(shape.length ? [] : Object.entries(params).map(([key, v]) => ({ key, value: typeof v === "string" ? v : JSON.stringify(v) })));
       }
     } catch (error) {
@@ -541,6 +570,25 @@ export function LaunchPage({
   }, []);
   const configRefused = configCheck && configCheck.asked === configAsked ? (configCheck.found?.error ?? null) : null;
 
+  /** Another profile chosen (api §5.12): inspect asks again with `profiles=`, for that profile's
+   * effective defaults; the user's values stay, the shown defaults follow the answer. A failed or
+   * cancelled re-ask keeps the last answer — Launch's own errors still say what is wrong. */
+  function reaskProfiles(to: string) {
+    if (!loaded || loaded.defaults === undefined) return; // a server before §5.12: Load asks again
+    inFlight.current?.abort();
+    const controller = new AbortController();
+    inFlight.current = controller;
+    inspect(loaded.location, loaded.revision, controller.signal, paramsFile?.path ?? null, undefined, to || null).then(
+      (found) => {
+        if (controller.signal.aborted) return;
+        if (inFlight.current === controller) inFlight.current = null;
+        setLoaded(found);
+        setParamsFile(found.params_file ?? null);
+      },
+      () => {},
+    );
+  }
+
   /** Every reason Launch waits, in order (ui-spec §4.6): the list of "Before Launch". */
   function reasons(): Reason[] {
     if (loading) return [{ text: "Wait for the pipeline to load", to: "location" }];
@@ -563,10 +611,14 @@ export function LaunchPage({
     }
     if (configRefused) found.push({ text: `Fix Extra config file: ${configRefused}`, to: "config_file" });
     for (const field of fields) {
-      const wrong = checkValue(field, own(values, field.key));
+      const wrong = checkValue(field, defaultsMode ? shownValue(field, own(values, field.key)) : own(values, field.key));
       const to = `params.${field.key}`;
-      if (wrong === REQUIRED) found.push({ text: `Fill the required field: ${field.key}`, to });
-      else if (wrong) found.push({ text: `Fix ${field.key}: ${wrong}`, to });
+      if (wrong === REQUIRED) {
+        // api §5.12: while the sources are not complete, a required field no source fills is a
+        // warning below, not a blocker: the engine's own check has the last word
+        if (incomplete) continue;
+        found.push({ text: `Fill the required field: ${field.key}`, to });
+      } else if (wrong) found.push({ text: `Fix ${field.key}: ${wrong}`, to });
     }
     if (targeting && engine === "snakemake" && !rule) found.push({ text: "Choose a rule", to: "rule" });
     if (targeting && module?.source === "registry" && !version.trim()) found.push({ text: "Give the module's version", to: "version" });
@@ -620,6 +672,7 @@ export function LaunchPage({
         ...(path ? { config_file: path } : {}),
       });
       onLaunched(run.id);
+      setLaunchedWarnings(run.warnings ?? []);
     } catch (error) {
       const fileDown = /^the config file cannot be read: /;
       if (path && error instanceof ApiError && error.status === 503 && fileDown.test(error.message)) {
@@ -648,7 +701,7 @@ export function LaunchPage({
   // a file's value only while Launch sends it as read, not one left out or changed (SEC-P3FU87E-02)
   let sent: Record<string, unknown> = {};
   try {
-    sent = buildParams(fields, values, rows);
+    sent = buildParams(fields, values, rows, leaves);
   } catch {
     // a JSON field still being typed: Before Launch already lists it as not valid JSON
   }
@@ -659,6 +712,18 @@ export function LaunchPage({
     } else if (c.field.startsWith("params.")) {
       if (own(sent, c.field.slice(7)) === c.value) warnings.push({ text: `Warning, not a blocker: ${paramsFile!.path} sets ${c.field.slice(7)}: ${c.value}${others}` });
     } else warnings.push({ text: `Warning, not a blocker: ${loadingLabel(c.field)} ${c.value} loads code or configuration${others}` });
+  }
+  // api §5.12: a required field no source fills, while the sources are not complete: a warning in
+  // Before Launch, and Launch stays enabled — the engine's own check has the last word
+  if (incomplete) {
+    for (const field of fields) {
+      if (field.required && checkValue(field, shownValue(field, own(values, field.key))) === REQUIRED) {
+        warnings.push({
+          text: `Warning, not a blocker: the required field ${field.key} has no value; the engine's own check has the last word`,
+          to: `params.${field.key}`,
+        });
+      }
+    }
   }
   const unplaced = paramsFile?.values && fields.length ? valuesFrom(fields, paramsFile.values).left : [];
   const placed = paramsFile?.values ? Object.keys(paramsFile.values).length - unplaced.length : 0;
@@ -763,6 +828,19 @@ export function LaunchPage({
           </Button>
         </div>
       )}
+      {launchedWarnings.length > 0 && (
+        <div role="status" aria-label="Launched with warnings" className="launch-banner">
+          <Icon name="alert" />
+          <div className="sp-grow">
+            <p>Launched with warnings; the engine's own check has the last word:</p>
+            <ul>
+              {launchedWarnings.map((w) => (
+                <li key={`${w.field}:${w.message}`}>{`${w.field}: ${w.message}`}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
       <div className="launch-grid">
         <Stack gap="lg">
           {singleOffered && (
@@ -816,7 +894,7 @@ export function LaunchPage({
                   {paramsFile.error
                     ? `${paramsFile.path} could not be read: ${paramsFile.error}`
                     : [
-                        `${plural(placed, "value", "values")} of ${paramsFile.path} ${placed === 1 ? "fills" : "fill"} the form and read changed.`,
+                        `${plural(placed, "value", "values")} of ${paramsFile.path} ${placed === 1 ? "fills" : "fill"} the form${defaultsMode ? ", as its effective defaults (api §5.12)" : " and read changed"}.`,
                         unplaced.length > 0 &&
                           `${plural(unplaced.length, "value", "values")} of ${paramsFile.path} ${unplaced.length === 1 ? "has" : "have"} no field in this form, and ${unplaced.length === 1 ? "is" : "are"} not sent: ${unplaced.join(", ")}`,
                       ]
@@ -1047,7 +1125,10 @@ export function LaunchPage({
                   label="Profile"
                   inputWrapperOrder={["label", "input", "description", "error"]}
                   value={profile}
-                  onChange={(e) => setPicked(e.currentTarget.value)}
+                  onChange={(e) => {
+                    setPicked(e.currentTarget.value);
+                    reaskProfiles(e.currentTarget.value);
+                  }}
                   data={[
                     { value: "", label: "(none)" },
                     ...(loaded?.profiles ?? []),
@@ -1166,9 +1247,12 @@ export function LaunchPage({
                   <ParamRows
                     fields={sections[0].fields}
                     notes={notes}
+                    hints={hints}
                     values={values}
                     errors={errors}
                     tried={tried}
+                    prefill={defaultsMode}
+                    incomplete={incomplete}
                     onChange={(key, v) => setValues((old) => ({ ...old, [key]: v }))}
                   />
                 )}
@@ -1179,9 +1263,12 @@ export function LaunchPage({
                     section={section}
                     reveal={section.fields.some((f) => goTo === `params.${f.key}`)}
                     notes={notes}
+                    hints={hints}
                     values={values}
                     errors={errors}
                     tried={tried}
+                    prefill={defaultsMode}
+                    incomplete={incomplete}
                     onChange={(key, v) => setValues((old) => ({ ...old, [key]: v }))}
                   />
                 ))}
@@ -1271,7 +1358,16 @@ export function LaunchPage({
             </div>
             {!phone && formError}
           </section>
-          {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} extra={leaves ? keptAs(engine, configFile) : null} />}
+          {loaded && engine && (
+            <ParamsPreview
+              engine={engine}
+              fields={fields}
+              values={values}
+              rows={rows}
+              extra={engine === "snakemake" && configFile.trim() !== "" ? keptAs(engine, configFile) : null}
+              effective={defaultsMode}
+            />
+          )}
           {/* the phone's pinned bar: Launch, then the first reason (a visual copy) or what it sends */}
           {phone && (
             <div className="launch-bar">
@@ -1333,9 +1429,12 @@ function ParamGroup({
   section,
   reveal,
   notes,
+  hints,
   values,
   errors,
   tried,
+  prefill,
+  incomplete,
   onChange,
 }: {
   id: string;
@@ -1343,13 +1442,19 @@ function ParamGroup({
   /** A "Before Launch" link is moving focus to one of its fields. */
   reveal: boolean;
   notes: Record<string, string>;
+  /** api §5.12: each field's effective default, in words. */
+  hints: Record<string, string>;
   values: Values;
   errors: Errors;
   tried: boolean;
+  /** The form prefills the effective defaults: the input shows the default's value. */
+  prefill: boolean;
+  /** The sources are not complete: an empty required field warns, it does not block. */
+  incomplete: boolean;
   onChange: (key: string, value: string | boolean) => void;
 }) {
   const required = section.fields.filter((f) => f.required && f.type !== "boolean");
-  const empty = required.filter((f) => String(own(values, f.key) ?? "").trim() === "").length;
+  const empty = required.filter((f) => String((prefill ? shownValue(f, own(values, f.key)) : own(values, f.key)) ?? "").trim() === "").length;
   const changed = section.fields.filter((f) => isChanged(f, own(values, f.key))).length;
   const failed = section.fields.some((f) => errors[`params.${f.key}`]);
   const status = [
@@ -1386,7 +1491,17 @@ function ParamGroup({
       reveal={reveal ? "link" : failed}
       card
     >
-      <ParamRows fields={section.fields} notes={notes} values={values} errors={errors} tried={tried} onChange={onChange} />
+      <ParamRows
+        fields={section.fields}
+        notes={notes}
+        hints={hints}
+        values={values}
+        errors={errors}
+        tried={tried}
+        prefill={prefill}
+        incomplete={incomplete}
+        onChange={onChange}
+      />
     </FoldSection>
   );
 }
@@ -1395,29 +1510,46 @@ function ParamGroup({
 function ParamRows({
   fields,
   notes = {},
+  hints = {},
   values,
   errors,
   tried,
+  prefill = false,
+  incomplete = false,
   onChange,
 }: {
   fields: Field[];
   /** A warning under a field, in words: outdir the same as the copied run's. */
   notes?: Record<string, string>;
+  /** api §5.12: the effective default's source, in words, under the field. */
+  hints?: Record<string, string>;
   values: Values;
   errors: Errors;
   tried: boolean;
+  /** The form prefills the effective defaults: the input shows the default's value. */
+  prefill?: boolean;
+  /** The sources are not complete (api §5.12): an empty required field warns, it does not block. */
+  incomplete?: boolean;
   onChange: (key: string, value: string | boolean) => void;
 }) {
   return (
     <div className="launch-params">
       {fields.map((field) => {
-        const value = own(values, field.key);
+        const value = prefill ? shownValue(field, own(values, field.key)) : own(values, field.key);
         // the client's check once the field was touched or Launch pressed, else the server's answer
-        const wrong = value !== undefined || tried ? checkValue(field, value) : null;
+        let wrong = value !== undefined || tried ? checkValue(field, value) : null;
+        if (incomplete && wrong === REQUIRED) wrong = null;
         const note = own(notes, field.key);
+        const hint = own(hints, field.key);
         return (
           <Fragment key={field.key}>
-            <ParamField field={field} value={value} error={wrong ?? errors[`params.${field.key}`]} onChange={(v) => onChange(field.key, v)} />
+            <ParamField
+              field={field}
+              value={value}
+              hint={hint}
+              error={wrong ?? errors[`params.${field.key}`]}
+              onChange={(v) => onChange(field.key, v)}
+            />
             {note && <p className="launch-warning">{note}</p>}
           </Fragment>
         );
@@ -1427,13 +1559,28 @@ function ParamRows({
 }
 
 /** What Launch sends, built by the same `buildParams` as the request (UX-PAR-32). Nextflow reads
- * it as params.json; Snakemake gets the same JSON as a config file, shown here as YAML. */
-function ParamsPreview({ engine, fields, values, rows, extra }: { engine: Engine; fields: Field[]; values: Values; rows: Row[]; extra: string | null }) {
+ * it as params.json; Snakemake gets the same JSON as a config file, shown here as YAML. With the
+ * effective defaults (api §5.12), only the values the user changed. */
+function ParamsPreview({
+  engine,
+  fields,
+  values,
+  rows,
+  extra,
+  effective,
+}: {
+  engine: Engine;
+  fields: Field[];
+  values: Values;
+  rows: Row[];
+  extra: string | null;
+  effective?: boolean;
+}) {
   const snakemake = engine === "snakemake";
   const label = snakemake ? "Config preview, as YAML" : "params.json preview";
   let text: string | null;
   try {
-    const params = buildParams(fields, values, rows, extra !== null);
+    const params = buildParams(fields, values, rows, extra !== null || !!effective);
     text = snakemake ? toYaml(params) : `${JSON.stringify(params, null, 2)}\n`;
   } catch {
     text = null;
@@ -1441,7 +1588,9 @@ function ParamsPreview({ engine, fields, values, rows, extra }: { engine: Engine
   return (
     <FoldSection id="launch-preview" icon="fileCode" title={label} card className="launch-preview-card" defaultOpen={false}>
       <Text size="sm" className="launch-preview-note" mb="sm">
-        {extra
+        {effective
+          ? `Only the values you changed${extra ? `, written to the run directory and passed with --configfile, after ${extra}` : ""}; a value a profile, the pipeline's config or the params file sets keeps coming from it (api §5.12).`
+          : extra
           ? `Only the keys you set · written to the run directory and passed with --configfile, after ${extra} · other keys come from ${extra}, then the pipeline`
           : snakemake
           ? "Only the values set, and a nested map whole once one of its values is set. Spectio writes them to .spectio/params.json in the run directory, passed with --configfile; shown here as YAML."
@@ -1461,11 +1610,14 @@ function ParamsPreview({ engine, fields, values, rows, extra }: { engine: Engine
 function ParamField({
   field,
   value,
+  hint,
   error,
   onChange,
 }: {
   field: Field;
   value: string | boolean | undefined;
+  /** api §5.12: where the shown default comes from, in words ("from profile test"). */
+  hint?: string;
   error?: string;
   onChange: (value: string | boolean) => void;
 }) {
@@ -1477,7 +1629,7 @@ function ParamField({
   // One row (Thomas, 2026-10-31): the name with the meta on its line, the input, the help under
   // it. The accessible description stays one text, "help · meta" (visually hidden); the visible
   // meta and help are its copy, hidden from assistive technology.
-  const description = [field.help, meta].filter(Boolean).join(" · ") || undefined;
+  const description = [field.help, hint, meta].filter(Boolean).join(" · ") || undefined;
   const descriptionId = useId();
   const inputContainer = (input: ReactNode) => (
     <>
@@ -1487,6 +1639,11 @@ function ParamField({
         </span>
       )}
       <div className="launch-param-input">{input}</div>
+      {hint && (
+        <span className="launch-param-source" aria-hidden="true">
+          {hint}
+        </span>
+      )}
       {field.help && (
         <span className="launch-param-help" aria-hidden="true">
           {field.help}
@@ -1536,6 +1693,11 @@ function ParamField({
           <span className="launch-param-meta" aria-hidden="true">
             {meta}
           </span>
+          {hint && (
+            <span className="launch-param-source" aria-hidden="true">
+              {hint}
+            </span>
+          )}
           {field.help && (
             <span className="launch-param-help" aria-hidden="true">
               {field.help}

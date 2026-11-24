@@ -19,6 +19,8 @@ export interface Field {
   default: unknown;
   help: string | null;
   format: string | null;
+  /** api §5.12: where the effective default came from, once the answer's `defaults` are applied. */
+  source?: DefaultSource;
   options?: unknown[]; // the raw enum values: an integer enum sends integers (CR-P3T19-02)
   minimum?: number;
   maximum?: number;
@@ -152,6 +154,44 @@ export function schemaFields(schema: JSONSchema | null, skipped: string[] = [], 
     sections.push(section(key, map, [key], true));
   }
   return sections.filter((s) => s.fields.length > 0);
+}
+
+// --- The effective defaults (api §5.12): what each field shows before the user types ---------------
+
+export type DefaultSource = "schema" | "config" | "profile" | "params_file";
+
+/** One entry of the inspect answer's `defaults`: the value and the source it comes from. */
+export interface EffectiveDefault {
+  value: unknown;
+  source: DefaultSource;
+}
+
+/** A field's effective default (api §5.12): the sources' value at the field's path inside its
+ * top-level name, else the field's own schema default; null when no source and no default. */
+export function effectiveDefault(field: Field, defaults: Record<string, EffectiveDefault> | null | undefined): EffectiveDefault | null {
+  const entry = defaults ? own(defaults, field.path[0]) : undefined;
+  if (entry) {
+    let at: unknown = entry.value;
+    for (const part of field.path.slice(1)) at = isObj(at) ? own(at, part) : undefined;
+    if (at !== undefined) return { value: at, source: entry.source };
+  }
+  return field.default === undefined ? null : { value: field.default, source: "schema" };
+}
+
+/** The source's words under the field, as the spec writes them ("from profile test", …). */
+export function sourceHint(source: DefaultSource, profile: string): string {
+  return source === "profile" ? `from profile ${profile}`
+    : source === "config" ? "from the pipeline's config"
+    : source === "params_file" ? "from the params file"
+    : "schema default";
+}
+
+/** What a field's input shows when the form prefills the effective defaults: the user's value,
+ * else the default as the input takes it (a string as it is, the rest as JSON). */
+export function shownValue(field: Field, value: string | boolean | undefined): string | boolean | undefined {
+  if (value !== undefined) return value;
+  if (field.type === "boolean") return typeof field.default === "boolean" ? field.default : undefined;
+  return field.default === undefined ? undefined : typeof field.default === "string" && field.type !== "json" ? field.default : JSON.stringify(field.default);
 }
 
 // --- The params a launch sends (UX-PAR-32: the preview and the request are built here, once) ---
