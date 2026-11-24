@@ -180,7 +180,7 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
             found.schema,
         )
         merged = {name: given["value"] for name, given in defaults.items()} | body.params
-        param_warnings = _check_params(found, merged, complete) or None
+        param_warnings = _check_params(found, merged, complete)
     # the values as resolved now: the run keeps them whatever the file says later (req. 18)
     chosen = choose(request, body.environment)
     environment = snapshot(chosen)

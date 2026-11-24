@@ -17,6 +17,7 @@ gives it, and the engine's own check has the last word.
 """
 
 import json
+import os
 import re
 import threading
 from pathlib import Path
@@ -27,7 +28,6 @@ import yaml
 from spectio_server.api.problems import Problem
 from spectio_server.api.workflows import (
     MAX_YAML,
-    TooLarge,
     Unreadable,
     _jsonable,
     _read,
@@ -49,12 +49,14 @@ CONTROL = re.compile(r"[\x00-\x1f]")
 MAX_CACHED = 128
 
 
-def _mtime(path: Path) -> int:
-    """The mtime_ns of a file or directory of the cache key (SEC-04/CR-02): 0 when it is missing."""
+def _stamp(path: Path) -> tuple[int, int]:
+    """The mtime_ns and size of a file or directory of the cache key (SEC-04/CR-02), (0, 0) when
+    it is missing: the size tells apart two edits within one tick of a coarse clock."""
     try:
-        return path.stat().st_mtime_ns
+        st = path.stat()
     except OSError:
-        return 0
+        return (0, 0)
+    return (st.st_mtime_ns, st.st_size)
 
 
 def _evict(store: dict[Any, Any]) -> None:
@@ -65,35 +67,27 @@ def _evict(store: dict[Any, Any]) -> None:
 
 
 def _smk_files(directory: Path) -> tuple[int, ...]:
-    """The mtime_ns of the files a Snakemake pipeline's config defaults come from (SEC-04/CR-02):
-    its Snakefile and the config file it names, 0 when missing. A path the read refuses (outside
-    the root, a control character) leaves the Snakefile alone: the answer is not complete then,
-    so it is never cached and the second mtime does not matter."""
-    snakefile = snakefile_of(directory)
-    named = snakefile
-    try:
-        text = _read(directory, *snakefile.relative_to(directory).parts)
-    except (Unreadable, TooLarge):
-        text = None
-    literal = CONFIGFILE.search(text or "")
-    if literal is None:
-        if not CONFIGFILE_LINE.search(text or ""):  # no configfile line: the fallback is read
-            named = directory / "config" / "config.yaml"
-    else:
-        rel = literal.group(1) or literal.group(2)
-        parts = rel.split("/")
-        # `_yaml_defaults` refuses the same paths (SEC-05/CR-02); the answer is not complete
-        # then, so the Snakefile's mtime alone cannot name a stale config file
-        odd = any(p in ("", ".", "..") for p in parts)
-        if not (rel.startswith("/") or CONTROL.search(rel) or odd):
-            named = directory / rel
-    return (_mtime(snakefile), _mtime(named))
+    """The stamps of the files a Snakemake pipeline's config defaults come from (SEC-04/CR-02):
+    its Snakefile and the config file `_config_file` names (the Snakefile again when none)."""
+    snakefile, rel, _ = _config_file(directory)
+    return (*_stamp(snakefile), *_stamp(directory / rel if rel else snakefile))
 
 
 def _nf_files(directory: Path) -> tuple[int, ...]:
-    """The mtime_ns of the files a `nextflow config` answer depends on (SEC-04/CR-02):
-    `nextflow.config` and the `conf/` directory it includes from, 0 when missing."""
-    return (_mtime(directory / "nextflow.config"), _mtime(directory / "conf"))
+    """The stamps of the files a `nextflow config` answer depends on (SEC-04/CR-02):
+    `nextflow.config`, the `conf/` directory and its `*.config` files (at most 64), which a
+    directory's own mtime does not follow when one is edited in place."""
+    conf = directory / "conf"
+    try:
+        names = sorted(e.name for e in os.scandir(conf) if e.name.endswith(".config"))[:64]
+    except OSError:
+        names = []
+    stamps = [
+        _stamp(directory / "nextflow.config"),
+        _stamp(conf),
+        *(_stamp(conf / n) for n in names),
+    ]
+    return tuple(n for stamp in stamps for n in stamp)
 
 
 def _fingerprint(directory: Path, name: str | None) -> tuple[int, ...]:
@@ -202,21 +196,38 @@ class DefaultsCache:
         return {k: v for k, v in params.items() if v is not None}
 
 
-def _configfile_defaults(directory: Path) -> tuple[dict[str, dict[str, Any]], bool]:
-    """The config file a Snakemake pipeline loads (§5.12), read without running anything: the
-    path of a literal `configfile: "<path>"` line of its Snakefile, relative to the pipeline's
-    root, else `config/config.yaml`."""
+def _config_file(directory: Path) -> tuple[Path, str | None, bool]:
+    """The Snakefile, the config file it loads relative to the pipeline's root, and whether the
+    Snakefile names it (§5.12): a literal `configfile: "<path>"` line's path, else
+    `config/config.yaml`. None when no file can be named: the Snakefile cannot be read, the line
+    is not a literal (a variable, a call), or the path leaves the root or holds a control
+    character (SEC-05/CR-02). The one place the cache key and the read both take it from."""
     snakefile = snakefile_of(directory)
     try:
-        text = _read(directory, *snakefile.relative_to(directory).parts)
-    except Unreadable:  # the Snakefile cannot be read: no source is known
-        return {}, False
-    literal = CONFIGFILE.search(text or "")
+        text = _read(directory, *snakefile.relative_to(directory).parts) or ""
+    except (Unreadable, UnicodeDecodeError):
+        return snakefile, None, True
+    literal = CONFIGFILE.search(text)
     if literal is None:
-        if CONFIGFILE_LINE.search(text or ""):  # a variable or a call: not a literal line
-            return {}, False
-        return _yaml_defaults(directory, "config/config.yaml", declared=False)
-    return _yaml_defaults(directory, literal.group(1) or literal.group(2), declared=True)
+        if CONFIGFILE_LINE.search(text):
+            return snakefile, None, True
+        return snakefile, "config/config.yaml", False
+    rel = literal.group(1) or literal.group(2)
+    if (
+        rel.startswith("/")
+        or CONTROL.search(rel)
+        or any(p in ("", ".", "..") for p in rel.split("/"))
+    ):
+        return snakefile, None, True
+    return snakefile, rel, True
+
+
+def _configfile_defaults(directory: Path) -> tuple[dict[str, dict[str, Any]], bool]:
+    """The config file a Snakemake pipeline loads (§5.12), read without running anything."""
+    _, rel, declared = _config_file(directory)
+    if rel is None:
+        return {}, False
+    return _yaml_defaults(directory, rel, declared=declared)
 
 
 def _yaml_defaults(
@@ -225,13 +236,9 @@ def _yaml_defaults(
     """`rel` inside `directory` as the config defaults, through `_read`'s walk (no symlink) and
     with inspect's YAML caps. `declared`: the Snakefile names the file, so one that is missing
     was not read; the fallback `config/config.yaml` may simply not exist."""
-    parts = rel.split("/")
-    # outside the root, or a control character in the name (SEC-05/CR-02): not read, never a 500
-    if rel.startswith("/") or CONTROL.search(rel) or any(p in ("", ".", "..") for p in parts):
-        return {}, False
-    try:
-        text = _read(directory, *parts, cap=MAX_YAML)
-    except Unreadable:
+    try:  # a file that is not UTF-8 is not read either: never a 500 (CR-345R-02)
+        text = _read(directory, *rel.split("/"), cap=MAX_YAML)
+    except (Unreadable, UnicodeDecodeError):
         return {}, False
     if text is None:
         return {}, not declared

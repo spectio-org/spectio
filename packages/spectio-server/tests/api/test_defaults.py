@@ -205,7 +205,7 @@ def test_nextflow_config_edit_is_seen(tmp_path: Path) -> None:
     assert complete and values["outdir"] == {"value": "results", "source": "config"}
     engine.base = {"outdir": "other"}
     (root / "nextflow.config").write_text("params.outdir = 'other'\n")
-    os.utime(root / "nextflow.config", ns=(2_000_000_000, 2_000_000_000))  # a later mtime_ns
+    os.utime(root / "nextflow.config", ns=(2_000_000_000, 2_000_000_000))  # a different mtime_ns
     values, complete = defaults_of(engine, "nextflow", [], root, cache=cache)
     assert complete and values["outdir"] == {"value": "other", "source": "config"}
     assert len(engine.calls) == 2
@@ -264,6 +264,31 @@ def test_configfile_control_character_is_not_read(tmp_path: Path) -> None:
         root = smk_root(tmp_path, line, config=None, name=f"smk{i}")
         values, complete = defaults_of(ConfigEngine(), "snakemake", [], root, schema=None)
         assert not complete and values == {}, line
+
+
+def test_configfile_not_utf8_is_not_read(tmp_path: Path) -> None:
+    """CR-345R-02: a config file that is not UTF-8 counts as not read, never a 500."""
+    root = smk_root(tmp_path, 'configfile: "other.yaml"\n', config=None)
+    (root / "other.yaml").write_bytes(b"\xff\xfe")
+    values, complete = defaults_of(ConfigEngine(), "snakemake", [], root, schema=None)
+    assert not complete and values == {}
+
+
+def test_nextflow_conf_file_edit_is_seen(tmp_path: Path) -> None:
+    """CR-345R-01: a file of `conf/` edited in place (the directory's mtime unchanged) is read
+    again."""
+    cache = DefaultsCache()
+    root = nf_root(tmp_path)
+    (root / "conf").mkdir()
+    (root / "conf" / "test.config").write_text("params.outdir = 'a'\n")
+    engine = ConfigEngine(base={"outdir": "a"})
+    defaults_of(engine, "nextflow", [], root, cache=cache)
+    before = (root / "conf").stat().st_mtime_ns
+    engine.base = {"outdir": "longer"}
+    (root / "conf" / "test.config").write_text("params.outdir = 'longer'\n")
+    os.utime(root / "conf", ns=(before, before))  # the directory looks untouched
+    values, _ = defaults_of(engine, "nextflow", [], root, cache=cache)
+    assert values["outdir"] == {"value": "longer", "source": "config"}
 
 
 def test_snakemake_configfile_literal(tmp_path: Path) -> None:
