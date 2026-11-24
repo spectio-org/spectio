@@ -4,7 +4,7 @@ icon: material/download
 # Installation
 
 !!! info "0.0.1 is built and not released yet"
-    The first version, `0.0.1`, is finished on the development branch and waits for its release checks ([roadmap](../roadmap/index.md)). Nothing is published for it yet: the names on PyPI (`spectio`, `snakemake-logger-plugin-spectio`) and in the Nextflow plugin registry (`nf-spectio`) only hold empty `0.0.0` placeholders. Do not install those.
+    The first version, `0.0.1`, is finished on the development branch and waits for its release checks. Its release candidate, `0.0.1-rc1`, is being prepared ([roadmap](../roadmap/index.md#001-rc1-the-release-candidate)). Nothing is published for it yet: the names on PyPI (`spectio`, `snakemake-logger-plugin-spectio`) and in the Nextflow plugin registry (`nf-spectio`) only hold empty `0.0.0` placeholders. Do not install those.
 
 ## What 0.0.1 is made of
 
@@ -18,7 +18,7 @@ icon: material/download
 | `snakemake-logger-plugin-spectio` | the Snakemake bridge, for runs you start by hand ([details](../usage/runs-from-a-terminal.md)) |
 | `nf-spectio` | the Nextflow bridge. `spectio init` unpacks it from the `spectio` wheel |
 
-You also need Python 3.11 or later, [uv](https://docs.astral.sh/uv/), tmux 2.1 or later on the machine that runs the server, and Nextflow or Snakemake for the engine you use. On SLURM, Snakemake also needs `snakemake-executor-plugin-slurm` 2.8.0 or later: with an older one Spectio sees none of the run's jobs ([why](../specs/architecture-plugins-and-packaging.md#134-supported-engine-versions)). The EMBL module `snakemake/9.23.1-foss-2025b` ships 2.6.1, so install Snakemake yourself there, for example `uv tool install snakemake==9.27.1 --with snakemake-executor-plugin-slurm==2.8.0` (run on that login node on 2026-11-24), and give `spectio init --snakemake` its path. `spectio doctor` prints the plugin's version. Source: `requires-python` in `packages/*/pyproject.toml`; the tmux floor is the check of `spectio serve --detach`.
+You also need Python 3.11 or later, [uv](https://docs.astral.sh/uv/), tmux 2.1 or later on the machine that runs the server, and Nextflow or Snakemake for the engine you use. On SLURM, Snakemake also needs `snakemake-executor-plugin-slurm` 2.8.0 or later: with an older one Spectio sees none of the run's jobs ([why](../specs/architecture-plugins-and-packaging.md#134-supported-engine-versions)). The EMBL module `snakemake/9.23.1-foss-2025b` ships 2.6.1, so install Snakemake yourself there, for example `uv tool install snakemake==9.27.1 --with snakemake-executor-plugin-slurm==2.8.0` (run on that login node on 2026-11-24, [inbox #159](../reviews/inbox.md#159-assumed-snakemake-slurm-runs-need-executor-plugin-280-spectio-reports-the-floor-and-does-not-enforce-it-2026-11-24)), and give `spectio init --snakemake` the path of the `snakemake` it installs (`uv tool dir --bin` names its directory). `spectio doctor` prints the plugin's version. Source: `requires-python` in `packages/*/pyproject.toml`; the tmux floor is the check of `spectio serve --detach`.
 
 0.0.1 targets the EMBL cluster first. Other sites are not checked.
 
