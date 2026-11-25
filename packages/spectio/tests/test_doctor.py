@@ -666,3 +666,45 @@ def test_req18_catalog_file_doctor_prints_path_state(
     path.write_text('[pipelines.x]\nengine = "nextflow"\nlocation = "http://h/SECRET"\n')
     found = line(doctor(capsys, settings)[1], "catalog")
     assert found.startswith(f"warn catalog {path}: invalid (") and "SECRET" not in found
+
+
+def test_doctor_software_found_and_missing(
+    home: Path, capsys: pytest.CaptureFixture[str], tools: Callable[..., Path]
+) -> None:
+    """inbox #161: the tools an environment deploys with are asked through the login shell, as
+    the engine finds them; found, the line reports the version, missing, it is a warning that
+    names the environment."""
+    tools("conda")
+    settings = configured(home, executor="local")
+    lines = doctor(capsys, settings)[1]
+    assert line(lines, "conda") == "ok conda 25.1.1: the software of local"
+    assert line(lines, "apptainer").startswith(
+        "warn apptainer not found on the login shell's PATH: local deploys with apptainer"
+    )
+
+    tools("conda", "apptainer")
+    path = home / ".spectio" / "environments.toml"
+    path.write_text(
+        '[environments.hpc]\nexecutor = "local"\nsoftware = ["apptainer"]\n'
+        '[environments.min]\nexecutor = "local"\nsoftware = []\n'
+    )
+    path.chmod(0o600)
+    lines = doctor(capsys, settings)[1]
+    assert line(lines, "conda") == "ok conda 25.1.1: the software of local"
+    assert line(lines, "apptainer") == "ok apptainer 1.3.6: the software of local, hpc"
+
+
+def test_doctor_software_failing_command_warns(
+    home: Path, capsys: pytest.CaptureFixture[str], tools: Callable[..., Path]
+) -> None:
+    """A `conda --version` that fails (a broken module, say) is a warning, not a fail, and its
+    first line of output is in the detail."""
+    fakes = tools("conda")
+    conda = fakes / "conda"
+    conda.write_text("#!/bin/sh\necho 'Traceback (module gone)' >&2\nexit 1\n")
+    conda.chmod(0o755)
+    settings = configured(home, executor="local")
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "conda").startswith(
+        "warn conda `conda --version` exited 1: Traceback (module gone): local deploys with conda"
+    )

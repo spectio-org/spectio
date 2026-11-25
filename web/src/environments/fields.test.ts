@@ -52,10 +52,23 @@ test("a valid draft is the POST body, with the other executor's values null", ()
     slurm: { partition: "htc", account: "mylab", time_min: 2880, mem_mib: 32768 },
     local: null,
     profiles: { nextflow: "singularity", snakemake: null },
+    software: ["conda", "apptainer"],
+    apptainer_args: "",
   });
   const local = toBody(draft({ executor: "local", cpus: "2", localMem: "8", localUnit: "GiB" })).body;
   expect(local?.slurm).toBeNull();
   expect(local?.local).toEqual({ cpus: 2, mem_mib: 8192 });
+});
+
+test("software and the Apptainer arguments: kept as sent, both tools by default (inbox #161)", () => {
+  const only = toBody(draft({ software: ["apptainer"], apptainerArgs: "--bind /g,/scratch" }));
+  expect(only.errors).toEqual({});
+  expect([only.body?.software, only.body?.apptainer_args]).toEqual([["apptainer"], "--bind /g,/scratch"]);
+  const none = toBody(draft({ software: [], apptainerArgs: "" }));
+  expect(none.errors).toEqual({});
+  expect([none.body?.software, none.body?.apptainer_args]).toEqual([[], ""]);
+  expect(toBody(draft({ apptainerArgs: "--bind\rtouch x" })).errors["apptainer_args"]).toMatch(/control character/);
+  expect(toBody(draft({ apptainerArgs: "a".repeat(501) })).errors["apptainer_args"]).toMatch(/500/);
 });
 
 const item = (over: Partial<EnvironmentItem> = {}): EnvironmentItem => ({
@@ -69,6 +82,8 @@ const item = (over: Partial<EnvironmentItem> = {}): EnvironmentItem => ({
   slurm: { partition: "htc", account: "mylab", time_min: 150, mem_mib: 1536 },
   local: null,
   profiles: { nextflow: null, snakemake: null },
+  software: ["conda", "apptainer"],
+  apptainer_args: "",
   etag: '"e"',
   ...over,
 });
@@ -80,22 +95,40 @@ test("an item reads back into the form: hours and minutes, GiB when it divides b
   expect([gib.hours, gib.minutes, gib.mem, gib.memUnit, gib.partition]).toEqual(["2", "0", "8", "GiB", ""]);
 });
 
+test("an item's software reads back into the form and saves as sent (inbox #161)", () => {
+  const back = fromItem(item({ software: ["apptainer"], apptainer_args: "--bind /g" }));
+  expect([back.software, back.apptainerArgs]).toEqual([["apptainer"], "--bind /g"]);
+  expect(toBody(back).body).toMatchObject({ software: ["apptainer"], apptainer_args: "--bind /g" });
+  // an environment from before the field kept: the form shows the default it launched with
+  const old = fromItem(item({ software: undefined as unknown as EnvironmentItem["software"] }));
+  expect([old.software, old.apptainerArgs]).toEqual([["conda", "apptainer"], ""]);
+});
+
 test("the summary line, in words; an unset value is left out", () => {
-  expect(summary(item(), "login1", "slurm")).toBe("partition htc · SLURM account mylab · 2 h 30 min per job · 1536 MiB per job");
+  expect(summary(item(), "login1", "slurm")).toBe(
+    "partition htc · SLURM account mylab · 2 h 30 min per job · 1536 MiB per job · deploys with conda and apptainer",
+  );
   expect(summary(item({ slurm: { partition: null, account: null, time_min: 120, mem_mib: 8192 } }), "login1", "slurm")).toBe(
-    "2 h per job · 8 GiB per job",
+    "2 h per job · 8 GiB per job · deploys with conda and apptainer",
   );
   expect(summary(item({ slurm: { partition: null, account: null, time_min: null, mem_mib: null } }), "login1", "slurm")).toBe(
-    "SLURM's defaults for your account",
+    "SLURM's defaults for your account · deploys with conda and apptainer",
   );
   const local = item({ executor: "local", slurm: null, local: { cpus: 2, mem_mib: 8192 } });
-  expect(summary(local, "login1", "slurm")).toBe("on login1 (the login node) · at most 2 CPUs and 8 GiB");
+  expect(summary(local, "login1", "slurm")).toBe("on login1 (the login node) · at most 2 CPUs and 8 GiB · deploys with conda and apptainer");
   expect(summary(item({ executor: "local", slurm: null, local: { cpus: null, mem_mib: null } }), "pc", "local")).toBe(
-    "this machine · no limit",
+    "this machine · no limit · deploys with conda and apptainer",
   );
+});
+
+test("the summary line names the software the item has, and nothing when absent (inbox #161)", () => {
+  expect(summary(item({ software: ["conda"] }), "login1", "slurm")).toMatch(/ · deploys with conda$/);
+  expect(summary(item({ software: [] }), "login1", "slurm")).toMatch(/ · deploys no software$/);
+  const old = item({ software: undefined as unknown as EnvironmentItem["software"] });
+  expect(summary(old, "login1", "slurm")).not.toContain("deploys");
 });
 
 test("one CPU is singular (DW-P3B11-02)", () => {
   const one = item({ executor: "local", slurm: null, local: { cpus: 1, mem_mib: null } });
-  expect(summary(one, "login1", "slurm")).toBe("on login1 (the login node) · at most 1 CPU");
+  expect(summary(one, "login1", "slurm")).toBe("on login1 (the login node) · at most 1 CPU · deploys with conda and apptainer");
 });

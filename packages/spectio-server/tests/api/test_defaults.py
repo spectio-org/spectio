@@ -308,6 +308,43 @@ def test_snakemake_configfile_not_a_literal(tmp_path: Path) -> None:
         assert values == {}, line
 
 
+def test_snakemake_configfile_variable(tmp_path: Path) -> None:
+    """inbox #161: `configfile: NAME` names the file of the literal that the last earlier
+    top-level line assigns to the variable, as a written-out path would; an indented
+    assignment, a keyword, an unassigned name and a control character in the literal name no
+    file."""
+    snakefile = 'configfile_location = "config/config.yaml"\nconfigfile: configfile_location\n'
+    values, complete = defaults_of(
+        ConfigEngine(), "snakemake", [], smk_root(tmp_path, snakefile), schema=None
+    )
+    assert complete
+    assert values == {"outdir": {"value": "results", "source": "config"}}
+
+    root = smk_root(
+        tmp_path,
+        'where = "config/config.yaml"\nwhere = "config/other.yaml"\nconfigfile: where\n',
+        config=None,
+        name="smk2",
+    )
+    (root / "config").mkdir()
+    (root / "config" / "other.yaml").write_text("outdir: other\n")
+    values, complete = defaults_of(ConfigEngine(), "snakemake", [], root, schema=None)
+    assert complete and values == {"outdir": {"value": "other", "source": "config"}}
+
+    for i, snakefile in enumerate(
+        (
+            '  where = "config/config.yaml"\nconfigfile: where\n',  # indented: not top-level
+            'where = "config/config.yaml"\nconfigfile: class\n',  # a keyword is no name
+            "configfile: where\n",  # never assigned a literal
+            'where = "con\x00fig.yaml"\nconfigfile: where\n',  # a control character (SEC-05)
+        )
+    ):
+        root = smk_root(tmp_path, snakefile, name=f"bad{i}")
+        values, complete = defaults_of(ConfigEngine(), "snakemake", [], root, schema=None)
+        assert not complete, snakefile
+        assert values == {}, snakefile
+
+
 def test_snakemake_configfile_missing(tmp_path: Path) -> None:
     root = smk_root(tmp_path, 'configfile: "config/nope.yaml"\n')
     values, complete = defaults_of(ConfigEngine(), "snakemake", [], root, schema=None)

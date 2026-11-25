@@ -282,6 +282,233 @@ def test_workflow_profile_keeps_its_default_resources(home: Path, bridges: Path)
     assert not {"--default-resources", "--jobs", "--cores"} & set(args)
 
 
+SOFTWARE_FLAGS = (
+    "--software-deployment-method",
+    "--conda-prefix",
+    "--apptainer-prefix",
+    "--apptainer-args",
+)
+
+
+def test_snakemake_deploys_the_environment_software(home: Path, bridges: Path) -> None:
+    """inbox #161: without a workflow profile, the environment's software deploys, its conda
+    environments and Apptainer images under the data directory's shared cache, and its
+    Apptainer arguments as one word; each flag before extra_args."""
+    spec = snakemake_spec(
+        home,
+        data_dir=home / "data",
+        software=["conda", "apptainer"],
+        apptainer_args="--bind /g,/scratch",
+        extra_args=["--touch"],
+    )
+    args = engine_args(spec)
+    at = args.index("--software-deployment-method")
+    assert args[at + 1 : at + 3] == ["conda", "apptainer"]
+    assert args[args.index("--conda-prefix") + 1] == str(home / "data" / "cache" / "conda")
+    assert args[args.index("--apptainer-prefix") + 1] == str(home / "data" / "cache" / "apptainer")
+    assert "--apptainer-args=--bind /g,/scratch" in args  # one word (CR-02)
+    assert args.index("--touch") > args.index("--logger")  # before extra_args
+    plain = engine_args(replace(spec, software=[], apptainer_args=""))
+    assert not set(SOFTWARE_FLAGS) & set(plain)
+    kept = [
+        a
+        for a in args
+        if a
+        not in (
+            *SOFTWARE_FLAGS,
+            "conda",
+            "apptainer",
+            "--apptainer-args=--bind /g,/scratch",
+            str(home / "data" / "cache" / "conda"),
+            str(home / "data" / "cache" / "apptainer"),
+        )
+    ]
+    assert plain == kept
+
+
+def test_snakemake_software_flags_parse_as_snakemake_reads_them(home: Path, bridges: Path) -> None:
+    """CR-02, CR-03: an Apptainer value starting with `-` stays one word, and the method's
+    values end at a flag Spectio always writes, even when extra_args starts with a target."""
+    spec = snakemake_spec(
+        home,
+        data_dir=None,
+        software=["conda", "apptainer"],
+        apptainer_args="--nv",
+        extra_args=["all"],
+    )
+    args = engine_args(spec)
+    at = args.index("--software-deployment-method")
+    assert args[at + 1 : at + 4] == ["conda", "apptainer", "--apptainer-args=--nv"]
+    bare = engine_args(replace(spec, apptainer_args=""))
+    at = bare.index("--software-deployment-method")
+    assert bare[at + 1 : at + 4] == ["conda", "apptainer", "--logger"]
+
+
+def test_snakemake_software_without_a_data_dir_keeps_its_method(home: Path, bridges: Path) -> None:
+    """No data directory (a spec built by hand): the methods are still asked for, and the
+    Apptainer arguments given; no prefix can be named."""
+    spec = snakemake_spec(home, software=["conda"], apptainer_args="--bind /g")
+    args = engine_args(spec)
+    assert args[args.index("--software-deployment-method") + 1] == "conda"
+    assert "--apptainer-args=--bind /g" in args
+    assert "--conda-prefix" not in args and "--apptainer-prefix" not in args
+
+
+@pytest.mark.parametrize("given", [["slurm"], []])
+def test_snakemake_profile_owns_the_software(home: Path, bridges: Path, given: list[str]) -> None:
+    """A workflow profile owns the software settings, as it owns the resources: no flag is
+    passed beside it."""
+    spec = snakemake_spec(
+        home, profiles=given, data_dir=home / "data", software=["conda", "apptainer"]
+    )
+    args = engine_args(spec)
+    assert bool(set(SOFTWARE_FLAGS) & set(args)) == (not given)  # flags iff no profile
+
+
+@pytest.mark.parametrize(
+    ("given", "flag", "value"),
+    [
+        (["--software-deployment-method=conda"], "--software-deployment-method", "=conda"),
+        (["--conda-prefix", "/my/conda"], "--conda-prefix", "/my/conda"),
+        (["--conda-prefix=/my/conda"], "--conda-prefix", "=/my/conda"),
+        (["--apptainer-prefix", "/my/img"], "--apptainer-prefix", "/my/img"),
+        (["--apptainer-args", "--bind /mine"], "--apptainer-args", "--bind /mine"),
+    ],
+)
+def test_snakemake_software_flag_not_doubled(
+    home: Path,
+    bridges: Path,
+    given: list[str],
+    flag: str,
+    value: str,
+) -> None:
+    """A flag the user already gives in extra_args is never doubled, as with
+    `--slurm-status-command`: theirs stays, Spectio's is not added."""
+    spec = snakemake_spec(
+        home,
+        data_dir=home / "data",
+        software=["conda", "apptainer"],
+        apptainer_args="--bind /g",
+        extra_args=given,
+    )
+    args = engine_args(spec)
+    assert sum(1 for a in args if a == flag or a.startswith(flag + "=")) == 1
+    if value.startswith("="):  # the user's own attached form, kept whole
+        assert given[0] in args
+    else:
+        assert args[args.index(flag) + 1] == value
+
+
+def test_snakemake_software_refuses_an_unknown_tool(home: Path, bridges: Path) -> None:
+    """The software names are checked again where they are used, as the SLURM names are."""
+    spec = snakemake_spec(home, software=["npm"])
+    with pytest.raises(ValueError, match="conda, apptainer"):
+        engine_args(spec)
+    with pytest.raises(ValueError, match="twice"):
+        engine_args(replace(spec, software=["conda", "conda"]))
+
+
+def _pipeline_with_config(home: Path) -> Path:
+    config = home / "pipeline" / "config"
+    config.mkdir(parents=True, exist_ok=True)
+    (config / "config.yaml").write_text("outdir: results\n")
+    return config
+
+
+def test_snakemake_pipeline_config_is_copied(home: Path, bridges: Path) -> None:
+    """inbox #161: the pipeline's `config/` is copied into the launch directory, so
+    `configfile: "config/config.yaml"` and `config/samples.tsv` resolve as they do from the
+    repository root. A symbolic link is never followed, and a file over 10 MiB is skipped."""
+    config = _pipeline_with_config(home)
+    (config / "samples.tsv").write_text("sample\nA\n")
+    (config / "link.yaml").symlink_to("/etc/hosts")
+    (config / "big.tsv").write_bytes(b"x" * (10 * 1024 * 1024 + 1))
+    spec = snakemake_spec(home)
+    assert run_head(spec).returncode == 0
+    copied = spec.launch_dir / "config"
+    assert (copied / "config.yaml").read_text() == "outdir: results\n"
+    assert (copied / "samples.tsv").read_text() == "sample\nA\n"
+    assert not (copied / "link.yaml").exists() and not (copied / "link.yaml").is_symlink()
+    assert not (copied / "big.tsv").exists()
+
+
+def test_snakemake_pipeline_config_symlink_or_fifo_not_copied(home: Path, bridges: Path) -> None:
+    """SEC-362-02, -03: a `config` that is a symbolic link is not followed, and a FIFO inside
+    is skipped rather than failing the copy."""
+    config = _pipeline_with_config(home)
+    os.mkfifo(config / "pipe")
+    spec = snakemake_spec(home)
+    assert run_head(spec).returncode == 0
+    assert (spec.engine_dir / "config" / "config.yaml").exists()
+    assert not (spec.engine_dir / "config" / "pipe").exists()
+
+    elsewhere = home / "elsewhere"
+    shutil.rmtree(config)
+    shutil.copytree(spec.engine_dir / "config", elsewhere)
+    config.symlink_to(elsewhere)
+    shutil.rmtree(spec.engine_dir / "config")
+    assert run_head(spec).returncode == 0
+    assert not (spec.engine_dir / "config").exists()
+
+
+def test_snakemake_pipeline_config_over_the_limit_leaves_nothing(
+    home: Path, bridges: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-07: a copy stopped at the limit removes what it wrote, so a Resume never keeps a
+    partial config/."""
+    from spectio.runner import headscript
+
+    config = _pipeline_with_config(home)
+    for i in range(3):
+        (config / f"t{i}.tsv").write_text("x\n")
+    monkeypatch.setattr(headscript, "MAX_CONFIG_ENTRIES", 2)
+    spec = snakemake_spec(home)
+    with pytest.raises(ValueError, match="config/"):
+        headscript.write_launch_files(spec)
+    assert not (spec.engine_dir / "config").exists()
+
+
+def test_snakemake_pipeline_config_copied_once(home: Path, bridges: Path) -> None:
+    """A launch directory that has `config/` keeps its copy: writing the launch files again
+    copies nothing, so the pipeline's later edit never changes a running launch's config."""
+    config = _pipeline_with_config(home)
+    spec = snakemake_spec(home)
+    assert write_launch_files(spec).is_file()
+    (config / "config.yaml").write_text("outdir: changed\n")
+    assert write_launch_files(replace(spec, launch_n=2)).is_file()
+    assert (spec.launch_dir / "config" / "config.yaml").read_text() == "outdir: results\n"
+
+
+def test_snakemake_pipeline_config_on_a_resume(home: Path, bridges: Path) -> None:
+    """The engine of a Resume runs in the parent's launch directory: the copy already there is
+    kept; a parent launched before the feature had none, and gets the pipeline's copy."""
+    config = _pipeline_with_config(home)
+    child = resume_spec(home, "snakemake")
+    assert child.resume_of is not None
+    parent_config = child.resume_of.launch_dir / "config" / "config.yaml"
+    parent_config.parent.mkdir()  # the parent launch copied it, as the feature does
+    parent_config.write_text("outdir: results\n")
+    (config / "config.yaml").write_text("outdir: changed\n")
+    assert write_launch_files(child).is_file()
+    assert parent_config.read_text() == "outdir: results\n"  # kept, never taken over
+    grandchild = resume_spec(home, "snakemake", launch_n=3)
+    parent_config.unlink()
+    parent_config.parent.rmdir()  # a parent launched before the feature: no config yet
+    assert write_launch_files(grandchild).is_file()
+    assert parent_config.read_text() == "outdir: changed\n"  # the pipeline's current one
+
+
+def test_nextflow_copies_no_pipeline_config(home: Path, bridges: Path) -> None:
+    _pipeline_with_config(home)
+    spec = make_spec(
+        home / "runs",
+        engine_cmd=shlex.quote(str(stub_engine(home / "bin"))),
+        location=home / "pipeline",
+    )
+    assert run_head(spec).returncode == 0
+    assert not (spec.launch_dir / "config").exists()
+
+
 def test_pythonpath_prepended_to_the_login_profiles(home: Path, bridges: Path) -> None:
     """CR-P3T09-05: a PYTHONPATH the login profile (or a module) sets is kept, after pylib."""
     with (home / ".bash_profile").open("a") as f:

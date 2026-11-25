@@ -15,6 +15,8 @@ FAKES = {
     "java": "echo 'openjdk version \"21.0.5\" 2024-10-15' >&2",
     "tmux": "exit 0",
     "sbatch": "exit 0",
+    "conda": "echo 'conda 25.1.1'",
+    "apptainer": "echo 'apptainer version 1.3.6'",
 }
 
 

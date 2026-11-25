@@ -179,6 +179,9 @@ export interface RunEnvironment {
   executor: "local" | "slurm" | null;
   slurm: { partition: string | null; account: string | null; time_min: number | null; mem_mib: number | null } | null;
   local: { cpus: number | null; mem_mib: number | null } | null;
+  /** The software a Snakemake launch deploys with (inbox #161); null unless `state` is `recorded`. */
+  software: ("conda" | "apptainer")[] | null;
+  apptainer_args: string | null;
   state: "recorded" | "not_recorded" | "not_readable";
 }
 
@@ -837,6 +840,10 @@ export interface EnvironmentItem {
   unusable_reason: string | null;
   slurm: NonNullable<RunEnvironment["slurm"]> | null;
   local: NonNullable<RunEnvironment["local"]> | null;
+  /** The software a Snakemake launch deploys with (inbox #161); a Nextflow environment keeps
+   * the field: its profiles decide. */
+  software: ("conda" | "apptainer")[];
+  apptainer_args: string;
   profiles: { nextflow: string | null; snakemake: string | null };
   etag: string;
 }

@@ -1,8 +1,8 @@
-import { Button, Radio, Select, TextInput } from "@mantine/core";
+import { Button, Checkbox, Radio, Select, TextInput } from "@mantine/core";
 import { useState } from "react";
 import { ApiError, type EnvironmentItem, createEnvironment, replaceEnvironment } from "../api";
 import { useServer } from "../server";
-import { type Draft, type Errors, type Unit, toBody } from "./fields";
+import { type Draft, type Errors, type Software, type Unit, toBody } from "./fields";
 
 // The one environment form (ui-spec §4.8.1): the pages' new and edit, and Launch's New environment
 // dialog (FU-P3-86g). Every field is a labelled native input; a field's rule shows under it as
@@ -19,11 +19,13 @@ const NAMES: Record<string, string> = {
   "local.mem_mib": "Memory at most",
   "profiles.nextflow": "Default Nextflow profile",
   "profiles.snakemake": "Default Snakemake profile",
+  "apptainer_args": "Apptainer arguments",
 };
 const FIELD_OF: Partial<Record<keyof Draft, string>> = {
   ...{ name: "name", label: "label", partition: "slurm.partition", account: "slurm.account", hours: "slurm.time_min" },
   ...{ minutes: "slurm.time_min", mem: "slurm.mem_mib", memUnit: "slurm.mem_mib", cpus: "local.cpus" },
   ...{ localMem: "local.mem_mib", localUnit: "local.mem_mib", nextflow: "profiles.nextflow", snakemake: "profiles.snakemake" },
+  ...{ software: "software", apptainerArgs: "apptainer_args" },
 };
 const BANNERS: Record<string, string> = {
   "412": "This environment changed in another tab.",
@@ -67,6 +69,12 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
     const field = FIELD_OF[key];
     if (field) setTouched(new Set(touched).add(field));
     setServer422(({ [field ?? ""]: _, ...rest }) => rest);
+  };
+  // A Checkbox.Group hands its whole selection, not one key's string
+  const setSoftware = (values: string[]) => {
+    setDraft({ ...draft, software: values as Software[] });
+    setTouched(new Set(touched).add("software"));
+    setServer422(({ software: _, ...rest }) => rest);
   };
   const save = () => {
     if (!body) return setTouched(new Set(Object.keys(NAMES)));
@@ -158,6 +166,18 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
           </div>
         </fieldset>
       )}
+      <fieldset>
+        <legend>Software (Snakemake)</legend>
+        <p className="sp-env-hint">
+          A Snakemake launch without a workflow profile deploys with these, under the server's data directory; a workflow
+          profile owns its software. A Nextflow run's profiles decide their own.
+        </p>
+        <Checkbox.Group value={draft.software} onChange={setSoftware} error={shown["software"]}>
+          <Checkbox value="conda" label="Conda" description="--software-deployment-method conda" mt={6} disabled={readOnly} />
+          <Checkbox value="apptainer" label="Apptainer" description="--software-deployment-method apptainer" mt={6} disabled={readOnly} />
+        </Checkbox.Group>
+        {text("apptainerArgs", "Apptainer arguments", "One --apptainer-args word, e.g. --bind /g,/scratch")}
+      </fieldset>
       <fieldset>
         <legend>Default profiles (optional)</legend>
         <p className="sp-env-hint">They preselect the profile at Launch when the pipeline has it; you can change it there.</p>

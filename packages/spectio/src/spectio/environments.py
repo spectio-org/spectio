@@ -5,9 +5,10 @@ of a closed character set, matched in full, or an integer in bounds, with strict
 `true`, `"5"` or `5.0` for an integer). The built-ins come from `Settings`: `local` always,
 `slurm` on a server set up with SLURM.
 
-A run keeps its own snapshot, `{name, label, executor, slurm, local}`, in its manifest and in
-`runs.environment` with a `state`; every per-run decision reads that column, never
-`settings.executor` or an `environments` row (SEC-PRE-FU86-R1-01).
+A run keeps its own snapshot, `{name, label, executor, slurm, local, software,
+apptainer_args}`, in its manifest and in `runs.environment` with a `state`; every per-run
+decision reads that column, never `settings.executor` or an `environments` row
+(SEC-PRE-FU86-R1-01).
 """
 
 import re
@@ -27,6 +28,11 @@ RESERVED = frozenset({"local", "slurm", "new"})  # the built-ins, and the screen
 _NOT_TEXT = frozenset({"Cc", "Cf", "Cn", "Co", "Cs", "Zl", "Zp"})
 NO_SLURM = "This server was set up with spectio init --local: it has no SLURM"
 LOCAL_CAPS = {"cpus": 2, "mem_mib": 8192}  # the built-in `local` on a login node (audit §7)
+# The software a Snakemake launch deploys with (inbox #161), each named at most once, in the
+# user's order. A Nextflow environment keeps the field; its profiles own its software.
+SOFTWARE_TOOLS = ("conda", "apptainer")
+MAX_APPTAINER_ARGS = 500
+APPTAINER_WORDS = re.compile(r"[A-Za-z0-9_./:,=@+% -]*")
 SnapshotState = Literal["recorded", "not_recorded", "not_readable"]
 
 
@@ -48,10 +54,31 @@ def _label(value: str) -> str:
     return value
 
 
+def _software(values: list[str]) -> list[str]:
+    if len(set(values)) != len(values):
+        raise ValueError(f"software names a tool twice: {values[:5]}")
+    return values
+
+
+def _apptainer_args(value: str) -> str:
+    """At most MAX_APPTAINER_ARGS characters of APPTAINER_WORDS only (SEC-362-01): Snakemake
+    pastes the value unquoted into the shell command of every container job
+    (`deployment/singularity.py` `shellcmd`, 9.27.1), so a quote, `;`, `$`, a backtick or a
+    control character would become shell syntax there."""
+    if len(value) > MAX_APPTAINER_ARGS or not APPTAINER_WORDS.fullmatch(value):
+        raise ValueError(
+            f"the Apptainer arguments are at most {MAX_APPTAINER_ARGS} characters of letters,"
+            " digits, spaces and _ . / : , = @ + % -"
+        )
+    return value
+
+
 Name = Annotated[str, AfterValidator(_name)]
 Label = Annotated[str, AfterValidator(_label)]
 ProfileName = Annotated[str, AfterValidator(_profile)]
 MemMib = Annotated[int, Field(ge=1, le=4_194_304)]
+Software = Annotated[list[Literal["conda", "apptainer"]], AfterValidator(_software)]
+ApptainerArgs = Annotated[str, AfterValidator(_apptainer_args)]
 
 
 class _Strict(BaseModel):
@@ -86,13 +113,18 @@ class Profiles(_Strict):
 
 
 class Snapshot(_Strict):
-    """What a run ran with: its manifest's `environment`, and `runs.environment` less `state`."""
+    """What a run ran with: its manifest's `environment`, and `runs.environment` less `state`.
+
+    `software` and `apptainer_args` are what a Snakemake launch deploys with (inbox #161); the
+    default deploys with both tools; an environment written before the field gets that default."""
 
     name: Name
     label: Label | None = None
     executor: Literal["local", "slurm"]
     slurm: SlurmValues | None = None
     local: LocalValues | None = None
+    software: Software = ["conda", "apptainer"]
+    apptainer_args: ApptainerArgs = ""
 
     @model_validator(mode="after")
     def _one_executor(self) -> "Snapshot":
@@ -150,7 +182,9 @@ def snapshot(env: Snapshot) -> dict[str, Any]:
     return Snapshot.model_validate(env.model_dump(exclude={"profiles"})).model_dump(mode="json")
 
 
-_UNKNOWN = dict.fromkeys(("name", "label", "executor", "slurm", "local"))
+_UNKNOWN = dict.fromkeys(
+    ("name", "label", "executor", "slurm", "local", "software", "apptainer_args")
+)
 
 
 def run_column(raw: object) -> dict[str, Any]:
@@ -189,9 +223,16 @@ def as_snapshot(column: dict[str, Any]) -> Snapshot:
 
 
 def launch_fields(env: Snapshot) -> dict[str, Any]:
-    """`LaunchSpec`'s `environment`, `slurm` and `local` from a run's snapshot (FU-P3-86c)."""
+    """`LaunchSpec`'s `environment`, `slurm` and `local` from a run's snapshot (FU-P3-86c), with
+    the software its Snakemake launches deploy with (inbox #161)."""
     slurm = (env.slurm or SlurmValues()) if env.executor == "slurm" else None
-    return {"environment": env.name, "slurm": slurm, "local": env.local if slurm is None else None}
+    return {
+        "environment": env.name,
+        "slurm": slurm,
+        "local": env.local if slurm is None else None,
+        "software": list(env.software),
+        "apptainer_args": env.apptainer_args,
+    }
 
 
 class NotAllowed(ValueError):

@@ -4,6 +4,7 @@ import type { EnvironmentBody, EnvironmentItem } from "../api";
 import { plural } from "../runs/stateWord";
 
 export type Unit = "MiB" | "GiB";
+export type Software = "conda" | "apptainer";
 export interface Draft {
   name: string;
   label: string;
@@ -19,10 +20,13 @@ export interface Draft {
   localUnit: Unit;
   nextflow: string;
   snakemake: string;
+  software: Software[];
+  apptainerArgs: string;
 }
 export const EMPTY: Draft = {
   ...{ name: "", label: "", executor: "slurm", partition: "", account: "", hours: "", minutes: "" },
   ...{ mem: "", memUnit: "GiB", cpus: "", localMem: "", localUnit: "GiB", nextflow: "", snakemake: "" },
+  ...{ software: ["conda", "apptainer"], apptainerArgs: "" },
 };
 
 /** Errors keyed by the API's field path, so a server `422` lands on the same field. */
@@ -89,8 +93,16 @@ export function toBody(d: Draft): { body: EnvironmentBody | null; errors: Errors
     if (mem_mib === undefined) errors["local.mem_mib"] = "Whole MiB, or GiB with one decimal; 1 MiB to 4,096 GiB";
     local = { cpus: cpus ?? null, mem_mib: mem_mib ?? null };
   }
+  // The software a Snakemake launch deploys with (api §5.4, inbox #161): checkboxes, so no name
+  // rule; the arguments go to Apptainer as one word, never as shell text, but a control
+  // character has no place in an argument.
+  if (d.apptainerArgs.length > 500) errors["apptainer_args"] = "At most 500 characters";
+  else if (/[\x00-\x1f]/.test(d.apptainerArgs)) errors["apptainer_args"] = "No control character";
   if (Object.keys(errors).length) return { body: null, errors };
-  return { body: { name, label: d.label.trim() || null, executor: d.executor, slurm, local, profiles }, errors };
+  return {
+    body: { name, label: d.label.trim() || null, executor: d.executor, slurm, local, software: d.software, apptainer_args: d.apptainerArgs, profiles },
+    errors,
+  };
 }
 
 const memText = (n: number | null): [string, Unit] =>
@@ -107,16 +119,32 @@ export function fromItem(item: EnvironmentItem): Draft {
     ...{ hours: t === null ? "" : String(Math.floor(t / 60)), minutes: t === null ? "" : String(t % 60) },
     ...{ cpus: item.local?.cpus == null ? "" : String(item.local.cpus) },
     ...{ nextflow: item.profiles.nextflow ?? "", snakemake: item.profiles.snakemake ?? "" },
+    // An environment from before the field kept: deploys with both tools, as it did
+    ...{ software: item.software ?? EMPTY.software, apptainerArgs: item.apptainer_args ?? "" },
   };
 }
 
 const memWords = (n: number) => (n % 1024 === 0 ? `${n / 1024} GiB` : `${n} MiB`);
 const timeWords = (t: number) => [t >= 60 ? `${Math.floor(t / 60)} h` : "", t % 60 ? `${t % 60} min` : ""].filter(Boolean).join(" ");
 
+/** The environment's software, in words (inbox #161); absent in a run's snapshot from before
+ * the field, and left out there. */
+const softwareWords = (software: readonly Software[] | null | undefined): string =>
+  software == null
+    ? ""
+    : software.length
+      ? ` · deploys with ${software.join(" and ")}`
+      : " · deploys no software";
+
 /** The card's summary line, in words; an unset value is left out. Also a run's snapshot's.
  * `kindSaid`: the line already names the kind (a Launch card's second line says "Login node"),
  * so the where clause leaves "(the login node)" out. */
-export function summary(item: Pick<EnvironmentItem, "executor" | "slurm" | "local">, node: string, serverExecutor: string, kindSaid = false): string {
+export function summary(
+  item: Pick<EnvironmentItem, "executor" | "slurm" | "local"> & { software?: readonly Software[] | null; apptainer_args?: string | null },
+  node: string,
+  serverExecutor: string,
+  kindSaid = false,
+): string {
   if (item.executor === "slurm") {
     const s = item.slurm;
     const parts = [
@@ -125,11 +153,11 @@ export function summary(item: Pick<EnvironmentItem, "executor" | "slurm" | "loca
       s?.time_min && `${timeWords(s.time_min)} per job`,
       s?.mem_mib && `${memWords(s.mem_mib)} per job`,
     ].filter(Boolean);
-    return parts.length ? parts.join(" · ") : "SLURM's defaults for your account";
+    return parts.length ? parts.join(" · ") + softwareWords(item.software) : `SLURM's defaults for your account${softwareWords(item.software)}`;
   }
   const where = serverExecutor === "slurm" ? `on ${node}${kindSaid ? "" : " (the login node)"}` : "this machine";
   const caps = [item.local?.cpus && plural(item.local.cpus, "CPU", "CPUs"), item.local?.mem_mib && memWords(item.local.mem_mib)].filter(Boolean);
-  return `${where} · ${caps.length ? `at most ${caps.join(" and ")}` : "no limit"}`;
+  return `${where} · ${caps.length ? `at most ${caps.join(" and ")}` : "no limit"}${softwareWords(item.software)}`;
 }
 
 export const label = (item: EnvironmentItem) => item.label ?? item.name;

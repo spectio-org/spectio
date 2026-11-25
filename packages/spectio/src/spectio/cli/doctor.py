@@ -30,6 +30,10 @@ from spectio.runner.squeue import STALL_FILE
 Result = tuple[str, str, str]  # status, check, detail
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
 _UV = re.compile(r"^uv ([0-9]+)\.([0-9]+)\.([0-9]+)\b", re.MULTILINE)
+# What `conda --version` and `apptainer --version` print (inbox #161): the version of the tool
+# the environments deploy with, found through the login shell, as the engine finds it.
+_CONDA = re.compile(r"^conda ([0-9][^\s]+)", re.MULTILINE)
+_APPTAINER = re.compile(r"apptainer(?: version)? ([0-9][^\s]+)", re.MULTILINE)
 _PLUGINS_BLOCK = re.compile(r"\bplugins\s*\{[^}]*nf-spectio", re.DOTALL)
 # 2.8.0 is the first Snakemake SLURM executor plugin that logs job events (its #478: run_job_pre);
 # older ones never do, and Spectio then shows no task of a Snakemake SLURM run.
@@ -190,6 +194,46 @@ def _catalog() -> Result:
     return ("ok" if found.state in ("missing", "ok") else "warn"), "catalog", f"{path}: {state}"
 
 
+def _software(settings: Settings) -> list[Result]:
+    """The software the environments deploy with (inbox #161): for `conda` and for `apptainer`,
+    an environment uses it, `--version` is asked through the login shell, as the head script's
+    engine finds it. A missing tool is a warning, not a fail: only the rules that ask for it
+    fail, at their task; the line names the environments that use it."""
+    found = envfile.read_file(
+        envfile.environments_path(), [b.environment.name for b in builtins(settings)]
+    )
+    every = [b.environment for b in builtins(settings)]
+    if found.state == "ok":
+        every += list(found.environments)
+    results: list[Result] = []
+    paths = which("conda", "apptainer")
+    for tool, pattern in (("conda", _CONDA), ("apptainer", _APPTAINER)):
+        users = ", ".join(e.name for e in every if tool in e.software)
+        if not users:
+            continue
+        path = paths[tool]
+        if path is None:
+            results.append(
+                ("warn", tool, f"not found on the login shell's PATH: {users} deploys with {tool}")
+            )
+            continue
+        out = run_login('"$1" --version', path)
+        match = pattern.search(out.stdout) if out.returncode == 0 else None
+        if match is None:
+            first = "".join((out.stderr or out.stdout).strip().splitlines()[:1])
+            results.append(
+                (
+                    "warn",
+                    tool,
+                    f"`{tool} --version` exited {out.returncode}: {first}:"
+                    f" {users} deploys with {tool}",
+                )
+            )
+        else:
+            results.append(("ok", tool, f"{match.group(1)}: the software of {users}"))
+    return results
+
+
 def _utc(epoch: float) -> str:
     return datetime.fromtimestamp(epoch, UTC).strftime("%Y-%m-%d %H:%M UTC")
 
@@ -314,6 +358,7 @@ def checks(
         else:
             results += server.db_checks(db_dir, mountinfo, fallback=settings.db_dir is None)
     results += [_environments(settings), _catalog()]
+    results += _software(settings)
     status, detail = runs_disk(settings.runs_root)  # a `warn` at most (FU-P3-74)
     results.append((status, "runs_disk", detail))
     results.append(_stalled(settings.runs_root))

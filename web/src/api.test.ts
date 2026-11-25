@@ -37,6 +37,8 @@ const run = {
     executor: "slurm",
     slurm: { partition: "htc", account: null, time_min: null, mem_mib: null },
     local: { cpus: null, mem_mib: null },
+    software: null,
+    apptainer_args: null,
     state: "recorded",
   },
   pinned: false,

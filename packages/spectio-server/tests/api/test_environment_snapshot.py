@@ -41,6 +41,8 @@ LOCAL = {
     "executor": "local",
     "slurm": None,
     "local": None,
+    "software": ["conda", "apptainer"],
+    "apptainer_args": "",
     "state": "recorded",
 }
 SLURM = {
@@ -49,6 +51,8 @@ SLURM = {
     "executor": "slurm",
     "slurm": {"partition": "htc", "account": None, "time_min": None, "mem_mib": None},
     "local": None,
+    "software": ["conda", "apptainer"],
+    "apptainer_args": "",
     "state": "recorded",
 }
 
@@ -271,7 +275,9 @@ def test_req18_snapshot_migration_backfills(settings: Settings) -> None:
         assert not new
         with engine.connect() as conn:
             (environment,) = conn.execute(select(runs.c.environment)).scalars()
-            assert environment == envs.run_column(None)
+            # migration 0011 predates `software` and `apptainer_args` (inbox #161)
+            later = ("software", "apptainer_args")
+            assert environment == {k: v for k, v in envs.run_column(None).items() if k not in later}
             assert conn.execute(select(environments.c.name)).scalar_one() == "slurm"
     finally:
         engine.dispose()
@@ -301,3 +307,20 @@ def test_req18_snapshot_label_refuses_format_chars(char: str) -> None:
     included."""
     with pytest.raises(ValueError):
         envs.Environment.model_validate({"name": "x", "executor": "local", "label": f"a{char}"})
+
+
+def test_snapshot_recorded_before_the_software_field_still_reads() -> None:
+    """CR-01: a run recorded before inbox #161 has no `software` or `apptainer_args` in its
+    column; `GET /runs` still validates it, with both null."""
+    from spectio_server.api.models import RunEnvironment
+
+    old = {
+        "name": "slurm",
+        "label": "SLURM",
+        "executor": "slurm",
+        "slurm": None,
+        "local": None,
+        "state": "recorded",
+    }
+    env = RunEnvironment.model_validate(old)
+    assert env.software is None and env.apptainer_args is None
