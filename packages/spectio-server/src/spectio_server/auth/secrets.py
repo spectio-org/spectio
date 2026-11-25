@@ -30,8 +30,6 @@ from spectio_server.store.writer import Writer
 
 KEY_FILE = "server.key"
 TICKET_TTL_S = 15 * 60
-IDLE = timedelta(days=7)  # the defaults of [auth] session_idle_days and session_max_days
-MAX_AGE = timedelta(days=30)
 SEEN_EVERY = timedelta(minutes=1)  # `last_seen_at` is written at most this often
 
 
@@ -100,8 +98,8 @@ class SessionStore:
     def __init__(
         self,
         writer: Writer,
-        idle: timedelta = IDLE,
-        max_age: timedelta = MAX_AGE,
+        idle: timedelta,
+        max_age: timedelta,
         clock: Callable[[], datetime] = _now,
     ) -> None:
         self.writer = writer
@@ -133,10 +131,11 @@ class SessionStore:
         return secret
 
     def _find(self, secret: str) -> Row[Any] | None:
+        """The row of this secret's digest (the unique index), checked again in constant time."""
         found = _digest(secret)
         with self.writer.engine.connect() as conn:
-            rows = conn.execute(select(sessions)).all()
-        return next((r for r in rows if hmac.compare_digest(found, r.digest)), None)
+            row = conn.execute(select(sessions).where(sessions.c.digest == found)).first()
+        return row if row is not None and hmac.compare_digest(found, row.digest) else None
 
     def _delete(self, session_id: str) -> None:
         self.writer.submit(
@@ -154,19 +153,30 @@ class SessionStore:
             return None
         return row
 
-    def started(self, secret: str) -> datetime | None:
-        """When this session started; None for a secret that is not a live session."""
-        row = self._live(secret, self.clock())
-        return None if row is None else row.created_at
-
-    def expires_at(self, secret: str) -> datetime | None:
-        """When it ends if it is not seen again: the idle time, or the absolute lifetime when
-        that comes first."""
+    def lifespan(self, secret: str) -> tuple[datetime, datetime] | None:
+        """When this session started and when it ends if it is not seen again (its idle time,
+        or its absolute lifetime when that comes first); None for a secret that is not a live
+        session. Expiry follows the wall clock, so a clock set back lengthens a session."""
         row = self._live(secret, self.clock())
         if row is None:
             return None
         end: datetime = min(row.created_at + self.max_age, row.last_seen_at + self.idle)
-        return end
+        return row.created_at, end
+
+    def _seen(self, session_id: str, now: datetime) -> bool:
+        """Write `last_seen_at`, unless a request seen it less than a minute ago already did."""
+        return bool(
+            self.writer.submit(
+                lambda c: (
+                    c.execute(
+                        update(sessions)
+                        .where(sessions.c.id == session_id)
+                        .where(sessions.c.last_seen_at <= now - SEEN_EVERY)
+                        .values(last_seen_at=now)
+                    ).rowcount
+                )
+            ).result()
+        )
 
     def valid(self, secret: str) -> bool:
         """Whether this is a live session; it is then seen now, in the database once a minute."""
@@ -175,11 +185,7 @@ class SessionStore:
         if row is None:
             return False
         if now - row.last_seen_at >= SEEN_EVERY:
-            self.writer.submit(
-                lambda c: c.execute(
-                    update(sessions).where(sessions.c.id == row.id).values(last_seen_at=now)
-                )
-            ).result()
+            self._seen(row.id, now)
         return True
 
     def revoke(self, secret: str) -> None:

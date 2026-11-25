@@ -6,17 +6,21 @@ and was seen less than the idle time ago; it is revoked by deleting its row.
 """
 
 import hashlib
+import os
 import sqlite3
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
-from sqlalchemy import select
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import inspect, select
 from typer.testing import CliRunner
 
 from spectio.cli.main import app as cli_app
-from spectio.config import Settings
+from spectio.config import Settings, write_config
+from spectio_server.auth.middleware import cookie_name
 from spectio_server.auth.secrets import SessionStore
 from spectio_server.bootstrap import revoke_all_sessions
 from spectio_server.store.db import DB_FILE, open_db
@@ -65,7 +69,7 @@ def test_a_session_survives_a_new_store_on_the_same_database(
     secret = store.create()
     again = SessionStore(writer, IDLE, MAX, clock)  # what a restart builds
     assert again.valid(secret)
-    assert again.started(secret) == T0
+    assert again.lifespan(secret) == (T0, T0 + IDLE)
     assert not again.valid("not-a-session")
 
 
@@ -110,7 +114,7 @@ def test_idle_expiry(writer: Writer, store: SessionStore, clock: Clock) -> None:
     clock.advance(IDLE)
     assert not store.valid(secret)
     assert _rows(writer) == []  # an expired row is deleted when met
-    assert store.started(secret) is None
+    assert store.lifespan(secret) is None
 
 
 def test_absolute_expiry_even_when_always_seen(
@@ -140,12 +144,12 @@ def test_last_seen_is_refreshed_at_most_once_a_minute(
     assert _rows(writer)[0][2] == T0 + timedelta(seconds=60)
 
 
-def test_started_does_not_count_as_a_visit(
+def test_lifespan_does_not_count_as_a_visit(
     writer: Writer, store: SessionStore, clock: Clock
 ) -> None:
     secret = store.create()
     clock.advance(timedelta(minutes=5))
-    assert store.started(secret) == T0
+    assert store.lifespan(secret) == (T0, T0 + IDLE)
     assert _rows(writer)[0][2] == T0
 
 
@@ -176,12 +180,12 @@ def test_revoke_all(writer: Writer, store: SessionStore) -> None:
 
 def test_expiry_is_the_earlier_of_idle_and_absolute(store: SessionStore, clock: Clock) -> None:
     secret = store.create()
-    assert store.expires_at(secret) == T0 + IDLE
+    assert store.lifespan(secret) == (T0, T0 + IDLE)
     for _ in range(4):  # seen every 6 days, up to day 24
         clock.advance(timedelta(days=6))
         assert store.valid(secret)
-    assert store.expires_at(secret) == T0 + MAX  # the 30 days end before a new week
-    assert store.expires_at("unknown") is None
+    assert store.lifespan(secret) == (T0, T0 + MAX)  # the 30 days end before a new week
+    assert store.lifespan("unknown") is None
 
 
 def test_the_exchange_sets_a_cookie_that_lasts_the_absolute_lifetime(
@@ -289,3 +293,111 @@ def test_sessions_table_is_in_the_migration(settings: Settings) -> None:
         }
     assert columns == {"id", "digest", "created_at", "last_seen_at"}
     assert "digest" in unique
+
+
+def test_a_second_visit_in_the_same_minute_writes_nothing(
+    writer: Writer, store: SessionStore, clock: Clock
+) -> None:
+    """Parallel requests that read the same row do not each write (SEC-SES-03)."""
+    secret = store.create()
+    row = store._find(secret)
+    assert row is not None
+    clock.advance(timedelta(seconds=90))
+    assert store._seen(row.id, clock())
+    assert not store._seen(row.id, clock())  # the guard is in the UPDATE itself
+    assert _rows(writer)[0][2] == T0 + timedelta(seconds=90)
+
+
+def test_the_exchange_revokes_the_session_the_request_carried(
+    settings: Settings, writer: Writer
+) -> None:
+    anon = client_for(settings, writer, signed_in=False)
+    store: SessionStore = anon.app.state.sessions  # type: ignore[attr-defined]
+    old = store.create()
+    anon.cookies.set(cookie_name(f"127.0.0.1:{settings.port}"), old)
+    ticket = anon.app.state.tickets.mint()  # type: ignore[attr-defined]
+    assert anon.post(EXCHANGE, json={"ticket": ticket}).status_code == 204
+    assert not store.valid(old)
+    assert len(_rows(writer)) == 1  # only the new session
+
+
+def test_the_cookie_has_no_domain(settings: Settings, writer: Writer) -> None:
+    anon = client_for(settings, writer, signed_in=False)
+    ticket = anon.app.state.tickets.mint()  # type: ignore[attr-defined]
+    cookie = anon.post(EXCHANGE, json={"ticket": ticket}).headers["set-cookie"].lower()
+    assert "domain" not in cookie  # this host only (req. 3)
+
+
+def test_an_expired_session_gets_401_and_its_row_is_deleted(
+    settings: Settings, writer: Writer
+) -> None:
+    client = client_for(settings, writer)
+    assert client.get("/api/v1/me").status_code == 200
+    assert len(_rows(writer)) == 1
+    with writer.engine.begin() as conn:  # a session last seen long ago, as after a week away
+        conn.execute(sessions.update().values(last_seen_at=datetime.now(UTC) - timedelta(days=8)))
+    assert client.get("/api/v1/me").status_code == 401
+    assert _rows(writer) == []
+
+
+def test_migration_0017_downgrades_and_upgrades_again(settings: Settings, writer: Writer) -> None:
+    assert settings.db_dir is not None
+    config = Config()
+    config.set_main_option("script_location", "spectio_server:migrations")
+    with writer.engine.begin() as conn:
+        config.attributes["connection"] = conn
+        command.downgrade(config, "0016")
+    with writer.engine.connect() as conn:
+        assert "sessions" not in inspect(conn).get_table_names()
+    engine, new = open_db(settings.db_dir)  # the next start migrates again
+    try:
+        assert not new
+        with engine.connect() as conn:
+            assert "sessions" in inspect(conn).get_table_names()
+    finally:
+        engine.dispose()
+
+
+def test_logout_all_names_the_database_it_used(
+    settings: Settings, writer: Writer, store: SessionStore
+) -> None:
+    store.create()
+    result = CliRunner().invoke(cli_app, ["logout", "--all"])  # no server.json
+    assert result.exit_code == 0, result.output
+    assert f"Signed out 1 session in {settings.db_dir}" in result.stdout
+    assert "no server record: used the configured database" in result.stdout
+
+
+def test_logout_all_falls_back_to_the_default_database(
+    settings: Settings, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: Clock
+) -> None:
+    base = tmp_path / "tmpbase"
+    base.mkdir(mode=0o700)
+    monkeypatch.setenv("TMPDIR", str(base))
+    default = base / f"spectio-{os.getuid()}"
+    default.mkdir(mode=0o700)
+    write_config(settings.model_copy(update={"db_dir": None}))
+    engine, _ = open_db(default)
+    other = Writer(engine)
+    try:
+        secret = SessionStore(other, IDLE, MAX, clock).create()
+        result = CliRunner().invoke(cli_app, ["logout", "--all"])
+        assert result.exit_code == 0, result.output
+        assert "no server record: used the default database" in result.stdout
+        assert f"Signed out 1 session in {default.resolve()}" in result.stdout
+        assert not SessionStore(other, IDLE, MAX, clock).valid(secret)
+    finally:
+        other.close()
+        engine.dispose()
+
+
+def test_logout_all_reports_a_broken_database(settings: Settings, writer: Writer) -> None:
+    assert settings.db_dir is not None
+    writer.close()
+    (settings.db_dir / "spectio.db").write_bytes(b"not a database" * 100)
+    for name in ("spectio.db-wal", "spectio.db-shm"):
+        (settings.db_dir / name).unlink(missing_ok=True)
+    result = CliRunner().invoke(cli_app, ["logout", "--all"])
+    assert result.exit_code == 2
+    assert result.output.startswith("spectio logout:")
+    assert "Traceback" not in result.output

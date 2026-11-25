@@ -218,20 +218,24 @@ def run_logout(all_sessions: bool) -> int:
     except ValueError as exc:  # a bad spectio.toml or SPECTIO_* value
         typer.echo(f"spectio logout: {exc}", err=True)
         return 2
-    db_dir: Path | None = None
+    found: Path | None = None
     try:
-        node, _, db_dir, _ = _checked(_record(settings))
+        node, _, found, _ = _checked(_record(settings))
         if node != hostname():
             raise OtherNode(f"The server runs on {node}: run `ssh {node} spectio logout --all`.")
     except OtherNode as exc:
         typer.echo(f"spectio logout: {exc}", err=True)
         return 2
     except Refused:  # no server runs: the database is where the next start finds it
-        db_dir = None
+        found = None
     try:
-        count = server.revoke_all_sessions(db_dir or settings.db_dir or server.preferred_db_dir())
+        db_dir = found or settings.db_dir or server.preferred_db_dir()
+        count = server.revoke_all_sessions(db_dir)
     except (server.UnsafeDatabase, OSError) as exc:
         typer.echo(f"spectio logout: {exc}", err=True)
         return 2
-    typer.echo(f"Signed out {count} session{'' if count == 1 else 's'}.")
+    if found is None:
+        which = "configured" if settings.db_dir else "default"
+        typer.echo(f"no server record: used the {which} database")
+    typer.echo(f"Signed out {count} session{'' if count == 1 else 's'} in {db_dir}.")
     return 0

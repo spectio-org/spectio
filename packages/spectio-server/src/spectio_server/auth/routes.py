@@ -86,6 +86,8 @@ def exchange(body: Exchange, request: Request) -> Response:
         return _refused("link-expired", "Link used or expired", EXPIRED)
     answer = Response(status_code=204, headers=HEADERS)
     name = cookie_name(request.headers.get("host"))  # no Domain: this host only (req. 3)
+    if (previous := request.cookies.get(name)) is not None:
+        state.sessions.revoke(previous)  # a new sign-in ends the session it replaces
     answer.set_cookie(
         name,
         state.sessions.create(),

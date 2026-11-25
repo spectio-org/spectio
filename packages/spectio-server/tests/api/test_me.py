@@ -84,12 +84,12 @@ def test_sign_out_needs_an_origin(authed_client: TestClient) -> None:
 
 
 def test_session_store_keeps_the_start_and_revokes(writer: Writer) -> None:
-    store = SessionStore(writer)
+    store = SessionStore(writer, timedelta(days=7), timedelta(days=30))
     before = datetime.now(UTC)
     secret = store.create()
-    started = store.started(secret)
-    assert started is not None and before <= started <= datetime.now(UTC)
-    assert store.started("unknown") is None
+    span = store.lifespan(secret)
+    assert span is not None and before <= span[0] <= datetime.now(UTC)
+    assert store.lifespan("unknown") is None
     store.revoke(secret)
-    assert not store.valid(secret) and store.started(secret) is None
+    assert not store.valid(secret) and store.lifespan(secret) is None
     store.revoke(secret)  # twice: nothing to do

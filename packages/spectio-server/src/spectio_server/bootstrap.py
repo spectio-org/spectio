@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from sqlalchemy import Connection, delete, insert, select, update
+from sqlalchemy.exc import SQLAlchemyError
 
 from spectio_server.ids import new_id
 from spectio_server.store.db import (
@@ -65,13 +66,16 @@ def revoke_all_sessions(db_dir: Path) -> int:
     db_dir = checked_db_dir(db_dir)
     if not (db_dir / DB_FILE).exists():
         return 0
-    engine, _ = open_db(db_dir)
-    writer = Writer(engine)
     try:
-        return writer.submit(lambda conn: conn.execute(delete(sessions)).rowcount).result()
-    finally:
-        writer.close()
-        engine.dispose()
+        engine, _ = open_db(db_dir)
+        writer = Writer(engine)
+        try:
+            return writer.submit(lambda conn: conn.execute(delete(sessions)).rowcount).result()
+        finally:
+            writer.close()
+            engine.dispose()
+    except (SQLAlchemyError, sqlite3.DatabaseError) as exc:
+        raise UnsafeDatabase(f"the sessions in {db_dir} could not be deleted: {exc}") from exc
 
 
 def ensure_tenancy(

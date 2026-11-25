@@ -11,7 +11,7 @@ const ME_URL = "/api/v1/me";
 const SIGN_OUT = "/api/v1/auth/session:sign-out";
 const ME = {
   principal: { user: "amartin", uid: 1000 },
-  session: { started_at: "2026-11-10T07:40:00+00:00", expires_at: null },
+  session: { started_at: "2026-11-10T07:40:00+00:00", expires_at: "2026-11-17T07:40:00+00:00" },
   paths: {
     config_file: "/home/amartin/.spectio/spectio.toml",
     data_dir: "/home/amartin/.spectio",
@@ -51,9 +51,17 @@ test("/profile names who the server runs as and this session", async () => {
   expect(within(who).getByText("1000")).toBeInTheDocument();
   const session = screen.getByRole("heading", { name: "This session" }).closest("section")!;
   expect(session).toHaveTextContent(`Started${when(ME.session.started_at)}`);
-  expect(session).toHaveTextContent("Ends when the server stops, or when you sign out");
+  expect(session).toHaveTextContent(`Expires${when(ME.session.expires_at)}`); // #375: a real end
+  expect(session).not.toHaveTextContent("server stops");
   const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
   expect(within(crumbs).getByText("Profile")).toHaveAttribute("aria-current", "page");
+});
+
+test("a session with no end date says it ends when you sign out", async () => {
+  serve({ [ME_URL]: { ...ME, session: { ...ME.session, expires_at: null } } });
+  app("/profile");
+  const session = (await screen.findByRole("heading", { name: "This session" })).closest("section")!;
+  expect(session).toHaveTextContent("Ends when you sign out");
 });
 
 test("Sign out of this session posts, then says how to sign in again", async () => {

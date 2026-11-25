@@ -33,14 +33,13 @@ def me(request: Request, response: Response) -> dict[str, Any]:
     state = request.app.state
     secret = request.cookies.get(cookie_name(request.headers.get("host")), "")
     uid = os.getuid()
-    started = state.sessions.started(secret)
-    expires = state.sessions.expires_at(secret)
+    span = state.sessions.lifespan(secret)
     response.headers["Cache-Control"] = "no-store"
     return {
         "principal": {"user": _user(uid), "uid": uid},
         "session": {
-            "started_at": None if started is None else started.isoformat(),
-            "expires_at": None if expires is None else expires.isoformat(),
+            "started_at": None if span is None else span[0].isoformat(),
+            "expires_at": None if span is None else span[1].isoformat(),
         },
         "paths": {
             "config_file": str(config_path()),
