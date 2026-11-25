@@ -252,6 +252,10 @@ def test_metrics_disabled_by_env(nextflow: str, tmp_path: Path) -> None:
         assert isinstance(trace, dict)
         for key in ("realtime", "%cpu", "peak_rss"):
             assert trace.get(key) is None, (key, trace)
+    # the cause itself (CR-02): no wrapper asks for `ps` any more
+    wrappers = list((launch_dir / "work").rglob(".command.run"))
+    assert wrappers
+    assert all("command -v ps" not in w.read_text() for w in wrappers)
 
 
 def test_task_events_carry_workdir_and_native_id(nf_run: Path) -> None:

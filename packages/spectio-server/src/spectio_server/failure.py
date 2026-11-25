@@ -63,7 +63,8 @@ LOG_TAIL_LINES = 20
 # (command-run.txt, v26.10.4) — and the way out, appended to the failure's log tail.
 PS_MISSING = "Command 'ps' required by nextflow to collect task metrics cannot be found"
 PS_HINT = (
-    " The task's container has no `ps`: set [engines] nextflow_task_metrics = false,"
+    " The task's container has no `ps`: set [engines] nextflow_task_metrics = false"
+    " (SPECTIO_ENGINES_NEXTFLOW_TASK_METRICS=false),"
     " or add procps to the image."
 )
 MAX_BENCHMARK_BYTES = 65536
