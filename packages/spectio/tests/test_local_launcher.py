@@ -20,7 +20,7 @@ import pytest
 from spectio.config import EngineOpts, Settings
 from spectio.runner import loop as loop_mod
 from spectio.runner.local import LocalLauncher, read_head_exit
-from spectio.runner.loop import RunnerLoop
+from spectio.runner.loop import RunnerLoop, _read_tail, engine_output_tail
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import (
     RunManifest,
@@ -499,6 +499,108 @@ def test_loop_launches_reads_spool_and_ends(runs_root: Path, launcher: LocalLaun
     assert last.failure is not None and last.failure.class_ == "engine_fault"
     loop.tick()  # the launch is no longer active: the launcher forgets it (CR-P3T09-07)
     assert not launcher._dirs and not launcher._procs and not launcher._warned
+
+
+def test_a_nextflow_failure_carries_its_own_last_lines(
+    runs_root: Path, launcher: LocalLauncher
+) -> None:
+    """A Nextflow head that ends with no end event (a config it cannot parse): the failure
+    quotes the end of its output, escape sequences and control characters removed (#368)."""
+    body = (
+        "printf 'N E X T F L O W\\n\\033[31mError nextflow.config:333:1: Variable declarations"
+        " cannot be mixed\\033[0m\\a\\n\\nERROR ~ Config parsing failed\\n'; exit 1"
+    )
+    engine = stub_engine(runs_root.parent / "bin", body)
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher)
+    ref = sink.launch(runs_root, RUN_A)
+    run_until(loop, lambda: ref.launch_id not in sink.launches)
+    failure = sink.last(ref.launch_id).failure
+    assert failure is not None and failure.class_ == "engine_fault"
+    assert failure.message.startswith("Nextflow exited with code 1 and sent no end event.")
+    assert "Error nextflow.config:333:1: Variable declarations cannot be mixed\n" in failure.message
+    assert failure.message.endswith("ERROR ~ Config parsing failed")
+    assert "\033" not in failure.message and "\a" not in failure.message
+
+
+def test_engine_output_tail_is_bounded() -> None:
+    text = ("x" * 300 + "\n") * 100
+    tail = engine_output_tail(text.encode())
+    assert tail is not None and len(tail) <= 2000 and len(tail.splitlines()) <= 15
+    assert engine_output_tail(b"\n \n") is None
+
+
+def test_engine_output_tail_keeps_the_error_line() -> None:
+    """An OSC left open loses its introducer only (strip_escapes), so the lines after it stay; a
+    line rewritten with `\\r` keeps its last state; an 8-bit CSI and a bidi override go."""
+    data = "start\n\x1b]0;title\nline a\np 10%\rp 100%\n\u202eabc\x9b31m\nERROR ~ boom\n"
+    assert engine_output_tail(data.encode()) == "start\n0;title\nline a\np 100%\nabc\nERROR ~ boom"
+
+
+TASK_ERROR = """ERROR ~ Error executing process > 'FASTQC (1)'
+
+Caused by:
+  Process `FASTQC (1)` terminated with an error exit status (1)
+
+Command executed:
+
+  fastqc --token SECRET-TOKEN-123 sample.fq
+
+Command exit status:
+  1
+
+Work dir:
+  /work/ab/cdef
+"""
+
+
+def test_engine_output_tail_hides_the_task_command() -> None:
+    """The script of a failed task, its values filled in, never reaches the message (SEC-NFERR-01);
+    a window that starts inside the block, or a block with no end, hides it all the same."""
+    tail = engine_output_tail(TASK_ERROR.encode())
+    assert tail is not None and "SECRET-TOKEN-123" not in tail
+    assert "Command executed: «hidden»\nCommand exit status:\n  1" in tail
+    assert "ERROR ~ Error executing process > 'FASTQC (1)'" in tail
+    inside = TASK_ERROR[TASK_ERROR.index("  fastqc") :]
+    assert "SECRET" not in (engine_output_tail(inside.encode()) or "")
+    no_end = TASK_ERROR[: TASK_ERROR.index("Command exit status:")]
+    assert (engine_output_tail(no_end.encode()) or "").endswith("Command executed: «hidden»")
+    template = TASK_ERROR.replace("Command executed:", "Command executed [templates/run.sh]:")
+    two = TASK_ERROR + template.replace("SECRET-TOKEN-123", "SECOND-TOKEN")
+    assert "TOKEN" not in (engine_output_tail(two.encode()) or "")
+    cut = template[: template.index("Command exit status:")]
+    assert "TOKEN" not in (engine_output_tail(cut.encode()) or "")
+    odd = TASK_ERROR.replace("Command executed:", "Command executed [a[1].sh]:")
+    assert "TOKEN" not in (
+        engine_output_tail(odd[: odd.index("Command exit status:")].encode()) or ""
+    )
+    assert "TOKEN" not in (engine_output_tail((TASK_ERROR + inside).encode()) or "")
+
+
+def test_head_out_through_a_symlink_or_shared_is_not_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "real").write_text("ERROR ~ boom\n")
+    (tmp_path / "head.out").symlink_to(tmp_path / "real")
+    (tmp_path / "shared").write_text("ERROR ~ boom\n")
+    (tmp_path / "shared").chmod(0o664)
+    fd = os.open(tmp_path, os.O_RDONLY)
+    try:
+        with pytest.raises(OSError):
+            _read_tail(fd, "head.out", 1024)
+        with pytest.raises(PermissionError):
+            _read_tail(fd, "shared", 1024)
+        with pytest.raises(FileNotFoundError):
+            _read_tail(fd, "missing", 1024)
+        assert _read_tail(fd, "real", 5) == b"boom\n"
+        os.mkfifo(tmp_path / "pipe")  # O_NONBLOCK: refused at once, never waited on
+        with pytest.raises(PermissionError):
+            _read_tail(fd, "pipe", 1024)
+        monkeypatch.setattr(os, "geteuid", lambda: os.getuid() + 1)  # another user's file
+        with pytest.raises(PermissionError):
+            _read_tail(fd, "real", 5)
+    finally:
+        os.close(fd)
 
 
 def test_cancel_and_launch_failure_markers(runs_root: Path, launcher: LocalLauncher) -> None:
