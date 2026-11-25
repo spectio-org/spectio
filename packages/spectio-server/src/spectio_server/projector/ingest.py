@@ -17,7 +17,13 @@ from spectio.runner.types import HeadReport, SpoolBatch
 from spectio.text import strip_escapes
 from spectio_sdk.events import UnknownEventType, parse_data
 from spectio_server.projector import nextflow, snakemake
-from spectio_server.projector.runs import ENGINE_ENDED, IN_CHUNK, Projection, failure_json
+from spectio_server.projector.runs import (
+    ENGINE_ENDED,
+    IN_CHUNK,
+    MAX_FAILURE_MESSAGE,
+    Projection,
+    failure_json,
+)
 from spectio_server.stages.freeze import StageSources
 from spectio_server.store.schema import events, launches, spool_cursors, spool_drops
 
@@ -28,7 +34,6 @@ log = logging.getLogger(__name__)
 
 # A head report's failure message, as stored: the runner's `_fail` cap, enforced here too, since
 # the server trusts no runner's text (SEC-NFERR-03)
-MAX_FAILURE_MESSAGE = 4096
 
 
 def load_cursor(conn: Connection, launch_id: str) -> dict[str, int]:

@@ -23,7 +23,12 @@ from spectio.runner.types import Failure, HeadReport, SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.projector import nextflow as nextflow_projector
 from spectio_server.projector.ingest import apply_head_report, ingest, load_cursor
-from spectio_server.projector.runs import Projection
+from spectio_server.projector.runs import (
+    MAX_FAILURE_MESSAGE,
+    STRICT_PARSER_HINT,
+    Projection,
+    failure_json,
+)
 from spectio_server.store.db import open_db
 from spectio_server.store.schema import (
     attempts,
@@ -702,6 +707,55 @@ def test_a_runner_failure_message_is_cleaned_and_capped(engine: Engine, writer: 
     head(writer, report(state="exited", ended=True, exit_code=1, failure=failure))
     stored = run_row(engine).failure["message"]
     assert stored.startswith("ERROR ~ boom\nxxx") and len(stored) == 4096
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Error nextflow.config:3:1: Variable declarations cannot be mixed with config statements",
+        "ERROR ~ Config parsing failed",
+    ],
+)
+def test_a_strict_parser_failure_names_the_way_out(
+    engine: Engine, writer: Writer, text: str
+) -> None:
+    """#368: the head's last lines name the strict config parser; the run's failure says once
+    how to go back to the old one."""
+    message = f"Nextflow exited with code 1 and sent no end event. Its last lines:\n{text}"
+    failure = Failure("engine_fault", message, None)
+    head(writer, report(state="exited", ended=True, exit_code=1, failure=failure))
+    stored = run_row(engine).failure["message"]
+    assert stored.startswith(message)
+    assert stored.endswith(
+        ' The pipeline\'s config uses the old syntax: set [engines] nxf_syntax_parser = "v1"'
+        " in spectio.toml (NXF_SYNTAX_PARSER, see https://docs.seqera.io/nextflow/strict-syntax)."
+    )
+    assert stored.count("nxf_syntax_parser") == 1
+
+
+def test_another_failure_gets_no_strict_parser_hint(engine: Engine, writer: Writer) -> None:
+    failure = Failure("engine_fault", "ERROR ~ boom", None)
+    head(writer, report(state="exited", ended=True, exit_code=1, failure=failure))
+    assert run_row(engine).failure["message"] == "ERROR ~ boom"
+
+
+def test_strict_parser_hint_only_on_an_engine_fault() -> None:
+    message = "ERROR ~ Config parsing failed"
+    assert failure_json("tool_error", message)["message"] == message
+    assert failure_json("engine_fault", message)["message"] == message + STRICT_PARSER_HINT
+
+
+def test_strict_parser_hint_is_added_once() -> None:
+    message = "ERROR ~ Config parsing failed" + STRICT_PARSER_HINT
+    assert failure_json("engine_fault", message)["message"] == message
+
+
+def test_strict_parser_hint_keeps_the_message_within_the_cap() -> None:
+    message = "ERROR ~ Config parsing failed" + "x" * MAX_FAILURE_MESSAGE
+    stored = failure_json("engine_fault", message[:MAX_FAILURE_MESSAGE])["message"]
+    assert len(stored) == MAX_FAILURE_MESSAGE
+    assert stored.endswith(STRICT_PARSER_HINT)
+    assert stored.startswith("ERROR ~ Config parsing failed")
 
 
 def test_launch_failure_fails_a_queued_run(engine: Engine, writer: Writer) -> None:

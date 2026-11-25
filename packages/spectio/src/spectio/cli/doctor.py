@@ -27,6 +27,17 @@ from spectio.runner.rundir import private_dir, read_small, runs_disk
 from spectio.runner.sacct import site_accounting
 from spectio.runner.squeue import STALL_FILE
 
+MOUNTINFO = Path("/proc/self/mountinfo")
+# Where compute nodes do not see what a login node writes (#352), and the file systems of memory.
+_NODE_LOCAL_DIRS = (  # names to refuse, not to use; /private/... is where macOS resolves them
+    "/tmp",  # noqa: S108
+    "/var/tmp",  # noqa: S108
+    "/dev/shm",  # noqa: S108
+    "/private/tmp",
+    "/private/var/tmp",
+)
+_NODE_LOCAL_FS = frozenset({"tmpfs", "ramfs"})
+
 Result = tuple[str, str, str]  # status, check, detail
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
 _UV = re.compile(r"^uv ([0-9]+)\.([0-9]+)\.([0-9]+)\b", re.MULTILINE)
@@ -251,6 +262,45 @@ def _cache_place(cache: Path) -> Result:
     return ("ok", "software_cache", str(cache))
 
 
+def _fs_type(path: Path, mountinfo: Path) -> str | None:
+    """The file system type of the longest mount point (the last of equals) that holds `path`,
+    from a mountinfo table; None when there is none to read (macOS)."""
+    try:
+        table = mountinfo.read_text(errors="replace")
+    except (OSError, ValueError):
+        return None
+    real, found, best = Path(os.path.realpath(path)), None, -1
+    for fields in (x.split() for x in table.splitlines()):
+        if "-" not in fields or len(fields) < 5 or fields.index("-") + 1 >= len(fields):
+            continue
+        point = Path(re.sub(r"\\([0-7]{3})", lambda m: chr(int(m[1], 8)), fields[4]))
+        if real.is_relative_to(point) and len(point.parts) >= best:
+            found, best = fields[fields.index("-") + 1], len(point.parts)
+    return found
+
+
+def _node_local(settings: Settings, mountinfo: Path) -> list[Result]:
+    """#352: with SLURM as the site runner, the pipeline cache (data_dir) and the runs root are
+    read by jobs on the compute nodes. Under /tmp, /var/tmp or /dev/shm, or on tmpfs, they are
+    probably not seen there: a warning for each, nothing for one on a shared file system."""
+    results: list[Result] = []
+    for name, path in (("data_dir", settings.data_dir), ("runs_root", settings.runs_root)):
+        real = os.path.realpath(path)  # a link out of /tmp to shared storage is fine
+        under = next((d for d in _NODE_LOCAL_DIRS if real == d or real.startswith(f"{d}/")), None)
+        fs = _fs_type(path, mountinfo)
+        reason = f"under {under}" if under else fs if fs in _NODE_LOCAL_FS else None
+        if reason:
+            results.append(
+                (
+                    "warn",
+                    name,
+                    f"{path} is on a node-local file system ({reason}): SLURM jobs on compute"
+                    f" nodes will not see it; set {name} on a shared file system",
+                )
+            )
+    return results
+
+
 def _utc(epoch: float) -> str:
     return datetime.fromtimestamp(epoch, UTC).strftime("%Y-%m-%d %H:%M UTC")
 
@@ -395,6 +445,7 @@ def checks(
     paths = which("tmux", "sbatch", "uv")
     results += _tools(settings.executor == "local", paths)
     if settings.executor == "slurm":
+        results += _node_local(settings, mountinfo or MOUNTINFO)
         results.append(_slurm_accounting(settings))
         if snakemake[0] == "ok" and (cmd := engines.snakemake_cmd) is not None:
             results.append(_slurm_plugin(cmd))

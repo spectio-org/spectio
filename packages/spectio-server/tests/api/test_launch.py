@@ -1,5 +1,6 @@
 """`GET /workflows:inspect` and `POST /runs` (P1 Task 17, Assumption 2; G5 of P2 §10.6)."""
 
+import errno
 import json
 import os
 import shutil
@@ -589,6 +590,71 @@ def test_git_short_name(authed_client: TestClient, fake_git: FakeGit, writer: Wr
     assert (workflow.source, workflow.location) == ("git", "https://github.com/nf-core/rnaseq")
     (version,) = table(writer, workflow_versions)
     assert version.revision == "3.14.0"
+
+
+@pytest.mark.parametrize("kind", ["symlink", "file"])
+def test_git_cache_not_a_directory_is_refused(
+    authed_client: TestClient,
+    fake_git: FakeGit,
+    settings: Settings,
+    tmp_path: Path,
+    kind: str,
+) -> None:
+    """#352: a `pipelines` under data_dir that is a symlink, or a file, is a 422 naming the
+    setting, never a bare 500; nothing is fetched."""
+    cache = settings.data_dir / "pipelines"
+    if kind == "symlink":
+        (tmp_path / "elsewhere").mkdir()
+        cache.symlink_to(tmp_path / "elsewhere")
+    else:
+        cache.write_text("not a directory\n")
+    params = {"location": "https://github.com/lab/pipeline", "revision": "v1"}
+    response = authed_client.get(INSPECT, params=params)
+    assert fields(response) == ["location"]
+    detail = response.json()["detail"]
+    assert "data_dir" in detail and str(cache) in detail
+    assert fields(launch(authed_client, params["location"], "nextflow", revision="v1")) == [
+        "workflow.location"
+    ]
+    assert fake_git.calls == []
+
+
+def test_git_cache_part_that_is_a_file_is_named(
+    authed_client: TestClient, fake_git: FakeGit, settings: Settings
+) -> None:
+    cache = settings.data_dir / "pipelines"
+    cache.mkdir(mode=0o700)
+    (cache / "github.com").write_text("not a directory\n")
+    params = {"location": "https://github.com/lab/pipeline", "revision": "v1"}
+    detail = authed_client.get(INSPECT, params=params)
+    assert fields(detail) == ["location"]
+    assert str(cache / "github.com") in detail.json()["detail"]
+    assert fake_git.calls == []
+
+
+def test_git_cache_not_private_is_refused_without_the_runs_root_wording(
+    authed_client: TestClient, fake_git: FakeGit, settings: Settings
+) -> None:
+    (settings.data_dir / "pipelines").mkdir(mode=0o755)
+    (settings.data_dir / "pipelines").chmod(0o755)
+    params = {"location": "https://github.com/lab/pipeline", "revision": "v1"}
+    response = authed_client.get(INSPECT, params=params)
+    assert fields(response) == ["location"]
+    detail = response.json()["detail"]
+    assert "not usable by you" in detail and "runs root" not in detail
+
+
+@pytest.mark.parametrize("code", [errno.ENOSPC, errno.EROFS, errno.EIO])
+def test_git_cache_other_os_errors_stay_server_errors(
+    authed_client: TestClient, monkeypatch: pytest.MonkeyPatch, code: int
+) -> None:
+    def broken(*args: Any, **kwargs: Any) -> Any:
+        raise OSError(code, os.strerror(code))
+
+    monkeypatch.setattr(wf, "private_dir", broken)
+    params = {"location": "https://github.com/lab/pipeline", "revision": "v1"}
+    with pytest.raises(OSError, match=os.strerror(code)):
+        authed_client.get(INSPECT, params=params)
 
 
 def test_git_location_fetched_once(

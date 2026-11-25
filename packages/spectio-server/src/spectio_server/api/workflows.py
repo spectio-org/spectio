@@ -202,12 +202,44 @@ def _git(*args: str) -> None:
         raise Invalid(field, f"not fetched: {said or f'git exited {out.returncode}'}")
 
 
+def _cache_refused(
+    data_dir: Path, where: tuple[str, ...], exc: OSError, reason: str | None
+) -> Invalid:
+    """The refusal (#352) of a pipeline cache that is a symlink, a file, or not private to the
+    account; it names the first part that is not a real directory (a part's name can repeat, so
+    not by name), else `pipelines`."""
+    path = data_dir / "pipelines"
+    for i in range(1, len(where) + 1):
+        part = data_dir.joinpath(*where[:i])
+        if part.is_symlink() or not part.is_dir():
+            path = part
+            break
+    return Invalid(
+        "location",
+        f"the pipeline cache {path} cannot be used ({reason or exc.strerror}): data_dir must"
+        " hold a real directory 'pipelines' that only this account can write; check the data_dir"
+        " setting",
+    )
+
+
 def fetch(data_dir: Path, url: str, parts: tuple[str, ...], revision: str) -> Path:
     """`<data dir>/pipelines/<parts…>/<revision>`, fetched once: into a temporary name, then
     renamed, so that a fetch cut short is never taken for a whole one."""
     where = ("pipelines", *parts)
-    with private_dir(data_dir, *where, create=True):  # each part 0700 and the user's (req. 10)
-        pass
+    try:
+        with private_dir(data_dir, *where, create=True):  # each part 0700 and the user's (req. 10)
+            pass
+    except (NotADirectoryError, PermissionError) as exc:
+        reason = (
+            "not usable by you (owner, mode or access)"
+            if isinstance(exc, PermissionError)
+            else None
+        )
+        raise _cache_refused(data_dir, where, exc, reason) from None
+    except OSError as exc:  # other errors (ENOSPC, EROFS, EIO...) stay server errors
+        if exc.errno != errno.ELOOP:  # O_NOFOLLOW on a symlink
+            raise
+        raise _cache_refused(data_dir, where, exc, None) from None
     parent = data_dir.joinpath(*where)
     target = parent / quote(revision, safe="")  # one path part: '/' becomes %2F
     if target.is_dir():
