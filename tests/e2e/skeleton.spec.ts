@@ -560,7 +560,7 @@ test("the Copy items are in the shared header's More actions on every tab and st
 
 test('Launch: a wrong value shows its error on the field; each row says required or optional', async ({ page }) => {
   await page.route('**/api/v1/workflows:inspect*', (r) => r.fulfill(json({
-    location: '/data/rnaseq', revision: null, engine: 'nextflow', engine_files: ['main.nf'], name: 'rnaseq', version: '3.27.0',
+    location: '/data/rnaseq', revision: null, engine: 'nextflow', engine_files: ['main.nf'], main_scripts: ['main.nf'], name: 'rnaseq', version: '3.27.0',
     engine_version: '26.10.4', engine_versions: { nextflow: '26.10.4' }, schema_source: 'nextflow_schema.json', profiles: ['test'],
     schema: { type: 'object', required: ['input'], properties: {
       input: { type: 'string', pattern: '\\.csv$' }, depth: { type: 'integer', minimum: 1, maximum: 9, default: 3 } } },
@@ -643,14 +643,14 @@ test('a refused Resume stays visible, aria-disabled, with its reason as text', a
 test('Copy to a new launch opens the form prefilled with the non-default values listed', async ({ page }) => {
   await mockFailed(page);
   await page.route(`**/api/v1/runs/${RUN}:launch-template`, (r) => r.fulfill(json({
-    workflow: { location: '/g/demo-lab/pipelines/rnaseq', revision: null, engine: 'nextflow' },
+    workflow: { location: '/g/demo-lab/pipelines/rnaseq', revision: null, engine: 'nextflow', main_script: null },
     profiles: ['test'],
     params: { input: 'samplesheet.csv', outdir: '/g/demo-lab/rnaseq/a', depth: 3, custom_config_base: '/g/shared/configs' },
     non_default: ['input', 'outdir', 'custom_config_base'],
     code_loading: [{ field: 'params.custom_config_base', value: '/g/shared/configs', writable_by_others: true }],
   })));
   await page.route('**/api/v1/workflows:inspect*', (r) => r.fulfill(json({
-    location: '/g/demo-lab/pipelines/rnaseq', revision: null, engine: 'nextflow', engine_files: ['main.nf'], name: 'rnaseq', version: '3.27.0',
+    location: '/g/demo-lab/pipelines/rnaseq', revision: null, engine: 'nextflow', engine_files: ['main.nf'], main_scripts: ['main.nf'], name: 'rnaseq', version: '3.27.0',
     engine_version: '26.10.4', engine_versions: { nextflow: '26.10.4' }, schema_source: 'nextflow_schema.json', profiles: ['test'],
     schema: { type: 'object', required: ['input'], properties: {
       input: { type: 'string' }, outdir: { type: 'string', default: 'results' }, depth: { type: 'integer', default: 3 },
