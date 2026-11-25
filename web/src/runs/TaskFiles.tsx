@@ -14,11 +14,12 @@ import {
 } from "../api";
 import { Icon } from "../icons";
 import { usePhone } from "../shell/layout";
+import { ago } from "../shell/Ago";
 import { CopyButton } from "./CopyMenu";
 import { LogLines } from "./LogViewer";
 import { OFFLINE, OFFLINE_WHY } from "./explorer";
 import { isResultPath } from "./ReportViewer";
-import { duration, when } from "./stateWord";
+import { duration } from "./stateWord";
 
 // Each job's files (P1 Task 32; ui-spec §4.4 note 2026-10-28, Job files; boards LiteTaskFiles,
 // MLiteTaskFilesSheet, LiteTaskFilesStates), shown in the task view of the detail sheet (DetailSheet:
@@ -78,7 +79,7 @@ function OutputsPanel({ run, task, n, outputs }: { run: RunDetail; task: Task; n
         {outputs.map((o) => (
           <li key={o.path} className="sp-sheet-row">
             <span className="sp-grow">
-              {[o.path, OUTPUT_WORDS[o.state], o.state === "temp_removed" && o.removed_at ? when(o.removed_at) : null, o.protected ? "write-protected" : null]
+              {[o.path, OUTPUT_WORDS[o.state], o.state === "temp_removed" && o.removed_at ? ago(o.removed_at) : null, o.protected ? "write-protected" : null]
                 .filter(Boolean)
                 .join(" · ")}
             </span>
@@ -185,7 +186,7 @@ function FilePanel({ task, n, file, running, cleanup, onReload }: { task: Task; 
   if (error) return <Refused title="The file could not be read" body={error.message} onRetry={() => setReads((r) => r + 1)} />;
   const size = file.size ?? 0;
   const big = size > DOWNLOAD;
-  const age = file.mtime ? (running ? `updated ${duration(file.mtime, null)} ago` : `written ${when(file.mtime)}`) : null;
+  const age = file.mtime ? (running ? `updated ${duration(file.mtime, null)} ago` : `written ${ago(file.mtime)}`) : null;
   return (
     <>
       <div className="sp-file-line">

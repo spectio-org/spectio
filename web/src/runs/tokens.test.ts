@@ -33,3 +33,50 @@ test("the side that carries the rail is lg + 4 px", () => {
   expect(phone.slice(0, phone.indexOf("}"))).toContain(`padding: ${rail} ${lg} ${lg};`);
   expect(rule(".sp-row-hit")).toContain("calc(-1 * var(--mantine-spacing-lg));");
 });
+
+// #385 (ui-spec §12.8): one table header style, in the muted text colour, readable on the header
+// background (and the sort icon's faint colour on the raised one, 3:1 for a control) in both schemes.
+const tokens = readFileSync("../design/tokens/spectio-tokens.css", "utf8");
+const [light, dark] = [tokens.slice(0, tokens.indexOf(':root[data-theme="dark"]')), tokens.slice(tokens.indexOf(':root[data-theme="dark"]'))];
+
+/** A token's hex in a scheme's block, following `var(--sp-…)` aliases (dark falls back to the light block). */
+function hex(token: string, scheme: string): string {
+  const own = new RegExp(`${token}:\\s*(#[0-9A-Fa-f]{6}|var\\(--[\\w-]+\\))`).exec(scheme) ?? new RegExp(`${token}:\\s*(#[0-9A-Fa-f]{6}|var\\(--[\\w-]+\\))`).exec(light);
+  const value = own![1];
+  return value.startsWith("#") ? value : hex(value.slice(4, -1), scheme);
+}
+const luminance = (h: string) => {
+  const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+};
+const contrast = (a: string, b: string) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+test("the table header is --sp-text-muted, with 4.5:1 on its background in light and dark", () => {
+  const rule = css.slice(css.indexOf(".sp-table th {"), css.indexOf("}", css.indexOf(".sp-table th {")));
+  expect(rule).toContain("color: var(--sp-text-muted);");
+  expect(rule).toContain("padding: var(--sp-cell-py) var(--sp-cell-px);");
+  for (const scheme of [light, dark]) {
+    expect(contrast(hex("--sp-text-muted", scheme), hex("--sp-surface-subtle", scheme))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(hex("--sp-text-faint", scheme), hex("--sp-surface-raised", scheme))).toBeGreaterThanOrEqual(3);
+  }
+});
+
+test("CR-03 (#385): the compact table keeps its sticky cells' borders and scrolls a focused control clear of them", () => {
+  const rule = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    expect(at).toBeGreaterThanOrEqual(0);
+    return css.slice(at, css.indexOf("}", at));
+  };
+  expect(rule('.sp-table[data-density="compact"]')).toContain("border-collapse: separate;");
+  // derived from the sticky header's height and the first column's cap, not a second guess
+  const wrap = rule('.sp-table-wrap:has(> .sp-table[data-density="compact"])');
+  expect(wrap).toContain("scroll-padding: var(--sp-head-h) 0 0 calc(var(--sp-name-cap) + 2 * var(--sp-cell-px));");
+  expect(rule(".sp-table-wrap")).toContain("--sp-name-cap: 28ch;");
+  expect(rule('.sp-table[data-density="compact"] th')).toContain("height: var(--sp-head-h);");
+  expect(rule(".sp-table .sp-open")).toContain("max-width: var(--sp-name-cap, 28ch);");
+  // the corner cell is above the header cells (2) and the first column (1)
+  expect(rule('.sp-table[data-density="compact"] th:first-child')).toContain("z-index: 3;");
+});

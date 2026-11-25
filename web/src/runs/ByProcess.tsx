@@ -1,10 +1,11 @@
 import { type ReactNode, useId, useState } from "react";
 import type { Process, ProcessEfficiency } from "../api";
+import { Icon } from "../icons";
 import { usePhone } from "../shell/layout";
-import { bytes, isLow, isNear, percent, seconds } from "./resources";
-import { Low, NearLimit, ProcessName } from "./RunState";
+import { bytes, isLow, isNear, percent } from "./resources";
+import { Low, NameTip, NearLimit, ProcessName, Progress, progressText } from "./RunState";
 import { Facts } from "./SlurmFacts";
-import { lastSegment, type words } from "./stateWord";
+import { lastSegment, type words, formatDuration } from "./stateWord";
 
 // The By process (Snakemake: By rule) view of the Tasks tab (ui-spec §4.4 note 2026-11-07; boards
 // LiteRunEfficiency, MLiteRunEfficiency): one row per process or rule from `/processes`
@@ -31,11 +32,11 @@ function Ratio({ value, memory = false }: { value: number | null; memory?: boole
 // row, never on a value that may not have varied (CR-P3T35-05; per-value flags are FU-P3-55).
 const cpus = (e: ProcessEfficiency): string => (e.requested.cpus === null ? "—" : String(e.requested.cpus));
 const memory = (e: ProcessEfficiency): string => bytes(e.requested.mem_bytes);
-const limit = (e: ProcessEfficiency): string => seconds(e.requested.time_limit_s);
+const limit = (e: ProcessEfficiency): string => formatDuration(e.requested.time_limit_s);
 
 const COLUMNS: { key: Key; label: (w: Words) => string; sort: (p: Process) => number | string | null; num?: boolean }[] = [
   { key: "name", label: (w) => w.Group, sort: (p) => lastSegment(p.process) },
-  { key: "jobs", label: (w) => `${w.Units} done`, sort: (p) => p.efficiency?.jobs.done ?? null, num: true },
+  { key: "jobs", label: (w) => w.Units, sort: (p) => p.efficiency?.jobs.done ?? null, num: true },
   { key: "measured", label: () => "Measured", sort: (p) => p.efficiency?.measured ?? null, num: true },
   { key: "cpu_mean", label: () => "CPU eff. mean", sort: (p) => p.efficiency?.cpu_mean ?? null, num: true },
   { key: "cpu_max", label: () => "CPU eff. max", sort: (p) => p.efficiency?.cpu_max ?? null, num: true },
@@ -45,7 +46,7 @@ const COLUMNS: { key: Key; label: (w: Words) => string; sort: (p: Process) => nu
   { key: "mem", label: () => "Memory asked", sort: (p) => p.efficiency?.requested.mem_bytes ?? null, num: true },
   { key: "time", label: () => "Time limit", sort: (p) => p.efficiency?.requested.time_limit_s ?? null, num: true },
   { key: "varies", label: () => "Requests", sort: (p) => (p.efficiency ? Number(p.efficiency.requested.varies) : null) },
-  { key: "peak", label: () => "Peak memory", sort: (p) => p.efficiency?.used.peak_rss_bytes_max ?? null },
+  { key: "peak", label: () => "Peak memory", sort: (p) => p.efficiency?.used.peak_rss_bytes_max ?? null, num: true },
   { key: "longest", label: () => "Longest", sort: (p) => p.efficiency?.used.elapsed_s_max ?? null, num: true },
 ];
 
@@ -53,7 +54,7 @@ const COLUMNS: { key: Key; label: (w: Words) => string; sort: (p: Process) => nu
 function cells(e: ProcessEfficiency | undefined): ReactNode[] {
   if (!e) return COLUMNS.slice(1).map(() => "—");
   return [
-    `${e.jobs.done} / ${e.jobs.total}`,
+    <Progress done={e.jobs.done} total={e.jobs.total} />,
     e.measured,
     <Ratio value={e.cpu_mean} />,
     <Ratio value={e.cpu_max} />,
@@ -64,7 +65,7 @@ function cells(e: ProcessEfficiency | undefined): ReactNode[] {
     limit(e),
     e.requested.varies ? "vary" : "",
     bytes(e.used.peak_rss_bytes_max),
-    seconds(e.used.elapsed_s_max),
+    formatDuration(e.used.elapsed_s_max),
   ];
 }
 
@@ -72,12 +73,12 @@ function cells(e: ProcessEfficiency | undefined): ReactNode[] {
 export function efficiencyFacts(e: ProcessEfficiency | undefined, w: Words): [string, ReactNode][] {
   if (!e) return [];
   return [
-    [`${w.Units} done · measured`, `${e.jobs.done} / ${e.jobs.total} · ${e.measured}`],
+    [`${w.Units} · measured`, `${progressText(e.jobs.done, e.jobs.total)} · ${e.measured}`],
     ["CPU eff. mean · max", <><Ratio value={e.cpu_mean} /> · <Ratio value={e.cpu_max} /></>],
     ["Mem eff. mean · max", <><Ratio value={e.mem_mean} memory /> · <Ratio value={e.mem_max} memory /></>],
     ["CPUs · memory · time limit asked", `${cpus(e)} · ${memory(e)} · ${limit(e)}`],
     ...(e.requested.varies ? ([["Requests", "vary"]] as [string, ReactNode][]) : []),
-    ["Peak memory · longest", `${bytes(e.used.peak_rss_bytes_max)} · ${seconds(e.used.elapsed_s_max)}`],
+    ["Peak memory · longest", `${bytes(e.used.peak_rss_bytes_max)} · ${formatDuration(e.used.elapsed_s_max)}`],
   ];
 }
 
@@ -104,9 +105,11 @@ function sorted(processes: Process[], key: Key, ascending: boolean): Process[] {
 
 function Show({ process, w, onShow }: { process: string; w: Words; onShow: (process: string) => void }) {
   return (
-    <button type="button" className="sp-link-button sp-open" aria-label={`Show the ${w.units} of ${w.group} ${process}`} onClick={() => onShow(process)}>
-      <ProcessName name={process} />
-    </button>
+    <NameTip label={process}>
+      <button type="button" className="sp-link-button sp-open" aria-label={`Show the ${w.units} of ${w.group} ${process}`} onClick={() => onShow(process)}>
+        <ProcessName name={process} />
+      </button>
+    </NameTip>
   );
 }
 
@@ -205,7 +208,7 @@ export function ByProcess({ processes, w, onShow }: { processes: Process[]; w: W
     <section className="sp-runs" aria-label={label}>
       {order}
       <div className="sp-table-wrap">
-        <table className="sp-table" aria-label={label}>
+        <table className="sp-table" data-density="compact" aria-label={label}>
           <thead>
             <tr>
               {COLUMNS.map((c) => (
@@ -215,9 +218,9 @@ export function ByProcess({ processes, w, onShow }: { processes: Process[]; w: W
                   className={c.num ? "sp-num" : undefined}
                   aria-sort={c.key === key ? (ascending ? "ascending" : "descending") : undefined}
                 >
-                  <button type="button" className="sp-sort" aria-label={`Sort by ${c.label(w)}`} onClick={() => sortBy(c.key)}>
+                  <button type="button" className="sp-sort" data-on={c.key === key || undefined} aria-label={`Sort by ${c.label(w)}`} onClick={() => sortBy(c.key)}>
                     {c.label(w)}
-                    {c.key === key && <span aria-hidden="true">{ascending ? " ↑" : " ↓"}</span>}
+                    <Icon name={c.key === key ? (ascending ? "sortUp" : "sortDown") : "sortBoth"} />
                   </button>
                 </th>
               ))}

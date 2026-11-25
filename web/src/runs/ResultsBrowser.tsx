@@ -6,6 +6,7 @@ import { type IconName, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { CardHead } from "../shell/CardHead";
+import { Ago, ago } from "../shell/Ago";
 import { PageHead } from "../shell/PageHead";
 import { EmptyState, ErrorPanel, SkeletonRows } from "../shell/States";
 import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
@@ -15,7 +16,7 @@ import { kindWord, size } from "./preview";
 import { isPlainText, isResultPath } from "./ReportViewer";
 import { NotFound, findTask } from "./RunDetailPage";
 import { runName, taskLabel } from "./RunState";
-import { when, words } from "./stateWord";
+import { words } from "./stateWord";
 
 // The results browser (P1 Task 32 part two; ui-spec §4.4 run tools note and §4.4.1, Explorer,
 // FU-P3-85d; boards LiteResults, MLiteResults): one folder of a run's results at a time, read only,
@@ -179,7 +180,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
   const label = folder.split("/").pop() || (work ? "work directory" : "results");
   const view = { sort: search.sort, q: typed || undefined };
   const focusRef = (entry: ResultEntry) => (entry.name === search.focus ? focused : undefined);
-  const facts = (entry: ResultEntry) => [kindWord(entryKind(entry), !!work), entry.type === "file" && entry.size !== null ? size(entry.size) : null, when(entry.mtime)].filter(Boolean).join(" · ");
+  const facts = (entry: ResultEntry) => [kindWord(entryKind(entry), !!work), entry.type === "file" && entry.size !== null ? size(entry.size) : null, ago(entry.mtime)].filter(Boolean).join(" · ");
   const clear = () => {
     setTyped("");
     bar.current?.querySelector("input")?.focus();
@@ -254,7 +255,9 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
                 <KindBadge kind={entryKind(entry)} work={!!work} />
               </td>
               <td className="sp-num">{entry.type === "file" && entry.size !== null ? size(entry.size) : "—"}</td>
-              <td>{when(entry.mtime)}</td>
+              <td>
+                <Ago iso={entry.mtime} />
+              </td>
               <td className="sp-explorer-act">
                 {entry.type === "file" && (
                   <ActionIcon component="a" variant="default" size="md" href={resultUrl(id, join(folder, entry.name), { download: true }, work)} download aria-label={`Download ${entry.name}`}>

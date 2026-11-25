@@ -13,9 +13,10 @@ import { type CopyItem, CopyButton, useCopyStatus } from "./CopyMenu";
 import { DeleteRuns } from "./DeleteRuns";
 import { extrasFacts } from "./RunDetailExtras";
 import { ResumeAction } from "./ResumeDialog";
-import { StateWord, runName, tasksText } from "./RunState";
+import { Ago } from "../shell/Ago";
+import { Progress, StateWord, runName } from "./RunState";
 import { TargetLine } from "./target";
-import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
+import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
 // UX-PAR-19, 21 and 22): the state bar, the engine's mark tile, the name and short ID, the state
@@ -24,21 +25,24 @@ import { duration, engineName, executorLabel, isTerminal, plural, runWord, short
 // actions" menu with the rest: Copy to a new launch, Pin or Unpin, the Copy items and, once ended,
 // Delete… last (FU-P3-115b). On the phone the primary sits in the bar pinned above the tab bar.
 
-/** The chips under the facts: the states with tasks, failed and retried always (UX-PAR-22). A chip
+/** The chips under the facts: the states with tasks, failed and retried always once the run has a
+ * task (UX-PAR-22; #353: a run where no job ran shows no "0 failed" nor "0 retried"). A chip
  * with a `filter` (a Tasks tab filter's label) opens the Tasks tab on it (P3-parD). */
 export function taskChips(run: RunDetail, processes: Process[]): { label: string; n: number; tone: string; filter?: string }[] {
   const c = run.task_counts;
   const chips = [
     { label: "succeeded", n: sum(c, "succeeded"), tone: "succeeded", always: false, filter: "Succeeded" },
     { label: "running", n: sum(c, "running"), tone: "running", always: false, filter: "Running" },
-    { label: "pending", n: sum(c, "pending", "submitted"), tone: "queued", always: false, filter: "Pending" },
+    { label: "queued", n: sum(c, "submitted"), tone: "queued", always: false, filter: "Queued" },
+    { label: "pending", n: sum(c, "pending"), tone: "queued", always: false, filter: "Pending" },
     { label: "failed", n: sum(c, "failed"), tone: "failed", always: true, filter: "Failed" },
     { label: "retried", n: processes.reduce((n, p) => n + p.retries, 0), tone: "review", always: true },
     { label: "cached", n: sum(c, "cached", "stored"), tone: "cached", always: false },
     { label: "aborted", n: sum(c, "aborted"), tone: "cancelled", always: false },
     { label: "not scheduled", n: sum(c, "not_scheduled"), tone: "cancelled", always: false },
   ];
-  return chips.filter((chip) => chip.always || chip.n > 0);
+  const hasTask = Object.values(c).some((n) => n > 0);
+  return chips.filter((chip) => (chip.always && hasTask) || chip.n > 0);
 }
 
 /** A driven run's directory, runs_root/<run id> (runner/rundir.py); a run from a terminal has its
@@ -146,7 +150,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
         <span>{[engine, ...run.profiles].join(" · ")}</span>
       </span>,
     ],
-    ["Started · ended", `${when(run.started_at)} · ${ended ? when(run.ended_at) : "—"}`],
+    ["Started · ended", <><Ago iso={run.started_at} /> · {ended ? <Ago iso={run.ended_at} /> : "—"}</>],
     ["Duration", duration(run.started_at, run.ended_at)],
     ["Head session", <span className="sp-mono">{run.head?.session ?? "—"}</span>],
     ["Head", headWord(run)],
@@ -253,17 +257,17 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
   const state = (
     <>
       <StateWord state={run.state} />
-      {failed > 0 && <span>{plural(failed, unit, units)} failed</span>}
       {line && <span>{line}</span>}
     </>
   );
   const progress = (
     <>
       <span>
-        {tasksText(run)} {units}
+        <Progress done={run.summary.tasks.done} total={run.summary.tasks.total} lower={run.summary.tasks.lower_bound} unit={units} />
+        {failed > 0 && ` · ${failed} failed`}
       </span>
       <span>{duration(run.started_at, run.ended_at)}</span>
-      {ended ? <span>ended {when(run.ended_at)}</span> : <LiveStatus />}
+      {ended ? <span>ended <Ago iso={run.ended_at} /></span> : <LiveStatus />}
     </>
   );
   return (

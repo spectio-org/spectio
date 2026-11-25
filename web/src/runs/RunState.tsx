@@ -1,8 +1,11 @@
 import "./runs.css";
+import { Tooltip } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 import type { Run, RunState, Task } from "../api";
 import { type IconName, Icon } from "../icons";
 import { PipelineMark } from "../shell/EngineMark";
+import { partsLine, taskName } from "./taskName";
 import { type Tone, classWord, lastSegment, plural, runWord, shortId, tone, words } from "./stateWord";
 
 // The icons of ui-spec §3.1, one per tone: clock, play, flag, pause, check, cross, slash.
@@ -52,15 +55,14 @@ export function StateWord({ state }: { state: RunState }) {
   return <Word state={state} word={runWord(state)} />;
 }
 
-/** The run's failure as words: "tool error · <message>", or, with no message, "tool error · 2
- * tasks failed" (UX-PAR-16); never blank. */
+/** The run's failure as words: "tool error · <message>", or, with no message, "tool error · see
+ * the failed jobs" (UX-PAR-16); never blank. The count of failed jobs is not repeated here: the
+ * header and the Tasks tab say it (#385). */
 export function failureText(run: Run): string {
   const failure = run.failure as { class?: unknown; message?: unknown } | null;
   const message = typeof failure?.message === "string" ? failure.message.trim() : "";
   const kind = typeof failure?.class === "string" ? classWord(failure.class) : "";
-  const { unit, units } = words(run.workflow.engine);
-  const failed = run.summary.tasks.failed;
-  const detail = message || (failed > 0 ? `${plural(failed, unit, units)} failed` : "");
+  const detail = message || (run.summary.tasks.failed > 0 ? `see the failed ${words(run.workflow.engine).units}` : "");
   return [kind, detail].filter(Boolean).join(" · ") || "failed";
 }
 
@@ -124,16 +126,19 @@ export function stateContext(run: Run): string {
   switch (run.state) {
     case "queued":
       return run.head ? "head started" : "head not started yet";
-    case "running":
-      return `${plural(run.task_counts.running ?? 0, unit, units)} running`;
+    case "running": {
+      // jobs that wait in the scheduler are still a running run (#385)
+      const running = run.task_counts.running ?? 0;
+      const queued = run.task_counts.submitted ?? 0;
+      if (running === 0 && queued > 0) {
+        return `${run.task_counts.pending || queued === 1 ? "" : "all "}${plural(queued, unit, units)} queued in the scheduler`;
+      }
+      return `${plural(running, unit, units)} running`;
+    }
     case "cancelling":
       return "stopping the engine";
-    case "succeeded":
-      return "completed";
     case "failed":
       return failureText(run);
-    case "cancelled":
-      return "cancelled";
     default:
       return "";
   }
@@ -151,11 +156,40 @@ export function RunLink({ run }: { run: Run }) {
   );
 }
 
-/** "24 / 32", or "242 / at least 347" while a checkpoint is open (ui-spec §5.2); "—" with none. */
+/** The one count format of every progress cell: "24 / 32", or "242 / at least 347" while a
+ * checkpoint is open (ui-spec §5.2); "—" with no total (#385). */
+export function progressText(done: number, total: number, lower = false): string {
+  if (!total) return "—";
+  return lower ? `${done} / at least ${total}` : `${done} / ${total}`;
+}
+
+/** A run's progress as text: its jobs or tasks done of all. */
 export function tasksText(run: Run): string {
   const t = run.summary.tasks;
-  if (!t.total) return "—";
-  return t.lower_bound ? `${t.done} / at least ${t.total}` : `${t.done} / ${t.total}`;
+  return progressText(t.done, t.total, t.lower_bound);
+}
+
+/** "n / m" with a bar beside it: indigo when all is done, running blue otherwise (UX-PAR-24).
+ * The bar is decoration; the text says the value. `lower`: the total may grow (a checkpoint is
+ * open), so the part past the known jobs is hatched and the bar is never full (ui-spec §5.2). */
+export function Bar({ done, all, lower = false }: { done: number; all: number; lower?: boolean }) {
+  const width = all ? Math.round((done / all) * 100) : 0;
+  return (
+    <span className="sp-bar" data-full={all > 0 && done === all && !lower} data-lower={lower || undefined} aria-hidden="true">
+      <span style={{ width: `${width}%` }} />
+    </span>
+  );
+}
+
+/** The one progress cell (#385): "done / total" in tabular figures on one line, with the bar when
+ * asked and the engine's unit after the count where the column holds both engines. */
+export function Progress({ done, total, lower = false, bar = false, unit }: { done: number; total: number; lower?: boolean; bar?: boolean; unit?: string }) {
+  return (
+    <span className="sp-done">
+      {bar && !!total && <Bar done={done} all={total} lower={lower} />}
+      {`${progressText(done, total, lower)}${unit && total ? ` ${unit}` : ""}`}
+    </span>
+  );
 }
 
 /** The run's pipeline: its mark (nf-core for an nf-core/ name, else the engine's; inbox #91), the
@@ -170,6 +204,30 @@ export function Pipeline({ run, size = 20 }: { run: Run; size?: number }) {
         {w.version && <span className="sp-version"> {w.version}</span>}
       </span>
     </span>
+  );
+}
+
+/** A name cut to one line by the CSS: its full text in a tooltip on hover and on focus (ui-spec
+ * §12.8). The child is the focusable element, whose accessible name keeps the full name. */
+export function NameTip({ label, children }: { label: string; children: ReactElement }) {
+  return (
+    <Tooltip label={label} events={{ hover: true, focus: true, touch: false }} multiline maw={360}>
+      {children}
+    </Tooltip>
+  );
+}
+
+/** A task's name in a table: the rule or process in bold, and on a second dimmed line, cut with an
+ * ellipsis, its wildcards or tag (#385). The row's own label names it whole. */
+export function TaskName({ task }: { task: Task }) {
+  const { parts } = taskName(task);
+  return (
+    <>
+      <strong>
+        <ProcessName name={task.process} />
+      </strong>
+      {parts.length > 0 && <span className="sp-open-parts">{partsLine(parts)}</span>}
+    </>
   );
 }
 

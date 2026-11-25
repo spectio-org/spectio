@@ -6,9 +6,9 @@ import { useServer } from "../server";
 import { CopyButton } from "./CopyMenu";
 import type { Detail } from "./DetailSheet";
 import { LogLines } from "./LogViewer";
-import { bytes, nearLimit, seconds } from "./resources";
+import { bytes, nearLimit } from "./resources";
 import { NearLimit } from "./RunState";
-import { lastSegment, words } from "./stateWord";
+import { lastSegment, words, formatDuration } from "./stateWord";
 
 // "Why it failed", one card per job that failed on its last attempt (P1 Task 32 on Task 29's
 // `failures`; ui-spec §4.4 note 2026-10-28, Failure summary; boards LiteRunFailed, MLiteRunFailed):
@@ -78,7 +78,7 @@ function FailureCard({ run, failure, processes, slurm, onOpen }: { run: RunDetai
     [
       "Time, limit · used",
       <>
-        {seconds(s.time_limit_s)} · {seconds(s.elapsed_s)}
+        {formatDuration(s.time_limit_s)} · {formatDuration(s.elapsed_s)}
         <NearLimit on={near.time} />
       </>,
     ],

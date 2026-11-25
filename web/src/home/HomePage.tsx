@@ -8,9 +8,10 @@ import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { failureText, Pipeline, RunLink, StateWord, runName, stateContext, tasksText } from "../runs/RunState";
 import { NoRuns, RunCard } from "../runs/RunsPage";
-import { ACTIVE, executorLabel, isTerminal, plural, tone, when, words } from "../runs/stateWord";
+import { ACTIVE, executorLabel, isTerminal, plural, tone, words } from "../runs/stateWord";
 import { useServer } from "../server";
 import { PipelineMark } from "../shell/EngineMark";
+import { Ago } from "../shell/Ago";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
 import { HomeCard } from "./HomeCard";
@@ -53,13 +54,15 @@ function cardDetail(state: RunState, active: Run[], ended: Run[]): string | null
   return latest ? `latest: ${runName(latest)}` : null;
 }
 
-/** An active run's context: "from a terminal · 288 / 384 tasks", or its state's context line. */
+/** An active run's context: "from a terminal · 288 / 384 tasks", or its state's context line;
+ * "" when a state has none (the caller then renders nothing). */
 function activeContext(run: Run): string {
   const own = run.state === "running" ? `${tasksText(run)} ${words(run.workflow.engine).units}` : stateContext(run);
-  return run.origin === "cli-observed" ? `from a terminal · ${own}` : own;
+  return [run.origin === "cli-observed" ? "from a terminal" : "", own].filter(Boolean).join(" · ");
 }
 
-/** A finished run's context: its tasks, or why it failed (never blank, UX-PAR-16). */
+/** A finished run's context: its tasks, or why it failed (UX-PAR-16); "" for a cancelled run or a
+ * succeeded one with no task, whose word says it all. */
 function endedContext(run: Run): string {
   if (run.state === "failed") return failureText(run);
   if (run.state === "succeeded" && run.summary.tasks.total) return `${tasksText(run)} ${words(run.workflow.engine).units}`;
@@ -206,22 +209,25 @@ export function HomePage() {
                   </ul>
                 ) : (
                   <ul className="sp-list">
-                    {active.map((run) => (
+                    {active.map((run) => {
+                      const context = activeContext(run);
+                      return (
                       <li key={run.id} data-rail="" data-tone={tone(run.state)} className="sp-row">
                         <PipelineMark engine={run.workflow.engine} name={run.workflow.name} size={22} />
                         <span>
                           <RunLink run={run} />
                           <span className="sp-muted">
                             {[run.workflow.name ?? run.workflow.location, run.workflow.version].filter(Boolean).join(" ")} · started{" "}
-                            {when(run.started_at ?? run.created_at)}
+                            <Ago iso={run.started_at ?? run.created_at} />
                           </span>
                         </span>
                         <span>
                           <StateWord state={run.state} />
-                          <span className="sp-muted">{activeContext(run)}</span>
+                          {context && <span className="sp-muted">{context}</span>}
                         </span>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </HomeCard>
@@ -236,7 +242,9 @@ export function HomePage() {
                   </ul>
                 ) : (
                   <ul className="sp-list sp-ended">
-                    {ended.map((run) => (
+                    {ended.map((run) => {
+                      const context = endedContext(run);
+                      return (
                       <li key={run.id} data-rail="" data-tone={tone(run.state)} className="sp-row">
                         <span className="sp-ended-state">
                           <StateWord state={run.state} />
@@ -245,12 +253,16 @@ export function HomePage() {
                         <span>
                           <RunLink run={run} />
                           <span className="sp-muted">
-                            <span>{run.workflow.name ?? run.workflow.location}</span> · {endedContext(run)}
+                            <span>{run.workflow.name ?? run.workflow.location}</span>
+                            {context && ` · ${context}`}
                           </span>
                         </span>
-                        <span>{when(run.ended_at)}</span>
+                        <span>
+                          <Ago iso={run.ended_at} />
+                        </span>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </HomeCard>

@@ -116,7 +116,7 @@ test("UX-PAR-11/12/13/16: subtitle words, linked cards with a detail line, a non
 
   const finished = screen.getByRole("region", { name: "Finished recently" });
   const row = (await within(finished).findByRole("link", { name: "Open run wgs-cohort-12" })).closest("li")!;
-  expect(within(row).getByText(/tool error · 2 jobs failed/)).toBeInTheDocument();
+  expect(within(row).getByText(/tool error · see the failed jobs/)).toBeInTheDocument();
   expect(within(row).getByRole("img", { name: "Snakemake" })).toBeInTheDocument();
 
   const active = screen.getByRole("region", { name: "Active runs" });
@@ -167,4 +167,28 @@ test("UI-07: every Home section is a card with the shared card head (ui-spec §1
   fireEvent.click(within(active).getByRole("button", { name: "Active runs" }));
   expect(within(active).queryByRole("link", { name: "Open run rnaseq-a" })).toBeNull();
   expect(window.localStorage.getItem("spectio-open:home:home-active")).toBe("0");
+});
+
+test("CR-E (#385): a cancelled run's row has no dangling separator, and an active run with no context has no empty muted span", async () => {
+  const cancelled = run({ ...ended, id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V7Y", name: "stopped-run", state: "cancelled" });
+  const paused = run({ id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V8Y", name: "paused-run", state: "paused", task_counts: {} });
+  const observed = run({ id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V9Y", name: "observed-run", state: "paused", origin: "cli-observed", task_counts: {} });
+  serve({
+    "/api/v1/runs:summary": { groups: [{ key: "cancelled", count: 1 }, { key: "paused", count: 2 }] },
+    "/api/v1/runs?sort=-ended_at": { items: [cancelled], next: null },
+    "/api/v1/runs?state=": { items: [paused, observed], next: null },
+    "/api/v1/runs": { items: [paused, observed, cancelled], next: null },
+  });
+  app("/");
+  const finished = await screen.findByRole("region", { name: "Finished recently" });
+  const row = (await within(finished).findByRole("link", { name: "Open run stopped-run" })).closest("li")!;
+  expect(row).toHaveTextContent("plate-qc");
+  expect(row.textContent).not.toMatch(/·\s*$|·\s*Today|·\s*\d{4}/);
+  expect(row.textContent).not.toContain("plate-qc ·");
+  const active = screen.getByRole("region", { name: "Active runs" });
+  const plain = (await within(active).findByRole("link", { name: "Open run paused-run" })).closest("li")!;
+  expect([...plain.querySelectorAll("span.sp-muted")].filter((s) => s.textContent === "")).toEqual([]);
+  const hand = within(active).getByRole("link", { name: "Open run observed-run" }).closest("li")!;
+  expect(hand).toHaveTextContent("from a terminal");
+  expect(hand.textContent).not.toContain("from a terminal ·");
 });

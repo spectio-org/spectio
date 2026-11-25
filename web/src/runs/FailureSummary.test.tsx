@@ -81,7 +81,7 @@ test("failed run: Why it failed shows SLURM state, requested and used memory, la
   expect(fact(job, "Attempt")).toHaveTextContent("2");
   expect(fact(job, "SLURM job")).toHaveTextContent("8812402");
   expect(fact(job, "Exit code")).toHaveTextContent("137");
-  expect(fact(job, "Memory, asked · used")).toHaveTextContent("2 GB · 2 GB near limit");
+  expect(fact(job, "Memory, asked · used")).toHaveTextContent("2.0 GB · 2.0 GB near limit");
   expect(fact(job, "Time, limit · used")).toHaveTextContent("4 h · 1 h 12");
   expect(within(job).getByText(FAILURE.message)).toBeInTheDocument();
   expect(within(job).getByText("SLURM state: from sacct · Reason: Step 0: OutOfMemory · used: from sacct")).toBeInTheDocument();
@@ -126,7 +126,7 @@ test("Snakemake: the state from the plugin's message, usage unavailable, Copy la
   });
   app(`/runs/${ID}`);
   const job = await card("bwa_mem (sample=WGS-07), attempt 2");
-  expect(fact(job, "Memory, asked · used")).toHaveTextContent("2 GB · —");
+  expect(fact(job, "Memory, asked · used")).toHaveTextContent("2.0 GB · —");
   expect(
     within(job).getByText("SLURM state: from the Snakemake SLURM plugin's message · Reason: Step 0: OutOfMemory · used: SLURM accounting unavailable"),
   ).toBeInTheDocument();

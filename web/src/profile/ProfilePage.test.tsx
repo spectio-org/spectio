@@ -4,7 +4,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { app, json, serve, stubStream, viewport } from "../testing";
-import { when } from "../runs/stateWord";
+import { ago } from "../shell/Ago";
 import { THEME_KEY } from "../shell/theme";
 
 const ME_URL = "/api/v1/me";
@@ -50,8 +50,8 @@ test("/profile names who the server runs as and this session", async () => {
   expect(within(who).getByText("amartin")).toBeInTheDocument();
   expect(within(who).getByText("1000")).toBeInTheDocument();
   const session = screen.getByRole("heading", { name: "This session" }).closest("section")!;
-  expect(session).toHaveTextContent(`Started${when(ME.session.started_at)}`);
-  expect(session).toHaveTextContent(`Expires${when(ME.session.expires_at)}`); // #375: a real end
+  expect(session).toHaveTextContent(`Started${ago(ME.session.started_at)}`);
+  expect(session).toHaveTextContent(`Expires${ago(ME.session.expires_at)}`); // #375: a real end
   expect(session).not.toHaveTextContent("server stops");
   const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
   expect(within(crumbs).getByText("Profile")).toHaveAttribute("aria-current", "page");

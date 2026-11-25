@@ -147,7 +147,7 @@ test("'vary' is one mark per row, never on a request value (CR-P3T35-05)", async
   const row = within(table).getAllByRole("row").find((r) => r.textContent?.includes("STAR_ALIGN"))!;
   const cell = (name: string) => within(row).getAllByRole("cell")[heads.indexOf(name)].textContent;
   expect(cell("CPUs asked")).toBe("12");
-  expect(cell("Memory asked")).toBe("72 GB");
+  expect(cell("Memory asked")).toBe("72.0 GB");
   expect(cell("Time limit")).toBe("8 h");
   expect(cell("Requests")).toBe("vary");
   expect(row.textContent?.match(/var/g)).toHaveLength(1);
@@ -162,7 +162,7 @@ test("on the phone 'requests vary' is one fact line, not a suffix on each value 
   await userEvent.click(await screen.findByRole("tab", { name: "By process" }));
   const cards = within(screen.getByRole("list", { name: "Tasks by process" })).getAllByRole("listitem");
   const star = cards.find((c) => c.textContent?.includes("STAR_ALIGN"))!;
-  expect(within(star).getByText("CPUs · memory · time limit asked").nextSibling?.textContent).toBe("12 · 72 GB · 8 h");
+  expect(within(star).getByText("CPUs · memory · time limit asked").nextSibling?.textContent).toBe("12 · 72.0 GB · 8 h");
   expect(within(star).getByText("Requests").nextSibling?.textContent).toBe("vary");
   const fastqc = cards.find((c) => c.textContent?.includes("FASTQC"))!;
   expect(within(fastqc).queryByText("Requests")).toBeNull();
@@ -214,4 +214,29 @@ test("on the phone the cards open in pipeline order, with the same two orders (F
   expect(names(cards())).toEqual(["FASTQC", "STAR_ALIGN"]);
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Sort by" }), "Pipeline order");
   expect(names(cards())).toEqual(["STAR_ALIGN", "FASTQC"]);
+});
+
+test("#385: the header says Tasks, every sortable header has a sort icon, the one in use shows its direction", async () => {
+  served();
+  app(`/runs/${ID}?tab=tasks`);
+  await userEvent.click(await screen.findByRole("tab", { name: "By process" }));
+  const table = screen.getByRole("table", { name: "Tasks by process" });
+  expect(table).toHaveAttribute("data-density", "compact");
+  const tasks = within(table).getByRole("button", { name: "Sort by Tasks" });
+  expect(within(table).queryByRole("button", { name: "Sort by Tasks done" })).toBeNull();
+  // the unsorted affordance is an icon, not text; no text arrow anywhere
+  for (const b of within(table).getAllByRole("button", { name: /^Sort by / })) expect(b.querySelector("svg.sp-icon")).not.toBeNull();
+  expect(table.textContent).not.toMatch(/[↑↓]/);
+  const path = (b: HTMLElement) => b.querySelector("svg path")!.getAttribute("d");
+  const unsorted = path(tasks);
+  await userEvent.click(tasks);
+  expect(tasks).toHaveAttribute("data-on");
+  expect(path(tasks)).not.toBe(unsorted);
+  const up = path(tasks);
+  await userEvent.click(tasks);
+  expect(path(tasks)).not.toBe(up);
+  expect(within(table).getByRole("columnheader", { name: /Tasks/ })).toHaveAttribute("aria-sort", "descending");
+  // the Tasks column is one progress format, and the peak memory column is a number
+  expect(within(table).getByRole("columnheader", { name: /Peak memory/ })).toHaveClass("sp-num");
+  expect(table.textContent).toContain("48 / 48");
 });

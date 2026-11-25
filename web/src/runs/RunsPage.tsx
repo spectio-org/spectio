@@ -9,27 +9,16 @@ import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { Scope, ScopeText, TargetTail } from "./target";
 import { usePhone } from "../shell/layout";
-import { ago } from "../shell/NotificationsBell";
+import { Ago } from "../shell/Ago";
 import { PageHead } from "../shell/PageHead";
 import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { DeleteRuns } from "./DeleteRuns";
 import { LazyGrid } from "./LazyGrid";
-import { Pipeline, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
+import { Pipeline, Progress, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
 import { ACTIVE, duration, isTerminal, plural, shortId, tone, words } from "./stateWord";
 
-/** A run's start as ui-spec §12.8 dates it ("2 h ago", then "2026-10-28 07:01"); the exact
- * time is in its `<time>` and its accessible name. */
-function Started({ run }: { run: Run }) {
-  const iso = run.started_at ?? run.created_at;
-  const text = ago(iso);
-  // ago() of a date a week back is that exact time already
-  const exact = ago(iso, new Date(new Date(iso).getTime() + 7 * 86400000));
-  return (
-    <time dateTime={iso} aria-label={text === exact ? text : `${text}, ${exact}`}>
-      {text}
-    </time>
-  );
-}
+/** A run's start as ui-spec §12.8 dates it ("2 h ago", then "2026-10-28 07:01"). */
+const Started = ({ run }: { run: Run }) => <Ago iso={run.started_at ?? run.created_at} />;
 
 /** The state filters; `key` is the `?state=` of the URL, so Home's cards link to one (UX-PAR-12).
  * Each item's icon is the one its states' words wear (`TONE_ICONS`, #161, inbox Thomas). */
@@ -159,13 +148,15 @@ export const headsWhere = (server: ServerVersion) =>
 const knownSoFar = (run: Run) =>
   run.workflow.engine === "nextflow" && !isTerminal(run.state) && !!run.summary.tasks.total;
 
-/** Under the count: the engine's unit for Snakemake, "known so far", and the failed count. */
+/** The progress cell: "24 / 32 jobs" in one format (the list holds both engines, so the unit is
+ * inline), then under it the failed count and, for Nextflow, "known so far". */
 function TasksCell({ run }: { run: Run }) {
-  const failed = run.summary.tasks.failed;
-  const note = run.workflow.engine === "snakemake" ? "jobs" : knownSoFar(run) ? "known so far" : null;
+  const t = run.summary.tasks;
+  const failed = t.failed;
+  const note = knownSoFar(run) ? "known so far" : null;
   return (
     <>
-      {tasksText(run)}
+      <Progress done={t.done} total={t.total} lower={t.lower_bound} unit={words(run.workflow.engine).units} />
       {(failed > 0 || note) && (
         <span className="sp-muted">
           {failed > 0 && <span className="sp-bad-inline">{failed} failed</span>}
@@ -218,14 +209,16 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
           {knownSoFar(run) && " known so far"}
         </span>
       </span>
-      <span className="sp-run-card-line">
-        {run.origin === "cli-observed" && (
-          <span className="sp-chip">
-            <Icon name="terminal" /> From a terminal
-          </span>
-        )}
-        <span>{stateContext(run)}</span>
-      </span>
+      {(run.origin === "cli-observed" || !!stateContext(run)) && (
+        <span className="sp-run-card-line">
+          {run.origin === "cli-observed" && (
+            <span className="sp-chip">
+              <Icon name="terminal" /> From a terminal
+            </span>
+          )}
+          {stateContext(run) && <span>{stateContext(run)}</span>}
+        </span>
+      )}
     </li>
   );
 }
@@ -247,7 +240,7 @@ const COLUMNS: ColDef<Run>[] = [
   {
     headerName: "Run",
     colId: "name",
-    flex: 1.4,
+    flex: 1.6,
     cellRenderer: ({ data: run }: { data: Run }) => (
       <>
         <span className="sp-run-cell">
@@ -267,11 +260,12 @@ const COLUMNS: ColDef<Run>[] = [
   {
     headerName: "State",
     colId: "state",
-    flex: 1.6,
+    flex: 0,
+    width: 150,
     cellRenderer: ({ data: run }: { data: Run }) => <StateWord state={run.state} />,
   },
   // Plain muted text, the size of the other cells — the badge stays on the phone's card (#161).
-  { headerName: "Scope", colId: "scope", flex: 0.8, minWidth: 140, cellRenderer: ({ data: run }: { data: Run }) => <ScopeText target={run.target} /> },
+  { headerName: "Scope", colId: "scope", flex: 0.8, minWidth: 110, cellRenderer: ({ data: run }: { data: Run }) => <ScopeText target={run.target} /> },
   {
     headerName: "Workflow",
     colId: "workflow",
@@ -283,9 +277,25 @@ const COLUMNS: ColDef<Run>[] = [
       </span>
     ),
   },
-  { headerName: "Tasks", cellRenderer: ({ data: run }: { data: Run }) => <TasksCell run={run} /> },
-  { headerName: "Started", colId: "started_at", cellRenderer: ({ data: run }: { data: Run }) => <Started run={run} /> },
-  { headerName: "Duration", colId: "duration", valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : "") },
+  // numbers and durations right-aligned, in tabular figures; words and dates left (ui-spec §12.8)
+  {
+    headerName: "Progress",
+    flex: 0,
+    width: 230,
+    cellClass: "sp-num",
+    headerClass: "ag-right-aligned-header",
+    cellRenderer: ({ data: run }: { data: Run }) => <TasksCell run={run} />,
+  },
+  { headerName: "Started", colId: "started_at", flex: 0, width: 170, cellClass: "sp-nowrap-cell", cellRenderer: ({ data: run }: { data: Run }) => <Started run={run} /> },
+  {
+    headerName: "Duration",
+    colId: "duration",
+    flex: 0,
+    width: 100,
+    cellClass: "sp-num",
+    headerClass: "ag-right-aligned-header",
+    valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : ""),
+  },
 ];
 
 const SORTABLE = new Set(["name", "state", "started_at", "duration"]);
@@ -647,7 +657,7 @@ export function RunsPage() {
           className="sp-grid-runs"
           rowData={runs}
           columnDefs={columns}
-          defaultColDef={{ sortable: false, autoHeight: true, wrapText: true, flex: 1, minWidth: 110, suppressHeaderMenuButton: true }}
+          defaultColDef={{ sortable: false, autoHeight: true, wrapText: true, suppressHeaderMenuButton: true }}
           getRowId={({ data }) => data.id}
           getRowStyle={({ data }) => (data ? { "--tone": `var(--sp-state-${tone(data.state)})` } : undefined)}
           domLayout="autoHeight"

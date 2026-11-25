@@ -39,14 +39,14 @@ test("the table shows each run with its state word, a row label and the terminal
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
   const header = within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim());
-  expect(header).toEqual(["", "Run", "State", "Workflow", "Tasks", "Started", "Duration"]);
+  expect(header).toEqual(["", "Run", "State", "Workflow", "Progress", "Started", "Duration"]);
   // the API's order, newest first: no header is sorted until one is pressed (FU-P3-115b)
   expect(within(table).getByRole("columnheader", { name: "Run" })).toHaveAttribute("aria-sort", "none");
   const open = within(table).getByRole("link", { name: "Open run rnaseq-a" });
   expect(open).toHaveAttribute("href", "/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W");
   const row = open.closest('[role="row"]') as HTMLElement;
   expect(within(row).getByText("Running")).toBeInTheDocument();
-  expect(within(row).getByText("24 / 32")).toBeInTheDocument();
+  expect(within(row).getByText("24 / 32 tasks")).toBeInTheDocument(); // one format, the unit inline (#385)
   expect(within(row).getByText("7T9V1W")).toBeInTheDocument();
   const hand = within(table).getByRole("link", { name: "Open run pilot-hand" }).closest('[role="row"]') as HTMLElement;
   expect(within(hand).getByText("From a terminal")).toBeInTheDocument();
@@ -181,7 +181,7 @@ test("UX-PAR-01, inbox #91 (b): each row shows its pipeline's mark: nf-core for 
   expect(within(nf).getByText("known so far")).toBeInTheDocument();
   const sm = within(table).getByRole("link", { name: "Open run plate-qc-a" }).closest('[role="row"]') as HTMLElement;
   expect(within(sm).getByRole("img", { name: "Snakemake" }).getAttribute("src")).toMatch(/logo-snakemake/);
-  expect(within(sm).getByText("jobs")).toBeInTheDocument(); // UX-PAR-20
+  expect(within(sm).getByText(/\d+ \/ \d+ jobs$/)).toBeInTheDocument(); // UX-PAR-20, the unit inline (#385)
   // the "3 jobs running" context left the table with the State column's second line (#161, inbox Thomas)
   expect(within(sm).queryByText("3 jobs running")).toBeNull();
 });
@@ -239,7 +239,7 @@ test("UX-G3a-05: below 1100 px the grid drops Started, so it fits at 1024 px", a
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
-  expect(within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim())).toEqual(["", "Run", "State", "Workflow", "Tasks", "Duration"]);
+  expect(within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim())).toEqual(["", "Run", "State", "Workflow", "Progress", "Duration"]);
 });
 
 test("a cell takes focus from the keyboard: the header, then the first run's name cell", async () => {
@@ -782,4 +782,41 @@ test("CR-P3UI08-01: on a phone the card's run name has the same tooltip on keybo
   } finally {
     vi.restoreAllMocks();
   }
+});
+
+test("CR-01 (#385): a checkpoint run's progress reads in full in its cell, in a column wide enough for it", async () => {
+  const open = run({
+    id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V5Z",
+    name: "wgs-open",
+    summary: { tasks: { done: 242, total: 347, failed: 0, cached: 0, lower_bound: true }, last_failure: null, stage_mode: "quarters" },
+  });
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [open], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const cell = within(table).getByText("242 / at least 347 tasks").closest('[role="gridcell"]') as HTMLElement;
+  expect(cell).toHaveClass("sp-num");
+  // the widths are written on the cells and headers: with margin for the longest text, not just the shortest
+  expect(parseInt(cell.style.width, 10)).toBeGreaterThanOrEqual(230);
+  const started = within(table).getByRole("columnheader", { name: "Started" });
+  expect(parseInt(started.style.width, 10)).toBeGreaterThanOrEqual(170);
+});
+
+test("CR-02 (#385): the Workflow cell wraps in full, with no tooltip standing in for a cut", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const what = within(table).getByText("nf-core/rnaseq").closest(".sp-what-ran") as HTMLElement;
+  expect(what).not.toBeNull();
+  expect(what.parentElement?.getAttribute("data-position")).toBeNull();
+  expect(what.getAttribute("aria-describedby")).toBeNull();
+});
+
+test("CR-07 (#385): a run card has no empty context line when its state has no context", async () => {
+  viewport(360);
+  const done = run({ id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V6Z", name: "wgs-done", state: "succeeded", ended_at: "2026-10-31T08:00:00+00:00" });
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [done], next: null } });
+  app("/runs");
+  const list = await screen.findByRole("list", { name: "Runs" });
+  const card = within(list).getByRole("link", { name: "Open run wgs-done" }).closest("li") as HTMLElement;
+  expect([...card.querySelectorAll("span")].filter((s) => s.children.length === 0 && s.textContent === "")).toEqual([]);
 });
