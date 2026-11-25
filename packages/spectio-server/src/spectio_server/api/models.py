@@ -5,9 +5,9 @@ dictionaries; FastAPI checks each one against its model. The state enums repeat 
 `store.schema`, and `test_openapi.py` checks that they agree.
 """
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, JsonValue
+from pydantic import BaseModel, JsonValue, model_validator
 
 from spectio_sdk.targets import RunTarget
 
@@ -93,10 +93,18 @@ class RunEnvironment(BaseModel):
     executor: Literal["local", "slurm"] | None
     slurm: EnvironmentSlurm | None
     local: EnvironmentLocal | None
-    # null unless `recorded` (inbox #161); a run recorded before the field has neither (CR-01)
-    software: list[Literal["conda", "apptainer"]] | None = None
-    apptainer_args: str | None = None
+    software: list[Literal["conda", "apptainer"]] | None  # null unless `recorded` (inbox #161)
+    apptainer_args: str | None
     state: Literal["recorded", "not_recorded", "not_readable"]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _recorded_before_software(cls, data: Any) -> Any:
+        """A run recorded before inbox #161 has neither key in its column: null, as a field the
+        snapshot did not record (CR-01). The schema keeps both required: always present."""
+        if isinstance(data, dict):
+            return {"software": None, "apptainer_args": None, **data}
+        return data
 
 
 class RunDefaultResources(BaseModel):

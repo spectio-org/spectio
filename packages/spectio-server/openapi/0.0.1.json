@@ -3432,6 +3432,8 @@
           "executor",
           "slurm",
           "local",
+          "software",
+          "apptainer_args",
           "state"
         ],
         "title": "RunEnvironment",
