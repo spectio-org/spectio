@@ -7210,7 +7210,6 @@
     },
     "/api/v1/workflows:graph": {
       "get": {
-        "description": "`main_script`: the Nextflow entry script the form chose (#351), else `main.nf`.",
         "operationId": "workflow_graph_api_v1_workflows_graph_get",
         "parameters": [
           {
@@ -7239,18 +7238,21 @@
             }
           },
           {
+            "description": "A Nextflow entry script at the pipeline's root, instead of main.nf.",
             "in": "query",
             "name": "main_script",
             "required": false,
             "schema": {
               "anyOf": [
                 {
+                  "maxLength": 255,
                   "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
+              "description": "A Nextflow entry script at the pipeline's root, instead of main.nf.",
               "title": "Main Script"
             }
           }

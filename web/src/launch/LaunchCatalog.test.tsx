@@ -26,6 +26,7 @@ const INSPECTED = {
   revision: "3.27.0",
   engine: null,
   engine_files: ["main.nf", "Snakefile"], // no guess: the engine is the entry's
+  main_scripts: ["main.nf"],
   name: "nf-core/rnaseq",
   version: "3.27.0",
   engine_version: null,

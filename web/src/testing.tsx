@@ -142,6 +142,7 @@ export function run(over: Record<string, unknown> = {}) {
       location: "/g/demo-lab/pipelines/rnaseq",
       name: "nf-core/rnaseq",
       version: "3.27.0",
+      main_script: null,
     },
     profiles: ["test"],
     failure: null,

@@ -50,7 +50,12 @@ from spectio_server.api.problems import Invalid, Problem, not_found
 from spectio_server.api.runs_read import context, read, run_detail, run_row
 from spectio_server.api.runs_write import extras_payload
 from spectio_server.api.taskfiles import HEADERS, TEXT_CSP
-from spectio_server.api.workflows import inspect_dir, resolve, schema_defaults
+from spectio_server.api.workflows import (
+    check_main_script,
+    inspect_dir,
+    resolve,
+    schema_defaults,
+)
 from spectio_server.failure import dir_run_id
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
@@ -193,6 +198,8 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
             resolved = resolve(settings.data_dir, parent.location, parent.revision)
         except Invalid as exc:
             raise exc.under("workflow") from None
+        if parent.main_script is not None:  # checked again, as Launch does (SEC-ENTRY-02)
+            check_main_script(resolved.directory, parent.main_script, "workflow.main_script")
         location, source = str(resolved.directory), resolved.source
         default_name = resolved.default_name
 

@@ -14,5 +14,5 @@ test("#351: a main script other than main.nf is a Nextflow entry; entryFiles add
   expect(guessEngine(["main_cellpose.nf"])).toBe("nextflow");
   expect(guessEngine(["main_cellpose.nf", "Snakefile"])).toBeNull();
   expect(entryFiles({ engine_files: ["main.nf"], main_scripts: ["main.nf", "main_x.nf"] })).toEqual(["main.nf", "main_x.nf"]);
-  expect(entryFiles({ engine_files: ["Snakefile"] })).toEqual(["Snakefile"]);
+  expect(entryFiles({ engine_files: ["Snakefile"], main_scripts: [] })).toEqual(["Snakefile"]);
 });

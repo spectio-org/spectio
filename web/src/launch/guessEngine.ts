@@ -2,7 +2,7 @@ import { ENGINES, ENGINE_FILES, type Engine, type Inspected } from "../api";
 
 /** The entry files inspect found: `engine_files`, and the Nextflow main scripts (#351). */
 export function entryFiles(found: Pick<Inspected, "engine_files" | "main_scripts">): string[] {
-  return [...new Set([...found.engine_files, ...(found.main_scripts ?? [])])];
+  return [...new Set([...found.engine_files, ...found.main_scripts])];
 }
 
 /** Whether `files` hold an entry of `engine`: for Nextflow, `main.nf` or another main script (#351). */

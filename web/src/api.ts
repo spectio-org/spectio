@@ -25,8 +25,8 @@ export interface Inspected {
   engine: Engine | null;
   engine_files: string[];
   /** The Nextflow entry scripts at the pipeline's root (#351): `main.nf` first, then each `*.nf`
-   * with an unnamed `workflow {` block; absent from a server before #351. */
-  main_scripts?: string[];
+   * with an unnamed `workflow {` block. */
+  main_scripts: string[];
   name: string;
   version: string | null;
   engine_version: string | null;
@@ -205,7 +205,7 @@ export interface Run {
     name: string | null;
     version: string | null;
     /** A Nextflow entry script other than `main.nf` (#351). */
-    main_script?: string | null;
+    main_script: string | null;
   };
   profiles: string[];
   /** One module or one rule; null for the whole pipeline (api §5.10). */
@@ -336,7 +336,7 @@ export interface CodeLoading {
  * a run, for Copy to a new launch (P1 Task 30). */
 export interface LaunchTemplate {
   /** `main_script`: the run's Nextflow entry script, kept by the copy (#351). */
-  workflow: { location: string; revision: string | null; engine: Engine; main_script?: string | null };
+  workflow: { location: string; revision: string | null; engine: Engine; main_script: string | null };
   profiles: string[];
   params: { [key: string]: Json };
   /** The top-level parameters that differ from the pipeline's schema defaults. */

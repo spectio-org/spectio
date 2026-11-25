@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 from pathlib import PurePosixPath
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
 from sqlalchemy import Connection, Row, select
 
@@ -574,9 +574,15 @@ def _in_pool(request: Request, build: Callable[[], dict[str, Any]]) -> dict[str,
 
 @router.get("/workflows:graph", response_model=models.GraphDocument)
 def workflow_graph(
-    request: Request, location: str, revision: str | None = None, main_script: str | None = None
+    request: Request,
+    location: str,
+    revision: str | None = None,
+    main_script: str | None = Query(  # the form's choice (#351, SEC-ENTRY-03)
+        None,
+        max_length=255,
+        description="A Nextflow entry script at the pipeline's root, instead of main.nf.",
+    ),
 ) -> dict[str, Any]:
-    """`main_script`: the Nextflow entry script the form chose (#351), else `main.nf`."""
     require_graph(request)
     settings: Settings = request.app.state.settings
     resolved = resolve(settings.data_dir, location, revision)
@@ -588,8 +594,10 @@ def workflow_graph(
         entry = next(f for f in found.engine_files if "Snakefile" in f)
         return _in_pool(request, lambda: static.snakemake_graph(root, entry))
     if found.engine == "nextflow":
-        script = root / (main_script or "main.nf")
-        metro = bioflow.metro_map(script)  # its own timeout, one at a time
+        # main.nf only when it is a regular file reached through no symlink (SEC-ENTRY-03)
+        script = main_script or "main.nf"
+        drawn = main_script is not None or "main.nf" in found.main_scripts
+        metro = bioflow.metro_map(root / script) if drawn else None  # its own timeout
         return _in_pool(request, lambda: static.nextflow_graph(root, found.name, metro))
     raise Problem(
         422,

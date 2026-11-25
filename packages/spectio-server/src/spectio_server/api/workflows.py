@@ -70,6 +70,8 @@ MAX_YAML = 256 * 1024  # a Snakemake schema or config file inspect parses (req. 
 MAX_SCHEMA_DEPTH = 64  # a schema or config inspect returns; the response encoder stops near 255
 MAX_TOKENS = 131_072  # YAML tokens in one file: about 2 s of pure-Python PyYAML (SEC-161S5-04)
 MAX_MAIN_SCRIPTS = 50  # the `*.nf` files at a pipeline's root inspect reads (#351)
+MAX_MAIN_SCRIPT_BYTES = 8 * MAX_FILE  # read of them in all (SEC-ENTRY-01)
+MAX_SCRIPT_NAMES = 1000  # `*.nf` names collected before they are sorted (SEC-ENTRY-01)
 UNNAMED_WORKFLOW = re.compile(r"^[ \t]*workflow[ \t]*\{", re.M)  # an entry workflow (#351)
 
 
@@ -524,22 +526,39 @@ def entry_files(directory: Path) -> list[str]:
 def main_scripts(directory: Path) -> list[str]:
     """The Nextflow entry scripts at the root of `directory` (#351): `main.nf` first when it is
     a regular file, then each other `*.nf` regular file, reached through no symlink, whose text
-    holds an unnamed `workflow {` block, by name. At most MAX_MAIN_SCRIPTS names are read, each
-    up to MAX_FILE bytes; a file that cannot be read, or is larger, is left out."""
-    try:
-        names = os.listdir(directory)
-    except OSError:
-        return []
+    holds an unnamed `workflow {` block, by name. At most MAX_SCRIPT_NAMES names are collected
+    before they are sorted, and the first MAX_MAIN_SCRIPTS of them read, each up to MAX_FILE
+    bytes and MAX_MAIN_SCRIPT_BYTES in all; a file that cannot be read, or is larger, is left
+    out (SEC-ENTRY-01, -04)."""
     found = ["main.nf"] if _regular(directory, "main.nf") else []
-    others = sorted(n for n in names if n != "main.nf" and MAIN_SCRIPT.fullmatch(n))
-    for name in others[:MAX_MAIN_SCRIPTS]:
+    names: list[str] = []
+    try:
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                if entry.name == "main.nf" or not MAIN_SCRIPT.fullmatch(entry.name):
+                    continue
+                if entry.is_file(follow_symlinks=False):  # no directory, FIFO nor symlink
+                    names.append(entry.name)
+                    if len(names) >= MAX_SCRIPT_NAMES:
+                        break
+    except OSError:
+        return found
+    left = MAX_MAIN_SCRIPT_BYTES
+    for name in sorted(names)[:MAX_MAIN_SCRIPTS]:
+        if left <= 0:
+            break
+        cap = min(MAX_FILE, left)
         try:
-            text = _read(directory, name)
-        except (Unreadable, UnicodeDecodeError):  # TooLarge is an Unreadable
+            text = _read(directory, name, cap=cap)  # `_read` checks the file again
+        except (OSError, Unreadable, UnicodeDecodeError):  # TooLarge is an Unreadable
+            left -= cap  # at most what was read
             continue
-        if text is not None and UNNAMED_WORKFLOW.search(text):
+        if text is None:
+            continue
+        left -= len(text.encode())
+        if UNNAMED_WORKFLOW.search(text):
             found.append(name)
-    return found[:MAX_MAIN_SCRIPTS]
+    return found
 
 
 def check_main_script(directory: Path, name: str, field: str) -> str:
@@ -552,12 +571,13 @@ def check_main_script(directory: Path, name: str, field: str) -> str:
     return name
 
 
-def inspect_dir(directory: Path, default_name: str) -> Found:
+def inspect_dir(directory: Path, default_name: str, scripts: list[str] | None = None) -> Found:
     """What the launch form needs from a pipeline directory. Raises Invalid (`location`) when
     a schema or config file cannot be read. A directory with a Nextflow entry script other
-    than `main.nf` is a Nextflow pipeline too (#351)."""
+    than `main.nf` is a Nextflow pipeline too (#351); `scripts`: `main_scripts`, when the
+    caller has read them already."""
     files = entry_files(directory)
-    scripts = main_scripts(directory)
+    scripts = main_scripts(directory) if scripts is None else scripts
     engines = [
         e
         for e, names in ENTRY_FILES.items()

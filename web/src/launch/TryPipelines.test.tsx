@@ -21,6 +21,7 @@ const INSPECTED = {
   revision: null,
   engine: "nextflow",
   engine_files: ["main.nf"],
+  main_scripts: ["main.nf"],
   name: "spectio/synthetic-scenarios",
   version: "0.1.0",
   engine_version: "26.10.4",

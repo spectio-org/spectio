@@ -15,6 +15,7 @@ const INSPECTED = {
   revision: null,
   engine: "nextflow",
   engine_files: ["main.nf"],
+  main_scripts: ["main.nf"],
   name: "rnaseq",
   version: "3.27.0",
   engine_version: "26.10.4",
@@ -161,7 +162,7 @@ test("a copy of a Snakemake file-target run opens as a Snakemake step, not a Nex
       target: { kind: "file", name: "results/x.txt" },
     },
     [URL_]: { ...DETAIL, ...run({ state: "succeeded", name: "synth" }) },
-    "/api/v1/workflows:inspect": { ...INSPECTED, location: "/g/demo-lab/pipelines/synth-qc", engine: "snakemake", engine_files: ["Snakefile"], schema: null, schema_source: "none", profiles: [] },
+    "/api/v1/workflows:inspect": { ...INSPECTED, location: "/g/demo-lab/pipelines/synth-qc", engine: "snakemake", engine_files: ["Snakefile"], main_scripts: [], schema: null, schema_source: "none", profiles: [] },
     "/api/v1/targets:inspect": { kind: "rule", rules: ["all", "qc_report"], plan: null },
     "/api/v1/runs?": { items: [], next: null },
   });
@@ -228,4 +229,17 @@ test("#351: a copy keeps the run's entry script, and sends it again", async () =
   await userEvent.click(screen.getAllByRole("button", { name: "Launch" }).at(-1)!);
   await waitFor(() => expect(posted).toHaveLength(1));
   expect(posted[0]).toMatchObject({ workflow: { main_script: "main_cellpose.nf" } });
+});
+
+test("#351: a copied entry script the pipeline no longer lists is shown, marked not found", async () => {
+  serve({
+    [`${URL_}:launch-template`]: { ...TEMPLATE, workflow: { ...TEMPLATE.workflow, main_script: "main_old.nf" } },
+    [URL_]: { ...DETAIL, ...run({ state: "failed", name: "wgs-cohort-12" }) },
+    "/api/v1/workflows:inspect": { ...INSPECTED, main_scripts: ["main.nf"] },
+    "/api/v1/runs?": { items: [], next: null },
+  });
+  app(`/launch?from=${ID}`);
+  const entry = await screen.findByRole("combobox", { name: /^Entry script/ });
+  expect(entry).toHaveValue("main_old.nf");
+  expect(entry).toHaveDisplayValue("main_old.nf (not found)");
 });

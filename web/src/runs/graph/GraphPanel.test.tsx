@@ -178,7 +178,7 @@ test("on the phone the Graph tab opens on the List", async () => {
 });
 
 test("Launch shows a Workflow map of the loaded pipeline, folded until opened", async () => {
-  const inspected = { location: "/data/demo", revision: null, engine: "nextflow", engine_files: ["main.nf"], name: "demo", version: null, engine_version: null, engine_versions: {}, schema: null, schema_source: "none", profiles: [], params_file: null };
+  const inspected = { location: "/data/demo", revision: null, engine: "nextflow", engine_files: ["main.nf"], main_scripts: ["main.nf"], name: "demo", version: null, engine_version: null, engine_versions: {}, schema: null, schema_source: "none", profiles: [], params_file: null };
   const mock = serve({
     "/api/v1/features": { features: ["graph_view"] },
     "/api/v1/workflows:inspect": inspected,
@@ -200,7 +200,7 @@ test("Launch shows a Workflow map of the loaded pipeline, folded until opened", 
 test("Launch has no Workflow map without the flag", async () => {
   serve({
     "/api/v1/features": { features: [] },
-    "/api/v1/workflows:inspect": { location: "/data/demo", revision: null, engine: "nextflow", engine_files: ["main.nf"], name: "demo", version: null, engine_version: null, engine_versions: {}, schema: null, schema_source: "none", profiles: [], params_file: null },
+    "/api/v1/workflows:inspect": { location: "/data/demo", revision: null, engine: "nextflow", engine_files: ["main.nf"], main_scripts: ["main.nf"], name: "demo", version: null, engine_version: null, engine_versions: {}, schema: null, schema_source: "none", profiles: [], params_file: null },
   });
   app("/launch?location=/data/demo");
   expect(await screen.findByRole("button", { name: /Parameters/ })).toBeInTheDocument();

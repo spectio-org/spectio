@@ -314,9 +314,11 @@ export function LaunchPage({
   const res = readResources(resources, extras);
   // The Nextflow entry script (#351): offered when the pipeline has another one than main.nf, or
   // none is main.nf; required then, never guessed. main.nf itself is not sent.
-  const scripts = loaded?.main_scripts ?? [];
+  const scripts = loaded ? loaded.main_scripts : [];
   const hasMain = !!loaded?.engine_files.includes("main.nf");
-  const entryChoice = !!loaded && !targeting && engine === "nextflow" && scripts.length > 0 && (scripts.length > 1 || !hasMain);
+  // a copied script the pipeline no longer lists is shown too, so the user sees it is gone
+  const gone = mainScript !== null && !scripts.includes(mainScript);
+  const entryChoice = !!loaded && !targeting && engine === "nextflow" && ((scripts.length > 0 && (scripts.length > 1 || !hasMain)) || gone);
   const entryScript = mainScript ?? (hasMain ? "main.nf" : "");
   const sentScript = entryChoice && entryScript && entryScript !== "main.nf" ? entryScript : null;
 

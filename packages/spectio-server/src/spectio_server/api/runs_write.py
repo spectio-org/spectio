@@ -162,13 +162,13 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         raise exc.under("workflow") from None
     files = ENTRY_FILES[engine]
     present = entry_files(resolved.directory)
-    scripts = main_scripts(resolved.directory) if engine == "nextflow" else []
-    if not set(files) & set(present) and not scripts:
+    scripts = main_scripts(resolved.directory)  # read once, inspect_dir reuses them
+    if not set(files) & set(present) and not (engine == "nextflow" and scripts):
         names = " or ".join(files)
         raise Invalid("workflow.engine", f"no {names} in this pipeline: is it a {engine} one?")
     main_script = _main_script(body.workflow, resolved.directory, "main.nf" in present, scripts)
     try:
-        found = inspect_dir(resolved.directory, resolved.default_name)
+        found = inspect_dir(resolved.directory, resolved.default_name, scripts)
     except Invalid as exc:
         raise exc.under("workflow") from None
     # the effective parameters (api §5.12): the sources' defaults under the form's values; the
@@ -324,6 +324,7 @@ def _create(
             "engine": workflow.engine,
             "name": found.name,
             "version": found.version,
+            "main_script": workflow.main_script,  # #351
         },
         "profiles": body.profiles,
         "params": body.params,

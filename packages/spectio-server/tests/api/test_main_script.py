@@ -2,6 +2,7 @@
 lists the candidates, `POST /runs` takes `workflow.main_script`, the run keeps it, Resume and
 Copy to a new launch carry it, and the launch map draws it."""
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +36,9 @@ def scripts(tmp_path: Path, main: bool = False) -> Path:
     (root / "lib.nf").write_text("workflow FOO {\n}\nprocess BAR {\n}\n")
     (tmp_path / "elsewhere.nf").write_text(ENTRY)
     (root / "linked.nf").symlink_to(tmp_path / "elsewhere.nf")
+    (root / "dir.nf").mkdir()  # a directory, and a FIFO where the system makes one
+    if hasattr(os, "mkfifo"):
+        os.mkfifo(root / "pipe.nf")
     if main:
         (root / "main.nf").write_text("// DSL1: no workflow block\n")
     return root
@@ -85,6 +89,38 @@ def test_inspect_main_scripts_bounded(authed_client: TestClient, tmp_path: Path)
     assert (body["engine"], body["main_scripts"]) == ("snakemake", [])
 
 
+def test_inspect_main_scripts_byte_budget(authed_client: TestClient, tmp_path: Path) -> None:
+    """At most 8 MiB read in all: eight files of nearly 1 MiB, then the reads stop."""
+    root = tmp_path / "large"
+    root.mkdir()
+    text = ENTRY + "//" + "x" * (wf.MAX_FILE - len(ENTRY) - 100) + "\n"
+    for i in range(60):
+        (root / f"entry_{i:02}.nf").write_text(text)
+    assert wf.MAX_MAIN_SCRIPT_BYTES == 8 * wf.MAX_FILE
+    body = authed_client.get(INSPECT, params={"location": str(root)}).json()
+    assert body["main_scripts"] == [f"entry_{i:02}.nf" for i in range(8)]
+
+
+def test_inspect_main_scripts_name_cap(
+    authed_client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """At most MAX_SCRIPT_NAMES (1000) matching names are collected before they are sorted."""
+    assert wf.MAX_SCRIPT_NAMES == 1000
+    monkeypatch.setattr(wf, "MAX_SCRIPT_NAMES", 3)
+    root = tmp_path / "names"
+    root.mkdir()
+    for i in range(10):
+        (root / f"entry_{i}.nf").write_text(ENTRY)
+    body = authed_client.get(INSPECT, params={"location": str(root)}).json()
+    assert len(body["main_scripts"]) == 3
+
+
+def test_inspect_lists_no_fifo_nor_directory(authed_client: TestClient, tmp_path: Path) -> None:
+    root = scripts(tmp_path)
+    body = authed_client.get(INSPECT, params={"location": str(root)}).json()
+    assert not {"dir.nf", "pipe.nf"} & set(body["main_scripts"])
+
+
 # --- Launch ----------------------------------------------------------------------------------
 
 
@@ -99,6 +135,7 @@ def test_launch_with_a_main_script(
     response = launch(authed_client, root, main_script="main_cellpose.nf")
     assert response.status_code == 201, response.text
     run_id = response.json()["id"]
+    assert response.json()["workflow"]["main_script"] == "main_cellpose.nf"
     manifest = read_run_manifest(run_paths(settings.runs_root, run_id).run_dir)
     assert manifest.workflow.main_script == "main_cellpose.nf"
     (row,) = table(writer, runs)
@@ -133,7 +170,18 @@ def test_launch_with_main_nf_needs_no_choice(
 
 @pytest.mark.parametrize(
     "bad",
-    ["../elsewhere.nf", "sub/x.nf", "-x.nf", "x.config", "missing.nf", "linked.nf", "lib"],
+    [
+        "../elsewhere.nf",
+        "sub/x.nf",
+        "-x.nf",
+        "x.config",
+        "missing.nf",
+        "linked.nf",
+        "lib",
+        "dir.nf",
+        "pipe.nf",  # missing where no FIFO was made: refused all the same
+        "x" * 253 + ".nf",
+    ],
 )
 def test_launch_main_script_refused(authed_client: TestClient, tmp_path: Path, bad: str) -> None:
     root = scripts(tmp_path)
@@ -195,6 +243,36 @@ def test_resume_and_copy_keep_the_main_script(
     assert found == "main_eubibridge_single.nf"
 
 
+def test_resume_checks_the_main_script_again(
+    authed_client: TestClient,
+    tmp_path: Path,
+    settings: Settings,
+    writer: Writer,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The parent's entry script became a symlink: Resume refuses, as Launch would."""
+    monkeypatch.setattr(resume, "processes_in", lambda path: [])
+    root = scripts(tmp_path)
+    response = launch(authed_client, root, main_script="main_cellpose.nf")
+    assert response.status_code == 201, response.text
+    run_id = response.json()["id"]
+    make_run_dirs(settings.runs_root, run_id)
+    session = "5f1c8a43-7f62-4a5e-9d4f-0a1b2c3d4e5f"
+
+    def failed(conn: Any) -> None:
+        conn.execute(update(runs).where(runs.c.id == run_id).values(state="failed"))
+        conn.execute(
+            update(launches).where(launches.c.run_id == run_id).values(engine_session_id=session)
+        )
+
+    writer.submit(failed).result()
+    (root / "main_cellpose.nf").unlink()
+    (root / "main_cellpose.nf").symlink_to(tmp_path / "elsewhere.nf")
+    refused = authed_client.post(f"{RUNS}/{run_id}:relaunch", json={"mode": "resume"})
+    assert fields(refused) == ["workflow.main_script"]
+    assert len(table(writer, runs)) == 1  # no child
+
+
 # --- The launch map --------------------------------------------------------------------------
 
 
@@ -212,3 +290,10 @@ def test_graph_draws_the_main_script(
     assert drawn == [root / "main_cellpose.nf", root / "main.nf"]
     refused = client.get(graph, params={"location": str(root), "main_script": "../x.nf"})
     assert fields(refused) == ["main_script"]
+    too_long = client.get(graph, params={"location": str(root), "main_script": "x" * 253 + ".nf"})
+    assert fields(too_long) == ["main_script"]
+    # a main.nf that is a symlink is not handed to the tool
+    (root / "main.nf").unlink()
+    (root / "main.nf").symlink_to(tmp_path / "elsewhere.nf")
+    assert client.get(graph, params={"location": str(root)}).status_code == 200
+    assert drawn == [root / "main_cellpose.nf", root / "main.nf"]
