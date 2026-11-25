@@ -39,3 +39,4 @@ spectio/runner/spool.py
 spectio/runner/squeue.py
 spectio/runner/tmux.py
 spectio/runner/types.py
+spectio/text.py
