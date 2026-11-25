@@ -468,6 +468,11 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
         env["NXF_LOG_FILE"] = str(_spectio(spec) / "nextflow.log")
         if spec.nxf_opts:
             env["NXF_OPTS"] = spec.nxf_opts
+        # Off ([engines] nextflow_task_metrics = false): nf-spectio's enableMetrics() goes off,
+        # the trace record loses realtime, %cpu and peak_rss, and the task wrapper's
+        # `command -v ps` no longer fails a container without procps (architecture §13.7).
+        if not spec.task_metrics:
+            env["SPECTIO_TASK_METRICS"] = "false"
     elif spec.software_cache is not None:
         # The tools' own caches default to the home directory (Apptainer's layers under
         # ~/.apptainer/cache, conda's packages under ~/.conda/pkgs when the base is not

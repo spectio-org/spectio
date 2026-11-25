@@ -59,6 +59,13 @@ log = logging.getLogger(__name__)
 CACHE_FILE = "sacct.json"  # in <run dir>/.spectio/
 MAX_CACHE_BYTES = 8388608
 LOG_TAIL_LINES = 20
+# What Nextflow's task wrapper says, with metrics on, when the container has no `ps`
+# (command-run.txt, v26.10.4) — and the way out, appended to the failure's log tail.
+PS_MISSING = "Command 'ps' required by nextflow to collect task metrics cannot be found"
+PS_HINT = (
+    " The task's container has no `ps`: set [engines] nextflow_task_metrics = false,"
+    " or add procps to the image."
+)
 MAX_BENCHMARK_BYTES = 65536
 MAX_MEASURES = 200_000  # attempts whose benchmark is kept in memory (CR-P3T34-01)
 MAX_BENCHMARKS_PER_VIEW = 500  # read by one view; later views read the rest (SEC-P3T34-01)
@@ -836,7 +843,10 @@ def _log_tail(attempt: AttemptFiles) -> str | None:
             text = read_task_file(attempt, name).text
         except (NotFound, NotAllowed, Binary, OSError):
             continue
-        return "\n".join(text.splitlines()[-LOG_TAIL_LINES:])
+        tail = "\n".join(text.splitlines()[-LOG_TAIL_LINES:])
+        if PS_MISSING in tail:  # the task wrapper, with metrics on, in a container without ps
+            return tail + PS_HINT
+        return tail
     return None
 
 

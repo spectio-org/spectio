@@ -157,7 +157,23 @@ def test_head_script_nextflow_args(home: Path, bridges: Path) -> None:
     assert env["NXF_OPTS"] == "-Xmx1g"
     assert env["SPECTIO_RUN_ID"] == RUN_ID and env["SPECTIO_LAUNCH_N"] == "1"
     assert env["SPECTIO_SPOOL_DIR"] == str(spectio_dir / "events")
+    assert "SPECTIO_TASK_METRICS" not in env  # on by default: nothing exported
     assert "plugins" not in (spectio_dir / "spectio.config").read_text()  # inbox #69
+
+
+def test_head_script_task_metrics_off(home: Path, bridges: Path) -> None:
+    """`[engines] nextflow_task_metrics = false`: the head script exports
+    SPECTIO_TASK_METRICS=false, which turns `enableMetrics()` off in nf-spectio; on, nothing is
+    exported (the test above), and Snakemake never sees the variable either way."""
+    spec = make_spec(
+        home / "runs",
+        engine_cmd=shlex.quote(str(stub_engine(home / "bin"))),
+        task_metrics=False,
+    )
+    assert run_head(spec).returncode == 0
+    assert exported(spec)["SPECTIO_TASK_METRICS"] == "false"
+    smk = replace(spec, engine="snakemake", engine_cmd="snakemake")
+    assert "SPECTIO_TASK_METRICS" not in engine_env(smk)
 
 
 def test_engine_finds_the_unpacked_nf_spectio(

@@ -220,8 +220,9 @@ def test_no_script_or_env_keys(nf_run: Path) -> None:
 
 
 def test_metrics_enabled(nextflow: str, tmp_path: Path) -> None:
-    """`enableMetrics()` is true (P1 Task 28): the trace of a finished task has its measures,
-    even with the pipeline's trace, report and timeline off, whose observers enable them too."""
+    """`enableMetrics()` is true with `SPECTIO_TASK_METRICS` unset, its default (P1 Task 28):
+    the trace of a finished task has its measures, even with the pipeline's trace, report and
+    timeline off, whose observers enable them too."""
     off = tmp_path / "off.config"
     off.write_text("trace.enabled = false\nreport.enabled = false\ntimeline.enabled = false\n")
     launch_dir = tmp_path / "launch"
@@ -234,6 +235,23 @@ def test_metrics_enabled(nextflow: str, tmp_path: Path) -> None:
         assert isinstance(trace, dict)
         for key in ("realtime", "%cpu", "peak_rss"):
             assert trace.get(key) is not None, (key, trace)
+
+
+def test_metrics_disabled_by_env(nextflow: str, tmp_path: Path) -> None:
+    """`SPECTIO_TASK_METRICS=false` (the head script's export for `[engines]
+    nextflow_task_metrics = false`) turns `enableMetrics()` off: a finished task's trace has
+    no measures, and its wrapper never runs `command -v ps`, so a container without `ps`
+    (procps) can run it."""
+    launch_dir = tmp_path / "launch"
+    done = run_nf(nextflow, launch_dir, env={"SPECTIO_TASK_METRICS": "false"})
+    assert done.returncode == 0, done.stdout + done.stderr
+    events = [SpoolEvent.model_validate_json(line) for line in spool_lines(launch_dir)]
+    traces = [ev.data["trace"] for ev in events if ev.type == "nextflow.onTaskComplete"]
+    assert traces
+    for trace in traces:
+        assert isinstance(trace, dict)
+        for key in ("realtime", "%cpu", "peak_rss"):
+            assert trace.get(key) is None, (key, trace)
 
 
 def test_task_events_carry_workdir_and_native_id(nf_run: Path) -> None:

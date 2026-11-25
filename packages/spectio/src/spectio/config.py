@@ -109,11 +109,14 @@ class SlurmOpts(_Model):
 
 class EngineOpts(_Model):
     """How the head script runs each engine: a shell command, from the login shell's PATH or
-    given as is (P1 Assumption 14)."""
+    given as is (P1 Assumption 14). `nextflow_task_metrics` is the plugin's `enableMetrics()`:
+    off, a task's trace record has no per-task CPU and memory, and a container without `ps`
+    (procps) can still run (architecture §13.7)."""
 
     nextflow_cmd: str | None = None
     snakemake_cmd: str | None = None
     nxf_opts: str = "-Xmx2g"
+    nextflow_task_metrics: bool = True
     extra_args: dict[Literal["nextflow", "snakemake"], list[str]] = {}  # per engine
 
 
@@ -159,6 +162,7 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_ENGINES_NEXTFLOW_CMD": ("engines", "nextflow_cmd"),
     "SPECTIO_ENGINES_SNAKEMAKE_CMD": ("engines", "snakemake_cmd"),
     "SPECTIO_ENGINES_NXF_OPTS": ("engines", "nxf_opts"),
+    "SPECTIO_ENGINES_NEXTFLOW_TASK_METRICS": ("engines", "nextflow_task_metrics"),
     "SPECTIO_ENGINES_EXTRA_ARGS_NEXTFLOW": ("engines", "extra_args", "nextflow"),
     "SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE": ("engines", "extra_args", "snakemake"),
     "SPECTIO_RUNNER_HEAD_WATCH_S": ("runner", "head_watch_s"),
