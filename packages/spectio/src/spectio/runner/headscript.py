@@ -69,21 +69,14 @@ _RESUME = (
 # the engine it became (bash execs the last command). Without it the engine could still start
 # after a Cancel and run until its SIGKILL (FU-P3-108a).
 _ENGINE = "( [ -e {cancel} ] && exit 143; {command} )\n"
-# conda's package download cache (#378): conda writes a package to an O_APPEND file, seeks to
-# its start and reads it back for the checksum; on a BeeGFS 8.2.2 client the seek leaves the
-# position at the end, the read comes back empty and the checksum fails (checked 2026-11-25),
-# while an environment built from a prefix there works. So the head makes each launch a fresh
-# private directory on the node-local
-# storage (`$TMPDIR`, else /tmp) — `mktemp -d` gives it mode 0700 and a random name no other
-# user can pre-create — and removes it once the engine has ended (_CONDA_PKGS_RM). The
-# environments' prefix stays in the software cache. A CONDA_PKGS_DIRS in spec.env wins.
+# conda's package cache (#378): on a BeeGFS client, conda's downloads into a shared directory read
+# back empty, so each launch gets a private (0700) node-local one, removed when the head exits.
 _CONDA_PKGS = (
-    'CONDA_PKGS_DIRS=$({mktemp} -d "${{TMPDIR:-/tmp}}/spectio-conda.XXXXXX") || exit 1\n'
-    "export CONDA_PKGS_DIRS\n"
+    'spectio_pkgs=$({mktemp} -d "${{TMPDIR:-/tmp}}/spectio-conda.XXXXXX") || exit 1\n'
+    'spectio_rm_pkgs() {{ {rm} -rf -- "$spectio_pkgs"; }}\n'
+    "trap spectio_rm_pkgs EXIT\n"
+    'export CONDA_PKGS_DIRS="$spectio_pkgs"\n'
 )
-# The package cache's removal, after the engine (#378): the engine's exit status is captured
-# first, so the head still ends as the engine did.
-_CONDA_PKGS_RM = 'spectio_status=$?\n{rm} -rf -- "$CONDA_PKGS_DIRS"\nexit "$spectio_status"\n'
 SESSION_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 LOCK = ".spectio-launch.lock"  # in the engine's directory, while a head of Spectio runs there
 LOCKED = 75  # head.exit's code when another head holds the lock
@@ -303,7 +296,7 @@ SOFTWARE_PREFIXES = {"conda": "--conda-prefix", "apptainer": "--apptainer-prefix
 APPTAINER_ARGS = "--apptainer-args"
 # The tools' own download caches under the software cache (inbox #161): directory, tool and
 # the variable that points the tool at it. conda's package cache is not here: the head script
-# makes it per launch on node-local storage instead (#378, _CONDA_PKGS).
+# makes it per launch on node-local storage instead (#378).
 SOFTWARE_CACHES = {
     "apptainer-cache": ("apptainer", "APPTAINER_CACHEDIR"),
 }
@@ -486,7 +479,7 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
     elif spec.software_cache is not None:
         # Apptainer's layers otherwise cache under ~/.apptainer/cache [to be validated]: kept
         # beside the environments instead (inbox #161). conda's package cache is the head
-        # script's own, per launch (#378, _CONDA_PKGS), never the software cache's.
+        # script's own, per launch (#378), never the software cache's.
         for name in _cache_dirs(spec):
             if name in SOFTWARE_CACHES:
                 env[SOFTWARE_CACHES[name][1]] = str(spec.software_cache / name)
@@ -528,7 +521,7 @@ def render_head_script(spec: LaunchSpec) -> str:
         pylib = shlex.quote(str(_spectio(spec) / "pylib"))
         inner += f"export PYTHONPATH={pylib}${{PYTHONPATH:+:$PYTHONPATH}}\n"
         if conda_pkgs:  # a fresh private directory, node-local (#378)
-            inner += _CONDA_PKGS.format(mktemp=tools["mktemp"])
+            inner += _CONDA_PKGS.format(mktemp=tools["mktemp"], rm=tools["rm"])
         if spec.resume_of is not None and spec.resume_of.unlock:  # `cli.py:1226`, v9.27.1
             unlock = " ".join([spec.engine_cmd, *map(shlex.quote, _snakemake_base(spec))])
             inner += f"{unlock} --unlock || exit $?\n"
@@ -544,8 +537,6 @@ def render_head_script(spec: LaunchSpec) -> str:
             cancel=shlex.quote(own + "/cancel"),
         )
     inner += _ENGINE.format(cancel=shlex.quote(own + "/cancel"), command=command)
-    if conda_pkgs:  # the package cache is gone when the head ends, the engine's status kept
-        inner += _CONDA_PKGS_RM.format(rm=tools["rm"])
     line = banner(spec)
     return _HEAD.format(
         run_id=spec.run_id,

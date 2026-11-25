@@ -366,12 +366,17 @@ def test_snakemake_conda_pkgs_dir_is_per_launch_and_removed(home: Path, bridges:
     assert mktemp in text
     # after the PYTHONPATH export, before the rule listing
     assert text.index("export PYTHONPATH=") < text.index(mktemp) < text.index("--list-rules")
-    assert "spectio_status=$?" in text and 'exit "$spectio_status"' in text
-    assert text.index("--logger") < text.index("spectio_status=$?")  # the engine, then the rm
+    assert "trap spectio_rm_pkgs EXIT" in text  # removed on every exit, early ones too
     assert run_head(spec).returncode == 7  # the engine's status, never the removal's
     where = Path(exported(spec)["CONDA_PKGS_DIRS"])
     assert where.parent == Path(os.environ["TMPDIR"]) and where.name.startswith("spectio-conda.")
     assert not where.exists()  # removed when the engine ended
+    # CR-378-01: a cancel before the engine starts exits early and still removes it
+    head = write_launch_files(spec)
+    (spec.launch_dir / ".spectio" / "cancel").write_text("")
+    early = subprocess.run([BASH, str(head)], capture_output=True, text=True, timeout=60)
+    assert early.returncode == 143
+    assert not list(Path(os.environ["TMPDIR"]).glob("spectio-conda.*"))
     # no conda deployed, or a workflow profile: the head makes no directory
     assert "mktemp" not in render_head_script(replace(spec, software=["apptainer"]))
     assert "mktemp" not in render_head_script(replace(spec, profiles=["slurm"]))
@@ -385,7 +390,7 @@ def test_snakemake_conda_pkgs_dirs_given_by_the_user_wins(home: Path, bridges: P
         home, software_cache=home / "cache", software=["conda"], env={"CONDA_PKGS_DIRS": given}
     )
     text = render_head_script(spec)
-    assert "mktemp" not in text and "spectio_status" not in text
+    assert "mktemp" not in text and "spectio_rm_pkgs" not in text
     assert run_head(spec).returncode == 0
     assert exported(spec)["CONDA_PKGS_DIRS"] == given
 
