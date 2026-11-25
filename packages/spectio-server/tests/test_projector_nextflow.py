@@ -565,6 +565,82 @@ def test_failure_without_terminate_is_engine_fault(engine: Engine, writer: Write
     }
 
 
+def test_failed_task_without_terminate_names_the_run_failure(
+    engine: Engine, writer: Writer
+) -> None:
+    # #377: an errorStrategy `finish` (or no errorAction) left the run an empty engine_fault.
+    fail: dict[str, Any] = {"trace": {"status": "FAILED", "exit": "1"}, "errorAction": "FINISH"}
+    ingest_events(
+        writer,
+        task(1, "onTaskComplete", process="CONVERT", tag="img1", **fail),
+        event(2, "onFlowComplete", success=False, errorMessage=""),
+    )
+    with engine.connect() as conn:
+        task_id = conn.execute(select(tasks.c.id)).scalar_one()
+        failure_class = conn.execute(select(attempts.c.failure_class)).scalar_one()
+    assert run_row(engine).failure == {
+        "class": "tool_error",
+        "message": "Task CONVERT (img1) failed with exit code 1.",
+        "task_id": task_id,
+        "attempt_n": 1,
+    }
+    assert failure_class == "tool_error"
+
+
+def test_the_engine_message_is_kept_and_a_retried_success_is_no_culprit(
+    engine: Engine, writer: Writer
+) -> None:
+    fail: dict[str, Any] = {"trace": {"status": "FAILED", "exit": "2"}, "errorAction": "RETRY"}
+    done: dict[str, Any] = {"trace": {"status": "COMPLETED"}}
+    ingest_events(
+        writer,
+        task(1, "onTaskComplete", tag="S01", **fail),
+        event(2, "onTaskComplete", process="ALIGN", tag="S01", attempt=2, taskId="2", **done),
+        event(3, "onFlowComplete", success=False, errorMessage="boom"),
+    )
+    assert run_row(engine).failure == {
+        "class": "engine_fault",
+        "message": "boom",
+        "task_id": None,
+        "attempt_n": None,
+    }
+
+
+def attempt_event(n: int, attempt: int, exit_: str, action: str) -> SpoolEvent:
+    trace = {"status": "FAILED", "exit": exit_}
+    return event(
+        n, "onTaskComplete", process="ALIGN", tag="S01", attempt=attempt, taskId=str(n),
+        trace=trace, errorAction=action,
+    )  # fmt: skip
+
+
+def test_the_last_attempt_is_blamed_across_batches(engine: Engine, writer: Writer) -> None:
+    # Separate batches give each attempt its own created_at (CR-01 of the #377 review).
+    ingest_events(writer, attempt_event(1, 1, "2", "RETRY"))
+    ingest_events(writer, attempt_event(2, 2, "3", "FINISH"))
+    ingest_events(writer, event(3, "onFlowComplete", success=False, errorMessage=""))
+    failure = run_row(engine).failure
+    assert (failure["attempt_n"], failure["message"]) == (
+        2,
+        "Task ALIGN (S01) failed with exit code 3.",
+    )
+
+
+@pytest.mark.parametrize("retried", [False, True])
+def test_an_ignored_failure_is_no_culprit(engine: Engine, writer: Writer, retried: bool) -> None:
+    # Also after a retry: attempt 1 RETRY (not ignored), attempt 2 IGNORE (CR-02).
+    if retried:
+        ingest_events(writer, attempt_event(1, 1, "2", "RETRY"))
+    ingest_events(writer, attempt_event(2, 2 if retried else 1, "3", "IGNORE"))
+    ingest_events(writer, event(3, "onFlowComplete", success=False, errorMessage=""))
+    assert run_row(engine).failure == {
+        "class": "engine_fault",
+        "message": "",
+        "task_id": None,
+        "attempt_n": None,
+    }
+
+
 def test_first_terminate_in_a_batch_is_the_culprit(
     engine: Engine, writer: Writer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
