@@ -641,7 +641,7 @@ def test_git_cache_not_private_is_refused_without_the_runs_root_wording(
     response = authed_client.get(INSPECT, params=params)
     assert fields(response) == ["location"]
     detail = response.json()["detail"]
-    assert "not private to you" in detail and "runs root" not in detail
+    assert "not usable by you" in detail and "runs root" not in detail
 
 
 @pytest.mark.parametrize("code", [errno.ENOSPC, errno.EROFS, errno.EIO])
