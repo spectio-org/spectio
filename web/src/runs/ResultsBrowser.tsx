@@ -6,7 +6,7 @@ import { type IconName, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { CardHead } from "../shell/CardHead";
-import { Ago, ago } from "../shell/NotificationsBell";
+import { Ago, ago } from "../shell/Ago";
 import { PageHead } from "../shell/PageHead";
 import { EmptyState, ErrorPanel, SkeletonRows } from "../shell/States";
 import { Toolbar, ToolbarSearch } from "../shell/Toolbar";

@@ -10,7 +10,6 @@ import {
   shortId,
   stageWord,
   stagesLine,
-  when,
 } from "./stateWord";
 
 test("run states read as the words of ui-spec §3.1", () => {
@@ -93,17 +92,12 @@ test("one duration format: s, min, h, then h and min (ui-spec §12.8)", () => {
   expect(formatDuration(2 * 3600 + 3 * 60)).toBe("2 h 3 min");
 });
 
-test("durations and times read as on the boards", () => {
+test("durations read as on the boards", () => {
   const start = new Date(2026, 9, 31, 7, 40, 0);
   expect(duration(start.toISOString(), new Date(2026, 9, 31, 7, 40, 12).toISOString())).toBe("12 s");
   expect(duration(start.toISOString(), new Date(2026, 9, 31, 8, 18, 0).toISOString())).toBe("38 min");
   expect(duration(start.toISOString(), new Date(2026, 9, 31, 8, 45, 0).toISOString())).toBe("1 h 5 min");
   expect(duration(null, null)).toBe("—");
-  const now = new Date(2026, 9, 31, 12, 0, 0);
-  expect(when(new Date(2026, 9, 31, 9, 2).toISOString(), now)).toBe("Today 09:02");
-  expect(when(new Date(2026, 9, 25, 18, 10).toISOString(), now)).toBe("Sun 18:10");
-  expect(when(new Date(2026, 8, 1, 6, 5).toISOString(), now)).toBe("2026-09-01 06:05");
-  expect(when(null, now)).toBe("—");
 });
 
 test("UX-PAR-16: a failed run's context is the class and the message, never blank (#385: no count)", async () => {
@@ -127,7 +121,7 @@ test("#385: a run's context does not repeat its word; a running run says when it
   expect(counts({ running: 3, submitted: 2 })).toBe("3 jobs running");
   expect(counts({ running: 1 }, "nextflow")).toBe("1 task running");
   expect(counts({ submitted: 5 })).toBe("all 5 jobs queued in the scheduler");
-  expect(counts({ submitted: 1 }, "nextflow")).toBe("all 1 task queued in the scheduler");
+  expect(counts({ submitted: 1 }, "nextflow")).toBe("1 task queued in the scheduler");
   expect(counts({ submitted: 2, pending: 4 })).toBe("2 jobs queued in the scheduler");
   expect(counts({}, "snakemake", "succeeded")).toBe("");
   expect(counts({}, "snakemake", "cancelled")).toBe("");

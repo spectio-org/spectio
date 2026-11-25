@@ -14,7 +14,7 @@ import {
 } from "../api";
 import { Icon } from "../icons";
 import { usePhone } from "../shell/layout";
-import { ago } from "../shell/NotificationsBell";
+import { ago } from "../shell/Ago";
 import { CopyButton } from "./CopyMenu";
 import { LogLines } from "./LogViewer";
 import { OFFLINE, OFFLINE_WHY } from "./explorer";

@@ -52,18 +52,18 @@ function stageLine(id: string | null, stages: Stage[]): string {
 /** The counts as chips: done of all, then running, queued, pending, failed, cached and retried. */
 function CountChips({ counts, retries, label }: { counts: Counts; retries: number; label: string }) {
   const chips = [
-    { text: `${sum(counts, "succeeded", "cached", "stored")} of ${total(counts)} done`, tone: "succeeded" },
-    { text: `${sum(counts, "running")} running`, tone: "running" },
-    { text: `${sum(counts, "submitted")} queued`, tone: "queued" },
-    { text: `${sum(counts, "pending")} pending`, tone: "queued" },
-    { text: `${sum(counts, "failed")} failed`, tone: "failed" },
-    { text: `${sum(counts, "cached", "stored")} cached`, tone: "cached" },
-    { text: `${retries} retried`, tone: "review" },
+    { key: "done", text: `${sum(counts, "succeeded", "cached", "stored")} of ${total(counts)} done`, tone: "succeeded" },
+    { key: "running", text: `${sum(counts, "running")} running`, tone: "running" },
+    { key: "queued", text: `${sum(counts, "submitted")} queued`, tone: "queued" },
+    { key: "pending", text: `${sum(counts, "pending")} pending`, tone: "queued" },
+    { key: "failed", text: `${sum(counts, "failed")} failed`, tone: "failed" },
+    { key: "cached", text: `${sum(counts, "cached", "stored")} cached`, tone: "cached" },
+    { key: "retried", text: `${retries} retried`, tone: "review" },
   ];
   return (
     <ul className="sp-counts" aria-label={label}>
       {chips.map((chip) => (
-        <li key={chip.text.replace(/^\d+ /, "")} className="sp-chip" data-tone={chip.tone}>
+        <li key={chip.key} className="sp-chip" data-tone={chip.tone}>
           {chip.text}
         </li>
       ))}

@@ -131,7 +131,7 @@ export function stateContext(run: Run): string {
       const running = run.task_counts.running ?? 0;
       const queued = run.task_counts.submitted ?? 0;
       if (running === 0 && queued > 0) {
-        return `${run.task_counts.pending ? "" : "all "}${plural(queued, unit, units)} queued in the scheduler`;
+        return `${run.task_counts.pending || queued === 1 ? "" : "all "}${plural(queued, unit, units)} queued in the scheduler`;
       }
       return `${plural(running, unit, units)} running`;
     }

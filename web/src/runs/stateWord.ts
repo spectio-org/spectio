@@ -190,21 +190,6 @@ export function duration(start: string | null, end: string | null, now = new Dat
   return formatDuration(((end ? new Date(end) : now).getTime() - new Date(start).getTime()) / 1000);
 }
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const two = (v: number) => String(v).padStart(2, "0");
-
-/** "Today 09:02", "Sun 18:10" within the week, else "2026-09-01 06:05"; local time. */
-export function when(iso: string | null, now = new Date()): string {
-  if (!iso) return "—";
-  const at = new Date(iso);
-  const time = `${two(at.getHours())}:${two(at.getMinutes())}`;
-  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const days = Math.round((day(now) - day(at)) / 86400000);
-  if (days === 0) return `Today ${time}`;
-  if (days > 0 && days < 7) return `${DAYS[at.getDay()]} ${time}`;
-  return `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())} ${time}`;
-}
-
 const EXECUTORS: Record<string, string> = { slurm: "SLURM", local: "Local" };
 /** The server's executor as people write it (UX-PAR-33): "SLURM", "Local". */
 export const executorLabel = (executor: string): string => EXECUTORS[executor] ?? executor.toUpperCase();

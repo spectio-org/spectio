@@ -7,7 +7,7 @@ import { RUN_ID } from "../runs/RunDetailPage";
 import { TONE_ICONS } from "../runs/RunState";
 import { type Tone, engineName, runWord, tone } from "../runs/stateWord";
 import { EngineMark } from "./EngineMark";
-import { ago } from "./NotificationsBell";
+import { ago } from "./Ago";
 import { EmptyState } from "./States";
 
 // Search in 0.0.1 (FU-P3-89; ui-spec §2 top bar note): no GET /search yet (api §5 is later), so

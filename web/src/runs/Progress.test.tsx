@@ -1,7 +1,7 @@
 // The one progress cell and its count format (#385, ui-spec §12.8).
 import { render } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { ago } from "../shell/NotificationsBell";
+import { ago } from "../shell/Ago";
 import { Progress, progressText, tasksText } from "./RunState";
 import { run } from "../testing";
 

@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import type { ApiError, ResultReport, Results, RunDetail } from "../api";
 import { listResults } from "../api";
 import { Icon } from "../icons";
+import { Ago, ago } from "../shell/Ago";
 import { FoldSection } from "../shell/FoldSection";
 import { CopyButton } from "./CopyMenu";
-import { when } from "./stateWord";
 
 // The Summary's "Results and reports" (P1 Task 32 part two; ui-spec §4.4 run tools note; board
 // LiteRunDetail): the results directory with Copy, the reports found below it, MultiQC first, and
@@ -111,12 +111,12 @@ function Contents({ run, results }: { run: RunDetail; results: Results }) {
                   to="/runs/$id/results"
                   params={{ id: run.id }}
                   search={{ path: f.name }}
-                  aria-label={`Browse ${f.name}/, modified ${when(f.mtime)}`}
+                  aria-label={`Browse ${f.name}/, modified ${ago(f.mtime)}`}
                   className="sp-mono"
                 >
                   {f.name}/
                 </Link>
-                <span className="sp-muted">modified {when(f.mtime)}</span>
+                <span className="sp-muted">modified <Ago iso={f.mtime} /></span>
               </li>
             ))}
           </ul>

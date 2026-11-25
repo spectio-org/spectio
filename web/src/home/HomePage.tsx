@@ -11,7 +11,7 @@ import { NoRuns, RunCard } from "../runs/RunsPage";
 import { ACTIVE, executorLabel, isTerminal, plural, tone, words } from "../runs/stateWord";
 import { useServer } from "../server";
 import { PipelineMark } from "../shell/EngineMark";
-import { Ago } from "../shell/NotificationsBell";
+import { Ago } from "../shell/Ago";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
 import { HomeCard } from "./HomeCard";
@@ -54,13 +54,15 @@ function cardDetail(state: RunState, active: Run[], ended: Run[]): string | null
   return latest ? `latest: ${runName(latest)}` : null;
 }
 
-/** An active run's context: "from a terminal · 288 / 384 tasks", or its state's context line. */
+/** An active run's context: "from a terminal · 288 / 384 tasks", or its state's context line;
+ * "" when a state has none (the caller then renders nothing). */
 function activeContext(run: Run): string {
   const own = run.state === "running" ? `${tasksText(run)} ${words(run.workflow.engine).units}` : stateContext(run);
-  return run.origin === "cli-observed" ? `from a terminal · ${own}` : own;
+  return [run.origin === "cli-observed" ? "from a terminal" : "", own].filter(Boolean).join(" · ");
 }
 
-/** A finished run's context: its tasks, or why it failed (never blank, UX-PAR-16). */
+/** A finished run's context: its tasks, or why it failed (UX-PAR-16); "" for a cancelled run or a
+ * succeeded one with no task, whose word says it all. */
 function endedContext(run: Run): string {
   if (run.state === "failed") return failureText(run);
   if (run.state === "succeeded" && run.summary.tasks.total) return `${tasksText(run)} ${words(run.workflow.engine).units}`;
@@ -219,7 +221,7 @@ export function HomePage() {
                         </span>
                         <span>
                           <StateWord state={run.state} />
-                          <span className="sp-muted">{activeContext(run)}</span>
+                          {activeContext(run) && <span className="sp-muted">{activeContext(run)}</span>}
                         </span>
                       </li>
                     ))}
@@ -246,7 +248,8 @@ export function HomePage() {
                         <span>
                           <RunLink run={run} />
                           <span className="sp-muted">
-                            <span>{run.workflow.name ?? run.workflow.location}</span> · {endedContext(run)}
+                            <span>{run.workflow.name ?? run.workflow.location}</span>
+                            {endedContext(run) && ` · ${endedContext(run)}`}
                           </span>
                         </span>
                         <span>
