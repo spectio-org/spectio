@@ -536,6 +536,77 @@ def test_snakemake_pipeline_config_on_a_resume(home: Path, bridges: Path) -> Non
     assert parent_config.read_text() == "outdir: changed\n"  # the pipeline's current one
 
 
+def test_snakemake_pipeline_root_is_linked(home: Path, bridges: Path) -> None:
+    """#367: the pipeline's top-level files and directories are linked into the launch
+    directory, so `open("VERSION")` and `workflow/data/x.bed.gz` resolve as they do from the
+    repository root; `.git`, `.snakemake`, `config` and the output directories are not."""
+    _pipeline_with_config(home)
+    location = home / "pipeline"
+    (location / "VERSION").write_text("1.2.3\n")
+    (location / "workflow" / "data").mkdir(parents=True)
+    (location / "workflow" / "data" / "x.bed.gz").write_text("")
+    for name in (".git", ".snakemake", "results", "resources", "logs", "benchmarks"):
+        (location / name).mkdir()
+    spec = snakemake_spec(home)
+    assert run_head(spec).returncode == 0
+    version = spec.engine_dir / "VERSION"
+    assert version.is_symlink() and version.read_text() == "1.2.3\n"
+    data = spec.engine_dir / "workflow" / "data" / "x.bed.gz"
+    assert (spec.engine_dir / "workflow").is_symlink() and data.read_text() == ""
+    for name in (".git", ".snakemake", "results", "resources", "logs", "benchmarks"):
+        assert not (spec.engine_dir / name).exists()
+    assert not (spec.engine_dir / "config").is_symlink()  # copied, never linked
+    assert (spec.engine_dir / "config" / "config.yaml").read_text() == "outdir: results\n"
+
+
+def test_snakemake_pipeline_root_link_keeps_an_existing_name(home: Path, bridges: Path) -> None:
+    """#367: a name the launch directory has already is kept, a dangling link included: a
+    Resume keeps what it has."""
+    (home / "pipeline").mkdir()
+    (home / "pipeline" / "VERSION").write_text("new\n")
+    spec = snakemake_spec(home)
+    kept = spec.engine_dir / "VERSION"
+    kept.write_text("kept\n")
+    dangling = spec.engine_dir / "workflow"  # a link left by an earlier launch
+    dangling.symlink_to(home / "gone")
+    assert run_head(spec).returncode == 0
+    assert kept.read_text() == "kept\n" and not kept.is_symlink()
+    assert dangling.is_symlink() and not dangling.exists()  # dangling, never replaced
+
+
+def test_snakemake_pipeline_root_symlink_not_linked(home: Path, bridges: Path) -> None:
+    """#367: a symbolic link at the pipeline's top level is skipped, as links, FIFOs and
+    sockets are never linked."""
+    location = home / "pipeline"
+    location.mkdir()
+    (location / "VERSION").write_text("1.2.3\n")
+    elsewhere = home / "elsewhere"
+    elsewhere.mkdir()
+    (elsewhere / "notes.md").write_text("x\n")
+    (location / "docs").symlink_to(elsewhere)
+    spec = snakemake_spec(home)
+    assert run_head(spec).returncode == 0
+    docs = spec.engine_dir / "docs"
+    assert not docs.is_symlink() and not docs.exists()
+    assert (spec.engine_dir / "VERSION").is_symlink()
+
+
+def test_snakemake_pipeline_root_link_stops_at_the_limit(
+    home: Path, bridges: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#367: past MAX_ROOT_LINKS entries the linking stops, and the launch still happens."""
+    from spectio.runner import headscript
+
+    (home / "pipeline").mkdir()
+    for i in range(3):
+        (home / "pipeline" / f"file{i}.txt").write_text("x\n")
+    monkeypatch.setattr(headscript, "MAX_ROOT_LINKS", 2)
+    spec = snakemake_spec(home)
+    assert run_head(spec).returncode == 0
+    linked = [e for e in spec.engine_dir.iterdir() if e.is_symlink()]
+    assert len(linked) == 2
+
+
 def test_nextflow_copies_no_pipeline_config(home: Path, bridges: Path) -> None:
     _pipeline_with_config(home)
     spec = make_spec(
