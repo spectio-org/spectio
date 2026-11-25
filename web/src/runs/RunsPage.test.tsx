@@ -795,19 +795,34 @@ test("CR-01 (#385): a checkpoint run's progress reads in full in its cell, in a 
   const table = await screen.findByRole("grid", { name: "Runs" });
   const cell = within(table).getByText("242 / at least 347 tasks").closest('[role="gridcell"]') as HTMLElement;
   expect(cell).toHaveClass("sp-num");
-  expect(parseInt(cell.style.width || "200", 10)).toBeGreaterThanOrEqual(200);
+  // the widths are written on the cells and headers: with margin for the longest text, not just the shortest
+  expect(parseInt(cell.style.width, 10)).toBeGreaterThanOrEqual(230);
   const started = within(table).getByRole("columnheader", { name: "Started" });
-  expect(parseInt(started.style.width || "150", 10)).toBeGreaterThanOrEqual(150);
+  expect(parseInt(started.style.width, 10)).toBeGreaterThanOrEqual(170);
 });
 
-test("CR-02 (#385): the Workflow cell wraps in full, with no tooltip standing in for a cut", async () => {
-  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+test("#353: every row keeps one height whatever the names, and the Workflow cell shows in full in a tooltip on keyboard focus", async () => {
+  const long = run({
+    id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V4Y",
+    name: "a-run-name-that-goes-on-and-on-and-on-and-on-and-on-and-on-and-on-and-on-and-on-and-on",
+    workflow: { engine: "nextflow", engine_version: "26.10.4", location: "/g/demo-lab/pipelines/rnaseq", name: "nf-core/a-very-long-pipeline-name-that-would-wrap-over-many-lines-in-a-narrow-cell", version: "3.27.0", main_script: null },
+  });
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), long], next: null } });
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
-  const what = within(table).getByText("nf-core/rnaseq").closest(".sp-what-ran") as HTMLElement;
-  expect(what).not.toBeNull();
-  expect(what.parentElement?.getAttribute("data-position")).toBeNull();
-  expect(what.getAttribute("aria-describedby")).toBeNull();
+  const rows = within(table).getAllByRole("row").filter((r) => r.getAttribute("row-index") !== null);
+  expect(rows.length).toBe(2);
+  const heights = new Set(rows.map((r) => r.style.height));
+  expect([...heights]).toEqual(["92px"]);
+  // the full workflow text stays in the accessible name; a clamp is only CSS
+  const what = within(table).getByText(/a-very-long-pipeline-name/).closest(".sp-what-ran") as HTMLElement;
+  expect(what).toHaveTextContent("nf-core/a-very-long-pipeline-name-that-would-wrap-over-many-lines-in-a-narrow-cell 3.27.0");
+  try {
+    keyboardFocus(what);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("nf-core/a-very-long-pipeline-name-that-would-wrap-over-many-lines-in-a-narrow-cell 3.27.0");
+  } finally {
+    vi.restoreAllMocks();
+  }
 });
 
 test("CR-07 (#385): a run card has no empty context line when its state has no context", async () => {

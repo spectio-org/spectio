@@ -1,5 +1,5 @@
 // The one date formatter of every screen (ui-spec §12.8), and the cell that shows it.
-export const two = (n: number) => String(n).padStart(2, "0");
+const two = (n: number) => String(n).padStart(2, "0");
 export const isoDay = (d: Date) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
 
 /** ui-spec §12.8: "just now", "12 min ago", "5 h ago", "3 days ago", then "2026-10-28 07:01"; "—"

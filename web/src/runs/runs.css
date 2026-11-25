@@ -119,6 +119,9 @@
 }
 
 .sp-table-wrap {
+  /* the name column's cap and the sticky header's height, shared by the cells and the scroll padding */
+  --sp-name-cap: 28ch;
+  --sp-head-h: 3rem;
   min-width: 0;
   overflow-x: auto;
   border-radius: var(--mantine-radius-md);
@@ -168,13 +171,15 @@
 .sp-table-wrap:has(> .sp-table[data-density="compact"]) {
   max-height: 70vh;
   overflow: auto;
-  /* a control scrolled into view by focus is not left under the sticky header or first column */
-  scroll-padding: 3rem 0 0 8rem;
+  /* a control scrolled into view by focus is not left under the sticky header (its height) or the
+     first column (its cap and the cell padding on both sides) */
+  scroll-padding: var(--sp-head-h) 0 0 calc(var(--sp-name-cap) + 2 * var(--sp-cell-px));
 }
 .sp-table[data-density="compact"] th {
   position: sticky;
   top: 0;
   z-index: 2;
+  height: var(--sp-head-h);
 }
 .sp-table[data-density="compact"] th:first-child,
 .sp-table[data-density="compact"] td:first-child {
@@ -1169,7 +1174,7 @@
   white-space: nowrap;
 }
 .sp-table .sp-open {
-  max-width: 28ch;
+  max-width: var(--sp-name-cap, 28ch);
 }
 .sp-open-task {
   display: flex;
@@ -2343,8 +2348,9 @@
   flex: none;
 }
 /* The name takes the free width and the pin a fixed slot at the column's right; a name wraps to
-   two lines at most, the full name in a tooltip on hover and focus. The workflow path is not
-   focusable, so it wraps in full, unclamped (CR-P3UI08-01). */
+   two lines at most, the full name in a tooltip on hover and focus. The Workflow cell was unclamped
+   for CR-P3UI08-01; the clamp is back by #353 (Thomas, 2026-11-25), two lines like the name, with the
+   full text in its tooltip on hover and focus. */
 .sp-grid-runs .sp-run-cell {
   align-items: flex-start;
 }
@@ -2356,8 +2362,21 @@
   flex: none;
   margin-top: -2px;
 }
+.sp-grid-runs .sp-pipeline {
+  max-width: 100%;
+}
 .sp-grid-runs .sp-pipeline > span:last-child {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
+}
+/* The Workflow cell is two lines at most, the full text in its tooltip on hover and focus. */
+.sp-grid-runs .sp-what-ran {
+  max-height: 2.9em;
+  overflow: hidden;
 }
 .sp-run-name .sp-run-link {
   display: -webkit-box;
