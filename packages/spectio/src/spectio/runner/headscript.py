@@ -611,6 +611,16 @@ MAX_CONFIG_FILE = 10 * 1024 * 1024
 # The whole copy is bounded too (SEC-362-02): past these, the launch stops with a ValueError.
 MAX_CONFIG_TOTAL = 100 * 1024 * 1024
 MAX_CONFIG_ENTRIES = 10_000
+# At most this many top-level entries of the pipeline directory are looked at (#367): past it,
+# the linking stops, and the launch goes on — a repository with more is not Spectio's to walk.
+MAX_ROOT_LINKS = 1000
+# Top-level names never linked into the launch directory (#367): `config` is copied by
+# `_copy_pipeline_config`; `.git` and `.snakemake` are the repository's and the engine's own;
+# the rest are the conventional output directories, a link to which would have a rule write
+# into the repository.
+ROOT_LINK_SKIPPED = frozenset(
+    {".git", ".snakemake", ".nextflow", "config", "results", "resources", "logs", "benchmarks"}
+)
 
 
 def _copy_pipeline_config(spec: LaunchSpec) -> None:
@@ -664,6 +674,44 @@ def _copy_pipeline_config(spec: LaunchSpec) -> None:
         raise
 
 
+def _link_pipeline_root(spec: LaunchSpec) -> None:
+    """The pipeline directory's top-level files and directories as symbolic links in the
+    engine's launch directory (issue #367), so a Snakefile that reads `open("VERSION")` or
+    `workflow/data/x.bed.gz` runs as it does from the repository root: the engine runs in the
+    launch directory (`--directory`, `_snakemake_base`). Only regular files and directories
+    are linked: a symbolic link, FIFO or socket at the top is skipped, as are the names of
+    `ROOT_LINK_SKIPPED` — a link to `results` or `logs` would have a rule write into the
+    repository. A name the launch directory has already is kept (`os.path.lexists`: a
+    dangling link counts), so a Resume keeps what it has, the parent's links included, which
+    point at the parent's repository (SEC-367-03); past MAX_ROOT_LINKS entries, in the
+    directory's own order, the linking stops, and does not fail."""
+    try:
+        entries = os.scandir(spec.location)
+    except OSError:
+        return
+    with entries:
+        for n, entry in enumerate(entries, start=1):
+            if n > MAX_ROOT_LINKS:
+                return
+            # Spectio's own names (`.spectio/`, the launch lock) are never the repository's
+            # (SEC-367-02)
+            if entry.name in ROOT_LINK_SKIPPED or entry.name.startswith(".spectio"):
+                continue
+            try:
+                st = entry.stat(follow_symlinks=False)
+            except OSError:  # gone between the listing and the stat: nothing to link
+                continue
+            if not (stat.S_ISREG(st.st_mode) or stat.S_ISDIR(st.st_mode)):
+                continue
+            target = spec.engine_dir / entry.name
+            if os.path.lexists(target):
+                continue
+            try:
+                os.symlink(os.path.abspath(entry.path), target)
+            except OSError:  # the launch goes on without the link: a rule that needs it fails
+                continue
+
+
 def write_launch_files(spec: LaunchSpec) -> Path:
     """Write `.spectio/{params.json, spectio.config, head.sh}` and deliver the bridge: unpack
     nf-spectio, or copy the Snakemake logger to `.spectio/pylib/`. Returns the head script.
@@ -687,6 +735,7 @@ def write_launch_files(spec: LaunchSpec) -> Path:
             unpack_nf_spectio({**os.environ, **spec.env})
         else:
             _copy_pipeline_config(spec)  # the engine's config/ (inbox #161), before the head runs
+            _link_pipeline_root(spec)  # the repository's top level (issue #367)
             if spec.software_cache is not None:
                 for name in _cache_dirs(spec):
                     _private_dir(spec.software_cache / name)
