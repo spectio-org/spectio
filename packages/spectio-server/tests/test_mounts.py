@@ -6,16 +6,17 @@ tests need no cluster and no Apptainer.
 """
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from spectio_server import mounts
 
 
-def unmounted(params: object, apptainer_args: str = "", **values: object) -> list[str]:
+def unmounted(params: object, apptainer_args: str = "", **values: Any) -> list[str]:
     """`mounts.unmounted_paths` with this machine's home and a fixed launch directory, unless
     a test gives its own."""
-    found = {
+    found: dict[str, Any] = {
         "home": Path("/home/someone"),
         "launch_dir": Path("/runs/run_1/launch"),
         "site_binds": [],
