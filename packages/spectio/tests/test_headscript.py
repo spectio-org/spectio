@@ -346,20 +346,71 @@ def test_snakemake_deploys_the_environment_software(home: Path, bridges: Path) -
 
 
 def test_snakemake_tool_caches_follow_the_software_cache(home: Path, bridges: Path) -> None:
-    """inbox #161: Apptainer's layer cache and conda's package cache default to the home
-    directory; a launch that deploys the tool points them into the software cache, and creates
-    each directory 0700. A workflow profile owns its software: nothing is set beside it."""
+    """inbox #161: Apptainer's layer cache defaults to the home directory; a launch that deploys
+    the tool points it into the software cache, and creates each directory 0700. conda's package
+    cache is the head script's own, per launch (#378), never the software cache's. A workflow
+    profile owns its software: nothing is set beside it."""
     cache = home / "big" / "cache"
     spec = snakemake_spec(home, software_cache=cache, software=["apptainer", "conda"])
     env = engine_env(spec)
     assert env["APPTAINER_CACHEDIR"] == str(cache / "apptainer-cache")
-    assert env["CONDA_PKGS_DIRS"] == str(cache / "conda-pkgs")
+    assert "CONDA_PKGS_DIRS" not in env  # the head script's own, per launch (#378)
     assert "CONDA_PKGS_DIRS" not in engine_env(replace(spec, software=["apptainer"]))
     assert "APPTAINER_CACHEDIR" not in engine_env(replace(spec, profiles=["slurm"]))
     write_launch_files(spec)
-    for name in ("conda", "apptainer", "apptainer-cache", "conda-pkgs"):
+    for name in ("conda", "apptainer", "apptainer-cache"):
         assert stat.S_IMODE((cache / name).stat().st_mode) == 0o700
+    assert not (cache / "conda-pkgs").exists()  # never made (#378)
     assert stat.S_IMODE(cache.stat().st_mode) == 0o700
+
+
+CONDA_PKGS_STUB = """#!/bin/bash
+printf '%s\\0' "$@" > argv.out
+export -p > env.out
+exit 7  # the head must keep the engine's exit status once the cache is removed (#378)
+"""
+
+
+def test_snakemake_conda_pkgs_dir_is_per_launch_and_removed(home: Path, bridges: Path) -> None:
+    """#378: conda's package downloads into a directory on the shared software cache come back
+    empty and fail their checksum, while an environment built from a prefix there works; so the
+    head makes a fresh private directory on the node's local storage, one per launch, and removes
+    it once the engine has ended, keeping the engine's exit status as its own."""
+    spec = snakemake_spec(home, software_cache=home / "cache", software=["conda"])
+    stub_engine(home / "bin", CONDA_PKGS_STUB)
+    text = render_head_script(spec)
+    # like rm and timeout: the login profile's PATH may hold no mktemp
+    mktemp = f'{shutil.which("mktemp") or "mktemp"} -d "${{TMPDIR:-/tmp}}/spectio-conda.XXXXXX"'
+    assert mktemp in text
+    # after the PYTHONPATH export, before the rule listing
+    assert text.index("export PYTHONPATH=") < text.index(mktemp) < text.index("--list-rules")
+    assert "trap spectio_rm_pkgs EXIT" in text  # removed on every exit, early ones too
+    assert run_head(spec).returncode == 7  # the engine's status, never the removal's
+    where = Path(exported(spec)["CONDA_PKGS_DIRS"])
+    assert where.parent == Path(os.environ["TMPDIR"]) and where.name.startswith("spectio-conda.")
+    assert not where.exists()  # removed when the engine ended
+    # CR-378-01: a cancel before the engine starts exits early and still removes it
+    head = write_launch_files(spec)
+    (spec.launch_dir / ".spectio" / "cancel").write_text("")
+    early = subprocess.run([BASH, str(head)], capture_output=True, text=True, timeout=60)
+    assert early.returncode == 143
+    assert not list(Path(os.environ["TMPDIR"]).glob("spectio-conda.*"))
+    # no conda deployed, or a workflow profile: the head makes no directory
+    assert "mktemp" not in render_head_script(replace(spec, software=["apptainer"]))
+    assert "mktemp" not in render_head_script(replace(spec, profiles=["slurm"]))
+
+
+def test_snakemake_conda_pkgs_dirs_given_by_the_user_wins(home: Path, bridges: Path) -> None:
+    """#378: a CONDA_PKGS_DIRS in the environment's env is the user's own: the head makes no
+    directory and removes none; the engine runs with the user's value."""
+    given = str(home / "my-pkgs")
+    spec = snakemake_spec(
+        home, software_cache=home / "cache", software=["conda"], env={"CONDA_PKGS_DIRS": given}
+    )
+    text = render_head_script(spec)
+    assert "mktemp" not in text and "spectio_rm_pkgs" not in text
+    assert run_head(spec).returncode == 0
+    assert exported(spec)["CONDA_PKGS_DIRS"] == given
 
 
 def test_snakemake_software_cache_chosen_by_the_user_keeps_its_mode(

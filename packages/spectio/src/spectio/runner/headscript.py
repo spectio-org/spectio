@@ -69,6 +69,14 @@ _RESUME = (
 # the engine it became (bash execs the last command). Without it the engine could still start
 # after a Cancel and run until its SIGKILL (FU-P3-108a).
 _ENGINE = "( [ -e {cancel} ] && exit 143; {command} )\n"
+# conda's package cache (#378): on a BeeGFS client, conda's downloads into a shared directory read
+# back empty, so each launch gets a private (0700) node-local one, removed when the head exits.
+_CONDA_PKGS = (
+    'spectio_pkgs=$({mktemp} -d "${{TMPDIR:-/tmp}}/spectio-conda.XXXXXX") || exit 1\n'
+    'spectio_rm_pkgs() {{ {rm} -rf -- "$spectio_pkgs"; }}\n'
+    "trap spectio_rm_pkgs EXIT\n"
+    'export CONDA_PKGS_DIRS="$spectio_pkgs"\n'
+)
 SESSION_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 LOCK = ".spectio-launch.lock"  # in the engine's directory, while a head of Spectio runs there
 LOCKED = 75  # head.exit's code when another head holds the lock
@@ -287,10 +295,10 @@ SOFTWARE_METHOD = "--software-deployment-method"
 SOFTWARE_PREFIXES = {"conda": "--conda-prefix", "apptainer": "--apptainer-prefix"}
 APPTAINER_ARGS = "--apptainer-args"
 # The tools' own download caches under the software cache (inbox #161): directory, tool and
-# the variable that points the tool at it
+# the variable that points the tool at it. conda's package cache is not here: the head script
+# makes it per launch on node-local storage instead (#378).
 SOFTWARE_CACHES = {
     "apptainer-cache": ("apptainer", "APPTAINER_CACHEDIR"),
-    "conda-pkgs": ("conda", "CONDA_PKGS_DIRS"),
 }
 
 
@@ -475,9 +483,9 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
                 )
             env["NXF_SYNTAX_PARSER"] = spec.nxf_syntax_parser
     elif spec.software_cache is not None:
-        # The tools' own caches default to the home directory (Apptainer's layers under
-        # ~/.apptainer/cache, conda's packages under ~/.conda/pkgs when the base is not
-        # writable) [to be validated]: kept beside the environments instead (inbox #161).
+        # Apptainer's layers otherwise cache under ~/.apptainer/cache [to be validated]: kept
+        # beside the environments instead (inbox #161). conda's package cache is the head
+        # script's own, per launch (#378), never the software cache's.
         for name in _cache_dirs(spec):
             if name in SOFTWARE_CACHES:
                 env[SOFTWARE_CACHES[name][1]] = str(spec.software_cache / name)
@@ -496,8 +504,17 @@ def render_head_script(spec: LaunchSpec) -> str:
         raise ValueError(f"{spec.launch_n!r} is not a launch number")
     exports = " ".join(f"{k}={shlex.quote(v)}" for k, v in engine_env(spec).items())
     command = " ".join([spec.engine_cmd, *map(shlex.quote, engine_args(spec))])
-    tools = {t: shlex.quote(shutil.which(t) or t) for t in ("timeout", "mv", "rm", "stat")}
+    tools = {
+        t: shlex.quote(shutil.which(t) or t) for t in ("timeout", "mv", "rm", "stat", "mktemp")
+    }
     own = str(_spectio(spec))
+    # #378: conda's package cache is the head's own, per launch — unless the environment's env
+    # names one, which then wins.
+    conda_pkgs = (
+        spec.engine == "snakemake"
+        and "CONDA_PKGS_DIRS" not in spec.env
+        and "conda" in _cache_dirs(spec)
+    )
     inner = (
         f"trap : INT TERM\ncd -- {shlex.quote(str(spec.engine_dir))} || exit 1\nexport {exports}\n"
     )
@@ -509,6 +526,8 @@ def render_head_script(spec: LaunchSpec) -> str:
     if spec.engine == "snakemake":  # in front of the login profile's own (CR-P3T09-05)
         pylib = shlex.quote(str(_spectio(spec) / "pylib"))
         inner += f"export PYTHONPATH={pylib}${{PYTHONPATH:+:$PYTHONPATH}}\n"
+        if conda_pkgs:  # a fresh private directory, node-local (#378)
+            inner += _CONDA_PKGS.format(mktemp=tools["mktemp"], rm=tools["rm"])
         if spec.resume_of is not None and spec.resume_of.unlock:  # `cli.py:1226`, v9.27.1
             unlock = " ".join([spec.engine_cmd, *map(shlex.quote, _snakemake_base(spec))])
             inner += f"{unlock} --unlock || exit $?\n"
