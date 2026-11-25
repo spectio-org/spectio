@@ -565,6 +565,11 @@ def test_engine_output_tail_hides_the_task_command() -> None:
     assert "SECRET" not in (engine_output_tail(inside.encode()) or "")
     no_end = TASK_ERROR[: TASK_ERROR.index("Command exit status:")]
     assert engine_output_tail(no_end.encode()).endswith("Command executed: «hidden»")
+    template = TASK_ERROR.replace("Command executed:", "Command executed [templates/run.sh]:")
+    two = TASK_ERROR + template.replace("SECRET-TOKEN-123", "SECOND-TOKEN")
+    assert "TOKEN" not in (engine_output_tail(two.encode()) or "")
+    cut = template[: template.index("Command exit status:")]
+    assert "TOKEN" not in (engine_output_tail(cut.encode()) or "")
 
 
 def test_head_out_through_a_symlink_or_shared_is_not_read(

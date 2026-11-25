@@ -143,28 +143,33 @@ TAIL_LINES = 15
 TAIL_CHARS = 2000
 # Nextflow's task error report holds the task's script with its values filled in: it is hidden
 # from the stored message, as `Command '…'` is in snakemake.error (SEC-NFERR-01, SEC-P3T1-08)
-COMMAND_START = "Command executed:"
+# a template task's block reads `Command executed [<template>]:` (TaskErrorFormatter.groovy:130,
+# Nextflow 26.11.0-edge, read 2026-11-25; SEC-NFERR-05)
+COMMAND_START = re.compile(r"Command executed(?: \[[^\]\n]*\])?:")
 COMMAND_END = "Command exit status:"
+COMMAND_HIDDEN = f"Command executed: {HIDDEN}"
 
 
 def _hide_commands(lines: list[str]) -> list[str]:
     """`lines` with each `Command executed:` block, up to its `Command exit status:` line, as
     one hidden line. Fails closed: a block with no end hides the rest, and an end with no start
-    (the window began inside a block) hides everything before it."""
-    ends = [i for i, line in enumerate(lines) if line.strip().startswith(COMMAND_END)]
-    starts = [i for i, line in enumerate(lines) if line.strip().startswith(COMMAND_START)]
-    if ends and (not starts or ends[0] < starts[0]):
-        lines = [f"{COMMAND_START} {HIDDEN}", *lines[ends[0] :]]
+    (the window began inside a block) hides everything back to the previous end."""
     kept: list[str] = []
+    since_end = 0  # where `kept` stood after the last end, or the window's start
     hiding = False
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith(COMMAND_START) and stripped != f"{COMMAND_START} {HIDDEN}":
-            kept.append(f"{COMMAND_START} {HIDDEN}")
+        if COMMAND_START.match(stripped):
+            kept.append(COMMAND_HIDDEN)
             hiding = True
-        elif hiding and stripped.startswith(COMMAND_END):
+        elif stripped.startswith(COMMAND_END):
+            if not hiding:
+                del kept[since_end:]
+                kept.append(COMMAND_HIDDEN)
             hiding = False
-        if not hiding:
+            kept.append(line)
+            since_end = len(kept)
+        elif not hiding:
             kept.append(line)
     return kept
 
