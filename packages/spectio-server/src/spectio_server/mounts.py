@@ -114,7 +114,8 @@ def unmounted_paths(
     bind in the environment's `apptainer_args`, every root of the site's configuration and of
     `env_binds`, and `extra_roots` — roots the caller knows the containers see, passed by value
     and never parsed as binds (the pipeline's directory, CR-05). A `params` value is a
-    candidate when it is an absolute path without a control character, normalised; a candidate
+    candidate when it is an absolute path without a control character, normalised, and not the
+    root itself; a candidate
     under no root is returned."""
     roots = [
         os.path.normpath(root)
