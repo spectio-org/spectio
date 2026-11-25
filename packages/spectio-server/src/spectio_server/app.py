@@ -150,8 +150,11 @@ def create_app(
         if stream := getattr(app.state, "stream", None):  # made later, on the socket only
             stream.notify({run_id: set()})  # the run's page re-reads it (api §8.3)
 
-    # schedulers §3.9: the stall watch, a poller of the accounting thread (FU-P3-126)
-    app.state.stall = StallWatch.from_settings(settings, app.state.accounting, notify=notify_stall)
+    # schedulers §3.9: the stall watch, a poller of the accounting thread (FU-P3-126); its
+    # `submit` moves a queued attempt to running through the one writer (#385)
+    app.state.stall = StallWatch.from_settings(
+        settings, app.state.accounting, notify=notify_stall, submit=writer.submit
+    )
     app.state.accounting.pollers.append(app.state.stall)
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
     app.state.engine_versions = workflows.EngineVersions(settings)

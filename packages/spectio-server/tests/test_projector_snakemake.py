@@ -18,10 +18,12 @@ import pytest
 from sqlalchemy import Connection, Engine, insert, select, update
 from sqlalchemy import event as sa_event
 
+from spectio.environments import Environment, run_column, snapshot
 from spectio.runner.spool import read_spool
 from spectio.runner.types import Failure, HeadReport, SpoolBatch
 from spectio_sdk.events import DATA_MODELS, SnakemakeJobInfo, SpoolEvent, parse_data
 from spectio_server.projector.ingest import apply_head_report, ingest
+from spectio_server.stall import _now_running, _submit_advance
 from spectio_server.store.db import open_db
 from spectio_server.store.schema import (
     attempts,
@@ -396,6 +398,111 @@ def test_launch_error_with_an_exit_code_still_fails(engine: Engine, writer: Writ
     head(writer, replace(exited(0), failure=Failure("engine_missing", "snakemake not found")))
     run = run_row(engine)
     assert (run.state, run.failure["class"]) == ("failed", "engine_missing")
+
+
+# --- The queue (#385, 2026-11-25): a SLURM job PENDING in squeue is `submitted` ------------
+
+
+def set_environment(writer: Writer, env: dict[str, Any]) -> None:
+    """`runs.environment`, as a launch writes it: the run's own executor decides."""
+    writer.submit(
+        lambda conn: conn.execute(update(runs).where(runs.c.id == RUN_ID).values(environment=env))
+    ).result()
+
+
+def slurm_column() -> dict[str, Any]:
+    return run_column(snapshot(Environment(name="slurm", label="SLURM", executor="slurm")))
+
+
+def test_a_slurm_run_opens_the_attempt_submitted(engine: Engine, writer: Writer) -> None:
+    """A job the SLURM executor holds in its queue is not running: the attempt opens
+    `submitted`, and its end moves it forward as before."""
+    set_environment(writer, slurm_column())
+    ingest_events(writer, job_info(1, 7, sample="S1"))
+    assert attempt_rows(engine) == [("align", "sample=S1", 1, "submitted")]
+    assert run_row(engine).task_counts == {"submitted": 1}
+    ingest_events(writer, event(2, "job_finished", job_id=7))
+    assert attempt_rows(engine) == [("align", "sample=S1", 1, "succeeded")]
+    assert run_row(engine).task_counts == {"succeeded": 1}
+
+
+def test_a_local_run_opens_the_attempt_running(engine: Engine, writer: Writer) -> None:
+    """A local executor runs a job at once: today's behaviour, environment or not."""
+    set_environment(
+        writer,
+        run_column(snapshot(Environment(name="local", label="This machine", executor="local"))),
+    )
+    ingest_events(writer, job_info(1, 7, sample="S1"))
+    assert attempt_rows(engine) == [("align", "sample=S1", 1, "running")]
+    set_environment(writer, run_column(snapshot(Environment(name="slurm", executor="slurm"))))
+    ingest_events(writer, job_info(2, 8, rule="merge"))
+    assert attempt_rows(engine) == [
+        ("align", "sample=S1", 1, "running"),
+        ("merge", None, 1, "submitted"),
+    ]
+
+
+def test_a_localrule_job_on_slurm_runs_at_once(engine: Engine, writer: Writer) -> None:
+    """A `localrule` job (`job_info.local`) never reaches SLURM's queue: `running`."""
+    set_environment(writer, slurm_column())
+    ingest_events(writer, event(1, "job_info", jobid=7, rule_name="all", wildcards={}, local=True))
+    assert attempt_rows(engine) == [("all", None, 1, "running")]
+
+
+def test_a_slurm_retry_opens_submitted_too(engine: Engine, writer: Writer) -> None:
+    """A retried job queues again: its attempt 2 opens `submitted` as well."""
+    set_environment(writer, slurm_column())
+    ingest_events(
+        writer,
+        job_info(1, 7, sample="S1"),
+        event(2, "job_error", jobid=7, rule_name="align"),
+        job_info(3, 7, sample="S1"),
+        event(4, "job_finished", job_id=7),
+    )
+    assert attempt_rows(engine) == [
+        ("align", "sample=S1", 1, "failed"),
+        ("align", "sample=S1", 2, "succeeded"),
+    ]
+
+
+def test_the_stall_poller_moves_a_submitted_attempt_to_running(
+    engine: Engine, writer: Writer
+) -> None:
+    """squeue says the job runs now: the poller's write moves the `submitted` attempt to
+    `running`, its task and the run's counts with it, and never an attempt that ended."""
+    set_environment(writer, slurm_column())
+    ingest_events(
+        writer,
+        job_info(1, 7, sample="S1"),
+        event(2, "slurm_submitted", jobid=7, external_jobid="4242"),
+        job_info(3, 8, rule="merge"),
+        event(4, "slurm_submitted", jobid=8, external_jobid="4243"),
+        event(5, "job_finished", job_id=8),
+    )
+    assert run_row(engine).task_counts == {"submitted": 1, "succeeded": 1}
+    writer.submit(lambda conn: _now_running(conn, RUN_ID, {"4242", "4243"})).result()
+    assert attempt_rows(engine) == [
+        ("align", "sample=S1", 1, "running"),
+        ("merge", None, 1, "succeeded"),  # ended: never moved again
+    ]
+    run = run_row(engine)
+    assert run.task_counts == {"running": 1, "succeeded": 1}
+    writer.submit(lambda conn: _now_running(conn, RUN_ID, {"4242", "4243"})).result()  # idempotent
+    assert run_row(engine).task_counts == {"running": 1, "succeeded": 1}
+
+
+def test_the_poller_hands_its_move_to_the_writer(engine: Engine, writer: Writer) -> None:
+    """`_submit_advance` (the watch's `advance`) queues the write on the writer thread: the
+    accounting thread never holds a connection."""
+    set_environment(writer, slurm_column())
+    ingest_events(
+        writer,
+        job_info(1, 7, sample="S1"),
+        event(2, "slurm_submitted", jobid=7, external_jobid="4242"),
+    )
+    _submit_advance(writer.submit, RUN_ID, ["4242"])
+    writer.submit(lambda conn: None).result()  # the writer runs its jobs in order
+    assert attempt_rows(engine) == [("align", "sample=S1", 1, "running")]
 
 
 # --- Security (SEC-P3T1-08, SEC-P3T1-11) ---------------------------------------------------

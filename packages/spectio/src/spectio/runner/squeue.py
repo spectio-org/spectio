@@ -1,6 +1,7 @@
-"""`squeue` for the stall check (FU-P3-126, schedulers §3.9): the job IDs SLURM holds now, of
-the server user's own jobs, in one call for all of them (CON-SLURM-POLL-05: never `-j` with a
-list, which asks slurmctld for the whole job table and filters on the client).
+"""`squeue` for the stall check (FU-P3-126, schedulers §3.9): the job IDs SLURM holds now,
+with their state, of the server user's own jobs, in one call for all of them
+(CON-SLURM-POLL-05: never `-j` with a list, which asks slurmctld for the whole job table and
+filters on the client). The state tells the watch a queued job still waits (#385, 2026-11-25).
 
 `--states=all` keeps a job that ended within the site's MinJobAge (EMBL login1 7200 s as
 given, Slurm's default 300 s: both [to be validated], on slurm-mini too): until slurmctld
@@ -30,16 +31,16 @@ STALL_FILE = ".stalled.json"  # in the runs root: what `spectio doctor` reads (F
 
 
 def squeue_argv(path: Path) -> list[str]:
-    """The call: the caller's own jobs (`--me`), every state, only the ID."""
-    return [str(path), "--me", "--noheader", "--states=all", "--format=%i"]
+    """The call: the caller's own jobs (`--me`), every state, the ID and its state (%T)."""
+    return [str(path), "--me", "--noheader", "--states=all", "--format=%i %T"]
 
 
-def squeue_ids(path: Path, timeout_s: float = TIMEOUT_S) -> set[str] | None:
-    """The job IDs `squeue` holds now; None when it failed or timed out. Raises Refused for
-    a tool that is not accepted, OSError when the tool cannot be read for now (both as
-    `sacct`, CR-P3FU106A-04). A line is a job ID; a pending array range `55_[1-3]` gives
-    its base `55`, which covers the tasks the watch is on (a running task `55_3` is itself
-    only, CR-P3FU126-STALL-02)."""
+def squeue_states(path: Path, timeout_s: float = TIMEOUT_S) -> dict[str, str] | None:
+    """The job IDs `squeue` holds now with their state (PENDING, RUNNING, …); None when it
+    failed or timed out. Raises Refused for a tool that is not accepted, OSError when the tool
+    cannot be read for now (both as `sacct`, CR-P3FU106A-04). A line is a job ID and its state;
+    a pending array range `55_[1-3]` gives its base `55`, which covers the tasks the watch is
+    on (a running task `55_3` is itself only, CR-P3FU126-STALL-02)."""
     check_tool(path, "squeue")
     with (
         tempfile.TemporaryFile() as err,  # a file, not a pipe: it never blocks the tool
@@ -64,11 +65,19 @@ def squeue_ids(path: Path, timeout_s: float = TIMEOUT_S) -> set[str] | None:
     if len(data) > MAX_OUTPUT or code != 0:
         log.warning("squeue gave no answer (exit %s, %d bytes)", code, len(data))
         return None
-    found: set[str] = set()
+    found: dict[str, str] = {}
     for line in data.decode("utf-8", "replace").splitlines():
-        job = line.strip()
-        if JOB_ID.fullmatch(job):
-            found.add(job)
-        elif pending := _RANGE.fullmatch(job):
-            found.add(pending[1])
+        parts = line.split()
+        if len(parts) != 2:
+            continue
+        if JOB_ID.fullmatch(parts[0]):
+            found[parts[0]] = parts[1]
+        elif pending := _RANGE.fullmatch(parts[0]):
+            found[pending[1]] = parts[1]
     return found
+
+
+def squeue_ids(path: Path, timeout_s: float = TIMEOUT_S) -> set[str] | None:
+    """The job IDs of `squeue_states` (#385); None when it failed or timed out."""
+    found = squeue_states(path, timeout_s)
+    return None if found is None else set(found)

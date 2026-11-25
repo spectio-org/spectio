@@ -6,10 +6,13 @@ with ", " (no wildcard: no tag). `job_finished` and `job_error` carry the `jobid
 
 Snakemake 9.27.1 logs `job_started` for the jobs it selects, then `job_info` as each one runs
 (`scheduling/job_scheduler.py:333-338`; `snakemake-interface-executor-plugins` 9.4.0,
-`executors/base.py:60-73,85-86,108-109`), and reports no separate submit. So `job_info` opens a
-`running` attempt: the first for its task, or the next after a failed one, since a retried job
-comes back with the same jobid and no attempt number (T2 note, row 16). `job_started` is logged
-only. `job_finished` gives `succeeded`, `job_error` `failed`.
+`executors/base.py:60-73,85-86,108-109`), and reports no separate submit. So `job_info` opens
+the attempt: `running` when the job runs at once (a local executor, or a `localrule` job), and
+`submitted` when the run's executor is SLURM, whose job may sit in the queue (§7.2, #385,
+2026-11-25) — it is the first for its task, or the next after a failed one, since a retried job
+comes back with the same jobid and no attempt number (T2 note, row 16); the stall watch moves
+it to `running` when SLURM starts it (schedulers §3.9). `job_started` is logged only.
+`job_finished` gives `succeeded`, `job_error` `failed`.
 
 No engine event ends a Snakemake launch: its head's exit code does (`head_exit`). On a non-zero
 exit the run's failure takes the text of the last `error` record, and blames the launch's last
@@ -22,6 +25,7 @@ from typing import Any
 from pydantic import BaseModel
 from sqlalchemy import insert, select, update
 
+from spectio.environments import executor_of
 from spectio_sdk.events import (
     SnakemakeJobError,
     SnakemakeJobFinished,
@@ -181,6 +185,19 @@ def spool_end(p: Projection) -> None:
     p.move("failed", failure_json("engine_fault", message))
 
 
+def _open_state(p: Projection, data: SnakemakeJobInfo) -> str:
+    """The state `job_info` opens the attempt in (api §7.2, #385, 2026-11-25): `submitted`
+    while the SLURM executor may still hold the job in its queue, and `running` for a job
+    that starts at once — a local executor, or a `localrule` job, which never reaches SLURM's
+    queue. The stall watch moves a `submitted` attempt when SLURM runs the job."""
+    if data.local:
+        return "running"
+    env = p.conn.execute(
+        select(runs.c.environment).where(runs.c.id == p.run_id)
+    ).scalar_one_or_none()
+    return "submitted" if executor_of(env) == "slurm" else "running"
+
+
 def _job_info(p: Projection, data: SnakemakeJobInfo) -> None:
     tag = ", ".join(f"{k}={v}" for k, v in sorted(data.wildcards.items())) or None
     task_id = p.task_id(data.rule_name, tag, None)
@@ -197,7 +214,7 @@ def _job_info(p: Projection, data: SnakemakeJobInfo) -> None:
         )
     last = _last_attempt(p, task_id)
     if last is not None and last.state != "failed":
-        return  # already running, or a re-announced job that has ended: no new attempt
+        return  # already open, or a re-announced job that has ended: no new attempt
     request = None if data.local else smk_request(data.threads, data.resources)
     slurm = None if data.local else {"request": request, "custom_options": data.custom_options}
     p.conn.execute(
@@ -207,7 +224,7 @@ def _job_info(p: Projection, data: SnakemakeJobInfo) -> None:
             task_id=task_id,
             n=1 if last is None else last.n + 1,
             launch_n=p.launch_n,
-            state="running",
+            state=_open_state(p, data),
             logs=_logs(p, [], data.log),
             resources=_resources(p, data),
             outputs=_outputs(p, data.output),

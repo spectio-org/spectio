@@ -49,6 +49,22 @@ def failure_json(
     return {"class": class_, "message": message, "task_id": task_id, "attempt_n": attempt_n}
 
 
+def sync_task_states(conn: Connection, task_ids: Iterable[str]) -> None:
+    """A task's state is its last attempt's (api §7.2); shared with the stall watch, whose
+    queue's move of #385 writes through the same rule."""
+    last = (
+        select(attempts.c.state)
+        .where(attempts.c.task_id == tasks.c.id)
+        .order_by(attempts.c.launch_n.desc(), attempts.c.n.desc())
+        .limit(1)
+        .scalar_subquery()
+    )
+    ids = list(task_ids)
+    for i in range(0, len(ids), IN_CHUNK):
+        chunk = tasks.c.id.in_(ids[i : i + IN_CHUNK])
+        conn.execute(update(tasks).where(chunk, last.is_not(None)).values(state=last))
+
+
 @dataclass
 class Projection:
     conn: Connection
@@ -233,18 +249,9 @@ class Projection:
 
     def sync_tasks(self, task_ids: Iterable[str]) -> None:
         """A task's state is its last attempt's (api §7.2)."""
-        last = (
-            select(attempts.c.state)
-            .where(attempts.c.task_id == tasks.c.id)
-            .order_by(attempts.c.launch_n.desc(), attempts.c.n.desc())
-            .limit(1)
-            .scalar_subquery()
-        )
         ids = list(task_ids)
         self.changed.update(ids)
-        for i in range(0, len(ids), IN_CHUNK):
-            chunk = tasks.c.id.in_(ids[i : i + IN_CHUNK])
-            self.conn.execute(update(tasks).where(chunk, last.is_not(None)).values(state=last))
+        sync_task_states(self.conn, ids)
 
     def set_launch(self, **values: Any) -> None:
         if values:
