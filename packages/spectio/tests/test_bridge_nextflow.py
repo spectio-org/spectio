@@ -240,8 +240,8 @@ def test_metrics_enabled(nextflow: str, tmp_path: Path) -> None:
 def test_metrics_disabled_by_env(nextflow: str, tmp_path: Path) -> None:
     """`SPECTIO_TASK_METRICS=false` (the head script's export for `[engines]
     nextflow_task_metrics = false`) turns `enableMetrics()` off: a finished task's trace has
-    no measures, and its wrapper never runs `command -v ps`, so a container without `ps`
-    (procps) can run it."""
+    no CPU or memory measure (Nextflow still computes `realtime` itself), and its wrapper
+    never runs `command -v ps`, so a container without `ps` (procps) can run it."""
     launch_dir = tmp_path / "launch"
     done = run_nf(nextflow, launch_dir, env={"SPECTIO_TASK_METRICS": "false"})
     assert done.returncode == 0, done.stdout + done.stderr
@@ -250,7 +250,7 @@ def test_metrics_disabled_by_env(nextflow: str, tmp_path: Path) -> None:
     assert traces
     for trace in traces:
         assert isinstance(trace, dict)
-        for key in ("realtime", "%cpu", "peak_rss"):
+        for key in ("%cpu", "peak_rss"):
             assert trace.get(key) is None, (key, trace)
     # the cause itself (CR-02): no wrapper asks for `ps` any more
     wrappers = list((launch_dir / "work").rglob(".command.run"))
