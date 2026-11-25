@@ -1,0 +1,133 @@
+# Spectio on minikube: the `minimal` profile of docs/specs/architecture-plugins-and-packaging.md §7.4, one
+# service with SQLite on a volume, running the `local` executor inside the pod. Applied by dev/minikube/up.sh.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spectio
+---
+# data directory (spectio.toml, server.json, server key) and the SQLite database
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spectio-data
+  namespace: spectio
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+# runs root: one directory per run (launch files, engine work directory, results)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spectio-runs
+  namespace: spectio
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spectio
+  namespace: spectio
+  labels: {app.kubernetes.io/name: spectio}
+spec:
+  replicas: 1 # SQLite and the runner loop: one server per data directory
+  strategy:
+    type: Recreate # never two servers on the volumes, not even during a rollout
+  selector:
+    matchLabels: {app.kubernetes.io/name: spectio}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: spectio}
+    spec:
+      # spectio.toml records the host name `spectio init` ran on (the host pin): keep it stable across pods
+      hostname: spectio
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        # the volumes arrive owned by root; Spectio refuses a data directory or runs root that is not the
+        # server user's own and private (dev-env §15.3 req. 10)
+        - name: own-volumes
+          image: spectio:dev
+          imagePullPolicy: Never
+          command: ["sh", "-c", "chown 10001:10001 /var/lib/spectio /var/lib/spectio-runs && chmod 0700 /var/lib/spectio /var/lib/spectio-runs"]
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL], add: [CHOWN, FOWNER, DAC_OVERRIDE]}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/spectio}
+            - {name: runs, mountPath: /var/lib/spectio-runs}
+      containers:
+        - name: spectio
+          image: spectio:dev
+          imagePullPolicy: Never # built into minikube by up.sh
+          # `serve --pane` mints no login link, so none reaches the pod log: get one with
+          # `kubectl -n spectio exec deploy/spectio -- spectio login --print-link`
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -e
+              if [ ! -f "$SPECTIO_CONFIG" ]; then
+                spectio init --local --port 8080 --data-dir "$SPECTIO_DATA_DIR" --db-dir "$SPECTIO_DB_DIR" \
+                  --runs-root "$SPECTIO_RUNS_ROOT" --nextflow /usr/local/bin/nextflow --snakemake /usr/local/bin/snakemake
+              fi
+              exec spectio serve --pane
+          env:
+            - {name: SPECTIO_PORT, value: "8080"}
+            - {name: SPECTIO_EXECUTOR, value: local}
+          # the server binds 127.0.0.1 only (dev-env §15.3 req. 1): reach it with `kubectl port-forward`, whose
+          # connection comes from inside the pod; an HTTP probe on the pod IP cannot reach it, so the probes
+          # run in the pod and only open the port (every URL answers 401 without a session, / included)
+          readinessProbe:
+            exec:
+              command: ["/opt/spectio/bin/python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8080), 3)"]
+            periodSeconds: 10
+            timeoutSeconds: 15 # a laptop under load starts the probe's Python slowly
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: ["/opt/spectio/bin/python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8080), 3)"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 20
+            failureThreshold: 10 # a restart kills the runs in flight: be slow to judge
+          resources:
+            requests: {cpu: 500m, memory: 1Gi}
+            limits: {memory: 3Gi}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            seccompProfile: {type: RuntimeDefault}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/spectio}
+            - {name: runs, mountPath: /var/lib/spectio-runs}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: spectio-data}
+        - name: runs
+          persistentVolumeClaim: {claimName: spectio-runs}
+        - name: tmp
+          emptyDir: {}
+---
+# `kubectl port-forward svc/spectio 8080:8080` works (the connection is made inside the pod). Other pods cannot
+# reach the server through this Service: it listens on the pod's 127.0.0.1 only, and 0.0.1 has no bind option.
+apiVersion: v1
+kind: Service
+metadata:
+  name: spectio
+  namespace: spectio
+spec:
+  selector: {app.kubernetes.io/name: spectio}
+  ports:
+    - {name: http, port: 8080, targetPort: 8080}
