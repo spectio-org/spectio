@@ -8,6 +8,7 @@ and shared with the limiter, and the runs root is a private directory of the tes
 
 import json
 from collections.abc import Callable
+from concurrent.futures import Future
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +16,14 @@ import pytest
 
 from spectio.config import Settings
 from spectio_server.failure import Accounting
-from spectio_server.stall import GRACE_S, WATCH_S, Stall, StallWatch
+from spectio_server.stall import (
+    GRACE_S,
+    WATCH_S,
+    Stall,
+    StallWatch,
+    _advance_failed,
+    _submit_advance,
+)
 
 
 class Clock:
@@ -339,3 +347,43 @@ def test_no_advance_without_a_write(runs: Path) -> None:
     watch.watch("run_l", {"8812401": clock.now}, submitted={"8812401"})
     assert watch.step()
     assert watch.stall("run_l") is None
+
+
+def test_closed_writer_is_logged_not_raised(caplog: pytest.LogCaptureFixture) -> None:
+    """The writer closes when the server stops: the poller's move is dropped with a warning,
+    never an exception on the accounting thread."""
+
+    def closed(fn: Callable[..., Any]) -> Future[None]:
+        raise RuntimeError("the writer is closed")
+
+    with caplog.at_level("WARNING"):
+        _submit_advance(closed, "run_x", ["8812401"])
+    assert "not queued" in caplog.text
+
+
+def test_cancelled_move_is_not_an_error(caplog: pytest.LogCaptureFixture) -> None:
+    """A cancelled future has no exception to read: `_advance_failed` returns quietly."""
+    future: Future[None] = Future()
+    future.cancel()
+    with caplog.at_level("WARNING"):
+        _advance_failed(future)
+    assert caplog.text == ""
+
+
+def test_the_move_comes_after_the_notify_and_the_stall_file(runs: Path) -> None:
+    """A slow or failing writer never delays the warning: `advance` runs last."""
+    clock = Clock()
+    order: list[str] = []
+    watch = stall_watch(
+        runs,
+        clock,
+        Squeue({"8812401": "RUNNING"}),
+        notify=lambda run_id: order.append("notify"),
+        advance=lambda run_id, jobs: order.append("advance"),
+        grace_s=0,
+    )
+    watch.write = lambda: order.append("write")  # type: ignore[method-assign]
+    # job A runs now; job B was never seen and is past the grace: its stall is notified
+    watch.watch("run_o", {"8812401": clock.now, "8812402": clock.now - 10}, submitted={"8812401"})
+    assert watch.step()
+    assert order == ["notify", "write", "advance"]

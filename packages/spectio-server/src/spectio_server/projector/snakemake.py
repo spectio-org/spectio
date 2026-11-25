@@ -8,11 +8,11 @@ Snakemake 9.27.1 logs `job_started` for the jobs it selects, then `job_info` as 
 (`scheduling/job_scheduler.py:333-338`; `snakemake-interface-executor-plugins` 9.4.0,
 `executors/base.py:60-73,85-86,108-109`), and reports no separate submit. So `job_info` opens
 the attempt: `running` when the job runs at once (a local executor, or a `localrule` job), and
-`submitted` when the run's executor is SLURM, whose job may sit in the queue (§7.2, #385,
-2026-11-25) — it is the first for its task, or the next after a failed one, since a retried job
-comes back with the same jobid and no attempt number (T2 note, row 16); the stall watch moves
-it to `running` when SLURM starts it (schedulers §3.9). `job_started` is logged only.
-`job_finished` gives `succeeded`, `job_error` `failed`.
+`submitted` when the run's executor is SLURM and the server watches `squeue`, since the job
+may sit in the queue (§7.2, #385, 2026-11-25) — it is the first for its task, or the next
+after a failed one, since a retried job comes back with the same jobid and no attempt number
+(T2 note, row 16); the stall watch moves it to `running` when SLURM starts it (schedulers §3.9).
+`job_started` is logged only. `job_finished` gives `succeeded`, `job_error` `failed`.
 
 No engine event ends a Snakemake launch: its head's exit code does (`head_exit`). On a non-zero
 exit the run's failure takes the text of the last `error` record, and blames the launch's last
@@ -189,8 +189,9 @@ def _open_state(p: Projection, data: SnakemakeJobInfo) -> str:
     """The state `job_info` opens the attempt in (api §7.2, #385, 2026-11-25): `submitted`
     while the SLURM executor may still hold the job in its queue, and `running` for a job
     that starts at once — a local executor, or a `localrule` job, which never reaches SLURM's
-    queue. The stall watch moves a `submitted` attempt when SLURM runs the job."""
-    if data.local:
+    queue. The stall watch moves a `submitted` attempt when SLURM runs the job; with no
+    watch (no `squeue` configured) nothing would, so the attempt opens `running` as before."""
+    if data.local or not p.queue_watched:
         return "running"
     env = p.conn.execute(
         select(runs.c.environment).where(runs.c.id == p.run_id)

@@ -30,6 +30,8 @@ from spectio_server.store.schema import (
     environments,
     launches,
     projects,
+    run_processes,
+    run_stages,
     runs,
     tasks,
     workflow_versions,
@@ -105,12 +107,14 @@ def replay(tmp_path: Path, writer: Writer, fixture: str) -> None:
         cursor = batch.cursor
 
 
-def submit(writer: Writer, batch: SpoolBatch) -> None:
-    writer.submit(lambda conn: ingest(conn, LAUNCH_ID, batch)).result()
+def submit(writer: Writer, batch: SpoolBatch, watched: bool = True) -> None:
+    """`watched`: the server reads `squeue` (the stall watch is on), as `serve` sets it when
+    `[slurm] squeue` is configured (#385)."""
+    writer.submit(lambda conn: ingest(conn, LAUNCH_ID, batch, queue_watched=watched)).result()
 
 
-def ingest_events(writer: Writer, *evs: SpoolEvent) -> None:
-    submit(writer, SpoolBatch(list(evs), {}, Counter()))
+def ingest_events(writer: Writer, *evs: SpoolEvent, watched: bool = True) -> None:
+    submit(writer, SpoolBatch(list(evs), {}, Counter()), watched)
 
 
 def event(n: int, type_: str, time: str = "2026-10-28T07:30:00Z", **data: Any) -> SpoolEvent:
@@ -426,6 +430,15 @@ def test_a_slurm_run_opens_the_attempt_submitted(engine: Engine, writer: Writer)
     assert run_row(engine).task_counts == {"succeeded": 1}
 
 
+def test_a_slurm_run_without_the_squeue_watch_opens_running(engine: Engine, writer: Writer) -> None:
+    """With no `squeue` configured nothing would move a queued attempt, so it would read
+    queued for the whole run: it opens `running`, as before #385."""
+    set_environment(writer, slurm_column())
+    ingest_events(writer, job_info(1, 7, sample="S1"), watched=False)
+    assert attempt_rows(engine) == [("align", "sample=S1", 1, "running")]
+    assert run_row(engine).task_counts == {"running": 1}
+
+
 def test_a_local_run_opens_the_attempt_running(engine: Engine, writer: Writer) -> None:
     """A local executor runs a job at once: today's behaviour, environment or not."""
     set_environment(
@@ -575,3 +588,56 @@ def test_snakemake_queries_use_indexes(engine: Engine, writer: Writer) -> None:
             plan = conn.exec_driver_sql(f"EXPLAIN QUERY PLAN {sql}", params).all()
             scans += [(sql, row[-1]) for row in plan if row[-1].startswith("SCAN ")]
     assert seen and scans == []
+
+
+def test_the_poller_moves_the_stage_with_its_task(engine: Engine, writer: Writer) -> None:
+    """A rule mapped to a stage: the stage reads `not_started` while its job is queued, and
+    `running` (counts and start time) once the poller's write moves it (ui-spec §5.1.1)."""
+
+    def map_rule(conn: Connection) -> None:
+        conn.execute(
+            insert(run_stages).values(
+                id="stg_1",
+                created_at=NOW,
+                run_id=RUN_ID,
+                stage_id="align",
+                position=1,
+                source="detected",
+                state="not_started",
+            )
+        )
+        conn.execute(
+            insert(run_processes).values(
+                id="prc_1",
+                created_at=NOW,
+                run_id=RUN_ID,
+                name="align",
+                position=1,
+                stage_id="align",
+                jobs_planned=1,
+            )
+        )
+
+    writer.submit(map_rule).result()
+    set_environment(writer, slurm_column())
+    ingest_events(
+        writer,
+        job_info(1, 7, sample="S1"),
+        event(2, "slurm_submitted", jobid=7, external_jobid="4242"),
+    )
+
+    def stage(conn: Connection) -> Any:
+        return conn.execute(select(run_stages).where(run_stages.c.id == "stg_1")).one()
+
+    with engine.connect() as conn:
+        queued = stage(conn)
+    assert (queued.state, queued.task_counts, queued.started_at) == (
+        "not_started",
+        {"submitted": 1},
+        None,
+    )
+    writer.submit(lambda conn: _now_running(conn, RUN_ID, {"4242"})).result()
+    with engine.connect() as conn:
+        moved = stage(conn)
+    assert (moved.state, moved.task_counts) == ("running", {"running": 1})
+    assert moved.started_at is not None

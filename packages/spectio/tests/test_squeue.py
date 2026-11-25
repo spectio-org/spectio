@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 
 from spectio.runner import sacct
-from spectio.runner.squeue import squeue_argv, squeue_ids, squeue_states
+from spectio.runner.squeue import squeue_argv, squeue_states
 
 FAKE = """#!{python}
 import json, os, sys
@@ -61,7 +61,6 @@ def test_squeue_argv(fakebin: Fake) -> None:
         "--format=%i %T",
     ]
     assert squeue_states(fakebin.path) == {}
-    assert squeue_ids(fakebin.path) == set()
     assert fakebin.calls()[0]["argv"] == squeue_argv(fakebin.path)
 
 
@@ -76,7 +75,6 @@ def test_squeue_states_and_arrays(fakebin: Fake) -> None:
         "55": "PENDING",
         "56": "PENDING",
     }
-    assert squeue_ids(fakebin.path) == {"8812401", "8812402_3", "55", "56"}
     fakebin.output("8812401\nnot a job at all\n")
     assert squeue_states(fakebin.path) == {}
 
@@ -85,18 +83,15 @@ def test_squeue_failure_gives_no_answer(fakebin: Fake) -> None:
     """A non-zero exit or too much output is a warning and no answer, never an error."""
     fakebin.path.write_text("#!/bin/sh\nexit 1\n")
     assert squeue_states(fakebin.path) is None
-    assert squeue_ids(fakebin.path) is None
     fakebin.path.write_text("#!/bin/sh\nyes 1234567\n")
-    assert squeue_ids(fakebin.path) is None
 
 
 def test_squeue_timeout_gives_no_answer(fakebin: Fake) -> None:
     """A tool that says nothing for longer than the timeout is killed: no answer (§3.8)."""
     fakebin.path.write_text("#!/bin/sh\nsleep 30\n")
     assert squeue_states(fakebin.path, timeout_s=0.1) is None
-    assert squeue_ids(fakebin.path, timeout_s=0.1) is None
 
 
 def test_squeue_refused_when_relative(fakebin: Fake) -> None:
     with pytest.raises(sacct.Refused):
-        squeue_ids(Path("squeue"))
+        squeue_states(Path("squeue"))

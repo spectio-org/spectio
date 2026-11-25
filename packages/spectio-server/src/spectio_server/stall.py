@@ -23,7 +23,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Connection, func, select, update
+from sqlalchemy import Connection, select, update
 
 from spectio.config import Settings
 from spectio.runner import sacct
@@ -33,9 +33,8 @@ from spectio.runner.squeue import STALL_FILE, squeue_states
 from spectio_server.failure import _launched, _resolver, dir_run_id, on_slurm
 from spectio_server.files.pool import Stalled
 from spectio_server.projector.runs import TERMINAL as RUN_ENDED
-from spectio_server.projector.runs import sync_task_states
-from spectio_server.store.schema import attempts, runs, tasks
-from spectio_server.store.writer import note_change
+from spectio_server.projector.runs import Projection
+from spectio_server.store.schema import attempts, launches, tasks
 
 if TYPE_CHECKING:
     from spectio_server.failure import Accounting, Context
@@ -232,13 +231,13 @@ class StallWatch:
                     changed.add(run_id)
             stalled_changed = self._stalled != before
             ids = [job for jobs in self._jobs.values() for job in jobs]
-        for run_id in advanced:
-            if self._advance is not None:
-                self._advance(run_id, advanced[run_id])
         for run_id in changed:
             self._notify_run(run_id)
         if stalled_changed or self._stalled:
             self.write()
+        if self._advance is not None:  # last: the stall answer never waits on the writer
+            for run_id, started in advanced.items():
+                self._advance(run_id, started)
         self._limiter.request(ids)
         return True
 
@@ -268,11 +267,17 @@ def _submit_advance(
 ) -> None:
     """One write on the writer thread, whose failure is logged, never raised here (the
     accounting thread never owns a connection)."""
-    future = submit(lambda conn: _now_running(conn, run_id, jobs))
+    try:
+        future = submit(lambda conn: _now_running(conn, run_id, jobs))
+    except RuntimeError as exc:  # the writer is closed: the server is stopping
+        log.warning("moving a queued attempt to running not queued: %s", exc)
+        return
     future.add_done_callback(_advance_failed)
 
 
 def _advance_failed(future: "Future[None]") -> None:
+    if future.cancelled():
+        return
     if (exc := future.exception()) is not None:
         log.warning("moving a queued attempt to running failed: %s", exc)
 
@@ -281,8 +286,9 @@ def _now_running(conn: Connection, run_id: str, jobs: Collection[str]) -> None:
     """The `submitted` attempts of the run's `jobs` that squeue says run now, moved to
     `running` on the writer thread (api §7.2, #385, 2026-11-25): states only move forward,
     so the update takes a `submitted` attempt alone, and an ended one is never touched.
-    Their tasks follow (a task's state is its last attempt's), and `runs.task_counts` with
-    them; `note_change` hands the changed tasks to the stream after the commit."""
+    Their tasks, the run's `task_counts` and its stages follow through the projection's own
+    `sync_tasks` and `finish`; `note_change` hands the changed tasks to the stream after the
+    commit."""
     run_tasks = select(tasks.c.id).where(tasks.c.run_id == run_id)
     moved = (
         conn.execute(
@@ -300,16 +306,16 @@ def _now_running(conn: Connection, run_id: str, jobs: Collection[str]) -> None:
     )
     if not moved:
         return
-    sync_task_states(conn, moved)
-    counts = conn.execute(
-        select(tasks.c.state, func.count()).where(tasks.c.run_id == run_id).group_by(tasks.c.state)
-    ).all()
-    conn.execute(
-        update(runs)
-        .where(runs.c.id == run_id)
-        .values(task_counts={state: n for state, n in counts}, updated_at=datetime.now(UTC))
+    launch_id = (
+        conn.execute(
+            select(launches.c.id).where(launches.c.run_id == run_id).order_by(launches.c.n.desc())
+        )
+        .scalars()
+        .first()
     )
-    note_change(conn, run_id, moved)
+    p = Projection.load(conn, str(launch_id))
+    p.sync_tasks(moved)
+    p.finish()
 
 
 def run_stall(conn: Connection, row: Any, ctx: "Context") -> dict[str, Any] | None:

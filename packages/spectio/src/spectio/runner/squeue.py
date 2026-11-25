@@ -75,9 +75,3 @@ def squeue_states(path: Path, timeout_s: float = TIMEOUT_S) -> dict[str, str] | 
         elif pending := _RANGE.fullmatch(parts[0]):
             found[pending[1]] = parts[1]
     return found
-
-
-def squeue_ids(path: Path, timeout_s: float = TIMEOUT_S) -> set[str] | None:
-    """The job IDs of `squeue_states` (#385); None when it failed or timed out."""
-    found = squeue_states(path, timeout_s)
-    return None if found is None else set(found)
