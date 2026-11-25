@@ -129,7 +129,11 @@ def unmounted_paths(
         )
     ]
     candidates = {os.path.normpath(v) for v in _paths(params) if _is_candidate(v)}
-    return sorted(p for p in candidates if not any(_under(p, root) for root in roots))
+    # The root itself ("/", or "//", which normpath keeps) exists in every container: a
+    # pipeline may hold it as a separator setting.
+    return sorted(
+        p for p in candidates if p.strip("/") and not any(_under(p, root) for root in roots)
+    )
 
 
 def echoed_paths(paths: list[str]) -> list[str]:

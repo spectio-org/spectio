@@ -56,6 +56,12 @@ def test_only_absolute_paths_without_control_characters() -> None:
     assert unmounted(params) == ["/shared/scratch/ok.csv"]
 
 
+def test_the_root_itself_is_never_refused() -> None:
+    # A pipeline may hold "/" as a separator setting; every container has a root.
+    params = {"abs_path": "/", "double": "//", "dot": "/.", "path": "/shared/x.csv"}
+    assert unmounted(params) == ["/shared/x.csv"]
+
+
 def test_paths_are_normalised_and_unique() -> None:
     params = {"a": "/shared//scratch/./x.csv", "b": "/shared/scratch/x.csv"}
     assert unmounted(params) == ["/shared/scratch/x.csv"]
