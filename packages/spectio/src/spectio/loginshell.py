@@ -95,12 +95,14 @@ def _capped(
 
 
 def which(*names: str) -> dict[str, str | None]:
-    """The absolute path of each of `names` on the login shell's PATH, or None."""
-    script = f'for c in "$@"; do printf "{_MARK}%s\\t%s\\n" "$c" "$(command -v -- "$c")"; done'
+    """The absolute path of each of `names` on the login shell's PATH, or None. `type -P` looks
+    on PATH even when the name is also a function or an alias, as `conda init` makes `conda`:
+    the binary is what an engine's subprocess runs."""
+    script = f'for c in "$@"; do printf "{_MARK}%s\\t%s\\n" "$c" "$(type -P -- "$c")"; done'
     found: dict[str, str | None] = dict.fromkeys(names)
     for line in run_login(script, *names).stdout.split("\n"):  # not splitlines: \x1e splits
         if line.startswith(_MARK):
             name, _, path = line.removeprefix(_MARK).partition("\t")
-            if name in found and path.startswith("/"):  # not an alias or a function
+            if name in found and path.startswith("/"):
                 found[name] = path
     return found
