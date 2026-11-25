@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import shlex
+import stat
 import threading
 import time
 from collections import Counter
@@ -71,6 +72,7 @@ log = logging.getLogger(__name__)
 
 LAUNCH_FAILED = "launch-failed.json"
 CANCEL = "cancel"
+HEAD_OUT = "head.out"  # the engine's output, as the head script copies it (headscript.py)
 # The launch whose head files `.spectio/` holds (CR-P3T09-11): head.pid, head.exit, cancel and
 # launch-failed.json are named per run, so a later launch clears an earlier one's first. No file
 # is launch 1, as before P1 Task 30.
@@ -132,16 +134,39 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def ended_failure(engine: str, report: HeadReport) -> HeadReport:
+# The end of the engine's own output a failure quotes (#368): enough for Nextflow's `ERROR ~`
+# line and the error block above it, small enough for the run's failure summary
+TAIL_READ = 16 * 1024
+TAIL_LINES = 15
+TAIL_CHARS = 2000
+# terminal escape sequences (CSI, OSC), then any other control character but a tab
+ESCAPES = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?|\x1b.?")
+CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+
+
+def engine_output_tail(data: bytes) -> str | None:
+    """The last non-blank lines of the engine's output, escape sequences and control
+    characters removed, at most TAIL_LINES lines and TAIL_CHARS characters; None when blank."""
+    text = ESCAPES.sub("", data.decode("utf-8", "replace").replace("\r\n", "\n"))
+    lines = [CONTROL.sub("", line).rstrip() for line in text.split("\n")]
+    kept = [line for line in lines if line.strip()][-TAIL_LINES:]
+    tail = "\n".join(kept)[-TAIL_CHARS:]
+    return tail or None
+
+
+def ended_failure(engine: str, report: HeadReport, output: str | None = None) -> HeadReport:
     """An ended head with the class the run fails with when no terminal engine event came
     (Assumption 15): `head_lost` with no exit code; `engine_fault` for a Nextflow head, which
-    ends on its own event. A Snakemake head's exit code ends its launch (Assumption 16)."""
+    ends on its own event, quoting the end of its `output` when there is one (#368). A
+    Snakemake head's exit code ends its launch (Assumption 16)."""
     if report.exit_code is None:
         message = "The head ended with no exit code: it was killed, or the machine restarted."
         return replace(report, failure=Failure("head_lost", message))
     if engine == "snakemake":
         return report
     message = f"Nextflow exited with code {report.exit_code} and sent no end event."
+    if output:
+        message += f" Its last lines:\n{output}"
     return replace(report, failure=Failure("engine_fault", message))
 
 
@@ -454,11 +479,22 @@ class RunnerLoop:
                 if time.monotonic() - first < self.end_grace_s:
                     return  # its last events may still be in the spool (Assumption 15)
             if not ref.engine_ended:  # an engine that ended on its own event has no failure
-                report = ended_failure(ref.engine, report)
+                report = ended_failure(ref.engine, report, self._head_output(ref))
         if self._last.get(ref.launch_id) == report:
             return
         self._last[ref.launch_id] = report
         self.sink.head_report(ref.launch_id, report)
+
+    def _head_output(self, ref: LaunchRef) -> str | None:
+        """The end of the launch's `.spectio/head.out` (#368), None for a run started from a
+        terminal, a Snakemake launch, or a file that cannot be read safely."""
+        if ref.terminal is not None or ref.engine != "nextflow":
+            return None
+        try:
+            with private_dir(self.settings.runs_root, ref.run_id, "launch", ".spectio") as fd:
+                return engine_output_tail(_read_tail(fd, HEAD_OUT, TAIL_READ))
+        except (OSError, ValueError):
+            return None
 
     def _cancel_asked(self, ref: LaunchRef) -> bool:
         """Whether this launch's `.spectio/cancel` marker is there (never for a run started
@@ -609,6 +645,18 @@ def _claim(dir_fd: int, launch_n: int) -> int:
             pass
     write_file(dir_fd, OWNER, f"{launch_n}\n".encode())
     return launch_n
+
+
+def _read_tail(dir_fd: int, name: str, size: int) -> bytes:
+    """The last `size` bytes of a regular file of the user, reached through no symlink."""
+    fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=dir_fd)
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode) or st.st_uid != os.geteuid():
+            raise PermissionError(f"{name}: not a regular file of this user")
+        return os.pread(fd, size, max(0, st.st_size - size))
+    finally:
+        os.close(fd)
 
 
 def _exists(dir_fd: int, name: str) -> bool:

@@ -20,7 +20,7 @@ import pytest
 from spectio.config import EngineOpts, Settings
 from spectio.runner import loop as loop_mod
 from spectio.runner.local import LocalLauncher, read_head_exit
-from spectio.runner.loop import RunnerLoop
+from spectio.runner.loop import RunnerLoop, engine_output_tail
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import (
     RunManifest,
@@ -499,6 +499,35 @@ def test_loop_launches_reads_spool_and_ends(runs_root: Path, launcher: LocalLaun
     assert last.failure is not None and last.failure.class_ == "engine_fault"
     loop.tick()  # the launch is no longer active: the launcher forgets it (CR-P3T09-07)
     assert not launcher._dirs and not launcher._procs and not launcher._warned
+
+
+def test_a_nextflow_failure_carries_its_own_last_lines(
+    runs_root: Path, launcher: LocalLauncher
+) -> None:
+    """A Nextflow head that ends with no end event (a config it cannot parse): the failure
+    quotes the end of its output, escape sequences and control characters removed (#368)."""
+    body = (
+        "printf 'N E X T F L O W\\n\\033[31mError nextflow.config:333:1: Variable declarations"
+        " cannot be mixed\\033[0m\\a\\n\\nERROR ~ Config parsing failed\\n'; exit 1"
+    )
+    engine = stub_engine(runs_root.parent / "bin", body)
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher)
+    ref = sink.launch(runs_root, RUN_A)
+    run_until(loop, lambda: ref.launch_id not in sink.launches)
+    failure = sink.last(ref.launch_id).failure
+    assert failure is not None and failure.class_ == "engine_fault"
+    assert failure.message.startswith("Nextflow exited with code 1 and sent no end event.")
+    assert "Error nextflow.config:333:1: Variable declarations cannot be mixed\n" in failure.message
+    assert failure.message.endswith("ERROR ~ Config parsing failed")
+    assert "\033" not in failure.message and "\a" not in failure.message
+
+
+def test_engine_output_tail_is_bounded() -> None:
+    text = ("x" * 300 + "\n") * 100
+    tail = engine_output_tail(text.encode())
+    assert tail is not None and len(tail) <= 2000 and len(tail.splitlines()) <= 15
+    assert engine_output_tail(b"\n \n") is None
 
 
 def test_cancel_and_launch_failure_markers(runs_root: Path, launcher: LocalLauncher) -> None:
