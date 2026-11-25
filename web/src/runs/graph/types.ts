@@ -45,6 +45,8 @@ export interface GraphNode {
   last_end?: string | null;
   /** Snakemake: a `temp()` output of the rule was removed. */
   temp?: boolean | null;
+  /** A job in this run, or one planned: false folds the step under "Not used by this run" (#376). */
+  used?: boolean | null;
   /** BioFlow-Insight (Launch): the process's or subworkflow's code. */
   code?: string | null;
 }

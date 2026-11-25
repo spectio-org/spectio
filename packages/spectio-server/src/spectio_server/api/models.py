@@ -718,6 +718,7 @@ class GraphNode(BaseModel):
     first_start: str | None = None
     last_end: str | None = None
     temp: bool | None = None  # Snakemake: a `temp()` output of the rule was removed
+    used: bool | None = None  # a task in this run, or a planned job (#376); false: drawn folded
     code: str | None = None  # BioFlow-Insight (Launch): the process's code, as text
 
 

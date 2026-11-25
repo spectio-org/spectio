@@ -31,8 +31,10 @@ export function LaunchMap({ location, revision, name, mainScript = null }: { loc
   if (doc.nodes.length === 0) return <p className="sp-empty">No step was found in the pipeline's code.</p>;
   const byId = new Map(doc.nodes.map((n) => [n.id, n]));
   const members = open ? open.members.map((m) => byId.get(m)).filter((m) => !!m) : [];
+  const word = doc.engine === "snakemake" ? "rule" : "process";
   return (
     <>
+      <p className="sp-gnote">{`Every ${word} of the pipeline. Which ones run depends on the configuration.`}</p>
       <GraphView
         doc={doc}
         title={name}

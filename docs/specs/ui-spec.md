@@ -769,6 +769,8 @@ A separate, simpler layout below 768 px (depictio's phone model), not a squeezed
 - A **Graph** tab in Run detail, next to Summary, Tasks, Parameters and Logs (§4.4), with its state in the URL (`?tab=graph&level=&layout=&q=&node=`).
 - A **Workflow map** panel on Launch (§4.6), drawn from the static document before any run exists.
 
+**Steps this run did not use.** *Added 2026-11-25 (#376).* The run graph draws only the rules or processes that have a job in this run (or one planned); the others, `used: false` in the document, are listed under the graph in one folded group, "Not used by this run (N)" (a `<button aria-expanded>`), and the Launch map says in one line that it shows every rule or process of the pipeline, not this configuration's plan.
+
 **Levels.**
 - **Stage**: one node per stage, with edges merged.
 - **Subworkflow**: Nextflow subworkflows, or Snakemake rule files.

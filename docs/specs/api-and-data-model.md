@@ -776,7 +776,7 @@ The bridges cut reported values to 4096 characters, and the server refuses a lon
 | `nodes[]` | `{id, name, kind: process\|rule\|checkpoint, stage_id, subworkflow, source, condition, params[], layout?, temp?, code?}`. `temp` (Snakemake run graphs): the rule wrote a file Snakemake removed as temporary (a `temp_removed` event on one of its stored outputs). `code` (BioFlow-Insight only): the process's code as the producer read it, capped at 64 KiB. `id` is the stored process or rule name, so a node joins `/processes` and `/tasks?process=` directly. `params` lists the `params.<x>` names that the node's code reads, when a static producer can tell |
 | `edges[]` | `{source, target, condition?}`. Edges can form cycles: static analysis does (see the [spike](../research/spike-metroflow-2026-11-10.md#3-measurements)). Every client algorithm must tolerate them |
 
-The run graph adds a runtime overlay to each node. It holds `status`, `counts`, `retries` and `pipeline_order` (as in `/processes`), plus `metrics {duration_s, cpu_mean, mem_max, failed}` and `first_start`, `last_end`. All of these values are computed and never stored.
+The run graph adds a runtime overlay to each node (#376, 2026-11-25: with `used`, true when the step has a task in the run or a planned job, and, for Nextflow, while the run is live; the document keeps every node). It holds `status`, `counts`, `retries` and `pipeline_order` (as in `/processes`), plus `metrics {duration_s, cpu_mean, mem_max, failed}` and `first_start`, `last_end`. All of these values are computed and never stored.
 
 **Routes.**
 

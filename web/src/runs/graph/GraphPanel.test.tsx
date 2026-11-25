@@ -192,9 +192,32 @@ test("Launch shows a Workflow map of the loaded pipeline, folded until opened", 
   expect(within(await screen.findByRole("table", { name: "Graph as a list" })).getAllByRole("row")).toHaveLength(7);
   expect(fetched(mock)).toContain("/api/v1/workflows:graph?location=/data/demo");
   expect(screen.getByRole("note")).toHaveTextContent("Static estimate");
+  expect(screen.getByText("Every process of the pipeline. Which ones run depends on the configuration.")).toBeInTheDocument();
   // no run yet: no colour overlay and no Jobs level
   expect(screen.queryByRole("combobox", { name: "Colour by" })).toBeNull();
   expect(within(screen.getByRole("combobox", { name: "Show" })).queryByRole("option", { name: "Jobs" })).toBeNull();
+});
+
+test("a step with no job in this run is not drawn: it is listed in one folded group", async () => {
+  const unused = { ...DOC, nodes: DOC.nodes.map((n) => (n.name === "REPORT" ? { ...n, used: false } : n)) };
+  mocks(["graph_view"], { [`${URL_}/graph`]: unused });
+  app(`/runs/${ID}?tab=graph&show=list`);
+  const rows = within(await listView()).getAllByRole("row").slice(1);
+  expect(rows).toHaveLength(5);
+  expect(within(await listView()).queryByRole("button", { name: "Open process REPORT" })).toBeNull();
+  const fold = await screen.findByRole("button", { name: "Not used by this run (1)" });
+  expect(fold).toHaveAttribute("aria-expanded", "false");
+  expect(screen.getByText("REPORT")).not.toBeVisible();
+  await userEvent.click(fold);
+  expect(fold).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByText("REPORT")).toBeVisible();
+});
+
+test("a run whose steps all have a job has no folded group", async () => {
+  mocks();
+  app(`/runs/${ID}?tab=graph&show=list`);
+  await listView();
+  expect(screen.queryByRole("button", { name: /Not used by this run/ })).toBeNull();
 });
 
 test("Launch has no Workflow map without the flag", async () => {
