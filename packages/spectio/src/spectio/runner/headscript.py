@@ -480,7 +480,7 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
         if spec.nxf_opts:
             env["NXF_OPTS"] = spec.nxf_opts
         # Off ([engines] nextflow_task_metrics = false): nf-spectio's enableMetrics() goes off,
-        # the trace record loses realtime, %cpu and peak_rss, and the task wrapper's
+        # the trace record loses %cpu and peak_rss (not realtime), and the task wrapper's
         # `command -v ps` no longer fails a container without procps (architecture §13.7).
         if not spec.task_metrics:
             env["SPECTIO_TASK_METRICS"] = "false"

@@ -684,7 +684,7 @@ class SpectioObserver implements TraceObserverV2 {
     // True: the task wrapper writes .command.trace, so the trace record has realtime, %cpu and
     // peak_rss (Session.groovy:545, BashWrapperBuilder.groovy:633-636, v26.10.4; P1 Task 28).
     // False under SPECTIO_TASK_METRICS=false (the head script's export of [engines]
-    // nextflow_task_metrics = false): off, the trace record lacks realtime, %cpu and peak_rss,
+    // nextflow_task_metrics = false): off, the trace record lacks %cpu and peak_rss (realtime stays),
     // and the wrapper's `command -v ps` no longer makes a task fail in a container without `ps`
     // (procps); on, nothing is exported and the wrapper runs as before.
     @Override boolean enableMetrics() { System.getenv('SPECTIO_TASK_METRICS') != 'false' }
