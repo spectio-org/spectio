@@ -47,7 +47,13 @@ from spectio_server.api.workflows import (
 )
 from spectio_server.defaults import effective_defaults
 from spectio_server.ids import new_id
-from spectio_server.mounts import env_binds, site_bind_paths, suggested_binds, unmounted_paths
+from spectio_server.mounts import (
+    echoed_paths,
+    env_binds,
+    site_bind_paths,
+    suggested_binds,
+    unmounted_paths,
+)
 from spectio_server.store.runs import EngineConflict, first, insert_run, module_source
 from spectio_server.store.schema import principals, runner_commands
 from spectio_server.store.writer import Writer
@@ -346,7 +352,8 @@ def _check_mounts(request: Request, body: LaunchIn, env: Environment, pipeline: 
     software). Read configuration only: no container, no stat, and a path a Snakefile builds
     while it runs is not seen. Refused until the launch binds the paths or the user confirms
     with `allow_unmounted`. The pipeline's directory counts as visible: Snakemake binds it
-    (its `apptainer exec` lines, seen on a cluster 2026-11-25)."""
+    (its `apptainer exec` lines, seen on a cluster 2026-11-25), passed as a root of its own —
+    never as a bind, which is parsed (CR-05)."""
     if (
         body.workflow.engine != "snakemake"
         or body.profiles
@@ -359,20 +366,26 @@ def _check_mounts(request: Request, body: LaunchIn, env: Environment, pipeline: 
         env.apptainer_args,
         home=Path.home(),
         launch_dir=request.app.state.settings.runs_root,
-        site_binds=[*site_bind_paths(), str(pipeline)],
+        site_binds=site_bind_paths(),
         env_binds=env_binds(),
+        extra_roots=[str(pipeline)],
     )
     if not invisible:
         return
-    shown = ", ".join(invisible[:5])
-    more = len(invisible) - 5
-    binds = ",".join(suggested_binds(invisible))
-    raise Invalid(
-        "allow_unmounted",
-        f"Not visible in the containers: {shown}{f', and {more} more' if more > 0 else ''}."
+    safe = echoed_paths(invisible)  # only a plain path is echoed or suggested (SEC-mounts-01)
+    shown = safe[:5]
+    named = ", ".join(shown) or f"{len(invisible)} path{'s' if len(invisible) > 1 else ''}"
+    more = len(invisible) - len(shown) if shown else 0
+    if more > 0:
+        named = f"{named}, and {more} more"
+    binds = ",".join(suggested_binds(safe))
+    how = (
         f" Add -B {binds} to the Apptainer options of environment {env.name},"
-        " or confirm to launch anyway.",
+        " or confirm to launch anyway."
+        if binds
+        else " Confirm to launch anyway."
     )
+    raise Invalid("allow_unmounted", f"May not be visible in the containers: {named}.{how}")
 
 
 def _resources(body: LaunchIn, env: Environment) -> dict[str, Any] | None:

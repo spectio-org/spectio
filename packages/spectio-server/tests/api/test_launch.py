@@ -356,9 +356,26 @@ def test_launch_snakemake_refuses_paths_the_containers_do_not_see(
     (error,) = response.json()["errors"]
     assert error["field"] == "allow_unmounted"
     assert error["message"] == (
-        "Not visible in the containers: /shared/scratch/0.fastq, /shared/scratch/1.fastq,"
+        "May not be visible in the containers: /shared/scratch/0.fastq, /shared/scratch/1.fastq,"
         " /shared/scratch/2.fastq, /shared/scratch/3.fastq, /shared/scratch/4.fastq,"
         " and 2 more. Add -B /shared to the Apptainer options of environment local,"
+        " or confirm to launch anyway."
+    )
+
+
+def test_launch_snakemake_refusal_echoes_only_plain_paths(
+    authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A path with a space is counted but never echoed nor suggested (SEC-mounts-01); the
+    refusal says only what it can echo safely."""
+    without_site_binds(monkeypatch)
+    params = {"reads0": "/shared/scratch/0.fastq", "odd": "/x --writable-tmpfs/y"}
+    response = launch(authed_client, str(synthetic / "snakemake"), "snakemake", params=params)
+    assert response.status_code == 422, response.text
+    (error,) = response.json()["errors"]
+    assert error["message"] == (
+        "May not be visible in the containers: /shared/scratch/0.fastq, and 1 more."
+        " Add -B /shared to the Apptainer options of environment local,"
         " or confirm to launch anyway."
     )
 

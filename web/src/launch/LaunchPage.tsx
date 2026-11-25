@@ -364,6 +364,32 @@ export function LaunchPage({
   /** An edit of a resource or of the extra config file forgets the server's error on it. */
   const dropErrors = (prefix: string) => setErrors((old) => Object.fromEntries(Object.entries(old).filter(([k]) => !k.startsWith(prefix))));
 
+  /** The refusal of the paths the containers would not see goes stale with any edit: the Alert
+   * and the confirmation are dropped together (CR-01), so the next launch is asked again. */
+  function dropUnmounted() {
+    setUnmounted(null);
+    setLaunchAnyway(false);
+  }
+
+  /** A parameter edited: the paths the containers would not see are asked of the new values. */
+  function editParam(key: string, value: string | boolean) {
+    setValues((old) => ({ ...old, [key]: value }));
+    dropUnmounted();
+  }
+
+  /** A row of the key–value list edited: same as a parameter (CR-01). */
+  function editRows(next: Row[]) {
+    setRows(next);
+    dropUnmounted();
+  }
+
+  /** An environment chosen: the refusal named the old environment's Apptainer options, so it is
+   * dropped with its confirmation (CR-01). */
+  function chooseEnv(name: string) {
+    setEnvName(name);
+    dropUnmounted();
+  }
+
   /** An edit of Pipeline or Revision cancels the inspect in flight and forgets the last one. */
   function edit(set: (v: string) => void, value: string) {
     inFlight.current?.abort();
@@ -374,6 +400,7 @@ export function LaunchPage({
     setEngine(null);
     setMainScript(null);
     setErrors({});
+    dropUnmounted();
     setLaunchedWarnings([]);
     setEntryName(null); // the picker goes back to None, and the entry's prefill is forgotten
     setFromName(null);
@@ -481,6 +508,7 @@ export function LaunchPage({
     inFlight.current = controller;
     setLoading(true);
     setErrors({});
+    dropUnmounted(); // a fresh Load answers for itself, as it does for the field errors (CR-01)
     try {
       const from = !copy && entry?.location === where ? entry : null;
       const found = wantSingle
@@ -804,7 +832,7 @@ export function LaunchPage({
   /** The paths the containers would not see (built 2026-11-25, api §5.2): the server's words and
    * the confirmation, above the Launch button; a keyboard-reachable checkbox, nothing hover-only. */
   const unmountedAlert = unmounted !== null && (
-    <Alert role="alert" className="launch-unmounted">
+    <Alert>
       <Text size="sm">{unmounted}</Text>
       <Checkbox
         mt="xs"
@@ -1199,6 +1227,7 @@ export function LaunchPage({
                   value={profile}
                   onChange={(e) => {
                     setPicked(e.currentTarget.value);
+                    dropUnmounted(); // the profile owns the software: the refusal is stale (CR-01)
                     reaskProfiles(e.currentTarget.value);
                   }}
                   data={[
@@ -1249,9 +1278,9 @@ export function LaunchPage({
               list={envs}
               failed={envsFailed}
               chosen={chosen}
-              onChoose={setEnvName}
+              onChoose={chooseEnv}
               onRetry={loadEnvs}
-              onCreated={(item) => void loadEnvs().then(() => setEnvName(item.name))}
+              onCreated={(item) => void loadEnvs().then(() => chooseEnv(item.name))}
               error={errors.environment}
             />
             <ResourcesRow
@@ -1331,7 +1360,7 @@ export function LaunchPage({
                     tried={tried}
                     prefill={defaultsMode}
                     incomplete={incomplete}
-                    onChange={(key, v) => setValues((old) => ({ ...old, [key]: v }))}
+                    onChange={editParam}
                   />
                 )}
                 {sections.length > 1 && sections.map((section, i) => (
@@ -1347,11 +1376,11 @@ export function LaunchPage({
                     tried={tried}
                     prefill={defaultsMode}
                     incomplete={incomplete}
-                    onChange={(key, v) => setValues((old) => ({ ...old, [key]: v }))}
+                    onChange={editParam}
                   />
                 ))}
               </Stack>
-              {sections.length === 0 && <KeyValueRows rows={rows} onChange={setRows} />}
+              {sections.length === 0 && <KeyValueRows rows={rows} onChange={editRows} />}
             </FoldSection>
           )}
           {loaded && graphOn && (

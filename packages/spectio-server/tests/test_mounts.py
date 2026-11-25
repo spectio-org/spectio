@@ -85,16 +85,29 @@ def test_home_tmp_launch_dir_and_the_apptainer_arguments() -> None:
         "in_tmp": "/tmp/spectio/data.csv",  # noqa: S108 - a root the check itself covers
         "in_launch": "/runs/run_1/launch/results/x.txt",
         "bound": "/data/reads.csv",
-        "bound_with_dst": "/shared/ref.fa",
+        "at_dst": "/ref/genome.fa",
         "unbound": "/shared/scratch/x.csv",
     }
     args = "--nvc --bind /data,/shared/ref.fa:/ref --bind=/etc"
     assert unmounted(params, args) == ["/shared/scratch/x.csv"]
 
 
-def test_a_bound_destination_is_not_a_root() -> None:
+def test_paths_in_the_image_or_mounted_by_apptainer_itself_are_never_refused() -> None:
+    params = {"a": "/dev/null", "b": "/opt/conda/x", "c": "/usr/share/x", "d": "/etc/passwd"}
+    assert unmounted(params) == []
+
+
+def test_a_bound_destination_is_the_root() -> None:
+    """A bind mounts `src` at `dst`, so the container sees the files at `dst` (CR-02): `/ref`
+    is the root, and `/shared/ref` is not — unless the second field is only an option."""
     params = {"at_dst": "/ref/genome.fa", "at_src": "/shared/ref/genome.fa"}
-    assert unmounted(params, "-B /shared/ref:/ref") == ["/ref/genome.fa"]
+    assert unmounted(params, "-B /shared/ref:/ref") == ["/shared/ref/genome.fa"]
+    assert unmounted(params, "-B /shared/ref:/ref:ro") == ["/shared/ref/genome.fa"]
+
+
+def test_a_bare_option_is_not_a_destination() -> None:
+    params = {"ro": "/shared/ref/x.fa", "rw": "/other/y.fa"}
+    assert unmounted(params, "-B /shared/ref:ro,/other:rw") == []
 
 
 def test_a_root_matches_by_path_component() -> None:
@@ -107,7 +120,7 @@ def test_a_root_covers_everything() -> None:
 
 
 def test_site_and_environment_binds_are_roots() -> None:
-    params = {"a": "/shared/scratch/x.csv", "b": "/data/reads.csv", "c": "/work/out.txt"}
+    params = {"a": "/shared/scratch/x.csv", "b": "/mnt/data/reads.csv", "c": "/work/out.txt"}
     found = unmounted(params, site_binds=["/data:/mnt/data"], env_binds="/work")
     assert found == ["/shared/scratch/x.csv"]
 
@@ -115,7 +128,15 @@ def test_site_and_environment_binds_are_roots() -> None:
 def test_site_and_environment_bind_lists_split_on_commas() -> None:
     params = {"a": "/data/reads.csv", "b": "/work/out.txt", "c": "/other/x"}
     found = unmounted(params, site_binds=["/data,/work:/mnt/work"])
-    assert found == ["/other/x"]
+    assert found == ["/other/x", "/work/out.txt"]
+
+
+def test_extra_roots_reach_the_check_by_value() -> None:
+    """The pipeline's directory is a root of its own (CR-05): never parsed as a bind, so a
+    comma or a colon in it splits nothing."""
+    params = {"in": "/work/a,b/ref.fa", "out": "/shared/scratch/x.csv"}
+    found = unmounted(params, extra_roots=["/work/a,b"])
+    assert found == ["/shared/scratch/x.csv"]
 
 
 # --- The suggestion --------------------------------------------------------------------------
@@ -124,6 +145,13 @@ def test_site_and_environment_bind_lists_split_on_commas() -> None:
 def test_suggested_binds_names_the_first_component() -> None:
     paths = ["/shared/scratch/a.csv", "/data/b/c.fa", "/data/d", "/scratch"]
     assert mounts.suggested_binds(paths) == ["/data", "/scratch", "/shared"]
+
+
+def test_only_plain_paths_are_echoed() -> None:
+    """The refusal names and suggests a path it can echo safely (SEC-mounts-01): absolute, one
+    line, no space, nothing a terminal would read as two words or an option."""
+    paths = ["/shared/scratch/a.csv", "/x --writable-tmpfs/y", "/quo'te", "/uni\\x", "a/b"]
+    assert mounts.echoed_paths(paths) == ["/shared/scratch/a.csv"]
 
 
 # --- The site's Apptainer configuration ------------------------------------------------------
@@ -164,6 +192,31 @@ def test_site_bind_paths_reads_at_most_256_kib(
     conf.write_text("#" * (256 * 1024) + "\nbind path = /late\n")
     monkeypatch.setattr(mounts, "CONFIG_FILES", (conf,))
     assert mounts.site_bind_paths() == []
+
+
+def test_site_bind_paths_drops_the_line_the_cap_cuts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The read stops at MAX_CONF_BYTES; the last line it holds may be cut in half, so it is
+    dropped: a `bind path` past the cap is never read as a broken value (SEC-mounts-02)."""
+    conf = tmp_path / "apptainer.conf"
+    cut = "bind path = /cut"
+    pad = "#" * (256 * 1024 - len("bind path = /whole\n") - len(cut))
+    conf.write_text(f"bind path = /whole\n{cut}{pad}\nbind path = /never\n")
+    monkeypatch.setattr(mounts, "CONFIG_FILES", (conf,))
+    assert mounts.site_bind_paths() == ["/whole"]
+
+
+def test_site_bind_paths_reads_only_a_regular_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A directory in the list is not read: the next file decides (SEC-mounts-02)."""
+    directory = tmp_path / "conf.d"
+    directory.mkdir()
+    other = tmp_path / "singularity.conf"
+    other.write_text("bind path = /data\n")
+    monkeypatch.setattr(mounts, "CONFIG_FILES", (directory, other))
+    assert mounts.site_bind_paths() == ["/data"]
 
 
 def test_env_binds_prefers_apptainer(monkeypatch: pytest.MonkeyPatch) -> None:

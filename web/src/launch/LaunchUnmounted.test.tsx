@@ -30,7 +30,7 @@ const REFUSAL = {
     {
       field: "allow_unmounted",
       message:
-        "Not visible in the containers: /shared/scratch/samples.csv. Add -B /shared to the Apptainer options of environment local, or confirm to launch anyway.",
+        "May not be visible in the containers: /shared/scratch/samples.csv. Add -B /shared to the Apptainer options of environment local, or confirm to launch anyway.",
     },
   ],
 };
@@ -83,7 +83,7 @@ test("a 422 on allow_unmounted shows the message with a checkbox that launches a
   await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/shared/scratch/samples.csv");
   fetchMock.mockResolvedValueOnce(json(422, REFUSAL));
   await userEvent.click(launch());
-  await screen.findByText(/Not visible in the containers: \/shared\/scratch\/samples\.csv/);
+  await screen.findByText(/May not be visible in the containers: \/shared\/scratch\/samples\.csv/);
   const checkbox = screen.getByRole("checkbox", {
     name: "Launch anyway: these paths are not visible in the containers",
   });
@@ -95,7 +95,28 @@ test("a 422 on allow_unmounted shows the message with a checkbox that launches a
   await userEvent.click(launch());
   await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
   expect(JSON.parse(String(fetchMock.mock.calls.at(-1)?.[1]?.body)).allow_unmounted).toBe(true);
-  expect(screen.queryByText(/Not visible in the containers/)).toBeNull();
+  expect(screen.queryByText(/May not be visible in the containers/)).toBeNull();
+});
+
+test("a parameter edited after a refusal drops the Alert and the confirmation (CR-01)", async () => {
+  const onLaunched = page();
+  await load();
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/shared/scratch/samples.csv");
+  fetchMock.mockResolvedValueOnce(json(422, REFUSAL));
+  await userEvent.click(launch());
+  const checkbox = await screen.findByRole("checkbox", { name: /Launch anyway/ });
+  await userEvent.click(checkbox); // ticked: the next launch would send allow_unmounted
+
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "x");
+  expect(screen.queryByText(/May not be visible in the containers/)).toBeNull(); // the Alert is gone
+  expect(screen.queryByRole("checkbox", { name: /Launch anyway/ })).toBeNull(); // so is the box
+
+  fetchMock.mockResolvedValueOnce(json(201, { id: "run_1", name: "pipeline-x", state: "queued" }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+  expect(JSON.parse(String(fetchMock.mock.calls.at(-1)?.[1]?.body))).not.toHaveProperty(
+    "allow_unmounted",
+  ); // unticked by the edit, the launch sends no confirmation
 });
 
 test("another field's refusal is not the container paths check", async () => {
@@ -111,6 +132,6 @@ test("another field's refusal is not the container paths check", async () => {
   );
   await userEvent.click(launch());
   await waitFor(() => expect(screen.getByRole("textbox", { name: /^input/ })).toHaveAttribute("aria-invalid", "true"));
-  expect(screen.queryByText(/Not visible in the containers/)).toBeNull();
+  expect(screen.queryByText(/May not be visible in the containers/)).toBeNull();
   expect(screen.queryByRole("checkbox", { name: /Launch anyway/ })).toBeNull();
 });
