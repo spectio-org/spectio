@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # A Spectio image for local development, modelled on the one of docs/specs/architecture-plugins-and-packaging.md
 # §7.4 but built from the wheels of the checkout, not from a published wheel (dev only: tagged spectio:dev, never
 # pushed). dev/minikube/up.sh builds the wheels into .build/wheels and stages the build context. Two targets:
@@ -32,13 +31,15 @@ RUN apt-get update \
 COPY --from=uv /uv /usr/local/bin/uv
 RUN uv python install "${PYTHON_VERSION}" \
  && ln -s "$(uv python find "${PYTHON_VERSION}")" /opt/python/python3
-# Spectio: the hashed third-party dependencies first, then the three wheels without dependencies
+# Spectio: the hashed third-party dependencies first, then the three wheels without dependencies; `uv pip check`
+# fails the build when a dependency of the wheels is missing or incompatible (they are installed with --no-deps)
 COPY requirements.txt /tmp/requirements.txt
 COPY wheels /tmp/wheels
 RUN uv venv --python "${PYTHON_VERSION}" /opt/spectio \
  && uv pip install --python /opt/spectio/bin/python --require-hashes --no-deps -r /tmp/requirements.txt \
  && uv pip install --python /opt/spectio/bin/python --no-deps /tmp/wheels/spectio_sdk-*.whl \
-      /tmp/wheels/spectio-*.whl /tmp/wheels/spectio_server-*.whl
+      /tmp/wheels/spectio-*.whl /tmp/wheels/spectio_server-*.whl \
+ && uv pip check --python /opt/spectio/bin/python
 # Snakemake in its own environment, from the lock file of this architecture
 COPY snakemake.lock.txt snakemake.lock.arm64.txt /tmp/
 RUN case "${TARGETARCH}" in \
