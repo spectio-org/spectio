@@ -615,7 +615,7 @@ MAX_ROOT_LINKS = 1000
 # the rest are the conventional output directories, a link to which would have a rule write
 # into the repository.
 ROOT_LINK_SKIPPED = frozenset(
-    {".git", ".snakemake", "config", "results", "resources", "logs", "benchmarks"}
+    {".git", ".snakemake", ".nextflow", "config", "results", "resources", "logs", "benchmarks"}
 )
 
 
@@ -678,8 +678,9 @@ def _link_pipeline_root(spec: LaunchSpec) -> None:
     are linked: a symbolic link, FIFO or socket at the top is skipped, as are the names of
     `ROOT_LINK_SKIPPED` — a link to `results` or `logs` would have a rule write into the
     repository. A name the launch directory has already is kept (`os.path.lexists`: a
-    dangling link counts), so a Resume keeps what it has; past MAX_ROOT_LINKS entries the
-    linking stops, and does not fail."""
+    dangling link counts), so a Resume keeps what it has, the parent's links included, which
+    point at the parent's repository (SEC-367-03); past MAX_ROOT_LINKS entries, in the
+    directory's own order, the linking stops, and does not fail."""
     try:
         entries = os.scandir(spec.location)
     except OSError:
@@ -688,7 +689,9 @@ def _link_pipeline_root(spec: LaunchSpec) -> None:
         for n, entry in enumerate(entries, start=1):
             if n > MAX_ROOT_LINKS:
                 return
-            if entry.name in ROOT_LINK_SKIPPED:
+            # Spectio's own names (`.spectio/`, the launch lock) are never the repository's
+            # (SEC-367-02)
+            if entry.name in ROOT_LINK_SKIPPED or entry.name.startswith(".spectio"):
                 continue
             try:
                 st = entry.stat(follow_symlinks=False)

@@ -545,16 +545,18 @@ def test_snakemake_pipeline_root_is_linked(home: Path, bridges: Path) -> None:
     (location / "VERSION").write_text("1.2.3\n")
     (location / "workflow" / "data").mkdir(parents=True)
     (location / "workflow" / "data" / "x.bed.gz").write_text("")
-    for name in (".git", ".snakemake", "results", "resources", "logs", "benchmarks"):
+    for name in (".git", ".snakemake", "results", "resources", "logs", "benchmarks", ".nextflow"):
         (location / name).mkdir()
+    (location / ".spectio-launch.lock").write_text("")  # Spectio's own name (SEC-367-02)
     spec = snakemake_spec(home)
     assert run_head(spec).returncode == 0
     version = spec.engine_dir / "VERSION"
     assert version.is_symlink() and version.read_text() == "1.2.3\n"
     data = spec.engine_dir / "workflow" / "data" / "x.bed.gz"
     assert (spec.engine_dir / "workflow").is_symlink() and data.read_text() == ""
-    for name in (".git", ".snakemake", "results", "resources", "logs", "benchmarks"):
+    for name in (".git", ".snakemake", "results", "resources", "logs", "benchmarks", ".nextflow"):
         assert not (spec.engine_dir / name).exists()
+    assert not (spec.engine_dir / ".spectio-launch.lock").is_symlink()
     assert not (spec.engine_dir / "config").is_symlink()  # copied, never linked
     assert (spec.engine_dir / "config" / "config.yaml").read_text() == "outdir: results\n"
 
