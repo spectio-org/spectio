@@ -160,6 +160,24 @@ def test_head_script_nextflow_args(home: Path, bridges: Path) -> None:
     assert "plugins" not in (spectio_dir / "spectio.config").read_text()  # inbox #69
 
 
+def test_head_script_nextflow_syntax_parser(home: Path, bridges: Path) -> None:
+    """#368: `[engines] nxf_syntax_parser = "v1"` exports NXF_SYNTAX_PARSER to the Nextflow
+    head, for pipelines whose config the strict parser of 26.10.4 refuses; unset leaves
+    Nextflow its own default, Snakemake never sees it, a user's own value wins, and any other
+    value is refused."""
+    engine = stub_engine(home / "bin")
+    spec = make_spec(home / "runs", engine_cmd=shlex.quote(str(engine)), nxf_syntax_parser="v1")
+    assert run_head(spec).returncode == 0
+    assert exported(spec)["NXF_SYNTAX_PARSER"] == "v1"
+    assert "NXF_SYNTAX_PARSER" not in engine_env(replace(spec, nxf_syntax_parser=None))
+    sm = make_spec(home / "runs", engine="snakemake", nxf_syntax_parser="v1")
+    assert "NXF_SYNTAX_PARSER" not in engine_env(sm)
+    user = engine_env(replace(spec, env={"NXF_SYNTAX_PARSER": "v2"}))
+    assert user["NXF_SYNTAX_PARSER"] == "v2"  # spec.env wins (applied last)
+    with pytest.raises(ValueError, match="NXF_SYNTAX_PARSER"):
+        engine_env(replace(spec, nxf_syntax_parser="v3"))
+
+
 def test_engine_finds_the_unpacked_nf_spectio(
     home: Path, bridges: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

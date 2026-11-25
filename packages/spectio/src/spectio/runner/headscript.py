@@ -468,6 +468,12 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
         env["NXF_LOG_FILE"] = str(_spectio(spec) / "nextflow.log")
         if spec.nxf_opts:
             env["NXF_OPTS"] = spec.nxf_opts
+        if spec.nxf_syntax_parser is not None:  # #368: re-checked, the spec may be hand-built
+            if spec.nxf_syntax_parser not in ("v1", "v2"):
+                raise ValueError(
+                    f"NXF_SYNTAX_PARSER: {spec.nxf_syntax_parser!r} is not 'v1' or 'v2'"
+                )
+            env["NXF_SYNTAX_PARSER"] = spec.nxf_syntax_parser
     elif spec.software_cache is not None:
         # The tools' own caches default to the home directory (Apptainer's layers under
         # ~/.apptainer/cache, conda's packages under ~/.conda/pkgs when the base is not

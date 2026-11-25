@@ -401,6 +401,7 @@ class RunnerLoop:
                 params=payload.params,
                 **fields,
                 nxf_opts=engines.nxf_opts,
+                nxf_syntax_parser=engines.nxf_syntax_parser,
                 extra_args=engines.extra_args.get(ref.engine, []),
                 resume_of=resume,
                 target=payload.target,
