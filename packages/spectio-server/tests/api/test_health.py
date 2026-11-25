@@ -89,3 +89,16 @@ def test_ready_when_the_database_read_fails(probe: TestClient, settings: Setting
     assert body["status"] == "unavailable"
     assert body["reason"] and "/" not in body["reason"]
     assert str(settings.db_dir) not in answer.text
+
+
+@pytest.mark.parametrize(
+    "path", ["/health/live/", "/health/livex", "/health/live/x", "/health/ready/../api"]
+)
+def test_only_the_exact_paths_are_exempt(probe: TestClient, path: str) -> None:
+    """A neighbour of a probe path gets the session check like any other path."""
+    assert probe.get(path).status_code == 401
+
+
+@pytest.mark.parametrize("path", [LIVE, READY])
+def test_the_host_allow_list_still_runs(probe: TestClient, path: str) -> None:
+    assert probe.get(path, headers={"Host": "evil.example"}).status_code == 400

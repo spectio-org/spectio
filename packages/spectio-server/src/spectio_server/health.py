@@ -17,6 +17,8 @@ revision, or none, is not the schema this server migrated its database to (`db.o
 ready refuses.
 """
 
+from functools import cache
+
 from alembic.config import Config
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
@@ -36,6 +38,7 @@ UNSUPPORTED = "database schema revision is not supported by this release"
 router = APIRouter(include_in_schema=False)  # a probe is not part of the API document
 
 
+@cache  # read once: the migrations ship with the package
 def head_revision() -> str:
     """The head of this release's migrations, the one `db.open_db` upgrades to: the oldest
     schema revision this server serves."""
