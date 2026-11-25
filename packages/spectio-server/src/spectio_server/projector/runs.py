@@ -64,6 +64,7 @@ class Projection:
     sources: "StageSources | None" = None  # where stage sources are read (P1 Task 27)
     dropped: Counter[str] = field(default_factory=Counter)  # paths not kept (P1 Task 28)
     lineage_id: str | None = None  # a Resume's lineage root, whose directories it runs in
+    queue_watched: bool = False  # the stall watch reads squeue: a queued job can be told (#385)
 
     @property
     def dir_run_id(self) -> str:

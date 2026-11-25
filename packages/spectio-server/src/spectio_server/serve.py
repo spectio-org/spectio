@@ -181,6 +181,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
                 settings.data_dir / "overlays",
                 settings.data_dir,
                 stage_files,
+                queue_watched=settings.slurm.squeue is not None,
             ),
             launcher,
             settings,

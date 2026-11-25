@@ -42,7 +42,11 @@ def load_cursor(conn: Connection, launch_id: str) -> dict[str, int]:
 
 
 def ingest(
-    conn: Connection, launch_id: str, batch: SpoolBatch, sources: StageSources | None = None
+    conn: Connection,
+    launch_id: str,
+    batch: SpoolBatch,
+    sources: StageSources | None = None,
+    queue_watched: bool = False,
 ) -> None:
     """Log and project the batch's new events, then store its cursor and drops.
 
@@ -57,6 +61,7 @@ def ingest(
     """
     p = Projection.load(conn, launch_id)
     p.sources = sources
+    p.queue_watched = queue_watched
     if any(e.run != p.run_id or e.launch != p.launch_n for e in batch.events):
         raise ValueError(f"the batch holds an event of another run or launch than {launch_id}")
     seen = _logged(conn, p.run_id, [e.id for e in batch.events])
