@@ -132,15 +132,15 @@
 }
 .sp-table th {
   text-align: left;
-  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  padding: var(--sp-cell-py) var(--sp-cell-px);
   font-size: var(--mantine-font-size-sm);
   font-weight: 600;
-  color: var(--sp-text-secondary);
+  color: var(--sp-text-muted);
   background: var(--sp-surface-subtle);
   border-bottom: 1px solid var(--sp-line-divider);
 }
 .sp-table td {
-  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  padding: var(--sp-cell-py) var(--sp-cell-px);
   vertical-align: middle;
   border-bottom: 1px solid var(--sp-line-divider);
   overflow-wrap: break-word;
@@ -156,6 +156,31 @@
 .sp-table .sp-num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+/* A compact table (the Tasks list, By process; ui-spec §12.8): tighter rows, the header and the
+   name column stay in view while the table scrolls inside its wrapper. */
+.sp-table[data-density="compact"] {
+  --sp-cell-py: var(--mantine-spacing-sm);
+}
+.sp-table-wrap:has(> .sp-table[data-density="compact"]) {
+  max-height: 70vh;
+  overflow: auto;
+}
+.sp-table[data-density="compact"] th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.sp-table[data-density="compact"] th:first-child,
+.sp-table[data-density="compact"] td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--sp-surface-raised);
+}
+.sp-table[data-density="compact"] th:first-child {
+  z-index: 3;
+  background: var(--sp-surface-subtle);
 }
 
 .sp-run-link {
@@ -1127,15 +1152,36 @@
 
 /* UI parity D (P3-parD): stages, processes and tasks open a detail sheet; count chips and the
    pipeline directory act; the log viewer searches and filters by level. */
+/* A name on one line, cut with an ellipsis, 28ch at most in a table; its full text is the
+   button's label and a tooltip on hover and on focus (ui-spec §12.8). */
 .sp-open {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
   font-size: inherit;
   color: var(--sp-text-link);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-table .sp-open {
+  max-width: 28ch;
 }
 .sp-open-task {
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0;
+}
+.sp-open-task strong {
+  display: block;
   max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-task-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 /* The wildcards or tag (#385): a second, dimmed line, cut with an ellipsis; the button's label has them whole. */
 .sp-open-task .sp-open-parts {
@@ -1749,6 +1795,13 @@
 .sp-sort[data-on] {
   color: var(--sp-text-link);
 }
+/* The sort icon: always there, so a sortable header shows it; fainter while unsorted. */
+.sp-sort .sp-icon {
+  flex: none;
+}
+.sp-sort:not([data-on]) .sp-icon {
+  color: var(--sp-text-faint);
+}
 .sp-explorer-act {
   width: 44px;
   text-align: right;
@@ -2272,7 +2325,7 @@
 /* One padding and one top alignment for every cell; the header in sm/600, muted. */
 .sp-grid-runs .ag-header-cell,
 .sp-grid-runs .ag-cell {
-  padding-inline: var(--mantine-spacing-md);
+  padding-inline: var(--sp-cell-px);
 }
 .sp-grid-runs .ag-header-cell-text {
   font-size: var(--mantine-font-size-sm);
@@ -2285,8 +2338,8 @@
   flex: none;
 }
 /* The name takes the free width and the pin a fixed slot at the column's right; a name wraps to
-   two lines at most, the full name in a tooltip on hover and focus. The workflow path is not
-   focusable, so it wraps in full, unclamped (CR-P3UI08-01). */
+   two lines at most, the full name in a tooltip on hover and focus. The workflow cell is one
+   line with an ellipsis, below. */
 .sp-grid-runs .sp-run-cell {
   align-items: flex-start;
 }
@@ -2299,7 +2352,22 @@
   margin-top: -2px;
 }
 .sp-grid-runs .sp-pipeline > span:last-child {
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The Workflow cell is one line, the pipeline and the target cut with an ellipsis; the full text
+   is in the cell's tooltip (ui-spec §12.8). */
+.sp-grid-runs .sp-what-ran {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.sp-grid-runs .sp-what-ran .sp-target-to {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sp-run-name .sp-run-link {
   display: -webkit-box;

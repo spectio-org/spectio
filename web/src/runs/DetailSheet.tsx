@@ -4,13 +4,13 @@ import { type Counts, type Process, type RunDetail, type Stage, type Task, listT
 import { Icon } from "../icons";
 import { useFrames } from "../live";
 import { usePhone } from "../shell/layout";
-import { bytes, nearLimit, seconds } from "./resources";
+import { bytes, nearLimit } from "./resources";
 import { efficiencyFacts } from "./ByProcess";
-import { CheckpointMark, NearLimit, Word, taskLabel } from "./RunState";
+import { CheckpointMark, NearLimit, TaskName, Word, taskLabel } from "./RunState";
 import { Facts, SlurmFacts } from "./SlurmFacts";
 import { TaskFiles } from "./TaskFiles";
 import { taskName } from "./taskName";
-import { type Shown, isTerminal, lastSegment, neededFirst, processState, refresh, stageWord, sum, taskWord, total, words } from "./stateWord";
+import { type Shown, isTerminal, lastSegment, neededFirst, processState, refresh, stageWord, sum, taskWord, total, words, formatDuration } from "./stateWord";
 
 // The detail of a stage, a process (a rule) or a task (a job), in a side sheet (LiteTaskFiles,
 // MLiteTaskFilesSheet; P3-parD, Thomas 2026-10-31: "steps & stages pas clickable, pas de détails"):
@@ -49,12 +49,13 @@ function stageLine(id: string | null, stages: Stage[]): string {
   return stage ? `Stage ${stage.position} · ${stage.name ?? stage.id}` : "Not in a stage";
 }
 
-/** The counts as chips: done of all, then running, pending, failed, cached and retried. */
+/** The counts as chips: done of all, then running, queued, pending, failed, cached and retried. */
 function CountChips({ counts, retries, label }: { counts: Counts; retries: number; label: string }) {
   const chips = [
     { text: `${sum(counts, "succeeded", "cached", "stored")} of ${total(counts)} done`, tone: "succeeded" },
     { text: `${sum(counts, "running")} running`, tone: "running" },
-    { text: `${sum(counts, "pending", "submitted")} pending`, tone: "queued" },
+    { text: `${sum(counts, "submitted")} queued`, tone: "queued" },
+    { text: `${sum(counts, "pending")} pending`, tone: "queued" },
     { text: `${sum(counts, "failed")} failed`, tone: "failed" },
     { text: `${sum(counts, "cached", "stored")} cached`, tone: "cached" },
     { text: `${retries} retried`, tone: "review" },
@@ -62,7 +63,7 @@ function CountChips({ counts, retries, label }: { counts: Counts; retries: numbe
   return (
     <ul className="sp-counts" aria-label={label}>
       {chips.map((chip) => (
-        <li key={chip.tone} className="sp-chip" data-tone={chip.tone}>
+        <li key={chip.text.replace(/^\d+ /, "")} className="sp-chip" data-tone={chip.tone}>
           {chip.text}
         </li>
       ))}
@@ -127,7 +128,9 @@ function ProcessTasks({ run, process, name, onOpen }: { run: RunDetail; process:
               aria-label={`Open ${w.unit} ${taskLabel(t)}, ${taskWord(t.state)}`}
               onClick={() => onOpen(t)}
             >
-              <span className="sp-mono">{taskLabel(t)}</span>
+              <span className="sp-task-name">
+                <TaskName task={t} />
+              </span>
               <Word state={t.state} word={taskWord(t.state)} />
             </button>
           </li>
@@ -265,7 +268,7 @@ function TaskView({ run, stages, processes, task, attempt, onOpen }: { run: RunD
     ["Stage", stageLine(task.stage_id, stages)],
     ["CPUs · CPU %", <Pair asked={r.cpus === null ? "—" : String(r.cpus)} used={r.cpu_percent === null ? "—" : `${Math.round(r.cpu_percent)} %`} />],
     ["Memory, asked · peak", <Pair asked={bytes(r.memory_bytes)} used={bytes(r.peak_rss_bytes)} near={near.memory} />],
-    ["Time limit · duration", <Pair asked={seconds(r.time_s)} used={seconds(r.realtime_s)} near={near.time} />],
+    ["Time limit · duration", <Pair asked={formatDuration(r.time_s)} used={formatDuration(r.realtime_s)} near={near.time} />],
   ];
   return (
     <>
@@ -319,7 +322,7 @@ export function DetailSheet({ run, stages, processes, views, onOpen, onBack, onC
               )}
             </Drawer.Title>
             {taskParts.length > 0 && (
-              <ul className="sp-sheet-parts" aria-label={taskParts.every((p) => p.key !== null) ? "Wildcards" : "Tag"}>
+              <ul className="sp-sheet-parts" aria-label={run.workflow.engine === "snakemake" ? "Wildcards" : "Tag"}>
                 {taskParts.map((p) => (
                   <li key={`${p.key}=${p.value}`}>
                     <Badge component="span" variant="light" size="sm" tt="none">

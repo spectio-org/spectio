@@ -646,12 +646,28 @@
 
 /* AG Grid (ui-spec §4.13; runs/DataGrid.tsx): the theme takes the app's tokens; these add the run
    rows' state rail, their multi-line cells, the sort arrows and a visible keyboard focus. */
+:root {
+  /* One cell padding for .sp-table and the runs grid (ui-spec §12.8) */
+  --sp-cell-px: var(--mantine-spacing-md);
+  --sp-cell-py: var(--mantine-spacing-md);
+}
 .sp-grid-runs .ag-row {
   box-shadow: inset 4px 0 0 var(--tone, transparent);
 }
 .sp-grid-runs .ag-cell {
-  padding-block: var(--mantine-spacing-md);
+  padding-block: var(--sp-cell-py);
   line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+/* Numbers and durations sit at the right, on one line (ui-spec §12.8); the header follows
+   through `ag-right-aligned-header`. */
+.sp-grid-runs .ag-cell.sp-num {
+  justify-content: flex-end;
+  text-align: right;
+  white-space: nowrap;
+}
+.sp-grid-runs .ag-cell.sp-num .sp-done {
+  justify-content: flex-end;
 }
 .sp-grid-icon {
   display: block;

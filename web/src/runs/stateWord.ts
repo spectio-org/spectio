@@ -31,7 +31,7 @@ const TONES: Record<string, Tone> = {
   paused: "paused",
   succeeded: "succeeded",
   completed: "succeeded",
-  Done: "succeeded",
+  Succeeded: "succeeded",
   failed: "failed",
   Failed: "failed",
   cancelling: "cancelled",
@@ -54,7 +54,7 @@ export const tone = (state: string): Tone => TONES[state] ?? "queued";
 
 const TASK_WORDS: Record<string, string> = {
   pending: "Pending",
-  submitted: "Submitted",
+  submitted: "Queued",
   running: "Running",
   succeeded: "Succeeded",
   failed: "Failed",
@@ -105,17 +105,19 @@ export const total = (counts: Counts) => Object.values(counts).reduce((a, b) => 
 export const lastSegment = (name: string) => name.split(":").pop() ?? name;
 export const sum = (counts: Counts, ...states: string[]) => states.reduce((n, s) => n + (counts[s] ?? 0), 0);
 
-/** A process or rule has no stored state: its word comes from its task counts. `ended`: the run
- * is terminal, so what had not finished is Stopped and what never started is Not run. */
+/** A process or rule has no stored state: its word comes from its task counts and says what is
+ * happening now (#385): Failed (a task failed on its last attempt), Running (at least one task
+ * runs), Queued (none runs, at least one waits in the scheduler), Pending (more to come, some may
+ * be done), Succeeded (all done). `ended`: the run is terminal, so what had not finished is
+ * Stopped and what never started is Not run. */
 export function processWord(counts: Counts, ended: boolean): string {
   if (sum(counts, "failed") > 0) return "Failed";
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
   const done = sum(counts, "succeeded", "cached", "stored");
-  if (total > 0 && done === total) return "Done";
-  if (sum(counts, "succeeded", "cached", "stored", "running", "aborted") === 0) {
-    return ended ? "Not run" : "Pending";
-  }
-  return ended ? "Stopped" : "Running";
+  if (total > 0 && done === total) return "Succeeded";
+  if (ended) return sum(counts, "succeeded", "cached", "stored", "running", "aborted") === 0 ? "Not run" : "Stopped";
+  if (sum(counts, "running") > 0) return "Running";
+  return sum(counts, "submitted") > 0 ? "Queued" : "Pending";
 }
 
 /** A process's or rule's state and word: the server's status for the four states of ui-spec §5.2
@@ -146,7 +148,7 @@ export const neededFirst = (processes: Process[]): Process[] =>
 export function stageWord(stage: Stage, ended: boolean): string {
   switch (stage.state) {
     case "completed":
-      return "Done";
+      return "Succeeded";
     case "failed":
       return sum(stage.task_counts, "failed") > 0 ? "Failed" : "Stopped";
     case "skipped":
@@ -171,14 +173,21 @@ export function stagesLine(stages: Stage[]): string | null {
 /** The last 6 characters of the ULID (ui-spec §4.4). */
 export const shortId = (id: string): string => id.slice(-6);
 
-/** "12 s", "38 min", "1 h 05"; "—" before the start. `end` null: until now. */
+/** The one duration format (ui-spec §12.8): "14 s", "38 min", "4 h", "2 h 3 min"; "—" when unknown. */
+export function formatDuration(seconds: number | null): string {
+  if (seconds === null) return "—";
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 60) return `${s} s`;
+  const minutes = Math.floor(s / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const rest = minutes % 60;
+  return rest ? `${Math.floor(minutes / 60)} h ${rest} min` : `${minutes / 60} h`;
+}
+
+/** A run's duration, from its start to its end ("—" before the start); `end` null: until now. */
 export function duration(start: string | null, end: string | null, now = new Date()): string {
   if (!start) return "—";
-  const seconds = Math.max(0, Math.round(((end ? new Date(end) : now).getTime() - new Date(start).getTime()) / 1000));
-  if (seconds < 60) return `${seconds} s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} min`;
-  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")}`;
+  return formatDuration(((end ? new Date(end) : now).getTime() - new Date(start).getTime()) / 1000);
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

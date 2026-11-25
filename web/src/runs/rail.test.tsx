@@ -43,7 +43,8 @@ test("each state maps to one of the eight token tones", () => {
   expect(tone("cancelling")).toBe("cancelled");
   expect(tone("pending")).toBe("queued");
   expect(tone("cached")).toBe("cached");
-  expect(tone("Done")).toBe("succeeded");
+  expect(tone("Succeeded")).toBe("succeeded");
+  expect(tone("submitted")).toBe("queued"); // Queued: the clock, the queued tone (#385)
 });
 
 test("CR-P3UI12-01: every sheet title is 600 in the display font (UI-18); only DetailSheet's head shrinks and wraps it", () => {

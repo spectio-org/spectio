@@ -63,9 +63,9 @@ test("SLURM facts show the request, 'Custom sbatch options set' without text, an
   expect(factsOf(slurm)).toEqual([
     ["Partition", "htc"],
     ["CPUs", "6"],
-    ["Memory", "8 GB"],
+    ["Memory", "8.0 GB"],
     ["Time limit", "8 h"],
-    ["Allocated", "htc-el8 · demo · normal · 6 CPUs · 8 GB · 8 h · cpu=6,mem=8G,node=1 differs from the request"],
+    ["Allocated", "htc-el8 · demo · normal · 6 CPUs · 8.0 GB · 8 h · cpu=6,mem=8G,node=1 differs from the request"],
     ["Custom sbatch options set", "yes"],
   ]);
   expect(drawer.textContent).not.toMatch(/slurm_extra|clusterOptions|--/);
@@ -73,7 +73,7 @@ test("SLURM facts show the request, 'Custom sbatch options set' without text, an
   expect(factsOf(efficiency)).toEqual([
     ["CPU · memory", "69 % · 100 % near limit · from sacct"],
     ["Elapsed · time limit", "6 min of 8 h"],
-    ["Peak · memory asked", "8 GB of 8 GB"],
+    ["Peak · memory asked", "8.0 GB of 8.0 GB"],
   ]);
 });
 

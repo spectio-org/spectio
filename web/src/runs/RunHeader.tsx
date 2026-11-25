@@ -13,7 +13,7 @@ import { type CopyItem, CopyButton, useCopyStatus } from "./CopyMenu";
 import { DeleteRuns } from "./DeleteRuns";
 import { extrasFacts } from "./RunDetailExtras";
 import { ResumeAction } from "./ResumeDialog";
-import { StateWord, runName, tasksText } from "./RunState";
+import { Progress, StateWord, runName } from "./RunState";
 import { TargetLine } from "./target";
 import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
@@ -31,7 +31,8 @@ export function taskChips(run: RunDetail, processes: Process[]): { label: string
   const chips = [
     { label: "succeeded", n: sum(c, "succeeded"), tone: "succeeded", always: false, filter: "Succeeded" },
     { label: "running", n: sum(c, "running"), tone: "running", always: false, filter: "Running" },
-    { label: "pending", n: sum(c, "pending", "submitted"), tone: "queued", always: false, filter: "Pending" },
+    { label: "queued", n: sum(c, "submitted"), tone: "queued", always: false, filter: "Queued" },
+    { label: "pending", n: sum(c, "pending"), tone: "queued", always: false, filter: "Pending" },
     { label: "failed", n: sum(c, "failed"), tone: "failed", always: true, filter: "Failed" },
     { label: "retried", n: processes.reduce((n, p) => n + p.retries, 0), tone: "review", always: true },
     { label: "cached", n: sum(c, "cached", "stored"), tone: "cached", always: false },
@@ -253,14 +254,14 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
   const state = (
     <>
       <StateWord state={run.state} />
-      {failed > 0 && <span>{plural(failed, unit, units)} failed</span>}
       {line && <span>{line}</span>}
     </>
   );
   const progress = (
     <>
       <span>
-        {tasksText(run)} {units}
+        <Progress done={run.summary.tasks.done} total={run.summary.tasks.total} lower={run.summary.tasks.lower_bound} unit={units} />
+        {failed > 0 && ` · ${failed} failed`}
       </span>
       <span>{duration(run.started_at, run.ended_at)}</span>
       {ended ? <span>ended {when(run.ended_at)}</span> : <LiveStatus />}

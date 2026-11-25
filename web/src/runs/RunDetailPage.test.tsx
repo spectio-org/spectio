@@ -116,7 +116,7 @@ test("with no stage, the flat processes list and its line", async () => {
   const table = screen.getByRole("table", { name: "Processes" });
   const align = within(table).getByText("NFCORE:RNASEQ:ALIGN").closest("tr")!;
   expect(within(align).getByText("Running")).toBeInTheDocument();
-  expect(within(within(table).getByText("NFCORE:RNASEQ:FASTQC").closest("tr")!).getByText("Done")).toBeInTheDocument();
+  expect(within(within(table).getByText("NFCORE:RNASEQ:FASTQC").closest("tr")!).getByText("Succeeded")).toBeInTheDocument();
 });
 
 test("with stages, the stage list and the header line", async () => {
@@ -206,7 +206,8 @@ test("a frame for this run refetches it; none once it is terminal", async () => 
   FakeEventSource.last!.frame({ run_id: "run_other" });
   FakeEventSource.last!.frame({ run_id: ID });
   await waitFor(() => expect(count()).toBe(before + 1), { timeout: 3000 });
-  expect(await screen.findByText("Succeeded")).toBeInTheDocument();
+  // in the header: a process row can read Succeeded too (#385)
+  expect(await within(await runHeader()).findByText("Succeeded")).toBeInTheDocument();
   FakeEventSource.last!.frame({ run_id: ID });
   await new Promise((r) => setTimeout(r, 1200));
   expect(count()).toBe(before + 1);
@@ -269,7 +270,7 @@ test("UX-PAR-20/21/22: a Snakemake run reads jobs and rules; facts sit in the he
   expect(within(chips).getByText("0 failed").closest("[data-tone]")).toHaveAttribute("data-tone", "failed");
   expect(within(chips).getByText("1 retried")).toBeInTheDocument();
   expect(screen.getByRole("table", { name: "Rules" })).toBeInTheDocument();
-  expect(screen.getByRole("columnheader", { name: "Rule, first-seen order" })).toBeInTheDocument();
+  expect(screen.getByRole("columnheader", { name: "Rule" })).toBeInTheDocument();
   // CR-P3PARA-03: the engine's mark beside the Pipeline fact.
   const pipeline = within(header).getByText("wgs-germline (no version declared)").closest("dd")!;
   expect(within(pipeline).getByRole("img", { name: "Snakemake" })).toBeInTheDocument();
@@ -369,7 +370,7 @@ test("FU-P3-80: a frame for this run reads the Summary log tail again; none once
   expect(await within(log).findByText("line two", {}, { timeout: 3000 })).toBeInTheDocument();
   state = "succeeded";
   FakeEventSource.last!.frame({ run_id: ID });
-  expect(await screen.findByText("Succeeded", {}, { timeout: 3000 })).toBeInTheDocument();
+  expect(await within(await runHeader()).findByText("Succeeded", {}, { timeout: 3000 })).toBeInTheDocument();
   await new Promise((r) => setTimeout(r, 300)); // the tail reads once more as the run ends
   const before = count();
   FakeEventSource.last!.frame({ run_id: ID });
@@ -902,7 +903,7 @@ test("#161: rules that never started read one muted line, and the legend waits b
   const what = screen.getByRole("button", { name: "What the states mean" });
   expect(what).toHaveAttribute("aria-expanded", "false");
   await userEvent.click(what);
-  expect(screen.getByText(/^Pending: no job has started\./)).toBeInTheDocument();
+  expect(screen.getByText(/^Failed: a job failed on its last attempt\./)).toBeInTheDocument();
 });
 
 test("a Nextflow process with no task reads 'No task (condition or empty input)'", async () => {
@@ -955,8 +956,8 @@ test("#161: a rule target run shows its steps to the target, and the rules it do
   // the chain to the target, in pipeline order, then the rules it does not need, dimmed
   const steps = screen.getByRole("list", { name: "Steps to the target" });
   expect(within(steps).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
-    "make_readsDone · 12 / 12 jobs",
-    "qc_reportDone · 1 / 1 job · target",
+    "make_readsSucceeded 12 / 12",
+    "qc_reportSucceeded 1 / 1 · target",
   ]);
   const list = screen.getByRole("list", { name: "Rules outside the target" });
   expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["mergenot needed", "alignnot needed"]);
@@ -1151,4 +1152,75 @@ test("#385: a Nextflow task's row shows the process, then its tag as the second 
   const open = await within(await screen.findByRole("table", { name: "Tasks" })).findByRole("button", { name: "Open task ALIGN (S01)" });
   expect(within(open).getByText("S01")).toBeInTheDocument();
   expect(open.textContent).not.toContain("(");
+});
+
+test("#385: a task waiting in the scheduler is Queued, in its own chip, filter and column; Pending is pending only", async () => {
+  const waiting = { id: "tsk_2", process: "NFCORE:RNASEQ:ALIGN", tag: "S02", name: "ALIGN (S02)", state: "submitted", stage_id: null, attempt_n: 1, resources: NO_RESOURCES };
+  const mock = detail(
+    { task_counts: { succeeded: 2, submitted: 4, pending: 3 }, summary: { tasks: { done: 2, total: 9, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" } },
+    {
+      [`${URL_}/processes`]: { items: [{ process: "NFCORE:RNASEQ:ALIGN", stage_id: null, counts: { succeeded: 2, submitted: 4, pending: 3 }, retries: 0 }] },
+      [`${URL_}/tasks`]: { items: [waiting], next: null },
+    },
+  );
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  const chips = within(header).getByRole("list", { name: "Tasks by state" });
+  expect(within(chips).getByText("4 queued")).toBeInTheDocument();
+  expect(within(chips).getByText("3 pending")).toBeInTheDocument();
+  // the process table: Running | Queued | Pending | Failed | Retried, and a word that says what happens now
+  const table = await screen.findByRole("table", { name: "Processes" });
+  const heads = within(table).getAllByRole("columnheader").map((h) => h.textContent);
+  expect(heads).toEqual(["Process", "State", "Tasks", "Running", "Queued", "Pending", "Failed", "Retried"]);
+  const row = within(table).getByText("NFCORE:RNASEQ:ALIGN").closest("tr")!;
+  expect(within(row).getByText("Queued")).toBeInTheDocument();
+  expect(within(row).getByText("2 / 9")).toBeInTheDocument();
+  expect(within(row).getAllByRole("cell").map((c) => c.textContent).slice(3)).toEqual(["0", "4", "3", "0", "0"]);
+  // the chip opens the Tasks tab on Queued, which asks for `submitted` only
+  await userEvent.click(within(chips).getByRole("button", { name: "Show the 4 queued tasks" }));
+  const filters = await screen.findByRole("group", { name: "Show tasks" });
+  expect(within(filters).getByRole("button", { name: /^Queued\s*4/ })).toHaveAttribute("aria-pressed", "true");
+  expect(within(filters).getByRole("button", { name: /^Pending\s*3/ })).toHaveAttribute("aria-pressed", "false");
+  await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/tasks?state=submitted&limit=50`));
+  expect(within(await screen.findByRole("table", { name: "Tasks" })).getByText("Queued").closest("[data-tone]")).toHaveAttribute("data-tone", "queued");
+  await userEvent.click(within(filters).getByRole("button", { name: /^Pending\s*3/ }));
+  await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/tasks?state=pending&limit=50`));
+});
+
+test("#385: the header says the failed count with the progress, and the table headers say the same thing as By process", async () => {
+  detail({
+    state: "failed",
+    ended_at: "2026-10-31T08:00:00+00:00",
+    failure: { class: "tool_error", message: "boom" },
+    summary: { tasks: { done: 24, total: 32, failed: 2, cached: 0 }, last_failure: null, stage_mode: "quarters" },
+  });
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).getByText("24 / 32 tasks")).toBeInTheDocument();
+  expect(header.textContent).toContain("24 / 32 tasks · 2 failed");
+  expect(header.textContent).not.toContain("2 tasks failed");
+  await userEvent.click(await screen.findByRole("tab", { name: "Tasks" }));
+  const table = await screen.findByRole("table", { name: "Tasks" });
+  expect(table).toHaveAttribute("data-density", "compact");
+  const heads = within(table).getAllByRole("columnheader").map((h) => h.textContent);
+  expect(heads).toEqual(expect.arrayContaining(["CPUs asked", "Memory asked", "Peak memory"]));
+  expect(within(table).getByRole("columnheader", { name: "Peak memory" })).toHaveClass("sp-num");
+});
+
+test("#385: a long task name is cut by the CSS and shown whole in a tooltip on focus, its label unchanged", async () => {
+  detail();
+  app(`/runs/${ID}?tab=tasks`);
+  const open = await within(await screen.findByRole("table", { name: "Tasks" })).findByRole("button", { name: "Open task ALIGN (S01)" });
+  expect(open).toHaveClass("sp-open");
+  // as a keyboard focuses it: the tooltip opens on :focus-visible, which jsdom does not follow
+  const matches = Element.prototype.matches;
+  vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, s: string) {
+    return s === ":focus-visible" ? this === document.activeElement : matches.call(this, s);
+  });
+  try {
+    act(() => open.focus());
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("ALIGN (S01)");
+  } finally {
+    vi.restoreAllMocks();
+  }
 });

@@ -116,7 +116,7 @@ test("UX-PAR-11/12/13/16: subtitle words, linked cards with a detail line, a non
 
   const finished = screen.getByRole("region", { name: "Finished recently" });
   const row = (await within(finished).findByRole("link", { name: "Open run wgs-cohort-12" })).closest("li")!;
-  expect(within(row).getByText(/tool error · 2 jobs failed/)).toBeInTheDocument();
+  expect(within(row).getByText(/tool error · see the failed jobs/)).toBeInTheDocument();
   expect(within(row).getByRole("img", { name: "Snakemake" })).toBeInTheDocument();
 
   const active = screen.getByRole("region", { name: "Active runs" });
