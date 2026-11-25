@@ -618,6 +618,16 @@ def test_head_running_starts_the_run(engine: Engine, writer: Writer) -> None:
     assert (launch.head_native_id, launch.head_state) == ("4242", "running")
 
 
+def test_a_runner_failure_message_is_cleaned_and_capped(engine: Engine, writer: Writer) -> None:
+    """The server trusts no runner's text: escapes, control and format characters go, and at
+    most 4096 characters are kept (SEC-NFERR-03)."""
+    message = "\x1b[31mERROR ~ boom\x1b[0m\u202e\n" + "x" * 5000
+    failure = Failure("engine_fault", message, None)
+    head(writer, report(state="exited", ended=True, exit_code=1, failure=failure))
+    stored = run_row(engine).failure["message"]
+    assert stored.startswith("ERROR ~ boom\nxxx") and len(stored) == 4096
+
+
 def test_launch_failure_fails_a_queued_run(engine: Engine, writer: Writer) -> None:
     failure = Failure("engine_missing", "nextflow not found on PATH", None)
     head(writer, report(state="exited", ended=True, exit_code=127, failure=failure))

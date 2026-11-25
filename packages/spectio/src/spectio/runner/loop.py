@@ -66,12 +66,14 @@ from spectio.runner.types import (
     SpoolBatch,
     Stalled,
 )
+from spectio.text import strip_escapes
 from spectio_sdk.targets import RunTarget, from_registry
 
 log = logging.getLogger(__name__)
 
 LAUNCH_FAILED = "launch-failed.json"
 CANCEL = "cancel"
+HIDDEN = "«hidden»"  # as spectio_server.files.redact
 HEAD_OUT = "head.out"  # the engine's output, as the head script copies it (headscript.py)
 # The launch whose head files `.spectio/` holds (CR-P3T09-11): head.pid, head.exit, cancel and
 # launch-failed.json are named per run, so a later launch clears an earlier one's first. No file
@@ -139,17 +141,43 @@ def _now() -> str:
 TAIL_READ = 16 * 1024
 TAIL_LINES = 15
 TAIL_CHARS = 2000
-# terminal escape sequences (CSI, OSC), then any other control character but a tab
-ESCAPES = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?|\x1b.?")
-CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+# Nextflow's task error report holds the task's script with its values filled in: it is hidden
+# from the stored message, as `Command '…'` is in snakemake.error (SEC-NFERR-01, SEC-P3T1-08)
+COMMAND_START = "Command executed:"
+COMMAND_END = "Command exit status:"
+
+
+def _hide_commands(lines: list[str]) -> list[str]:
+    """`lines` with each `Command executed:` block, up to its `Command exit status:` line, as
+    one hidden line. Fails closed: a block with no end hides the rest, and an end with no start
+    (the window began inside a block) hides everything before it."""
+    ends = [i for i, line in enumerate(lines) if line.strip().startswith(COMMAND_END)]
+    starts = [i for i, line in enumerate(lines) if line.strip().startswith(COMMAND_START)]
+    if ends and (not starts or ends[0] < starts[0]):
+        lines = [f"{COMMAND_START} {HIDDEN}", *lines[ends[0] :]]
+    kept: list[str] = []
+    hiding = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(COMMAND_START) and stripped != f"{COMMAND_START} {HIDDEN}":
+            kept.append(f"{COMMAND_START} {HIDDEN}")
+            hiding = True
+        elif hiding and stripped.startswith(COMMAND_END):
+            hiding = False
+        if not hiding:
+            kept.append(line)
+    return kept
 
 
 def engine_output_tail(data: bytes) -> str | None:
-    """The last non-blank lines of the engine's output, escape sequences and control
-    characters removed, at most TAIL_LINES lines and TAIL_CHARS characters; None when blank."""
-    text = ESCAPES.sub("", data.decode("utf-8", "replace").replace("\r\n", "\n"))
-    lines = [CONTROL.sub("", line).rstrip() for line in text.split("\n")]
-    kept = [line for line in lines if line.strip()][-TAIL_LINES:]
+    """The last non-blank lines of the engine's output: a line rewritten in place (`\\r`) as its
+    last state, escape sequences, control and format characters removed (`strip_escapes`),
+    commands hidden (`_hide_commands`), at most TAIL_LINES lines and TAIL_CHARS characters;
+    None when blank."""
+    text = data.decode("utf-8", "replace").replace("\r\n", "\n")
+    text = strip_escapes("\n".join(line.rsplit("\r", 1)[-1] for line in text.split("\n")))
+    lines = [line.rstrip() for line in text.split("\n") if line.strip()]
+    kept = _hide_commands(lines)[-TAIL_LINES:]
     tail = "\n".join(kept)[-TAIL_CHARS:]
     return tail or None
 
@@ -648,12 +676,15 @@ def _claim(dir_fd: int, launch_n: int) -> int:
 
 
 def _read_tail(dir_fd: int, name: str, size: int) -> bytes:
-    """The last `size` bytes of a regular file of the user, reached through no symlink."""
+    """The last `size` bytes of a regular file of the user that others cannot write, reached
+    through no symlink (the rules of `read_small`)."""
     fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=dir_fd)
     try:
         st = os.fstat(fd)
         if not stat.S_ISREG(st.st_mode) or st.st_uid != os.geteuid():
             raise PermissionError(f"{name}: not a regular file of this user")
+        if st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):  # as read_small (SEC-P3T09-01)
+            raise PermissionError(f"{name}: writable by others")
         return os.pread(fd, size, max(0, st.st_size - size))
     finally:
         os.close(fd)

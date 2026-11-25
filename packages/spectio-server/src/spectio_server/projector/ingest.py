@@ -14,6 +14,7 @@ from sqlalchemy import Connection, select, update
 from sqlalchemy.exc import OperationalError
 
 from spectio.runner.types import HeadReport, SpoolBatch
+from spectio.text import strip_escapes
 from spectio_sdk.events import UnknownEventType, parse_data
 from spectio_server.projector import nextflow, snakemake
 from spectio_server.projector.runs import ENGINE_ENDED, IN_CHUNK, Projection, failure_json
@@ -24,6 +25,10 @@ from spectio_server.store.schema import events, launches, spool_cursors, spool_d
 HEAD_FAILURES = frozenset({"head_lost", "engine_fault"})
 
 log = logging.getLogger(__name__)
+
+# A head report's failure message, as stored: the runner's `_fail` cap, enforced here too, since
+# the server trusts no runner's text (SEC-NFERR-03)
+MAX_FAILURE_MESSAGE = 4096
 
 
 def load_cursor(conn: Connection, launch_id: str) -> dict[str, int]:
@@ -148,7 +153,8 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
             p.end_launch("failed", "head_lost")
         else:
             p.end_launch()
-        p.move("failed", failure_json(failure.class_, failure.message, failure.task_id))
+        message = strip_escapes(failure.message)[:MAX_FAILURE_MESSAGE]  # SEC-NFERR-03
+        p.move("failed", failure_json(failure.class_, message, failure.task_id))
     elif report.state == "running" and not report.ended:
         p.move("running")
     p.finish()
