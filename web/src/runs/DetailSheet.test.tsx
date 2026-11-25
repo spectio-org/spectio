@@ -60,7 +60,7 @@ test("a process row is a button that opens its detail in a modal sheet; Close re
   await userEvent.click(open);
   const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
   expect(sheet).toHaveAttribute("aria-modal", "true");
-  expect(within(sheet).getByText(ALIGN)).toBeInTheDocument();
+  expect(within(sheet).getByText(ALIGN, { selector: ".sp-sheet-name" })).toBeInTheDocument();
   const facts = within(sheet).getByRole("list", { name: "Tasks of ALIGN by state" });
   expect(within(facts).getByText("3 of 5 done")).toBeInTheDocument();
   expect(within(facts).getByText("1 running")).toBeInTheDocument();
@@ -96,7 +96,12 @@ test("the process's tasks are paged: one task and one state column under a heade
   expect(head).toBeVisible();
   expect([...head.children].map((c) => c.textContent)).toEqual(["Task", "State"]);
   const first = within(list).getByRole("button", { name: "Open task ALIGN (S01), Succeeded" });
-  expect([...first.children].map((c) => c.textContent)).toEqual(["ALIGN (S01)", "Succeeded"]);
+  // the rule on its first line, the tag on a second, dimmed one, as in the Tasks table (#385)
+  expect(first.children).toHaveLength(2);
+  expect(first.children[1]).toHaveTextContent("Succeeded");
+  const name = first.children[0];
+  expect(name.querySelector("strong")).toHaveTextContent("ALIGN");
+  expect(name.querySelector(".sp-open-parts")).toHaveTextContent("S01");
   expect(first.textContent!.match(/S01/g)).toHaveLength(1); // the tag once, not again as a chip
   expect(within(list).getByRole("button", { name: "Open task ALIGN (S02), Running" })).toHaveTextContent("Running");
   expect(fetched(mock)).toContain(`${URL_}/tasks?process=${ALIGN}&limit=50`);

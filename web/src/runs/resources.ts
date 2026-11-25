@@ -1,11 +1,12 @@
 import type { Resources } from "../api";
+import { formatDuration } from "./stateWord";
 
 // Resources per job as words (ui-spec §4.4 note 2026-10-28, Resources; P1 Tasks 29 and 32): sizes
 // in powers of 1024 written GB and MB, as Nextflow writes them; "—" for a value not known yet.
 
 const UNITS = ["B", "KB", "MB", "GB", "TB"];
 
-/** "8 GB", "8.0 GB" (not a whole number of GB), "512 B"; "—" when unknown. */
+/** "512 B", "3 KB", then one fixed decimal from MB up ("2.5 MB", "8.0 GB"); "—" when unknown. */
 export function bytes(n: number | null): string {
   if (n === null) return "—";
   let value = n;
@@ -14,17 +15,7 @@ export function bytes(n: number | null): string {
     value /= 1024;
     unit += 1;
   }
-  return `${Number.isInteger(value) ? value : value.toFixed(1)} ${UNITS[unit]}`;
-}
-
-/** "41 s", "6 min", "4 h", "1 h 12"; "—" when unknown. */
-export function seconds(s: number | null): string {
-  if (s === null) return "—";
-  if (s < 60) return `${Math.round(s)} s`;
-  const minutes = Math.floor(s / 60);
-  if (minutes < 60) return `${minutes} min`;
-  const rest = minutes % 60;
-  return rest ? `${Math.floor(minutes / 60)} h ${String(rest).padStart(2, "0")}` : `${minutes / 60} h`;
+  return `${unit >= 2 || !Number.isInteger(value) ? value.toFixed(1) : value} ${UNITS[unit]}`;
 }
 
 /** A peak above 90 % of the memory asked, or a duration above 90 % of the time limit. */
@@ -39,7 +30,7 @@ export function resourcesLine(r: Resources): string {
   return [
     `asked ${bytes(r.memory_bytes)}`,
     `peak ${bytes(r.peak_rss_bytes)}${near.memory ? ", near limit" : ""}`,
-    `limit ${seconds(r.time_s)}${near.time ? ", near limit" : ""}`,
+    `limit ${formatDuration(r.time_s)}${near.time ? ", near limit" : ""}`,
   ].join(" · ");
 }
 

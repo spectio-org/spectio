@@ -6,6 +6,7 @@ import { Icon, type IconName } from "../icons";
 import { CardHead } from "../shell/CardHead";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
+import { ago } from "../shell/NotificationsBell";
 import { PageHead } from "../shell/PageHead";
 import { ErrorPanel, SkeletonRows } from "../shell/States";
 import { CopyButton } from "./CopyMenu";
@@ -39,7 +40,7 @@ import { BackToRun, Crumbs, type ResultsSearch, useTaskName } from "./ResultsBro
 import { NotFound } from "./RunDetailPage";
 import { compareText } from "./gridText";
 import { runName } from "./RunState";
-import { isTerminal, when } from "./stateWord";
+import { isTerminal } from "./stateWord";
 
 // The preview page of one results file (ui-spec §4.4.1, FU-P3-85c; boards LiteFilePreview,
 // MLiteFilePreview, LiteFilePreviewStates; api §5.3): the `stat` route first (facts, kind, the
@@ -758,7 +759,7 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
         ) : (
           <PreviewCard
             icon={KIND_ICONS[kind] ?? "file"}
-            meta={[kindWord(file.type === "link_outside" ? "link" : kind, !!work), file.size === null ? null : size(file.size), file.mtime ? `modified ${when(file.mtime)}` : null, !ended && readAt ? `read at ${clock(readAt)}` : null]
+            meta={[kindWord(file.type === "link_outside" ? "link" : kind, !!work), file.size === null ? null : size(file.size), file.mtime ? `modified ${ago(file.mtime)}` : null, !ended && readAt ? `read at ${clock(readAt)}` : null]
               .filter(Boolean)
               .join(" · ")}
             actions={

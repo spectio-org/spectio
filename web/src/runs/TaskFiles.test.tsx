@@ -231,7 +231,7 @@ test("the task's facts: last attempt, resources with near limit in words; no not
   detail({ [`${FILES}/2/files`]: listing([]) });
   const { sheet } = await openFiles();
   const facts = within(sheet).getByRole("region", { name: "SUBREAD_FEATURECOUNTS (S19)" });
-  expect(within(facts).getByText("Memory, asked · peak").nextSibling).toHaveTextContent("8 GB · 8 GB near limit");
+  expect(within(facts).getByText("Memory, asked · peak").nextSibling).toHaveTextContent("8.0 GB · 8.0 GB near limit");
   expect(within(facts).getByText("Time limit · duration").nextSibling).toHaveTextContent("8 h · 6 min");
   expect(within(facts).getByText("CPUs · CPU %").nextSibling).toHaveTextContent("6 · 412 %");
   expect(within(facts).getByText("Last attempt").nextSibling).toHaveTextContent("2");
@@ -287,12 +287,12 @@ test("resources columns show 'near limit' as text, after the state; unknown valu
   app(`/runs/${ID}?tab=tasks`);
   const table = await screen.findByRole("table", { name: "Tasks" });
   const heads = within(table).getAllByRole("columnheader").map((h) => h.textContent);
-  expect(heads).toEqual(["Task", "State", "Attempt", "Duration", "CPUs", "CPU %", "Memory", "Peak memory", "Time limit", "CPU eff.", "Mem eff.", "Files"]);
+  expect(heads).toEqual(["Task", "State", "Attempt", "Duration", "CPUs asked", "CPU %", "Memory asked", "Peak memory", "Time limit", "CPU eff.", "Mem eff.", "Files"]);
   const [, failedRow, pendingRow] = within(table).getAllByRole("row");
   expect(within(failedRow).getAllByRole("cell").map((c) => c.textContent).slice(1)).toEqual([
-    "Failed", "2", "6 min", "6", "412 %", "8 GB", "8 GB near limit", "8 h", "—", "—", "Files",
+    "Failed", "2", "6 min", "6", "412 %", "8.0 GB", "8.0 GB near limit", "8 h", "—", "—", "Files",
   ]);
-  expect(within(pendingRow).getAllByRole("cell").map((c) => c.textContent).slice(2, 9)).toEqual(["—", "—", "6", "—", "8 GB", "—", "8 h"]);
+  expect(within(pendingRow).getAllByRole("cell").map((c) => c.textContent).slice(2, 9)).toEqual(["—", "—", "6", "—", "8.0 GB", "—", "8 h"]);
   expect(within(pendingRow).getByRole("button", { name: "Files of SUBREAD_FEATURECOUNTS (S20)" })).toBeInTheDocument();
 });
 
@@ -301,7 +301,7 @@ test("on the phone each task has one resources line and a full-width Files butto
   detail({ [`${FILES}/2/files`]: listing([]) });
   app(`/runs/${ID}?tab=tasks`);
   const cards = await screen.findByRole("list", { name: "Tasks" });
-  expect(within(cards).getByText("attempt 2 · asked 8 GB · peak 8 GB, near limit · limit 8 h")).toBeInTheDocument();
+  expect(within(cards).getByText("attempt 2 · asked 8.0 GB · peak 8.0 GB, near limit · limit 8 h")).toBeInTheDocument();
   await userEvent.click(within(cards).getByRole("button", { name: "Files of SUBREAD_FEATURECOUNTS (S19), attempt 2" }));
   expect(await screen.findByRole("dialog", { name: "SUBREAD_FEATURECOUNTS (S19)" })).toHaveAttribute("aria-modal", "true");
 });

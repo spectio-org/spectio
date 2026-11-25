@@ -39,15 +39,15 @@ import { taskSearch } from "./explorer";
 import { FailureSummary } from "./FailureSummary";
 import { LogLines, LogViewer, ToolButton } from "./LogViewer";
 import { ByProcess } from "./ByProcess";
-import { bytes, isLow, isNear, nearLimit, percent, resourcesLine, seconds } from "./resources";
+import { bytes, isLow, isNear, nearLimit, percent, resourcesLine } from "./resources";
 import { ResultsSection } from "./ResultsSection";
 import { ResumeAction } from "./ResumeDialog";
 import { RunHeader, runDirectory } from "./RunHeader";
-import { CheckpointMark, Low, NearLimit, ProcessName, Word, runName, shortFailure, taskLabel } from "./RunState";
-import { partsLine, taskName } from "./taskName";
+import { CheckpointMark, Low, NearLimit, NameTip, ProcessName, Progress, TaskName, Word, runName, shortFailure, taskLabel } from "./RunState";
 import {
   classWord,
   engineName,
+  formatDuration,
   isTerminal,
   lastSegment,
   neededFirst,
@@ -104,21 +104,11 @@ type Words = ReturnType<typeof words>;
 /** A process's name as the button that opens its detail; the label names the row. */
 function OpenProcess({ name, w, onOpen }: { name: string; w: Words; onOpen: (d: Detail) => void }) {
   return (
-    <button type="button" className="sp-link-button sp-open" aria-label={`Open ${w.group} ${name}`} onClick={() => onOpen({ kind: "process", name })}>
-      <ProcessName name={name} />
-    </button>
-  );
-}
-
-/** "n of m" with a bar beside it: indigo when all is done, running blue otherwise (UX-PAR-24).
- * The bar is decoration; the text says the value. `lower`: the total may grow (a checkpoint is
- * open), so the part past the known jobs is hatched and the bar is never full (ui-spec §5.2). */
-function Bar({ done, all, lower = false }: { done: number; all: number; lower?: boolean }) {
-  const width = all ? Math.round((done / all) * 100) : 0;
-  return (
-    <span className="sp-bar" data-full={all > 0 && done === all && !lower} data-lower={lower || undefined} aria-hidden="true">
-      <span style={{ width: `${width}%` }} />
-    </span>
+    <NameTip label={name}>
+      <button type="button" className="sp-link-button sp-open" aria-label={`Open ${w.group} ${name}`} onClick={() => onOpen({ kind: "process", name })}>
+        <ProcessName name={name} />
+      </button>
+    </NameTip>
   );
 }
 
@@ -128,13 +118,8 @@ type Rows = { processes: Process[]; ended: boolean; open: string[]; label: strin
 
 const QUIET = new Set(["not_needed", "up_to_date", "no_tasks"]); // states with no job to come
 
-/** "12 / 20", "0 / at least 3", "0 jobs yet", or "0 jobs" for a state with no job to come. */
-function doneText(p: Process, w: Words): string {
-  const all = total(p.counts);
-  const done = sum(p.counts, "succeeded", "cached", "stored");
-  if (!all) return QUIET.has(p.status ?? "") ? `0 ${w.units}` : `0 ${w.units} yet`;
-  return p.lower_bound ? `${done} / at least ${all}` : `${done} / ${all}`;
-}
+/** "0 jobs yet", or "0 jobs" for a state with no job to come: the cell of a process with no job. */
+const noneText = (p: Process, w: Words): string => (QUIET.has(p.status ?? "") ? `0 ${w.units}` : `0 ${w.units} yet`);
 
 /** The process's name, and the "Checkpoint" mark of a checkpoint rule. */
 function NameCell({ p, w, onOpen }: { p: Process; w: Words; onOpen: (d: Detail) => void }) {
@@ -161,11 +146,9 @@ function ProcessCards({ processes, ended, open, label, w, onOpen }: Rows) {
               </span>
               <Word state={state} word={word} />
             </span>
-            <span className="sp-done">
-              <Bar done={done} all={all} lower={p.lower_bound} /> {all ? `${doneText(p, w)} ${w.units}` : doneText(p, w)}
-            </span>
+            {all ? <Progress bar done={done} total={all} lower={p.lower_bound} unit={w.units} /> : <span className="sp-done">{noneText(p, w)}</span>}
             <span className="sp-muted">
-              {sum(p.counts, "running")} running · {sum(p.counts, "pending", "submitted")} pending ·{" "}
+              {sum(p.counts, "running")} running · {sum(p.counts, "submitted")} queued · {sum(p.counts, "pending")} pending ·{" "}
               {sum(p.counts, "failed")} failed · {p.retries} retried
             </span>
           </li>
@@ -202,10 +185,11 @@ function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
       <table className="sp-table" aria-label={label}>
         <thead>
           <tr>
-            <th scope="col">{w.Group}, first-seen order</th>
+            <th scope="col">{w.Group}</th>
             <th scope="col">State</th>
-            <th scope="col">{w.Units} done</th>
+            <th scope="col" className="sp-num">{w.Units}</th>
             <th scope="col" className="sp-num" data-narrow="">Running</th>
+            <th scope="col" className="sp-num" data-narrow="">Queued</th>
             <th scope="col" className="sp-num" data-narrow="">Pending</th>
             <th scope="col" className="sp-num">Failed</th>
             <th scope="col" className="sp-num" data-narrow="">Retried</th>
@@ -224,19 +208,14 @@ function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
                 <td className="sp-state-cell">
                   <Word state={state} word={word} />
                 </td>
-                <td>
-                  {all ? (
-                    <span className="sp-done">
-                      <Bar done={done} all={all} lower={p.lower_bound} /> {doneText(p, w)}
-                    </span>
-                  ) : (
-                    doneText(p, w)
-                  )}
+                <td className="sp-num">
+                  {all ? <Progress bar done={done} total={all} lower={p.lower_bound} /> : noneText(p, w)}
                 </td>
                 <td className="sp-num" data-narrow="" data-running={sum(p.counts, "running") > 0 || undefined}>
                   {sum(p.counts, "running")}
                 </td>
-                <td className="sp-num" data-narrow="">{sum(p.counts, "pending", "submitted")}</td>
+                <td className="sp-num" data-narrow="">{sum(p.counts, "submitted")}</td>
+                <td className="sp-num" data-narrow="">{sum(p.counts, "pending")}</td>
                 <td className="sp-num">{sum(p.counts, "failed")}</td>
                 <td className="sp-num" data-narrow="">{p.retries}</td>
               </tr>
@@ -252,7 +231,6 @@ function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
  * order, each with its jobs done and its state's tone, the target last; then the rules it does not
  * need, dimmed. The process table below keeps the counts. */
 function TargetSteps({ run, steps, outside, ended, open }: { run: RunDetail; steps: Process[]; outside: string[]; ended: boolean; open: string[] }) {
-  const w = words(run.workflow.engine);
   const target = run.target?.name;
   return (
     <div className="sp-target-steps">
@@ -266,7 +244,7 @@ function TargetSteps({ run, steps, outside, ended, open }: { run: RunDetail; ste
               <li key={p.process} className="sp-step" data-tone={tone(state)} data-target={p.process === target || undefined}>
                 <ProcessName name={p.process} />
                 <span className="sp-step-count">
-                  {word} · {done} / {total(p.counts)} {total(p.counts) === 1 ? w.unit : w.units}
+                  <Word state={state} word={word} /> <Progress done={done} total={total(p.counts)} lower={p.lower_bound} />
                   {p.process === target && " · target"}
                 </span>
               </li>
@@ -341,7 +319,8 @@ function StagesOrProcesses({
   );
   const legend = (
     <p className="sp-legend">
-      Pending: no {w.unit} has started. Running: {w.units} are running, or some are done and more are to come. Done:
+      Failed: a {w.unit} failed on its last attempt. Running: at least one {w.unit} is running. Queued: none is
+      running and some wait in the scheduler. Pending: more {w.units} are to come, even when some are done. Succeeded:
       every {w.unit} succeeded or was reused. Stopped: the run ended before it finished.{" "}
       {run.workflow.engine === "snakemake"
         ? `Waiting for checkpoint: its jobs may appear once the checkpoint ends. Up to date: its outputs already exist. ${
@@ -395,10 +374,7 @@ function StagesOrProcesses({
                 <span className="sp-muted">{plural(mine.length, w.group, w.groups)}</span>
               </span>
               <Word state={word} word={word} />
-              <span className="sp-done">
-                <Bar done={done} all={all} />
-                {done} of {all} {w.units}
-              </span>
+              <Progress bar done={done} total={all} />
               <span className="sp-chev">
                 <Icon name="chevronDown" />
               </span>
@@ -647,7 +623,8 @@ function SummaryAside({ run, server, onLogs, logOpener }: { run: RunDetail; serv
 const TASK_FILTERS: { label: string; states: string[] | null }[] = [
   { label: "All", states: null },
   { label: "Running", states: ["running"] },
-  { label: "Pending", states: ["pending", "submitted"] },
+  { label: "Queued", states: ["submitted"] },
+  { label: "Pending", states: ["pending"] },
   { label: "Succeeded", states: ["succeeded"] },
   { label: "Failed", states: ["failed"] },
 ];
@@ -702,14 +679,12 @@ function ViewTabs({ view, setView, w }: { view: "list" | "process"; setView: (v:
 /** A task's process (rule) and, on a second dimmed line, its tag (wildcards) as the button that opens
  * its detail; the label names the row, whole (#385). */
 function OpenTask({ task, w, onOpen }: { task: Task; w: Words; onOpen: (d: Detail) => void }) {
-  const { parts } = taskName(task);
   return (
-    <button type="button" className="sp-link-button sp-open sp-open-task" aria-label={`Open ${w.unit} ${taskLabel(task)}`} onClick={() => onOpen({ kind: "task", task })}>
-      <strong>
-        <ProcessName name={task.process} />
-      </strong>
-      {parts.length > 0 && <span className="sp-open-parts">{partsLine(parts)}</span>}
-    </button>
+    <NameTip label={taskLabel(task)}>
+      <button type="button" className="sp-link-button sp-open sp-open-task" aria-label={`Open ${w.unit} ${taskLabel(task)}`} onClick={() => onOpen({ kind: "task", task })}>
+        <TaskName task={task} />
+      </button>
+    </NameTip>
   );
 }
 
@@ -882,17 +857,17 @@ function TasksPanel({
         )}
         {!!tasks?.length && !phone && (
           <div className="sp-table-wrap">
-            <table className="sp-table" aria-label={w.Units}>
+            <table className="sp-table" data-density="compact" aria-label={w.Units}>
               <thead>
                 <tr>
                   <th scope="col">{w.Unit}</th>
                   <th scope="col">State</th>
                   <th scope="col" className="sp-num">Attempt</th>
                   <th scope="col" className="sp-num">Duration</th>
-                  <th scope="col" className="sp-num" data-narrow="">CPUs</th>
+                  <th scope="col" className="sp-num" data-narrow="">CPUs asked</th>
                   <th scope="col" className="sp-num" data-narrow="">CPU %</th>
-                  <th scope="col" className="sp-num">Memory</th>
-                  <th scope="col">Peak memory</th>
+                  <th scope="col" className="sp-num">Memory asked</th>
+                  <th scope="col" className="sp-num">Peak memory</th>
                   <th scope="col" className="sp-num">Time limit</th>
                   <th scope="col" className="sp-num sp-nowrap-cell" aria-describedby={effSource}>
                     CPU eff.
@@ -919,17 +894,17 @@ function TasksPanel({
                       </td>
                       <td className="sp-num">{t.attempt_n ?? "—"}</td>
                       <td className="sp-num sp-nowrap-cell">
-                        {seconds(r.realtime_s)}
+                        {formatDuration(r.realtime_s)}
                         <NearLimit on={near.time} />
                       </td>
                       <td className="sp-num" data-narrow="">{r.cpus ?? "—"}</td>
                       <td className="sp-num" data-narrow="">{r.cpu_percent === null ? "—" : `${Math.round(r.cpu_percent)} %`}</td>
                       <td className="sp-num sp-nowrap-cell">{bytes(r.memory_bytes)}</td>
-                      <td className="sp-nowrap-cell">
+                      <td className="sp-num sp-nowrap-cell">
                         {bytes(r.peak_rss_bytes)}
                         <NearLimit on={near.memory} />
                       </td>
-                      <td className="sp-num sp-nowrap-cell">{seconds(r.time_s)}</td>
+                      <td className="sp-num sp-nowrap-cell">{formatDuration(r.time_s)}</td>
                       <td className="sp-num sp-nowrap-cell">
                         {percent(t.efficiency?.cpu)}
                         <Low on={isLow(t.efficiency?.cpu)} />

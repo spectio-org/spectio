@@ -1,6 +1,7 @@
 import { type ReactNode, useId } from "react";
 import type { Efficiency, Slurm, SlurmAllocated, SlurmRequest, Task } from "../api";
-import { bytes, isLow, isNear, percent, seconds } from "./resources";
+import { bytes, isLow, isNear, percent } from "./resources";
+import { formatDuration } from "./stateWord";
 import { Low, NearLimit } from "./RunState";
 
 // A job's SLURM request and efficiency, in the task view of the detail sheet (ui-spec §4.4 note
@@ -33,7 +34,7 @@ function requested(r: SlurmRequest): [string, string | null][] {
     ["QOS", r.qos],
     ["CPUs", r.cpus === null ? null : String(r.cpus)],
     ["Memory", memory(r)],
-    ["Time limit", r.time_limit_s === null ? null : seconds(r.time_limit_s)],
+    ["Time limit", r.time_limit_s === null ? null : formatDuration(r.time_limit_s)],
     ["GPUs or other gres", r.gres],
     ["Constraint", r.constraint],
     ["Nodes", r.nodes === null ? null : String(r.nodes)],
@@ -61,7 +62,7 @@ const allocated = (a: SlurmAllocated): string =>
     a.qos,
     a.ncpus === null ? null : `${a.ncpus} CPUs`,
     a.req_mem_bytes === null ? null : bytes(a.req_mem_bytes),
-    a.time_limit_s === null ? null : seconds(a.time_limit_s),
+    a.time_limit_s === null ? null : formatDuration(a.time_limit_s),
     a.alloc_tres,
   ]
     .filter(Boolean)
@@ -109,7 +110,7 @@ function SlurmBlock({ slurm }: { slurm: Slurm }) {
 
 function EfficiencyBlock({ task, e }: { task: Task; e: Efficiency }) {
   const r = task.resources;
-  const elapsed = `${seconds(e.elapsed_s ?? r.realtime_s)} of ${seconds(r.time_s)}`;
+  const elapsed = `${formatDuration(e.elapsed_s ?? r.realtime_s)} of ${formatDuration(r.time_s)}`;
   const measured = e.cpu !== null || e.mem !== null;
   const ratios = (
     <>

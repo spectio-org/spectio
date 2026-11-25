@@ -8,9 +8,10 @@ import { Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { failureText, Pipeline, RunLink, StateWord, runName, stateContext, tasksText } from "../runs/RunState";
 import { NoRuns, RunCard } from "../runs/RunsPage";
-import { ACTIVE, executorLabel, isTerminal, plural, tone, when, words } from "../runs/stateWord";
+import { ACTIVE, executorLabel, isTerminal, plural, tone, words } from "../runs/stateWord";
 import { useServer } from "../server";
 import { PipelineMark } from "../shell/EngineMark";
+import { Ago } from "../shell/NotificationsBell";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
 import { HomeCard } from "./HomeCard";
@@ -213,7 +214,7 @@ export function HomePage() {
                           <RunLink run={run} />
                           <span className="sp-muted">
                             {[run.workflow.name ?? run.workflow.location, run.workflow.version].filter(Boolean).join(" ")} · started{" "}
-                            {when(run.started_at ?? run.created_at)}
+                            <Ago iso={run.started_at ?? run.created_at} />
                           </span>
                         </span>
                         <span>
@@ -248,7 +249,9 @@ export function HomePage() {
                             <span>{run.workflow.name ?? run.workflow.location}</span> · {endedContext(run)}
                           </span>
                         </span>
-                        <span>{when(run.ended_at)}</span>
+                        <span>
+                          <Ago iso={run.ended_at} />
+                        </span>
                       </li>
                     ))}
                   </ul>

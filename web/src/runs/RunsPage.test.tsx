@@ -39,14 +39,14 @@ test("the table shows each run with its state word, a row label and the terminal
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
   const header = within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim());
-  expect(header).toEqual(["", "Run", "State", "Workflow", "Tasks", "Started", "Duration"]);
+  expect(header).toEqual(["", "Run", "State", "Workflow", "Progress", "Started", "Duration"]);
   // the API's order, newest first: no header is sorted until one is pressed (FU-P3-115b)
   expect(within(table).getByRole("columnheader", { name: "Run" })).toHaveAttribute("aria-sort", "none");
   const open = within(table).getByRole("link", { name: "Open run rnaseq-a" });
   expect(open).toHaveAttribute("href", "/runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W");
   const row = open.closest('[role="row"]') as HTMLElement;
   expect(within(row).getByText("Running")).toBeInTheDocument();
-  expect(within(row).getByText("24 / 32")).toBeInTheDocument();
+  expect(within(row).getByText("24 / 32 tasks")).toBeInTheDocument(); // one format, the unit inline (#385)
   expect(within(row).getByText("7T9V1W")).toBeInTheDocument();
   const hand = within(table).getByRole("link", { name: "Open run pilot-hand" }).closest('[role="row"]') as HTMLElement;
   expect(within(hand).getByText("From a terminal")).toBeInTheDocument();
@@ -181,7 +181,7 @@ test("UX-PAR-01, inbox #91 (b): each row shows its pipeline's mark: nf-core for 
   expect(within(nf).getByText("known so far")).toBeInTheDocument();
   const sm = within(table).getByRole("link", { name: "Open run plate-qc-a" }).closest('[role="row"]') as HTMLElement;
   expect(within(sm).getByRole("img", { name: "Snakemake" }).getAttribute("src")).toMatch(/logo-snakemake/);
-  expect(within(sm).getByText("jobs")).toBeInTheDocument(); // UX-PAR-20
+  expect(within(sm).getByText(/\d+ \/ \d+ jobs$/)).toBeInTheDocument(); // UX-PAR-20, the unit inline (#385)
   // the "3 jobs running" context left the table with the State column's second line (#161, inbox Thomas)
   expect(within(sm).queryByText("3 jobs running")).toBeNull();
 });
@@ -239,7 +239,7 @@ test("UX-G3a-05: below 1100 px the grid drops Started, so it fits at 1024 px", a
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
-  expect(within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim())).toEqual(["", "Run", "State", "Workflow", "Tasks", "Duration"]);
+  expect(within(table).getAllByRole("columnheader").map((h) => h.textContent?.trim())).toEqual(["", "Run", "State", "Workflow", "Progress", "Duration"]);
 });
 
 test("a cell takes focus from the keyboard: the header, then the first run's name cell", async () => {

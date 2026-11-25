@@ -143,15 +143,15 @@ renderVals() {
       fact('Executor', 'SLURM'),
       fact('Failure', '—')
     ],
-    counts: [chip('524', 'succeeded', 'done'), chip('64', 'running', 'run'), chip('215', 'pending', 'wait'), chip('0', 'failed', 'fail'), chip('7', 'retried', 'retry')],
+    counts: [chip('524', 'succeeded', 'done'), chip('64', 'running', 'run'), chip('1', 'queued', 'wait'), chip('214', 'pending', 'wait'), chip('0', 'failed', 'fail'), chip('7', 'retried', 'retry')],
     tabs: [tab('Summary'), tab('Tasks', true), tab('Parameters'), tab('Logs')]
   };
-  const ST = { running: ['Running', '#3B82F6', '#1D5FC9'], done: ['Succeeded', '#1F9D63', '#157A4B'], submitted: ['Submitted', '#6E7287', '#33364A'], failed: ['Failed · retried', '#D9890B', '#8F5806'] };
+  const ST = { running: ['Running', '#3B82F6', '#1D5FC9'], done: ['Succeeded', '#1F9D63', '#157A4B'], submitted: ['Queued', '#6E7287', '#33364A'], failed: ['Failed · retried', '#D9890B', '#8F5806'] };
   const task = (proc, tag, st, attempt, job, exit, dur, work, cpus, cpu, mem, peak, tl, near, open, ce, me) => { const [state, rail, fg] = ST[st]; const pc = v => v === undefined ? '—' : v + ' %'; return { ce: pc(ce), me: pc(me), clow: ce !== undefined && ce < 25, mlow: me !== undefined && me < 25, mnear: me !== undefined && me > 90, proc, tag, state, rail, fg, attempt, afg: attempt === '1' ? '#4D5065' : '#8F5806', job, exit, efg: exit === '137' ? '#B02A2A' : '#33364A', dur, work, cpus, cpu, mem, peak, tl, near, fsh: open ? 'inset 0 0 0 2px #7750D4' : 'inset 0 0 0 1px #DFE1EA' }; };
   const ft = (t, on) => ({ t, id: on ? 'ft-log' : 'ft-' + t.replace(/[^a-z]/g, ''), sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 400, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
   const FL = (t, k) => ({ t, c: { info: '#C4C7D4', err: '#F59A9A', warn: '#F5C779' }[k || 'info'] });
   return { ...base,
-    filters: [seg('All', '803', true), seg('Running', '64'), seg('Pending', '215'), seg('Succeeded', '524'), seg('Failed', '0'), seg('Retried', '7')],
+    filters: [seg('All', '803', true), seg('Running', '64'), seg('Queued', '1'), seg('Pending', '214'), seg('Succeeded', '524'), seg('Failed', '0'), seg('Retried', '7')],
     ftabs: [ft('.command.log', true), ft('.command.err'), ft('.command.out'), ft('.command.sh'), ft('.command.run'), ft('.exitcode'), ft('More files')],
     flines: [
       FL('//================================= Running ==================================\\\\'),
