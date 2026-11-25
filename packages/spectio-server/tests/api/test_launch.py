@@ -233,6 +233,7 @@ def test_launch_creates_run_and_command(
         "engine": "nextflow",
         "name": "spectio/synthetic-scenarios",
         "version": "0.1.0",
+        "main_script": None,  # main.nf (#351)
     }
     assert (run["profiles"], run["params"]) == (["local"], {"chunks": 2})
 

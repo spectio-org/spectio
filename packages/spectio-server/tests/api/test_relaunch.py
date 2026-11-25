@@ -414,7 +414,8 @@ def test_launch_template(
     assert response.status_code == 200, response.text
     template = response.json()
     location = str(synthetic / "nextflow")
-    assert template["workflow"] == {"location": location, "revision": None, "engine": "nextflow"}
+    workflow = {"location": location, "revision": None, "engine": "nextflow", "main_script": None}
+    assert template["workflow"] == workflow
     assert (template["profiles"], template["params"]) == (["local"], {"chunks": 2})
     assert template["non_default"] == ["chunks"]  # its default is 0
     # the template is a body POST /runs takes as it is

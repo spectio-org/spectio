@@ -16,6 +16,7 @@ const INSPECTED = {
   revision: null,
   engine: "nextflow",
   engine_files: ["main.nf"],
+  main_scripts: ["main.nf"],
   name: "rnaseq",
   version: "3.27.0",
   engine_version: "26.10.4",

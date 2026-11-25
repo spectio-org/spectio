@@ -111,7 +111,8 @@ class LaunchSpec:
     None when unknown or not a SLURM Snakemake launch. `software` and `apptainer_args` are the
     environment's Snakemake software deployment (inbox #161), and `software_cache` the directory
     the conda environments and Apptainer images are kept in, shared by the runs
-    (`config.software_cache_dir`).
+    (`config.software_cache_dir`). `main_script` is a Nextflow entry script other than `main.nf`
+    (#351).
     """
 
     run_id: str
@@ -136,6 +137,7 @@ class LaunchSpec:
     slurm_accounting: bool | None = None
     software: list[str] = field(default_factory=list)
     apptainer_args: str = ""
+    main_script: str | None = None
     software_cache: Path | None = None
 
     @property

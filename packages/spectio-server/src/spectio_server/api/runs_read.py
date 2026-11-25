@@ -90,6 +90,7 @@ _RUN_COLUMNS = (
     runs.c.pinned,
     runs.c.default_resources,
     runs.c.config_file,
+    runs.c.main_script,
     workflows.c.engine,
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
@@ -220,6 +221,7 @@ def run_json(
             "location": row.location,
             "name": row.workflow_name,
             "version": row.workflow_version,
+            "main_script": row.main_script,
         },
         "profiles": profiles,
         "environment": row.environment,  # null for a run started from a terminal (FU-P3-86a)

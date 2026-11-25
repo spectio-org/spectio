@@ -26,6 +26,7 @@ export function moduleInspected(module: ModuleAnswer, location: string, pipeline
     revision: null,
     engine: "nextflow",
     engine_files: ["main.nf"],
+    main_scripts: ["main.nf"],
     name: module.name,
     version: module.version,
     engine_version: pipeline?.engine_version ?? null,

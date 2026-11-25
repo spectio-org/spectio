@@ -40,6 +40,7 @@ from spectio.runner.local import checkable, same_process
 from spectio.runner.observed import check_observed_launch_dir, end_pointer, scan_observed
 from spectio.runner.resume import clear_stale_lock, prove
 from spectio.runner.rundir import (
+    MAIN_SCRIPT,
     RUN_ID,
     check_launch_dir,
     make_run_dirs,
@@ -121,6 +122,7 @@ class LaunchPayload(BaseModel):
     target: RunTarget | None = None  # one module or one rule (api §5.10)
     default_resources: DefaultResources | None = None  # api §5.7 (FU-P3-110b)
     config_file: ConfigFilePayload | None = None
+    main_script: str | None = Field(None, pattern=rf"^{MAIN_SCRIPT.pattern}$")  # #351
 
 
 def extra_file(payload: LaunchPayload) -> ExtraFile | None:
@@ -343,6 +345,7 @@ class RunnerLoop:
                 target=payload.target,
                 default_resources=payload.default_resources,
                 config_file=extra_file(payload),
+                main_script=payload.main_script,
                 # The shared cache of the software deployment (inbox #161): the conda
                 # environments and Apptainer images build once, off the home directory.
                 software_cache=software_cache_dir(self.settings),

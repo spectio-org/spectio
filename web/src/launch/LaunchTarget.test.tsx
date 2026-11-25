@@ -35,6 +35,7 @@ const SMK = {
   revision: null,
   engine: "snakemake",
   engine_files: ["Snakefile"],
+  main_scripts: [],
   name: "synth",
   version: null,
   engine_version: "9.27.1",
@@ -229,7 +230,7 @@ test("a Snakemake rule: Load lists the rules, choosing one previews the jobs, La
 test("one step with no engine file for the kind: Before Launch points at the path, not the engine (CR-161R-06)", async () => {
   fetchMock.mockImplementation(async (url) => {
     const u = String(url);
-    if (u.startsWith("/api/v1/workflows:inspect")) return json(200, { ...SMK, engine_files: ["main.nf"] });
+    if (u.startsWith("/api/v1/workflows:inspect")) return json(200, { ...SMK, engine_files: ["main.nf"], main_scripts: ["main.nf"] });
     if (u === "/api/v1/targets:inspect") return json(200, { kind: "rule", rules: ["all"], plan: null });
     return json(404, {});
   });

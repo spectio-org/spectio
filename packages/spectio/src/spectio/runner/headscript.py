@@ -22,7 +22,7 @@ from spectio.config import NF_SPECTIO_VERSION, slurm_name
 from spectio.environments import APPTAINER_WORDS, PROFILE, LocalValues, SlurmValues
 from spectio.loginshell import KEEP
 from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
-from spectio.runner.rundir import RUN_ID, private_dir, write_file
+from spectio.runner.rundir import MAIN_SCRIPT, RUN_ID, private_dir, write_file
 from spectio.runner.types import ExtraFile, LaunchSpec
 from spectio_sdk.targets import REGISTRY_NAME, RULE, VERSION, RunTarget
 
@@ -173,6 +173,10 @@ def engine_args(spec: LaunchSpec) -> list[str]:
     target = spec.target
     if spec.engine == "nextflow":
         args = ["run", str(spec.location)] if target is None else _module_run(spec, target)
+        if spec.main_script is not None and target is None:  # #351, checked again here
+            if not MAIN_SCRIPT.fullmatch(spec.main_script):
+                raise ValueError(f"main script {spec.main_script[:40]!r} is not allowed")
+            args += ["-main-script", spec.main_script]
         args += ["-params-file", params]
         # The user's file first, Spectio's own last, so that its generic keys win (api §5.7).
         configs = [str(p) for p in (_extra(spec), spectio / "spectio.config") if p is not None]

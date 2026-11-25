@@ -18,7 +18,7 @@ const run = {
   created_at: "",
   started_at: null,
   ended_at: null,
-  workflow: { engine: null, engine_version: null, location: "", name: null, version: null },
+  workflow: { engine: null, engine_version: null, location: "", name: null, version: null, main_script: null },
   profiles: [],
   target: {
     kind: "module",
@@ -195,7 +195,7 @@ const SAMPLES: Record<string, object> = {
   ResultStat: { root: "", path: "", name: "", type: "file", size: null, mtime: null } satisfies ResultStat,
   CodeLoading: { field: "", value: "", writable_by_others: false } satisfies CodeLoading,
   LaunchTemplate: {
-    workflow: { location: "", revision: null, engine: "nextflow" },
+    workflow: { location: "", revision: null, engine: "nextflow", main_script: null },
     profiles: [],
     params: {},
     non_default: [],
@@ -206,7 +206,7 @@ const SAMPLES: Record<string, object> = {
     default_resources: null,
     config_file: null,
   } satisfies LaunchTemplate,
-  TemplateWorkflow: { location: "", revision: null, engine: "nextflow" },
+  TemplateWorkflow: { location: "", revision: null, engine: "nextflow", main_script: null },
   Failure: failure,
   Scheduler: scheduler,
   Resources: resources,

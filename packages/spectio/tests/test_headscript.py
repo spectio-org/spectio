@@ -1432,3 +1432,19 @@ def test_no_status_command_off_snakemake_slurm(home: Path, bridges: Path) -> Non
     assert "--slurm-status-command" not in engine_args(
         make_spec(home / "runs", slurm=SlurmValues(partition="htc"), slurm_accounting=False)
     )
+
+
+def test_nextflow_main_script(tmp_path: Path) -> None:
+    """#351: a chosen entry script follows `run <location>` as `-main-script` (Nextflow CLI
+    reference, `run`); none keeps Nextflow's own `main.nf`."""
+    spec = make_spec(tmp_path / "runs", main_script="main_cellpose.nf")
+    args = engine_args(spec)
+    assert args[:4] == ["run", str(spec.location), "-main-script", "main_cellpose.nf"]
+    assert "-main-script" not in engine_args(replace(spec, main_script=None))
+
+
+@pytest.mark.parametrize("bad", ["../x.nf", "sub/x.nf", "-x.nf", ".nf", "x.config", "a b.nf"])
+def test_nextflow_main_script_refused(tmp_path: Path, bad: str) -> None:
+    """Defence in depth: the name is checked again where the argument list is built."""
+    with pytest.raises(ValueError, match="main script"):
+        engine_args(make_spec(tmp_path / "runs", main_script=bad))

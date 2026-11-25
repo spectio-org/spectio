@@ -12,8 +12,9 @@ then checked out. Neither a location nor a revision may hold a control character
 `spectio.locations`, shared with the catalog file (SEC-PRE-FU87-02).
 
 Inspect reads the directory, never runs it: the engine files present (`main.nf`, `Snakefile`,
-`workflow/Snakefile`), the engine they point to (none for both or neither), the Nextflow
-manifest's name and version and the profiles, and the parameter schema with where it came from.
+`workflow/Snakefile`), the Nextflow entry scripts (#351), the engine they point to (none for
+both or neither), the Nextflow manifest's name and version and the profiles, and the parameter
+schema with where it came from.
 """
 
 import contextlib
@@ -29,7 +30,7 @@ import subprocess
 import threading
 import time
 from collections.abc import Callable, Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import quote
@@ -41,7 +42,7 @@ from spectio import envfile, locations
 from spectio.config import Settings
 from spectio.environments import PROFILE
 from spectio.runner.engines import EngineError, check_engine
-from spectio.runner.rundir import private_dir
+from spectio.runner.rundir import MAIN_SCRIPT, private_dir
 from spectio_server.api.problems import Invalid, Problem
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 
@@ -68,6 +69,10 @@ MAX_NUMBER = 128  # characters of a YAML number (SEC-161S4-01)
 MAX_YAML = 256 * 1024  # a Snakemake schema or config file inspect parses (req. 21, SEC-161S4-04)
 MAX_SCHEMA_DEPTH = 64  # a schema or config inspect returns; the response encoder stops near 255
 MAX_TOKENS = 131_072  # YAML tokens in one file: about 2 s of pure-Python PyYAML (SEC-161S5-04)
+MAX_MAIN_SCRIPTS = 50  # the `*.nf` files at a pipeline's root inspect reads (#351)
+MAX_MAIN_SCRIPT_BYTES = 8 * MAX_FILE  # read of them in all (SEC-ENTRY-01)
+MAX_SCRIPT_NAMES = 1000  # `*.nf` names collected before they are sorted (SEC-ENTRY-01)
+UNNAMED_WORKFLOW = re.compile(r"^[ \t]*workflow[ \t]*\{", re.M)  # an entry workflow (#351)
 
 
 class Unreadable(ValueError):
@@ -103,6 +108,7 @@ class Found:
     profiles: list[str]
     schema: dict[str, Any] | None
     schema_source: SchemaSource
+    main_scripts: list[str] = field(default_factory=list)
 
 
 @contextlib.contextmanager
@@ -517,11 +523,66 @@ def entry_files(directory: Path) -> list[str]:
     return [f for names in ENTRY_FILES.values() for f in names if _regular(directory, f)]
 
 
-def inspect_dir(directory: Path, default_name: str) -> Found:
+def main_scripts(directory: Path) -> list[str]:
+    """The Nextflow entry scripts at the root of `directory` (#351): `main.nf` first when it is
+    a regular file, then each other `*.nf` regular file, reached through no symlink, whose text
+    holds an unnamed `workflow {` block, by name. At most MAX_SCRIPT_NAMES names are collected
+    before they are sorted, and the first MAX_MAIN_SCRIPTS of them read, each up to MAX_FILE
+    bytes and MAX_MAIN_SCRIPT_BYTES in all; a file that cannot be read, or is larger, is left
+    out (SEC-ENTRY-01, -04)."""
+    found = ["main.nf"] if _regular(directory, "main.nf") else []
+    names: list[str] = []
+    try:
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                if entry.name == "main.nf" or not MAIN_SCRIPT.fullmatch(entry.name):
+                    continue
+                if entry.is_file(follow_symlinks=False):  # no directory, FIFO nor symlink
+                    names.append(entry.name)
+                    if len(names) >= MAX_SCRIPT_NAMES:
+                        break
+    except OSError:
+        return found
+    left = MAX_MAIN_SCRIPT_BYTES
+    for name in sorted(names)[:MAX_MAIN_SCRIPTS]:
+        if left <= 0:
+            break
+        cap = min(MAX_FILE, left)
+        try:
+            text = _read(directory, name, cap=cap)  # `_read` checks the file again
+        except (OSError, Unreadable, UnicodeDecodeError):  # TooLarge is an Unreadable
+            left -= cap  # at most what was read
+            continue
+        if text is None:
+            continue
+        left -= len(text.encode())
+        if UNNAMED_WORKFLOW.search(text):
+            found.append(name)
+    return found
+
+
+def check_main_script(directory: Path, name: str, field: str) -> str:
+    """A chosen Nextflow entry script (#351): a bare `*.nf` name, a regular file at the root of
+    `directory` reached through no symlink; raises Invalid (`field`)."""
+    if not MAIN_SCRIPT.fullmatch(name):
+        raise Invalid(field, "a file name ending in .nf, at the pipeline's root")
+    if not _regular(directory, name):
+        raise Invalid(field, f"{name} is not a file at the pipeline's root")
+    return name
+
+
+def inspect_dir(directory: Path, default_name: str, scripts: list[str] | None = None) -> Found:
     """What the launch form needs from a pipeline directory. Raises Invalid (`location`) when
-    a schema or config file cannot be read."""
+    a schema or config file cannot be read. A directory with a Nextflow entry script other
+    than `main.nf` is a Nextflow pipeline too (#351); `scripts`: `main_scripts`, when the
+    caller has read them already."""
     files = entry_files(directory)
-    engines = [e for e, names in ENTRY_FILES.items() if set(names) & set(files)]
+    scripts = main_scripts(directory) if scripts is None else scripts
+    engines = [
+        e
+        for e, names in ENTRY_FILES.items()
+        if set(names) & set(files) or (e == "nextflow" and scripts)
+    ]
     engine = engines[0] if len(engines) == 1 else None  # both or neither: no guess
     try:
         name, version, nf_profiles = nextflow_config(directory)
@@ -546,6 +607,7 @@ def inspect_dir(directory: Path, default_name: str) -> Found:
         profiles=list(dict.fromkeys(shown)),
         schema=schema,
         schema_source=source,
+        main_scripts=scripts,
     )
 
 
@@ -719,6 +781,7 @@ def inspect(
         "revision": resolved.revision,
         "engine": found.engine,
         "engine_files": found.engine_files,
+        "main_scripts": found.main_scripts,  # #351
         "name": found.name,
         "version": found.version,
         "engine_version": versions.get(found.engine) if found.engine else None,

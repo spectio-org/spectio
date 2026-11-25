@@ -10,7 +10,8 @@ import { type ViewNode, collapse } from "./model";
 import { type GraphSettings, settingsOf } from "./settings";
 import { type GraphDocument, getWorkflowGraph } from "./types";
 
-export function LaunchMap({ location, revision, name }: { location: string; revision: string | null; name: string }) {
+/** `mainScript`: the Nextflow entry script chosen in the form (#351); null: main.nf. */
+export function LaunchMap({ location, revision, name, mainScript = null }: { location: string; revision: string | null; name: string; mainScript?: string | null }) {
   const phone = usePhone();
   const [doc, setDoc] = useState<GraphDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,11 +21,11 @@ export function LaunchMap({ location, revision, name }: { location: string; revi
     const controller = new AbortController();
     setDoc(null);
     setError(null);
-    getWorkflowGraph(location, revision, controller.signal)
+    getWorkflowGraph(location, revision, controller.signal, mainScript)
       .then(setDoc)
       .catch((e: ApiError) => controller.signal.aborted || setError(e.message));
     return () => controller.abort();
-  }, [location, revision]);
+  }, [location, revision, mainScript]);
   if (error) return <p role="alert">The map could not be drawn: {error}</p>;
   if (!doc) return <p className="sp-muted">Reading the pipeline's steps…</p>;
   if (doc.nodes.length === 0) return <p className="sp-empty">No step was found in the pipeline's code.</p>;

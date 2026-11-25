@@ -11,6 +11,7 @@ const INSPECTED = {
   revision: null,
   engine: "nextflow",
   engine_files: ["main.nf"],
+  main_scripts: ["main.nf"],
   name: "rnaseq",
   version: "3.27.0",
   engine_version: "26.10.4",
@@ -271,6 +272,7 @@ const SNAKEMAKE = {
   version: null,
   engine: "snakemake",
   engine_files: ["workflow/Snakefile"],
+  main_scripts: [],
   schema_source: "inferred",
   profiles: ["slurm"],
   schema: {
@@ -785,4 +787,58 @@ test("§5.12: a 201 with warnings shows them, one line each, after Launch", asyn
   expect(within(banner).getAllByRole("listitem")).toHaveLength(2);
   expect(within(banner).getByText("params.input: 'input' is a required property")).toBeInTheDocument();
   expect(within(banner).getByText("params.depth: 'depth' is a required property")).toBeInTheDocument();
+});
+
+// #351: a Nextflow pipeline whose entry script is not main.nf (inbox #161 finding 17)
+const MULTI = {
+  ...INSPECTED,
+  engine_files: [],
+  main_scripts: ["main_cellpose.nf", "main_eubibridge_single.nf"],
+  schema: null,
+  schema_source: "none",
+};
+
+test("with no main.nf, the Entry script is required and sent as workflow.main_script", async () => {
+  const onLaunched = page();
+  await load(MULTI);
+  expect(screen.getByRole("button", { name: "Nextflow" })).toHaveAttribute("aria-pressed", "true");
+  const entry = screen.getByRole("combobox", { name: /^Entry script/ });
+  expect(entry).toBeRequired();
+  expect(entry).toHaveValue("");
+  expect(launch()).toHaveAttribute("aria-disabled", "true");
+  expect(launch()).toHaveAccessibleDescription("Choose the entry script");
+  const before = screen.getByRole("status", { name: "Before Launch" });
+  await userEvent.click(within(before).getByRole("link", { name: "Choose the entry script" }));
+  expect(entry).toHaveFocus();
+  await userEvent.selectOptions(entry, "main_eubibridge_single.nf");
+  expect(launch()).not.toHaveAttribute("aria-disabled");
+  fetchMock.mockResolvedValueOnce(json(201, { id: "run_1", name: "x", state: "queued" }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+  const [, init] = fetchMock.mock.calls[1];
+  expect(JSON.parse(String(init?.body)).workflow).toEqual({
+    location: "/data/rnaseq",
+    revision: null,
+    engine: "nextflow",
+    main_script: "main_eubibridge_single.nf",
+  });
+});
+
+test("with main.nf among several, Entry script defaults to it and sends nothing for it", async () => {
+  const onLaunched = page();
+  await load({ ...MULTI, engine_files: ["main.nf"], main_scripts: ["main.nf", "main_cellpose.nf"] });
+  const entry = screen.getByRole("combobox", { name: /^Entry script/ });
+  expect(entry).toHaveValue("main.nf");
+  expect(entry).not.toBeRequired();
+  fetchMock.mockResolvedValueOnce(json(201, { id: "run_1", name: "x", state: "queued" }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+  const [, init] = fetchMock.mock.calls[1];
+  expect(JSON.parse(String(init?.body)).workflow).not.toHaveProperty("main_script");
+});
+
+test("main.nf alone shows no Entry script field", async () => {
+  page();
+  await load({ ...INSPECTED, main_scripts: ["main.nf"] });
+  expect(screen.queryByRole("combobox", { name: /^Entry script/ })).toBeNull();
 });

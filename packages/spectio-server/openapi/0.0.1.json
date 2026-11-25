@@ -4739,6 +4739,17 @@
             "title": "Location",
             "type": "string"
           },
+          "main_script": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Script"
+          },
           "revision": {
             "anyOf": [
               {
@@ -4754,7 +4765,8 @@
         "required": [
           "location",
           "revision",
-          "engine"
+          "engine",
+          "main_script"
         ],
         "title": "TemplateWorkflow",
         "type": "object"
@@ -4883,6 +4895,18 @@
             "title": "Location",
             "type": "string"
           },
+          "main_script": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Script"
+          },
           "revision": {
             "anyOf": [
               {
@@ -4930,6 +4954,17 @@
             "title": "Location",
             "type": "string"
           },
+          "main_script": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Script"
+          },
           "name": {
             "anyOf": [
               {
@@ -4958,7 +4993,8 @@
           "engine_version",
           "location",
           "name",
-          "version"
+          "version",
+          "main_script"
         ],
         "title": "WorkflowRef",
         "type": "object"
@@ -7199,6 +7235,25 @@
                 }
               ],
               "title": "Revision"
+            }
+          },
+          {
+            "description": "A Nextflow entry script at the pipeline's root, instead of main.nf.",
+            "in": "query",
+            "name": "main_script",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A Nextflow entry script at the pipeline's root, instead of main.nf.",
+              "title": "Main Script"
             }
           }
         ],

@@ -50,7 +50,12 @@ from spectio_server.api.problems import Invalid, Problem, not_found
 from spectio_server.api.runs_read import context, read, run_detail, run_row
 from spectio_server.api.runs_write import extras_payload
 from spectio_server.api.taskfiles import HEADERS, TEXT_CSP
-from spectio_server.api.workflows import inspect_dir, resolve, schema_defaults
+from spectio_server.api.workflows import (
+    check_main_script,
+    inspect_dir,
+    resolve,
+    schema_defaults,
+)
 from spectio_server.failure import dir_run_id
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
@@ -193,6 +198,8 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
             resolved = resolve(settings.data_dir, parent.location, parent.revision)
         except Invalid as exc:
             raise exc.under("workflow") from None
+        if parent.main_script is not None:  # checked again, as Launch does (SEC-ENTRY-02)
+            check_main_script(resolved.directory, parent.main_script, "workflow.main_script")
         location, source = str(resolved.directory), resolved.source
         default_name = resolved.default_name
 
@@ -203,7 +210,12 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
     manifest = RunManifest(
         run_id=child_id,
         name=f"{parent.workflow_name or default_name}-{child_id[-6:]}",
-        workflow=Workflow(location=parent.location, revision=parent.revision, engine=parent.engine),
+        workflow=Workflow(
+            location=parent.location,
+            revision=parent.revision,
+            engine=parent.engine,
+            main_script=parent.main_script,  # Resume keeps the entry script (#351)
+        ),
         params=params,
         profiles=profiles,
         created_at=now,
@@ -227,6 +239,8 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         "environment": environment,
         **extras_payload(resources, config_bytes),
     }
+    if parent.main_script is not None:
+        payload["main_script"] = parent.main_script
     if manifest.target is not None:  # Resume keeps the target (api §5.10 Relaunch)
         payload["target"] = manifest.target.model_dump(exclude_none=True)
     paths = run_paths(settings.runs_root, child_id)
@@ -401,6 +415,7 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
             "location": row.location,
             "revision": None if module else row.revision,
             "engine": row.engine,
+            "main_script": row.main_script,  # #351
         },
         "profiles": _profiles(settings.runs_root, run_id, payload) or [],
         "params": params,

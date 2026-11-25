@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 from pathlib import PurePosixPath
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
 from sqlalchemy import Connection, Row, select
 
@@ -40,7 +40,7 @@ from spectio_server.api.runs_read import (
     run_row,
 )
 from spectio_server.api.taskfiles import HEADERS, in_pool, load_attempt
-from spectio_server.api.workflows import inspect_dir, resolve
+from spectio_server.api.workflows import check_main_script, inspect_dir, resolve
 from spectio_server.failure import dir_run_id
 from spectio_server.files import results as files_results
 from spectio_server.files.confine import (
@@ -573,24 +573,43 @@ def _in_pool(request: Request, build: Callable[[], dict[str, Any]]) -> dict[str,
 
 
 @router.get("/workflows:graph", response_model=models.GraphDocument)
-def workflow_graph(request: Request, location: str, revision: str | None = None) -> dict[str, Any]:
+def workflow_graph(
+    request: Request,
+    location: str,
+    revision: str | None = None,
+    main_script: str | None = Query(  # the form's choice (#351, SEC-ENTRY-03)
+        None,
+        max_length=255,
+        description="A Nextflow entry script at the pipeline's root, instead of main.nf.",
+    ),
+) -> dict[str, Any]:
     require_graph(request)
     settings: Settings = request.app.state.settings
     resolved = resolve(settings.data_dir, location, revision)
     found = inspect_dir(resolved.directory, resolved.default_name)
     root = resolved.directory
+    if main_script is not None:
+        check_main_script(root, main_script, "main_script")
     if found.engine == "snakemake":
         entry = next(f for f in found.engine_files if "Snakefile" in f)
         return _in_pool(request, lambda: static.snakemake_graph(root, entry))
     if found.engine == "nextflow":
-        metro = bioflow.metro_map(root / "main.nf")  # its own timeout, one at a time
+        # main.nf only when it is a regular file reached through no symlink (SEC-ENTRY-03)
+        script = main_script or "main.nf"
+        drawn = main_script is not None or "main.nf" in found.main_scripts
+        metro = bioflow.metro_map(root / script) if drawn else None  # its own timeout
         return _in_pool(request, lambda: static.nextflow_graph(root, found.name, metro))
     raise Problem(
         422,
         "validation-failed",
         "Validation failed",
         "no single engine found in the pipeline",
-        errors=[{"field": "location", "message": "neither or both of main.nf and a Snakefile"}],
+        errors=[
+            {
+                "field": "location",
+                "message": "neither or both of a Nextflow main script and a Snakefile",
+            }
+        ],
     )
 
 
