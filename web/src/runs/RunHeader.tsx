@@ -13,9 +13,10 @@ import { type CopyItem, CopyButton, useCopyStatus } from "./CopyMenu";
 import { DeleteRuns } from "./DeleteRuns";
 import { extrasFacts } from "./RunDetailExtras";
 import { ResumeAction } from "./ResumeDialog";
+import { Ago } from "../shell/Ago";
 import { Progress, StateWord, runName } from "./RunState";
 import { TargetLine } from "./target";
-import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
+import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
 // UX-PAR-19, 21 and 22): the state bar, the engine's mark tile, the name and short ID, the state
@@ -147,7 +148,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
         <span>{[engine, ...run.profiles].join(" · ")}</span>
       </span>,
     ],
-    ["Started · ended", `${when(run.started_at)} · ${ended ? when(run.ended_at) : "—"}`],
+    ["Started · ended", <><Ago iso={run.started_at} /> · {ended ? <Ago iso={run.ended_at} /> : "—"}</>],
     ["Duration", duration(run.started_at, run.ended_at)],
     ["Head session", <span className="sp-mono">{run.head?.session ?? "—"}</span>],
     ["Head", headWord(run)],
@@ -264,7 +265,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
         {failed > 0 && ` · ${failed} failed`}
       </span>
       <span>{duration(run.started_at, run.ended_at)}</span>
-      {ended ? <span>ended {when(run.ended_at)}</span> : <LiveStatus />}
+      {ended ? <span>ended <Ago iso={run.ended_at} /></span> : <LiveStatus />}
     </>
   );
   return (

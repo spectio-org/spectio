@@ -5,6 +5,7 @@
 // SVG given through `icons` (an icon left out draws as a solid square, FU-P3-116). Cells are
 // text: no column renders HTML from the data.
 import {
+  CellStyleModule,
   ClientSideRowModelModule,
   ModuleRegistry,
   RenderApiModule,
@@ -16,7 +17,7 @@ import {
 import { AgGridReact, type AgGridReactProps } from "ag-grid-react";
 import { iconSvg } from "../icons";
 
-ModuleRegistry.registerModules([ClientSideRowModelModule, TextFilterModule, RowAutoHeightModule, RowStyleModule, RenderApiModule]);
+ModuleRegistry.registerModules([CellStyleModule, ClientSideRowModelModule, TextFilterModule, RowAutoHeightModule, RowStyleModule, RenderApiModule]);
 
 const v = (token: string) => `var(--sp-${token})`;
 const theme = themeQuartz.withoutPart("iconSet").withParams({

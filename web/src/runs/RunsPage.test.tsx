@@ -783,3 +783,39 @@ test("CR-P3UI08-01: on a phone the card's run name has the same tooltip on keybo
     vi.restoreAllMocks();
   }
 });
+
+test("CR-01 (#385): a checkpoint run's progress reads in full in its cell, in a column wide enough for it", async () => {
+  const open = run({
+    id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V5Z",
+    name: "wgs-open",
+    summary: { tasks: { done: 242, total: 347, failed: 0, cached: 0, lower_bound: true }, last_failure: null, stage_mode: "quarters" },
+  });
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [open], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const cell = within(table).getByText("242 / at least 347 tasks").closest('[role="gridcell"]') as HTMLElement;
+  expect(cell).toHaveClass("sp-num");
+  expect(parseInt(cell.style.width || "200", 10)).toBeGreaterThanOrEqual(200);
+  const started = within(table).getByRole("columnheader", { name: "Started" });
+  expect(parseInt(started.style.width || "150", 10)).toBeGreaterThanOrEqual(150);
+});
+
+test("CR-02 (#385): the Workflow cell wraps in full, with no tooltip standing in for a cut", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  const what = within(table).getByText("nf-core/rnaseq").closest(".sp-what-ran") as HTMLElement;
+  expect(what).not.toBeNull();
+  expect(what.parentElement?.getAttribute("data-position")).toBeNull();
+  expect(what.getAttribute("aria-describedby")).toBeNull();
+});
+
+test("CR-07 (#385): a run card has no empty context line when its state has no context", async () => {
+  viewport(360);
+  const done = run({ id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V6Z", name: "wgs-done", state: "succeeded", ended_at: "2026-10-31T08:00:00+00:00" });
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [done], next: null } });
+  app("/runs");
+  const list = await screen.findByRole("list", { name: "Runs" });
+  const card = within(list).getByRole("link", { name: "Open run wgs-done" }).closest("li") as HTMLElement;
+  expect([...card.querySelectorAll("span")].filter((s) => s.children.length === 0 && s.textContent === "")).toEqual([]);
+});

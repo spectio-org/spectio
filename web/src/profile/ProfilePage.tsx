@@ -5,7 +5,7 @@ import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { type Me, getMe, signOut } from "../api";
 import { Icon, type IconName } from "../icons";
 import { copyText } from "../runs/CopyMenu";
-import { when } from "../runs/stateWord";
+import { Ago } from "../shell/Ago";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { CardHead } from "../shell/CardHead";
@@ -156,10 +156,10 @@ export function ProfilePage() {
             ) : (
               <>
                 <dl className="sp-facts">
-                  <div><dt>Started</dt><dd>{when(me.session.started_at)}</dd></div>
+                  <div><dt>Started</dt><dd><Ago iso={me.session.started_at} /></dd></div>
                   <div>
                     <dt>Expires</dt>
-                    <dd>{me.session.expires_at ? when(me.session.expires_at) : "Ends when the server stops, or when you sign out"}</dd>
+                    <dd>{me.session.expires_at ? <Ago iso={me.session.expires_at} /> : "Ends when the server stops, or when you sign out"}</dd>
                   </div>
                 </dl>
                 {out === "failed" && <p role="alert" className="sp-note sp-alert">Could not sign out. {outError}</p>}

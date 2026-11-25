@@ -9,12 +9,12 @@ import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { Scope, ScopeText, TargetTail } from "./target";
 import { usePhone } from "../shell/layout";
-import { Ago } from "../shell/NotificationsBell";
+import { Ago } from "../shell/Ago";
 import { PageHead } from "../shell/PageHead";
 import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { DeleteRuns } from "./DeleteRuns";
 import { LazyGrid } from "./LazyGrid";
-import { NameTip, Pipeline, Progress, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
+import { Pipeline, Progress, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
 import { ACTIVE, duration, isTerminal, plural, shortId, tone, words } from "./stateWord";
 
 /** A run's start as ui-spec §12.8 dates it ("2 h ago", then "2026-10-28 07:01"). */
@@ -209,14 +209,16 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
           {knownSoFar(run) && " known so far"}
         </span>
       </span>
-      <span className="sp-run-card-line">
-        {run.origin === "cli-observed" && (
-          <span className="sp-chip">
-            <Icon name="terminal" /> From a terminal
-          </span>
-        )}
-        <span>{stateContext(run)}</span>
-      </span>
+      {(run.origin === "cli-observed" || !!stateContext(run)) && (
+        <span className="sp-run-card-line">
+          {run.origin === "cli-observed" && (
+            <span className="sp-chip">
+              <Icon name="terminal" /> From a terminal
+            </span>
+          )}
+          {stateContext(run) && <span>{stateContext(run)}</span>}
+        </span>
+      )}
     </li>
   );
 }
@@ -269,24 +271,22 @@ const COLUMNS: ColDef<Run>[] = [
     colId: "workflow",
     flex: 1.4,
     cellRenderer: ({ data: run }: { data: Run }) => (
-      <NameTip label={whatRan(run)}>
-        <span className="sp-what-ran">
-          <Pipeline run={run} />
-          <TargetTail target={run.target} />
-        </span>
-      </NameTip>
+      <span className="sp-what-ran">
+        <Pipeline run={run} />
+        <TargetTail target={run.target} />
+      </span>
     ),
   },
   // numbers and durations right-aligned, in tabular figures; words and dates left (ui-spec §12.8)
   {
     headerName: "Progress",
     flex: 0,
-    width: 150,
+    width: 200,
     cellClass: "sp-num",
     headerClass: "ag-right-aligned-header",
     cellRenderer: ({ data: run }: { data: Run }) => <TasksCell run={run} />,
   },
-  { headerName: "Started", colId: "started_at", flex: 0, width: 130, cellRenderer: ({ data: run }: { data: Run }) => <Started run={run} /> },
+  { headerName: "Started", colId: "started_at", flex: 0, width: 150, cellClass: "sp-nowrap-cell", cellRenderer: ({ data: run }: { data: Run }) => <Started run={run} /> },
   {
     headerName: "Duration",
     colId: "duration",
@@ -297,12 +297,6 @@ const COLUMNS: ColDef<Run>[] = [
     valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : ""),
   },
 ];
-
-/** The Workflow cell's full text, for its tooltip: the pipeline, its version and the target. */
-const whatRan = (run: Run): string =>
-  [run.workflow.name ?? run.workflow.location, run.workflow.version, run.target && run.target.kind !== "module" ? `→ ${run.target.name}` : null]
-    .filter(Boolean)
-    .join(" ");
 
 const SORTABLE = new Set(["name", "state", "started_at", "duration"]);
 

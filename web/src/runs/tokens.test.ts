@@ -63,3 +63,13 @@ test("the table header is --sp-text-muted, with 4.5:1 on its background in light
     expect(contrast(hex("--sp-text-faint", scheme), hex("--sp-surface-raised", scheme))).toBeGreaterThanOrEqual(3);
   }
 });
+
+test("CR-03 (#385): the compact table keeps its sticky cells' borders and scrolls a focused control clear of them", () => {
+  const rule = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    expect(at).toBeGreaterThanOrEqual(0);
+    return css.slice(at, css.indexOf("}", at));
+  };
+  expect(rule('.sp-table[data-density="compact"]')).toContain("border-collapse: separate;");
+  expect(rule('.sp-table-wrap:has(> .sp-table[data-density="compact"])')).toContain("scroll-padding: 3rem 0 0 8rem;");
+});

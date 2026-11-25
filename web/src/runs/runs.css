@@ -160,11 +160,16 @@
 /* A compact table (the Tasks list, By process; ui-spec §12.8): tighter rows, the header and the
    name column stay in view while the table scrolls inside its wrapper. */
 .sp-table[data-density="compact"] {
+  /* separate borders, so the sticky header and first column keep theirs while they stay in view */
   --sp-cell-py: var(--mantine-spacing-sm);
+  border-collapse: separate;
+  border-spacing: 0;
 }
 .sp-table-wrap:has(> .sp-table[data-density="compact"]) {
   max-height: 70vh;
   overflow: auto;
+  /* a control scrolled into view by focus is not left under the sticky header or first column */
+  scroll-padding: 3rem 0 0 8rem;
 }
 .sp-table[data-density="compact"] th {
   position: sticky;
@@ -2338,8 +2343,8 @@
   flex: none;
 }
 /* The name takes the free width and the pin a fixed slot at the column's right; a name wraps to
-   two lines at most, the full name in a tooltip on hover and focus. The workflow cell is one
-   line with an ellipsis, below. */
+   two lines at most, the full name in a tooltip on hover and focus. The workflow path is not
+   focusable, so it wraps in full, unclamped (CR-P3UI08-01). */
 .sp-grid-runs .sp-run-cell {
   align-items: flex-start;
 }
@@ -2352,22 +2357,7 @@
   margin-top: -2px;
 }
 .sp-grid-runs .sp-pipeline > span:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* The Workflow cell is one line, the pipeline and the target cut with an ellipsis; the full text
-   is in the cell's tooltip (ui-spec §12.8). */
-.sp-grid-runs .sp-what-ran {
-  display: flex;
-  flex-wrap: nowrap;
-  min-width: 0;
-}
-.sp-grid-runs .sp-what-ran .sp-target-to {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .sp-run-name .sp-run-link {
   display: -webkit-box;
