@@ -1360,6 +1360,17 @@
               }
             ],
             "title": "Temp"
+          },
+          "used": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used"
           }
         },
         "required": [

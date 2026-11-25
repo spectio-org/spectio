@@ -3,7 +3,7 @@
 // (status, parameters with this run's values, outputs read live, jobs).
 import { NativeSelect } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ApiError, type Json, type Run, type RunDetail, type Task, listRuns, listTasks, resultUrl } from "../../api";
 import { useFrames } from "../../live";
 import { usePhone } from "../../shell/layout";
@@ -850,6 +850,37 @@ function Replay({ span, at, onAt }: { span: { from: number; to: number }; at: nu
   );
 }
 
+/** The document without the steps that have no job in this run (`used: false`, #376), and those
+ * steps. When none is used, nothing is set apart: there is nothing to tell apart. */
+function drawnOf(doc: GraphDocument): { drawn: GraphDocument; unused: GraphNode[] } {
+  const unused = doc.nodes.filter((n) => n.used === false);
+  if (unused.length === 0 || unused.length === doc.nodes.length) return { drawn: doc, unused: [] };
+  const kept = new Set(doc.nodes.filter((n) => n.used !== false).map((n) => n.id));
+  const edges = doc.edges.filter((e) => kept.has(e.source) && kept.has(e.target));
+  return { drawn: { ...doc, nodes: doc.nodes.filter((n) => kept.has(n.id)), edges }, unused };
+}
+
+/** The steps this run never ran, folded in one group under the graph. */
+function Unused({ steps }: { steps: GraphNode[] }) {
+  const [open, setOpen] = useState(false);
+  const list = useId();
+  if (steps.length === 0) return null;
+  return (
+    <section className="sp-gnote" aria-label="Steps not used by this run">
+      <button type="button" className="sp-link-button" aria-expanded={open} aria-controls={list} onClick={() => setOpen(!open)}>
+        {`Not used by this run (${steps.length})`}
+      </button>
+      <ul id={list} className="sp-gsheet-list" hidden={!open}>
+        {steps.map((n) => (
+          <li key={n.id} className="sp-mono">
+            {n.name}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   const phone = usePhone();
   const settings = settingsOf(search, phone);
@@ -862,6 +893,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   const [edge, setEdge] = useState<ViewEdge | null>(null);
   const [trace, setTrace] = useState<{ id: string; direction: "up" | "down" } | null>(null);
   const live = !isTerminal(run.state);
+  const { drawn: shown, unused } = useMemo(() => (doc ? drawnOf(doc) : { drawn: null, unused: [] }), [doc]);
   const source = useMemo(() => ({ location: run.workflow.location, revision: null, fromRun: true }), [run.workflow.location]);
 
   const load = useCallback(() => {
@@ -873,8 +905,8 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   useFrames(load, run.id, live);
 
   // the Jobs level: every step's jobs (expandedSteps), refetched only when their counts change
-  const wantJobs = settings.level === "jobs" && doc !== null;
-  const expanded = wantJobs ? expandedSteps(doc) : [];
+  const wantJobs = settings.level === "jobs" && shown !== null;
+  const expanded = wantJobs && shown ? expandedSteps(shown) : [];
   const jobsKey = expanded.map((n) => `${n.id}=${JSON.stringify(n.counts ?? {})}`).join("\n");
   const fetched = useRef(new Map<string, string>()); // `${run}/${step}` → the counts its jobs were loaded at
   useEffect(() => {
@@ -906,8 +938,8 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   }, [compareId]);
 
   const set = (patch: Partial<GraphSettings>) => onSearch(searchOf({ ...settings, ...patch }, phone));
-  const view = useMemo(() => (doc ? viewOf(doc, settings, settings.level === "jobs" ? jobs : undefined) : null), [doc, settings.level, jobs, settings.fold, settings.focus, settings.hide]); // eslint-disable-line react-hooks/exhaustive-deps
-  const diff = useMemo(() => (doc && other ? diffGraphs(doc, other) : null), [doc, other]);
+  const view = useMemo(() => (shown ? viewOf(shown, settings, settings.level === "jobs" ? jobs : undefined) : null), [shown, settings.level, jobs, settings.fold, settings.focus, settings.hide]); // eslint-disable-line react-hooks/exhaustive-deps
+  const diff = useMemo(() => (shown && other ? diffGraphs(shown, drawnOf(other).drawn) : null), [shown, other]);
   const traced = useMemo(() => (view && trace && view.nodes.some((n) => n.id === trace.id) ? lineage(view, trace.id, trace.direction) : null), [view, trace]);
   // computed once per document and open group, not on every render (CR-8)
   const groupView = useMemo(() => {
@@ -918,7 +950,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   const span = doc ? timeSpan(doc) : null;
 
   if (error) return <p role="alert">The graph could not be read: {error}</p>;
-  if (!doc || !view) return <p className="sp-muted">Drawing the graph…</p>;
+  if (!doc || !shown || !view) return <p className="sp-muted">Drawing the graph…</p>;
   if (doc.nodes.length === 0) return <p className="sp-empty">No step is known for this run yet.</p>;
 
   // a group opened from its name on the map is not a box of the view: its details are those of the
@@ -929,12 +961,12 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
   const removed = diff ? [...diff].filter(([, d]) => d.change === "removed").map(([id]) => other?.nodes.find((n) => n.id === id)?.name ?? id) : [];
   const note = PRODUCER_NOTES[doc.producer];
   const shownJobs = expanded.reduce((n, s) => n + (jobs[s.id]?.length ?? 0), 0);
-  const left = doc.nodes.filter((n) => Object.values(n.counts ?? {}).some((c) => c > 0) && !jobs[n.id]?.length).length;
+  const left = shown.nodes.filter((n) => Object.values(n.counts ?? {}).some((c) => c > 0) && !jobs[n.id]?.length).length;
 
   return (
     <>
       <GraphView
-        doc={doc}
+        doc={shown}
         title={run.name ?? run.id}
         settings={settings}
         onSettings={set}
@@ -1020,6 +1052,7 @@ export function GraphPanel({ run, search, onSearch, onOpen, onTasks }: Props) {
           )
         }
       />
+      <Unused steps={unused} />
     </>
   );
 }

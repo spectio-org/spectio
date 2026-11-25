@@ -170,6 +170,8 @@ def run_graph(request: Request, run_id: str) -> dict[str, Any]:
         else:
             temp = set()
             graphs, dag = [], document.nf_dag(_flow_begin(conn, run_id))
+    # Nextflow: a process with no task yet may still be reached, while the run is live
+    reachable = run.engine != "snakemake" and run.state not in TERMINAL
     nodes = []
     for item in items:
         span = timing.get(item["process"])
@@ -187,6 +189,7 @@ def run_graph(request: Request, run_id: str) -> dict[str, Any]:
                 "first_start": _iso(span[0]) if span else None,
                 "last_end": _iso(span[1]) if span else None,
                 "temp": item["process"] in temp,
+                "used": item["used"] or reachable,
             }
         )
     known = {n["id"] for n in nodes}
@@ -200,7 +203,7 @@ def run_graph(request: Request, run_id: str) -> dict[str, Any]:
         order = len(nodes)
         for name in processes:
             if name not in known:
-                nodes.append(_idle_node(name, idle, order))
+                nodes.append(_idle_node(name, idle, order, reachable))
                 order += 1
         producer, complete = "nf-dag", True
     else:
@@ -238,7 +241,7 @@ def _temp_rules(conn: Connection, run_id: str) -> set[str]:
     }
 
 
-def _idle_node(name: str, status: str, order: int) -> dict[str, Any]:
+def _idle_node(name: str, status: str, order: int, used: bool) -> dict[str, Any]:
     """A process of the DAG with no task yet."""
     return {
         "id": name,
@@ -250,6 +253,7 @@ def _idle_node(name: str, status: str, order: int) -> dict[str, Any]:
         "metrics": {"duration_s": None, "cpu_mean": None, "mem_max": None, "failed": 0},
         "first_start": None,
         "last_end": None,
+        "used": used,
     }
 
 

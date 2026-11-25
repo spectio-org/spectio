@@ -625,6 +625,7 @@ def process_items(
                 "retries": retries.get(process, 0),
                 "status": status,
                 "is_checkpoint": bool(r is not None and r.is_checkpoint),
+                "used": bool(mine_counts) or bool(planned),  # a task, or a planned job (#376)
                 "lower_bound": facts.checkpoint_open,
                 "efficiency": efficiency.aggregate(of_process.get(process, []), planned),
                 "pipeline_order": ranks[process],

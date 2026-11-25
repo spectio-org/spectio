@@ -96,6 +96,20 @@ def test_snakemake_rulegraph_replayed(settings: Settings, writer: Writer, tmp_pa
     assert next(n for n in doc["nodes"] if n["id"] == "split")["kind"] == "checkpoint"
 
 
+def test_snakemake_used_rules(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """#376: a rule with a job in this run, or planned a job by `run_info`, is `used`; a rule
+    only defined in the rule files (`unused`, `report` up to date) is not, and stays a node."""
+    run = smk_run(settings, writer, tmp_path)
+    job(run, 1, "make_reads")
+    doc = got(graph_client(settings, writer), f"/runs/{RUN}/graph")
+    used = {n["id"]: n["used"] for n in doc["nodes"]}
+    assert used["make_reads"] is True  # it has a task
+    assert used["split"] is True  # planned one job, none started yet
+    assert used["all"] is True  # planned one job
+    assert used["unused"] is False  # in no plan and with no job
+    assert used["report"] is False  # up to date: nothing to run
+
+
 def test_snakemake_no_rulegraph(settings: Settings, writer: Writer, tmp_path: Path) -> None:
     """With no rule graph yet: the rules, no edges, `stages-only`, not complete."""
     run = smk_run(settings, writer, tmp_path)
@@ -215,6 +229,20 @@ def test_nextflow_dag(settings: Settings, writer: Writer) -> None:
     groups = {g["id"]: g for g in doc["groups"]}
     assert groups["sub:PIPE:QC"]["parent"] == "sub:PIPE"
     assert groups["sub:PIPE"]["parent"] is None and groups["sub:PIPE"]["kind"] == "subworkflow"
+
+
+def test_nextflow_dag_used_processes(settings: Settings, writer: Writer) -> None:
+    """#376: a DAG process is `used` once it has a task. One with none is still `used` while the
+    run is live (it may be reached), and not once the run ended; it stays a node."""
+    run = Run(settings, writer)
+    run.push("nextflow.onFlowBegin", dag={"processes": ["PIPE:QC:FASTQC", "PIPE:QC:STATS"]})
+    run.push("nextflow.onTaskSubmit", process="PIPE:QC:FASTQC", tag="S1", attempt=1)
+    client = graph_client(settings, writer)
+    live = {n["id"]: n["used"] for n in got(client, f"/runs/{RUN}/graph")["nodes"]}
+    assert live == {"PIPE:QC:FASTQC": True, "PIPE:QC:STATS": True}
+    run.end()
+    ended = {n["id"]: n["used"] for n in got(client, f"/runs/{RUN}/graph")["nodes"]}
+    assert ended == {"PIPE:QC:FASTQC": True, "PIPE:QC:STATS": False}
 
 
 def test_nextflow_dag_truncated(settings: Settings, writer: Writer) -> None:
