@@ -2,12 +2,14 @@
 const two = (n: number) => String(n).padStart(2, "0");
 export const isoDay = (d: Date) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
 
-/** ui-spec §12.8: "just now", "12 min ago", "5 h ago", "3 days ago", then "2026-10-28 07:01"; "—"
- * for no date. */
+/** ui-spec §12.8: "just now", "12 min ago", "5 h ago", "3 days ago", then "2026-10-28 07:01" (and for a
+ * date ahead); "—" for no date. */
 export function ago(iso: string | null, now = new Date()): string {
   if (!iso) return "—";
   const at = new Date(iso);
   const minutes = Math.floor((now.getTime() - at.getTime()) / 60000);
+  // a date ahead (a session's end) is shown exactly; a minute of clock skew is still "just now"
+  if (minutes < -1) return `${isoDay(at)} ${two(at.getHours())}:${two(at.getMinutes())}`;
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes} min ago`;
   if (minutes < 24 * 60) return `${Math.floor(minutes / 60)} h ago`;
