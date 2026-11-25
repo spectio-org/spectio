@@ -397,13 +397,15 @@ def test_snakemake_conda_pkgs_dir_is_per_launch_and_removed(
     it once the engine has ended, keeping the engine's exit status as its own."""
     local = tmp_path / "node-local"  # stands for /tmp; TMPDIR (the test's own) is not used
     local.mkdir()
+    assert headscript.CONDA_PKGS_BASE == "/tmp"  # noqa: S108
     monkeypatch.setattr(headscript, "CONDA_PKGS_BASE", str(local))
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "shared-scratch"))  # a profile's, ignored
     spec = snakemake_spec(home, software_cache=home / "cache", software=["conda"])
     stub_engine(home / "bin", CONDA_PKGS_STUB)
     text = render_head_script(spec)
     # like rm and timeout: the login profile's PATH may hold no mktemp
     mktemp = f"{shutil.which('mktemp') or 'mktemp'} -d {local}/spectio-conda.XXXXXX"
-    assert mktemp in text
+    assert mktemp in text and "${TMPDIR" not in text
     # after the PYTHONPATH export, before the rule listing
     assert text.index("export PYTHONPATH=") < text.index(mktemp) < text.index("--list-rules")
     assert "trap spectio_rm_pkgs EXIT" in text  # removed on every exit, early ones too
