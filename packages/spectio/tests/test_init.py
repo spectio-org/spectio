@@ -17,7 +17,7 @@ from sqlalchemy import select
 from typer.testing import CliRunner
 
 from spectio.cli.main import app
-from spectio.config import Settings, config_path
+from spectio.config import Settings, config_path, software_cache_dir
 from spectio_server.store.db import DB_FILE, open_db
 from spectio_server.store.schema import environments, principals, projects, runners
 
@@ -220,6 +220,17 @@ def test_settings_layers(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert (flagged.slurm.partition, flagged.slurm.account) == ("flag", "env")
     assert Settings().runner.head_watch_s == 5
     assert Settings().data_dir == home / ".spectio"
+
+
+def test_software_cache_defaults_to_the_runs_root(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """inbox #161: unset, the conda and Apptainer cache is under the runs root, the storage
+    `spectio init` chose for runs, not the home directory; SPECTIO_SOFTWARE_CACHE sets it."""
+    runs = tmp_path / "scratch" / "runs"
+    assert software_cache_dir(Settings(runs_root=runs)) == runs / ".software-cache"
+    monkeypatch.setenv("SPECTIO_SOFTWARE_CACHE", str(tmp_path / "group" / "cache"))
+    assert software_cache_dir(Settings(runs_root=runs)) == tmp_path / "group" / "cache"
 
 
 def test_bad_config_refused(home: Path, fakebin: Path) -> None:

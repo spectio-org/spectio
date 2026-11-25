@@ -13,7 +13,7 @@ from pathlib import Path
 import typer
 
 from spectio import catalog, envfile
-from spectio.config import MIN_UV, NF_SPECTIO_VERSION, Settings, config_path
+from spectio.config import MIN_UV, NF_SPECTIO_VERSION, Settings, config_path, software_cache_dir
 from spectio.environments import builtins
 from spectio.loginshell import run_login, which
 from spectio.runner.engines import (
@@ -231,7 +231,24 @@ def _software(settings: Settings) -> list[Result]:
             )
         else:
             results.append(("ok", tool, f"{match.group(1)}: the software of {users}"))
+    if any(e.software for e in every):
+        results.append(_cache_place(software_cache_dir(settings)))
     return results
+
+
+def _cache_place(cache: Path) -> Result:
+    """Where the conda environments and Apptainer images go (inbox #161): a warning inside the
+    home directory, whose quota is often small (50 GB at EMBL) and fills with environments."""
+    home = Path.home().resolve()
+    where = cache.resolve()
+    if where == home or home in where.parents:
+        return (
+            "warn",
+            "software_cache",
+            f"{cache} is in the home directory: set software_cache (SPECTIO_SOFTWARE_CACHE) on"
+            " scratch or a group share",
+        )
+    return ("ok", "software_cache", str(cache))
 
 
 def _utc(epoch: float) -> str:
