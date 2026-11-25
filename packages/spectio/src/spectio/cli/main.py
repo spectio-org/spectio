@@ -9,7 +9,7 @@ import typer
 
 from spectio.cli.doctor import run_doctor
 from spectio.cli.init import run_init
-from spectio.cli.login import run_login
+from spectio.cli.login import run_login, run_logout
 from spectio.cli.open import run_open
 from spectio.cli.serve import DETACH_WAIT_S, run_detach, run_serve
 from spectio.config import Settings
@@ -113,6 +113,16 @@ def login(
 ) -> None:
     """Get a new single-use token link from the running server (valid 15 minutes)."""
     raise typer.Exit(run_login(print_link, as_json))
+
+
+@app.command()
+def logout(
+    all_sessions: Annotated[
+        bool, Opt("--all", help="Sign out every browser session of this node's server")
+    ] = False,
+) -> None:
+    """Revoke browser sessions: after it, each browser needs a new link."""
+    raise typer.Exit(run_logout(all_sessions))
 
 
 @app.command("open")

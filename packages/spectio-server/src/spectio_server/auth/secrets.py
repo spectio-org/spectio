@@ -5,8 +5,9 @@ Each is 32 bytes from `secrets` (43 base64url characters) and compared in consta
 - the **server key**, written at each start to `server.key` (0600) in the node-local directory;
   only `POST /api/v1/auth/links` accepts it;
 - the **link ticket**, single use, valid 15 minutes; only its SHA-256 is kept (auth §2.1);
-- the **session secret**, in memory only, so a restart ends every session; only its SHA-256 is
-  kept too, with the time it started (the Profile page, FU-P3-112); Sign out revokes it.
+- the **session secret**, kept only as its SHA-256 in the `sessions` table, with when the session
+  started and when it was last seen (#375): a restart keeps it while it is valid, within an idle
+  time and an absolute lifetime; Sign out and `spectio logout --all` delete its row.
 """
 
 import hashlib
@@ -16,17 +17,30 @@ import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
+
+from sqlalchemy import Connection, Row, delete, insert, select, update
 
 from spectio.runner.rundir import private_dir, write_file
+from spectio_server.ids import new_id
+from spectio_server.store.schema import sessions
+from spectio_server.store.writer import Writer
 
 KEY_FILE = "server.key"
 TICKET_TTL_S = 15 * 60
+IDLE = timedelta(days=7)  # the defaults of [auth] session_idle_days and session_max_days
+MAX_AGE = timedelta(days=30)
+SEEN_EVERY = timedelta(minutes=1)  # `last_seen_at` is written at most this often
 
 
 def _new() -> str:
     return secrets.token_urlsafe(32)
+
+
+def _now() -> datetime:
+    return datetime.now(UTC)
 
 
 def _digest(secret: str) -> bytes:
@@ -78,32 +92,100 @@ class TicketStore:
 
 
 class SessionStore:
-    """Session digests and when each started, until the server stops or the session signs out."""
+    """Sessions in the database, by digest (#375): each is valid while it is younger than
+    `max_age` and was seen less than `idle` ago. Reads and writes go through the server's own
+    database and writer, so a restart keeps the sessions that are still valid, and `spectio
+    logout --all` revokes them with no server running."""
 
-    def __init__(self) -> None:
-        self._started: dict[bytes, datetime] = {}
-        self._lock = threading.Lock()
+    def __init__(
+        self,
+        writer: Writer,
+        idle: timedelta = IDLE,
+        max_age: timedelta = MAX_AGE,
+        clock: Callable[[], datetime] = _now,
+    ) -> None:
+        self.writer = writer
+        self.idle = idle
+        self.max_age = max_age
+        self.clock = clock
+
+    def _expired(self, conn: Connection, now: datetime) -> None:
+        conn.execute(
+            delete(sessions).where(
+                (sessions.c.created_at <= now - self.max_age)
+                | (sessions.c.last_seen_at <= now - self.idle)
+            )
+        )
 
     def create(self) -> str:
         secret = _new()
-        with self._lock:
-            self._started[_digest(secret)] = datetime.now(UTC)
-        return secret
+        now = self.clock()
 
-    def started(self, secret: str) -> datetime | None:
-        """When this session started; None for a secret that is not a session."""
-        found = _digest(secret)
-        with self._lock:
-            return next(
-                (t for d, t in self._started.items() if hmac.compare_digest(found, d)), None
+        def write(conn: Connection) -> None:
+            self._expired(conn, now)  # rows never met again would stay for ever
+            conn.execute(
+                insert(sessions).values(
+                    id=new_id("ses"), digest=_digest(secret), created_at=now, last_seen_at=now
+                )
             )
 
+        self.writer.submit(write).result()
+        return secret
+
+    def _find(self, secret: str) -> Row[Any] | None:
+        found = _digest(secret)
+        with self.writer.engine.connect() as conn:
+            rows = conn.execute(select(sessions)).all()
+        return next((r for r in rows if hmac.compare_digest(found, r.digest)), None)
+
+    def _delete(self, session_id: str) -> None:
+        self.writer.submit(
+            lambda c: c.execute(delete(sessions).where(sessions.c.id == session_id))
+        ).result()
+
+    def _live(self, secret: str, now: datetime) -> Row[Any] | None:
+        """The session's row, or None for a secret that is not a session or that has expired
+        (its row is deleted when met)."""
+        row = self._find(secret)
+        if row is None:
+            return None
+        if now - row.created_at >= self.max_age or now - row.last_seen_at >= self.idle:
+            self._delete(row.id)
+            return None
+        return row
+
+    def started(self, secret: str) -> datetime | None:
+        """When this session started; None for a secret that is not a live session."""
+        row = self._live(secret, self.clock())
+        return None if row is None else row.created_at
+
+    def expires_at(self, secret: str) -> datetime | None:
+        """When it ends if it is not seen again: the idle time, or the absolute lifetime when
+        that comes first."""
+        row = self._live(secret, self.clock())
+        if row is None:
+            return None
+        end: datetime = min(row.created_at + self.max_age, row.last_seen_at + self.idle)
+        return end
+
     def valid(self, secret: str) -> bool:
-        return self.started(secret) is not None
+        """Whether this is a live session; it is then seen now, in the database once a minute."""
+        now = self.clock()
+        row = self._live(secret, now)
+        if row is None:
+            return False
+        if now - row.last_seen_at >= SEEN_EVERY:
+            self.writer.submit(
+                lambda c: c.execute(
+                    update(sessions).where(sessions.c.id == row.id).values(last_seen_at=now)
+                )
+            ).result()
+        return True
 
     def revoke(self, secret: str) -> None:
-        found = _digest(secret)
-        with self._lock:
-            self._started = {
-                d: t for d, t in self._started.items() if not hmac.compare_digest(found, d)
-            }
+        row = self._find(secret)
+        if row is not None:
+            self._delete(row.id)
+
+    def revoke_all(self) -> int:
+        return self.writer.submit(lambda c: c.execute(delete(sessions)).rowcount).result()

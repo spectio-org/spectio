@@ -3,8 +3,9 @@
 - `GET /auth/link` and `GET /auth/link.js`: the bootstrap page, static, with no data. Its script
   reads the ticket from the fragment, drops it from the history and posts the exchange.
 - `POST /api/v1/auth/magic-links:exchange` (`{"ticket"}`): burns the ticket and answers 204 with
-  the session cookie (`HttpOnly`, `SameSite=Strict`, `Path=/`, named after the `Host` port:
-  req. 3); a used, expired or unknown ticket gets 401 `/problems/link-expired`.
+  the session cookie (`HttpOnly`, `SameSite=Strict`, `Path=/`, `Max-Age` the absolute lifetime of
+  a session, named after the `Host` port: req. 3); a used, expired or unknown ticket gets 401
+  `/problems/link-expired`.
 - `POST /api/v1/auth/links` (`Authorization: Bearer <server key>`): a new link, for
   `spectio login --print-link`. The key gives a link, never a session.
 
@@ -85,7 +86,14 @@ def exchange(body: Exchange, request: Request) -> Response:
         return _refused("link-expired", "Link used or expired", EXPIRED)
     answer = Response(status_code=204, headers=HEADERS)
     name = cookie_name(request.headers.get("host"))  # no Domain: this host only (req. 3)
-    answer.set_cookie(name, state.sessions.create(), httponly=True, samesite="strict", path="/")
+    answer.set_cookie(
+        name,
+        state.sessions.create(),
+        max_age=int(state.sessions.max_age.total_seconds()),  # the absolute lifetime (#375)
+        httponly=True,
+        samesite="strict",
+        path="/",
+    )
     return answer
 
 

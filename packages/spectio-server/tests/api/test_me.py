@@ -38,7 +38,8 @@ def test_me_names_the_principal_the_session_and_the_paths(
     assert body["principal"] == {"user": pwd.getpwuid(os.getuid()).pw_name, "uid": os.getuid()}
     started = datetime.fromisoformat(body["session"]["started_at"])
     assert timedelta(0) <= datetime.now(UTC) - started < timedelta(minutes=1)
-    assert body["session"]["expires_at"] is None  # in memory: it ends when the server stops
+    expires = datetime.fromisoformat(body["session"]["expires_at"])
+    assert expires - started == timedelta(days=7)  # the idle time (#375)
     assert body["paths"] == {
         "config_file": str(config_path()),
         "data_dir": str(settings.data_dir),
@@ -82,8 +83,8 @@ def test_sign_out_needs_an_origin(authed_client: TestClient) -> None:
     assert authed_client.post(SIGN_OUT, headers={"Origin": ""}).status_code == 403
 
 
-def test_session_store_keeps_the_start_and_revokes() -> None:
-    store = SessionStore()
+def test_session_store_keeps_the_start_and_revokes(writer: Writer) -> None:
+    store = SessionStore(writer)
     before = datetime.now(UTC)
     secret = store.create()
     started = store.started(secret)

@@ -3,8 +3,8 @@ Profile page (ui-spec §4.10.1, api §5.8; FU-P3-112).
 
 Single-user mode: the principal is the Unix user the server runs as. Behind the session, as
 every route; it answers paths only, never a secret, a token or a file's contents, and
-`Cache-Control: no-store`. The session never expires on its own: it lives in memory until the
-server stops or it signs out (`auth.routes`), so `expires_at` is null.
+`Cache-Control: no-store`. `expires_at` is when the session ends if it is not used again: its idle
+time, or its absolute lifetime when that comes first (#375).
 """
 
 import os
@@ -34,12 +34,13 @@ def me(request: Request, response: Response) -> dict[str, Any]:
     secret = request.cookies.get(cookie_name(request.headers.get("host")), "")
     uid = os.getuid()
     started = state.sessions.started(secret)
+    expires = state.sessions.expires_at(secret)
     response.headers["Cache-Control"] = "no-store"
     return {
         "principal": {"user": _user(uid), "uid": uid},
         "session": {
             "started_at": None if started is None else started.isoformat(),
-            "expires_at": None,
+            "expires_at": None if expires is None else expires.isoformat(),
         },
         "paths": {
             "config_file": str(config_path()),

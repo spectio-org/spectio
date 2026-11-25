@@ -19,6 +19,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     MetaData,
     String,
     Table,
@@ -461,4 +462,16 @@ snakemake_jobs = Table(
     Column("launch_id", String, ForeignKey("launches.id"), primary_key=True),
     Column("jobid", Integer, primary_key=True),
     Column("task_id", String, ForeignKey("tasks.id"), nullable=False),
+)
+
+# Browser sessions (#375, auth §2): the SHA-256 of the session secret, never the secret, with when
+# the session started and when it was last seen. Keyed by their own id, so no created_by.
+sessions = Table(
+    "sessions",
+    metadata,
+    Column("id", String, primary_key=True),
+    Column("digest", LargeBinary, nullable=False),
+    Column("created_at", UTCDateTime(), nullable=False),
+    Column("last_seen_at", UTCDateTime(), nullable=False),
+    UniqueConstraint("digest", name="uq_sessions_digest"),
 )

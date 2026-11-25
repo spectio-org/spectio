@@ -21,6 +21,7 @@ else `/` stays this plain page and says why (`static`), behind the session too.
 import os
 import pwd
 import shutil
+from datetime import timedelta
 from importlib.metadata import version
 from pathlib import Path
 
@@ -161,7 +162,11 @@ def create_app(
     app.state.target_engine = targets.login_engine(settings)  # api §5.10; replaced in tests
     app.state.server_key = server_key or ServerKey.new()
     app.state.tickets = TicketStore()
-    app.state.sessions = SessionStore()
+    app.state.sessions = SessionStore(
+        writer,
+        timedelta(days=settings.auth.session_idle_days),
+        timedelta(days=settings.auth.session_max_days),
+    )
     problems.install(app)
     # Starlette runs the last middleware installed first: Host, cross-site, session, writes
     writes.install(app)  # last, the session-exempt writes included: Origin and JSON (§15.3 req. 7)

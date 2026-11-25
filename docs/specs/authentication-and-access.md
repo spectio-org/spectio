@@ -104,6 +104,8 @@ It never returns secrets.
 | **Run token** | the run's life + 24 h | as above | Issued to a provisioned run (§4) or an engine plugin; ingest only, for that run |
 | **Embed token** | ≤ 1 h | JWT bound to one resource and origin | `api-and-data-model.md` §9 |
 
+In 0.0.1 single-user mode the browser session is a row of the server's database, kept as a SHA-256 digest only, valid for 7 days idle and 30 days absolute by default (settings `session_idle_days` and `session_max_days`); a restart keeps it and `spectio logout --all` revokes every session (#375, 2026-11-25; owner: [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15.3, "Access"). The 12 h / 7 d row above stays the target of the multi-user modes.
+
 ### 3.1 Browser hardening
 
 *(decided — Thomas, 2026-10-27, inbox #23)*

@@ -11,22 +11,24 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import Connection, insert, select, update
+from sqlalchemy import Connection, delete, insert, select, update
 
 from spectio_server.ids import new_id
 from spectio_server.store.db import (
+    DB_FILE,
     MOUNTINFO,
     NETWORK_FS,
     UnsafeDatabase,
     _owner,
     _private_dir,
     check_sqlite_version,
+    checked_db_dir,
     default_db_dir,
     fs_type,
     open_db,
     preferred_db_dir,
 )
-from spectio_server.store.schema import environments, principals, projects, runners
+from spectio_server.store.schema import environments, principals, projects, runners, sessions
 from spectio_server.store.writer import Writer
 
 __all__ = [
@@ -36,6 +38,7 @@ __all__ = [
     "ensure_tenancy",
     "init_store",
     "preferred_db_dir",
+    "revoke_all_sessions",
 ]
 
 
@@ -49,6 +52,23 @@ def init_store(db_dir: Path, *, user: str, kind: str, config: dict[str, Any], ve
         return writer.submit(
             lambda conn: ensure_tenancy(conn, user, kind, config, version)
         ).result()
+    finally:
+        writer.close()
+        engine.dispose()
+
+
+def revoke_all_sessions(db_dir: Path) -> int:
+    """Delete every browser session of the database in `db_dir` (`spectio logout --all`): the
+    number deleted. It opens the database itself, so it works with the server running (its next
+    request finds no session) or stopped. A directory with no database holds no session and gets
+    none."""
+    db_dir = checked_db_dir(db_dir)
+    if not (db_dir / DB_FILE).exists():
+        return 0
+    engine, _ = open_db(db_dir)
+    writer = Writer(engine)
+    try:
+        return writer.submit(lambda conn: conn.execute(delete(sessions)).rowcount).result()
     finally:
         writer.close()
         engine.dispose()

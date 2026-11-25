@@ -1,4 +1,5 @@
-"""`spectio login --print-link` (P1 Task 12; dev-env §15.3 "Access", req. 8 and 9).
+"""`spectio login --print-link` (P1 Task 12; dev-env §15.3 "Access", req. 8 and 9), and
+`spectio logout --all` (#375).
 
 It reads the state file `<data dir>/server.json` and checks each value before use: the node
 (req. 8's pattern), the port (1024 to 65535), the database directory and the socket. On another
@@ -9,6 +10,10 @@ server.json when it names one (SLURM and shared hosts, inbox #109 rule 5): a soc
 user, `SOCKET` in the database directory the key is read from; else 127.0.0.1 and the port. It
 prints the link, or with `--json` one line: `SENTINEL`, a space, then `{"ticket": …}`, for
 `spectio open`.
+
+`logout --all` deletes every browser session of this node's database, the one server.json names
+(else the configured or default database directory), so it works with the server running or
+stopped; on a server of another node it names the node, as `login` does.
 """
 
 import http.client
@@ -195,4 +200,38 @@ def run_login(print_link: bool, as_json: bool) -> int:
         typer.echo(f"{SENTINEL} {json.dumps({'ticket': url.partition('#')[2]})}")
     else:
         typer.echo(url)
+    return 0
+
+
+def run_logout(all_sessions: bool) -> int:
+    if not all_sessions:
+        typer.echo("spectio logout: 0.0.1 has --all only", err=True)
+        return 2
+    try:
+        settings = Settings()
+        import spectio_server.bootstrap as server  # the one import of the server (architecture §6)
+    except ImportError:
+        typer.echo(
+            "spectio logout: the server package is missing: install spectio[server]", err=True
+        )
+        return 2
+    except ValueError as exc:  # a bad spectio.toml or SPECTIO_* value
+        typer.echo(f"spectio logout: {exc}", err=True)
+        return 2
+    db_dir: Path | None = None
+    try:
+        node, _, db_dir, _ = _checked(_record(settings))
+        if node != hostname():
+            raise OtherNode(f"The server runs on {node}: run `ssh {node} spectio logout --all`.")
+    except OtherNode as exc:
+        typer.echo(f"spectio logout: {exc}", err=True)
+        return 2
+    except Refused:  # no server runs: the database is where the next start finds it
+        db_dir = None
+    try:
+        count = server.revoke_all_sessions(db_dir or settings.db_dir or server.preferred_db_dir())
+    except (server.UnsafeDatabase, OSError) as exc:
+        typer.echo(f"spectio logout: {exc}", err=True)
+        return 2
+    typer.echo(f"Signed out {count} session{'' if count == 1 else 's'}.")
     return 0
