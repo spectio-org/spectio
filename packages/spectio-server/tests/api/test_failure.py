@@ -551,6 +551,18 @@ def test_nf_log_tail_falls_back_to_err(settings: Settings, writer: Writer) -> No
     assert failure["scheduler"]["accounting"] == "unavailable"  # a local server: no sacct
 
 
+def test_nf_log_tail_names_the_ps_fix(settings: Settings, writer: Writer) -> None:
+    """A Nextflow task that failed on the wrapper's `command -v ps` (metrics on, a container
+    without procps): the tail names the way out — the [engines] nextflow_task_metrics setting,
+    or procps in the image."""
+    client = client_for(settings, writer)
+    run = Run(settings, writer)
+    workdir = run.nf_task(0, 1, "FAILED", "TERMINATE")
+    write_private(workdir / ".command.err", failure.PS_MISSING + "\n")
+    (found,) = detail(client)["failures"]
+    assert found["log_tail"] == failure.PS_MISSING + failure.PS_HINT
+
+
 def test_nf_log_tail_confined(settings: Settings, writer: Writer, tmp_path: Path) -> None:
     """The tail goes through the job-file reader: a `.command.log` that links out is not read."""
     client = client_for(settings, writer)

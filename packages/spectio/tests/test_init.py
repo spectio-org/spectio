@@ -122,6 +122,7 @@ def test_init_defaults_unattended(home: Path, fakebin: Path) -> None:
     assert config["host"] == socket.gethostname()
     assert isinstance(config["port"], int)
     assert config["engines"]["nxf_opts"] == "-Xmx2g"
+    assert config["engines"]["nextflow_task_metrics"] is True
     assert config["runner"] == {"head_watch_s": 5.0, "spool_s": 2.0}
     assert "slurm" in config  # partition and account unset: an empty table to fill in
     for path in (data_dir, db_dir, runs_root):  # private to the user (SEC-P3T3-09)
@@ -211,10 +212,12 @@ def test_settings_layers(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SPECTIO_PORT", "9001")
     monkeypatch.setenv("SPECTIO_SLURM_ACCOUNT", "env")
     monkeypatch.setenv("SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE", "--keep-going --cores 'a b'")
+    monkeypatch.setenv("SPECTIO_ENGINES_NEXTFLOW_TASK_METRICS", "false")
     settings = Settings()
     assert settings.port == 9001
     assert (settings.slurm.partition, settings.slurm.account) == ("toml", "env")
     assert settings.engines.extra_args == {"snakemake": ["--keep-going", "--cores", "a b"]}
+    assert settings.engines.nextflow_task_metrics is False
     flagged = Settings(port=9002, slurm={"partition": "flag"})
     assert flagged.port == 9002
     assert (flagged.slurm.partition, flagged.slurm.account) == ("flag", "env")
