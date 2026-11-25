@@ -2348,9 +2348,8 @@
   flex: none;
 }
 /* The name takes the free width and the pin a fixed slot at the column's right; a name wraps to
-   two lines at most, the full name in a tooltip on hover and focus. The Workflow cell was unclamped
-   for CR-P3UI08-01; the clamp is back by #353 (Thomas, 2026-11-25), two lines like the name, with the
-   full text in its tooltip on hover and focus. */
+   two lines at most, the full name in a tooltip on hover and focus. The workflow path is not
+   focusable, so it wraps in full, unclamped (CR-P3UI08-01). */
 .sp-grid-runs .sp-run-cell {
   align-items: flex-start;
 }
@@ -2362,21 +2361,8 @@
   flex: none;
   margin-top: -2px;
 }
-.sp-grid-runs .sp-pipeline {
-  max-width: 100%;
-}
 .sp-grid-runs .sp-pipeline > span:last-child {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
   overflow-wrap: anywhere;
-}
-/* The Workflow cell is two lines at most, the full text in its tooltip on hover and focus. */
-.sp-grid-runs .sp-what-ran {
-  max-height: 2.9em;
-  overflow: hidden;
 }
 .sp-run-name .sp-run-link {
   display: -webkit-box;

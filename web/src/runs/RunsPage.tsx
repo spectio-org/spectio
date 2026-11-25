@@ -14,7 +14,7 @@ import { PageHead } from "../shell/PageHead";
 import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { DeleteRuns } from "./DeleteRuns";
 import { LazyGrid } from "./LazyGrid";
-import { NameTip, Pipeline, Progress, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
+import { Pipeline, Progress, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
 import { ACTIVE, duration, isTerminal, plural, shortId, tone, words } from "./stateWord";
 
 /** A run's start as ui-spec §12.8 dates it ("2 h ago", then "2026-10-28 07:01"). */
@@ -271,12 +271,10 @@ const COLUMNS: ColDef<Run>[] = [
     colId: "workflow",
     flex: 1.4,
     cellRenderer: ({ data: run }: { data: Run }) => (
-      <NameTip label={whatRan(run)}>
-        <span className="sp-what-ran" tabIndex={0}>
-          <Pipeline run={run} />
-          <TargetTail target={run.target} />
-        </span>
-      </NameTip>
+      <span className="sp-what-ran">
+        <Pipeline run={run} />
+        <TargetTail target={run.target} />
+      </span>
     ),
   },
   // numbers and durations right-aligned, in tabular figures; words and dates left (ui-spec §12.8)
@@ -299,16 +297,6 @@ const COLUMNS: ColDef<Run>[] = [
     valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : ""),
   },
 ];
-
-/** The Workflow cell's full text, for its tooltip: the pipeline, its version and the target. */
-const whatRan = (run: Run): string =>
-  [run.workflow.name ?? run.workflow.location, run.workflow.version, run.target && run.target.kind !== "module" ? `→ ${run.target.name}` : null]
-    .filter(Boolean)
-    .join(" ");
-
-/** One row height, whatever the names (#353): two lines of a run name or a workflow, then the short
- * id, plus the cell padding. */
-const ROW_HEIGHT = 92;
 
 const SORTABLE = new Set(["name", "state", "started_at", "duration"]);
 
@@ -669,8 +657,7 @@ export function RunsPage() {
           className="sp-grid-runs"
           rowData={runs}
           columnDefs={columns}
-          defaultColDef={{ sortable: false, wrapText: true, suppressHeaderMenuButton: true }}
-          rowHeight={ROW_HEIGHT}
+          defaultColDef={{ sortable: false, autoHeight: true, wrapText: true, suppressHeaderMenuButton: true }}
           getRowId={({ data }) => data.id}
           getRowStyle={({ data }) => (data ? { "--tone": `var(--sp-state-${tone(data.state)})` } : undefined)}
           domLayout="autoHeight"
