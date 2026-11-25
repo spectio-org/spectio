@@ -94,14 +94,14 @@ bash dev/minikube/up.sh down      # minikube delete -p spectio: the cluster, its
   No Ingress, no `NodePort`, no TLS.
 - One replica, SQLite, one volume. Deleting the Deployment's pod is safe (the volumes stay); deleting the PVCs or
   the minikube profile deletes users, runs and results.
-- The image is built for the architecture of the Docker VM (arm64 on Apple silicon). Snakemake's lock file
-  `dev/snakemake.lock.txt` is hash-locked for linux x86_64 only, so on arm64 the same pinned versions are resolved
-  without hashes (`Dockerfile`, target `engines`). The Debian packages (Java, `procps`, `tmux`) are not pinned.
+- The image is built for the architecture of the Docker VM (arm64 on Apple silicon). Snakemake
+  is hash-locked per architecture (`dev/snakemake.lock.txt` for x86_64, `dev/snakemake.lock.arm64.txt` for arm64,
+  the same versions); the `Dockerfile` picks one by `TARGETARCH` and refuses any other. The Debian packages (Java,
+  `procps`, `tmux`) are not pinned.
 - The image is modelled on §7.4, dev only: §7.4 builds it from the *published* wheel; this one is built from the
   checkout, tagged `spectio:dev`, and never pushed. Python packages are installed with `--require-hashes`
-  (`uv.lock` for Spectio's dependencies, `dev/snakemake.lock.txt` or `dev/snakemake.lock.arm64.txt` for Snakemake,
-  whose transitive versions differ a little between the two); Debian packages and the `trixie-slim` snapshot by
-  digest are the only unpinned parts.
+  (`uv.lock` for Spectio's dependencies, the lock of the architecture for Snakemake). The base image is pinned by
+  digest; the Debian packages installed on it are the only unpinned part.
 - **Pipelines run as the server's uid (10001).** A pipeline's tasks can therefore read what the server keeps on
   its volumes: the server key, the database, the session records and every run. Treat the pipelines you launch
   here as trusted. There is no per-run isolation until the Kubernetes runner exists.
