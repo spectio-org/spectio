@@ -212,3 +212,20 @@ test("a copy of a module run sends no extra config file (api §5.10), and the pr
   expect(sent).toMatchObject({ target: { kind: "module", version: "0.0.0-6d1763b" }, profiles: ["docker"] });
   expect(sent).not.toHaveProperty("config_file");
 });
+
+test("#351: a copy keeps the run's entry script, and sends it again", async () => {
+  const posted: Record<string, unknown>[] = [];
+  serve({
+    [`${URL_}:launch-template`]: { ...TEMPLATE, workflow: { ...TEMPLATE.workflow, main_script: "main_cellpose.nf" } },
+    [URL_]: { ...DETAIL, ...run({ state: "failed", name: "wgs-cohort-12" }) },
+    "/api/v1/workflows:inspect": { ...INSPECTED, engine_files: [], main_scripts: ["main_cellpose.nf", "main_other.nf"] },
+    "/api/v1/runs?": { items: [], next: null },
+    "/api/v1/runs": (_url: URL, init?: RequestInit) => (posted.push(JSON.parse(String(init?.body))), json(201, { id: "run_2", name: "x", state: "queued" })),
+  });
+  app(`/launch?from=${ID}`);
+  const entry = await screen.findByRole("combobox", { name: /^Entry script/ });
+  expect(entry).toHaveValue("main_cellpose.nf");
+  await userEvent.click(screen.getAllByRole("button", { name: "Launch" }).at(-1)!);
+  await waitFor(() => expect(posted).toHaveLength(1));
+  expect(posted[0]).toMatchObject({ workflow: { main_script: "main_cellpose.nf" } });
+});

@@ -169,6 +169,7 @@ def insert_run(
             target=null() if m.target is None else m.target.model_dump(exclude_none=True),
             default_resources=column(DefaultResources, m.default_resources),
             config_file=column(KeptConfig, m.config_file),
+            main_script=m.workflow.main_script,
             **lineage,
             **{**mine, "created_at": m.created_at},
         )

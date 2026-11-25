@@ -227,6 +227,7 @@ def test_run_versions_and_origin(
         "location": "/pipelines/nextflow",
         "name": "lab/nextflow",
         "version": "1.2.0",  # the manifest version read at launch
+        "main_script": None,  # main.nf (#351)
     }
     add_run(writer, settings, rid(9), "smk", "queued", engine="snakemake")
     smk = authed_client.get(f"{RUNS}/{rid(9)}").json()["workflow"]

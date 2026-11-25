@@ -47,7 +47,7 @@ import { usePhone } from "../shell/layout";
 import { CatalogPicker, SaveToCatalog } from "./CatalogPicker";
 import { EngineButtons } from "./EngineButtons";
 import { EnvironmentRow } from "./EnvironmentRow";
-import { guessEngine } from "./guessEngine";
+import { entryFiles, guessEngine, hasEntry } from "./guessEngine";
 import { ConfigFileRow, type Draft, NO_DRAFT, RESOURCE_LABELS, ResourcesRow, draftFrom, keptAs, readResources, summaryLine } from "./RunExtras";
 import { TryPipelines } from "./TryPipelines";
 import { REGISTRY_NAME, TRY_MODULES, moduleInspected } from "./target";
@@ -109,6 +109,7 @@ function targetId(to: string): string {
   if (to === "rule") return "launch-rule";
   if (to === "version") return "launch-version";
   if (to === "config_file") return "launch-config-file";
+  if (to === "main_script") return "launch-main-script";
   if (to.startsWith("resources.")) return { "resources.cpus": "res-cpus", "resources.mem": "res-mem" }[to] ?? "res-time-h";
   return paramId(to.slice("params.".length));
 }
@@ -120,7 +121,7 @@ function formKey(field: string, keys: string[]): string {
   const bare = field.replace(/^workflow\./, "");
   if (bare === "target.version") return "version";
   if (bare === "target.name" || bare === "rule") return "rule";
-  if (["location", "revision", "engine", "name", "environment", "config_file"].includes(bare)) return bare;
+  if (["location", "revision", "engine", "main_script", "name", "environment", "config_file"].includes(bare)) return bare;
   // api §5.7: default_resources.cpus, .mem_mib, .time_min, or the whole (a Snakemake profile)
   if (bare.startsWith("default_resources")) {
     return { "default_resources.cpus": "resources.cpus", "default_resources.mem_mib": "resources.mem", "default_resources.time_min": "resources.time" }[bare] ?? "resources";
@@ -211,6 +212,8 @@ export function LaunchPage({
   const graphOn = useFeatures().includes(GRAPH_VIEW);
   const [loading, setLoading] = useState(false);
   const [engine, setEngine] = useState<Engine | null>(null);
+  // The Nextflow entry script chosen (#351); until then main.nf when the pipeline has it
+  const [mainScript, setMainScript] = useState<string | null>(null);
   // Profile as the user set it; until then, the chosen environment's default profile (§4.8.1)
   const [picked, setPicked] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -309,6 +312,13 @@ export function LaunchPage({
   const moduleName = oneModule && REGISTRY_NAME.test(location.trim());
   const extras = { engine, profile, env: chosen };
   const res = readResources(resources, extras);
+  // The Nextflow entry script (#351): offered when the pipeline has another one than main.nf, or
+  // none is main.nf; required then, never guessed. main.nf itself is not sent.
+  const scripts = loaded?.main_scripts ?? [];
+  const hasMain = !!loaded?.engine_files.includes("main.nf");
+  const entryChoice = !!loaded && !targeting && engine === "nextflow" && scripts.length > 0 && (scripts.length > 1 || !hasMain);
+  const entryScript = mainScript ?? (hasMain ? "main.nf" : "");
+  const sentScript = entryChoice && entryScript && entryScript !== "main.nf" ? entryScript : null;
 
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
@@ -355,6 +365,7 @@ export function LaunchPage({
     setLoading(false);
     setLoaded(null);
     setEngine(null);
+    setMainScript(null);
     setErrors({});
     setLaunchedWarnings([]);
     setEntryName(null); // the picker goes back to None, and the entry's prefill is forgotten
@@ -480,6 +491,7 @@ export function LaunchPage({
         const params = copy.template.params;
         const { values: filled, left } = shape.length ? valuesFrom(shape, params) : { values: {}, left: [] };
         setEngine(was);
+        setMainScript(copy.template.workflow.main_script ?? null); // the copied run's entry script (#351)
         setPicked(copy.template.profiles[0] ?? ""); // the copied run's profile wins
         setEnvName(copy.template.environment);
         setValues(filled);
@@ -491,10 +503,11 @@ export function LaunchPage({
         // one step's engine is its kind's; else the entry's engine and params file (§4.7.1); every
         // value the form does not place is listed. With the effective defaults (api §5.12) the
         // params file's values are defaults the form shows, not values it sends.
-        const was = wantSingle ? KINDS[want].engine : (from?.engine ?? guessEngine(found.engine_files));
+        const was = wantSingle ? KINDS[want].engine : (from?.engine ?? guessEngine(entryFiles(found)));
         const shape = schemaFields(found.schema, [], was === "snakemake").flatMap((s) => s.fields);
         const params = found.params_file?.values ?? {};
         setEngine(was);
+        setMainScript(null);
         setPicked(null);
         setValues(shape.length && found.defaults === undefined ? valuesFrom(shape, params).values : {});
         setRows(shape.length ? [] : Object.entries(params).map(([key, v]) => ({ key, value: typeof v === "string" ? v : JSON.stringify(v) })));
@@ -600,13 +613,13 @@ export function LaunchPage({
   function reasons(): Reason[] {
     if (loading) return [{ text: "Wait for the pipeline to load", to: "location" }];
     if (!loaded) return [{ text: "Load a pipeline first", to: "location" }];
-    if (loaded.engine_files.length === 0) {
+    if (entryFiles(loaded).length === 0) {
       return [{ text: "No main.nf or Snakefile in this directory: check the path", to: "location" }];
     }
     const found: Reason[] = [];
     if (!engine) found.push({ text: "Choose the engine", to: "engine" });
     if (!chosen && !envsFailed) found.push({ text: "Choose where it runs", to: "environment" });
-    if (engine && !ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f))) {
+    if (engine && !hasEntry(engine, entryFiles(loaded))) {
       const other = engineName(engine === "nextflow" ? "snakemake" : "nextflow");
       const files = ENGINE_FILES[engine].join(" or ");
       // in One step the engine follows the kind of step, so there is no engine button to press
@@ -616,6 +629,7 @@ export function LaunchPage({
     for (const [to, wrong] of Object.entries(res.errors)) {
       found.push({ text: `Fix ${RESOURCE_LABELS[to as keyof typeof RESOURCE_LABELS]}: ${wrong.brief}`, to });
     }
+    if (entryChoice && !entryScript) found.push({ text: "Choose the entry script", to: "main_script" });
     if (configRefused) found.push({ text: `Fix Extra config file: ${configRefused}`, to: "config_file" });
     for (const field of fields) {
       const wrong = checkValue(field, defaultsMode ? shownValue(field, own(values, field.key)) : own(values, field.key));
@@ -669,7 +683,7 @@ export function LaunchPage({
     setConfigDown(null);
     try {
       const run = await launch({
-        workflow: { location: loaded.location, revision: loaded.revision, engine },
+        workflow: { location: loaded.location, revision: loaded.revision, engine, ...(sentScript ? { main_script: sentScript } : {}) },
         ...(name.trim() ? { name: name.trim() } : {}),
         profiles: profile ? [profile] : [],
         ...(chosen ? { environment: chosen.name } : {}),
@@ -786,19 +800,20 @@ export function LaunchPage({
     const how = fromProfile ? "concurrency from the profile" : chosen.local?.cpus && `at most ${chosen.local.cpus} CPUs`;
     return [`run on ${server?.node ?? "the server"} by ${by}`, how].filter(Boolean).join(" · ");
   };
-  const guessed = loaded && guessEngine(loaded.engine_files);
+  const found = loaded ? entryFiles(loaded) : [];
+  const guessed = loaded && guessEngine(found);
   const entryEngine = (fromEntry ?? entry)?.engine;
-  const engineNote = engine && engine === entryEngine && (!loaded || ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f)))
+  const engineNote = engine && engine === entryEngine && (!loaded || hasEntry(engine, found))
     ? `${engineName(engine)}, from the catalog entry`
     : !loaded
     ? "Load the pipeline to guess the engine"
-    : loaded.engine_files.length === 0
+    : found.length === 0
       ? "No main.nf or Snakefile found"
       : !guessed
-        ? `No guess: ${loaded.engine_files.join(" and ")} found · choose the engine`
-        : engine && !ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f))
+        ? `No guess: ${found.join(" and ")} found · choose the engine`
+        : engine && !hasEntry(engine, found)
           ? `${ENGINE_FILES[engine].join(" or ")} not found: Launch will refuse. Guessed: ${engineName(guessed)}`
-          : `Guessed from ${loaded.engine_files.join(", ")} · change it if the guess is wrong`;
+          : `Guessed from ${found.join(", ")} · change it if the guess is wrong`;
 
   return (
     <Stack className="launch-page" gap="xl">
@@ -882,7 +897,7 @@ export function LaunchPage({
             icon="route"
             title={targeting ? (kind === "module" ? "Module" : "Rule") : "Pipeline"}
             card
-            reveal={goTo === "location" || goTo === "engine" || goTo === "rule"}
+            reveal={goTo === "location" || goTo === "engine" || goTo === "main_script" || goTo === "rule"}
           >
             {targeting && (
               <div className="launch-seg" role="radiogroup" aria-label="Kind of step">
@@ -1023,7 +1038,7 @@ export function LaunchPage({
                   ) : (
                     <Text size="sm" c="dimmed">
                       {loaded.revision ? `A Git repository at ${loaded.revision}` : "A directory on this machine"}
-                      {loaded.engine_files.length ? ` · ${loaded.engine_files.join(", ")} found` : ""}
+                      {entryFiles(loaded).length ? ` · ${entryFiles(loaded).join(", ")} found` : ""}
                       {` · ${SOURCES[loaded.schema_source]}`}
                     </Text>
                   )}
@@ -1125,6 +1140,25 @@ export function LaunchPage({
                   onChange={(e) => setEngine(e)}
                   note={engineNote}
                   error={errors.engine}
+                />
+              )}
+              {entryChoice && (
+                <NativeSelect
+                  id="launch-main-script"
+                  label="Entry script"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
+                  required={!hasMain}
+                  withAsterisk={!hasMain}
+                  value={entryScript}
+                  onChange={(e) => setMainScript(e.currentTarget.value || null)}
+                  data={[
+                    ...(hasMain ? [] : [{ value: "", label: "(choose one)" }]),
+                    ...scripts,
+                    // a copied entry script this pipeline no longer lists stays visible, since Launch sends it
+                    ...(entryScript && !scripts.includes(entryScript) ? [{ value: entryScript, label: `${entryScript} (not found)` }] : []),
+                  ]}
+                  description={`The Nextflow script the run starts from · passed as -main-script${hasMain ? "; main.nf when left as is" : ""}`}
+                  error={errors.main_script}
                 />
               )}
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -1292,7 +1326,7 @@ export function LaunchPage({
           {loaded && graphOn && (
             <FoldSection id="launch-map" icon="route" title="Workflow map" defaultOpen={false}>
               <Suspense fallback={<p className="sp-muted">Loading the map…</p>}>
-                <LaunchMap location={loaded.location} revision={loaded.revision} name={loaded.name} />
+                <LaunchMap location={loaded.location} revision={loaded.revision} name={loaded.name} mainScript={sentScript} />
               </Suspense>
             </FoldSection>
           )}

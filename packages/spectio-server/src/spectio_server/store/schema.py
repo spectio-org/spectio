@@ -257,6 +257,8 @@ runs = Table(
     # null when the run has none.
     Column("default_resources", Json),
     Column("config_file", Json),
+    # The Nextflow entry script other than `main.nf` (#351); null: `main.nf`, or Snakemake
+    Column("main_script", String),
     _check("runs", "state", RUN_STATES),
     _check("runs", "origin", RUN_ORIGINS, nullable=True),
     Index("ix_runs_project_created", "project_id", "created_at"),

@@ -24,6 +24,9 @@ export interface Inspected {
   revision: string | null;
   engine: Engine | null;
   engine_files: string[];
+  /** The Nextflow entry scripts at the pipeline's root (#351): `main.nf` first, then each `*.nf`
+   * with an unnamed `workflow {` block; absent from a server before #351. */
+  main_scripts?: string[];
   name: string;
   version: string | null;
   engine_version: string | null;
@@ -54,7 +57,8 @@ export interface ParamsFile {
 
 /** The body of `POST /api/v1/runs` (api §5 note of 2026-10-30). */
 export interface LaunchBody {
-  workflow: { location: string; revision: string | null; engine: Engine };
+  /** `main_script`: a Nextflow entry script other than `main.nf` (#351). */
+  workflow: { location: string; revision: string | null; engine: Engine; main_script?: string };
   name?: string;
   profiles: string[];
   /** An environment's name (api §5.4); absent: the server's default. */
@@ -200,6 +204,8 @@ export interface Run {
     location: string;
     name: string | null;
     version: string | null;
+    /** A Nextflow entry script other than `main.nf` (#351). */
+    main_script?: string | null;
   };
   profiles: string[];
   /** One module or one rule; null for the whole pipeline (api §5.10). */
@@ -329,7 +335,8 @@ export interface CodeLoading {
 /** `GET /runs/{id}:launch-template` (schema `LaunchTemplate`): a `POST /runs` body prefilled from
  * a run, for Copy to a new launch (P1 Task 30). */
 export interface LaunchTemplate {
-  workflow: { location: string; revision: string | null; engine: Engine };
+  /** `main_script`: the run's Nextflow entry script, kept by the copy (#351). */
+  workflow: { location: string; revision: string | null; engine: Engine; main_script?: string | null };
   profiles: string[];
   params: { [key: string]: Json };
   /** The top-level parameters that differ from the pipeline's schema defaults. */

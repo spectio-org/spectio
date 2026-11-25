@@ -27,6 +27,8 @@ from spectio_sdk.targets import RunTarget
 
 RUN_ID = re.compile(r"run_[0-7][0-9A-HJKMNP-TV-Z]{25}")  # a ULID with its prefix (api §7)
 MAX_SMALL_FILE = 1048576  # a manifest, PID, exit or marker file is never larger
+# A Nextflow entry script other than `main.nf` (#351): a bare file name at the pipeline's root
+MAIN_SCRIPT = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*\.nf")
 
 # A runs directory is on a nearly full disk when its file system has less than 10 GiB free, or
 # is 90% used with less than 1 TiB free (FU-P3-74). The percentage catches a large shared file
@@ -58,6 +60,8 @@ class Workflow(BaseModel):
     location: str
     revision: str | None = None
     engine: Literal["nextflow", "snakemake"]
+    # The Nextflow entry script, passed as `-main-script` (#351); None: Nextflow's `main.nf`
+    main_script: str | None = Field(None, pattern=rf"^{MAIN_SCRIPT.pattern}$")
 
 
 class RunManifest(BaseModel):

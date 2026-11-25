@@ -1001,3 +1001,43 @@ def test_launch_on_a_nearly_full_disk_warns_once_and_starts(
         "scratch or group file system"
     ]
     (ref.launch_dir / "release").touch()
+
+
+def test_rundir_manifest_keeps_the_main_script(runs_root: Path) -> None:
+    """#351: a run's Nextflow entry script; a run.json written before it reads as None."""
+    workflow = {"location": "/p/a", "engine": "nextflow", "main_script": "main_cellpose.nf"}
+    manifest = RunManifest(
+        run_id=RUN_A, name="a", workflow=workflow, params={}, profiles=[], created_at=NOW
+    )
+    write_run_manifest(runs_root / RUN_A, manifest)
+    assert read_run_manifest(runs_root / RUN_A).workflow.main_script == "main_cellpose.nf"
+    old = RunManifest.model_validate_json(
+        manifest.model_dump_json(exclude={"workflow": {"main_script"}})
+    )
+    assert old.workflow.main_script is None
+    for bad in ("../x.nf", "sub/x.nf", "-x.nf", "x.config"):
+        with pytest.raises(ValueError):
+            RunManifest(**{**manifest.model_dump(), "workflow": {**workflow, "main_script": bad}})
+
+
+def test_loop_hands_the_main_script_to_the_launcher(
+    runs_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#351: the launch command's `main_script` reaches the spec; a bad name is refused."""
+    monkeypatch.setattr(loop_mod, "check_engine", lambda *a: None)
+    engines = EngineOpts(nextflow_cmd="nextflow-x")
+    settings = Settings(runs_root=runs_root, executor="local", engines=engines)
+    for given, expected in (("main_cellpose.nf", "main_cellpose.nf"), (None, None)):
+        sink, recorder = FakeSink(), Recorder()
+        loop = RunnerLoop(sink, recorder, settings, tick_s=0.05)
+        ref = sink.launch(runs_root, RUN_A)
+        command = sink.commands[0]
+        extra = {} if given is None else {"main_script": given}
+        sink.commands = [replace(command, payload={**command.payload, **extra})]
+        make_run_dirs(runs_root, RUN_A)
+        loop.tick()
+        (spec,) = recorder.specs
+        assert (spec.run_id, spec.main_script) == (ref.run_id, expected)
+        shutil.rmtree(runs_root / RUN_A)
+    with pytest.raises(ValueError):
+        loop_mod.LaunchPayload.model_validate({"location": "/p", "main_script": "../x.nf"})

@@ -126,9 +126,10 @@ export function getRunGraph(id: string, signal?: AbortSignal): Promise<GraphDocu
   return call(`${run(id)}/graph`, signal);
 }
 
-export function getWorkflowGraph(location: string, revision: string | null, signal?: AbortSignal): Promise<GraphDocument> {
+export function getWorkflowGraph(location: string, revision: string | null, signal?: AbortSignal, mainScript: string | null = null): Promise<GraphDocument> {
   const query = new URLSearchParams({ location });
   if (revision) query.set("revision", revision);
+  if (mainScript) query.set("main_script", mainScript); // #351
   return call(`/workflows:graph?${query}`, signal);
 }
 

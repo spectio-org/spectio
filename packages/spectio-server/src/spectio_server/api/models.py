@@ -43,6 +43,7 @@ class WorkflowRef(BaseModel):
     location: str
     name: str | None
     version: str | None
+    main_script: str | None  # a Nextflow entry script other than `main.nf` (#351)
 
 
 class Head(BaseModel):
@@ -309,6 +310,7 @@ class TemplateWorkflow(BaseModel):
     location: str
     revision: str | None
     engine: Literal["nextflow", "snakemake"]
+    main_script: str | None  # #351
 
 
 class CodeLoading(BaseModel):

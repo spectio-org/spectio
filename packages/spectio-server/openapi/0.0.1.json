@@ -4739,6 +4739,17 @@
             "title": "Location",
             "type": "string"
           },
+          "main_script": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Script"
+          },
           "revision": {
             "anyOf": [
               {
@@ -4754,7 +4765,8 @@
         "required": [
           "location",
           "revision",
-          "engine"
+          "engine",
+          "main_script"
         ],
         "title": "TemplateWorkflow",
         "type": "object"
@@ -4883,6 +4895,18 @@
             "title": "Location",
             "type": "string"
           },
+          "main_script": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Script"
+          },
           "revision": {
             "anyOf": [
               {
@@ -4930,6 +4954,17 @@
             "title": "Location",
             "type": "string"
           },
+          "main_script": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Script"
+          },
           "name": {
             "anyOf": [
               {
@@ -4958,7 +4993,8 @@
           "engine_version",
           "location",
           "name",
-          "version"
+          "version",
+          "main_script"
         ],
         "title": "WorkflowRef",
         "type": "object"
@@ -7174,6 +7210,7 @@
     },
     "/api/v1/workflows:graph": {
       "get": {
+        "description": "`main_script`: the Nextflow entry script the form chose (#351), else `main.nf`.",
         "operationId": "workflow_graph_api_v1_workflows_graph_get",
         "parameters": [
           {
@@ -7199,6 +7236,22 @@
                 }
               ],
               "title": "Revision"
+            }
+          },
+          {
+            "in": "query",
+            "name": "main_script",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Main Script"
             }
           }
         ],

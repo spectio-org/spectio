@@ -134,6 +134,7 @@ def command(conn: Connection, row: Row[Any], settings: Settings) -> dict[str, An
         resume_of=resume,
         default_resources=payload.default_resources,
         config_file=extra_file(payload),  # its name only: the bytes are cleared once answered
+        main_script=payload.main_script,  # #351
         data_dir=settings.data_dir,  # the software prefixes are the server's (inbox #161)
     )
     try:

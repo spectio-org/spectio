@@ -36,9 +36,11 @@ from spectio_server.api.workflows import (
     MAX_DEPTH,
     Found,
     Resolved,
+    check_main_script,
     depth,
     entry_files,
     inspect_dir,
+    main_scripts,
     refuse_control,
     resolve,
     schema_defaults,
@@ -62,6 +64,7 @@ class WorkflowIn(BaseModel):
     location: str
     revision: str | None = None
     engine: Literal["nextflow", "snakemake"]
+    main_script: str | None = Field(None, max_length=255)  # a Nextflow entry script (#351)
 
 
 class LaunchIn(BaseModel):
@@ -158,9 +161,12 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     except Invalid as exc:
         raise exc.under("workflow") from None
     files = ENTRY_FILES[engine]
-    if not set(files) & set(entry_files(resolved.directory)):
+    present = entry_files(resolved.directory)
+    scripts = main_scripts(resolved.directory) if engine == "nextflow" else []
+    if not set(files) & set(present) and not scripts:
         names = " or ".join(files)
         raise Invalid("workflow.engine", f"no {names} in this pipeline: is it a {engine} one?")
+    main_script = _main_script(body.workflow, resolved.directory, "main.nf" in present, scripts)
     try:
         found = inspect_dir(resolved.directory, resolved.default_name)
     except Invalid as exc:
@@ -192,7 +198,12 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         body,
         request,
         response,
-        Workflow(location=resolved.location, revision=resolved.revision, engine=engine),
+        Workflow(
+            location=resolved.location,
+            revision=resolved.revision,
+            engine=engine,
+            main_script=main_script,
+        ),
         str(resolved.directory),
         resolved.source,
         found,
@@ -201,6 +212,22 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         (resources, config_file, config_bytes),
         param_warnings,
     )
+
+
+def _main_script(
+    workflow: WorkflowIn, directory: Path, has_main: bool, scripts: list[str]
+) -> str | None:
+    """The Nextflow entry script (#351): a bare `*.nf` name, a regular file at the pipeline's
+    root reached through no symlink. Without `main.nf` one must be chosen: never guessed."""
+    given = workflow.main_script
+    if given is None:
+        if workflow.engine == "nextflow" and not has_main:
+            names = ", ".join(scripts)
+            raise Invalid("workflow.main_script", f"no main.nf: choose the main script ({names})")
+        return None
+    if workflow.engine != "nextflow":
+        raise Invalid("workflow.main_script", "only a Nextflow pipeline takes a main script")
+    return check_main_script(directory, given, "workflow.main_script")
 
 
 def _launch_module(
@@ -214,6 +241,8 @@ def _launch_module(
         raise Invalid("workflow.revision", "a module has a version, not a revision")
     if body.config_file is not None:  # its roots are a pipeline's (api §5.7, §5.10)
         raise Invalid("config_file", "a module run takes no extra config file")
+    if body.workflow.main_script is not None:  # #351: a pipeline's entry script
+        raise Invalid("workflow.main_script", "a module run takes no main script")
     state = request.app.state
     module = launch_module(
         state.settings, state.target_engine, state.files, body.workflow.location, given, body.params
@@ -270,6 +299,8 @@ def _create(
         "environment": environment,
         **extras_payload(resources, config_bytes),
     }
+    if workflow.main_script is not None:  # #351
+        payload["main_script"] = workflow.main_script
     if target is not None:
         payload["target"] = target.model_dump(exclude_none=True)
     writer: Writer = request.app.state.writer

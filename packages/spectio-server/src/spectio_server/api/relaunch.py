@@ -203,7 +203,12 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
     manifest = RunManifest(
         run_id=child_id,
         name=f"{parent.workflow_name or default_name}-{child_id[-6:]}",
-        workflow=Workflow(location=parent.location, revision=parent.revision, engine=parent.engine),
+        workflow=Workflow(
+            location=parent.location,
+            revision=parent.revision,
+            engine=parent.engine,
+            main_script=parent.main_script,  # Resume keeps the entry script (#351)
+        ),
         params=params,
         profiles=profiles,
         created_at=now,
@@ -227,6 +232,8 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         "environment": environment,
         **extras_payload(resources, config_bytes),
     }
+    if parent.main_script is not None:
+        payload["main_script"] = parent.main_script
     if manifest.target is not None:  # Resume keeps the target (api §5.10 Relaunch)
         payload["target"] = manifest.target.model_dump(exclude_none=True)
     paths = run_paths(settings.runs_root, child_id)
@@ -401,6 +408,7 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
             "location": row.location,
             "revision": None if module else row.revision,
             "engine": row.engine,
+            "main_script": row.main_script,  # #351
         },
         "profiles": _profiles(settings.runs_root, run_id, payload) or [],
         "params": params,

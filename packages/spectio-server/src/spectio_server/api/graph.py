@@ -40,7 +40,7 @@ from spectio_server.api.runs_read import (
     run_row,
 )
 from spectio_server.api.taskfiles import HEADERS, in_pool, load_attempt
-from spectio_server.api.workflows import inspect_dir, resolve
+from spectio_server.api.workflows import check_main_script, inspect_dir, resolve
 from spectio_server.failure import dir_run_id
 from spectio_server.files import results as files_results
 from spectio_server.files.confine import (
@@ -573,24 +573,35 @@ def _in_pool(request: Request, build: Callable[[], dict[str, Any]]) -> dict[str,
 
 
 @router.get("/workflows:graph", response_model=models.GraphDocument)
-def workflow_graph(request: Request, location: str, revision: str | None = None) -> dict[str, Any]:
+def workflow_graph(
+    request: Request, location: str, revision: str | None = None, main_script: str | None = None
+) -> dict[str, Any]:
+    """`main_script`: the Nextflow entry script the form chose (#351), else `main.nf`."""
     require_graph(request)
     settings: Settings = request.app.state.settings
     resolved = resolve(settings.data_dir, location, revision)
     found = inspect_dir(resolved.directory, resolved.default_name)
     root = resolved.directory
+    if main_script is not None:
+        check_main_script(root, main_script, "main_script")
     if found.engine == "snakemake":
         entry = next(f for f in found.engine_files if "Snakefile" in f)
         return _in_pool(request, lambda: static.snakemake_graph(root, entry))
     if found.engine == "nextflow":
-        metro = bioflow.metro_map(root / "main.nf")  # its own timeout, one at a time
+        script = root / (main_script or "main.nf")
+        metro = bioflow.metro_map(script)  # its own timeout, one at a time
         return _in_pool(request, lambda: static.nextflow_graph(root, found.name, metro))
     raise Problem(
         422,
         "validation-failed",
         "Validation failed",
         "no single engine found in the pipeline",
-        errors=[{"field": "location", "message": "neither or both of main.nf and a Snakefile"}],
+        errors=[
+            {
+                "field": "location",
+                "message": "neither or both of a Nextflow main script and a Snakefile",
+            }
+        ],
     )
 
 
