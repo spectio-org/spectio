@@ -102,18 +102,21 @@ spec:
           env:
             - {name: SPECTIO_PORT, value: "8080"}
             - {name: SPECTIO_EXECUTOR, value: local}
-          # the server binds 127.0.0.1 only (dev-env §15.3 req. 1): reach it with `kubectl port-forward`, whose
-          # connection comes from inside the pod; an HTTP probe on the pod IP cannot reach it, so the probes
-          # run in the pod and only open the port (every URL answers 401 without a session, / included)
+          # the server binds 127.0.0.1 only (dev-env §15.3 req. 1): an HTTP probe on the pod IP cannot reach it, so
+          # the probes run in the pod (exec) and GET the health endpoints with Python's urllib (stdlib only; it sends
+          # Host: 127.0.0.1:8080, which the Host allow-list accepts). Both need no session. Any status but 200 fails:
+          # /health/live answers while the process serves, no database access; /health/ready answers 503 with a fixed
+          # reason unless the schema revision is supported (admin-and-operations.md §3.5).
           readinessProbe:
             exec:
-              command: ["/opt/spectio/bin/python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8080), 3)"]
+              command: ["/opt/spectio/bin/python", "-c", "import sys, urllib.request as u; sys.exit(0 if u.urlopen('http://127.0.0.1:8080/health/ready', timeout=10).status == 200 else 1)"]
+            initialDelaySeconds: 20 # the server needs a few seconds to bind: no failed probe in the events at a normal start
             periodSeconds: 10
             timeoutSeconds: 15 # a laptop under load starts the probe's Python slowly
             failureThreshold: 6
           livenessProbe:
             exec:
-              command: ["/opt/spectio/bin/python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8080), 3)"]
+              command: ["/opt/spectio/bin/python", "-c", "import sys, urllib.request as u; sys.exit(0 if u.urlopen('http://127.0.0.1:8080/health/live', timeout=10).status == 200 else 1)"]
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 20
