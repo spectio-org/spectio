@@ -28,7 +28,7 @@ SYSTEM_ROOTS = ("/dev", "/proc", "/sys", "/usr", "/opt", "/etc", "/bin", "/sbin"
 BIND_OPTIONS = ("ro", "rw")
 # A path the refusal may echo and build a suggestion from (SEC-mounts-01): absolute, one line,
 # no space, no quote — nothing a terminal would read as two words or an option.
-ECHOED = re.compile(r"^/[A-Za-z0-9._+@/-]+$")
+ECHOED = re.compile(r"/[A-Za-z0-9._+@/-]+")  # matched in full
 
 
 def env_binds() -> str:
@@ -127,7 +127,6 @@ def unmounted_paths(
             *(root for value in (*site_binds, env_binds) for root in _bind_roots(value)),
             *extra_roots,
         )
-        if root
     ]
     candidates = {os.path.normpath(v) for v in _paths(params) if _is_candidate(v)}
     return sorted(p for p in candidates if not any(_under(p, root) for root in roots))
@@ -136,7 +135,7 @@ def unmounted_paths(
 def echoed_paths(paths: list[str]) -> list[str]:
     """The paths the refusal may echo and suggest (SEC-mounts-01): those of `ECHOED`. The
     others stay counted, but are never printed nor used for a suggestion."""
-    return [p for p in paths if ECHOED.match(p)]
+    return [p for p in paths if ECHOED.fullmatch(p)]
 
 
 def suggested_binds(paths: list[str]) -> list[str]:
@@ -158,7 +157,9 @@ def site_bind_paths() -> list[str]:
         try:
             if not stat.S_ISREG(os.fstat(fd).st_mode):
                 continue
-            raw = os.read(fd, MAX_CONF_BYTES)
+            raw = b""
+            while len(raw) < MAX_CONF_BYTES and (chunk := os.read(fd, MAX_CONF_BYTES - len(raw))):
+                raw += chunk
         except OSError:
             continue
         finally:
