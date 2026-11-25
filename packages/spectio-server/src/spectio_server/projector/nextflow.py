@@ -11,7 +11,7 @@ import re
 from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import insert, select, update
+from sqlalchemy import exists, insert, select, update
 
 from spectio_sdk.events import (
     NextflowFlowComplete,
@@ -173,34 +173,40 @@ def _flow_complete(p: Projection, data: NextflowFlowComplete) -> None:
 
 
 def _failure(p: Projection, message: str) -> dict[str, Any]:
-    """`tool_error` from the launch's culprit: its first TERMINATE failure, else its first task
-    left `failed` and not ignored, by its last attempt (an errorStrategy `finish`, or no
-    errorAction, #377); else `engine_fault`. An empty engine message names the task."""
-    culprit = (
-        p.conn.execute(
-            select(attempts.c.id, attempts.c.task_id, attempts.c.n)
-            .join(launches, launches.c.culprit_attempt_id == attempts.c.id)
-            .where(launches.c.id == p.launch_id)
-        ).one_or_none()
-        or p.conn.execute(
+    """`tool_error` from the launch's culprit: its first TERMINATE failure; else (an
+    errorStrategy `finish`, or no errorAction, #377) its first task, by first sight, whose last
+    attempt of the launch failed and was not ignored, blamed on that attempt (ties on first
+    sight broken by task id, which need not follow event order); else `engine_fault`. The
+    fallback leaves `culprit_attempt_id` unset. An empty engine message names the task."""
+    culprit = p.conn.execute(
+        select(attempts.c.id, attempts.c.task_id, attempts.c.n)
+        .join(launches, launches.c.culprit_attempt_id == attempts.c.id)
+        .where(launches.c.id == p.launch_id)
+    ).one_or_none()
+    if culprit is None:
+        later = attempts.alias("later")
+        culprit = p.conn.execute(
             select(attempts.c.id, attempts.c.task_id, attempts.c.n)
             .join(tasks, tasks.c.id == attempts.c.task_id)
             .where(
                 tasks.c.run_id == p.run_id,
-                tasks.c.state == "failed",
                 attempts.c.launch_n == p.launch_n,
                 attempts.c.state == "failed",
                 attempts.c.ignored.is_not(True),
+                ~exists().where(  # the task's last attempt of the launch
+                    later.c.task_id == attempts.c.task_id,
+                    later.c.launch_n == attempts.c.launch_n,
+                    later.c.n > attempts.c.n,
+                ),
             )
-            .order_by(attempts.c.created_at, attempts.c.n.desc())
+            .order_by(tasks.c.created_at, tasks.c.id)
             .limit(1)
         ).one_or_none()
-    )
-    if culprit is None:
-        return failure_json("engine_fault", message)
-    p.conn.execute(
-        update(attempts).where(attempts.c.id == culprit.id).values(failure_class="tool_error")
-    )
+        if culprit is None:
+            return failure_json("engine_fault", message)
+        p.conn.execute(
+            update(attempts).where(attempts.c.id == culprit.id).values(failure_class="tool_error")
+        )
     return failure_json(
         "tool_error", message or _task_message(p, culprit.id), culprit.task_id, culprit.n
     )
