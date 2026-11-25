@@ -29,7 +29,13 @@ from spectio.runner.squeue import STALL_FILE
 
 MOUNTINFO = Path("/proc/self/mountinfo")
 # Where compute nodes do not see what a login node writes (#352), and the file systems of memory.
-_NODE_LOCAL_DIRS = ("/tmp", "/var/tmp", "/dev/shm")  # noqa: S108 - names to refuse, not to use
+_NODE_LOCAL_DIRS = (  # names to refuse, not to use; /private/... is where macOS resolves them
+    "/tmp",  # noqa: S108
+    "/var/tmp",  # noqa: S108
+    "/dev/shm",  # noqa: S108
+    "/private/tmp",
+    "/private/var/tmp",
+)
 _NODE_LOCAL_FS = frozenset({"tmpfs", "ramfs"})
 
 Result = tuple[str, str, str]  # status, check, detail
@@ -260,12 +266,12 @@ def _fs_type(path: Path, mountinfo: Path) -> str | None:
     """The file system type of the longest mount point (the last of equals) that holds `path`,
     from a mountinfo table; None when there is none to read (macOS)."""
     try:
-        table = mountinfo.read_text()
-    except OSError:
+        table = mountinfo.read_text(errors="replace")
+    except (OSError, ValueError):
         return None
     real, found, best = Path(os.path.realpath(path)), None, -1
     for fields in (x.split() for x in table.splitlines()):
-        if "-" not in fields or len(fields) < 5:
+        if "-" not in fields or len(fields) < 5 or fields.index("-") + 1 >= len(fields):
             continue
         point = Path(re.sub(r"\\([0-7]{3})", lambda m: chr(int(m[1], 8)), fields[4]))
         if real.is_relative_to(point) and len(point.parts) >= best:
@@ -279,10 +285,8 @@ def _node_local(settings: Settings, mountinfo: Path) -> list[Result]:
     probably not seen there: a warning for each, nothing for one on a shared file system."""
     results: list[Result] = []
     for name, path in (("data_dir", settings.data_dir), ("runs_root", settings.runs_root)):
-        spots = {os.path.abspath(path), os.path.realpath(path)}
-        under = next(
-            (d for d in _NODE_LOCAL_DIRS for s in spots if s == d or s.startswith(f"{d}/")), None
-        )
+        real = os.path.realpath(path)  # a link out of /tmp to shared storage is fine
+        under = next((d for d in _NODE_LOCAL_DIRS if real == d or real.startswith(f"{d}/")), None)
         fs = _fs_type(path, mountinfo)
         reason = f"under {under}" if under else fs if fs in _NODE_LOCAL_FS else None
         if reason:

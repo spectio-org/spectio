@@ -202,6 +202,21 @@ def _git(*args: str) -> None:
         raise Invalid(field, f"not fetched: {said or f'git exited {out.returncode}'}")
 
 
+def _cache_refused(
+    data_dir: Path, where: tuple[str, ...], exc: OSError, reason: str | None
+) -> Invalid:
+    """The refusal (#352) of a pipeline cache that is a symlink, a file, or not private to the
+    account; it names the part that `private_dir` failed on, when it says which."""
+    named = exc.filename if isinstance(exc.filename, str) else None
+    path = data_dir.joinpath(*where[: where.index(named) + 1] if named in where else ("pipelines",))
+    return Invalid(
+        "location",
+        f"the pipeline cache {path} cannot be used ({reason or exc.strerror}): data_dir must"
+        " hold a real directory 'pipelines' that only this account can write; check the data_dir"
+        " setting",
+    )
+
+
 def fetch(data_dir: Path, url: str, parts: tuple[str, ...], revision: str) -> Path:
     """`<data dir>/pipelines/<parts…>/<revision>`, fetched once: into a temporary name, then
     renamed, so that a fetch cut short is never taken for a whole one."""
@@ -209,13 +224,13 @@ def fetch(data_dir: Path, url: str, parts: tuple[str, ...], revision: str) -> Pa
     try:
         with private_dir(data_dir, *where, create=True):  # each part 0700 and the user's (req. 10)
             pass
-    except OSError as exc:  # a symlink or a file for a directory, a part not private (#352)
-        raise Invalid(
-            "location",
-            f"the pipeline cache {data_dir / 'pipelines'} cannot be used ({exc.strerror or exc}):"
-            " data_dir must hold a real directory 'pipelines' that only this account can write;"
-            " check the data_dir setting",
-        ) from None
+    except (NotADirectoryError, PermissionError) as exc:
+        reason = "not private to you (owner or mode)" if isinstance(exc, PermissionError) else None
+        raise _cache_refused(data_dir, where, exc, reason) from None
+    except OSError as exc:  # other errors (ENOSPC, EROFS, EIO...) stay server errors
+        if exc.errno not in (errno.ELOOP, errno.EEXIST):
+            raise
+        raise _cache_refused(data_dir, where, exc, None) from None
     parent = data_dir.joinpath(*where)
     target = parent / quote(revision, safe="")  # one path part: '/' becomes %2F
     if target.is_dir():

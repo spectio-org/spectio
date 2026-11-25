@@ -756,7 +756,7 @@ def test_doctor_warns_data_dir_in_a_node_local_directory(
     assert db_dir
     _, lines = doctor(capsys, settings, mountinfo=mountinfo(db_dir, "ext4"))
     assert line(lines, "data_dir") == (
-        f"warn data_dir {where} is on a node-local file system (under {under}):"
+        f"warn data_dir {where} is on a node-local file system (under {os.path.realpath(under)}):"
         " SLURM jobs on compute nodes will not see it; set data_dir on a shared file system"
     )
     assert not [x for x in lines if x.split()[1] == "runs_root"]
@@ -791,3 +791,53 @@ def test_doctor_shared_or_local_runner_has_no_node_local_warning(
     local = _node_local(settings, executor="local", data_dir=Path("/tmp/spectio-data"))  # noqa: S108 - names the check refuses
     _, lines = doctor(capsys, local, mountinfo=mountinfo(db_dir, "ext4"))
     assert not [x for x in lines if "node-local" in x]
+
+
+ROOT_EXT4 = b"1 0 8:1 / / rw - ext4 /dev/sda1 rw\n"
+
+
+@pytest.mark.parametrize(
+    ("table", "path", "expected"),
+    [
+        (ROOT_EXT4, "/tmp/x", "ext4"),  # noqa: S108 - /tmp that is not a tmpfs mount
+        (
+            ROOT_EXT4 + b"2 1 9:1 / /shared rw - nfs4 a rw\n3 1 9:2 / /shared rw - tmpfs b rw\n",
+            "/shared/x",
+            "tmpfs",
+        ),
+        (
+            ROOT_EXT4 + b"2 1 9:1 / /shared/my\\040data rw - nfs4 a rw\n",
+            "/shared/my data/x",
+            "nfs4",
+        ),
+        (ROOT_EXT4 + b"2 1 9:1 / /shared rw -\n3 1 9:2\n", "/shared/x", "ext4"),  # truncated
+        (ROOT_EXT4 + b"2 1 9:1 / /shared rw - nfs4 srv:/\xff rw\n", "/shared/x", "nfs4"),
+    ],
+    ids=["tmp-not-tmpfs", "overmount", "escaped-space", "truncated-line", "non-utf8"],
+)
+def test_fs_type_reads_a_mount_table_softly(
+    tmp_path: Path, table: bytes, path: str, expected: str
+) -> None:
+    mounts = tmp_path / "mountinfo"
+    mounts.write_bytes(table)
+    assert doctor_cli._fs_type(Path(path), mounts) == expected
+    assert doctor_cli._fs_type(Path(path), tmp_path / "missing") is None
+
+
+def test_node_local_follows_a_symlink_to_shared_storage(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A data_dir that is a link out of a node-local directory to shared storage is fine; the
+    same link's target inside it is not."""
+    local = tmp_path / "local"
+    local.mkdir()
+    (tmp_path / "shared").mkdir()
+    (local / "link").symlink_to(tmp_path / "shared")
+    monkeypatch.setattr(doctor_cli, "_NODE_LOCAL_DIRS", (str(local.resolve()),))
+    table = tmp_path / "mountinfo"
+    table.write_bytes(ROOT_EXT4)
+    settings = _node_local(configured(home, executor="slurm"), data_dir=local / "link")
+    assert doctor_cli._node_local(settings, table) == []
+    settings = settings.model_copy(update={"data_dir": local / "real"})
+    (found,) = doctor_cli._node_local(settings, table)
+    assert found[1] == "data_dir" and "node-local" in found[2]

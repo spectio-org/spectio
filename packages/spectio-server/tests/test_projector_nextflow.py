@@ -23,7 +23,12 @@ from spectio.runner.types import Failure, HeadReport, SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.projector import nextflow as nextflow_projector
 from spectio_server.projector.ingest import apply_head_report, ingest, load_cursor
-from spectio_server.projector.runs import Projection
+from spectio_server.projector.runs import (
+    MAX_FAILURE_MESSAGE,
+    STRICT_PARSER_HINT,
+    Projection,
+    failure_json,
+)
 from spectio_server.store.db import open_db
 from spectio_server.store.schema import (
     attempts,
@@ -732,6 +737,25 @@ def test_another_failure_gets_no_strict_parser_hint(engine: Engine, writer: Writ
     failure = Failure("engine_fault", "ERROR ~ boom", None)
     head(writer, report(state="exited", ended=True, exit_code=1, failure=failure))
     assert run_row(engine).failure["message"] == "ERROR ~ boom"
+
+
+def test_strict_parser_hint_only_on_an_engine_fault() -> None:
+    message = "ERROR ~ Config parsing failed"
+    assert failure_json("tool_error", message)["message"] == message
+    assert failure_json("engine_fault", message)["message"] == message + STRICT_PARSER_HINT
+
+
+def test_strict_parser_hint_is_added_once() -> None:
+    message = "ERROR ~ Config parsing failed" + STRICT_PARSER_HINT
+    assert failure_json("engine_fault", message)["message"] == message
+
+
+def test_strict_parser_hint_keeps_the_message_within_the_cap() -> None:
+    message = "ERROR ~ Config parsing failed" + "x" * MAX_FAILURE_MESSAGE
+    stored = failure_json("engine_fault", message[:MAX_FAILURE_MESSAGE])["message"]
+    assert len(stored) == MAX_FAILURE_MESSAGE
+    assert stored.endswith(STRICT_PARSER_HINT)
+    assert stored.startswith("ERROR ~ Config parsing failed")
 
 
 def test_launch_failure_fails_a_queued_run(engine: Engine, writer: Writer) -> None:

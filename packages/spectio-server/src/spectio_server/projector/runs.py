@@ -40,6 +40,7 @@ _NEXT = {
     "running": frozenset({"succeeded", "failed", "cancelling"}),
     "cancelling": frozenset({"cancelled"}),
 }
+MAX_FAILURE_MESSAGE = 4096  # characters of a failure message kept (SEC-NFERR-03)
 # What Nextflow's strict config parser says about an old-syntax nextflow.config (#368), and
 # the way out, appended once to a run's failure message.
 STRICT_PARSER_MARKERS = (
@@ -55,9 +56,15 @@ STRICT_PARSER_HINT = (
 def failure_json(
     class_: str, message: str, task_id: str | None = None, attempt_n: int | None = None
 ) -> dict[str, Any]:
-    """`runs.failure` (api §7)."""
-    if any(m in message for m in STRICT_PARSER_MARKERS) and STRICT_PARSER_HINT not in message:
-        message += STRICT_PARSER_HINT
+    """`runs.failure` (api §7). The Nextflow engine fault that names the strict config parser
+    gets the way out added once, the message cut first so that both stay within
+    MAX_FAILURE_MESSAGE."""
+    if (
+        class_ == "engine_fault"
+        and any(m in message for m in STRICT_PARSER_MARKERS)
+        and STRICT_PARSER_HINT not in message
+    ):
+        message = message[: MAX_FAILURE_MESSAGE - len(STRICT_PARSER_HINT)] + STRICT_PARSER_HINT
     return {"class": class_, "message": message, "task_id": task_id, "attempt_n": attempt_n}
 
 
