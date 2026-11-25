@@ -1,4 +1,5 @@
 import {
+  Alert,
   Anchor,
   Button,
   Checkbox,
@@ -252,6 +253,10 @@ export function LaunchPage({
   // A re-ask of the profile's values that failed (api §5.12, CR-06): one muted line says so; the
   // form keeps the previous answer, and Launch's own errors still say what is wrong
   const [profilesDown, setProfilesDown] = useState(false);
+  // The refusal of the paths the containers would not see (built 2026-11-25, api §5.2): the
+  // server's message and the confirmation that sends the launch again with `allow_unmounted`
+  const [unmounted, setUnmounted] = useState<string | null>(null);
+  const [launchAnyway, setLaunchAnyway] = useState(false);
   const inFlight = useRef<AbortController | null>(null);
   // What to run (ui-spec §4.15, api §5.10): the whole pipeline, or one module or one rule when the
   // server has single targets on. A module loads as a form of its inputs; a Snakemake pipeline
@@ -693,9 +698,12 @@ export function LaunchPage({
         ...(target ? { target } : {}),
         ...(Object.keys(res.sent).length ? { default_resources: res.sent } : {}),
         ...(path ? { config_file: path } : {}),
+        ...(launchAnyway ? { allow_unmounted: true } : {}),
       });
       onLaunched(run.id);
       setLaunchedWarnings(run.warnings ?? []);
+      setUnmounted(null);
+      setLaunchAnyway(false);
     } catch (error) {
       const fileDown = /^the config file cannot be read: /;
       if (path && error instanceof ApiError && error.status === 503 && fileDown.test(error.message)) {
@@ -704,8 +712,16 @@ export function LaunchPage({
         setConfigDown(error.message.replace(fileDown, "").replace(/\.$/, ""));
         return;
       }
-      const found =
-        error instanceof ApiError && error.errors.length ? toErrors(error.errors, keys) : { form: `Not launched: ${(error as Error).message}` };
+      // the paths the containers would not see are shown on their own (api §5.2), not on a field
+      const known = error instanceof ApiError && error.errors.length ? error.errors : [];
+      const refusal = known.find((e) => e.field === "allow_unmounted") ?? null;
+      setUnmounted(refusal ? refusal.message : null);
+      const rest = known.filter((e) => e !== refusal);
+      const found = rest.length
+        ? toErrors(rest, keys)
+        : known.length
+          ? {}
+          : { form: `Not launched: ${(error as Error).message}` };
       setErrors(found);
       if (found.config_file) focusField("config_file");
     } finally {
@@ -784,6 +800,19 @@ export function LaunchPage({
     <Text size="sm" c="var(--sp-state-failed-fg)" role="alert" mt={4}>
       {errors.form}
     </Text>
+  );
+  /** The paths the containers would not see (built 2026-11-25, api §5.2): the server's words and
+   * the confirmation, above the Launch button; a keyboard-reachable checkbox, nothing hover-only. */
+  const unmountedAlert = unmounted !== null && (
+    <Alert role="alert" className="launch-unmounted">
+      <Text size="sm">{unmounted}</Text>
+      <Checkbox
+        mt="xs"
+        label="Launch anyway: these paths are not visible in the containers"
+        checked={launchAnyway}
+        onChange={(e) => setLaunchAnyway(e.currentTarget.checked)}
+      />
+    </Alert>
   );
   const local = server?.executor === "local";
   const headLine = server ? (local ? `a process on ${server.node}` : `a tmux session on ${server.node}`) : "…";
@@ -1405,6 +1434,7 @@ export function LaunchPage({
                 </ul>
               )}
             </div>
+            {!phone && unmountedAlert}
             {!phone && formError}
           </section>
           {loaded && engine && (
@@ -1420,6 +1450,7 @@ export function LaunchPage({
           {/* the phone's pinned bar: Launch, then the first reason (a visual copy) or what it sends */}
           {phone && (
             <div className="launch-bar">
+              {unmountedAlert}
               <div className="launch-bar-row">
                 {launchButton}
                 {(why || summary) && (

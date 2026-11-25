@@ -22,6 +22,7 @@ from spectio.runner.loop import LaunchPayload
 from spectio.runner.rundir import read_run_manifest, run_paths
 from spectio.runner.types import HeadReport, LaunchSpec
 from spectio_server import app as app_mod
+from spectio_server import mounts
 from spectio_server.api import workflows as wf
 from spectio_server.serve import start_text
 from spectio_server.sink import StoreSink
@@ -333,6 +334,126 @@ def test_launch_one_engine_per_location(authed_client: TestClient, tmp_path: Pat
     both = str(pipeline(tmp_path, "main.nf", "Snakefile"))
     assert launch(authed_client, both, "nextflow").status_code == 201
     assert fields(launch(authed_client, both, "snakemake")) == ["workflow.engine"]
+
+
+# --- The paths the containers do not see (built 2026-11-25, api §5.2) ------------------------
+
+
+def without_site_binds(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No site configuration and no binds in the environment of this test's host."""
+    monkeypatch.delenv("APPTAINER_BIND", raising=False)
+    monkeypatch.delenv("SINGULARITY_BIND", raising=False)
+    monkeypatch.setattr(mounts, "CONFIG_FILES", ("/nonexistent/apptainer.conf",))
+
+
+def test_launch_snakemake_refuses_paths_the_containers_do_not_see(
+    authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    without_site_binds(monkeypatch)
+    params = {f"reads{i}": f"/shared/scratch/{i}.fastq" for i in range(7)}
+    response = launch(authed_client, str(synthetic / "snakemake"), "snakemake", params=params)
+    assert response.status_code == 422, response.text
+    (error,) = response.json()["errors"]
+    assert error["field"] == "allow_unmounted"
+    assert error["message"] == (
+        "Not visible in the containers: /shared/scratch/0.fastq, /shared/scratch/1.fastq,"
+        " /shared/scratch/2.fastq, /shared/scratch/3.fastq, /shared/scratch/4.fastq,"
+        " and 2 more. Add -B /shared to the Apptainer options of environment local,"
+        " or confirm to launch anyway."
+    )
+
+
+def test_launch_snakemake_pipeline_dir_is_visible(
+    authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Snakemake binds the pipeline's directory itself: a path under it is never refused."""
+    without_site_binds(monkeypatch)
+    pipeline = synthetic / "snakemake"
+    params = {"ref": str(pipeline / "resources" / "ref.fa")}
+    response = launch(authed_client, str(pipeline), "snakemake", params=params)
+    assert response.status_code == 201, response.text
+
+
+def test_launch_snakemake_allow_unmounted_launches(
+    authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    without_site_binds(monkeypatch)
+    response = launch(
+        authed_client,
+        str(synthetic / "snakemake"),
+        "snakemake",
+        params={"reads0": "/shared/scratch/0.fastq"},
+        allow_unmounted=True,
+    )
+    assert response.status_code == 201, response.text
+
+
+def test_launch_snakemake_with_a_profile_is_not_checked(
+    authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    without_site_binds(monkeypatch)  # the profile owns the software: no check beside it
+    response = launch(
+        authed_client,
+        str(synthetic / "snakemake"),
+        "snakemake",
+        params={"reads0": "/shared/scratch/0.fastq"},
+        profiles=["local"],
+    )
+    assert response.status_code == 201, response.text
+
+
+def test_launch_nextflow_is_not_checked(
+    authed_client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    without_site_binds(monkeypatch)  # Nextflow mounts its own paths
+    root = pipeline(tmp_path, "main.nf")
+    response = launch(
+        authed_client, str(root), "nextflow", params={"reads0": "/shared/scratch/0.fastq"}
+    )
+    assert response.status_code == 201, response.text
+
+
+def test_launch_snakemake_without_apptainer_is_not_checked(
+    authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    without_site_binds(monkeypatch)
+    created = authed_client.post(
+        "/api/v1/environments",
+        json={"name": "mylab", "label": "My lab", "executor": "local", "software": ["conda"]},
+    )
+    assert created.status_code == 201, created.text
+    response = launch(
+        authed_client,
+        str(synthetic / "snakemake"),
+        "snakemake",
+        params={"reads0": "/shared/scratch/0.fastq"},
+        environment="mylab",
+    )
+    assert response.status_code == 201, response.text
+
+
+def test_launch_snakemake_sees_the_environment_binds(
+    authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    without_site_binds(monkeypatch)
+    created = authed_client.post(
+        "/api/v1/environments",
+        json={
+            "name": "mylab",
+            "label": "My lab",
+            "executor": "local",
+            "apptainer_args": "--bind=/shared/scratch",
+        },
+    )
+    assert created.status_code == 201, created.text
+    response = launch(
+        authed_client,
+        str(synthetic / "snakemake"),
+        "snakemake",
+        params={"reads0": "/shared/scratch/0.fastq"},
+        environment="mylab",
+    )
+    assert response.status_code == 201, response.text
 
 
 @pytest.mark.parametrize(
