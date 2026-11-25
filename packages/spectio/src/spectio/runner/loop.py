@@ -145,7 +145,10 @@ TAIL_CHARS = 2000
 # from the stored message, as `Command '…'` is in snakemake.error (SEC-NFERR-01, SEC-P3T1-08)
 # a template task's block reads `Command executed [<template>]:` (TaskErrorFormatter.groovy:130,
 # Nextflow 26.11.0-edge, read 2026-11-25; SEC-NFERR-05)
-COMMAND_START = re.compile(r"Command executed(?: \[[^\]\n]*\])?:")
+# Any line that starts like one ends in `:` counts, so an odd template name fails closed
+# (SEC-NFERR-05a). A script line that starts with `Command exit status:` would end the hiding
+# early; only a later real end repairs it, a residual accepted (SEC-NFERR-05b).
+COMMAND_START = re.compile(r"Command executed\b[^\n]*:$")
 COMMAND_END = "Command exit status:"
 COMMAND_HIDDEN = f"Command executed: {HIDDEN}"
 

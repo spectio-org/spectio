@@ -570,6 +570,11 @@ def test_engine_output_tail_hides_the_task_command() -> None:
     assert "TOKEN" not in (engine_output_tail(two.encode()) or "")
     cut = template[: template.index("Command exit status:")]
     assert "TOKEN" not in (engine_output_tail(cut.encode()) or "")
+    odd = TASK_ERROR.replace("Command executed:", "Command executed [a[1].sh]:")
+    assert "TOKEN" not in (
+        engine_output_tail(odd[: odd.index("Command exit status:")].encode()) or ""
+    )
+    assert "TOKEN" not in (engine_output_tail((TASK_ERROR + inside).encode()) or "")
 
 
 def test_head_out_through_a_symlink_or_shared_is_not_read(
