@@ -25,7 +25,8 @@ import { duration, engineName, executorLabel, isTerminal, plural, runWord, short
 // actions" menu with the rest: Copy to a new launch, Pin or Unpin, the Copy items and, once ended,
 // Delete… last (FU-P3-115b). On the phone the primary sits in the bar pinned above the tab bar.
 
-/** The chips under the facts: the states with tasks, failed and retried always (UX-PAR-22). A chip
+/** The chips under the facts: the states with tasks, failed and retried always once the run has a
+ * task (UX-PAR-22; #353: a run where no job ran shows no "0 failed" nor "0 retried"). A chip
  * with a `filter` (a Tasks tab filter's label) opens the Tasks tab on it (P3-parD). */
 export function taskChips(run: RunDetail, processes: Process[]): { label: string; n: number; tone: string; filter?: string }[] {
   const c = run.task_counts;
@@ -40,7 +41,8 @@ export function taskChips(run: RunDetail, processes: Process[]): { label: string
     { label: "aborted", n: sum(c, "aborted"), tone: "cancelled", always: false },
     { label: "not scheduled", n: sum(c, "not_scheduled"), tone: "cancelled", always: false },
   ];
-  return chips.filter((chip) => chip.always || chip.n > 0);
+  const hasTask = Object.values(c).some((n) => n > 0);
+  return chips.filter((chip) => (chip.always && hasTask) || chip.n > 0);
 }
 
 /** A driven run's directory, runs_root/<run id> (runner/rundir.py); a run from a terminal has its

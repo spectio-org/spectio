@@ -209,7 +209,9 @@ export function HomePage() {
                   </ul>
                 ) : (
                   <ul className="sp-list">
-                    {active.map((run) => (
+                    {active.map((run) => {
+                      const context = activeContext(run);
+                      return (
                       <li key={run.id} data-rail="" data-tone={tone(run.state)} className="sp-row">
                         <PipelineMark engine={run.workflow.engine} name={run.workflow.name} size={22} />
                         <span>
@@ -221,10 +223,11 @@ export function HomePage() {
                         </span>
                         <span>
                           <StateWord state={run.state} />
-                          {activeContext(run) && <span className="sp-muted">{activeContext(run)}</span>}
+                          {context && <span className="sp-muted">{context}</span>}
                         </span>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </HomeCard>
@@ -239,7 +242,9 @@ export function HomePage() {
                   </ul>
                 ) : (
                   <ul className="sp-list sp-ended">
-                    {ended.map((run) => (
+                    {ended.map((run) => {
+                      const context = endedContext(run);
+                      return (
                       <li key={run.id} data-rail="" data-tone={tone(run.state)} className="sp-row">
                         <span className="sp-ended-state">
                           <StateWord state={run.state} />
@@ -249,14 +254,15 @@ export function HomePage() {
                           <RunLink run={run} />
                           <span className="sp-muted">
                             <span>{run.workflow.name ?? run.workflow.location}</span>
-                            {endedContext(run) && ` · ${endedContext(run)}`}
+                            {context && ` · ${context}`}
                           </span>
                         </span>
                         <span>
                           <Ago iso={run.ended_at} />
                         </span>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </HomeCard>

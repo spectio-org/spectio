@@ -71,5 +71,12 @@ test("CR-03 (#385): the compact table keeps its sticky cells' borders and scroll
     return css.slice(at, css.indexOf("}", at));
   };
   expect(rule('.sp-table[data-density="compact"]')).toContain("border-collapse: separate;");
-  expect(rule('.sp-table-wrap:has(> .sp-table[data-density="compact"])')).toContain("scroll-padding: 3rem 0 0 8rem;");
+  // derived from the sticky header's height and the first column's cap, not a second guess
+  const wrap = rule('.sp-table-wrap:has(> .sp-table[data-density="compact"])');
+  expect(wrap).toContain("scroll-padding: var(--sp-head-h) 0 0 calc(var(--sp-name-cap) + 2 * var(--sp-cell-px));");
+  expect(rule(".sp-table-wrap")).toContain("--sp-name-cap: 28ch;");
+  expect(rule('.sp-table[data-density="compact"] th')).toContain("height: var(--sp-head-h);");
+  expect(rule(".sp-table .sp-open")).toContain("max-width: var(--sp-name-cap, 28ch);");
+  // the corner cell is above the header cells (2) and the first column (1)
+  expect(rule('.sp-table[data-density="compact"] th:first-child')).toContain("z-index: 3;");
 });

@@ -299,7 +299,7 @@ test("UX-PAR-25/16: a failed run opens on Why it failed, never blank, with a way
   expect(within(why).getByRole("button", { name: /^Why it failed/ })).toHaveAttribute("aria-expanded", "true");
   expect(within(why).getByText("tool error")).toBeInTheDocument();
   expect(within(why).getByText("2 tasks failed, and the run stopped")).toBeInTheDocument();
-  expect(within(await runHeader()).getByText(/^ended /)).toBeInTheDocument();
+  expect(within(await runHeader()).getByText(/^ended/)).toBeInTheDocument(); // "ended" and the <Ago> time after it
   // The head has ended: folded, with its exit code as the summary.
   expect(screen.getByRole("button", { name: /^The head has ended\s*exit 1/ })).toHaveAttribute("aria-expanded", "false");
   expect(await screen.findByText(/Error in rule x/)).toBeInTheDocument();
@@ -1223,4 +1223,26 @@ test("#385: a long task name is cut by the CSS and shown whole in a tooltip on f
   } finally {
     vi.restoreAllMocks();
   }
+});
+
+test("#353 (#385 round 2): a run where no job ran shows no zero failed or retried chip; once a task exists they show even at zero", async () => {
+  detail(
+    { state: "failed", task_counts: {}, ended_at: "2026-10-31T08:00:00+00:00", failure: { class: "head_lost", message: "" }, summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" } },
+    { [`${URL_}/processes`]: { items: [] } },
+  );
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).queryByText("0 failed")).toBeNull();
+  expect(within(header).queryByText("0 retried")).toBeNull();
+});
+
+test("#353 (#385 round 2): with a task in the run, failed and retried show even at zero", async () => {
+  detail(
+    { task_counts: { running: 1 } },
+    { [`${URL_}/processes`]: { items: [{ process: "NFCORE:RNASEQ:ALIGN", stage_id: null, counts: { running: 1 }, retries: 0 }] } },
+  );
+  app(`/runs/${ID}`);
+  const chips = within(await runHeader()).getByRole("list", { name: "Tasks by state" });
+  expect(within(chips).getByText("0 failed")).toBeInTheDocument();
+  expect(within(chips).getByText("0 retried")).toBeInTheDocument();
 });
