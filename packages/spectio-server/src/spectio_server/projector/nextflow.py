@@ -25,7 +25,7 @@ from spectio_server.ids import new_id
 from spectio_server.projector import targets
 from spectio_server.projector.runs import TERMINAL, Projection, failure_json
 from spectio_server.stages import freeze
-from spectio_server.store.schema import attempts, launches, runs
+from spectio_server.store.schema import attempts, launches, runs, tasks
 
 HOOK_STATES = {
     "onTaskPending": "pending",
@@ -173,12 +173,47 @@ def _flow_complete(p: Projection, data: NextflowFlowComplete) -> None:
 
 
 def _failure(p: Projection, message: str) -> dict[str, Any]:
-    """`tool_error` from the launch's culprit, its first TERMINATE failure, else `engine_fault`."""
-    culprit = p.conn.execute(
-        select(attempts.c.task_id, attempts.c.n)
-        .join(launches, launches.c.culprit_attempt_id == attempts.c.id)
-        .where(launches.c.id == p.launch_id)
-    ).one_or_none()
+    """`tool_error` from the launch's culprit: its first TERMINATE failure, else its first task
+    left `failed` and not ignored, by its last attempt (an errorStrategy `finish`, or no
+    errorAction, #377); else `engine_fault`. An empty engine message names the task."""
+    culprit = (
+        p.conn.execute(
+            select(attempts.c.id, attempts.c.task_id, attempts.c.n)
+            .join(launches, launches.c.culprit_attempt_id == attempts.c.id)
+            .where(launches.c.id == p.launch_id)
+        ).one_or_none()
+        or p.conn.execute(
+            select(attempts.c.id, attempts.c.task_id, attempts.c.n)
+            .join(tasks, tasks.c.id == attempts.c.task_id)
+            .where(
+                tasks.c.run_id == p.run_id,
+                tasks.c.state == "failed",
+                attempts.c.launch_n == p.launch_n,
+                attempts.c.state == "failed",
+                attempts.c.ignored.is_not(True),
+            )
+            .order_by(attempts.c.created_at, attempts.c.n.desc())
+            .limit(1)
+        ).one_or_none()
+    )
     if culprit is None:
         return failure_json("engine_fault", message)
-    return failure_json("tool_error", message, culprit.task_id, culprit.n)
+    p.conn.execute(
+        update(attempts).where(attempts.c.id == culprit.id).values(failure_class="tool_error")
+    )
+    return failure_json(
+        "tool_error", message or _task_message(p, culprit.id), culprit.task_id, culprit.n
+    )
+
+
+def _task_message(p: Projection, attempt_id: str) -> str:
+    """ "Task <process> (<tag or name>) failed with exit code <n>." for an empty engine message."""
+    row = p.conn.execute(
+        select(tasks.c.process_or_rule, tasks.c.tag, tasks.c.name, attempts.c.exit)
+        .join(attempts, attempts.c.task_id == tasks.c.id)
+        .where(attempts.c.id == attempt_id)
+    ).one()
+    label = row.tag or row.name
+    named = f"{row.process_or_rule} ({label})" if label else row.process_or_rule
+    code = f" with exit code {row.exit}" if row.exit is not None else ""
+    return f"Task {named} failed{code}."

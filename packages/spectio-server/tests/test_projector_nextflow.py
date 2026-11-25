@@ -565,6 +565,57 @@ def test_failure_without_terminate_is_engine_fault(engine: Engine, writer: Write
     }
 
 
+def test_failed_task_without_terminate_names_the_run_failure(
+    engine: Engine, writer: Writer
+) -> None:
+    # #377: an errorStrategy `finish` (or no errorAction) left the run an empty engine_fault.
+    fail: dict[str, Any] = {"trace": {"status": "FAILED", "exit": "1"}, "errorAction": "FINISH"}
+    ingest_events(
+        writer,
+        task(1, "onTaskComplete", process="CONVERT", tag="img1", **fail),
+        event(2, "onFlowComplete", success=False, errorMessage=""),
+    )
+    with engine.connect() as conn:
+        task_id = conn.execute(select(tasks.c.id)).scalar_one()
+        failure_class = conn.execute(select(attempts.c.failure_class)).scalar_one()
+    assert run_row(engine).failure == {
+        "class": "tool_error",
+        "message": "Task CONVERT (img1) failed with exit code 1.",
+        "task_id": task_id,
+        "attempt_n": 1,
+    }
+    assert failure_class == "tool_error"
+
+
+def test_the_engine_message_is_kept_and_a_retried_success_is_no_culprit(
+    engine: Engine, writer: Writer
+) -> None:
+    fail: dict[str, Any] = {"trace": {"status": "FAILED", "exit": "2"}, "errorAction": "RETRY"}
+    done: dict[str, Any] = {"trace": {"status": "COMPLETED"}}
+    ingest_events(
+        writer,
+        task(1, "onTaskComplete", tag="S01", **fail),
+        event(2, "onTaskComplete", process="ALIGN", tag="S01", attempt=2, taskId="2", **done),
+        event(3, "onFlowComplete", success=False, errorMessage="boom"),
+    )
+    assert run_row(engine).failure == {
+        "class": "engine_fault",
+        "message": "boom",
+        "task_id": None,
+        "attempt_n": None,
+    }
+
+
+def test_an_ignored_failure_is_no_culprit(engine: Engine, writer: Writer) -> None:
+    ignore: dict[str, Any] = {"trace": {"status": "FAILED", "exit": "3"}, "errorAction": "IGNORE"}
+    ingest_events(
+        writer,
+        task(1, "onTaskComplete", **ignore),
+        event(2, "onFlowComplete", success=False, errorMessage=""),
+    )
+    assert run_row(engine).failure["class"] == "engine_fault"
+
+
 def test_first_terminate_in_a_batch_is_the_culprit(
     engine: Engine, writer: Writer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
