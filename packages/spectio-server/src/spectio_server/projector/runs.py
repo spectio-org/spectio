@@ -40,12 +40,24 @@ _NEXT = {
     "running": frozenset({"succeeded", "failed", "cancelling"}),
     "cancelling": frozenset({"cancelled"}),
 }
+# What Nextflow's strict config parser says about an old-syntax nextflow.config (#368), and
+# the way out, appended once to a run's failure message.
+STRICT_PARSER_MARKERS = (
+    "Variable declarations cannot be mixed with config statements",
+    "Config parsing failed",
+)
+STRICT_PARSER_HINT = (
+    ' The pipeline\'s config uses the old syntax: set [engines] nxf_syntax_parser = "v1"'
+    " in spectio.toml (NXF_SYNTAX_PARSER, see https://docs.seqera.io/nextflow/strict-syntax)."
+)
 
 
 def failure_json(
     class_: str, message: str, task_id: str | None = None, attempt_n: int | None = None
 ) -> dict[str, Any]:
     """`runs.failure` (api §7)."""
+    if any(m in message for m in STRICT_PARSER_MARKERS) and STRICT_PARSER_HINT not in message:
+        message += STRICT_PARSER_HINT
     return {"class": class_, "message": message, "task_id": task_id, "attempt_n": attempt_n}
 
 

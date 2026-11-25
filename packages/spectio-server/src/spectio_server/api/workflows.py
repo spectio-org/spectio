@@ -206,8 +206,16 @@ def fetch(data_dir: Path, url: str, parts: tuple[str, ...], revision: str) -> Pa
     """`<data dir>/pipelines/<parts…>/<revision>`, fetched once: into a temporary name, then
     renamed, so that a fetch cut short is never taken for a whole one."""
     where = ("pipelines", *parts)
-    with private_dir(data_dir, *where, create=True):  # each part 0700 and the user's (req. 10)
-        pass
+    try:
+        with private_dir(data_dir, *where, create=True):  # each part 0700 and the user's (req. 10)
+            pass
+    except OSError as exc:  # a symlink or a file for a directory, a part not private (#352)
+        raise Invalid(
+            "location",
+            f"the pipeline cache {data_dir / 'pipelines'} cannot be used ({exc.strerror or exc}):"
+            " data_dir must hold a real directory 'pipelines' that only this account can write;"
+            " check the data_dir setting",
+        ) from None
     parent = data_dir.joinpath(*where)
     target = parent / quote(revision, safe="")  # one path part: '/' becomes %2F
     if target.is_dir():

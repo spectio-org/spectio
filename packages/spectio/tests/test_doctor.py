@@ -725,3 +725,69 @@ def test_doctor_software_failing_command_warns(
     assert line(lines, "conda").startswith(
         "warn conda `conda --version` exited 1: Traceback (module gone): local deploys with conda"
     )
+
+
+def _node_local(settings: Settings, **kwargs: Any) -> Settings:
+    """`settings` with data_dir and runs_root on a shared-looking path that need not exist."""
+    return settings.model_copy(
+        update={
+            "data_dir": Path("/shared/spectio/data"),
+            "runs_root": Path("/shared/spectio/runs"),
+            **kwargs,
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    ("where", "under"),
+    [
+        ("/tmp/spectio-data", "/tmp"),  # noqa: S108 - names the check refuses
+        ("/var/tmp/spectio-data", "/var/tmp"),  # noqa: S108 - names the check refuses
+        ("/dev/shm/x", "/dev/shm"),  # noqa: S108 - names the check refuses
+    ],
+)
+def test_doctor_warns_data_dir_in_a_node_local_directory(
+    home: Path, capsys: pytest.CaptureFixture[str], where: str, under: str
+) -> None:
+    """#352: with SLURM as the site runner, a data_dir under /tmp, /var/tmp or /dev/shm is a
+    warning that names it: the compute nodes will not see the pipeline cache."""
+    settings = _node_local(configured(home, executor="slurm"), data_dir=Path(where))
+    db_dir = settings.db_dir
+    assert db_dir
+    _, lines = doctor(capsys, settings, mountinfo=mountinfo(db_dir, "ext4"))
+    assert line(lines, "data_dir") == (
+        f"warn data_dir {where} is on a node-local file system (under {under}):"
+        " SLURM jobs on compute nodes will not see it; set data_dir on a shared file system"
+    )
+    assert not [x for x in lines if x.split()[1] == "runs_root"]
+
+
+def test_doctor_warns_runs_root_on_tmpfs(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The mount table decides too: a runs root on tmpfs (read from the table given)."""
+    settings = _node_local(configured(home, executor="slurm"))
+    db_dir = settings.db_dir
+    assert db_dir
+    table = home.parent / "mountinfo-tmpfs"
+    table.write_text(
+        "1 0 254:254 / / rw - ext4 /dev/sda1 rw\n"
+        "2 1 999:999 / /shared/spectio rw shared:1 - tmpfs tmpfs rw\n"
+    )
+    _, lines = doctor(capsys, settings, mountinfo=table)
+    assert line(lines, "runs_root") == (
+        "warn runs_root /shared/spectio/runs is on a node-local file system (tmpfs):"
+        " SLURM jobs on compute nodes will not see it; set runs_root on a shared file system"
+    )
+    assert line(lines, "data_dir").startswith("warn data_dir /shared/spectio/data ")
+
+
+def test_doctor_shared_or_local_runner_has_no_node_local_warning(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    settings = _node_local(configured(home, executor="slurm"))
+    db_dir = settings.db_dir
+    assert db_dir
+    _, lines = doctor(capsys, settings, mountinfo=mountinfo(db_dir, "ext4"))
+    assert not [x for x in lines if x.split()[1] in ("data_dir", "runs_root")], lines
+    local = _node_local(settings, executor="local", data_dir=Path("/tmp/spectio-data"))  # noqa: S108 - names the check refuses
+    _, lines = doctor(capsys, local, mountinfo=mountinfo(db_dir, "ext4"))
+    assert not [x for x in lines if "node-local" in x]

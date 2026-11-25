@@ -591,6 +591,33 @@ def test_git_short_name(authed_client: TestClient, fake_git: FakeGit, writer: Wr
     assert version.revision == "3.14.0"
 
 
+@pytest.mark.parametrize("kind", ["symlink", "file"])
+def test_git_cache_not_a_directory_is_refused(
+    authed_client: TestClient,
+    fake_git: FakeGit,
+    settings: Settings,
+    tmp_path: Path,
+    kind: str,
+) -> None:
+    """#352: a `pipelines` under data_dir that is a symlink, or a file, is a 422 naming the
+    setting, never a bare 500; nothing is fetched."""
+    cache = settings.data_dir / "pipelines"
+    if kind == "symlink":
+        (tmp_path / "elsewhere").mkdir()
+        cache.symlink_to(tmp_path / "elsewhere")
+    else:
+        cache.write_text("not a directory\n")
+    params = {"location": "https://github.com/lab/pipeline", "revision": "v1"}
+    response = authed_client.get(INSPECT, params=params)
+    assert fields(response) == ["location"]
+    detail = response.json()["detail"]
+    assert "data_dir" in detail and str(cache) in detail
+    assert fields(launch(authed_client, params["location"], "nextflow", revision="v1")) == [
+        "workflow.location"
+    ]
+    assert fake_git.calls == []
+
+
 def test_git_location_fetched_once(
     authed_client: TestClient,
     git_repo: Path,

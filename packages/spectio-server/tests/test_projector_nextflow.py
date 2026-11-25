@@ -704,6 +704,36 @@ def test_a_runner_failure_message_is_cleaned_and_capped(engine: Engine, writer: 
     assert stored.startswith("ERROR ~ boom\nxxx") and len(stored) == 4096
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Error nextflow.config:3:1: Variable declarations cannot be mixed with config statements",
+        "ERROR ~ Config parsing failed",
+    ],
+)
+def test_a_strict_parser_failure_names_the_way_out(
+    engine: Engine, writer: Writer, text: str
+) -> None:
+    """#368: the head's last lines name the strict config parser; the run's failure says once
+    how to go back to the old one."""
+    message = f"Nextflow exited with code 1 and sent no end event. Its last lines:\n{text}"
+    failure = Failure("engine_fault", message, None)
+    head(writer, report(state="exited", ended=True, exit_code=1, failure=failure))
+    stored = run_row(engine).failure["message"]
+    assert stored.startswith(message)
+    assert stored.endswith(
+        ' The pipeline\'s config uses the old syntax: set [engines] nxf_syntax_parser = "v1"'
+        " in spectio.toml (NXF_SYNTAX_PARSER, see https://docs.seqera.io/nextflow/strict-syntax)."
+    )
+    assert stored.count("nxf_syntax_parser") == 1
+
+
+def test_another_failure_gets_no_strict_parser_hint(engine: Engine, writer: Writer) -> None:
+    failure = Failure("engine_fault", "ERROR ~ boom", None)
+    head(writer, report(state="exited", ended=True, exit_code=1, failure=failure))
+    assert run_row(engine).failure["message"] == "ERROR ~ boom"
+
+
 def test_launch_failure_fails_a_queued_run(engine: Engine, writer: Writer) -> None:
     failure = Failure("engine_missing", "nextflow not found on PATH", None)
     head(writer, report(state="exited", ended=True, exit_code=127, failure=failure))
