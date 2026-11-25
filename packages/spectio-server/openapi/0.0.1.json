@@ -1543,6 +1543,11 @@
         "additionalProperties": false,
         "description": "The 0.0.1 body of `POST /runs` (api \u00a75 note of 2026-10-30).",
         "properties": {
+          "allow_unmounted": {
+            "default": false,
+            "title": "Allow Unmounted",
+            "type": "boolean"
+          },
           "config_file": {
             "anyOf": [
               {

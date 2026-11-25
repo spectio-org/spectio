@@ -47,6 +47,13 @@ from spectio_server.api.workflows import (
 )
 from spectio_server.defaults import effective_defaults
 from spectio_server.ids import new_id
+from spectio_server.mounts import (
+    echoed_paths,
+    env_binds,
+    site_bind_paths,
+    suggested_binds,
+    unmounted_paths,
+)
 from spectio_server.store.runs import EngineConflict, first, insert_run, module_source
 from spectio_server.store.schema import principals, runner_commands
 from spectio_server.store.writer import Writer
@@ -80,6 +87,9 @@ class LaunchIn(BaseModel):
     target: TargetIn | None = None  # one module or one rule (api §5.10), behind a flag
     default_resources: DefaultResources | None = None  # api §5.7 (FU-P3-110a)
     config_file: str | None = None  # an absolute path, api §5.7
+    # Built 2026-11-25 (api §5.2): launch although some of `params`' paths are not visible in the
+    # containers. Absent or false: such a launch is refused with this field.
+    allow_unmounted: bool = False
 
     @field_validator("params")
     @classmethod
@@ -190,6 +200,7 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     # the values as resolved now: the run keeps them whatever the file says later (req. 18)
     chosen = choose(request, body.environment)
     environment = snapshot(chosen)
+    _check_mounts(request, body, chosen, resolved.directory)
     resources = _resources(body, chosen)
     config_file, config_bytes = _config_file(request, body, resolved)
 
@@ -333,6 +344,48 @@ def _create(
     if warnings:  # a `required` error with the sources not complete (api §5.12)
         answer["warnings"] = warnings
     return answer
+
+
+def _check_mounts(request: Request, body: LaunchIn, env: Environment, pipeline: Path) -> None:
+    """The paths of `params` the containers would not see (built 2026-11-25, api §5.2), for a
+    Snakemake launch with Apptainer deployed by Spectio and no profile (the profile owns its
+    software). Read configuration only: no container, no stat, and a path a Snakefile builds
+    while it runs is not seen. Refused until the launch binds the paths or the user confirms
+    with `allow_unmounted`. The pipeline's directory counts as visible: Snakemake binds it
+    (its `apptainer exec` lines, seen on a cluster 2026-11-25), passed as a root of its own —
+    never as a bind, which is parsed (CR-05)."""
+    if (
+        body.workflow.engine != "snakemake"
+        or body.profiles
+        or "apptainer" not in env.software
+        or body.allow_unmounted
+    ):
+        return
+    invisible = unmounted_paths(
+        body.params,
+        env.apptainer_args,
+        home=Path.home(),
+        launch_dir=request.app.state.settings.runs_root,
+        site_binds=site_bind_paths(),
+        env_binds=env_binds(),
+        extra_roots=[str(pipeline)],
+    )
+    if not invisible:
+        return
+    safe = echoed_paths(invisible)  # only a plain path is echoed or suggested (SEC-mounts-01)
+    shown = safe[:5]
+    named = ", ".join(shown) or f"{len(invisible)} path{'s' if len(invisible) > 1 else ''}"
+    more = len(invisible) - len(shown) if shown else 0
+    if more > 0:
+        named = f"{named}, and {more} more"
+    binds = ",".join(suggested_binds(safe))
+    how = (
+        f" Add -B {binds} to the Apptainer options of environment {env.name},"
+        " or confirm to launch anyway."
+        if binds
+        else " Confirm to launch anyway."
+    )
+    raise Invalid("allow_unmounted", f"May not be visible in the containers: {named}.{how}")
 
 
 def _resources(body: LaunchIn, env: Environment) -> dict[str, Any] | None:

@@ -1,4 +1,5 @@
 import {
+  Alert,
   Anchor,
   Button,
   Checkbox,
@@ -252,6 +253,10 @@ export function LaunchPage({
   // A re-ask of the profile's values that failed (api §5.12, CR-06): one muted line says so; the
   // form keeps the previous answer, and Launch's own errors still say what is wrong
   const [profilesDown, setProfilesDown] = useState(false);
+  // The refusal of the paths the containers would not see (built 2026-11-25, api §5.2): the
+  // server's message and the confirmation that sends the launch again with `allow_unmounted`
+  const [unmounted, setUnmounted] = useState<string | null>(null);
+  const [launchAnyway, setLaunchAnyway] = useState(false);
   const inFlight = useRef<AbortController | null>(null);
   // What to run (ui-spec §4.15, api §5.10): the whole pipeline, or one module or one rule when the
   // server has single targets on. A module loads as a form of its inputs; a Snakemake pipeline
@@ -359,6 +364,32 @@ export function LaunchPage({
   /** An edit of a resource or of the extra config file forgets the server's error on it. */
   const dropErrors = (prefix: string) => setErrors((old) => Object.fromEntries(Object.entries(old).filter(([k]) => !k.startsWith(prefix))));
 
+  /** The refusal of the paths the containers would not see goes stale with any edit: the Alert
+   * and the confirmation are dropped together (CR-01), so the next launch is asked again. */
+  function dropUnmounted() {
+    setUnmounted(null);
+    setLaunchAnyway(false);
+  }
+
+  /** A parameter edited: the paths the containers would not see are asked of the new values. */
+  function editParam(key: string, value: string | boolean) {
+    setValues((old) => ({ ...old, [key]: value }));
+    dropUnmounted();
+  }
+
+  /** A row of the key–value list edited: same as a parameter (CR-01). */
+  function editRows(next: Row[]) {
+    setRows(next);
+    dropUnmounted();
+  }
+
+  /** An environment chosen: the refusal named the old environment's Apptainer options, so it is
+   * dropped with its confirmation (CR-01). */
+  function chooseEnv(name: string) {
+    setEnvName(name);
+    dropUnmounted();
+  }
+
   /** An edit of Pipeline or Revision cancels the inspect in flight and forgets the last one. */
   function edit(set: (v: string) => void, value: string) {
     inFlight.current?.abort();
@@ -369,6 +400,7 @@ export function LaunchPage({
     setEngine(null);
     setMainScript(null);
     setErrors({});
+    dropUnmounted();
     setLaunchedWarnings([]);
     setEntryName(null); // the picker goes back to None, and the entry's prefill is forgotten
     setFromName(null);
@@ -476,6 +508,7 @@ export function LaunchPage({
     inFlight.current = controller;
     setLoading(true);
     setErrors({});
+    dropUnmounted(); // a fresh Load answers for itself, as it does for the field errors (CR-01)
     try {
       const from = !copy && entry?.location === where ? entry : null;
       const found = wantSingle
@@ -693,9 +726,12 @@ export function LaunchPage({
         ...(target ? { target } : {}),
         ...(Object.keys(res.sent).length ? { default_resources: res.sent } : {}),
         ...(path ? { config_file: path } : {}),
+        ...(launchAnyway ? { allow_unmounted: true } : {}),
       });
       onLaunched(run.id);
       setLaunchedWarnings(run.warnings ?? []);
+      setUnmounted(null);
+      setLaunchAnyway(false);
     } catch (error) {
       const fileDown = /^the config file cannot be read: /;
       if (path && error instanceof ApiError && error.status === 503 && fileDown.test(error.message)) {
@@ -704,8 +740,16 @@ export function LaunchPage({
         setConfigDown(error.message.replace(fileDown, "").replace(/\.$/, ""));
         return;
       }
-      const found =
-        error instanceof ApiError && error.errors.length ? toErrors(error.errors, keys) : { form: `Not launched: ${(error as Error).message}` };
+      // the paths the containers would not see are shown on their own (api §5.2), not on a field
+      const known = error instanceof ApiError && error.errors.length ? error.errors : [];
+      const refusal = known.find((e) => e.field === "allow_unmounted") ?? null;
+      setUnmounted(refusal ? refusal.message : null);
+      const rest = known.filter((e) => e !== refusal);
+      const found = rest.length
+        ? toErrors(rest, keys)
+        : known.length
+          ? {}
+          : { form: `Not launched: ${(error as Error).message}` };
       setErrors(found);
       if (found.config_file) focusField("config_file");
     } finally {
@@ -784,6 +828,19 @@ export function LaunchPage({
     <Text size="sm" c="var(--sp-state-failed-fg)" role="alert" mt={4}>
       {errors.form}
     </Text>
+  );
+  /** The paths the containers would not see (built 2026-11-25, api §5.2): the server's words and
+   * the confirmation, above the Launch button; a keyboard-reachable checkbox, nothing hover-only. */
+  const unmountedAlert = unmounted !== null && (
+    <Alert>
+      <Text size="sm">{unmounted}</Text>
+      <Checkbox
+        mt="xs"
+        label="Launch anyway: these paths are not visible in the containers"
+        checked={launchAnyway}
+        onChange={(e) => setLaunchAnyway(e.currentTarget.checked)}
+      />
+    </Alert>
   );
   const local = server?.executor === "local";
   const headLine = server ? (local ? `a process on ${server.node}` : `a tmux session on ${server.node}`) : "…";
@@ -1170,6 +1227,7 @@ export function LaunchPage({
                   value={profile}
                   onChange={(e) => {
                     setPicked(e.currentTarget.value);
+                    dropUnmounted(); // the profile owns the software: the refusal is stale (CR-01)
                     reaskProfiles(e.currentTarget.value);
                   }}
                   data={[
@@ -1220,9 +1278,9 @@ export function LaunchPage({
               list={envs}
               failed={envsFailed}
               chosen={chosen}
-              onChoose={setEnvName}
+              onChoose={chooseEnv}
               onRetry={loadEnvs}
-              onCreated={(item) => void loadEnvs().then(() => setEnvName(item.name))}
+              onCreated={(item) => void loadEnvs().then(() => chooseEnv(item.name))}
               error={errors.environment}
             />
             <ResourcesRow
@@ -1302,7 +1360,7 @@ export function LaunchPage({
                     tried={tried}
                     prefill={defaultsMode}
                     incomplete={incomplete}
-                    onChange={(key, v) => setValues((old) => ({ ...old, [key]: v }))}
+                    onChange={editParam}
                   />
                 )}
                 {sections.length > 1 && sections.map((section, i) => (
@@ -1318,11 +1376,11 @@ export function LaunchPage({
                     tried={tried}
                     prefill={defaultsMode}
                     incomplete={incomplete}
-                    onChange={(key, v) => setValues((old) => ({ ...old, [key]: v }))}
+                    onChange={editParam}
                   />
                 ))}
               </Stack>
-              {sections.length === 0 && <KeyValueRows rows={rows} onChange={setRows} />}
+              {sections.length === 0 && <KeyValueRows rows={rows} onChange={editRows} />}
             </FoldSection>
           )}
           {loaded && graphOn && (
@@ -1405,6 +1463,7 @@ export function LaunchPage({
                 </ul>
               )}
             </div>
+            {!phone && unmountedAlert}
             {!phone && formError}
           </section>
           {loaded && engine && (
@@ -1420,6 +1479,7 @@ export function LaunchPage({
           {/* the phone's pinned bar: Launch, then the first reason (a visual copy) or what it sends */}
           {phone && (
             <div className="launch-bar">
+              {unmountedAlert}
               <div className="launch-bar-row">
                 {launchButton}
                 {(why || summary) && (

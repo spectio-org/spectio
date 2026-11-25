@@ -70,6 +70,9 @@ export interface LaunchBody {
   default_resources?: { cpus?: number; mem_mib?: number; time_min?: number };
   /** The absolute path of an extra config file, read once by the server at this launch (api §5.7). */
   config_file?: string;
+  /** Built 2026-11-25 (api §5.2): launch although the server refused paths the containers would
+   * not see. Only sent as `true`, after the user confirms on the refusal. */
+  allow_unmounted?: boolean;
 }
 
 export interface Launched {
