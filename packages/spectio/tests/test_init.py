@@ -225,6 +225,21 @@ def test_settings_layers(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert Settings().data_dir == home / ".spectio"
 
 
+def test_settings_nxf_syntax_parser(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """#368: `[engines] nxf_syntax_parser = "v1"` picks Nextflow's config/script parser, for
+    pipelines whose config the strict parser of 26.10.4 refuses; only `v1` or `v2`, unset by
+    default so Nextflow's own default applies, with the same flat `SPECTIO_*` name."""
+    assert Settings().engines.nxf_syntax_parser is None
+    config_path().parent.mkdir(mode=0o700)
+    config_path().write_text('[engines]\nnxf_syntax_parser = "v1"\n')
+    assert Settings().engines.nxf_syntax_parser == "v1"
+    monkeypatch.setenv("SPECTIO_ENGINES_NXF_SYNTAX_PARSER", "v2")
+    assert Settings().engines.nxf_syntax_parser == "v2"
+    monkeypatch.setenv("SPECTIO_ENGINES_NXF_SYNTAX_PARSER", "v3")
+    with pytest.raises(ValueError):
+        Settings()
+
+
 def test_software_cache_defaults_to_the_runs_root(
     home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

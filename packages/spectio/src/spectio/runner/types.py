@@ -132,6 +132,7 @@ class LaunchSpec:
     # [engines] nextflow_task_metrics: on, the head script exports nothing; off, it exports
     # SPECTIO_TASK_METRICS=false, which turns nf-spectio's enableMetrics() off.
     task_metrics: bool = True
+    nxf_syntax_parser: str | None = None  # `v1` or `v2`, as NXF_SYNTAX_PARSER (#368)
     extra_args: list[str] = field(default_factory=list)
     resume_of: ResumeSource | None = None
     target: RunTarget | None = None

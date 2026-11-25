@@ -117,6 +117,8 @@ class EngineOpts(_Model):
     snakemake_cmd: str | None = None
     nxf_opts: str = "-Xmx2g"
     nextflow_task_metrics: bool = True
+    # #368: Nextflow's config/script parser, for pipelines whose config the strict one refuses
+    nxf_syntax_parser: Literal["v1", "v2"] | None = None
     extra_args: dict[Literal["nextflow", "snakemake"], list[str]] = {}  # per engine
 
 
@@ -163,6 +165,7 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_ENGINES_SNAKEMAKE_CMD": ("engines", "snakemake_cmd"),
     "SPECTIO_ENGINES_NXF_OPTS": ("engines", "nxf_opts"),
     "SPECTIO_ENGINES_NEXTFLOW_TASK_METRICS": ("engines", "nextflow_task_metrics"),
+    "SPECTIO_ENGINES_NXF_SYNTAX_PARSER": ("engines", "nxf_syntax_parser"),
     "SPECTIO_ENGINES_EXTRA_ARGS_NEXTFLOW": ("engines", "extra_args", "nextflow"),
     "SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE": ("engines", "extra_args", "snakemake"),
     "SPECTIO_RUNNER_HEAD_WATCH_S": ("runner", "head_watch_s"),
