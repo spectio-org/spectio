@@ -216,6 +216,8 @@ Every case on SLURM, `launch` included, also checks that the server listens on i
 
 kind does not run inside a Claude Code cloud session: the VM's cgroup v1 layout stops the node's static pods ([spike D2](../research/spike-cloud-env-2026-10-26.md#result)), and the same layout stops sind (§4.1). Kubernetes and SLURM scenarios therefore run in CI and on the user's machine only (a session can run `dev/slurm/native.sh` for a one-node Slurm with accounting, §4.1); `dev-env.yml` proves both layers on every change to `dev/` (§1 "Checks").
 
+*Note 2026-11-25 (assumed; development only):* `dev/minikube/` runs the Spectio of the checkout, built from its wheels, in a local minikube cluster (`bash dev/minikube/up.sh`, `bash dev/minikube/smoke.sh`, `dev/minikube/README.md`): one pod, SQLite on a volume, the `local` executor, the synthetic `happy` run through the API on both engines. It is not a Kubernetes profile of this section, tests no Kubernetes runner (none is built) and is not run in CI; it reads `dev/versions.env` like `dev/k8s/cluster.sh`.
+
 ## 5. Isolated, parallel scenarios
 
 - **One command per scenario.** `dev/scenario.py up <scenario> [--id <n>]` creates:
