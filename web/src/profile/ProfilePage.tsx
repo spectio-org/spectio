@@ -159,7 +159,7 @@ export function ProfilePage() {
                   <div><dt>Started</dt><dd>{when(me.session.started_at)}</dd></div>
                   <div>
                     <dt>Expires</dt>
-                    <dd>{me.session.expires_at ? when(me.session.expires_at) : "Ends when the server stops, or when you sign out"}</dd>
+                    <dd>{me.session.expires_at ? when(me.session.expires_at) : "Ends when you sign out"}</dd>
                   </div>
                 </dl>
                 {out === "failed" && <p role="alert" className="sp-note sp-alert">Could not sign out. {outError}</p>}

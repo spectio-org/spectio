@@ -12,6 +12,7 @@ import threading
 import time
 import urllib.request
 from collections.abc import Iterator
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -111,10 +112,14 @@ def test_req2_exemptions_are_the_four() -> None:
     } == set(EXEMPT)
 
 
-def test_req2_secrets_256_bits(tmp_path: Path) -> None:
+def test_req2_secrets_256_bits(tmp_path: Path, writer: Writer) -> None:
     tmp_path.chmod(0o700)
     key = ServerKey.generate(tmp_path)
-    for secret in (TicketStore().mint(), SessionStore().create(), key.value):
+    for secret in (
+        TicketStore().mint(),
+        SessionStore(writer, timedelta(days=7), timedelta(days=30)).create(),
+        key.value,
+    ):
         assert re.fullmatch(r"[A-Za-z0-9_-]{43}", secret)
         assert len(base64.urlsafe_b64decode(secret + "=")) >= 32
     assert TicketStore().mint() != TicketStore().mint()

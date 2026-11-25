@@ -21,7 +21,7 @@ Click the avatar at the right of the top bar. The breadcrumb reads Home › Prof
 | Card | What it says |
 |---|---|
 | **Who the server runs as** | the Unix user and its UID, and "You are the only principal: runs, files and settings are this user's." |
-| **This session** | when this browser's session started; "Expires: Ends when the server stops, or when you sign out" (a session lives in memory and has no end date); **Sign out of this session** |
+| **This session** | when this browser's session started; "Expires" with the date and time the session ends if it is not used again (#375, 2026-11-25; a session is kept in the database and survives a server restart; the screenshots below predate it and show "Ends when the server stops, or when you sign out"); **Sign out of this session** |
 | **Config paths** | the config file, the data directory, the database directory and the observed runs directory, each with a **Copy** button. They are read only here: change them in `spectio.toml`, then restart `spectio serve` |
 | **Theme** | Light, Dark or System, kept in this browser. System follows your device |
 
@@ -51,10 +51,10 @@ GET /me                            (the same cookie)
 401
 ```
 
-- **`expires_at` is always `null`** in 0.0.1.
+- **`expires_at` was `null`** in this recording, made before #375 (2026-11-25); it is now the end of the session: its idle time, or its absolute lifetime when that comes first.
 
 ## Not checked
 
-- The page on a server with an `expires_at` (no 0.0.1 session has one), the "Could not copy" message, and the Retry state were not captured. Unit tests cover them.
+- The page with the `expires_at` of #375 (2026-11-25; the screenshots predate it), the "Could not copy" message, and the Retry state were not captured. Unit tests cover them.
 - The avatar has no "you are here" cue yet.
 - Firefox, WebKit and a screen reader: Chromium only.

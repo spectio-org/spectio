@@ -38,7 +38,8 @@ def test_me_names_the_principal_the_session_and_the_paths(
     assert body["principal"] == {"user": pwd.getpwuid(os.getuid()).pw_name, "uid": os.getuid()}
     started = datetime.fromisoformat(body["session"]["started_at"])
     assert timedelta(0) <= datetime.now(UTC) - started < timedelta(minutes=1)
-    assert body["session"]["expires_at"] is None  # in memory: it ends when the server stops
+    expires = datetime.fromisoformat(body["session"]["expires_at"])
+    assert expires - started == timedelta(days=7)  # the idle time (#375)
     assert body["paths"] == {
         "config_file": str(config_path()),
         "data_dir": str(settings.data_dir),
@@ -82,13 +83,13 @@ def test_sign_out_needs_an_origin(authed_client: TestClient) -> None:
     assert authed_client.post(SIGN_OUT, headers={"Origin": ""}).status_code == 403
 
 
-def test_session_store_keeps_the_start_and_revokes() -> None:
-    store = SessionStore()
+def test_session_store_keeps_the_start_and_revokes(writer: Writer) -> None:
+    store = SessionStore(writer, timedelta(days=7), timedelta(days=30))
     before = datetime.now(UTC)
     secret = store.create()
-    started = store.started(secret)
-    assert started is not None and before <= started <= datetime.now(UTC)
-    assert store.started("unknown") is None
+    span = store.lifespan(secret)
+    assert span is not None and before <= span[0] <= datetime.now(UTC)
+    assert store.lifespan("unknown") is None
     store.revoke(secret)
-    assert not store.valid(secret) and store.started(secret) is None
+    assert not store.valid(secret) and store.lifespan(secret) is None
     store.revoke(secret)  # twice: nothing to do

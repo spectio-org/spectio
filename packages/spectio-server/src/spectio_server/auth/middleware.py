@@ -12,6 +12,7 @@ the cross-site check (`api.browser`), run before this one; the write checks of r
 from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
+from starlette.concurrency import run_in_threadpool
 
 from spectio_server.api.problems import problem
 from spectio_server.auth import host
@@ -54,6 +55,7 @@ def install(app: FastAPI) -> None:
         if (request.method, request.url.path) in EXEMPT:
             return await call_next(request)
         secret = request.cookies.get(cookie_name(request.headers.get("host")))
-        if secret is None or not request.app.state.sessions.valid(secret):
+        # off the event loop: the session is a row of the database (#375)
+        if secret is None or not await run_in_threadpool(request.app.state.sessions.valid, secret):
             return unauthenticated()
         return await call_next(request)

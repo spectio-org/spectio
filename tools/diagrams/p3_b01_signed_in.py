@@ -8,7 +8,8 @@ merged, then the batch code-simplifier):
 - spectio_server/auth/secrets.py: three secrets of 32 bytes (`secrets.token_urlsafe(32)`), compared
   in constant time; ServerKey.generate writes `server.key` 0600 under the db dir (node-local) at
   each start; TicketStore: single use (`burn` pops it), TICKET_TTL_S 15 * 60, only the SHA-256 kept;
-  SessionStore: in memory, digests only;
+  SessionStore: in memory, digests only (since #375, 2026-11-25: a `sessions` table, digests only,
+  so a restart keeps a valid session; this figure's third line was changed to say so);
 - spectio_server/serve.py: start_text prints the first link "(single use, valid 15 minutes)", and
   "New link at any time: spectio login --print-link"; on SLURM the `ssh -N -L` tunnel line;
 - spectio/cli/login.py: `_checked` (node, port 1024-65535, absolute db dir), another node: "run
@@ -97,7 +98,7 @@ def build(theme: Theme) -> Sketch:
     s.step(x + 150, CAP, 1, "serve makes a key")
     lines(s, x, CAP + 30, ("a new 32-byte key at each start",
                            "it buys a link, never a session",
-                           "a restart ends every session"))
+                           "a restart keeps valid sessions"))
 
     # 2 login asks the server for a link
     x = COL[1]

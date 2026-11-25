@@ -88,6 +88,7 @@ def slurm_name(value: str) -> str:
 AbsPath = Annotated[Path, AfterValidator(_absolute)]
 SlurmName = Annotated[str, AfterValidator(slurm_name)]
 Seconds = Annotated[float, Field(gt=0, allow_inf_nan=False)]
+Days = Annotated[float, Field(gt=0, le=3650, allow_inf_nan=False)]
 
 
 class _Model(BaseModel):
@@ -136,6 +137,14 @@ class RunnerOpts(_Model):
     spool_s: Seconds = 2
 
 
+class AuthOpts(_Model):
+    """How long a browser session lasts (#375; dev-env §15.3 "Access"): it ends after
+    `session_idle_days` with no request, and in any case `session_max_days` after it started."""
+
+    session_idle_days: Days = 7
+    session_max_days: Days = 30
+
+
 class FeatureOpts(_Model):
     """Features behind a flag (dev-env §15.1). `single_target`: runs that target one module or
     one rule (api §5.10); `module_namespaces`: the registry namespaces such a run may use."""
@@ -156,6 +165,8 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_EXECUTOR": ("executor",),
     "SPECTIO_SERVER_HOST": ("server", "host"),
     "SPECTIO_SERVER_FEATURES": ("server", "features"),
+    "SPECTIO_AUTH_SESSION_IDLE_DAYS": ("auth", "session_idle_days"),
+    "SPECTIO_AUTH_SESSION_MAX_DAYS": ("auth", "session_max_days"),
     "SPECTIO_SLURM_PARTITION": ("slurm", "partition"),
     "SPECTIO_SLURM_ACCOUNT": ("slurm", "account"),
     "SPECTIO_SLURM_ACCOUNTING": ("slurm", "accounting"),
@@ -212,6 +223,7 @@ class Settings(BaseSettings):
     executor: Literal["slurm", "local"] = "slurm"  # local: P1 Assumption 23
     host: str | None = None  # the login node spectio init ran on (the host pin)
     server: ServerOpts = ServerOpts()
+    auth: AuthOpts = AuthOpts()
     slurm: SlurmOpts = SlurmOpts()
     engines: EngineOpts = EngineOpts()
     runner: RunnerOpts = RunnerOpts()
@@ -260,6 +272,8 @@ def render_toml(settings: Settings) -> str:
     del data["server"]  # its one allowed value is the default (dev-env §15.3 req. 1)
     if settings.executor == "local":
         del data["slurm"]
+    if settings.auth == AuthOpts():
+        del data["auth"]  # the defaults: written only once someone changes one
     if settings.features == FeatureOpts():
         del data["features"]  # off by default: written only once someone turns one on
     top = [f"{k} = {_toml_value(v)}" for k, v in data.items() if not isinstance(v, dict)]

@@ -147,7 +147,7 @@ export type TargetInspected =
 /** `GET /api/v1/me` in 0.0.1 (schema `Me`, api §5.8): paths only, never a secret. */
 export interface Me {
   principal: { user: string; uid: number };
-  /** `expires_at` null: the session ends when the server stops. */
+  /** `expires_at`: when the session ends if it is not used again (#375); null: only a sign-out ends it. */
   session: { started_at: string | null; expires_at: string | null };
   paths: { config_file: string; data_dir: string; db_dir: string; observed_dir: string };
 }

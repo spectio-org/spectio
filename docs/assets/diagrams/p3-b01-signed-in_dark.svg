@@ -46,7 +46,7 @@
   <text x="200.0" y="372.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">1 · serve makes a key</text>
   <text x="50.0" y="402.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">a new 32-byte key at each start</text>
   <text x="50.0" y="423.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">it buys a link, never a session</text>
-  <text x="50.0" y="444.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">a restart ends every session</text>
+  <text x="50.0" y="444.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">a restart keeps valid sessions</text>
   <rect x="440.0" y="120.0" width="320.0" height="66.0" rx="5" fill="#121318"/>
   <path d="M439.7,119.4 C547.6,119.0 652.3,119.6 760.4,120.4" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M440.2,120.2 C546.4,120.2 653.7,120.2 760.8,119.7" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
