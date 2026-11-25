@@ -1,6 +1,7 @@
 """dev-env §15.3 req. 2: the token link, the server key and the session (P1 Task 12).
 
-Every route needs the session secret, except the four of P1 Assumption 8; the ticket is single
+Every route needs the session secret, except the four of P1 Assumption 8 and the health
+probes (`health.PATHS`, admin §3.5); the ticket is single
 use and lives 15 minutes; only `spectio login --print-link` uses the server key.
 """
 
@@ -24,6 +25,7 @@ from spectio.cli import login
 from spectio.cli.main import app as cli_app
 from spectio.config import Settings
 from spectio_server import app as app_mod
+from spectio_server import health
 from spectio_server.auth.middleware import EXEMPT, cookie_name
 from spectio_server.auth.routes import EXPIRED
 from spectio_server.auth.secrets import ServerKey, SessionStore, TicketStore
@@ -87,7 +89,11 @@ def test_req2_every_route_needs_session(
     for method_set, path in _routes(client.app.routes, ""):  # type: ignore[attr-defined]
         url = re.sub(r"\{[^}]+\}", "x", path)
         for method in sorted(method_set):
-            if (method, path) in EXEMPT or (method == "HEAD" and ("GET", path) in EXEMPT):
+            if (
+                (method, path) in EXEMPT
+                or (method == "HEAD" and ("GET", path) in EXEMPT)
+                or path in health.PATHS  # the probes answer without a session (test_health)
+            ):
                 continue
             answer = client.request(method, url)
             assert answer.status_code == 401, (method, url, answer.text)
@@ -110,6 +116,7 @@ def test_req2_exemptions_are_the_four() -> None:
         ("POST", EXCHANGE),
         ("POST", LINKS),
     } == set(EXEMPT)
+    assert health.PATHS == frozenset({"/health/live", "/health/ready"})
 
 
 def test_req2_secrets_256_bits(tmp_path: Path, writer: Writer) -> None:

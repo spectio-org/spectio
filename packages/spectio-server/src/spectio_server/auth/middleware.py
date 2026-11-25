@@ -4,9 +4,10 @@ Every request needs the session cookie that the link exchange set, named after t
 (`cookie_name`, req. 3; P1 Task 13), or gets a 401 problem with
 no data, whatever its path, before any route runs. Four routes are exempt (P1 Assumption 8):
 the bootstrap page and its script, which carry no data, the exchange, which checks its ticket,
-and `auth/links`, which checks the server key. The Host allow-list (`auth.host`, req. 4), then
-the cross-site check (`api.browser`), run before this one; the write checks of req. 7
-(`auth.writes`) run after it, on the exempt writes too.
+and `auth/links`, which checks the server key. The health probes (`health.PATHS`) are exempt
+too: a platform, not a browser, probes them, with no session (admin §3.5). The Host
+allow-list (`auth.host`, req. 4), then the cross-site check (`api.browser`), run before this
+one; the write checks of req. 7 (`auth.writes`) run after it, on the exempt writes too.
 """
 
 from collections.abc import Awaitable, Callable
@@ -14,6 +15,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from starlette.concurrency import run_in_threadpool
 
+from spectio_server import health
 from spectio_server.api.problems import problem
 from spectio_server.auth import host
 
@@ -52,7 +54,7 @@ def install(app: FastAPI) -> None:
     async def session(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if (request.method, request.url.path) in EXEMPT:
+        if request.url.path in health.PATHS or (request.method, request.url.path) in EXEMPT:
             return await call_next(request)
         secret = request.cookies.get(cookie_name(request.headers.get("host")))
         # off the event loop: the session is a row of the database (#375)

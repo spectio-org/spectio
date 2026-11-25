@@ -8,20 +8,22 @@ as `:cancel`, needs only the Origin. The Host allow-list
 `auth.middleware`) run before this one, so a request with no session gets a 401 and learns
 nothing of these rules. The two session-exempt writes, the exchange and `auth/links`, are
 checked here all the same. No route sends a CORS header, so a cross-site preflight is never
-granted.
+granted. The health probes (`health.PATHS`) are GET-only and exempt here too: their 405, not
+this check's 403, says a write is not allowed (admin §3.5).
 """
 
 from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 
+from spectio_server import health
 from spectio_server.api.problems import problem
 
 MAX_BODY = 1048576
 
 
 def refusal(request: Request) -> Response | None:
-    if request.method in ("GET", "HEAD"):
+    if request.method in ("GET", "HEAD") or request.url.path in health.PATHS:
         return None
     origin = request.headers.get("origin")
     if origin is None:
