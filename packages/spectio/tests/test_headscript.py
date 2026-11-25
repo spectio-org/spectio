@@ -20,6 +20,7 @@ import pytest
 
 from spectio import loginshell
 from spectio.environments import DefaultResources, LocalValues, SlurmValues
+from spectio.runner import headscript
 from spectio.runner.engines import (
     EngineMissing,
     EngineTooOld,
@@ -387,30 +388,35 @@ exit 7  # the head must keep the engine's exit status once the cache is removed 
 """
 
 
-def test_snakemake_conda_pkgs_dir_is_per_launch_and_removed(home: Path, bridges: Path) -> None:
+def test_snakemake_conda_pkgs_dir_is_per_launch_and_removed(
+    home: Path, bridges: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """#378: conda's package downloads into a directory on the shared software cache come back
     empty and fail their checksum, while an environment built from a prefix there works; so the
     head makes a fresh private directory on the node's local storage, one per launch, and removes
     it once the engine has ended, keeping the engine's exit status as its own."""
+    local = tmp_path / "node-local"  # stands for /tmp; TMPDIR (the test's own) is not used
+    local.mkdir()
+    monkeypatch.setattr(headscript, "CONDA_PKGS_BASE", str(local))
     spec = snakemake_spec(home, software_cache=home / "cache", software=["conda"])
     stub_engine(home / "bin", CONDA_PKGS_STUB)
     text = render_head_script(spec)
     # like rm and timeout: the login profile's PATH may hold no mktemp
-    mktemp = f'{shutil.which("mktemp") or "mktemp"} -d "${{TMPDIR:-/tmp}}/spectio-conda.XXXXXX"'
+    mktemp = f"{shutil.which('mktemp') or 'mktemp'} -d {local}/spectio-conda.XXXXXX"
     assert mktemp in text
     # after the PYTHONPATH export, before the rule listing
     assert text.index("export PYTHONPATH=") < text.index(mktemp) < text.index("--list-rules")
     assert "trap spectio_rm_pkgs EXIT" in text  # removed on every exit, early ones too
     assert run_head(spec).returncode == 7  # the engine's status, never the removal's
     where = Path(exported(spec)["CONDA_PKGS_DIRS"])
-    assert where.parent == Path(os.environ["TMPDIR"]) and where.name.startswith("spectio-conda.")
+    assert where.parent == local and where.name.startswith("spectio-conda.")
     assert not where.exists()  # removed when the engine ended
     # CR-378-01: a cancel before the engine starts exits early and still removes it
     head = write_launch_files(spec)
     (spec.launch_dir / ".spectio" / "cancel").write_text("")
     early = subprocess.run([BASH, str(head)], capture_output=True, text=True, timeout=60)
     assert early.returncode == 143
-    assert not list(Path(os.environ["TMPDIR"]).glob("spectio-conda.*"))
+    assert not list(local.glob("spectio-conda.*"))
     # no conda deployed, or a workflow profile: the head makes no directory
     assert "mktemp" not in render_head_script(replace(spec, software=["apptainer"]))
     assert "mktemp" not in render_head_script(replace(spec, profiles=["slurm"]))

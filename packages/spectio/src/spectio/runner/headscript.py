@@ -71,8 +71,11 @@ _RESUME = (
 _ENGINE = "( [ -e {cancel} ] && exit 143; {command} )\n"
 # conda's package cache (#378): on a BeeGFS client, conda's downloads into a shared directory read
 # back empty, so each launch gets a private (0700) node-local one, removed when the head exits.
+# Under /tmp, never $TMPDIR: a login profile may point TMPDIR at the shared scratch (seen on a
+# cluster, 2026-11-25), where the downloads fail the same way.
+CONDA_PKGS_BASE = "/tmp"  # noqa: S108 (mktemp -d: random name, mode 0700)
 _CONDA_PKGS = (
-    'spectio_pkgs=$({mktemp} -d "${{TMPDIR:-/tmp}}/spectio-conda.XXXXXX") || exit 1\n'
+    "spectio_pkgs=$({mktemp} -d {template}) || exit 1\n"
     'spectio_rm_pkgs() {{ {rm} -rf -- "$spectio_pkgs"; }}\n'
     "trap spectio_rm_pkgs EXIT\n"
     'export CONDA_PKGS_DIRS="$spectio_pkgs"\n'
@@ -532,7 +535,11 @@ def render_head_script(spec: LaunchSpec) -> str:
         pylib = shlex.quote(str(_spectio(spec) / "pylib"))
         inner += f"export PYTHONPATH={pylib}${{PYTHONPATH:+:$PYTHONPATH}}\n"
         if conda_pkgs:  # a fresh private directory, node-local (#378)
-            inner += _CONDA_PKGS.format(mktemp=tools["mktemp"], rm=tools["rm"])
+            inner += _CONDA_PKGS.format(
+                mktemp=tools["mktemp"],
+                rm=tools["rm"],
+                template=shlex.quote(f"{CONDA_PKGS_BASE}/spectio-conda.XXXXXX"),
+            )
         if spec.resume_of is not None and spec.resume_of.unlock:  # `cli.py:1226`, v9.27.1
             unlock = " ".join([spec.engine_cmd, *map(shlex.quote, _snakemake_base(spec))])
             inner += f"{unlock} --unlock || exit $?\n"
