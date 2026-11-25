@@ -60,7 +60,8 @@ class Workflow(BaseModel):
     location: str
     revision: str | None = None
     engine: Literal["nextflow", "snakemake"]
-    # The Nextflow entry script, passed as `-main-script` (#351); None: Nextflow's `main.nf`
+    # The Nextflow entry script, run by its path in the pipeline directory (#351); None:
+    # Nextflow's `main.nf`
     main_script: str | None = Field(None, pattern=rf"^{MAIN_SCRIPT.pattern}$")
 
 
