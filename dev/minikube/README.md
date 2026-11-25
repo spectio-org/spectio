@@ -7,10 +7,10 @@ SQLite on a volume), for development only. It is not the Kubernetes deployment o
 ## Prerequisites
 
 - A running Docker daemon (colima, Docker Desktop, Linux Docker), `minikube` (docker driver) and `kubectl`.
-- To build the wheels (done once; `up.sh --rebuild` repeats it): `uv`, `npm`, Java 21 and Nextflow (the `spectio`
+- To build the wheels (done once; `up.sh --rebuild` repeats it): `uv`, `npm`, `unzip`, Java 21 and Nextflow (the `spectio`
   wheel carries nf-spectio, which is compiled against Nextflow; pins in `dev/versions.env`).
   The Nextflow must be the pinned `-dist` launcher (a conda launcher cannot compile it): on the `PATH` or as
-  `NEXTFLOW=/path/to/nextflow`; `up.sh` stops when the wheel comes out without the engine bridges.
+  `NEXTFLOW=/absolute/path/to/nextflow`; `up.sh` stops when the wheel comes out without the engine bridges.
 - Kubernetes `MINIKUBE_KUBERNETES_VERSION` of `dev/versions.env` for the node.
 - About 5 GiB of free memory in the Docker VM (minikube gets 4 GiB by default: `MINIKUBE_MEMORY`, `MINIKUBE_CPUS`).
 - Colima, or any Docker VM that also hosts another cluster (kind): raise the inotify limit, or kube-proxy dies with
@@ -36,7 +36,7 @@ account token, all capabilities dropped; an init container only chowns the volum
 The first start runs `spectio init --local` in the pod; the configuration is kept on the volume.
 
 Probes: both are `exec` probes inside the pod (the server binds `127.0.0.1` only) that GET `/health/live` (liveness) and
-`/health/ready` (readiness, 503 unless the database schema revision is supported) with Python's `urllib`; they need no session.
+`/health/ready` (readiness, 503 unless the database schema revision is supported) with Python's `http.client`; they need no session.
 
 ## Open the UI
 

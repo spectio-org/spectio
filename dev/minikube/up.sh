@@ -51,8 +51,10 @@ state=$( (cd "$repo" && git rev-parse HEAD && git status --porcelain=v1 -- packa
   git diff HEAD -- packages web engine-bridges uv.lock) | shasum -a 256 | cut -c1-64)
 if [ "${1:-}" = --rebuild ] || [ "$(cat "$build/wheels.sha" 2>/dev/null || true)" != "$state" ] ||
   ! ls "$build"/wheels/spectio_server-*.whl >/dev/null 2>&1; then
-  for cmd in uv npm java; do command -v "$cmd" >/dev/null || die "$cmd is needed to build the wheels"; done
-  command -v "${NEXTFLOW:-nextflow}" >/dev/null || die "nextflow is needed to build nf-spectio into the spectio wheel"
+  for cmd in uv npm java unzip; do command -v "$cmd" >/dev/null || die "$cmd is needed to build the wheels"; done
+  # absolute, and exported: build.sh runs from the wheel's build hook, in another directory
+  NEXTFLOW=$(command -v "${NEXTFLOW:-nextflow}") || die "nextflow is needed to build nf-spectio into the spectio wheel"
+  export NEXTFLOW
   log "web screens"
   npm --prefix "$repo/web" ci --ignore-scripts --no-audit --no-fund >/dev/null
   (cd "$repo/web" && ./node_modules/.bin/vite build --configLoader runner >/dev/null)
@@ -62,16 +64,17 @@ if [ "${1:-}" = --rebuild ] || [ "$(cat "$build/wheels.sha" 2>/dev/null || true)
   for p in spectio-sdk spectio spectio-server; do
     uv build "$repo/packages/$p" --wheel --out-dir "$build/wheels" --quiet
   done
-  # the hook that adds the bridges only warns when it cannot build them (`--quiet` hides it): a wheel without them
-  # gives an image whose runs all fail ("_bridges/... is missing"), so check, and do not record the state
-  listing=$(unzip -l "$build"/wheels/spectio-[0-9]*.whl)
-  case "$listing" in
-    *spectio/_bridges/nf-spectio-*) ;;
-    *) rm -rf "$build/wheels"
-       die "the spectio wheel carries no engine bridges: nf-spectio is compiled with the jar of the -dist Nextflow of dev/versions.env: put it on the PATH or set NEXTFLOW to its path (a conda launcher is not enough)" ;;
-  esac
   echo "$state" >"$build/wheels.sha"
 fi
+# the hook that adds the bridges only warns when it cannot build them (`--quiet` hides it): a wheel without them
+# gives an image whose runs all fail ("_bridges/... is missing"). Checked on every run, so that wheels kept from an
+# earlier up.sh are checked too; on failure nothing is kept and the next run rebuilds.
+whl=$(ls "$build"/wheels/spectio-[0-9]*.whl 2>/dev/null || true)
+case "$(unzip -l "$whl" 2>/dev/null || true)" in
+  *spectio/_bridges/nf-spectio-*) ;;
+  *) rm -rf "$build/wheels" "$build/wheels.sha"
+     die "the spectio wheel carries no engine bridges: nf-spectio is compiled with the jar of the -dist Nextflow of dev/versions.env: put it on the PATH or set NEXTFLOW to its absolute path (a conda launcher is not enough), then re-run" ;;
+esac
 # the hashed third-party dependencies of the wheels (the workspace itself is left out), and the Snakemake locks
 (cd "$repo" && uv export --frozen --no-dev --no-emit-project --no-emit-workspace --no-header >"$build/requirements.txt")
 cp "$repo/dev/snakemake.lock.txt" "$repo/dev/snakemake.lock.arm64.txt" "$build/"
