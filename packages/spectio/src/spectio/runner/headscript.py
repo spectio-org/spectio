@@ -172,11 +172,14 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         raise ValueError("a Snakemake launch takes one profile")
     target = spec.target
     if spec.engine == "nextflow":
-        args = ["run", str(spec.location)] if target is None else _module_run(spec, target)
+        script = spec.location
         if spec.main_script is not None and target is None:  # #351, checked again here
             if not MAIN_SCRIPT.fullmatch(spec.main_script):
                 raise ValueError(f"main script {spec.main_script[:40]!r} is not allowed")
-            args += ["-main-script", spec.main_script]
+            # by its path: Nextflow 26.10.4 ignores `-main-script` for a local directory, and
+            # reads the directory's nextflow.config for a script path (checked 2026-11-25)
+            script = spec.location / spec.main_script
+        args = ["run", str(script)] if target is None else _module_run(spec, target)
         args += ["-params-file", params]
         # The user's file first, Spectio's own last, so that its generic keys win (api §5.7).
         configs = [str(p) for p in (_extra(spec), spectio / "spectio.config") if p is not None]

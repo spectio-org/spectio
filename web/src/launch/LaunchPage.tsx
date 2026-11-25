@@ -1159,7 +1159,7 @@ export function LaunchPage({
                     // a copied entry script this pipeline no longer lists stays visible, since Launch sends it
                     ...(entryScript && !scripts.includes(entryScript) ? [{ value: entryScript, label: `${entryScript} (not found)` }] : []),
                   ]}
-                  description={`The Nextflow script the run starts from · passed as -main-script${hasMain ? "; main.nf when left as is" : ""}`}
+                  description={`The Nextflow script the run starts from · run by its path${hasMain ? "; main.nf when left as is" : ""}`}
                   error={errors.main_script}
                 />
               )}

@@ -1508,12 +1508,15 @@ def test_no_status_command_off_snakemake_slurm(home: Path, bridges: Path) -> Non
 
 
 def test_nextflow_main_script(tmp_path: Path) -> None:
-    """#351: a chosen entry script follows `run <location>` as `-main-script` (Nextflow CLI
-    reference, `run`); none keeps Nextflow's own `main.nf`."""
+    """#351: a chosen entry script is run by its path in the pipeline directory: Nextflow
+    26.10.4 ignores `-main-script` for a local directory ("Cannot find script file", checked on
+    the login node 2026-11-25), and reads the directory's `nextflow.config` for a script path;
+    none keeps Nextflow's own `main.nf`."""
     spec = make_spec(tmp_path / "runs", main_script="main_cellpose.nf")
     args = engine_args(spec)
-    assert args[:4] == ["run", str(spec.location), "-main-script", "main_cellpose.nf"]
-    assert "-main-script" not in engine_args(replace(spec, main_script=None))
+    assert args[:2] == ["run", str(spec.location / "main_cellpose.nf")]
+    assert "-main-script" not in args
+    assert engine_args(replace(spec, main_script=None))[:2] == ["run", str(spec.location)]
 
 
 @pytest.mark.parametrize("bad", ["../x.nf", "sub/x.nf", "-x.nf", ".nf", "x.config", "a b.nf"])
