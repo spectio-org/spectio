@@ -1131,6 +1131,22 @@
   font-size: inherit;
   color: var(--sp-text-link);
 }
+.sp-open-task {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  max-width: 100%;
+}
+/* The wildcards or tag (#385): a second, dimmed line, cut with an ellipsis; the button's label has them whole. */
+.sp-open-task .sp-open-parts {
+  max-width: 36ch;
+  overflow: hidden;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 400;
+  color: var(--sp-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .sp-open strong,
 .sp-open .sp-mono {
   color: inherit;
@@ -1197,6 +1213,22 @@
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+/* A task's title over its wildcards or tag as badges that wrap (#385). */
+.sp-sheet-titles {
+  flex: 1;
+  min-width: 0;
+}
+.sp-sheet-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-xs);
+  margin: var(--mantine-spacing-xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-sheet-parts li {
+  max-width: 100%;
 }
 .sp-sheet-head .mantine-CloseButton-root {
   flex-shrink: 0;

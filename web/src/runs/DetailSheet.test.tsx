@@ -219,7 +219,6 @@ test("a task row in the sheet opens the task detail: its facts and its files, no
   const facts = within(taskSheet).getByRole("region", { name: "ALIGN (S02)" });
   expect(facts).toHaveFocus();
   expect(within(taskSheet).getByText("tsk_2")).toBeInTheDocument();
-  expect(within(taskSheet).getByText("S02")).toBeInTheDocument();
   // UI-12: the sticky head holds the title, the state (icon and word) and Close; the facts do not repeat it
   const head = within(taskSheet).getByRole("heading", { level: 2, name: "ALIGN (S02)" }).closest(".sp-sheet-head") as HTMLElement;
   expect(within(head).getByText("Running")).toBeInTheDocument();
@@ -274,4 +273,32 @@ test("on the phone, a process card opens a bottom sheet that traps focus and ret
   expect(sheet).toContainElement(document.activeElement as HTMLElement);
   await userEvent.keyboard("{Escape}");
   await waitFor(() => expect(open).toHaveFocus());
+});
+
+test("#385: a Snakemake job's sheet head has the rule as its title and one labelled badge per wildcard", async () => {
+  const job = { ...task(1), process: "align", tag: "cell=C01, sample=S1" };
+  detail(
+    { workflow: { engine: "snakemake", engine_version: "9.27.1", location: "/p/smk", name: "smk", version: null } },
+    { [`${URL_}/tasks`]: { items: [job], next: null } },
+  );
+  app(`/runs/${ID}?tab=tasks`);
+  await userEvent.click(await screen.findByRole("button", { name: "Open job align (cell=C01, sample=S1)" }));
+  const sheet = await screen.findByRole("dialog", { name: "align (cell=C01, sample=S1)" });
+  const head = within(sheet).getByRole("heading", { level: 2 }).closest(".sp-sheet-head") as HTMLElement;
+  expect(within(head).getByText("align")).toBeInTheDocument();
+  const parts = within(head).getByRole("list", { name: "Wildcards" });
+  expect(within(parts).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["cell: C01", "sample: S1"]);
+  expect(within(head).getByRole("button", { name: "Close" })).toBeInTheDocument();
+  expect(within(sheet).queryByText("Tag", { selector: "dt" })).toBeNull();
+});
+
+test("#385: a Nextflow task's sheet head shows the tag as one badge", async () => {
+  detail();
+  app(`/runs/${ID}`);
+  await userEvent.click(within(await alignTable()).getByRole("button", { name: `Open process ${ALIGN}` }));
+  const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
+  await userEvent.click(await within(sheet).findByRole("button", { name: "Open task ALIGN (S02), Running" }));
+  const taskSheet = await screen.findByRole("dialog", { name: "ALIGN (S02)" });
+  const head = within(taskSheet).getByRole("heading", { level: 2 }).closest(".sp-sheet-head") as HTMLElement;
+  expect(within(within(head).getByRole("list", { name: "Tag" })).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["S02"]);
 });

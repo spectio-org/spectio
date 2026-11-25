@@ -1,4 +1,4 @@
-import { Button, Drawer } from "@mantine/core";
+import { Badge, Button, Drawer } from "@mantine/core";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type Counts, type Process, type RunDetail, type Stage, type Task, listTasks } from "../api";
 import { Icon } from "../icons";
@@ -9,6 +9,7 @@ import { efficiencyFacts } from "./ByProcess";
 import { CheckpointMark, NearLimit, Word, taskLabel } from "./RunState";
 import { Facts, SlurmFacts } from "./SlurmFacts";
 import { TaskFiles } from "./TaskFiles";
+import { taskName } from "./taskName";
 import { type Shown, isTerminal, lastSegment, neededFirst, processState, refresh, stageWord, sum, taskWord, total, words } from "./stateWord";
 
 // The detail of a stage, a process (a rule) or a task (a job), in a side sheet (LiteTaskFiles,
@@ -250,7 +251,6 @@ function TaskView({ run, stages, processes, task, attempt, onOpen }: { run: RunD
   }, [run.id, task.id, onSlurm]);
   const facts: [string, ReactNode][] = [
     ["ID", <span className="sp-mono">{task.id}</span>],
-    ["Tag", task.tag ?? "—"],
     ["Last attempt", task.attempt_n ?? "—"],
     [
       w.Group,
@@ -288,6 +288,7 @@ export function DetailSheet({ run, stages, processes, views, onOpen, onBack, onC
     last.current = view;
   }, [view]);
   const name = view ? title(view, stages) : "";
+  const taskParts = view?.kind === "task" ? taskName(view.task).parts : [];
   const previous = views.length > 1 ? title(views[views.length - 2], stages) : null;
   let body = null;
   if (view?.kind === "process") {
@@ -305,7 +306,30 @@ export function DetailSheet({ run, stages, processes, views, onOpen, onBack, onC
       <Drawer.Content className={phone ? "sp-sheet-bottom" : undefined}>
         <Drawer.Header className="sp-sheet-head">
           {/* reopened from the URL, the focus trap starts on the title (data-autofocus), not on Close */}
-          <Drawer.Title className="sp-sheet-title">{view?.kind === "task" && view.attempt ? <span data-autofocus tabIndex={-1}>{name}</span> : name}</Drawer.Title>
+          <div className="sp-sheet-titles">
+            <Drawer.Title className="sp-sheet-title">
+              {view?.kind === "task" ? (
+                <span {...(view.attempt ? { "data-autofocus": true, tabIndex: -1 } : {})}>
+                  {/* the rule alone is shown; its parts are the badges below, and the whole label names the sheet */}
+                  <span aria-hidden="true">{taskName(view.task).title}</span>
+                  <span className="sp-sr">{name}</span>
+                </span>
+              ) : (
+                name
+              )}
+            </Drawer.Title>
+            {taskParts.length > 0 && (
+              <ul className="sp-sheet-parts" aria-label={taskParts.every((p) => p.key !== null) ? "Wildcards" : "Tag"}>
+                {taskParts.map((p) => (
+                  <li key={`${p.key}=${p.value}`}>
+                    <Badge component="span" variant="light" size="sm" tt="none">
+                      {p.key === null ? p.value : `${p.key}: ${p.value}`}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           {view?.kind === "task" && <Word state={view.task.state} word={taskWord(view.task.state)} />}
           <Drawer.CloseButton aria-label="Close" size={phone ? 44 : 36} icon={<Icon name="cross" />} />
         </Drawer.Header>

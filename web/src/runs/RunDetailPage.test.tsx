@@ -181,7 +181,7 @@ test("on a failed run the tasks filter starts at failed", async () => {
   await userEvent.click(await screen.findByRole("tab", { name: "Tasks" }));
   expect(screen.getByRole("button", { name: /^Failed/ })).toHaveAttribute("aria-pressed", "true");
   await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/tasks?state=failed&limit=50`));
-  expect(await screen.findByText(/\(S01\)/)).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: "Open task ALIGN (S01)" })).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: "Process" })).toBeInTheDocument();
 });
 
@@ -240,10 +240,11 @@ test("UX-PAR-26: the Tasks tab filters by pressed state buttons and refreshes on
   await userEvent.click(running);
   expect(running).toHaveAttribute("aria-pressed", "true");
   await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/tasks?state=running&limit=50`));
-  // The task cell reads "PROCESS (tag)", and its state is a word with an icon in a tone.
+  // The task cell reads the process, then its tag on a second line, and its state is a word with an icon in a tone.
   const table = await screen.findByRole("table", { name: "Tasks" });
   const row = within(table).getByText("ALIGN").closest("tr")!;
-  expect(row).toHaveTextContent("ALIGN (S01)");
+  expect(row).toHaveTextContent("ALIGN");
+  expect(within(row).getByText("S01")).toBeInTheDocument();
   expect(within(row).getByText("Failed").closest("[data-tone]")).toHaveAttribute("data-tone", "failed");
   // Live: a frame for this run refetches the shown page.
   const count = () => fetched(mock).filter((u) => u.startsWith(`${URL_}/tasks`)).length;
@@ -1126,4 +1127,28 @@ test("D-09: a 409 run-dir-unreachable on the Logs tab names the directory it tri
   const alert = await screen.findByRole("alert");
   expect(alert).toHaveTextContent(/The engine log could not be read: Run directory not reachable: \/scratch\/gone\/run_x\/launch/);
   expect(document.body.textContent).not.toMatch(/cleaned/i);
+});
+
+test("#385: a Snakemake job's row names the rule, with its wildcards as a second line, not `rule (…)`", async () => {
+  const job = { id: "tsk_9", process: "align", tag: "cell=C01, sample=S1", name: null, state: "succeeded", stage_id: null, attempt_n: 1, resources: NO_RESOURCES };
+  detail(
+    { workflow: { engine: "snakemake", engine_version: "9.27.1", location: "/g/wgs", name: "wgs", version: null } },
+    { [`${URL_}/tasks`]: { items: [job], next: null } },
+  );
+  app(`/runs/${ID}?tab=tasks`);
+  const table = await screen.findByRole("table", { name: "Jobs" });
+  // the accessible name is the whole text, and it names the row
+  const open = await within(table).findByRole("button", { name: "Open job align (cell=C01, sample=S1)" });
+  expect(within(open).getByText("align")).toBeInTheDocument();
+  expect(within(open).getByText("cell=C01 · sample=S1")).toBeInTheDocument();
+  expect(open.textContent).not.toContain("(");
+  expect(open).not.toHaveAttribute("title");
+});
+
+test("#385: a Nextflow task's row shows the process, then its tag as the second line", async () => {
+  detail();
+  app(`/runs/${ID}?tab=tasks`);
+  const open = await within(await screen.findByRole("table", { name: "Tasks" })).findByRole("button", { name: "Open task ALIGN (S01)" });
+  expect(within(open).getByText("S01")).toBeInTheDocument();
+  expect(open.textContent).not.toContain("(");
 });
