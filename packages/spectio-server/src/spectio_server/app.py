@@ -33,7 +33,7 @@ from spectio.catalog import KIND as CATALOG
 from spectio.catalog import catalog_path
 from spectio.config import Settings
 from spectio.envfile import environments_path
-from spectio_server import static, targets
+from spectio_server import health, static, targets
 from spectio_server.api import (
     browser,
     cancel,
@@ -174,6 +174,7 @@ def create_app(
     browser.install(app)  # no cross-site request, a GET included (§15.3 req. 7, SEC-P3T17-02)
     host.install(app)  # first, the bootstrap routes included: the Host allow-list (§15.3 req. 4)
     app.include_router(routes.pages)
+    app.include_router(health.router)  # the probes, outside the API prefix (admin §3.5)
     app.include_router(routes.router, prefix=API)
 
     # one scan, on TCP only: the start text reads it back (CR-P3T17-04)

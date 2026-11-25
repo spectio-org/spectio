@@ -7,7 +7,8 @@ origin, is refused with 403, a `GET` too. A `GET` such as inspect clones a repos
 site's `<img src>` must not reach it. The `SameSite=Strict` cookie (req. 3) does not cover a page
 on another port of the same loopback host: a site ignores the port ([HTML standard, "same
 site"](https://html.spec.whatwg.org/multipage/browsers.html#same-site) **[to be validated]**), so
-this check stays.
+this check stays. The health probes (`health.PATHS`) carry no data and no session: they pass
+(admin §3.5).
 """
 
 from collections.abc import Awaitable, Callable
@@ -15,6 +16,7 @@ from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request, Response
 
+from spectio_server import health
 from spectio_server.api.problems import problem
 
 
@@ -26,6 +28,8 @@ def _netloc(url: str) -> str | None:
 
 
 def refusal(request: Request) -> Response | None:
+    if request.url.path in health.PATHS:  # a probe sends no browser headers
+        return None
     host = request.headers.get("host", "")
     origin = request.headers.get("origin")
     referer = request.headers.get("referer")
