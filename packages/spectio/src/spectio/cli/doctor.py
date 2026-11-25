@@ -245,8 +245,8 @@ def _cache_place(cache: Path) -> Result:
         return (
             "warn",
             "software_cache",
-            f"{cache} is in the home directory: set software_cache (SPECTIO_SOFTWARE_CACHE) on"
-            " scratch or a group share",
+            f"{cache} is in the home directory: set software_cache (SPECTIO_SOFTWARE_CACHE) to"
+            " a directory of yours on a large file system (scratch)",
         )
     return ("ok", "software_cache", str(cache))
 

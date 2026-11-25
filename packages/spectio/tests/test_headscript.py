@@ -344,6 +344,23 @@ def test_snakemake_tool_caches_follow_the_software_cache(home: Path, bridges: Pa
     assert stat.S_IMODE(cache.stat().st_mode) == 0o700
 
 
+def test_snakemake_software_cache_chosen_by_the_user_keeps_its_mode(
+    home: Path, bridges: Path
+) -> None:
+    """CR-01: a cache directory that exists keeps its mode (a shared one stays shared, one the
+    user does not own is not chmod-ed); beside a workflow profile nothing is created (CR-02)."""
+    cache = home / "group" / "cache"
+    cache.mkdir(parents=True, mode=0o755)
+    cache.chmod(0o2775)
+    write_launch_files(snakemake_spec(home, software_cache=cache, software=["conda"]))
+    assert stat.S_IMODE(cache.stat().st_mode) == 0o2775
+    assert stat.S_IMODE((cache / "conda").stat().st_mode) == 0o700
+    other = home / "other" / "cache"
+    spec = snakemake_spec(home, software_cache=other, software=["conda"], profiles=["slurm"])
+    write_launch_files(spec)
+    assert not other.exists()
+
+
 def test_snakemake_software_flags_parse_as_snakemake_reads_them(home: Path, bridges: Path) -> None:
     """CR-02, CR-03: an Apptainer value starting with `-` stays one word, and the method's
     values end at a flag Spectio always writes, even when extra_args starts with a target."""

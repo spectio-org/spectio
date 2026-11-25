@@ -279,17 +279,32 @@ def _cap(local: LocalValues | None, key: str) -> int | None:
 SOFTWARE_METHOD = "--software-deployment-method"
 SOFTWARE_PREFIXES = {"conda": "--conda-prefix", "apptainer": "--apptainer-prefix"}
 APPTAINER_ARGS = "--apptainer-args"
-# The tools' own download caches, under the software cache (inbox #161)
-SOFTWARE_CACHES = {"apptainer-cache": "APPTAINER_CACHEDIR", "conda-pkgs": "CONDA_PKGS_DIRS"}
+# The tools' own download caches under the software cache (inbox #161): directory, tool and
+# the variable that points the tool at it
+SOFTWARE_CACHES = {
+    "apptainer-cache": ("apptainer", "APPTAINER_CACHEDIR"),
+    "conda-pkgs": ("conda", "CONDA_PKGS_DIRS"),
+}
 
 
 def _cache_dirs(spec: LaunchSpec) -> list[str]:
-    """The software cache's directories a launch uses: each tool's prefix and its cache."""
-    return [
-        name
-        for name in (*SOFTWARE_PREFIXES, *SOFTWARE_CACHES)
-        if name.split("-")[0] in spec.software
-    ]
+    """The software cache's directories a launch uses: each deployed tool's prefix and its own
+    cache; none beside a workflow profile, which owns its software (CR-02)."""
+    if spec.software_cache is None or spec.profiles:
+        return []
+    caches = [name for name, (tool, _) in SOFTWARE_CACHES.items() if tool in spec.software]
+    return [*(t for t in SOFTWARE_PREFIXES if t in spec.software), *caches]
+
+
+def _private_dir(path: Path) -> None:
+    """`path` and its missing parents, each made here 0700 whatever the umask (SEC-362-04); a
+    directory that exists keeps its mode, so a cache the user chose is never changed (CR-01)."""
+    if path.is_dir():
+        return
+    _private_dir(path.parent)
+    with contextlib.suppress(FileExistsError):  # another launch made it meanwhile
+        os.mkdir(path, 0o700)
+        os.chmod(path, 0o700)
 
 
 def _sets_software(arg: str, flag: str) -> bool:
@@ -446,13 +461,13 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
         env["NXF_LOG_FILE"] = str(_spectio(spec) / "nextflow.log")
         if spec.nxf_opts:
             env["NXF_OPTS"] = spec.nxf_opts
-    elif spec.software_cache is not None and spec.software and not spec.profiles:
+    elif spec.software_cache is not None:
         # The tools' own caches default to the home directory (Apptainer's layers under
         # ~/.apptainer/cache, conda's packages under ~/.conda/pkgs when the base is not
         # writable) [to be validated]: kept beside the environments instead (inbox #161).
-        for name, variable in SOFTWARE_CACHES.items():
-            if name.split("-")[0] in spec.software:
-                env[variable] = str(spec.software_cache / name)
+        for name in _cache_dirs(spec):
+            if name in SOFTWARE_CACHES:
+                env[SOFTWARE_CACHES[name][1]] = str(spec.software_cache / name)
     env.update(spec.env)
     for name in env:
         if not ENV_NAME.fullmatch(name):
@@ -668,11 +683,9 @@ def write_launch_files(spec: LaunchSpec) -> Path:
             unpack_nf_spectio({**os.environ, **spec.env})
         else:
             _copy_pipeline_config(spec)  # the engine's config/ (inbox #161), before the head runs
-            if spec.software_cache is not None:  # shared, private whatever the umask
-                for name in _cache_dirs(spec):  # (SEC-362-04; chmod: makedirs sets the leaf)
-                    os.makedirs(spec.software_cache / name, exist_ok=True)
-                    for d in (spec.software_cache, spec.software_cache / name):
-                        os.chmod(d, 0o700)
+            if spec.software_cache is not None:
+                for name in _cache_dirs(spec):
+                    _private_dir(spec.software_cache / name)
             pylib = _spectio(spec) / "pylib"
             shutil.rmtree(pylib, ignore_errors=True)
             os.mkdir("pylib", 0o700, dir_fd=fd)
