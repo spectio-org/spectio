@@ -44,6 +44,7 @@ import { ResultsSection } from "./ResultsSection";
 import { ResumeAction } from "./ResumeDialog";
 import { RunHeader, runDirectory } from "./RunHeader";
 import { CheckpointMark, Low, NearLimit, ProcessName, Word, runName, shortFailure, taskLabel } from "./RunState";
+import { partsLine, taskName } from "./taskName";
 import {
   classWord,
   engineName,
@@ -698,14 +699,16 @@ function ViewTabs({ view, setView, w }: { view: "list" | "process"; setView: (v:
   );
 }
 
-/** A task's name and tag as the button that opens its detail; the label names the row. */
+/** A task's process (rule) and, on a second dimmed line, its tag (wildcards) as the button that opens
+ * its detail; the label names the row, whole (#385). */
 function OpenTask({ task, w, onOpen }: { task: Task; w: Words; onOpen: (d: Detail) => void }) {
+  const { parts } = taskName(task);
   return (
-    <button type="button" className="sp-link-button sp-open" aria-label={`Open ${w.unit} ${taskLabel(task)}`} onClick={() => onOpen({ kind: "task", task })}>
+    <button type="button" className="sp-link-button sp-open sp-open-task" aria-label={`Open ${w.unit} ${taskLabel(task)}`} onClick={() => onOpen({ kind: "task", task })}>
       <strong>
         <ProcessName name={task.process} />
       </strong>
-      {(task.tag ?? task.name) && <> ({task.tag ?? task.name})</>}
+      {parts.length > 0 && <span className="sp-open-parts">{partsLine(parts)}</span>}
     </button>
   );
 }
