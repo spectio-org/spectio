@@ -25,7 +25,7 @@ from typing import Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
-from spectio.config import Settings
+from spectio.config import Settings, software_cache_dir
 from spectio.environments import (
     DefaultResources,
     Snapshot,
@@ -343,9 +343,9 @@ class RunnerLoop:
                 target=payload.target,
                 default_resources=payload.default_resources,
                 config_file=extra_file(payload),
-                # The shared cache of the software deployment (inbox #161): under the server's
-                # data directory, the conda environments and Apptainer images build once.
-                data_dir=self.settings.data_dir,
+                # The shared cache of the software deployment (inbox #161): the conda
+                # environments and Apptainer images build once, off the home directory.
+                software_cache=software_cache_dir(self.settings),
                 # Only the Snakemake SLURM plugin has a status command to set (FU-P3-106b);
                 # a definite answer is kept for the process, a failure asked again later.
                 slurm_accounting=(

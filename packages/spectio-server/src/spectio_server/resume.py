@@ -14,7 +14,7 @@ from typing import Any
 
 from sqlalchemy import Connection, Row, select
 
-from spectio.config import Settings
+from spectio.config import Settings, software_cache_dir
 from spectio.environments import as_snapshot, launch_fields, read_as
 from spectio.runner.headscript import SESSION_ID, engine_args
 from spectio.runner.loop import LaunchPayload, extra_file
@@ -134,7 +134,7 @@ def command(conn: Connection, row: Row[Any], settings: Settings) -> dict[str, An
         resume_of=resume,
         default_resources=payload.default_resources,
         config_file=extra_file(payload),  # its name only: the bytes are cleared once answered
-        data_dir=settings.data_dir,  # the software prefixes are the server's (inbox #161)
+        software_cache=software_cache_dir(settings),  # the server's (inbox #161)
     )
     try:
         argv = [*_words(spec.engine_cmd), *engine_args(spec)]

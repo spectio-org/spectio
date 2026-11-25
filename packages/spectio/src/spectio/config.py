@@ -146,6 +146,7 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_DATA_DIR": ("data_dir",),
     "SPECTIO_DB_DIR": ("db_dir",),
     "SPECTIO_RUNS_ROOT": ("runs_root",),
+    "SPECTIO_SOFTWARE_CACHE": ("software_cache",),
     "SPECTIO_PORT": ("port",),
     "SPECTIO_EXECUTOR": ("executor",),
     "SPECTIO_SERVER_HOST": ("server", "host"),
@@ -197,6 +198,9 @@ class Settings(BaseSettings):
     data_dir: AbsPath = Field(default_factory=default_data_dir)
     db_dir: AbsPath | None = None  # unset: default_db_dir() at each start (§15.3 fallback)
     runs_root: AbsPath = Field(default_factory=lambda: Path.home() / "spectio-runs")
+    # conda environments and Apptainer images of Snakemake launches (inbox #161); unset:
+    # `<runs_root>/.software-cache`, on the runs' storage, never the size-capped home
+    software_cache: AbsPath | None = None
     port: int = Field(DEFAULT_PORT, ge=1024, le=65535)
     executor: Literal["slurm", "local"] = "slurm"  # local: P1 Assumption 23
     host: str | None = None  # the login node spectio init ran on (the host pin)
@@ -219,6 +223,13 @@ class Settings(BaseSettings):
         check_config(path)
         toml = TomlConfigSettingsSource(settings_cls, toml_file=path)
         return init_settings, _FlatEnv(settings_cls), toml
+
+
+def software_cache_dir(settings: Settings) -> Path:
+    """Where Snakemake launches keep conda environments and Apptainer images, shared by the
+    runs (inbox #161): `software_cache`, else `.software-cache` under the runs root, which
+    `spectio init` puts on large storage; a home directory is often capped (50 GB at EMBL)."""
+    return settings.software_cache or settings.runs_root / ".software-cache"
 
 
 def _toml_value(value: Any) -> str:

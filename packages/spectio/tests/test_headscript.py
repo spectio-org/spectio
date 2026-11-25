@@ -29,6 +29,7 @@ from spectio.runner.engines import (
 )
 from spectio.runner.headscript import (
     engine_args,
+    engine_env,
     list_rules_args,
     nextflow_config,
     render_head_script,
@@ -296,7 +297,7 @@ def test_snakemake_deploys_the_environment_software(home: Path, bridges: Path) -
     Apptainer arguments as one word; each flag before extra_args."""
     spec = snakemake_spec(
         home,
-        data_dir=home / "data",
+        software_cache=home / "data" / "cache",
         software=["conda", "apptainer"],
         apptainer_args="--bind /g,/scratch",
         extra_args=["--touch"],
@@ -326,12 +327,46 @@ def test_snakemake_deploys_the_environment_software(home: Path, bridges: Path) -
     assert plain == kept
 
 
+def test_snakemake_tool_caches_follow_the_software_cache(home: Path, bridges: Path) -> None:
+    """inbox #161: Apptainer's layer cache and conda's package cache default to the home
+    directory; a launch that deploys the tool points them into the software cache, and creates
+    each directory 0700. A workflow profile owns its software: nothing is set beside it."""
+    cache = home / "big" / "cache"
+    spec = snakemake_spec(home, software_cache=cache, software=["apptainer", "conda"])
+    env = engine_env(spec)
+    assert env["APPTAINER_CACHEDIR"] == str(cache / "apptainer-cache")
+    assert env["CONDA_PKGS_DIRS"] == str(cache / "conda-pkgs")
+    assert "CONDA_PKGS_DIRS" not in engine_env(replace(spec, software=["apptainer"]))
+    assert "APPTAINER_CACHEDIR" not in engine_env(replace(spec, profiles=["slurm"]))
+    write_launch_files(spec)
+    for name in ("conda", "apptainer", "apptainer-cache", "conda-pkgs"):
+        assert stat.S_IMODE((cache / name).stat().st_mode) == 0o700
+    assert stat.S_IMODE(cache.stat().st_mode) == 0o700
+
+
+def test_snakemake_software_cache_chosen_by_the_user_keeps_its_mode(
+    home: Path, bridges: Path
+) -> None:
+    """CR-01: a cache directory that exists keeps its mode (a shared one stays shared, one the
+    user does not own is not chmod-ed); beside a workflow profile nothing is created (CR-02)."""
+    cache = home / "group" / "cache"
+    cache.mkdir(parents=True, mode=0o755)
+    cache.chmod(0o2775)
+    write_launch_files(snakemake_spec(home, software_cache=cache, software=["conda"]))
+    assert stat.S_IMODE(cache.stat().st_mode) == 0o2775
+    assert stat.S_IMODE((cache / "conda").stat().st_mode) == 0o700
+    other = home / "other" / "cache"
+    spec = snakemake_spec(home, software_cache=other, software=["conda"], profiles=["slurm"])
+    write_launch_files(spec)
+    assert not other.exists()
+
+
 def test_snakemake_software_flags_parse_as_snakemake_reads_them(home: Path, bridges: Path) -> None:
     """CR-02, CR-03: an Apptainer value starting with `-` stays one word, and the method's
     values end at a flag Spectio always writes, even when extra_args starts with a target."""
     spec = snakemake_spec(
         home,
-        data_dir=None,
+        software_cache=None,
         software=["conda", "apptainer"],
         apptainer_args="--nv",
         extra_args=["all"],
@@ -359,7 +394,10 @@ def test_snakemake_profile_owns_the_software(home: Path, bridges: Path, given: l
     """A workflow profile owns the software settings, as it owns the resources: no flag is
     passed beside it."""
     spec = snakemake_spec(
-        home, profiles=given, data_dir=home / "data", software=["conda", "apptainer"]
+        home,
+        profiles=given,
+        software_cache=home / "data" / "cache",
+        software=["conda", "apptainer"],
     )
     args = engine_args(spec)
     assert bool(set(SOFTWARE_FLAGS) & set(args)) == (not given)  # flags iff no profile
@@ -386,7 +424,7 @@ def test_snakemake_software_flag_not_doubled(
     `--slurm-status-command`: theirs stays, Spectio's is not added."""
     spec = snakemake_spec(
         home,
-        data_dir=home / "data",
+        software_cache=home / "data" / "cache",
         software=["conda", "apptainer"],
         apptainer_args="--bind /g",
         extra_args=given,
