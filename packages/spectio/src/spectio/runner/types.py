@@ -129,6 +129,7 @@ class LaunchSpec:
     local: LocalValues | None = None
     env: dict[str, str] = field(default_factory=dict)
     nxf_opts: str | None = None
+    nxf_syntax_parser: str | None = None  # `v1` or `v2`, as NXF_SYNTAX_PARSER (#368)
     extra_args: list[str] = field(default_factory=list)
     resume_of: ResumeSource | None = None
     target: RunTarget | None = None
