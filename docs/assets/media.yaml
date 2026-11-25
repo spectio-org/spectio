@@ -1121,3 +1121,11 @@ media:
       - docs/assets/diagrams/module-run-161_dark.svg
       - docs/assets/diagrams/module-run-161_light.png
       - docs/assets/diagrams/module-run-161_dark.png
+  - id: runner-channel-spike
+    kind: diagram
+    generator: python3 tools/diagrams/runner_channel_spike.py
+    outputs:
+      - docs/assets/diagrams/runner_channel_spike_light.svg
+      - docs/assets/diagrams/runner_channel_spike_dark.svg
+      - docs/assets/diagrams/runner_channel_spike_light.png
+      - docs/assets/diagrams/runner_channel_spike_dark.png

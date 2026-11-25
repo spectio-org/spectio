@@ -694,6 +694,23 @@ def test_doctor_software_found_and_missing(
     assert line(lines, "apptainer") == "ok apptainer 1.3.6: the software of local, hpc"
 
 
+def test_doctor_software_cache_in_home_warns(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], tools: Callable[..., Path]
+) -> None:
+    """inbox #161: conda environments and Apptainer images fill a home quota quickly; a
+    software cache inside the home directory is a warning that names the setting."""
+    tools("conda", "apptainer")
+    settings = configured(home, executor="local").model_copy(
+        update={"runs_root": home / "spectio-runs", "software_cache": None}
+    )
+    found = line(doctor(capsys, settings)[1], "software_cache")
+    assert found.startswith(f"warn software_cache {home / 'spectio-runs' / '.software-cache'}")
+    assert "SPECTIO_SOFTWARE_CACHE" in found
+    elsewhere = tmp_path / "scratch" / "cache"
+    settings = settings.model_copy(update={"software_cache": elsewhere})
+    assert line(doctor(capsys, settings)[1], "software_cache") == f"ok software_cache {elsewhere}"
+
+
 def test_doctor_software_failing_command_warns(
     home: Path, capsys: pytest.CaptureFixture[str], tools: Callable[..., Path]
 ) -> None:

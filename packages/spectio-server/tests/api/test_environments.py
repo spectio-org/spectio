@@ -454,7 +454,7 @@ def test_req18_snapshot_launch_with_environment(
     assert spec.local == envs.LocalValues(cpus=4)
     # The software of the snapshot, and the server's data directory for its prefixes (inbox #161)
     assert (spec.software, spec.apptainer_args) == (["conda", "apptainer"], "")
-    assert spec.data_dir == settings.data_dir
+    assert spec.software_cache == settings.runs_root / ".software-cache"
 
 
 def test_software_round_trip(authed_client: TestClient, synthetic: Path, writer: Writer) -> None:

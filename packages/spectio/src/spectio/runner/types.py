@@ -109,9 +109,10 @@ class LaunchSpec:
     (api §5.10); a registry module's `location` is its name, every other one a directory.
     `slurm_accounting` is the site's accounting as `site_accounting` found it (FU-P3-106b),
     None when unknown or not a SLURM Snakemake launch. `software` and `apptainer_args` are the
-    environment's Snakemake software deployment (inbox #161), and `data_dir` the server's data
-    directory, under whose `cache/` the conda environments and Apptainer images are kept, shared
-    by the runs. `main_script` is a Nextflow entry script other than `main.nf` (#351).
+    environment's Snakemake software deployment (inbox #161), and `software_cache` the directory
+    the conda environments and Apptainer images are kept in, shared by the runs
+    (`config.software_cache_dir`). `main_script` is a Nextflow entry script other than `main.nf`
+    (#351).
     """
 
     run_id: str
@@ -137,7 +138,7 @@ class LaunchSpec:
     software: list[str] = field(default_factory=list)
     apptainer_args: str = ""
     main_script: str | None = None
-    data_dir: Path | None = None
+    software_cache: Path | None = None
 
     @property
     def engine_dir(self) -> Path:
