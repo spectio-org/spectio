@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# Spectio, as it is in this checkout, on a local minikube (dev/minikube/README.md).
+# Spectio, as it is in this checkout, on a local minikube (dev/minikube/README.md). Development only.
 #
 #   bash dev/minikube/up.sh            start minikube, build the image from the wheels, deploy, wait for ready
-#   bash dev/minikube/up.sh --rebuild  also rebuild the wheels (web screens included) before the image
+#   bash dev/minikube/up.sh --rebuild  rebuild the wheels (web screens included) first, whatever their state
 #   bash dev/minikube/up.sh down       delete the minikube profile (the data volumes go with it)
 #
 # Needs a running Docker (colima, Docker Desktop), minikube and kubectl; to build the wheels also uv, Node
 # (npm) and, for the nf-spectio bridge in the spectio wheel, Java 21 and Nextflow (dev/versions.env pins).
 # Nothing is installed: the wheels and the staged build context live in dev/minikube/.build (git-ignored).
-# Environment: MINIKUBE_PROFILE (spectio), MINIKUBE_CPUS (4), MINIKUBE_MEMORY (4096, MiB), TARGET (engines|minimal).
-# Bash 3.2 (macOS) safe.
+# The wheels are rebuilt when .build/wheels.sha differs from the checkout's (HEAD plus uncommitted changes under
+# packages/, web/, engine-bridges/, uv.lock).
+# Environment: MINIKUBE_PROFILE (spectio; `down` accepts only spectio or spectio-*, FORCE=1 overrides),
+# MINIKUBE_CPUS (4), MINIKUBE_MEMORY (4096, MiB), TARGET (engines|minimal). Bash 3.2 (macOS) safe.
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/../.." && pwd)
@@ -23,7 +25,14 @@ log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 die() { echo "up.sh: $*" >&2; exit 1; }
 
 case "${1:-}" in
-  down) minikube delete -p "$profile"; exit ;;
+  down)
+    case "$profile" in
+      spectio | spectio-*) ;;
+      *) [ "${FORCE:-}" = 1 ] || die "refusing to delete profile '$profile': only spectio or spectio-* (FORCE=1 overrides)" ;;
+    esac
+    echo "up.sh: deleting minikube profile '$profile': its node container, the volumes of the Spectio data and runs, and its kubectl context" >&2
+    minikube delete -p "$profile"
+    exit ;;
   "" | --rebuild) ;;
   *) sed -n '2,6p' "$0"; exit 2 ;;
 esac
@@ -33,31 +42,37 @@ docker info >/dev/null 2>&1 || die "the Docker daemon is not running (colima sta
 
 # Two clusters on one Docker VM exhaust inotify instances (default 128): kube-proxy then dies with "too many open
 # files" and the cluster never gets ready. Colima: `colima ssh -- sudo sysctl -w fs.inotify.max_user_instances=1024`.
-inotify=$(docker run --rm --pid=host alpine cat /proc/sys/fs/inotify/max_user_instances 2>/dev/null || echo 0)
+inotify=$(docker run --rm "$BUSYBOX_IMAGE" cat /proc/sys/fs/inotify/max_user_instances 2>/dev/null || echo 0)
 [ "$inotify" -ge 512 ] || echo "up.sh: warning: fs.inotify.max_user_instances is $inotify in the Docker VM; raise it to 1024 (see dev/minikube/README.md)" >&2
 
 # 1. wheels: the web screens, then the three wheels (architecture-plugins-and-packaging.md §7.3)
-if [ "${1:-}" = --rebuild ] || ! ls "$build"/wheels/spectio_server-*.whl >/dev/null 2>&1; then
+state=$( (cd "$repo" && git rev-parse HEAD && git status --porcelain=v1 -- packages web engine-bridges uv.lock &&
+  git diff HEAD -- packages web engine-bridges uv.lock) | shasum -a 256 | cut -c1-64)
+if [ "${1:-}" = --rebuild ] || [ "$(cat "$build/wheels.sha" 2>/dev/null || true)" != "$state" ] ||
+  ! ls "$build"/wheels/spectio_server-*.whl >/dev/null 2>&1; then
   for cmd in uv npm java; do command -v "$cmd" >/dev/null || die "$cmd is needed to build the wheels"; done
   command -v nextflow >/dev/null || die "nextflow is needed to build nf-spectio into the spectio wheel"
   log "web screens"
   npm --prefix "$repo/web" ci --ignore-scripts --no-audit --no-fund >/dev/null
   (cd "$repo/web" && ./node_modules/.bin/vite build --configLoader runner >/dev/null)
   log "wheels"
-  rm -rf "$build/wheels"
+  rm -rf "$build/wheels" "$build/wheels.sha"
   mkdir -p "$build/wheels"
   for p in spectio-sdk spectio spectio-server; do
     uv build "$repo/packages/$p" --wheel --out-dir "$build/wheels" --quiet
   done
+  echo "$state" >"$build/wheels.sha"
 fi
-cp "$repo/dev/snakemake.lock.txt" "$build/snakemake.lock.txt"
+# the hashed third-party dependencies of the wheels (the workspace itself is left out), and the Snakemake locks
+(cd "$repo" && uv export --frozen --no-dev --no-emit-project --no-emit-workspace --no-header >"$build/requirements.txt")
+cp "$repo/dev/snakemake.lock.txt" "$repo/dev/snakemake.lock.arm64.txt" "$build/"
 ls "$build/wheels"/*.whl
 
 # 2. minikube on the docker driver, in its own profile (and kubectl context) so that other clusters stay as they are
 if ! minikube status -p "$profile" >/dev/null 2>&1; then
-  log "minikube start (profile $profile)"
+  log "minikube start (profile $profile, Kubernetes $MINIKUBE_KUBERNETES_VERSION)"
   minikube start -p "$profile" --driver=docker --cpus "${MINIKUBE_CPUS:-4}" --memory "${MINIKUBE_MEMORY:-4096}" \
-    --kubernetes-version=stable --wait=all
+    --kubernetes-version="$MINIKUBE_KUBERNETES_VERSION" --wait=all
 fi
 
 # 3. the image, built by the Docker daemon inside minikube: no registry, the manifests use imagePullPolicy: Never

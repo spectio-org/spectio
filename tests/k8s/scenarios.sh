@@ -117,11 +117,11 @@ scenario_nf() {
   fi
   kubectl apply -f "$here/rbac.yaml" >/dev/null
   sa_kubeconfig "$sa" "$kc"
-  KUBECONFIG=$kc deny_check "${deny[@]}" || die "nf$v: the $sa Role grants calls it must not"
-  KUBECONFIG=$kc K8S_CLEANUP=false nf_run "nf$v-happy" "$nf" "${extra[@]}"
+  KUBECONFIG=$kc deny_check ${deny[@]+"${deny[@]}"} || die "nf$v: the $sa Role grants calls it must not"
+  KUBECONFIG=$kc K8S_CLEANUP=false nf_run "nf$v-happy" "$nf" ${extra[@]+"${extra[@]}"}
   local happy_rc=$NF_RC
   KUBECONFIG=$kc K8S_QUEUE=$queue nf_run "nf$v-error" "$nf" --input "$here/mini-samplesheet.csv" \
-    --fail_mode exit --fail_process ALIGN --fail_sample S07 "${extra[@]}"
+    --fail_mode exit --fail_process ALIGN --fail_sample S07 ${extra[@]+"${extra[@]}"}
   local error_rc=$NF_RC
 
   # One task's objects: QC_STATS of sample S01. 26.10 creates a Job per task, 25.10 a bare Pod.

@@ -1,40 +1,73 @@
 # syntax=docker/dockerfile:1
-# The Spectio image of docs/specs/architecture-plugins-and-packaging.md §7.4, built from the wheels of the
-# checkout (dev/minikube/up.sh builds them into .build/wheels). Two targets:
+# A Spectio image for local development, modelled on the one of docs/specs/architecture-plugins-and-packaging.md
+# §7.4 but built from the wheels of the checkout, not from a published wheel (dev only: tagged spectio:dev, never
+# pushed). dev/minikube/up.sh builds the wheels into .build/wheels and stages the build context. Two targets:
 #
 #   minimal   Python (uv-managed, so SQLite >= SQLITE_MIN_VERSION) + spectio, spectio-server, spectio-sdk
 #   engines   minimal + Java 21 + Nextflow + Snakemake, so that runs on the `local` executor work in the pod
 #
-# Build context: dev/minikube/.build (wheels/, snakemake.lock.txt), staged by up.sh. The pins are build
-# arguments, which up.sh reads from dev/versions.env; the defaults below are only for a manual build.
+# Build context: dev/minikube/.build (wheels/, requirements.txt, snakemake.lock*.txt). Every Python package is
+# installed with --require-hashes: the third-party dependencies of the wheels from requirements.txt (a `uv export`
+# of uv.lock, universal), Snakemake from the lock file of the image's architecture; the wheels themselves with
+# --no-deps. uv, curl and the download of Nextflow stay in the build stage: the final image has none of them.
+# The pins are build arguments, which up.sh reads from dev/versions.env; the defaults are only for a manual build.
 ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.11.32@sha256:df4cae8f3a96d175e2e5f992e597550000edbe78fdc2594d5cd8de1a217f504c
 FROM ${UV_IMAGE} AS uv
 
-FROM debian:trixie-slim@sha256:8aa5a7bf5a1955bddbe7d74fcdd0b91ab30e74362a8b73af672b0481b35b44a0 AS minimal
+FROM debian:trixie-slim@sha256:8aa5a7bf5a1955bddbe7d74fcdd0b91ab30e74362a8b73af672b0481b35b44a0 AS builder
 ARG PYTHON_VERSION=3.13.14
+ARG NEXTFLOW_VERSION
+ARG NEXTFLOW_SHA256
+ARG SNAKEMAKE_VERSION
+ARG SNAKEMAKE_EXECUTOR_SLURM_VERSION
+ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive \
     UV_PYTHON_INSTALL_DIR=/opt/python \
     UV_PYTHON_PREFERENCE=only-managed \
     UV_LINK_MODE=copy \
-    UV_NO_CACHE=1 \
-    PYTHONDONTWRITEBYTECODE=1
-# procps: Nextflow's task wrapper calls `ps`; tini: PID 1 that reaps the engine heads' children
+    UV_NO_CACHE=1
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates procps tini tmux git \
+ && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=uv /uv /usr/local/bin/uv
 RUN uv python install "${PYTHON_VERSION}" \
- && uv venv --python "${PYTHON_VERSION}" /opt/spectio
-# The three wheels in one command: spectio's requirement on spectio-sdk and the [server] extra on
-# spectio-server are met by these files, never by an index.
+ && ln -s "$(uv python find "${PYTHON_VERSION}")" /opt/python/python3
+# Spectio: the hashed third-party dependencies first, then the three wheels without dependencies
+COPY requirements.txt /tmp/requirements.txt
 COPY wheels /tmp/wheels
-RUN set -e; cd /tmp/wheels; \
-    uv pip install --python /opt/spectio/bin/python \
-      ./spectio_sdk-*.whl "spectio[server] @ $(ls /tmp/wheels/spectio-*.whl)" ./spectio_server-*.whl \
- && rm -rf /tmp/wheels \
- && ln -s /opt/spectio/bin/spectio /usr/local/bin/spectio \
- && /opt/spectio/bin/python -c "import sqlite3; print('sqlite', sqlite3.sqlite_version)"
-RUN useradd --uid 10001 --create-home --home-dir /home/spectio --shell /bin/bash spectio \
+RUN uv venv --python "${PYTHON_VERSION}" /opt/spectio \
+ && uv pip install --python /opt/spectio/bin/python --require-hashes --no-deps -r /tmp/requirements.txt \
+ && uv pip install --python /opt/spectio/bin/python --no-deps /tmp/wheels/spectio_sdk-*.whl \
+      /tmp/wheels/spectio-*.whl /tmp/wheels/spectio_server-*.whl
+# Snakemake in its own environment, from the lock file of this architecture
+COPY snakemake.lock.txt snakemake.lock.arm64.txt /tmp/
+RUN case "${TARGETARCH}" in \
+      amd64) lock=/tmp/snakemake.lock.txt ;; \
+      arm64) lock=/tmp/snakemake.lock.arm64.txt ;; \
+      *) echo "no Snakemake lock file for TARGETARCH='${TARGETARCH}' (needs BuildKit)" >&2; exit 1 ;; \
+    esac \
+ && uv venv --python "${PYTHON_VERSION}" /opt/snakemake \
+ && uv pip install --python /opt/snakemake/bin/python --require-hashes --no-deps -r "$lock"
+# Nextflow: the -dist launcher is the jar itself; checked against the sha256 of dev/versions.env
+RUN mkdir /opt/nextflow \
+ && curl -fsSL -o /opt/nextflow/nextflow \
+      "https://github.com/nextflow-io/nextflow/releases/download/v${NEXTFLOW_VERSION}/nextflow-${NEXTFLOW_VERSION}-dist" \
+ && echo "${NEXTFLOW_SHA256}  /opt/nextflow/nextflow" | sha256sum -c - \
+ && chmod 0755 /opt/nextflow/nextflow
+
+FROM debian:trixie-slim@sha256:8aa5a7bf5a1955bddbe7d74fcdd0b91ab30e74362a8b73af672b0481b35b44a0 AS minimal
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1
+# procps: Nextflow's task wrapper calls `ps`; tini: PID 1 that reaps the engine heads' children (the Deployment
+# runs it explicitly: a `command:` replaces the ENTRYPOINT); git: Nextflow and Snakemake fetch workflows with it
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates procps tini tmux git \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /opt/python /opt/python
+COPY --from=builder /opt/spectio /opt/spectio
+RUN ln -s /opt/spectio/bin/spectio /usr/local/bin/spectio \
+ && /opt/spectio/bin/python -c "import sqlite3; print('sqlite', sqlite3.sqlite_version)" \
+ && useradd --uid 10001 --create-home --home-dir /home/spectio --shell /bin/bash spectio \
  && mkdir -p /var/lib/spectio /var/lib/spectio-runs \
  && chown spectio:spectio /var/lib/spectio /var/lib/spectio-runs
 USER 10001:10001
@@ -48,34 +81,14 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["spectio", "serve", "--pane"]
 
 FROM minimal AS engines
-ARG NEXTFLOW_VERSION
-ARG NEXTFLOW_SHA256
-ARG SNAKEMAKE_VERSION
-ARG SNAKEMAKE_EXECUTOR_SLURM_VERSION
-ARG PYTHON_VERSION=3.13.14
-ARG TARGETARCH
 USER root
 RUN apt-get update \
- && apt-get install -y --no-install-recommends openjdk-21-jre-headless curl \
+ && apt-get install -y --no-install-recommends openjdk-21-jre-headless \
  && rm -rf /var/lib/apt/lists/*
-# Nextflow: the -dist launcher is the jar itself; checked against the sha256 of dev/versions.env
-RUN curl -fsSL -o /usr/local/bin/nextflow \
-      "https://github.com/nextflow-io/nextflow/releases/download/v${NEXTFLOW_VERSION}/nextflow-${NEXTFLOW_VERSION}-dist" \
- && echo "${NEXTFLOW_SHA256}  /usr/local/bin/nextflow" | sha256sum -c - \
- && chmod 0755 /usr/local/bin/nextflow
-# Snakemake in its own environment. dev/snakemake.lock.txt is hash-locked for linux x86_64 only: on amd64 it
-# is used as it is; on arm64 (a Mac under colima) the same top-level versions are resolved without hashes.
-COPY snakemake.lock.txt /tmp/snakemake.lock.txt
-RUN uv venv --python "${PYTHON_VERSION}" /opt/snakemake \
- && if [ "${TARGETARCH}" = amd64 ]; then \
-      uv pip install --python /opt/snakemake/bin/python --require-hashes --no-deps -r /tmp/snakemake.lock.txt; \
-    else \
-      uv pip install --python /opt/snakemake/bin/python \
-        "snakemake==${SNAKEMAKE_VERSION}" "snakemake-executor-plugin-slurm==${SNAKEMAKE_EXECUTOR_SLURM_VERSION}"; \
-    fi \
- && ln -s /opt/snakemake/bin/snakemake /usr/local/bin/snakemake \
- && rm /tmp/snakemake.lock.txt
+COPY --from=builder /opt/nextflow/nextflow /usr/local/bin/nextflow
+COPY --from=builder /opt/snakemake /opt/snakemake
 # `python3` for the pipelines' scripts: the uv-managed interpreter itself, not the Spectio environment
-RUN ln -s "$(uv python find "${PYTHON_VERSION}")" /usr/local/bin/python3
+RUN ln -s /opt/snakemake/bin/snakemake /usr/local/bin/snakemake \
+ && ln -s /opt/python/python3 /usr/local/bin/python3
 USER 10001:10001
 ENV NXF_ANSI_LOG=false

@@ -1,9 +1,26 @@
-# Spectio on minikube: the `minimal` profile of docs/specs/architecture-plugins-and-packaging.md §7.4, one
-# service with SQLite on a volume, running the `local` executor inside the pod. Applied by dev/minikube/up.sh.
+# Spectio on minikube, for development: modelled on the `minimal` profile of
+# docs/specs/architecture-plugins-and-packaging.md §7.4 (one service, SQLite on a volume), running the `local`
+# executor inside the pod. Not the deployment of §7.5. Applied by dev/minikube/up.sh.
 apiVersion: v1
 kind: Namespace
 metadata:
   name: spectio
+  labels:
+    # the pod below is restricted except for its root init container, which `warn` reports
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+---
+# Intent: nothing reaches the server pod but `kubectl port-forward` (which a NetworkPolicy does not affect). minikube's
+# default CNI does not enforce NetworkPolicy; start it with `--cni=calico` to have this one enforced. Egress is
+# not restricted: the engines fetch workflows and images, so a rule would need the site's allow-list.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: spectio
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
 ---
 # data directory (spectio.toml, server.json, server key) and the SQLite database
 apiVersion: v1
@@ -60,7 +77,9 @@ spec:
             runAsUser: 0
             runAsNonRoot: false
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities: {drop: [ALL], add: [CHOWN, FOWNER, DAC_OVERRIDE]}
+            seccompProfile: {type: RuntimeDefault}
           volumeMounts:
             - {name: data, mountPath: /var/lib/spectio}
             - {name: runs, mountPath: /var/lib/spectio-runs}
@@ -70,7 +89,8 @@ spec:
           imagePullPolicy: Never # built into minikube by up.sh
           # `serve --pane` mints no login link, so none reaches the pod log: get one with
           # `kubectl -n spectio exec deploy/spectio -- spectio login --print-link`
-          command: ["sh", "-c"]
+          # tini is PID 1 (a `command:` replaces the image's ENTRYPOINT): it reaps the engine heads' children
+          command: ["/usr/bin/tini", "--", "sh", "-c"]
           args:
             - |
               set -e
@@ -99,26 +119,31 @@ spec:
             timeoutSeconds: 20
             failureThreshold: 10 # a restart kills the runs in flight: be slow to judge
           resources:
-            requests: {cpu: 500m, memory: 1Gi}
-            limits: {memory: 3Gi}
+            requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 1Gi}
+            limits: {memory: 3Gi, ephemeral-storage: 4Gi} # counts /tmp and the home directory below
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001
             runAsGroup: 10001
             allowPrivilegeEscalation: false
+            # the engines write to /tmp, to $HOME (.nextflow, caches) and to the runs root only
+            readOnlyRootFilesystem: true
             capabilities: {drop: [ALL]}
             seccompProfile: {type: RuntimeDefault}
           volumeMounts:
             - {name: data, mountPath: /var/lib/spectio}
             - {name: runs, mountPath: /var/lib/spectio-runs}
             - {name: tmp, mountPath: /tmp}
+            - {name: home, mountPath: /home/spectio}
       volumes:
         - name: data
           persistentVolumeClaim: {claimName: spectio-data}
         - name: runs
           persistentVolumeClaim: {claimName: spectio-runs}
         - name: tmp
-          emptyDir: {}
+          emptyDir: {sizeLimit: 2Gi}
+        - name: home
+          emptyDir: {sizeLimit: 1Gi}
 ---
 # `kubectl port-forward svc/spectio 8080:8080` works (the connection is made inside the pod). Other pods cannot
 # reach the server through this Service: it listens on the pod's 127.0.0.1 only, and 0.0.1 has no bind option.

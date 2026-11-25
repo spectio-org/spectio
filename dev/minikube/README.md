@@ -1,14 +1,15 @@
 # Spectio on minikube
 
 The Spectio of this checkout (wheels built from `packages/`, web screens included) in a local minikube cluster:
-the `minimal` profile of `docs/specs/architecture-plugins-and-packaging.md` §7.4, one service with SQLite on a
-volume. It is a development and demonstration setup, not the Kubernetes deployment of §7.5.
+modelled on the `minimal` profile of `docs/specs/architecture-plugins-and-packaging.md` §7.4 (one service with
+SQLite on a volume), for development only. It is not the Kubernetes deployment of §7.5.
 
 ## Prerequisites
 
 - A running Docker daemon (colima, Docker Desktop, Linux Docker), `minikube` (docker driver) and `kubectl`.
 - To build the wheels (done once; `up.sh --rebuild` repeats it): `uv`, `npm`, Java 21 and Nextflow (the `spectio`
   wheel carries nf-spectio, which is compiled against Nextflow; pins in `dev/versions.env`).
+- Kubernetes `MINIKUBE_KUBERNETES_VERSION` of `dev/versions.env` for the node.
 - About 5 GiB of free memory in the Docker VM (minikube gets 4 GiB by default: `MINIKUBE_MEMORY`, `MINIKUBE_CPUS`).
 - Colima, or any Docker VM that also hosts another cluster (kind): raise the inotify limit, or kube-proxy dies with
   "too many open files" and the cluster never gets ready (it is 128 by default):
@@ -23,7 +24,8 @@ bash dev/minikube/up.sh
 It starts minikube in its own profile `spectio` (kubectl context `spectio`), builds the wheels into
 `dev/minikube/.build/` (git-ignored), builds the image `spectio:dev` with the Docker daemon inside minikube
 (`Dockerfile`, target `engines`: Java 21, Nextflow and Snakemake at the pins of `dev/versions.env`; `TARGET=minimal`
-leaves the engines out), applies `spectio.yaml` and waits until the Deployment is ready. A first run downloads
+leaves the engines out), rebuilding the wheels first when `.build/wheels.sha` no longer matches the checkout,
+applies `spectio.yaml` and waits until the Deployment is ready. A first run downloads
 the minikube base image (1.7 GB) and takes several minutes; a repeat takes about one.
 
 What it creates, in the namespace `spectio`: PVC `spectio-data` (data directory and SQLite database), PVC
@@ -56,11 +58,12 @@ bash dev/minikube/smoke.sh                # both engines
 bash dev/minikube/smoke.sh nextflow       # or snakemake
 ```
 
-It port-forwards and requests `/` and `/api/v1/me` (expect 401: the server answers and wants a session), then runs
+It port-forwards and requires `401` from `/` and `/api/v1/me` (the server answers and wants a session), then runs
 `tests/slurm/e2e_client.py` inside the pod, as `tests/local/e2e.sh` does on a laptop. The client signs in with a
 link it asks `spectio login --print-link --json` for (never printed), launches the synthetic pipeline `happy` with
 `POST /api/v1/runs` on the `local` environment, polls until the run ends and compares its tasks to the golden
-file. The output ends with `RESULT minikube-<engine> pass|fail`.
+file. The output ends with `RESULT minikube-<engine> pass|fail`, and a last line checks that tini is PID 1 and no
+zombie process is left.
 
 ## Logs and state
 
@@ -77,6 +80,8 @@ Runs live under `/var/lib/spectio-runs/<run id>/` in the pod (PVC `spectio-runs`
 bash dev/minikube/up.sh down      # minikube delete -p spectio: the cluster, its volumes and the image
 ```
 
+`down` prints what it deletes and refuses a profile that is not `spectio` or `spectio-*` unless `FORCE=1`.
+
 `kubectl --context spectio delete namespace spectio` removes only Spectio and its data.
 
 ## Known limits
@@ -92,5 +97,19 @@ bash dev/minikube/up.sh down      # minikube delete -p spectio: the cluster, its
 - The image is built for the architecture of the Docker VM (arm64 on Apple silicon). Snakemake's lock file
   `dev/snakemake.lock.txt` is hash-locked for linux x86_64 only, so on arm64 the same pinned versions are resolved
   without hashes (`Dockerfile`, target `engines`). The Debian packages (Java, `procps`, `tmux`) are not pinned.
-- The image is not an official one: §7.4 builds it from the *published* wheel; this one is built from the
-  checkout, tagged `spectio:dev`, and never pushed.
+- The image is modelled on §7.4, dev only: §7.4 builds it from the *published* wheel; this one is built from the
+  checkout, tagged `spectio:dev`, and never pushed. Python packages are installed with `--require-hashes`
+  (`uv.lock` for Spectio's dependencies, `dev/snakemake.lock.txt` or `dev/snakemake.lock.arm64.txt` for Snakemake,
+  whose transitive versions differ a little between the two); Debian packages and the `trixie-slim` snapshot by
+  digest are the only unpinned parts.
+- **Pipelines run as the server's uid (10001).** A pipeline's tasks can therefore read what the server keeps on
+  its volumes: the server key, the database, the session records and every run. Treat the pipelines you launch
+  here as trusted. There is no per-run isolation until the Kubernetes runner exists.
+- **Egress is unrestricted.** The pod, and so every task, can reach any host the cluster can. The NetworkPolicy
+  `default-deny-ingress` states the ingress intent only: minikube's default CNI does not enforce it.
+- **Hardening gaps against §7.5:** no Ingress, TLS or authentication in front of the port-forward, a root init
+  container (it only chowns the volumes; the namespace warns about it under `restricted`), no resource quotas on
+  the namespace, no image signature or scan, Secrets are not used (the server key lives on the data volume), and
+  the container shares its volumes' lifetime with the minikube profile. The container itself drops all
+  capabilities, runs non-root with a read-only root file system (writable: `/tmp`, the home directory, the two
+  volumes) and the `RuntimeDefault` seccomp profile.
