@@ -1,8 +1,11 @@
+/// <reference types="node" />
+import { readFileSync } from "node:fs";
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { FakeEventSource, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 import { ICONS } from "../icons";
+import { ROW_HEIGHT } from "./RunsPage";
 
 // The runs page renders AG Grid and these tests type with userEvent: several take 3 to 4.5 s
 // here and went past the default 5 s on CI once FU-P3-115b added its columns (#248).
@@ -234,7 +237,7 @@ test("UX-PAR-18: the footer counts the rows shown against the filter's total", a
   expect(screen.getByRole("searchbox", { name: "Filter by run name" })).toBeInTheDocument();
 });
 
-test("UX-G3a-05: below 1100 px the grid drops Started, so it fits at 1024 px", async () => {
+test("UX-G3a-05: below 1100 px the grid drops Started", async () => {
   viewport(1024);
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
   app("/runs");
@@ -801,14 +804,54 @@ test("CR-01 (#385): a checkpoint run's progress reads in full in its cell, in a 
   expect(parseInt(started.style.width, 10)).toBeGreaterThanOrEqual(170);
 });
 
-test("CR-02 (#385): the Workflow cell wraps in full, with no tooltip standing in for a cut", async () => {
-  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+test("#353: the arrow keys to a Workflow or a Run cell open its tooltip; the cell's name says it whole, the chip stays in it", async () => {
+  const changed = run({
+    name: "fastqc-two",
+    target: { ...MODULE_TARGET, kind: "rule", name: "qc_report", version: null, source: null, flag: "target", checksum_changed: true },
+  });
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [changed], next: null } });
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
-  const what = within(table).getByText("nf-core/rnaseq").closest(".sp-what-ran") as HTMLElement;
-  expect(what).not.toBeNull();
-  expect(what.parentElement?.getAttribute("data-position")).toBeNull();
-  expect(what.getAttribute("aria-describedby")).toBeNull();
+  const text = "nf-core/rnaseq 3.27.0 · → rule qc_report · checksum changed";
+  const cell = (col: string) => table.querySelector(`.ag-row [col-id="${col}"]`) as HTMLElement;
+  // the clamp is CSS only: the cell's text holds all of it, and the warning stays visible in the cell
+  for (const part of ["nf-core/rnaseq", "3.27.0", "qc_report", "checksum changed"]) expect(cell("workflow")).toHaveTextContent(part);
+  expect(within(cell("workflow")).getAllByText("checksum changed").some((el) => el.classList.contains("sp-chip"))).toBe(true);
+  // from the State cell, as a user: the arrow keys (AG Grid never focuses a cell's own link or text)
+  await userEvent.click(cell("state"));
+  await userEvent.keyboard("{ArrowRight}{ArrowRight}");
+  expect(document.activeElement).toBe(cell("workflow"));
+  expect(await screen.findByRole("tooltip")).toHaveTextContent(text);
+  await userEvent.keyboard("{Escape}"); // dismissable (WCAG 1.4.13), the cell keeps its focus
+  await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+  expect(document.activeElement).toBe(cell("workflow"));
+  await userEvent.keyboard("{ArrowLeft}{ArrowLeft}{ArrowLeft}");
+  expect(document.activeElement).toBe(cell("name"));
+  await waitFor(() => expect(screen.getByRole("tooltip")).toHaveTextContent("fastqc-two"));
+});
+
+test("#353: every row has the one height, sized for the worst cell as runs.css lays it out", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), observed], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  for (const row of within(table).getAllByRole("row").filter((r) => r.classList.contains("ag-row"))) {
+    expect(row.style.height).toBe(`${ROW_HEIGHT}px`);
+  }
+  const rule = (file: string, selector: string) => {
+    const css = readFileSync(new URL(file, import.meta.url), "utf8");
+    const at = css.indexOf(`${selector} {`);
+    expect(at, `${selector} in ${file}`).toBeGreaterThanOrEqual(0);
+    return css.slice(at, css.indexOf("}", at));
+  };
+  // two clamped name lines, the Run link's and the pipeline's, at the cell's 1.45 line height
+  expect(rule("./runs.css", ".sp-run-name .sp-run-link")).toContain("-webkit-line-clamp: 2;");
+  expect(rule("./runs.css", ".sp-grid-runs .sp-pipeline > span:last-child")).toContain("-webkit-line-clamp: 2;");
+  expect(rule("../app.css", ".sp-grid-runs .ag-cell")).toContain("line-height: 1.45;");
+  // a name (2 x 14 px lines), a chip (12 px line + 2 px), a line of 13 px, the gaps (xs = 4 px twice), the
+  // cell's padding (md = 12 px twice) and 3 px of borders; the padding and borders are literals here,
+  // tests/e2e/rowheight.spec.ts is the real guard on the sum (no cell scrolls, in Chromium)
+  const lines = 2 * 14 * 1.45 + (12 * 1.45 + 2) + 13 * 1.45;
+  expect(ROW_HEIGHT).toBe(Math.ceil(lines + 2 * 4 + 2 * 12 + 3));
 });
 
 test("CR-07 (#385): a run card has no empty context line when its state has no context", async () => {
