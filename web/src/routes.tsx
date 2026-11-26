@@ -3,6 +3,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  redirect,
   useNavigate,
   useParams,
   useRouterState,
@@ -11,7 +12,9 @@ import {
 import { useMemo } from "react";
 import type { WorkRoot } from "./api";
 import { CatalogEntryPage, CatalogPage } from "./catalog/CatalogPage";
-import { EnvironmentPage, EnvironmentsPage, envListSearch } from "./environments/EnvironmentsPage";
+import { ComputeItemPage, ComputePage } from "./compute/ComputePage";
+import { fromSearch, listSearch } from "./compute/Managed";
+import { ProfileItemPage, ProfilesPage } from "./compute/ProfilesPage";
 import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
 import { ProfilePage } from "./profile/ProfilePage";
@@ -27,7 +30,7 @@ import { AppShell } from "./shell/AppShell";
 // run detail (P1 Task 20), and the launch form (Task 19); and the report viewer (Task 31) and the
 // results browser (Task 32), and the preview of one results file (FU-P3-85c); the same two on a
 // Nextflow attempt's work directory (FU-P3-85e), which need `task` and `attempt`; and the
-// Environments list and form (FU-P3-86f); the Catalog list and form (FU-P3-87d); Profile (FU-P3-112).
+// Compute and Profiles lists and forms (FU-P3-86f, #408); the Catalog list and form (FU-P3-87d); Profile (FU-P3-112).
 
 /** `/launch?location=<pipeline>`: Launch opens on that pipeline (Home's pipeline links);
  * `/launch?from=<run ID>`: Copy to a new launch, prefilled from that run. */
@@ -99,18 +102,25 @@ function WorkdirFileRoute() {
   return <FilePreview key={`${id}:${work.task}:${work.attempt}:${search.path ?? ""}`} id={id} search={search} work={work} />;
 }
 
-/** `/environments/new?from=<name>`: the form, prefilled from that environment (Duplicate). */
-export const envSearch = (search: Record<string, unknown>): { from?: string } =>
-  typeof search.from === "string" && /^[a-z][a-z0-9-]{0,31}$/.test(search.from) ? { from: search.from } : {};
-
-function NewEnvironmentRoute() {
-  const { from } = envSearch(useSearch({ from: "/environments/new" }));
-  return <EnvironmentPage key={from ?? ""} name={null} from={from} />;
+/** `/compute/new?from=<name>` and `/profiles/new?from=<name>`: the form, prefilled from that item (Duplicate). */
+function NewComputeRoute() {
+  const { from } = fromSearch(useSearch({ from: "/compute/new" }));
+  return <ComputeItemPage key={from ?? ""} name={null} from={from} />;
 }
 
-function EnvironmentRoute() {
-  const { name } = useParams({ from: "/environments/$name" });
-  return <EnvironmentPage key={name} name={name} />;
+function ComputeRoute() {
+  const { name } = useParams({ from: "/compute/$name" });
+  return <ComputeItemPage key={name} name={name} />;
+}
+
+function NewProfileRoute() {
+  const { from } = fromSearch(useSearch({ from: "/profiles/new" }));
+  return <ProfileItemPage key={from ?? ""} name={null} from={from} />;
+}
+
+function ProfileRoute() {
+  const { name } = useParams({ from: "/profiles/$name" });
+  return <ProfileItemPage key={name} name={name} />;
 }
 
 function CatalogEntryRoute() {
@@ -134,9 +144,20 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/runs/$id/results/file", component: FileRoute, validateSearch: resultsSearch }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id/workdir", component: WorkdirRoute, validateSearch: resultsSearch }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id/workdir/file", component: WorkdirFileRoute, validateSearch: resultsSearch }),
-  createRoute({ getParentRoute: () => root, path: "/environments", component: EnvironmentsPage, validateSearch: envListSearch }),
-  createRoute({ getParentRoute: () => root, path: "/environments/new", component: NewEnvironmentRoute, validateSearch: envSearch }),
-  createRoute({ getParentRoute: () => root, path: "/environments/$name", component: EnvironmentRoute }),
+  createRoute({ getParentRoute: () => root, path: "/compute", component: ComputePage, validateSearch: listSearch }),
+  createRoute({ getParentRoute: () => root, path: "/compute/new", component: NewComputeRoute, validateSearch: fromSearch }),
+  createRoute({ getParentRoute: () => root, path: "/compute/$name", component: ComputeRoute }),
+  createRoute({ getParentRoute: () => root, path: "/profiles", component: ProfilesPage, validateSearch: listSearch }),
+  createRoute({ getParentRoute: () => root, path: "/profiles/new", component: NewProfileRoute, validateSearch: fromSearch }),
+  createRoute({ getParentRoute: () => root, path: "/profiles/$name", component: ProfileRoute }),
+  // Environments became Compute and Profiles (#408): an old link lands on the profiles
+  createRoute({
+    getParentRoute: () => root,
+    path: "/environments",
+    beforeLoad: () => {
+      throw redirect({ to: "/profiles" });
+    },
+  }),
   createRoute({ getParentRoute: () => root, path: "/catalog", component: CatalogPage }),
   createRoute({ getParentRoute: () => root, path: "/catalog/new", component: () => <CatalogEntryPage name={null} /> }),
   createRoute({ getParentRoute: () => root, path: "/catalog/$name", component: CatalogEntryRoute }),

@@ -39,7 +39,7 @@ async function openByButton() {
 
 test("the top-bar button opens a modal dialog with a labelled input; Escape closes it and focus returns", async () => {
   backend();
-  app("/environments");
+  app("/compute");
   const { opener, dialog } = await openByButton();
   expect(dialog).toHaveAttribute("aria-modal", "true");
   const input = within(dialog).getByRole("searchbox", { name: "Search runs, pipelines and pages" });
@@ -51,7 +51,7 @@ test("the top-bar button opens a modal dialog with a labelled input; Escape clos
 
 test("Ctrl+K and ⌘K open the dialog", async () => {
   backend();
-  app("/environments");
+  app("/compute");
   await screen.findByRole("button", { name: "Search runs, pipelines and pages" });
   await userEvent.keyboard("{Control>}k{/Control}");
   expect(await screen.findByRole("dialog", { name: "Search" })).toBeInTheDocument();
@@ -63,7 +63,7 @@ test("Ctrl+K and ⌘K open the dialog", async () => {
 
 test("results are grouped under Runs, Pipelines and Pages, after one debounced request", async () => {
   const mock = backend();
-  app("/environments");
+  app("/compute");
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), "rna");
   const runs = await within(dialog).findByRole("region", { name: "Runs" });
@@ -78,7 +78,7 @@ test("results are grouped under Runs, Pipelines and Pages, after one debounced r
 
 test("a page matches by name; arrow keys move through the results and Enter opens one", async () => {
   backend();
-  const router = app("/environments");
+  const router = app("/compute");
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), "la");
   const pages = await within(dialog).findByRole("region", { name: "Pages" });
@@ -95,7 +95,7 @@ test("a page matches by name; arrow keys move through the results and Enter open
 
 test("a run ID is looked up exactly with GET /runs/{id}", async () => {
   const mock = backend({ [`/api/v1/runs/${ID}`]: { ...DETAIL, ...run({ name: "wgs-12" }) } });
-  const router = app("/environments");
+  const router = app("/compute");
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), ID);
   const hit = await within(dialog).findByRole("button", { name: "Run wgs-12, Running, Nextflow, 1 h ago" });
@@ -106,7 +106,7 @@ test("a run ID is looked up exactly with GET /runs/{id}", async () => {
 
 test("nothing found says No match", async () => {
   backend();
-  app("/environments");
+  app("/compute");
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), "zzz");
   await waitFor(() => expect(within(dialog).getByRole("status")).toHaveTextContent("No match"));
@@ -115,7 +115,7 @@ test("nothing found says No match", async () => {
 
 test("UI-06: a spotlight panel, no close button, an Esc hint, and a prompt before typing", async () => {
   backend();
-  app("/environments");
+  app("/compute");
   const { dialog } = await openByButton();
   expect(within(dialog).queryByRole("button", { name: /close/i })).toBeNull();
   expect(within(dialog).getByText("Esc")).toBeInTheDocument();
@@ -124,7 +124,7 @@ test("UI-06: a spotlight panel, no close button, an Esc hint, and a prompt befor
 
 test("UI-06: a run row shows its state tile and word, engine mark and time; the active row follows the arrows", async () => {
   backend();
-  app("/environments");
+  app("/compute");
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), "rna");
   const runRow = await within(dialog).findByRole("button", { name: RNA_RUN });
@@ -143,7 +143,7 @@ test("UI-06: a run row shows its state tile and word, engine mark and time; the 
 
 test("a failed request shows an error line", async () => {
   backend({ "/api/v1/runs?q=": () => json(500, { title: "Server error", detail: "database locked" }) });
-  app("/environments");
+  app("/compute");
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), "rna");
   expect(await within(dialog).findByText("Search failed: database locked")).toBeInTheDocument();
@@ -154,7 +154,7 @@ test("a failed request shows an error line", async () => {
 test("on the phone the search icon opens the same dialog, full screen", async () => {
   viewport(390);
   backend();
-  app("/environments");
+  app("/compute");
   const { dialog } = await openByButton();
   expect(dialog).toHaveAttribute("data-full-screen", "true");
 });
@@ -162,7 +162,7 @@ test("on the phone the search icon opens the same dialog, full screen", async ()
 test("on a 360 px phone the search icon still shows and opens the dialog (CR-P3FU89-01)", async () => {
   viewport(360);
   backend();
-  app("/environments");
+  app("/compute");
   const { opener, dialog } = await openByButton();
   // sp-narrow-hide hides a control below 390 px (shell.css); a phone has no ⌘K, so search keeps its icon
   expect(opener).not.toHaveClass("sp-narrow-hide");
@@ -172,7 +172,7 @@ test("on a 360 px phone the search icon still shows and opens the dialog (CR-P3F
 test("FU-P3-116: the short ID the UI shows (last 6 of the run ID) finds its run, in any case", async () => {
   const other = run({ id: "run_01JBC6Q4ZK7M8N2P3R5SD80950", name: "sarek-b" });
   backend({ "/api/v1/runs?limit=200": { items: [run(), other], next: null } });
-  app("/environments");
+  app("/compute");
   const { dialog } = await openByButton();
   await userEvent.type(within(dialog).getByRole("searchbox"), "d80950");
   const runs = await within(dialog).findByRole("region", { name: "Runs" });

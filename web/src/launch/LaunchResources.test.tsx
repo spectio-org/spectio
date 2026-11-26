@@ -38,26 +38,36 @@ const SNAKEMAKE = {
     properties: { samples: { type: "string", default: "config/samples.tsv" }, ref: { type: "object", default: { build: "GRCh38", release: 113 } } },
   },
 };
-const item = (name: string, over: Record<string, unknown> = {}) => ({
-  ...{ name, label: null, executor: "slurm", builtin: false, default: false, usable: true, unusable_reason: null },
-  ...{ slurm: { partition: "htc", account: "mylab", time_min: null, mem_mib: null }, local: null },
-  ...{ profiles: { nextflow: null, snakemake: null }, etag: `"${name}"` },
+const compute = (name: string, over: Record<string, unknown> = {}) => ({
+  ...{ name, label: null, executor: "slurm", slurm: { account: "mylab" }, local: null, software: ["conda", "apptainer"], apptainer_args: "" },
+  ...{ builtin: false, usable: true, unusable_reason: null, etag: `"c-${name}"` },
   ...over,
 });
-const LOCAL = item("local", { label: "Login node", executor: "local", builtin: true, default: true, slurm: null, local: { cpus: 2, mem_mib: 8192 } });
-const LONG = item("mylab-long", { label: "Long jobs", slurm: { partition: "long", account: "mylab", time_min: 2880, mem_mib: 32768 } });
+const COMPUTES = {
+  items: [compute("local", { label: "Login node", executor: "local", slurm: null, local: { cpus: 2, mem_mib: 8192 }, builtin: true }), compute("mylab")],
+  file: { path: "/home/amartin/.spectio/computes.toml", state: "ok", detail: null },
+};
+const NOTHING = { partition: null, constraint: null, gres: null, time_min: null, mem_mib: null, cpus: null };
+const item = (name: string, over: Record<string, unknown> = {}) => ({
+  ...{ name, label: null, compute: "mylab", resources: NOTHING, software: ["conda", "apptainer"] },
+  ...{ engine_profiles: { nextflow: null, snakemake: null }, builtin: false, etag: `"${name}"` },
+  ...over,
+});
+const LOCAL = item("local", { label: "Login node", compute: "local", builtin: true });
+const LONG = item("mylab-long", { label: "Long jobs", resources: { ...NOTHING, partition: "long", time_min: 2880, mem_mib: 32768 } });
 const envs = (items: unknown[], fallback = "local") => ({
   items,
   default: fallback,
-  file: { path: "/home/amartin/.spectio/environments.toml", state: "ok", detail: null },
+  file: { path: "/home/amartin/.spectio/execution-profiles.toml", state: "ok", detail: null },
 });
 
-/** Launch with these environments and this pipeline; `answer` replies to POST /runs. Returns the bodies sent. */
+/** Launch with these execution profiles and this pipeline; `answer` replies to POST /runs. Returns the bodies sent. */
 function launchWith(over: { environments?: unknown; inspected?: unknown; answer?: () => Response | Promise<Response> } = {}) {
   const posted: Record<string, unknown>[] = [];
   serve({
     "/api/v1/version": SLURM_SERVER,
-    "/api/v1/environments": over.environments ?? envs([LOCAL]),
+    "/api/v1/execution-profiles": over.environments ?? envs([LOCAL]),
+    "/api/v1/computes": COMPUTES,
     "/api/v1/workflows:inspect": over.inspected ?? INSPECTED,
     "/api/v1/runs?": { items: [], next: null },
     "/api/v1/runs": (_url: URL, init?: RequestInit) => {
@@ -91,7 +101,7 @@ test("both rows are folded by default, their closed lines say what is in force, 
   const config = row(/^Extra config file/);
   expect(config).toHaveAttribute("aria-expanded", "false");
   expect(config).toHaveTextContent("No extra config file");
-  expect(summaryValue("Run resources")).toHaveTextContent("from the environment");
+  expect(summaryValue("Run resources")).toHaveTextContent("from the execution profile");
   expect(summaryValue("Extra config")).toHaveTextContent("none");
   await userEvent.click(launchButton());
   await waitFor(() => expect(posted).toHaveLength(1));
@@ -158,10 +168,10 @@ test("out of bounds before Launch: each error under its input, listed in Before 
   expect(screen.getByRole("textbox", { name: "Time per task, hours" })).toHaveAccessibleDescription(expect.stringMatching(/^At most 720 hours \(30 days\)/));
 });
 
-test("a SLURM environment's values are the placeholders, said under the inputs and on the folded line", async () => {
+test("a SLURM profile's values are the placeholders, said under the inputs and on the folded line", async () => {
   launchWith({ environments: envs([LONG], "mylab-long") });
   await load();
-  expect(row(/^Run resources/)).toHaveTextContent("From the environment: 48 h · 32 GiB per task");
+  expect(row(/^Run resources/)).toHaveTextContent("From the execution profile: 48 h · 32 GiB per task");
   await userEvent.click(row(/^Run resources/));
   const mem = screen.getByRole("textbox", { name: "Memory per task" });
   expect(mem).toHaveAttribute("placeholder", "32");
@@ -199,14 +209,14 @@ test("Snakemake with a profile: the profile sets the resources, values typed bef
   await load("/data/smk");
   await userEvent.click(row(/^Run resources/));
   fill(screen.getByRole("textbox", { name: "Memory per task" }), "4");
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^Profile/ }), "slurm");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ }), "slurm");
   expect(within(where()).getByText(/The profile slurm sets the resources, so none are set here\./)).toBeInTheDocument();
   expect(screen.queryByRole("textbox", { name: "Memory per task" })).toBeNull();
   expect(summaryValue("Run resources")).toHaveTextContent("from the profile slurm");
   // back to no profile: the value typed is still there
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^Profile/ }), "");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ }), "");
   expect(screen.getByRole("textbox", { name: "Memory per task" })).toHaveValue("4");
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^Profile/ }), "slurm");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ }), "slurm");
   await userEvent.click(launchButton());
   await waitFor(() => expect(posted).toHaveLength(1));
   expect(posted[0]).not.toHaveProperty("default_resources");

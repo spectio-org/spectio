@@ -50,7 +50,7 @@ test("/catalog: Launch is marked, the head reads Launch › Catalog, rows name t
   expect(screen.queryByRole("link", { name: "Back to Launch" })).toBeNull(); // the breadcrumb is the way up (ui-spec §12.5, UI-03)
   const nav = screen.getByRole("navigation", { name: "Main" });
   expect(within(nav).getByRole("link", { name: "Launch" })).toHaveAttribute("aria-current", "page");
-  expect(within(nav).getAllByRole("link")).toHaveLength(4); // no NAV item for the catalog
+  expect(within(nav).getAllByRole("link")).toHaveLength(5); // no NAV item for the catalog
   const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
   expect(within(crumbs).getByRole("link", { name: "Launch" })).toHaveAttribute("href", "/launch");
   expect(within(crumbs).getByText("Catalog")).toHaveAttribute("aria-current", "page");
@@ -164,7 +164,7 @@ test("Add pipeline: focus on the heading, Revision once Pipeline is a repository
   expect(save).toHaveAttribute("aria-disabled", "true");
   expect(save).toHaveAccessibleDescription("Fix Revision first");
   await userEvent.type(screen.getByLabelText(/^Revision/), "3.27.0");
-  await userEvent.type(screen.getByLabelText("Default profile (optional)"), "test");
+  await userEvent.type(screen.getByLabelText("Engine profile (optional)"), "test");
   await userEvent.type(screen.getByLabelText("Params file (optional)"), "conf/test.yaml");
   await userEvent.click(screen.getByRole("button", { name: "Save" }));
   expect(await screen.findByText("An entry named rnaseq-test exists")).toBeInTheDocument();
@@ -259,4 +259,66 @@ test("UI-15: loading, empty and error are the shared states", async () => {
   serve({ [API]: () => json(500, { title: "Server error", detail: "boom" }) });
   app("/catalog");
   expect((await screen.findByRole("alert")).closest(".sp-errorpanel")).not.toBeNull();
+});
+
+const PROFILES = "/api/v1/execution-profiles";
+const profileList = (...names: string[]) => ({
+  items: names.map((name) => ({ name, label: null, compute: "slurm", builtin: false, etag: `"${name}"` })),
+  file: { path: "/home/amartin/.spectio/execution-profiles.toml", state: "ok", detail: null },
+});
+
+test("#408: the entry's Profiles are checkboxes of the execution profiles, its Default profile one of them; both are sent", async () => {
+  const bodies: Record<string, unknown>[] = [];
+  serve({
+    [PROFILES]: profileList("slurm", "local", "gpu-h100"),
+    [API]: (_u: URL, init?: RequestInit) => {
+      if (init?.method !== "POST") return json(200, list([]));
+      bodies.push(JSON.parse(String(init.body)));
+      return json(201, entry("rnaseq", bodies[0]));
+    },
+  });
+  app("/catalog/new");
+  await userEvent.type(await screen.findByLabelText("Name"), "rnaseq");
+  await userEvent.type(screen.getByLabelText("Pipeline"), "/data/rnaseq");
+  const group = await screen.findByRole("group", { name: /^Profiles/ });
+  expect(within(group).getAllByRole("checkbox").map((c) => c.getAttribute("value"))).toEqual(["slurm", "local", "gpu-h100"]);
+  const def = screen.getByRole("combobox", { name: "Default profile" });
+  expect(def).toBeDisabled(); // nothing ticked: nothing to be the default of
+  await userEvent.click(within(group).getByRole("checkbox", { name: "gpu-h100" }));
+  await userEvent.click(within(group).getByRole("checkbox", { name: "local" }));
+  expect([...def.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["None: the server's default", "gpu-h100", "local"]);
+  await userEvent.selectOptions(def, "gpu-h100");
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(bodies).toHaveLength(1));
+  expect(bodies[0]).toMatchObject({ name: "rnaseq", profiles: ["gpu-h100", "local"], default_profile: "gpu-h100" });
+});
+
+test("#408: unticking the default profile clears it, so the default is always one of the profiles", async () => {
+  serve({
+    [PROFILES]: profileList("slurm", "gpu-h100"),
+    [`${API}/rnaseq`]: entry("rnaseq", { location: "/data/rnaseq", revision: null, profiles: ["slurm", "gpu-h100"], default_profile: "gpu-h100" }),
+    [API]: list([]),
+  });
+  app("/catalog/rnaseq");
+  const def = await screen.findByRole("combobox", { name: "Default profile" });
+  expect(def).toHaveValue("gpu-h100");
+  await userEvent.click(within(screen.getByRole("group", { name: /^Profiles/ })).getByRole("checkbox", { name: "gpu-h100" }));
+  expect(def).toHaveValue("");
+});
+
+test("#408: the execution profiles cannot be read: the entry's own are kept, and the form says so", async () => {
+  serve({
+    [PROFILES]: () => json(500, { title: "x", detail: "boom" }),
+    [`${API}/rnaseq`]: entry("rnaseq", { location: "/data/rnaseq", revision: null, profiles: ["gpu-h100"], default_profile: null }),
+    [API]: list([]),
+  });
+  app("/catalog/rnaseq");
+  const group = await screen.findByRole("group", { name: /^Profiles/ });
+  expect(within(group).getByRole("checkbox", { name: "gpu-h100" })).toBeChecked();
+});
+
+test("#408: a catalog row says which profiles the pipeline runs with, and the default", async () => {
+  serve({ [PROFILES]: profileList("gpu-h100"), [API]: list([entry("rnaseq", { profiles: ["gpu-h100", "local"], default_profile: "gpu-h100" })]) });
+  app("/catalog");
+  expect(await screen.findByText(/runs with gpu-h100, local \(default gpu-h100\)/)).toBeInTheDocument();
 });

@@ -1,7 +1,7 @@
 import { NativeSelect, TextInput } from "@mantine/core";
 import { type ReactNode, useEffect, useState } from "react";
-import type { Engine, EnvironmentItem, LaunchTemplate } from "../api";
-import { label as envLabel } from "../environments/fields";
+import type { Engine, LaunchTemplate } from "../api";
+import { type Resolved, label as envLabel } from "../environments/fields";
 import { Icon } from "../icons";
 
 // Resources and Extra config file, two folding rows of Launch's "Where it runs" (FU-P3-110d;
@@ -35,7 +35,7 @@ export interface Wrong {
 export interface Context {
   engine: Engine | null;
   profile: string;
-  env: EnvironmentItem | null;
+  env: Resolved | null;
 }
 
 const MAX_MIB = 4_194_304;
@@ -97,8 +97,8 @@ export function readResources(d: Draft, c: Context): { sent: Sent; errors: Parti
   return { sent, errors };
 }
 
-/** The environment's own values, for a `slurm` one (api §5.4): "48 h · 32 GiB". */
-function envWords(env: EnvironmentItem | null): string {
+/** The execution profile's own values, for a `slurm` one (api §5.4): "48 h · 32 GiB". */
+function envWords(env: Resolved | null): string {
   const s = env?.executor === "slurm" ? env.slurm : null;
   return [s?.time_min && timeWords(s.time_min), s?.mem_mib && memWords(s.mem_mib)].filter(Boolean).join(" · ");
 }
@@ -108,13 +108,13 @@ function closedLine(sent: Sent, c: Context): string {
   if (fromProfile(c)) return `From the profile ${c.profile}`;
   if (Object.keys(sent).length) return `Defaults: ${resourceWords(sent)} per task`;
   const env = envWords(c.env);
-  return env ? `From the environment: ${env} per task` : "The pipeline's defaults";
+  return env ? `From the execution profile: ${env} per task` : "The pipeline's defaults";
 }
 
 /** The Summary's Run resources line. */
 export function summaryLine(sent: Sent, c: Context): string {
   if (fromProfile(c)) return `from the profile ${c.profile}`;
-  if (!Object.keys(sent).length) return "from the environment";
+  if (!Object.keys(sent).length) return "from the execution profile";
   return `${resourceWords(sent)} per task; ${c.engine === "snakemake" ? "rules" : "processes"} that set their own keep them`;
 }
 

@@ -1,4 +1,4 @@
-// The placement picker in the Environment editor (#401): the filters, the fill of the three
+// The placement picker in the Profile editor (#401, #408): the filters, the fill of the three
 // fields and the fallback to plain fields.
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -21,9 +21,15 @@ const FACTS = {
     { name: "private", default: false, allowed: false, max_time_min: null, groups: [group()] },
   ],
 };
+const FILE = { path: "/x", state: "ok", detail: null };
+const compute = (name: string, executor: string) => ({
+  ...{ name, label: null, executor, slurm: null, local: null, software: ["conda", "apptainer"], apptainer_args: "" },
+  ...{ builtin: true, usable: true, unusable_reason: null, etag: `"${name}"` },
+});
+const COMPUTES = { items: [compute("slurm", "slurm"), compute("local", "local")], file: FILE };
 const open = async (facts: unknown) => {
-  serve({ "/api/v1/version": SLURM, "/api/v1/environments": { items: [], default: "slurm", file: { path: "/x", state: "ok", detail: null } }, "/api/v1/cluster/facts": facts });
-  app("/environments/new");
+  serve({ "/api/v1/version": SLURM, "/api/v1/computes": COMPUTES, "/api/v1/cluster/facts": facts });
+  app("/profiles/new");
   await screen.findByRole("textbox", { name: "Partition" });
 };
 const listed = () => within(screen.queryByRole("list", { name: "Partitions that fit" }) ?? document.body).queryAllByRole("button").map((b) => b.getAttribute("aria-label"));
@@ -89,45 +95,45 @@ test("two features join with & and any GPU is gpu:1; a filter left empty keeps w
   expect(screen.getByRole("textbox", { name: "GRES" })).toHaveValue("gpu:1");
 });
 
-test("the account is a select of the user's accounts when the facts list some", async () => {
-  await open(FACTS);
-  await userEvent.click(await screen.findByRole("textbox", { name: "SLURM account" }));
-  await userEvent.click(await screen.findByRole("option", { name: "lab-b" }));
-  expect(screen.getByRole("textbox", { name: "SLURM account" })).toHaveValue("lab-b");
-});
-
 test.each([
   ["no SLURM on the host", { scheduler: null, fetched_at: null, partitions: [], accounts: [] }],
   ["the request fails", null],
 ])("%s: today's plain fields, plus constraint and gres, and no picker", async (_why, facts) => {
-  serve({
-    "/api/v1/version": SLURM,
-    "/api/v1/environments": { items: [], default: "slurm", file: { path: "/x", state: "ok", detail: null } },
-    ...(facts ? { "/api/v1/cluster/facts": facts } : {}),
-  });
-  app("/environments/new");
-  for (const name of ["Partition", "SLURM account", "Constraint", "GRES"]) {
+  serve({ "/api/v1/version": SLURM, "/api/v1/computes": COMPUTES, ...(facts ? { "/api/v1/cluster/facts": facts } : {}) });
+  app("/profiles/new");
+  for (const name of ["Partition", "Constraint", "GRES"]) {
     expect(await screen.findByRole("textbox", { name })).toBeInTheDocument();
   }
   expect(screen.queryByRole("region", { name: "Find a partition by need" })).toBeNull();
 });
 
-test("Save sends the constraint and gres the form holds", async () => {
+test("Save sends the constraint and gres the form holds, under resources", async () => {
   const sent: unknown[] = [];
+  const created = (body: unknown) => new Response(JSON.stringify(body), { status: 201, headers: { "content-type": "application/json" } });
   serve({
     "/api/v1/version": SLURM,
-    "/api/v1/environments": (_u: URL, init?: RequestInit) =>
+    "/api/v1/computes": COMPUTES,
+    "/api/v1/execution-profiles": (_u: URL, init?: RequestInit) =>
       init?.method === "POST"
-        ? (sent.push(JSON.parse(String(init.body))), new Response(JSON.stringify({ name: "gpu-env", etag: '"1"' }), { status: 201, headers: { "content-type": "application/json" } }))
-        : new Response(JSON.stringify({ items: [], default: "slurm", file: { path: "/x", state: "ok", detail: null } }), { headers: { "content-type": "application/json" } }),
+        ? (sent.push(JSON.parse(String(init.body))), created({ name: "gpu-env", etag: '"1"' }))
+        : new Response(JSON.stringify({ items: [], file: FILE }), { headers: { "content-type": "application/json" } }),
     "/api/v1/cluster/facts": { scheduler: null, fetched_at: null, partitions: [], accounts: [] },
   });
-  app("/environments/new");
+  app("/profiles/new");
   await userEvent.type(await screen.findByRole("textbox", { name: /^Name/ }), "gpu-env");
   await userEvent.type(screen.getByRole("textbox", { name: "Constraint" }), "a100&avx512");
   await userEvent.type(screen.getByRole("textbox", { name: "GRES" }), "gpu:A100:1");
   await userEvent.click(screen.getByRole("button", { name: "Save" }));
-  expect(sent[0]).toMatchObject({ slurm: { constraint: "a100&avx512", gres: "gpu:A100:1" } });
+  expect(sent[0]).toMatchObject({ compute: "slurm", resources: { constraint: "a100&avx512", gres: "gpu:A100:1" } });
+});
+
+test("a local compute has no partition, constraint or GRES, and no picker", async () => {
+  await open(FACTS);
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Compute" }), "local");
+  expect(screen.queryByRole("textbox", { name: "Partition" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "GRES" })).toBeNull();
+  expect(screen.queryByRole("region", { name: "Find a partition by need" })).toBeNull();
+  expect(screen.getByRole("textbox", { name: "CPUs per job" })).toBeInTheDocument();
 });
 
 test("a constraint with a space is refused where it is typed", async () => {

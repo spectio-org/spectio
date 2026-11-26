@@ -41,11 +41,11 @@ function json(status: number, body: unknown): Response {
 }
 
 const fetchMock = vi.fn<typeof fetch>();
-// The Environment row, the catalog picker and the feature flags read on their own (as in
-// LaunchPage.test): they fail here, so the form sends no environment and no profile.
+// The Profile row, the catalog picker and the feature flags read on their own (as in
+// LaunchPage.test): they fail here, so the form sends no execution profile and no profile.
 beforeEach(() =>
   vi.stubGlobal("fetch", (url: RequestInfo | URL, init?: RequestInit) =>
-    ["/api/v1/environments", "/api/v1/catalog", "/api/v1/features"].includes(String(url))
+    ["/api/v1/execution-profiles", "/api/v1/computes", "/api/v1/catalog", "/api/v1/features"].includes(String(url))
       ? Promise.resolve(json(500, { title: "x" }))
       : fetchMock(url, init),
   ),

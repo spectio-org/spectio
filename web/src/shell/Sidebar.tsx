@@ -5,13 +5,14 @@ import { Icon } from "../icons";
 import { useFrames } from "../live";
 import { ACTIVE, executorLabel } from "../runs/stateWord";
 
-/** The 0.0.1 sections (Environments: ui-spec §4.8.1, FU-P3-86f), with the icons and section colours of LiteSidebar and MLiteTabbar (G1).
+/** The 0.0.1 sections (Compute and Profiles: ui-spec §4.8.1, FU-P3-86f, #408), with the icons and section colours of LiteSidebar and MLiteTabbar (G1).
  * Home is active on `/` only; Runs and Launch also on the pages under them (UX-PAR-06). */
 export const NAV = [
   { to: "/", label: "Home", section: "home", icon: "home", exact: true },
   { to: "/runs", label: "Runs", section: "runs", icon: "runs", exact: false },
   { to: "/launch", label: "Launch", section: "launch", icon: "launch", exact: false },
-  { to: "/environments", label: "Environments", section: "environments", icon: "server", exact: false },
+  { to: "/compute", label: "Compute", section: "environments", icon: "server", exact: false },
+  { to: "/profiles", label: "Profiles", section: "environments", icon: "sliders", exact: false },
 ] as const;
 
 /** The `NAV` item marked on a page outside its path: the Catalog pages are Launch's (ui-spec §4.7.1). */

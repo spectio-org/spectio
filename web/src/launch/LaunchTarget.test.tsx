@@ -54,7 +54,7 @@ function json(status: number, body: unknown): Response {
 const fetchMock = vi.fn<typeof fetch>();
 beforeEach(() =>
   vi.stubGlobal("fetch", (url: RequestInfo | URL, init?: RequestInit) =>
-    ["/api/v1/environments", "/api/v1/catalog"].includes(String(url)) ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
+    ["/api/v1/execution-profiles", "/api/v1/computes", "/api/v1/catalog"].includes(String(url)) ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
   ),
 );
 afterEach(() => {
@@ -117,7 +117,7 @@ test("one step: the kind of step replaces the engine picker, the catalog and the
   expect(within(kind).getByRole("radio", { name: "Nextflow module" })).toBeChecked();
   expect(screen.queryByRole("group", { name: "Engine" })).toBeNull();
   expect(screen.queryByText("The catalog could not be read.")).toBeNull();
-  expect(screen.getByRole("combobox", { name: /^Profile/ })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ })).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: /^Run name/ })).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: /^Module/ })).toHaveAccessibleDescription(
     "A registry module such as nf-core/fastqc, or the absolute path of a module directory.",
@@ -129,7 +129,7 @@ test("one step: the kind of step replaces the engine picker, the catalog and the
   await ruleKind();
   expect(screen.getByRole("textbox", { name: /^Snakemake pipeline/ })).toBeInTheDocument();
   expect(screen.queryByRole("group", { name: "Engine" })).toBeNull();
-  expect(screen.getByRole("combobox", { name: /^Profile/ })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ })).toBeInTheDocument();
 });
 
 test("a registry module: Load pins the registry's version, its inputs are the parameters, Launch sends the target", async () => {
@@ -152,7 +152,7 @@ test("a registry module: Load pins the registry's version, its inputs are the pa
   expect(screen.getByText("checksum: after install")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /Module inputs/ })).toBeInTheDocument();
   // the profile the launch sends is on screen for a module too (ui-spec §4.15, SEC-161W-01)
-  expect(screen.getByRole("combobox", { name: /^Profile/ })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ })).toBeInTheDocument();
   // a module run takes no extra config file (api §5.10): no row, no Summary line
   expect(screen.queryByText("Extra config file")).toBeNull();
   expect(screen.queryByText("Extra config")).toBeNull();

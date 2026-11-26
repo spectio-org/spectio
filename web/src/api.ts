@@ -61,8 +61,8 @@ export interface LaunchBody {
   workflow: { location: string; revision: string | null; engine: Engine; main_script?: string };
   name?: string;
   profiles: string[];
-  /** An environment's name (api §5.4); absent: the server's default. */
-  environment?: string;
+  /** An execution profile's name (api §5.13, #408); absent: the server's default. */
+  execution_profile?: string;
   params: Record<string, unknown>;
   /** One module or one rule (api §5.10, 0.0.2); absent: the whole pipeline. */
   target?: TargetIn;
@@ -847,48 +847,87 @@ export function launch(body: LaunchBody): Promise<Launched> {
   });
 }
 
-/** Schema `EnvironmentItem` (api §5.4): a built-in or one of `environments.toml`'s. */
-export interface EnvironmentItem {
+/** The state of a TOML file the store reads (api §5.4, §5.6, §5.13). */
+export interface StoreFile {
+  path: string;
+  state: "missing" | "ok" | "refused" | "invalid" | "unreachable";
+  detail: string | null;
+}
+
+/** Schema `Compute` (api §5.13, #408): a backend, a built-in or one of `computes.toml`'s. */
+export interface Compute {
   name: string;
   label: string | null;
   executor: "local" | "slurm";
-  builtin: boolean;
-  default: boolean;
-  usable: boolean;
-  unusable_reason: string | null;
-  slurm: NonNullable<RunEnvironment["slurm"]> | null;
-  local: NonNullable<RunEnvironment["local"]> | null;
-  /** The software a Snakemake launch deploys with (inbox #161); a Nextflow environment keeps
-   * the field: its profiles decide. */
+  /** Only with the `slurm` executor. */
+  slurm: { account: string | null } | null;
+  /** Only with the `local` executor. */
+  local: { cpus: number | null; mem_mib: number | null } | null;
+  /** The software deployment methods this backend has. */
   software: ("conda" | "apptainer")[];
   apptainer_args: string;
-  profiles: { nextflow: string | null; snakemake: string | null };
+  builtin: boolean;
+  usable: boolean;
+  unusable_reason: string | null;
   etag: string;
 }
-export type EnvironmentBody = Omit<EnvironmentItem, "builtin" | "default" | "usable" | "unusable_reason" | "etag">;
+export type ComputeBody = Omit<Compute, "builtin" | "usable" | "unusable_reason" | "etag">;
 
-/** Schema `EnvironmentList`. */
-export interface EnvironmentList {
-  items: EnvironmentItem[];
-  default: string;
-  file: { path: string; state: "missing" | "ok" | "refused" | "invalid" | "unreachable"; detail: string | null };
+/** Schema `ExecutionProfile` (api §5.13, #408): resources on top of one compute. */
+export interface ExecutionProfile {
+  name: string;
+  label: string | null;
+  compute: string;
+  /** Every field is optional: null leaves the engine's or SLURM's default. */
+  resources: {
+    partition: string | null;
+    constraint: string | null;
+    gres: string | null;
+    time_min: number | null;
+    mem_mib: number | null;
+    cpus: number | null;
+  };
+  /** A subset of the compute's `software`. */
+  software: ("conda" | "apptainer")[];
+  engine_profiles: { nextflow: string | null; snakemake: string | null };
+  builtin: boolean;
+  etag: string;
+}
+export type ExecutionProfileBody = Omit<ExecutionProfile, "builtin" | "etag">;
+
+/** Schema `ComputeList` and `ExecutionProfileList`; `default` names the profile Launch preselects. */
+export interface ComputeList {
+  items: Compute[];
+  file: StoreFile;
+}
+export interface ExecutionProfileList {
+  items: ExecutionProfile[];
+  default?: string;
+  file: StoreFile;
 }
 
-const env = (name: string) => `/environments/${encodeURIComponent(name)}`;
 const sendJson = (method: string, body: unknown, etag?: string): RequestInit => ({
   method,
   headers: { "content-type": "application/json", ...(etag ? { "if-match": etag } : {}) },
   body: JSON.stringify(body),
 });
 
-export const listEnvironments = (signal?: AbortSignal): Promise<EnvironmentList> => call("/environments", { signal });
-export const getEnvironment = (name: string, signal?: AbortSignal): Promise<EnvironmentItem> => call(env(name), { signal });
-export const createEnvironment = (body: EnvironmentBody): Promise<EnvironmentItem> => call("/environments", sendJson("POST", body));
-export const replaceEnvironment = (body: EnvironmentBody, etag: string): Promise<EnvironmentItem> =>
-  call(env(body.name), sendJson("PUT", body, etag));
-export const deleteEnvironment = (name: string, etag: string): Promise<null> =>
-  call(env(name), { method: "DELETE", headers: { "if-match": etag } });
-export const makeDefault = (name: string): Promise<null> => call(`${env(name)}:make-default`, { method: "POST" });
+const computePath = (name: string) => `/computes/${encodeURIComponent(name)}`;
+export const listComputes = (signal?: AbortSignal): Promise<ComputeList> => call("/computes", { signal });
+export const getCompute = (name: string, signal?: AbortSignal): Promise<Compute> => call(computePath(name), { signal });
+export const createCompute = (body: ComputeBody): Promise<Compute> => call("/computes", sendJson("POST", body));
+export const replaceCompute = (body: ComputeBody, etag: string): Promise<Compute> => call(computePath(body.name), sendJson("PUT", body, etag));
+export const deleteCompute = (name: string, etag: string): Promise<null> =>
+  call(computePath(name), { method: "DELETE", headers: { "if-match": etag } });
+
+const profilePath = (name: string) => `/execution-profiles/${encodeURIComponent(name)}`;
+export const listExecutionProfiles = (signal?: AbortSignal): Promise<ExecutionProfileList> => call("/execution-profiles", { signal });
+export const getExecutionProfile = (name: string, signal?: AbortSignal): Promise<ExecutionProfile> => call(profilePath(name), { signal });
+export const createExecutionProfile = (body: ExecutionProfileBody): Promise<ExecutionProfile> => call("/execution-profiles", sendJson("POST", body));
+export const replaceExecutionProfile = (body: ExecutionProfileBody, etag: string): Promise<ExecutionProfile> =>
+  call(profilePath(body.name), sendJson("PUT", body, etag));
+export const deleteExecutionProfile = (name: string, etag: string): Promise<null> =>
+  call(profilePath(name), { method: "DELETE", headers: { "if-match": etag } });
 
 /** `GET /cluster/facts` (#401): what the SLURM scheduler offers; `scheduler` null when the host has none. */
 export interface ClusterFacts {
@@ -924,6 +963,9 @@ export interface CatalogItem {
   revision: string | null;
   profile: string | null;
   params_file: string | null;
+  /** The execution profiles the pipeline runs with, and the one Launch preselects (api §5.13, #408). */
+  profiles?: string[];
+  default_profile?: string | null;
   etag: string;
 }
 export type CatalogBody = Omit<CatalogItem, "etag">;
@@ -931,7 +973,7 @@ export type CatalogBody = Omit<CatalogItem, "etag">;
 /** Schema `CatalogList`: the entries in name order, and the file's state (empty unless `ok`). */
 export interface CatalogList {
   items: CatalogItem[];
-  file: EnvironmentList["file"];
+  file: StoreFile;
 }
 
 const entry = (name: string) => `/catalog/${encodeURIComponent(name)}`;
