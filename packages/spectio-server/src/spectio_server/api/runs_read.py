@@ -95,6 +95,7 @@ _RUN_COLUMNS = (
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
     workflow_versions.c.version.label("workflow_version"),
+    workflow_versions.c.version_source.label("workflow_version_source"),
     workflow_versions.c.revision,
     launches.c.head_native_id,
     launches.c.head_host,

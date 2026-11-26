@@ -590,7 +590,12 @@ def workflow_graph(
     require_graph(request)
     settings: Settings = request.app.state.settings
     resolved = resolve(settings.data_dir, location, revision)
-    found = inspect_dir(resolved.directory, resolved.default_name)
+    found = inspect_dir(
+        resolved.directory,
+        resolved.default_name,
+        git_name=resolved.git_name,
+        revision=resolved.revision,
+    )
     root = resolved.directory
     if main_script is not None:
         check_main_script(root, main_script, "main_script")
@@ -626,7 +631,12 @@ def workflow_source(
     if len(name) > 512:
         raise not_found("no such process or rule in the pipeline's code")
     resolved = resolve(settings.data_dir, location, revision)
-    found = inspect_dir(resolved.directory, resolved.default_name)
+    found = inspect_dir(
+        resolved.directory,
+        resolved.default_name,
+        git_name=resolved.git_name,
+        revision=resolved.revision,
+    )
     root = resolved.directory
     engine = found.engine
     if engine not in ("snakemake", "nextflow"):

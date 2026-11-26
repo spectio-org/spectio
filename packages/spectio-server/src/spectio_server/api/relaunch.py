@@ -145,6 +145,7 @@ def _insert_child(
         origin="ui",
         workflow_name=parent.workflow_name,
         workflow_version=parent.workflow_version,
+        workflow_version_source=parent.workflow_version_source,  # the parent's, as its version
     )
     conn.execute(
         insert(runner_commands).values(
@@ -435,7 +436,12 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         return {**template, "non_default": list(params), "code_loading": loading}
     try:
         resolved = resolve(settings.data_dir, row.location, row.revision)
-        found = inspect_dir(resolved.directory, resolved.default_name)
+        found = inspect_dir(
+            resolved.directory,
+            resolved.default_name,
+            git_name=resolved.git_name,
+            revision=resolved.revision,
+        )
     except Invalid as exc:
         raise exc.under("workflow") from None
     defaults = schema_defaults(found.schema if found.schema_source != "inferred" else None)
