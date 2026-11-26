@@ -23,6 +23,9 @@ afterEach(() => {
   window.matchMedia = plainMatchMedia;
 });
 
+// Mantine's Combobox scrolls the active option into view.
+Element.prototype.scrollIntoView ??= () => {};
+
 globalThis.ResizeObserver ??= class {
   observe() {}
   unobserve() {}

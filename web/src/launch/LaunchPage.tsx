@@ -854,7 +854,8 @@ export function LaunchPage({
       const how = fromProfile
         ? `resources and partition from the profile ${profile} (this environment's are not passed)`
         : chosen.slurm?.partition && `partition ${chosen.slurm.partition}`;
-      return [`sent to SLURM by ${by}`, how].filter(Boolean).join(" · ");
+      const placement = fromProfile ? [] : [chosen.slurm?.constraint && `constraint ${chosen.slurm.constraint}`, chosen.slurm?.gres && `GRES ${chosen.slurm.gres}`];
+      return [`sent to SLURM by ${by}`, how, ...placement].filter(Boolean).join(" · ");
     }
     const how = fromProfile ? "concurrency from the profile" : chosen.local?.cpus && `at most ${chosen.local.cpus} CPUs`;
     return [`run on ${server?.node ?? "the server"} by ${by}`, how].filter(Boolean).join(" · ");

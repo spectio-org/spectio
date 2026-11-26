@@ -141,3 +141,42 @@
   display: block;
   margin-top: var(--mantine-spacing-xs);
 }
+/* The placement picker (#401): filters, then the partitions that fit as a compact list. */
+.sp-placement {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  margin-bottom: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border: 1px solid var(--sp-line-divider);
+  border-radius: var(--mantine-radius-md);
+}
+.sp-placement h3 {
+  margin: 0;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+}
+.sp-placement p {
+  margin: 0;
+}
+.sp-placement-list,
+.sp-placement-groups {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-placement-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  max-height: 320px;
+  overflow-y: auto;
+}
+.sp-placement-row {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid var(--sp-line-divider);
+  border-radius: var(--mantine-radius-sm);
+}
+.sp-placement-row[data-chosen] {
+  border-color: var(--sp-section-environments);
+}

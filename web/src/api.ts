@@ -184,7 +184,15 @@ export interface RunEnvironment {
   name: string | null;
   label: string | null;
   executor: "local" | "slurm" | null;
-  slurm: { partition: string | null; account: string | null; time_min: number | null; mem_mib: number | null } | null;
+  slurm: {
+    partition: string | null;
+    account: string | null;
+    time_min: number | null;
+    mem_mib: number | null;
+    /** A SLURM constraint and GRES (#401); absent in a snapshot from before them. */
+    constraint?: string | null;
+    gres?: string | null;
+  } | null;
   local: { cpus: number | null; mem_mib: number | null } | null;
   /** The software a Snakemake launch deploys with (inbox #161); null unless `state` is `recorded`. */
   software: ("conda" | "apptainer")[] | null;
@@ -881,6 +889,31 @@ export const replaceEnvironment = (body: EnvironmentBody, etag: string): Promise
 export const deleteEnvironment = (name: string, etag: string): Promise<null> =>
   call(env(name), { method: "DELETE", headers: { "if-match": etag } });
 export const makeDefault = (name: string): Promise<null> => call(`${env(name)}:make-default`, { method: "POST" });
+
+/** `GET /cluster/facts` (#401): what the SLURM scheduler offers; `scheduler` null when the host has none. */
+export interface ClusterFacts {
+  scheduler: "slurm" | null;
+  fetched_at: string | null;
+  partitions: {
+    name: string;
+    default: boolean;
+    /** The user's accounts may use it; unknown counts as true. */
+    allowed: boolean;
+    /** Null is unlimited. */
+    max_time_min: number | null;
+    /** One entry per group of nodes sharing cpus, memory, features and GPUs. */
+    groups: {
+      nodes: number;
+      idle: number;
+      cpus: number;
+      mem_mib: number;
+      features: string[];
+      gpus: { type: string | null; count: number }[];
+    }[];
+  }[];
+  accounts: string[];
+}
+export const getClusterFacts = (signal?: AbortSignal): Promise<ClusterFacts> => call("/cluster/facts", { signal });
 
 /** Schema `CatalogItem` (api §5.6): a named pipeline location with its launch defaults. */
 export interface CatalogItem {

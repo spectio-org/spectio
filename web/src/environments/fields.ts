@@ -11,6 +11,8 @@ export interface Draft {
   executor: "slurm" | "local";
   partition: string;
   account: string;
+  constraint: string;
+  gres: string;
   hours: string;
   minutes: string;
   mem: string;
@@ -24,7 +26,7 @@ export interface Draft {
   apptainerArgs: string;
 }
 export const EMPTY: Draft = {
-  ...{ name: "", label: "", executor: "slurm", partition: "", account: "", hours: "", minutes: "" },
+  ...{ name: "", label: "", executor: "slurm", partition: "", account: "", constraint: "", gres: "", hours: "", minutes: "" },
   ...{ mem: "", memUnit: "GiB", cpus: "", localMem: "", localUnit: "GiB", nextflow: "", snakemake: "" },
   ...{ software: ["conda", "apptainer"], apptainerArgs: "" },
 };
@@ -34,6 +36,8 @@ export type Errors = Record<string, string>;
 
 const NAME = /^[a-z][a-z0-9-]{0,31}$/;
 const SLURM_NAME = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
+const CONSTRAINT = /^[A-Za-z0-9_.=:,&|!*[\]()-]{1,200}$/;
+const GRES = /^[A-Za-z0-9_.:,=-]{1,100}$/;
 const PROFILE = /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$/;
 const MAX_MIB = 4_194_304;
 
@@ -74,6 +78,10 @@ export function toBody(d: Draft): { body: EnvironmentBody | null; errors: Errors
   if (d.executor === "slurm") {
     const partition = named("slurm.partition", d.partition, SLURM_NAME, slurmWords);
     const account = named("slurm.account", d.account, SLURM_NAME, slurmWords);
+    const constraint = d.constraint.trim();
+    if (constraint && !CONSTRAINT.test(constraint)) errors["slurm.constraint"] = "Letters, digits and _.=:,&|!*[]()-, no spaces, up to 200";
+    const gres = d.gres.trim();
+    if (gres && !GRES.test(gres)) errors["slurm.gres"] = "Letters, digits and _.:,=-, no spaces, up to 100";
     const h = whole(d.hours, 0, 720);
     const m = whole(d.minutes, 0, 59);
     let time_min: number | null = null;
@@ -85,7 +93,8 @@ export function toBody(d: Draft): { body: EnvironmentBody | null; errors: Errors
     }
     const mem_mib = mib(d.mem, d.memUnit);
     if (mem_mib === undefined) errors["slurm.mem_mib"] = "Whole MiB, or GiB with one decimal; 1 MiB to 4,096 GiB";
-    slurm = { partition, account, time_min, mem_mib: mem_mib ?? null };
+    // The two placement fields are sent when set only, so an older server never sees them
+    slurm = { partition, account, time_min, mem_mib: mem_mib ?? null, ...(constraint && { constraint }), ...(gres && { gres }) };
   } else {
     const cpus = whole(d.cpus, 1, 256);
     if (cpus === undefined) errors["local.cpus"] = "A whole number, 1 to 256";
@@ -116,6 +125,7 @@ export function fromItem(item: EnvironmentItem): Draft {
   return {
     ...{ name: item.name, label: item.label ?? "", executor: item.executor, mem, memUnit, localMem, localUnit },
     ...{ partition: item.slurm?.partition ?? "", account: item.slurm?.account ?? "" },
+    ...{ constraint: item.slurm?.constraint ?? "", gres: item.slurm?.gres ?? "" },
     ...{ hours: t === null ? "" : String(Math.floor(t / 60)), minutes: t === null ? "" : String(t % 60) },
     ...{ cpus: item.local?.cpus == null ? "" : String(item.local.cpus) },
     ...{ nextflow: item.profiles.nextflow ?? "", snakemake: item.profiles.snakemake ?? "" },
@@ -150,6 +160,8 @@ export function summary(
     const parts = [
       s?.partition && `partition ${s.partition}`,
       s?.account && `SLURM account ${s.account}`,
+      s?.constraint && `constraint ${s.constraint}`,
+      s?.gres && `GRES ${s.gres}`,
       s?.time_min && `${timeWords(s.time_min)} per job`,
       s?.mem_mib && `${memWords(s.mem_mib)} per job`,
     ].filter(Boolean);
