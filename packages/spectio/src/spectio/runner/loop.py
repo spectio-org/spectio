@@ -67,14 +67,13 @@ from spectio.runner.types import (
     SpoolBatch,
     Stalled,
 )
-from spectio.text import strip_escapes
+from spectio.text import HIDDEN, hide_snakemake_commands, strip_escapes
 from spectio_sdk.targets import RunTarget, from_registry
 
 log = logging.getLogger(__name__)
 
 LAUNCH_FAILED = "launch-failed.json"
 CANCEL = "cancel"
-HIDDEN = "«hidden»"  # as spectio_server.files.redact
 HEAD_OUT = "head.out"  # the engine's output, as the head script copies it (headscript.py)
 # The launch whose head files `.spectio/` holds (CR-P3T09-11): head.pid, head.exit, cancel and
 # launch-failed.json are named per run, so a later launch clears an earlier one's first. No file
@@ -179,13 +178,15 @@ def _hide_commands(lines: list[str]) -> list[str]:
     return kept
 
 
-def engine_output_tail(data: bytes) -> str | None:
+def engine_output_tail(data: bytes, engine: str = "nextflow") -> str | None:
     """The last non-blank lines of the engine's output: a line rewritten in place (`\\r`) as its
     last state, escape sequences, control and format characters removed (`strip_escapes`),
-    commands hidden (`_hide_commands`), at most TAIL_LINES lines and TAIL_CHARS characters;
-    None when blank."""
+    commands hidden (`_hide_commands`, and for Snakemake `hide_snakemake_commands`), at most
+    TAIL_LINES lines and TAIL_CHARS characters; None when blank."""
     text = data.decode("utf-8", "replace").replace("\r\n", "\n")
     text = strip_escapes("\n".join(line.rsplit("\r", 1)[-1] for line in text.split("\n")))
+    if engine == "snakemake":
+        text = hide_snakemake_commands(text)  # before the blank lines go: a block can hold some
     lines = [line.rstrip() for line in text.split("\n") if line.strip()]
     kept = _hide_commands(lines)[-TAIL_LINES:]
     tail = "\n".join(kept)[-TAIL_CHARS:]
@@ -541,7 +542,7 @@ class RunnerLoop:
             return None
         try:
             with private_dir(self.settings.runs_root, ref.run_id, "launch", ".spectio") as fd:
-                return engine_output_tail(_read_tail(fd, HEAD_OUT, TAIL_READ))
+                return engine_output_tail(_read_tail(fd, HEAD_OUT, TAIL_READ), ref.engine)
         except (OSError, ValueError):
             return None
 

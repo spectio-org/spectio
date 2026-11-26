@@ -629,6 +629,63 @@ def test_engine_output_tail_hides_the_task_command() -> None:
     assert "TOKEN" not in (engine_output_tail((TASK_ERROR + inside).encode()) or "")
 
 
+def smk_tail(text: str) -> str:
+    return engine_output_tail(text.encode(), "snakemake") or ""
+
+
+def test_snakemake_tail_hides_the_quoted_command() -> None:
+    """A `CalledProcessError` quotes the job's shell text, `export` values included (SEC-SMKFAIL-01,
+    #352): it never reaches the stored message."""
+    text = (
+        "RuleException:\nCalledProcessError in file /x/Snakefile, line 3:\n"
+        "Command 'export TOKEN=s3cret; tool --in a' returned non-zero exit status 1.\n"
+        '  File "/x/Snakefile", line 3, in __rule_map\n'
+    )
+    tail = smk_tail(text)
+    assert "s3cret" not in tail and "tool --in" not in tail
+    assert "Command «hidden» returned non-zero exit status 1." in tail
+    assert "CalledProcessError in file /x/Snakefile, line 3:" in tail
+    signal = smk_tail("Command 'export TOKEN=s3cret' died with <Signals.SIGKILL: 9>.\nnext")
+    assert "s3cret" not in signal and "died with <Signals.SIGKILL: 9>." in signal
+
+
+def test_snakemake_tail_hides_the_shell_block() -> None:
+    """The `shell:` block of `Error in rule X:`, and of each job `printshellcmds` prints, is one
+    hidden line; the lines after the block stay."""
+    text = (
+        "Error in rule map:\n    message: Command failed\n    jobid: 3\n"
+        "    shell:\n        export TOKEN=s3cret\n\n        tool --in a\n"
+        "        (one of the commands exited with non-zero exit code)\n"
+        "    (command exited with non-zero exit status)\n"
+        "rule align:\n    shell: tool --token s3cret2\n    jobid: 4\n"
+    )
+    tail = smk_tail(text)
+    assert "s3cret" not in tail and "tool --in" not in tail
+    assert "    shell: «hidden»\n    (command exited with non-zero exit status)" in tail
+    assert "    shell: «hidden»\n    jobid: 4" in tail
+    assert "    jobid: 3" in tail
+    assert smk_tail(tail) == tail  # hiding twice changes nothing
+
+
+def test_snakemake_tail_hides_a_window_cut_inside_a_command() -> None:
+    """A window that starts in the quoted command, or a quote with no end, hides it all the same
+    (fail closed)."""
+    inside = "export TOKEN=s3cret\ntool --in a' returned non-zero exit status 2.\nlast line\n"
+    tail = smk_tail(inside)
+    assert "s3cret" not in tail and "tool --in" not in tail and tail.endswith("last line")
+    open_quote = "before\nCommand 'export TOKEN=s3cret\ntool --in a\nERROR\n"
+    tail = smk_tail(open_quote)
+    assert tail == "before\nCommand: «hidden»"
+    both = "Command 'export A=s1' returned non-zero exit status 1.\nCommand 'export B=s2\nrest"
+    tail = smk_tail(both)
+    assert "s1" not in tail and "s2" not in tail and "rest" not in tail
+
+
+def test_the_nextflow_tail_is_left_alone_by_the_snakemake_hiding() -> None:
+    tail = engine_output_tail(b"ERROR ~ boom\n    shell:\n        keep\n")
+    assert tail is not None and "keep" in tail
+
+
 def test_head_out_through_a_symlink_or_shared_is_not_read(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

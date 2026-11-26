@@ -22,7 +22,8 @@ from spectio.environments import Environment, run_column, snapshot
 from spectio.runner.spool import read_spool
 from spectio.runner.types import Failure, HeadReport, SpoolBatch
 from spectio_sdk.events import DATA_MODELS, SnakemakeJobInfo, SpoolEvent, parse_data
-from spectio_server.projector.ingest import apply_head_report, ingest
+from spectio_server.projector.ingest import _own_message, apply_head_report, ingest
+from spectio_server.projector.runs import MAX_FAILURE_MESSAGE
 from spectio_server.stall import _now_running, _submit_advance
 from spectio_server.store.db import open_db
 from spectio_server.store.schema import (
@@ -443,6 +444,61 @@ def test_an_error_record_beats_the_head_report(engine: Engine, writer: Writer) -
     ingest_events(writer, event(1, "error", msg="WorkflowError:\nboom", exception="WorkflowError"))
     head(writer, replace(exited(1), failure=Failure("engine_fault", TAIL)))
     assert run_row(engine).failure["message"] == "WorkflowError:\nboom"
+
+
+def test_a_retried_job_gets_no_head_tail(engine: Engine, writer: Writer) -> None:
+    """A job that failed and was retried still failed: "before any job failed" would be untrue,
+    so the run's failure quotes no tail (CR-SMKFAIL-01)."""
+    ingest_events(
+        writer,
+        job_info(1, 7, sample="S1"),
+        event(2, "job_error", jobid=7, rule_name="align"),
+        job_info(3, 7, sample="S1"),
+        event(4, "job_finished", job_id=7),
+    )
+    head(writer, replace(exited(1), failure=Failure("engine_fault", TAIL)))
+    assert run_row(engine).failure["message"] == "snakemake exited with code 1"
+
+
+def test_a_cancelling_run_with_a_head_tail_still_ends_cancelled(
+    engine: Engine, writer: Writer
+) -> None:
+    ingest_events(writer, job_info(1, 7, sample="S1"))
+    writer.submit(
+        lambda conn: conn.execute(
+            update(runs).where(runs.c.id == RUN_ID).values(state="cancelling")
+        )
+    ).result()
+    head(writer, replace(exited(1), failure=Failure("engine_fault", TAIL)))
+    row = run_row(engine)
+    assert (row.state, row.failure) == ("cancelled", None)
+
+
+def test_own_message_strips_escapes_and_caps() -> None:
+    long = "Snakemake exited with code 1.\x1b[31m red\x1b[0m\a " + "x" * MAX_FAILURE_MESSAGE
+    got = _own_message(replace(exited(1), failure=Failure("engine_fault", long)))
+    assert got is not None and "\x1b" not in got and "\a" not in got
+    assert got.startswith("Snakemake exited with code 1. red") and len(got) == MAX_FAILURE_MESSAGE
+    assert _own_message(replace(exited(1), failure=Failure("head_lost", "x"))) is None
+    assert _own_message(exited(1)) is None
+
+
+def test_own_message_never_returns_the_command(engine: Engine, writer: Writer) -> None:
+    """A runner that forgets to hide the commands cannot leak them (SEC-SMKFAIL-03)."""
+    quoted = (
+        "Snakemake exited with code 1 before any job failed. Its last lines:\n"
+        "CalledProcessError in file /x/Snakefile, line 3:\n"
+        "Command 'export TOKEN=s3cret; tool --in a' returned non-zero exit status 1.\n"
+        "Error in rule map:\n    shell:\n        export TOKEN=s3cret2\n    jobid: 2"
+    )
+    report = replace(exited(1), failure=Failure("engine_fault", quoted))
+    got = _own_message(report)
+    assert got is not None and "s3cret" not in got and "tool --in" not in got
+    assert "CalledProcessError in file /x/Snakefile, line 3:" in got
+    unclosed = replace(exited(1), failure=Failure("engine_fault", "x\nCommand 'export T=s3cret"))
+    assert "s3cret" not in (_own_message(unclosed) or "")
+    head(writer, report)
+    assert "s3cret" not in run_row(engine).failure["message"]
 
 
 # --- The queue (#385, 2026-11-25): a SLURM job PENDING in squeue is `submitted` ------------

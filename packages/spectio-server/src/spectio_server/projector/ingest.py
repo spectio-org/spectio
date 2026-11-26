@@ -14,7 +14,7 @@ from sqlalchemy import Connection, select, update
 from sqlalchemy.exc import OperationalError
 
 from spectio.runner.types import HeadReport, SpoolBatch
-from spectio.text import strip_escapes
+from spectio.text import hide_snakemake_commands, strip_escapes
 from spectio_sdk.events import UnknownEventType, parse_data
 from spectio_server.projector import nextflow, snakemake
 from spectio_server.projector.runs import (
@@ -173,10 +173,12 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
 def _own_message(report: HeadReport) -> str | None:
     """The runner's own `engine_fault` message of a head report — for a Snakemake head, the end
     of the engine's output when no job failed (#352) — capped and stripped again: the server
-    trusts no runner's text (SEC-NFERR-03). None when the report carries none."""
+    trusts no runner's text (SEC-NFERR-03). Its Snakemake commands are hidden here too, so a
+    runner that forgets cannot leak them (SEC-SMKFAIL-03). None when the report carries none."""
     if report.failure is None or report.failure.class_ != "engine_fault":
         return None
-    return strip_escapes(report.failure.message)[:MAX_FAILURE_MESSAGE] or None
+    message = hide_snakemake_commands(strip_escapes(report.failure.message)[:MAX_FAILURE_MESSAGE])
+    return message or None
 
 
 def _logged(conn: Connection, run_id: str, event_ids: list[str]) -> set[str]:
