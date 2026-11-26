@@ -4,6 +4,9 @@ runner's failure messages (SEC-NFERR-02); `spectio_server.files.redact` re-expor
 
 import re
 
+from spectio_sdk.events import hide_quoted_commands
+
+HIDDEN = "«hidden»"  # as spectio_server.files.redact
 # CSI (ESC [ or the 8-bit CSI, … final), OSC (ESC ] or the 8-bit OSC, … BEL, ST or ESC \),
 # other two-character escapes, the C0 and C1 controls left except tab and newline, and the bidi
 # and other format controls, line and paragraph separators (SEC-P3T28-07 r1, SEC-P3T28-08 r3).
@@ -26,3 +29,52 @@ def strip_escapes(text: str) -> str:
     """`text` with terminal escape sequences, control and format characters removed (tab and
     newline kept)."""
     return _ESCAPES.sub("", text)
+
+
+# A header already hidden is not one: hiding twice changes nothing
+_SHELL_HEADER = re.compile(rf"([ \t]*)shell:(?! {HIDDEN}$)")
+# The line that ends the `shell:` block of `Error in rule X:`
+_SHELL_END = re.compile(r"\s*\((?:one of the commands|command) exited with non-zero exit code")
+# The `Command:` / `Output:` pair of a conda environment that could not be created
+# (Snakemake's `Could not create conda environment …`): the command line up to `Output:`
+_COMMAND_HEADER = re.compile(r"([ \t]*)Command:\s*$")
+_COMMAND_END = re.compile(r"\s*Output:")
+# The end of a quote whose `Command '` start is not in the text (a window cut inside it)
+_QUOTE_END = re.compile(r"(?s)\A.*' (returned non-zero exit status \d+|died with <[^>]*>)")
+
+
+def hide_snakemake_commands(text: str) -> str:
+    """`text`, the engine's output or a message that quotes it, with the shell commands of a
+    failed Snakemake job hidden (SEC-SMKFAIL-01, -05): the `shell:` block of `Error in rule X:`
+    as one `shell: «hidden»` line, up to and including its `(… exited with non-zero exit code`
+    line; the `Command '…' returned non-zero exit status N` of a `CalledProcessError`, as the
+    SDK hides it from `snakemake.error`; the `Command:` line of a conda environment that could
+    not be created, up to its `Output:` line (SEC-SMKFAIL-07). Fails closed: a block with no
+    end, or a `Command '` with no end, hides the rest of the text; an end with no start hides
+    everything back to the text's start. It does not reach the raw commands `-p` prints with no
+    header at all: the runner quotes no output once a job began (SEC-SMKFAIL-04).
+    """
+    kept: list[str] = []
+    hiding = False  # inside a `shell:` block
+    command = False  # inside a `Command:` block, up to its `Output:` line (kept)
+    for line in text.split("\n"):
+        if hiding:
+            hiding = not _SHELL_END.match(line)
+        elif command and not _COMMAND_END.match(line):
+            continue
+        elif header := _SHELL_HEADER.match(line):
+            kept.append(f"{header[1]}shell: {HIDDEN}")
+            hiding = True
+        elif header := _COMMAND_HEADER.match(line):
+            kept.append(f"{header[1]}Command: {HIDDEN}")
+            command = True
+        else:
+            command = False
+            kept.append(line)
+    hidden = hide_quoted_commands("\n".join(kept))
+    hidden = _QUOTE_END.sub(rf"Command {HIDDEN} \1", hidden)
+    lines = hidden.split("\n")
+    for i, line in enumerate(lines):
+        if "Command '" in line:
+            return "\n".join([*lines[:i], f"Command: {HIDDEN}"])
+    return hidden

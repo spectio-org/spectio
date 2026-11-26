@@ -162,12 +162,17 @@ _QUOTED_COMMAND = re.compile(
 )
 
 
+def hide_quoted_commands(text: str) -> str:
+    """`text` with each closed `Command '…' returned non-zero exit status N` quote replaced."""
+    return _QUOTED_COMMAND.sub(r"Command «hidden» \1", text)
+
+
 def _hide_command(msg: str | None) -> str | None:
     """Replace the command an error text quotes; fail closed when the quote is not closed."""
     if msg is None:
         return None
     # Cut first: the pattern's cost stays bounded, and a quote the cut leaves open fails closed.
-    msg = _QUOTED_COMMAND.sub(r"Command «hidden» \1", msg[:MAX_MESSAGE_CHARS])
+    msg = hide_quoted_commands(msg[:MAX_MESSAGE_CHARS])
     if "Command '" in msg:
         msg = msg.split("\n", 1)[0]
         if "Command '" in msg:

@@ -20,7 +20,7 @@ import pytest
 from spectio.config import EngineOpts, Settings
 from spectio.runner import loop as loop_mod
 from spectio.runner.local import LocalLauncher, read_head_exit
-from spectio.runner.loop import RunnerLoop, _read_tail, engine_output_tail
+from spectio.runner.loop import RunnerLoop, _read_tail, ended_failure, engine_output_tail
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import (
     RunManifest,
@@ -30,6 +30,7 @@ from spectio.runner.rundir import (
 )
 from spectio.runner.spool import SPOOL_REFUSED
 from spectio.runner.types import Command, HeadReport, LaunchRef, LaunchSpec, SpoolBatch
+from spectio.text import hide_snakemake_commands
 
 RUN_A = "run_01K8T9HEAD0000000000000T0A"
 RUN_B = "run_01K8T9HEAD0000000000000T0B"
@@ -523,6 +524,58 @@ def test_a_nextflow_failure_carries_its_own_last_lines(
     assert "\033" not in failure.message and "\a" not in failure.message
 
 
+def test_a_snakemake_failure_carries_its_own_last_lines(
+    runs_root: Path, launcher: LocalLauncher
+) -> None:
+    """A Snakemake head that exits non-zero before any job started (an Apptainer or config error
+    at startup) carries the end of its output on its head report, as Nextflow does (#352, #368):
+    the server quotes it when no `error` record came and no job started."""
+    logger = runs_root.parent / "bridges" / "snakemake_logger_plugin_spectio"  # Task 7's place
+    logger.mkdir()
+    (logger / "__init__.py").write_text("")
+    version = 'case "$1" in --version) echo 9.27.1; exit 0;; esac\n'
+    body = (
+        "printf 'Building DAG of jobs...\\n\\033[31mApptainerError: image"
+        " /shared/containers/align.sif not found\\033[0m\\a\\n\\n'; exit 1"
+    )
+    engine = stub_engine(runs_root.parent / "bin", version + body)
+    sink = FakeSink()
+    settings = Settings(
+        runs_root=runs_root,
+        executor="local",
+        engines=EngineOpts(snakemake_cmd=shlex.quote(str(engine))),
+    )
+    loop = RunnerLoop(sink, launcher, settings, tick_s=0.05, end_grace_s=0)
+    ref = sink.launch(runs_root, RUN_A)
+    sink.launches[ref.launch_id] = ref = replace(ref, engine="snakemake")
+    sink.commands[-1] = replace(sink.commands[-1], launch=ref)
+    run_until(loop, lambda: ref.launch_id not in sink.launches)
+    failure = sink.last(ref.launch_id).failure
+    assert failure is not None and failure.class_ == "engine_fault"
+    assert failure.message.startswith("Snakemake exited with code 1 before any job started.")
+    assert (
+        "Building DAG of jobs...\nApptainerError: image /shared/containers/align.sif not found"
+    ) in failure.message
+    assert "\033" not in failure.message and "\a" not in failure.message
+
+
+def test_ended_failure_of_a_snakemake_head() -> None:
+    """A Snakemake head's exit code ends its launch (Assumption 16): a non-zero one carries the
+    end of its output (#352), the first sentence alone when there is none, and 0 no failure."""
+    head = HeadReport("exited", "4711.1", "login1", 1, True, None)
+    tail = "ConfigError in line 22 of workflow/Snakefile: unknown key 'apptainer'"
+    found = ended_failure("snakemake", head, tail)
+    assert found.failure is not None and found.failure.class_ == "engine_fault"
+    assert found.failure.message == (
+        f"Snakemake exited with code 1 before any job started. Its last lines:\n{tail}"
+    )
+    bare = ended_failure("snakemake", replace(head, exit_code=2))
+    assert bare.failure is not None
+    assert bare.failure.message == "Snakemake exited with code 2 before any job started."
+    done = ended_failure("snakemake", replace(head, exit_code=0), tail)
+    assert done.failure is None
+
+
 def test_engine_output_tail_is_bounded() -> None:
     text = ("x" * 300 + "\n") * 100
     tail = engine_output_tail(text.encode())
@@ -575,6 +628,94 @@ def test_engine_output_tail_hides_the_task_command() -> None:
         engine_output_tail(odd[: odd.index("Command exit status:")].encode()) or ""
     )
     assert "TOKEN" not in (engine_output_tail((TASK_ERROR + inside).encode()) or "")
+
+
+def smk_tail(text: str) -> str:
+    return engine_output_tail(text.encode(), "snakemake") or ""
+
+
+def test_snakemake_tail_hides_the_quoted_command() -> None:
+    """A `CalledProcessError` quotes the job's shell text, `export` values included (SEC-SMKFAIL-01,
+    #352): it never reaches the stored message."""
+    text = (
+        "RuleException:\nCalledProcessError in file /x/Snakefile, line 3:\n"
+        "Command 'export TOKEN=s3cret; tool --in a' returned non-zero exit status 1.\n"
+        '  File "/x/Snakefile", line 3, in __rule_map\n'
+    )
+    tail = smk_tail(text)
+    assert "s3cret" not in tail and "tool --in" not in tail
+    assert "Command «hidden» returned non-zero exit status 1." in tail
+    assert "CalledProcessError in file /x/Snakefile, line 3:" in tail
+    signal = smk_tail("Command 'export TOKEN=s3cret' died with <Signals.SIGKILL: 9>.\nnext")
+    assert "s3cret" not in signal and "died with <Signals.SIGKILL: 9>." in signal
+
+
+def test_snakemake_tail_hides_the_shell_block() -> None:
+    """The `shell:` block of `Error in rule X:`, up to and including its terminator line, is one
+    hidden line; the lines after it stay. A continuation at column 0 is inside the block."""
+    text = (
+        "Error in rule map:\n    message: Command failed\n    jobid: 3\n"
+        "    shell:\n        export TOKEN=s3cret\n\nexport OTHER=s3cret2; tool --in a\n"
+        "        (one of the commands exited with non-zero exit code; note that snakemake uses"
+        " bash strict mode!)\n"
+        "    (command exited with non-zero exit status)\n"
+    )
+    hidden = hide_snakemake_commands(text)
+    assert (
+        "s3cret" not in hidden and "tool --in" not in hidden and "one of the commands" not in hidden
+    )
+    assert hidden.endswith("    shell: «hidden»\n    (command exited with non-zero exit status)\n")
+    assert "    jobid: 3" in hidden
+    assert hide_snakemake_commands(hidden) == hidden  # hiding twice changes nothing
+    assert hide_snakemake_commands("    shell:\n        tool --token s3cret\nlast") == (
+        "    shell: «hidden»"  # no terminator: the rest of the text goes
+    )
+    assert hide_snakemake_commands("    shell: «hidden»\nlast") == "    shell: «hidden»\nlast"
+
+
+@pytest.mark.parametrize(
+    "began",
+    [
+        "rule align:\n    jobid: 1",
+        "localrule all:",
+        "Job 3: Aligning",
+        "Error in rule x:\n  jobid: 2",
+    ],
+)
+def test_snakemake_tail_is_dropped_once_a_job_began(began: str) -> None:
+    """`-p` prints each job's raw command with no `shell:` header, so a head killed mid-run leaves
+    commands in its last lines: once a job began, no tail is quoted (SEC-SMKFAIL-04)."""
+    text = f"Building DAG of jobs...\n{began}\n\nexport TOKEN=s3cret; tool --in a\nKilled\n"
+    assert engine_output_tail(text.encode(), "snakemake") is None
+    assert engine_output_tail(text.encode()) is not None  # Nextflow's tail is untouched
+    start = "Building DAG of jobs...\nApptainerError: image not found\n"
+    assert engine_output_tail(start.encode(), "snakemake") == start.rstrip()
+
+
+def test_snakemake_tail_is_dropped_when_the_output_is_longer_than_the_window() -> None:
+    """What came before the window may hold a job's command (SEC-SMKFAIL-06)."""
+    data = b"ApptainerError: image not found\n"
+    assert engine_output_tail(data, "snakemake", truncated=True) is None
+    assert engine_output_tail(data, "snakemake") == "ApptainerError: image not found"
+
+
+def test_snakemake_tail_hides_a_window_cut_inside_a_command() -> None:
+    """A window that starts in the quoted command, or a quote with no end, hides it all the same
+    (fail closed)."""
+    inside = "export TOKEN=s3cret\ntool --in a' returned non-zero exit status 2.\nlast line\n"
+    tail = smk_tail(inside)
+    assert "s3cret" not in tail and "tool --in" not in tail and tail.endswith("last line")
+    open_quote = "before\nCommand 'export TOKEN=s3cret\ntool --in a\nERROR\n"
+    tail = smk_tail(open_quote)
+    assert tail == "before\nCommand: «hidden»"
+    both = "Command 'export A=s1' returned non-zero exit status 1.\nCommand 'export B=s2\nrest"
+    tail = smk_tail(both)
+    assert "s1" not in tail and "s2" not in tail and "rest" not in tail
+
+
+def test_the_nextflow_tail_is_left_alone_by_the_snakemake_hiding() -> None:
+    tail = engine_output_tail(b"ERROR ~ boom\n    shell:\n        keep\n")
+    assert tail is not None and "keep" in tail
 
 
 def test_head_out_through_a_symlink_or_shared_is_not_read(
@@ -1143,3 +1284,24 @@ def test_loop_hands_the_main_script_to_the_launcher(
         shutil.rmtree(runs_root / RUN_A)
     with pytest.raises(ValueError):
         loop_mod.LaunchPayload.model_validate({"location": "/p", "main_script": "../x.nf"})
+
+
+def test_snakemake_tail_hides_the_conda_create_command() -> None:
+    """SEC-SMKFAIL-07: `Could not create conda environment …` quotes conda's command line."""
+    from spectio.text import hide_snakemake_commands
+
+    text = (
+        "CreateCondaEnvironmentException:\n"
+        "Could not create conda environment from /shared/envs/tools.yaml:\n"
+        "Command:\n"
+        "conda env create --file /shared/x.yaml -c https://user:s3cret@example.org/chan\n"
+        "Output:\n"
+        "ChecksumMismatchError: Conda detected a mismatch"
+    )
+    hidden = hide_snakemake_commands(text)
+    assert "s3cret" not in hidden
+    assert "Command: «hidden»" in hidden
+    assert "Output:" in hidden and "ChecksumMismatchError" in hidden
+    assert hide_snakemake_commands(hidden) == hidden
+    # no Output: line: the rest of the text is hidden
+    assert "s3cret" not in hide_snakemake_commands("Command:\nconda create -c https://u:s3cret@x")
