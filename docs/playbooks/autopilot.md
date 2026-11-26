@@ -341,3 +341,15 @@ Thomas, 2026-11-10: more features per session and per week, within the credits h
 9. **Follow-ups.** A minor is folded into the next task that touches the same module; it gets no FU id of its own. The open follow-up list is reviewed once per milestone.
 10. **Waves chain.** The run does not pause at a wave boundary: it goes on to the next ready steps while the budget check answers `go`. The human gates of `pipeline.yaml` still stop it.
 11. **CI by path.** `ci.yml` skips `unit`, `product`, `web` and `e2e-local` on a PR that changes only `docs/`, `design/`, `.autopilot/`, `mkdocs.yml` or top-level Markdown files; `security`, `docs-gate` and `pr-body` run on every PR, and pushes to `main` run everything but the nightly corpus (this delivers §13 item 6).
+
+## 15. Dev mode: features first, gates at the milestone (Thomas, 2026-11-26)
+
+Thomas, 2026-11-26: too many validation steps; review and simplify agents run too often, and features move too slowly. Until Thomas ends it, this section replaces §11, §13 and §14 where they differ ([decision log](../decisions/log.md#2026-11-26-dev-mode-features-first-gates-at-the-milestone-thomas)).
+
+1. **No review per PR.** One `code-reviewer` pass per milestone, on the milestone's diff. Per PR, only a `security-reviewer` pass when the diff touches a sensitive path (sessions and auth, secrets, commands sent to a scheduler or a shell, user-supplied file paths); its blockers and majors are fixed in the PR, with no second pass. Minors are not fixed in the PR.
+2. **`code-simplifier` once per milestone**, never per PR or batch.
+3. **Short docs.** The PR body keeps its four headings with a line or two each. A spec changes only when a contract changes. `doc-reviewer` runs only for the promotion to `main`.
+4. **Bigger lots.** One PR per feature, small fixes grouped into one PR. Each lot goes to an agent dedicated to its area (server, web, infra) so that code stays consistent.
+5. **Builders.** Sonnet agents for the web and short lots; Refract only for well-framed server lots, handed to Sonnet after one timeout.
+6. **Tests at the milestone.** A builder writes tests for the new behaviour and runs only those files. Full suites (pytest, vitest, Playwright, the SLURM e2e) run at the milestone. Integration PRs never wait for CI; the promotion to `main` still needs green checks.
+7. **Done means it works.** A feature is done when it runs in the deployed app (minikube, or the login node) and its result is shown: a screenshot or the command output.

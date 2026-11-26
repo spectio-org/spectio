@@ -8,6 +8,8 @@ argument-hint: "<step-id or branch> [BASE]"
 
 Rules: `karpathy-guidelines` (simplicity first, surgical changes) and `requesting-code-review`. This skill is the procedure; the agents are `code-reviewer` and `security-reviewer` (both read-only) and `code-simplifier` (edits the step's branch only).
 
+**Dev mode (Thomas, 2026-11-26, `docs/playbooks/autopilot.md` §15).** This procedure runs once per milestone on the milestone's diff. Per PR, only a single `security-reviewer` pass on sensitive paths.
+
 **When it applies.** Any step that changed code: `build` steps, a `spike` whose code a later step will reuse, and the whole branch of a plan. A step whose diff touches only docs, specs or boards skips it and says so in its Progress page.
 
 1. **Pin the range.** BASE is the commit the step started from (the integration branch tip at dispatch, recorded by the autopilot as `base` in the step's `state.json` entry, or given as `$1`). HEAD is the step branch tip. Write both down; never use `HEAD~1`.

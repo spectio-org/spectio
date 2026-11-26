@@ -1507,3 +1507,13 @@ Same day, after Thomas tried it: a step's or link's details are docked beside th
 
 - **Decision.** The next deployment after 0.0.1 is one central UI for all users, with sign-in through OIDC later (reusing depictio's code). Each user keeps a runner of their own on the login node. Jobs are not launched on Kubernetes for now. Both deployments must work: the server each user runs on the login node (0.0.1) stays.
 - **Why.** Users should not have to deploy the server themselves, while their jobs keep running under their own account on the cluster.
+
+## 2026-11-26 — Dev mode: features first, gates at the milestone (Thomas)
+
+- **Decision.** Until Thomas ends it, [autopilot §15](../playbooks/autopilot.md#15-dev-mode-features-first-gates-at-the-milestone-thomas-2026-11-26) applies:
+  - no code review per PR, only a security pass on sensitive paths;
+  - review, simplify, full test suites and doc review once per milestone;
+  - bigger lots, built by agents dedicated to their area;
+  - integration PRs never wait for CI;
+  - a feature is done when it works in the deployed app.
+- **Why.** On 2026-11-26 a small error-message fix took four security rounds and a row-height change three review passes. Review and fix loops cost more than the code, and features moved too slowly.
