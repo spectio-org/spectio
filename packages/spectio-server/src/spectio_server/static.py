@@ -2,7 +2,8 @@
 
 Only the screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}`, the report viewer
 `/runs/{run_id}/report`, the results browser `/runs/{run_id}/results` and the Environments pages
-`/environments`, `/environments/new`, `/environments/{name}`, FU-P3-86f; the Catalog pages
+`/environments`, `/environments/new`, `/environments/{name}`, FU-P3-86f, and from #408 the
+Compute pages `/compute...` and the Profiles pages `/profiles...`, alike; the Catalog pages
 `/catalog`, `/catalog/new`, `/catalog/{name}`, FU-P3-87d) answer `index.html` (to `GET` and
 `HEAD`), and
 only `/assets/<name>` answers a file: one plain name, a known web type, opened under `dist`
@@ -84,6 +85,12 @@ ROUTES = (
     "/environments",
     "/environments/new",
     "/environments/{name}",
+    "/compute",  # #408: computes and execution profiles; /environments stays, the web redirects it
+    "/compute/new",
+    "/compute/{name}",
+    "/profiles",
+    "/profiles/new",
+    "/profiles/{name}",
     "/catalog",
     "/catalog/new",
     "/catalog/{name}",
