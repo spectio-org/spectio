@@ -99,6 +99,7 @@ def insert_run(
     origin: str | None = None,
     workflow_name: str | None = None,
     workflow_version: str | None = None,
+    workflow_version_source: str | None = None,
     failure: dict[str, Any] | None = None,
     native_id: str | None = None,
     default_outdir: str | None = None,
@@ -126,6 +127,7 @@ def insert_run(
             revision=module.version if module is not None else m.workflow.revision,
             key=None if module is None else module.hash,
             version=workflow_version,
+            version_source=workflow_version_source,
             **mine,
         )
     )

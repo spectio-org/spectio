@@ -178,7 +178,13 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         raise Invalid("workflow.engine", f"no {names} in this pipeline: is it a {engine} one?")
     main_script = _main_script(body.workflow, resolved.directory, "main.nf" in present, scripts)
     try:
-        found = inspect_dir(resolved.directory, resolved.default_name, scripts)
+        found = inspect_dir(
+            resolved.directory,
+            resolved.default_name,
+            scripts,
+            git_name=resolved.git_name,
+            revision=resolved.revision,
+        )
     except Invalid as exc:
         raise exc.under("workflow") from None
     # the effective parameters (api §5.12): the sources' defaults under the form's values; the
@@ -440,6 +446,7 @@ def _insert(
             origin="ui",
             workflow_name=found.name,
             workflow_version=found.version,
+            workflow_version_source=found.version_source,
             default_outdir=outdir if isinstance(outdir, str) else None,
         )
     except EngineConflict as exc:

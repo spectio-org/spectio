@@ -212,6 +212,7 @@ workflow_versions = Table(
     Column("key", String),
     Column("params_schema", Json),
     Column("version", String),  # the version the pipeline declares, read at launch (inbox #87)
+    Column("version_source", String),  # where it came from: manifest, file or tag (#400)
 )
 
 runs = Table(

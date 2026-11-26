@@ -14,7 +14,8 @@ then checked out. Neither a location nor a revision may hold a control character
 Inspect reads the directory, never runs it: the engine files present (`main.nf`, `Snakefile`,
 `workflow/Snakefile`), the Nextflow entry scripts (#351), the engine they point to (none for
 both or neither), the Nextflow manifest's name and version and the profiles, and the parameter
-schema with where it came from.
+schema with where it came from. A pipeline's identity comes from the manifest, or, for a Git
+location, from the URL's path and a `VERSION` file or the revision's tag (#400).
 """
 
 import contextlib
@@ -73,6 +74,7 @@ MAX_MAIN_SCRIPTS = 50  # the `*.nf` files at a pipeline's root inspect reads (#3
 MAX_MAIN_SCRIPT_BYTES = 8 * MAX_FILE  # read of them in all (SEC-ENTRY-01)
 MAX_SCRIPT_NAMES = 1000  # `*.nf` names collected before they are sorted (SEC-ENTRY-01)
 UNNAMED_WORKFLOW = re.compile(r"^[ \t]*workflow[ \t]*\{", re.M)  # an entry workflow (#351)
+VERSION_LINE = re.compile(r"[0-9A-Za-z._+-]{1,64}")  # a VERSION file's first line (#400)
 
 
 class Unreadable(ValueError):
@@ -86,6 +88,7 @@ class TooLarge(Unreadable):
 
 
 SchemaSource = Literal["nextflow_schema.json", "config.schema.yaml", "inferred", "none"]
+VersionSource = Literal["manifest", "file", "tag"]  # where the version came from (#400)
 
 
 @dataclass(frozen=True)
@@ -97,6 +100,7 @@ class Resolved:
     source: Literal["local", "git"]
     directory: Path  # what is read and launched
     default_name: str  # the directory's, or the repository's, name
+    git_name: str | None = None  # the URL path's `<org>/<repo>` (#400); a local path has none
 
 
 @dataclass(frozen=True)
@@ -109,6 +113,7 @@ class Found:
     schema: dict[str, Any] | None
     schema_source: SchemaSource
     main_scripts: list[str] = field(default_factory=list)
+    version_source: VersionSource | None = None  # where `version` came from (#400)
 
 
 @contextlib.contextmanager
@@ -151,7 +156,9 @@ def resolve(data_dir: Path, location: str, revision: str | None) -> Resolved:
     url, parts = git_url(location)
     revision = check_revision(revision)
     directory = fetch(data_dir, url, parts, revision)
-    return Resolved(url, revision, "git", directory, parts[-1])
+    # The URL path's `<org>/<repo>` (#400): the last two parts after the host, `.git` gone
+    git_name = "/".join(parts[-2:]) if len(parts) > 2 else None
+    return Resolved(url, revision, "git", directory, parts[-1], git_name)
 
 
 def local_dir(location: str) -> Path:
@@ -495,6 +502,43 @@ def nextflow_config(root: Path) -> tuple[str | None, str | None, list[str]]:
     return value("name"), value("version"), profiles
 
 
+def version_file(root: Path) -> str | None:
+    """The first line of a `VERSION` file at `root`, the fetched repository's root (#400):
+    stripped, at most 64 characters of `[0-9A-Za-z._+-]`, read through `_read` (no symlink, as
+    every file inspect reads). A file that is missing, a symlink, unreadable, not UTF-8 or
+    larger than `MAX_FILE`, and a first line that holds anything else, is not a version."""
+    try:
+        text = _read(root, "VERSION")
+    except (Unreadable, UnicodeDecodeError):  # optional: left out, never a refusal
+        return None
+    if text is None:
+        return None
+    line = text.split("\n", 1)[0].strip()
+    return line if VERSION_LINE.fullmatch(line) else None
+
+
+def tag_version(directory: Path, revision: str) -> str | None:
+    """The revision when it names a tag of the fetched repository (#400), one leading `v`
+    stripped when a digit follows; else None. The clone's own refs are read, as every file
+    inspect reads (loose, or packed in `packed-refs`): no remote is contacted, and no git runs.
+    A ref store the walk cannot read (packed-refs past `MAX_FILE`, a reftable clone) gives no
+    version, never a wrong one."""
+    name = f"refs/tags/{revision}"
+    if not _regular(directory, f".git/{name}"):
+        try:
+            packed = _read(directory, ".git", "packed-refs")
+        except (Unreadable, UnicodeDecodeError):
+            return None
+        if packed is None or not any(
+            line.endswith(f" {name}")
+            for line in packed.splitlines()
+            if line and not line.startswith(("#", "^"))
+        ):
+            return None
+    stripped = revision[1:]
+    return stripped if revision[0] == "v" and stripped[:1].isdigit() else revision
+
+
 def snakemake_profiles(root: Path) -> list[str]:
     """The profiles the head can use: `profiles/<name>/config.yaml` (P1 Task 9)."""
     try:
@@ -603,11 +647,19 @@ def check_main_script(directory: Path, name: str, field: str) -> str:
     return name
 
 
-def inspect_dir(directory: Path, default_name: str, scripts: list[str] | None = None) -> Found:
+def inspect_dir(
+    directory: Path,
+    default_name: str,
+    scripts: list[str] | None = None,
+    git_name: str | None = None,
+    revision: str | None = None,
+) -> Found:
     """What the launch form needs from a pipeline directory. Raises Invalid (`location`) when
     a schema or config file cannot be read. A directory with a Nextflow entry script other
     than `main.nf` is a Nextflow pipeline too (#351); `scripts`: `main_scripts`, when the
-    caller has read them already."""
+    caller has read them already. `git_name` and `revision` (#400): `resolve`'s `<org>/<repo>`
+    of a Git location's URL path and its revision, which name the pipeline when the Nextflow
+    manifest does not."""
     files = entry_files(directory)
     scripts = main_scripts(directory) if scripts is None else scripts
     engines = [
@@ -629,17 +681,27 @@ def inspect_dir(directory: Path, default_name: str, scripts: list[str] | None = 
         raise Invalid(
             "location", "the pipeline's files cannot be read: not JSON or YAML this server reads"
         ) from None
+    version_source: VersionSource | None = "manifest" if version is not None else None
+    if version is None and revision is not None:  # a fetched repository (#400)
+        from_file = version_file(directory)
+        if from_file is not None:
+            version, version_source = from_file, "file"
+        else:
+            from_tag = tag_version(directory, revision)
+            if from_tag is not None:
+                version, version_source = from_tag, "tag"
     profiles = {"nextflow": nf_profiles, "snakemake": snakemake_profiles(directory)}
     shown = [p for e in (engines if engine is None else [engine]) for p in profiles[e]]
     return Found(
         engine_files=files,
         engine=engine,
-        name=name or default_name,
+        name=name or git_name or default_name,
         version=version,
         profiles=list(dict.fromkeys(shown)),
         schema=schema,
         schema_source=source,
         main_scripts=scripts,
+        version_source=version_source,
     )
 
 
@@ -790,7 +852,12 @@ def inspect(
         with _as_invalid("params_file"):
             locations.check_params_file(params_file)
     resolved = resolve(settings.data_dir, location, revision)
-    found = inspect_dir(resolved.directory, resolved.default_name)
+    found = inspect_dir(
+        resolved.directory,
+        resolved.default_name,
+        git_name=resolved.git_name,
+        revision=resolved.revision,
+    )
     params = None if params_file is None else _params(request, resolved, found.engine, params_file)
     # defaults imports targets, which imports this module
     from spectio_server.defaults import effective_defaults
@@ -816,6 +883,7 @@ def inspect(
         "main_scripts": found.main_scripts,  # #351
         "name": found.name,
         "version": found.version,
+        "version_source": found.version_source,  # #400
         "engine_version": versions.get(found.engine) if found.engine else None,
         "engine_versions": versions,
         "schema": found.schema,
