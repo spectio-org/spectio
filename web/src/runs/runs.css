@@ -2347,9 +2347,13 @@
 .sp-grid-runs .sp-state svg {
   flex: none;
 }
-/* The name takes the free width and the pin a fixed slot at the column's right; a name wraps to
-   two lines at most, the full name in a tooltip on hover and focus. The workflow path is not
-   focusable, so it wraps in full, unclamped (CR-P3UI08-01). */
+/* One row height (#353, ROW_HEIGHT in RunsPage.tsx): only text is clamped, never a box with a
+   chip or a warning. The run's name and the pipeline's name wrap to two lines, the target to one,
+   each with its full text in a tooltip on hover and focus; the chips sit on the line of the ID or
+   of the target. The cell's white space is normal, so a chip can never push the row taller. */
+.sp-grid-runs .ag-cell {
+  white-space: normal;
+}
 .sp-grid-runs .sp-run-cell {
   align-items: flex-start;
 }
@@ -2361,7 +2365,26 @@
   flex: none;
   margin-top: -2px;
 }
+.sp-grid-runs .sp-run-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-xs);
+}
+.sp-grid-runs .sp-chip {
+  margin: 0;
+  padding-inline: var(--mantine-spacing-xs);
+}
+.sp-grid-runs .sp-pipeline {
+  display: flex;
+}
 .sp-grid-runs .sp-pipeline > span:last-child {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
 }
 .sp-run-name .sp-run-link {
@@ -2417,11 +2440,38 @@
 .sp-scope-text {
   color: var(--sp-text-muted);
 }
+/* The Workflow cell is one native button (the tooltip's focus target), drawn as plain text. */
 .sp-what-ran {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-xs);
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+.sp-what-ran-tail {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  max-width: 100%;
+}
+.sp-what-ran-tail > * {
+  flex: none;
+}
+.sp-what-ran-tail > .sp-target-to {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sp-target-to {
   font-family: var(--sp-font-mono);

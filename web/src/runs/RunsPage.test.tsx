@@ -1,8 +1,11 @@
+/// <reference types="node" />
+import { readFileSync } from "node:fs";
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { FakeEventSource, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 import { ICONS } from "../icons";
+import { ROW_HEIGHT } from "./RunsPage";
 
 // The runs page renders AG Grid and these tests type with userEvent: several take 3 to 4.5 s
 // here and went past the default 5 s on CI once FU-P3-115b added its columns (#248).
@@ -801,14 +804,46 @@ test("CR-01 (#385): a checkpoint run's progress reads in full in its cell, in a 
   expect(parseInt(started.style.width, 10)).toBeGreaterThanOrEqual(170);
 });
 
-test("CR-02 (#385): the Workflow cell wraps in full, with no tooltip standing in for a cut", async () => {
-  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
+test("#353: the Workflow cell is one native button, the target and the changed checksum shown in it and said in its tooltip on focus", async () => {
+  const changed = run({
+    name: "fastqc-two",
+    target: { ...MODULE_TARGET, kind: "rule", name: "qc_report", version: null, source: null, flag: "target", checksum_changed: true },
+  });
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [changed], next: null } });
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
-  const what = within(table).getByText("nf-core/rnaseq").closest(".sp-what-ran") as HTMLElement;
-  expect(what).not.toBeNull();
-  expect(what.parentElement?.getAttribute("data-position")).toBeNull();
-  expect(what.getAttribute("aria-describedby")).toBeNull();
+  const text = "nf-core/rnaseq 3.27.0 · → rule qc_report · checksum changed";
+  // the accessible name keeps the whole of it, and the warning stays visible in the cell
+  const what = within(table).getByRole("button", { name: `Copy workflow ${text}` });
+  expect(what.tagName).toBe("BUTTON");
+  expect(within(what).getByText("checksum changed")).toHaveClass("sp-chip");
+  try {
+    keyboardFocus(what);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(text);
+  } finally {
+    vi.restoreAllMocks();
+  }
+});
+
+test("#353: every row has the one height, sized for the worst cell as runs.css lays it out", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), observed], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("grid", { name: "Runs" });
+  for (const row of within(table).getAllByRole("row").filter((r) => r.classList.contains("ag-row"))) {
+    expect(row.style.height).toBe(`${ROW_HEIGHT}px`);
+  }
+  const css = readFileSync("src/runs/runs.css", "utf8") + readFileSync("src/app.css", "utf8");
+  // two clamped name lines, the Run link's and the pipeline's; 1.45 is the cell's line height
+  for (const selector of [".sp-run-name .sp-run-link", ".sp-grid-runs .sp-pipeline > span:last-child"]) {
+    const at = css.indexOf(`${selector} {`);
+    expect(at, selector).toBeGreaterThanOrEqual(0);
+    expect(css.slice(at, css.indexOf("}", at)), selector).toContain("-webkit-line-clamp: 2;");
+  }
+  expect(css).toContain("line-height: 1.45;");
+  // a name (2 x 14 px lines), a chip (12 px line + 2 px), a line of 13 px, the gaps (xs = 4 px twice), the
+  // cell's padding (md = 12 px twice) and 3 px of borders
+  const lines = 2 * 14 * 1.45 + (12 * 1.45 + 2) + 13 * 1.45;
+  expect(ROW_HEIGHT).toBe(Math.ceil(lines + 2 * 4 + 2 * 12 + 3));
 });
 
 test("CR-07 (#385): a run card has no empty context line when its state has no context", async () => {

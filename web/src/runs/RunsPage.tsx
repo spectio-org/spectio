@@ -7,14 +7,15 @@ import { type Page, type Run, type RunsSort, type ServerVersion, type Summary, l
 import { type IconName, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
-import { Scope, ScopeText, TargetTail } from "./target";
+import { Scope, ScopeText, TargetTail, targetText } from "./target";
+import { useCopyStatus } from "./CopyMenu";
 import { usePhone } from "../shell/layout";
 import { Ago } from "../shell/Ago";
 import { PageHead } from "../shell/PageHead";
 import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { DeleteRuns } from "./DeleteRuns";
 import { LazyGrid } from "./LazyGrid";
-import { Pipeline, Progress, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
+import { NameTip, Pipeline, Progress, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
 import { ACTIVE, duration, isTerminal, plural, shortId, tone, words } from "./stateWord";
 
 /** A run's start as ui-spec §12.8 dates it ("2 h ago", then "2026-10-28 07:01"). */
@@ -179,6 +180,42 @@ function RunName({ run }: { run: Run }) {
   );
 }
 
+/** What a Workflow cell says, whole: the pipeline and its version, the target, and the changed
+ * checksum, which the cell shows in full and the tooltip repeats (#353). */
+function whatRan(run: Run): string {
+  const w = run.workflow;
+  const t = run.target;
+  return [[w.name ?? w.location, w.version].filter(Boolean).join(" "), t && `→ ${targetText(t)}`, t?.checksum_changed && "checksum changed"]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** The Workflow cell: the pipeline's name clamped to two lines and the target to one (runs.css),
+ * the changed-checksum chip never clamped. A button, so the keyboard reaches the full text in the
+ * tooltip; it copies the pipeline's name and version (#353, ui-spec §12.8). */
+function WorkflowCell({ run }: { run: Run }) {
+  const [said, copy] = useCopyStatus();
+  const w = run.workflow;
+  const name = [w.name ?? w.location, w.version].filter(Boolean).join(" ");
+  return (
+    <>
+      <NameTip label={whatRan(run)}>
+        <button type="button" className="sp-what-ran" aria-label={`Copy workflow ${whatRan(run)}`} onClick={() => copy({ label: "Copy", what: "the workflow", text: name })}>
+          <Pipeline run={run} />
+          {run.target && (
+            <span className="sp-what-ran-tail">
+              <TargetTail target={run.target} />
+            </span>
+          )}
+        </button>
+      </NameTip>
+      <span role="status" className="sp-sr">
+        {said}
+      </span>
+    </>
+  );
+}
+
 /** A run as a card, for the phone (MLiteRuns, MLiteHome; UX-PAR-10): the state and duration,
  * the name, the pipeline with its mark and the tasks, then the context. The runs list gives
  * its box and its pin (UX-P3FU115B-06); Home gives neither. */
@@ -247,12 +284,14 @@ const COLUMNS: ColDef<Run>[] = [
           <RunName run={run} />
           <PinButton run={run} />
         </span>
-        {run.origin === "cli-observed" && (
-          <span className="sp-chip">
-            <Icon name="terminal" /> From a terminal
-          </span>
-        )}
-        <span className="sp-id">{shortId(run.id)}</span>
+        <span className="sp-run-meta">
+          {run.origin === "cli-observed" && (
+            <span className="sp-chip">
+              <Icon name="terminal" /> From a terminal
+            </span>
+          )}
+          <span className="sp-id">{shortId(run.id)}</span>
+        </span>
       </>
     ),
   },
@@ -270,12 +309,7 @@ const COLUMNS: ColDef<Run>[] = [
     headerName: "Workflow",
     colId: "workflow",
     flex: 1.4,
-    cellRenderer: ({ data: run }: { data: Run }) => (
-      <span className="sp-what-ran">
-        <Pipeline run={run} />
-        <TargetTail target={run.target} />
-      </span>
-    ),
+    cellRenderer: ({ data: run }: { data: Run }) => <WorkflowCell run={run} />,
   },
   // numbers and durations right-aligned, in tabular figures; words and dates left (ui-spec §12.8)
   {
@@ -297,6 +331,13 @@ const COLUMNS: ColDef<Run>[] = [
     valueGetter: ({ data: run }) => (run ? duration(run.started_at, run.ended_at) : ""),
   },
 ];
+
+/** One height for every row of the list (#353), the worst cell's: a name of two clamped lines
+ * (2 x 14 px x 1.45 = 40.6), a chip (12 px x 1.45 + 2 px of padding = 19.4) and a line of ID or
+ * target (13 px x 1.45 = 18.85), the three 4 px apart when a narrow column wraps them: 86.8. The
+ * cell adds its padding, 2 x 12 px, and AG Grid's 3 px of borders: 113.8, so 114. RunsPage.test.tsx
+ * holds this sum to the CSS (the clamps, the line height). */
+export const ROW_HEIGHT = 114;
 
 const SORTABLE = new Set(["name", "state", "started_at", "duration"]);
 
@@ -373,6 +414,9 @@ export function RunsPage() {
   const phone = usePhone();
   // UX-G3a-05: Started drops below 1100 px, so the grid fits at 1024 px without a sideways scroll.
   const narrow = useMediaQuery("(max-width: 1099.98px)") ?? false;
+  // #353: below 1400 px the Scope column goes too (the Workflow cell names the target), so the Run and
+  // Workflow columns keep the width their chips need and a row keeps its one height.
+  const compact = useMediaQuery("(max-width: 1399.98px)") ?? false;
   const [typed, setTyped] = useState(q);
   // The q this page last wrote: a q from elsewhere (a link that drops it) re-seeds the box, while
   // the page's own write never trims what the user is still typing (CR-P3PARA-09).
@@ -523,7 +567,7 @@ export function RunsPage() {
   // The Scope column and buttons once single targets can exist here: the flag, or a run that has one
   // (a terminal run is captured whatever the flag says; api §5.10).
   const scoped = !!server?.features?.single_target || target !== undefined || !!list?.rows.some((r) => r.target);
-  const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started") && (scoped || c.colId !== "scope")).map(
+  const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started") && (scoped && !compact ? true : c.colId !== "scope")).map(
     (c): ColDef<Run> =>
       c.colId && SORTABLE.has(c.colId)
         ? { ...c, sortable: true, unSortIcon: true, comparator: keep, sortingOrder: ["asc", "desc", null], sort: sort === c.colId ? "asc" : sort === `-${c.colId}` ? "desc" : null }
@@ -657,7 +701,8 @@ export function RunsPage() {
           className="sp-grid-runs"
           rowData={runs}
           columnDefs={columns}
-          defaultColDef={{ sortable: false, autoHeight: true, wrapText: true, suppressHeaderMenuButton: true }}
+          rowHeight={ROW_HEIGHT}
+          defaultColDef={{ sortable: false, suppressHeaderMenuButton: true }}
           getRowId={({ data }) => data.id}
           getRowStyle={({ data }) => (data ? { "--tone": `var(--sp-state-${tone(data.state)})` } : undefined)}
           domLayout="autoHeight"
