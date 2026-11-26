@@ -114,6 +114,99 @@
         "title": "CatalogList",
         "type": "object"
       },
+      "ClusterFacts": {
+        "description": "`GET /cluster/facts` (#401): what SLURM says of its partitions, nodes and the user's\naccounts, for the environment form. `scheduler` is null when this host has no SLURM.",
+        "properties": {
+          "accounts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "partitions": {
+            "items": {
+              "$ref": "#/components/schemas/ClusterPartition"
+            },
+            "title": "Partitions",
+            "type": "array"
+          },
+          "scheduler": {
+            "anyOf": [
+              {
+                "const": "slurm",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduler"
+          }
+        },
+        "required": [
+          "scheduler",
+          "fetched_at",
+          "partitions",
+          "accounts"
+        ],
+        "title": "ClusterFacts",
+        "type": "object"
+      },
+      "ClusterPartition": {
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "default": {
+            "title": "Default",
+            "type": "boolean"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/NodeGroup"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "max_time_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Time Min"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "default",
+          "allowed",
+          "max_time_min",
+          "groups"
+        ],
+        "title": "ClusterPartition",
+        "type": "object"
+      },
       "CodeLoading": {
         "description": "A value that loads code or configuration (dev-env \u00a715.3 req. 16): `field` is a dotted\npath, `params.<name>`, `workflow.location`, or `engine.<option>` for an engine option of\n`spectio.toml`; `writable_by_others` when the path, or a directory above it, is.",
         "properties": {
@@ -733,6 +826,28 @@
             ],
             "title": "Account"
           },
+          "constraint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint"
+          },
+          "gres": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gres"
+          },
           "mem_mib": {
             "anyOf": [
               {
@@ -955,6 +1070,31 @@
           "single_target"
         ],
         "title": "Features",
+        "type": "object"
+      },
+      "GpuKind": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          }
+        },
+        "required": [
+          "type",
+          "count"
+        ],
+        "title": "GpuKind",
         "type": "object"
       },
       "GraphDocument": {
@@ -1891,6 +2031,51 @@
           "expires_at"
         ],
         "title": "MeSession",
+        "type": "object"
+      },
+      "NodeGroup": {
+        "description": "The nodes of a partition that share CPUs, memory, features and GPUs.",
+        "properties": {
+          "cpus": {
+            "title": "Cpus",
+            "type": "integer"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Features",
+            "type": "array"
+          },
+          "gpus": {
+            "items": {
+              "$ref": "#/components/schemas/GpuKind"
+            },
+            "title": "Gpus",
+            "type": "array"
+          },
+          "idle": {
+            "title": "Idle",
+            "type": "integer"
+          },
+          "mem_mib": {
+            "title": "Mem Mib",
+            "type": "integer"
+          },
+          "nodes": {
+            "title": "Nodes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "nodes",
+          "idle",
+          "cpus",
+          "mem_mib",
+          "features",
+          "gpus"
+        ],
+        "title": "NodeGroup",
         "type": "object"
       },
       "Notification": {
@@ -4151,6 +4336,28 @@
             ],
             "title": "Account"
           },
+          "constraint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint"
+          },
+          "gres": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gres"
+          },
           "mem_mib": {
             "anyOf": [
               {
@@ -5266,6 +5473,27 @@
           }
         },
         "summary": "Replace Entry"
+      }
+    },
+    "/api/v1/cluster/facts": {
+      "get": {
+        "operationId": "cluster_facts_api_v1_cluster_facts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterFacts"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cluster Facts",
+        "tags": [
+          "cluster"
+        ]
       }
     },
     "/api/v1/environments": {

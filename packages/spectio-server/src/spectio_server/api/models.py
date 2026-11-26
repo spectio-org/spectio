@@ -78,6 +78,8 @@ class EnvironmentSlurm(BaseModel):
     account: str | None
     time_min: int | None
     mem_mib: int | None
+    constraint: str | None = None  # #401; null in a run recorded before it
+    gres: str | None = None
 
 
 class EnvironmentLocal(BaseModel):
@@ -389,6 +391,40 @@ class Me(BaseModel):
     principal: Principal
     session: MeSession
     paths: MePaths
+
+
+class GpuKind(BaseModel):
+    type: str | None  # null when the GRES names no model (`gpu:4`)
+    count: int
+
+
+class NodeGroup(BaseModel):
+    """The nodes of a partition that share CPUs, memory, features and GPUs."""
+
+    nodes: int
+    idle: int
+    cpus: int
+    mem_mib: int
+    features: list[str]  # usable in `--constraint`
+    gpus: list[GpuKind]
+
+
+class ClusterPartition(BaseModel):
+    name: str
+    default: bool
+    allowed: bool  # the user's accounts and groups may use it; true when unknown
+    max_time_min: int | None  # null: unlimited
+    groups: list[NodeGroup]
+
+
+class ClusterFacts(BaseModel):
+    """`GET /cluster/facts` (#401): what SLURM says of its partitions, nodes and the user's
+    accounts, for the environment form. `scheduler` is null when this host has no SLURM."""
+
+    scheduler: Literal["slurm"] | None
+    fetched_at: str | None
+    partitions: list[ClusterPartition]
+    accounts: list[str]
 
 
 NotificationKind = Literal["run_succeeded", "run_failed", "run_cancelled", "gate_waiting"]
