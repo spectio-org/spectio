@@ -169,23 +169,28 @@ function TasksCell({ run }: { run: Run }) {
 }
 /** Whether the grid's cell around `ref` is the focused element: AG Grid moves focus from cell to
  * cell (arrow keys, Tab) and never into a cell's own link, so a cell's tooltip opens on the cell's
- * focus (#353). Outside the grid (the phone's card) it stays false. */
+ * focus (#353); Escape closes it until the cell is focused again (a controlled Mantine tooltip
+ * ignores Escape). Outside the grid (the phone's card) it stays false. */
 function useCellFocus() {
   const ref = useRef<HTMLSpanElement>(null);
-  const [focused, setFocused] = useState(false);
+  const [open, setOpen] = useState(false);
   useEffect(() => {
     const cell = ref.current?.closest<HTMLElement>(".ag-cell");
     if (!cell) return;
-    const on = (e: FocusEvent) => setFocused(e.target === cell);
-    const off = () => setFocused(false);
+    setOpen(document.activeElement === cell); // a renderer remounted in the focused cell
+    const on = (e: FocusEvent) => setOpen(e.target === cell);
+    const off = () => setOpen(false);
+    const escape = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     cell.addEventListener("focusin", on);
     cell.addEventListener("focusout", off);
+    cell.addEventListener("keydown", escape);
     return () => {
       cell.removeEventListener("focusin", on);
       cell.removeEventListener("focusout", off);
+      cell.removeEventListener("keydown", escape);
     };
   }, []);
-  return [ref, focused] as const;
+  return [ref, open] as const;
 }
 
 /** The run's link, clamped to two lines (runs.css), its full name in a tooltip on hover, on the

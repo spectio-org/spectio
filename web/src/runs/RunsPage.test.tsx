@@ -822,6 +822,9 @@ test("#353: the arrow keys to a Workflow or a Run cell open its tooltip; the cel
   await userEvent.keyboard("{ArrowRight}{ArrowRight}");
   expect(document.activeElement).toBe(cell("workflow"));
   expect(await screen.findByRole("tooltip")).toHaveTextContent(text);
+  await userEvent.keyboard("{Escape}"); // dismissable (WCAG 1.4.13), the cell keeps its focus
+  await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+  expect(document.activeElement).toBe(cell("workflow"));
   await userEvent.keyboard("{ArrowLeft}{ArrowLeft}{ArrowLeft}");
   expect(document.activeElement).toBe(cell("name"));
   await waitFor(() => expect(screen.getByRole("tooltip")).toHaveTextContent("fastqc-two"));
@@ -845,7 +848,8 @@ test("#353: every row has the one height, sized for the worst cell as runs.css l
   expect(rule("./runs.css", ".sp-grid-runs .sp-pipeline > span:last-child")).toContain("-webkit-line-clamp: 2;");
   expect(rule("../app.css", ".sp-grid-runs .ag-cell")).toContain("line-height: 1.45;");
   // a name (2 x 14 px lines), a chip (12 px line + 2 px), a line of 13 px, the gaps (xs = 4 px twice), the
-  // cell's padding (md = 12 px twice) and 3 px of borders
+  // cell's padding (md = 12 px twice) and 3 px of borders; the padding and borders are literals here,
+  // tests/e2e/rowheight.spec.ts is the real guard on the sum (no cell scrolls, in Chromium)
   const lines = 2 * 14 * 1.45 + (12 * 1.45 + 2) + 13 * 1.45;
   expect(ROW_HEIGHT).toBe(Math.ceil(lines + 2 * 4 + 2 * 12 + 3));
 });
