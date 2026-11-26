@@ -404,6 +404,47 @@ def test_launch_error_with_an_exit_code_still_fails(engine: Engine, writer: Writ
     assert (run.state, run.failure["class"]) == ("failed", "engine_missing")
 
 
+TAIL = (
+    "Snakemake exited with code 1 before any job failed. Its last lines:\n"
+    "Building DAG of jobs...\nApptainerError: image /shared/containers/align.sif not found"
+)
+
+
+def test_a_failure_before_any_job_quotes_the_head_report(engine: Engine, writer: Writer) -> None:
+    """A Snakemake head that exits non-zero with no error record and no failed job (an
+    Apptainer or config error at startup) fails `engine_fault` with the head report's own
+    message — the end of its output, as Nextflow's (#352, #368): the run says why."""
+    head(writer, replace(exited(1), failure=Failure("engine_fault", TAIL)))
+    assert run_row(engine).failure == {
+        "class": "engine_fault",
+        "message": TAIL,
+        "task_id": None,
+        "attempt_n": None,
+    }
+
+
+def test_a_failed_job_keeps_its_message_with_a_head_report_tail(
+    engine: Engine, writer: Writer
+) -> None:
+    """The run keeps blaming the launch's last failed job (#352): a head report's own lines are
+    quoted only when no job failed, so this one keeps today's message."""
+    ingest_events(
+        writer,
+        job_info(1, 7, sample="S1"),
+        event(2, "job_error", jobid=7, rule_name="align"),
+    )
+    head(writer, replace(exited(1), failure=Failure("engine_fault", TAIL)))
+    failure = run_row(engine).failure
+    assert (failure["class"], failure["message"]) == ("tool_error", "snakemake exited with code 1")
+    assert failure["task_id"] is not None and failure["attempt_n"] == 1
+
+
+def test_an_error_record_beats_the_head_report(engine: Engine, writer: Writer) -> None:
+    ingest_events(writer, event(1, "error", msg="WorkflowError:\nboom", exception="WorkflowError"))
+    head(writer, replace(exited(1), failure=Failure("engine_fault", TAIL)))
+    assert run_row(engine).failure["message"] == "WorkflowError:\nboom"
+
+
 # --- The queue (#385, 2026-11-25): a SLURM job PENDING in squeue is `submitted` ------------
 
 

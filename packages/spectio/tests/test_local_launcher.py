@@ -20,7 +20,7 @@ import pytest
 from spectio.config import EngineOpts, Settings
 from spectio.runner import loop as loop_mod
 from spectio.runner.local import LocalLauncher, read_head_exit
-from spectio.runner.loop import RunnerLoop, _read_tail, engine_output_tail
+from spectio.runner.loop import RunnerLoop, _read_tail, ended_failure, engine_output_tail
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import (
     RunManifest,
@@ -521,6 +521,59 @@ def test_a_nextflow_failure_carries_its_own_last_lines(
     assert "Error nextflow.config:333:1: Variable declarations cannot be mixed\n" in failure.message
     assert failure.message.endswith("ERROR ~ Config parsing failed")
     assert "\033" not in failure.message and "\a" not in failure.message
+
+
+def test_a_snakemake_failure_carries_its_own_last_lines(
+    runs_root: Path, launcher: LocalLauncher
+) -> None:
+    """A Snakemake head that exits non-zero before any job failed (an Apptainer or config error
+    at startup) carries the end of its output on its head report, as Nextflow does (#352, #368):
+    the server quotes it when no `error` record and no failed job says more."""
+    logger = runs_root.parent / "bridges" / "snakemake_logger_plugin_spectio"  # Task 7's place
+    logger.mkdir()
+    (logger / "__init__.py").write_text("")
+    version = 'case "$1" in --version) echo 9.27.1; exit 0;; esac\n'
+    body = (
+        "printf 'Building DAG of jobs...\\n\\033[31mApptainerError: image"
+        " /shared/containers/align.sif not found\\033[0m\\a\\n\\n'; exit 1"
+    )
+    engine = stub_engine(runs_root.parent / "bin", version + body)
+    sink = FakeSink()
+    settings = Settings(
+        runs_root=runs_root,
+        executor="local",
+        engines=EngineOpts(snakemake_cmd=shlex.quote(str(engine))),
+    )
+    loop = RunnerLoop(sink, launcher, settings, tick_s=0.05, end_grace_s=0)
+    ref = sink.launch(runs_root, RUN_A)
+    sink.launches[ref.launch_id] = ref = replace(ref, engine="snakemake")
+    sink.commands[-1] = replace(sink.commands[-1], launch=ref)
+    run_until(loop, lambda: ref.launch_id not in sink.launches)
+    failure = sink.last(ref.launch_id).failure
+    assert failure is not None and failure.class_ == "engine_fault"
+    assert failure.message.startswith("Snakemake exited with code 1 before any job failed.")
+    assert (
+        "Building DAG of jobs...\n"
+        "ApptainerError: image /shared/containers/align.sif not found"
+    ) in failure.message
+    assert "\033" not in failure.message and "\a" not in failure.message
+
+
+def test_ended_failure_of_a_snakemake_head() -> None:
+    """A Snakemake head's exit code ends its launch (Assumption 16): a non-zero one carries the
+    end of its output (#352), the first sentence alone when there is none, and 0 no failure."""
+    head = HeadReport("exited", "4711.1", "login1", 1, True, None)
+    tail = "ConfigError in line 22 of workflow/Snakefile: unknown key 'apptainer'"
+    found = ended_failure("snakemake", head, tail)
+    assert found.failure is not None and found.failure.class_ == "engine_fault"
+    assert found.failure.message == (
+        f"Snakemake exited with code 1 before any job failed. Its last lines:\n{tail}"
+    )
+    bare = ended_failure("snakemake", replace(head, exit_code=2))
+    assert bare.failure is not None
+    assert bare.failure.message == "Snakemake exited with code 2 before any job failed."
+    done = ended_failure("snakemake", replace(head, exit_code=0), tail)
+    assert done.failure is None
 
 
 def test_engine_output_tail_is_bounded() -> None:

@@ -196,12 +196,19 @@ def ended_failure(engine: str, report: HeadReport, output: str | None = None) ->
     """An ended head with the class the run fails with when no terminal engine event came
     (Assumption 15): `head_lost` with no exit code; `engine_fault` for a Nextflow head, which
     ends on its own event, quoting the end of its `output` when there is one (#368). A
-    Snakemake head's exit code ends its launch (Assumption 16)."""
+    Snakemake head's exit code ends its launch (Assumption 16): a non-zero one carries the end
+    of its `output`, which the server quotes only when no job failed and no `error` record came
+    (#352), and one of 0 reports no failure: the run ends on the exit code alone."""
     if report.exit_code is None:
         message = "The head ended with no exit code: it was killed, or the machine restarted."
         return replace(report, failure=Failure("head_lost", message))
     if engine == "snakemake":
-        return report
+        if report.exit_code == 0:
+            return report
+        message = f"Snakemake exited with code {report.exit_code} before any job failed."
+        if output:
+            message += f" Its last lines:\n{output}"
+        return replace(report, failure=Failure("engine_fault", message))
     message = f"Nextflow exited with code {report.exit_code} and sent no end event."
     if output:
         message += f" Its last lines:\n{output}"
@@ -528,8 +535,9 @@ class RunnerLoop:
 
     def _head_output(self, ref: LaunchRef) -> str | None:
         """The end of the launch's `.spectio/head.out` (#368), None for a run started from a
-        terminal, a Snakemake launch, or a file that cannot be read safely."""
-        if ref.terminal is not None or ref.engine != "nextflow":
+        terminal or a file that cannot be read safely: a Nextflow head quotes it when the
+        engine sent no end event, a failed Snakemake head when no job failed (#352)."""
+        if ref.terminal is not None:
             return None
         try:
             with private_dir(self.settings.runs_root, ref.run_id, "launch", ".spectio") as fd:

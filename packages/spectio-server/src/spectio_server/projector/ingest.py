@@ -149,7 +149,7 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
         and (failure is None or failure.class_ in HEAD_FAILURES)
         and snakemake.drives(p)
     ):  # a Snakemake head never writes a terminal event: its exit code wins (CR-P3T05-01)
-        snakemake.head_exit(p, report.exit_code)
+        snakemake.head_exit(p, report.exit_code, _own_message(report))
     elif (
         report.ended
         and report.exit_code is None
@@ -168,6 +168,15 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
     elif report.state == "running" and not report.ended:
         p.move("running")
     p.finish()
+
+
+def _own_message(report: HeadReport) -> str | None:
+    """The runner's own `engine_fault` message of a head report — for a Snakemake head, the end
+    of the engine's output when no job failed (#352) — capped and stripped again: the server
+    trusts no runner's text (SEC-NFERR-03). None when the report carries none."""
+    if report.failure is None or report.failure.class_ != "engine_fault":
+        return None
+    return strip_escapes(report.failure.message)[:MAX_FAILURE_MESSAGE] or None
 
 
 def _logged(conn: Connection, run_id: str, event_ids: list[str]) -> set[str]:

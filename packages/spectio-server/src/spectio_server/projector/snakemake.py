@@ -15,7 +15,8 @@ after a failed one, since a retried job comes back with the same jobid and no at
 `job_started` is logged only. `job_finished` gives `succeeded`, `job_error` `failed`.
 
 No engine event ends a Snakemake launch: its head's exit code does (`head_exit`). On a non-zero
-exit the run's failure takes the text of the last `error` record, and blames the launch's last
+exit the run's failure takes the text of the last `error` record, or, with none and no failed
+job, the end of the engine's output from the head report (#352), and blames the launch's last
 failed job when no later attempt of its task ran. A run started from a terminal has no exit
 code: once the PID check sees its head gone, its spool ends it (`spool_end`, assumed: inbox #113).
 """
@@ -126,8 +127,10 @@ def _end_time(p: Projection) -> None:
     ).scalar_one_or_none()
 
 
-def head_exit(p: Projection, exit_code: int) -> None:
-    """End the launch on the head's exit code: 0 succeeds, anything else fails."""
+def head_exit(p: Projection, exit_code: int, reported: str | None = None) -> None:
+    """End the launch on the head's exit code: 0 succeeds, anything else fails. `reported` is
+    the head report's own message, the end of the engine's output (#352): the run's failure
+    quotes it only when no `error` record came and no job failed."""
     if p.state in TERMINAL:
         return
     _end_time(p)
@@ -136,7 +139,7 @@ def head_exit(p: Projection, exit_code: int) -> None:
     if exit_code == 0:
         p.move("succeeded")
     else:
-        p.move("failed", _failure(p, exit_code))
+        p.move("failed", _failure(p, exit_code, reported))
 
 
 def spool_end(p: Projection) -> None:
@@ -400,16 +403,17 @@ def _last_attempt(p: Projection, task_id: str) -> Any:
     ).one_or_none()
 
 
-def _failure(p: Projection, exit_code: int) -> dict[str, Any]:
+def _failure(p: Projection, exit_code: int, reported: str | None = None) -> dict[str, Any]:
     """`tool_error` when the launch's last failed job is its task's last attempt, else
-    `engine_fault`; the message is the last `error` record's text (already hidden, §14.1)."""
+    `engine_fault`; the message is the last `error` record's text (already hidden, §14.1), or,
+    with none and no failed job, the head report's own text — the end of the engine's output
+    (#352, 2026-11-25) — else the exit code."""
     payload = p.conn.execute(
         select(events.c.payload)
         .where(events.c.run_id == p.run_id, events.c.type == ERROR_EVENT)
         .order_by(events.c.seq.desc())
         .limit(1)
     ).scalar_one_or_none()
-    message = (payload or {}).get("msg") or f"snakemake exited with code {exit_code}"
     culprit = p.conn.execute(
         select(attempts.c.id, attempts.c.task_id, attempts.c.n)
         .join(launches, launches.c.culprit_attempt_id == attempts.c.id)
@@ -417,7 +421,13 @@ def _failure(p: Projection, exit_code: int) -> dict[str, Any]:
         .where(launches.c.id == p.launch_id, tasks.c.state == "failed")
     ).one_or_none()
     if culprit is None:
+        message = (
+            (payload or {}).get("msg")
+            or reported
+            or f"snakemake exited with code {exit_code}"
+        )
         return failure_json("engine_fault", message)
+    message = (payload or {}).get("msg") or f"snakemake exited with code {exit_code}"
     p.conn.execute(
         update(attempts).where(attempts.c.id == culprit.id).values(failure_class="tool_error")
     )
