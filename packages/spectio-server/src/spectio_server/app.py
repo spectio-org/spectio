@@ -38,6 +38,7 @@ from spectio_server.api import (
     browser,
     cancel,
     catalog,
+    cluster,
     environments,
     extras,
     graph,
@@ -57,6 +58,7 @@ from spectio_server.api import (
 )
 from spectio_server.auth import host, middleware, routes, writes
 from spectio_server.auth.secrets import ServerKey, SessionStore, TicketStore
+from spectio_server.cluster import Facts
 from spectio_server.failure import Accounting, Measures
 from spectio_server.files.pool import FilePool
 from spectio_server.stall import StallWatch
@@ -200,6 +202,7 @@ def create_app(
             environments_path(), envfile.ENVIRONMENTS, "environments"
         )  # §15.3 req. 18
         app.state.catalog = environments.Store(catalog_path(), CATALOG, "catalog")  # api §5.6
+        app.state.cluster = Facts(settings)  # #401
         routers = (
             graph,  # `/workflows:graph` before any `/workflows/{…}`
             workflows,
@@ -214,6 +217,7 @@ def create_app(
             cancel,
             environments,
             catalog,
+            cluster,
             targets,
             me,
             notifications,

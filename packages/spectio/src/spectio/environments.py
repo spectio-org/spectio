@@ -33,6 +33,10 @@ LOCAL_CAPS = {"cpus": 2, "mem_mib": 8192}  # the built-in `local` on a login nod
 SOFTWARE_TOOLS = ("conda", "apptainer")
 MAX_APPTAINER_ARGS = 500
 APPTAINER_WORDS = re.compile(r"[A-Za-z0-9_./:,=@+% -]*")
+# A node constraint and a generic resource (#401): no space, quote, backslash, `$` or `~`, since
+# Snakemake evaluates its resource values (SEC-PRE-FU86-01); the constraint keeps SLURM's operators.
+CONSTRAINT = re.compile(r"[A-Za-z0-9_.=:,&|!*\[\]()-]{1,200}")
+GRES = re.compile(r"[A-Za-z0-9_.:,=-]{1,100}")
 SnapshotState = Literal["recorded", "not_recorded", "not_readable"]
 
 
@@ -73,12 +77,28 @@ def _apptainer_args(value: str) -> str:
     return value
 
 
+def _constraint(value: str) -> str:
+    if not CONSTRAINT.fullmatch(value):
+        raise ValueError(
+            "a constraint is at most 200 characters of letters, digits and _.=:,&|!*[]()-"
+        )
+    return value
+
+
+def _gres(value: str) -> str:
+    if not GRES.fullmatch(value):
+        raise ValueError("gres is at most 100 characters of letters, digits and _.:,=-")
+    return value
+
+
 Name = Annotated[str, AfterValidator(_name)]
 Label = Annotated[str, AfterValidator(_label)]
 ProfileName = Annotated[str, AfterValidator(_profile)]
 MemMib = Annotated[int, Field(ge=1, le=4_194_304)]
 Software = Annotated[list[Literal["conda", "apptainer"]], AfterValidator(_software)]
 ApptainerArgs = Annotated[str, AfterValidator(_apptainer_args)]
+Constraint = Annotated[str, AfterValidator(_constraint)]
+Gres = Annotated[str, AfterValidator(_gres)]
 
 
 class _Strict(BaseModel):
@@ -90,6 +110,8 @@ class SlurmValues(_Strict):
     account: SlurmName | None = None
     time_min: Annotated[int, Field(ge=1, le=43_200)] | None = None
     mem_mib: MemMib | None = None
+    constraint: Constraint | None = None  # `--constraint`: node features (#401)
+    gres: Gres | None = None  # `--gres`: generic resources, such as `gpu:H100:1` (#401)
 
 
 class LocalValues(_Strict):

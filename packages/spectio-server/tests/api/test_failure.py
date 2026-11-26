@@ -50,7 +50,14 @@ SLURM_RUN = {  # `runs.environment` of a run launched on the built-in `slurm`
     "name": "slurm",
     "label": "SLURM (from spectio init)",
     "executor": "slurm",
-    "slurm": {"partition": None, "account": None, "time_min": None, "mem_mib": None},
+    "slurm": {
+        "partition": None,
+        "account": None,
+        "time_min": None,
+        "mem_mib": None,
+        "constraint": None,
+        "gres": None,
+    },
     "local": None,
     "state": "recorded",
 }

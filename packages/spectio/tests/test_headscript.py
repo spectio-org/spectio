@@ -267,6 +267,48 @@ def snakemake_spec(home: Path, **kw: object) -> LaunchSpec:
     return make_spec(home / "runs", engine="snakemake", engine_cmd=engine, location=location, **kw)
 
 
+PLACED = SlurmValues(partition="htc", account="lab", constraint="avx512&zen4", gres="gpu:H100:1")
+
+
+def test_nextflow_config_carries_constraint_and_gres(home: Path, bridges: Path) -> None:
+    """#401: one `clusterOptions`, the account first; a constraint alone is one too."""
+    spec = make_spec(home / "runs", slurm=PLACED)
+    write_launch_files(spec)
+    config = (spec.launch_dir / ".spectio" / "spectio.config").read_text()
+    assert (
+        "process.clusterOptions = '--account=lab --constraint=avx512&zen4 --gres=gpu:H100:1'"
+        in config
+    )
+    only = nextflow_config(make_spec(home / "runs", slurm=SlurmValues(constraint="gpu=H100")))
+    assert "process.clusterOptions = '--constraint=gpu=H100'" in only
+    assert "clusterOptions" not in nextflow_config(
+        make_spec(home / "runs", slurm=SlurmValues(partition="htc"))
+    )
+    for bad in (
+        SlurmValues.model_construct(constraint="a'b"),
+        SlurmValues.model_construct(gres="gpu 1"),
+    ):
+        with pytest.raises(ValueError, match="not a SLURM"):
+            nextflow_config(make_spec(home / "runs", slurm=bad))
+
+
+def test_snakemake_default_resources_carry_constraint_and_gres(home: Path, bridges: Path) -> None:
+    """#401: Snakemake's SLURM plugin reads the `constraint` and `gres` resources; each is a
+    Python string literal, as the partition is, and one shell word after quoting."""
+    spec = snakemake_spec(home, slurm=PLACED)
+    assert run_head(spec).returncode == 0
+    args = argv(spec)
+    at = args.index("--default-resources")
+    assert args[at + 1 : at + 5] == [
+        "slurm_partition='htc'",
+        "slurm_account='lab'",
+        "constraint='avx512&zen4'",
+        "gres='gpu:H100:1'",
+    ]
+    with pytest.raises(ValueError, match="not a SLURM constraint"):
+        engine_args(replace(spec, slurm=SlurmValues.model_construct(constraint="a b")))
+
+
 @pytest.mark.parametrize(
     ("slurm", "added"),
     [(None, ["--cores", "all"]), (SlurmValues(partition="htc"), ["--jobs", "100"])],

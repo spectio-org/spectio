@@ -56,6 +56,7 @@ MODELS = {
     ("/api/v1/runs:summary", "get", "200"): "Summary",
     ("/api/v1/version", "get", "200"): "ServerVersion",
     ("/api/v1/me", "get", "200"): "Me",  # FU-P3-112
+    ("/api/v1/cluster/facts", "get", "200"): "ClusterFacts",  # #401
     ("/api/v1/runs/{run_id}/processes", "get", "200"): "ProcessList",
     ("/api/v1/runs/{run_id}/stages", "get", "200"): "StageList",
     ("/api/v1/runs/{run_id}/tasks", "get", "200"): "TaskList",

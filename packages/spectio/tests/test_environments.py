@@ -59,6 +59,40 @@ def test_req18_snapshot_model_refuses(slurm: dict[str, Any]) -> None:
         envs.Environment.model_validate(slurm_env(**slurm))
 
 
+def test_slurm_constraint_and_gres_accept_slurm_syntax() -> None:
+    """#401: the operators of a constraint, the type of a GRES."""
+    env = envs.Environment.model_validate(
+        slurm_env(constraint="(avx512&zen4)|gpu=H100", gres="gpu:H100:1")
+    )
+    assert env.slurm == envs.SlurmValues(constraint="(avx512&zen4)|gpu=H100", gres="gpu:H100:1")
+    envs.Environment.model_validate(slurm_env(constraint="a" * 200, gres="g" * 100))
+
+
+@pytest.mark.parametrize(
+    "slurm",
+    [
+        {"constraint": ""},
+        {"constraint": "a" * 201},
+        {"constraint": "avx512 zen4"},  # no space
+        {"constraint": "a'b"},
+        {"constraint": "a;b"},
+        {"constraint": "$HOME"},
+        {"constraint": "~x"},
+        {"constraint": "a\n"},
+        {"constraint": 5},
+        {"gres": ""},
+        {"gres": "g" * 101},
+        {"gres": "gpu:1 x"},
+        {"gres": "gpu:1;x"},
+        {"gres": "gpu:(S:0)"},  # the node's own `(S:0-1)` is not a request
+        {"gres": "$X"},
+    ],
+)
+def test_slurm_constraint_and_gres_refuse(slurm: dict[str, Any]) -> None:
+    with pytest.raises(ValidationError):
+        envs.Environment.model_validate(slurm_env(**slurm))
+
+
 @pytest.mark.parametrize(
     "fields",
     [
@@ -186,7 +220,14 @@ def test_req18_snapshot_column_states() -> None:
         "name": "mylab",
         "label": "My lab",
         "executor": "slurm",
-        "slurm": {"partition": "htc", "account": None, "time_min": None, "mem_mib": None},
+        "slurm": {
+            "partition": "htc",
+            "account": None,
+            "time_min": None,
+            "mem_mib": None,
+            "constraint": None,
+            "gres": None,
+        },
         "local": None,
         "software": ["conda", "apptainer"],
         "apptainer_args": "",

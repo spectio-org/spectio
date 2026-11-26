@@ -19,7 +19,14 @@ import stat
 from pathlib import Path
 
 from spectio.config import NF_SPECTIO_VERSION, slurm_name
-from spectio.environments import APPTAINER_WORDS, PROFILE, LocalValues, SlurmValues
+from spectio.environments import (
+    APPTAINER_WORDS,
+    CONSTRAINT,
+    GRES,
+    PROFILE,
+    LocalValues,
+    SlurmValues,
+)
 from spectio.loginshell import KEEP
 from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
 from spectio.runner.rundir import MAIN_SCRIPT, RUN_ID, private_dir, write_file
@@ -363,14 +370,29 @@ def _software_args(spec: LaunchSpec) -> list[str]:
     return args
 
 
+def _checked(key: str, value: str) -> str:
+    """A `constraint` or `gres` checked again before it is written (#401), as the names are."""
+    if not {"constraint": CONSTRAINT, "gres": GRES}[key].fullmatch(value):
+        raise ValueError(f"{value[:40]!r} is not a SLURM {key}")
+    return value
+
+
 def _slurm_resources(slurm: SlurmValues, run: dict[str, int]) -> list[str]:
-    """`--default-resources` values: partition and account as Python string literals, since
+    """`--default-resources` values: partition, account, constraint and gres as Python string
+    literals (the plugin reads `slurm_partition`, `slurm_account`, `constraint`, `gres`), since
     Snakemake evaluates each value after expanding `~` and `$` (9.27.1 `resources.py:801-825`)
     and a SLURM name holds no quote (SEC-PRE-FU86-01), checked again here; integers as such.
     The run's time and memory replace the environment's, in this one list (api §5.7)."""
     found = [
         f"slurm_{key}='{slurm_name(value)}'"
         for key, value in (("partition", slurm.partition), ("account", slurm.account))
+        if value
+    ]
+    # The plugin quotes `constraint` (`submit_string.py` `safe_quote`) and checks `gres`
+    # (`utils.py` `set_gres_string`, which refuses `-`, `,` and `=`), 2.8.0.
+    found += [
+        f"{key}='{_checked(key, value)}'"
+        for key, value in (("constraint", slurm.constraint), ("gres", slurm.gres))
         if value
     ]
     if (time := run.get("time_min", slurm.time_min)) is not None:
@@ -586,11 +608,20 @@ def nextflow_config(spec: LaunchSpec) -> str:
     slurm = spec.slurm
     if slurm is not None:
         lines.append("process.executor = 'slurm'")
+        options: list[str] = []
         if slurm.partition:
             lines.append(f"process.queue = {_groovy(slurm_name(slurm.partition))}")
         if slurm.account:
-            account = "--account=" + slurm_name(slurm.account)  # SEC-PRE-FU86-01, again
-            lines.append(f"process.clusterOptions = {_groovy(account)}")
+            options.append("--account=" + slurm_name(slurm.account))  # SEC-PRE-FU86-01, again
+        # #401: `clusterOptions` is Nextflow's way to `--constraint` and `--gres`, which become
+        # `#SBATCH` header lines, one per word (no word holds a space)
+        options += [
+            f"--{key}={_checked(key, value)}"
+            for key, value in (("constraint", slurm.constraint), ("gres", slurm.gres))
+            if value
+        ]
+        if options:
+            lines.append(f"process.clusterOptions = {_groovy(' '.join(options))}")
     else:
         lines.append("process.executor = 'local'")
     own = slurm or SlurmValues()
@@ -627,7 +658,9 @@ def banner(spec: LaunchSpec) -> str | None:
 
 def _environment_text(spec: LaunchSpec) -> str:
     if spec.slurm is not None:
-        values = [(k, getattr(spec.slurm, k)) for k in ("partition", "account")]
+        values = [
+            (k, getattr(spec.slurm, k)) for k in ("partition", "account", "constraint", "gres")
+        ]
         named = [f"{k} {v}" for k, v in values if v]
         if spec.slurm.time_min is not None:
             named.append(f"time {spec.slurm.time_min} min")
