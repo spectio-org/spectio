@@ -1284,3 +1284,24 @@ def test_loop_hands_the_main_script_to_the_launcher(
         shutil.rmtree(runs_root / RUN_A)
     with pytest.raises(ValueError):
         loop_mod.LaunchPayload.model_validate({"location": "/p", "main_script": "../x.nf"})
+
+
+def test_snakemake_tail_hides_the_conda_create_command() -> None:
+    """SEC-SMKFAIL-07: `Could not create conda environment …` quotes conda's command line."""
+    from spectio.text import hide_snakemake_commands
+
+    text = (
+        "CreateCondaEnvironmentException:\n"
+        "Could not create conda environment from /shared/envs/tools.yaml:\n"
+        "Command:\n"
+        "conda env create --file /shared/x.yaml -c https://user:s3cret@example.org/chan\n"
+        "Output:\n"
+        "ChecksumMismatchError: Conda detected a mismatch"
+    )
+    hidden = hide_snakemake_commands(text)
+    assert "s3cret" not in hidden
+    assert "Command: «hidden»" in hidden
+    assert "Output:" in hidden and "ChecksumMismatchError" in hidden
+    assert hide_snakemake_commands(hidden) == hidden
+    # no Output: line: the rest of the text is hidden
+    assert "s3cret" not in hide_snakemake_commands("Command:\nconda create -c https://u:s3cret@x")

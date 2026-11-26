@@ -35,6 +35,10 @@ def strip_escapes(text: str) -> str:
 _SHELL_HEADER = re.compile(rf"([ \t]*)shell:(?! {HIDDEN}$)")
 # The line that ends the `shell:` block of `Error in rule X:`
 _SHELL_END = re.compile(r"\s*\((?:one of the commands|command) exited with non-zero exit code")
+# The `Command:` / `Output:` pair of a conda environment that could not be created
+# (Snakemake's `Could not create conda environment …`): the command line up to `Output:`
+_COMMAND_HEADER = re.compile(r"([ \t]*)Command:\s*$")
+_COMMAND_END = re.compile(r"\s*Output:")
 # The end of a quote whose `Command '` start is not in the text (a window cut inside it)
 _QUOTE_END = re.compile(r"(?s)\A.*' (returned non-zero exit status \d+|died with <[^>]*>)")
 
@@ -44,19 +48,28 @@ def hide_snakemake_commands(text: str) -> str:
     failed Snakemake job hidden (SEC-SMKFAIL-01, -05): the `shell:` block of `Error in rule X:`
     as one `shell: «hidden»` line, up to and including its `(… exited with non-zero exit code`
     line; the `Command '…' returned non-zero exit status N` of a `CalledProcessError`, as the
-    SDK hides it from `snakemake.error`. Fails closed: a block with no end, or a `Command '`
-    with no end, hides the rest of the text; an end with no start hides everything back to the
-    text's start. It does not reach the raw commands `-p` prints with no header at all: the
-    runner quotes no output once a job began (SEC-SMKFAIL-04)."""
+    SDK hides it from `snakemake.error`; the `Command:` line of a conda environment that could
+    not be created, up to its `Output:` line (SEC-SMKFAIL-07). Fails closed: a block with no
+    end, or a `Command '` with no end, hides the rest of the text; an end with no start hides
+    everything back to the text's start. It does not reach the raw commands `-p` prints with no
+    header at all: the runner quotes no output once a job began (SEC-SMKFAIL-04).
+    """
     kept: list[str] = []
     hiding = False  # inside a `shell:` block
+    command = False  # inside a `Command:` block, up to its `Output:` line (kept)
     for line in text.split("\n"):
         if hiding:
             hiding = not _SHELL_END.match(line)
+        elif command and not _COMMAND_END.match(line):
+            continue
         elif header := _SHELL_HEADER.match(line):
             kept.append(f"{header[1]}shell: {HIDDEN}")
             hiding = True
+        elif header := _COMMAND_HEADER.match(line):
+            kept.append(f"{header[1]}Command: {HIDDEN}")
+            command = True
         else:
+            command = False
             kept.append(line)
     hidden = hide_quoted_commands("\n".join(kept))
     hidden = _QUOTE_END.sub(rf"Command {HIDDEN} \1", hidden)
