@@ -41,6 +41,7 @@ FAILED_TTL_S = 60.0
 SINFO_FORMAT = "%P|%l|%D|%c|%m|%f|%G|%T"
 _FIELDS = SINFO_FORMAT.count("|") + 1
 _NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}")
+_FEATURE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.=-]{0,63}")  # sites write `gpu=H100` as a feature
 _COUNT = re.compile(r"[0-9]{1,9}")
 _IDLE = {"idle", "idle~", "idle#"}  # `idle*` does not answer: not counted
 
@@ -130,7 +131,7 @@ def parse_sinfo(text: str) -> dict[str, dict[str, Any]]:
         if not (_NAME.fullmatch(name) and all(_COUNT.fullmatch(v) for v in (nodes, cpus, mem))):
             continue
         names = [] if features == "(null)" else features.split(",")
-        if not all(_NAME.fullmatch(n) for n in names):
+        if not all(_FEATURE.fullmatch(n) for n in names):
             continue
         part = found.setdefault(
             name, {"default": False, "max_time_min": _minutes(limit), "groups": {}}

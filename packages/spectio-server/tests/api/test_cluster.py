@@ -237,3 +237,11 @@ def test_run_tool_without_the_command(settings: Settings, tmp_path: Path) -> Non
     assert cluster.run_tool(mine, "sinfo", []) == "cpu*|1:00:00|1|1|1|(null)|(null)|idle\n"
     tool.write_text("#!/bin/sh\nexit 1\n")
     assert cluster.run_tool(mine, "sinfo", []) is None
+
+
+def test_sinfo_keeps_a_gpu_partition_whose_features_name_the_gpu() -> None:
+    # sites describe the GPU as a `key=value` feature, usable as `--constraint=gpu=X1`
+    text = "gpu-x|7-00:00:00|2|64|512000|net10G,gpu=X1,zen9|gpu:X1:4(S:0-1)|mixed\n"
+    part = parse_sinfo(text)["gpu-x"]
+    assert part["groups"][0]["features"] == ["net10G", "gpu=X1", "zen9"]
+    assert part["groups"][0]["gpus"] == [{"type": "X1", "count": 4}]
