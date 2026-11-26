@@ -31,6 +31,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from spectio import envfile
 from spectio.catalog import KIND as CATALOG
 from spectio.catalog import catalog_path
+from spectio.computes import COMPUTES, PROFILES
 from spectio.config import Settings
 from spectio.envfile import environments_path
 from spectio_server import health, static, targets
@@ -39,6 +40,7 @@ from spectio_server.api import (
     cancel,
     catalog,
     cluster,
+    computes,
     environments,
     extras,
     graph,
@@ -198,9 +200,13 @@ def create_app(
         # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`
         app.state.reports = {}  # the reports of ended runs (P1 Task 31)
         app.state.follows = logs.Follows()  # dev-env §15.3 req. 14
+        # §15.3 req. 18; `environments.toml` is read only, once, to migrate it (#408)
         app.state.environments = environments.Store(
-            environments_path(), envfile.ENVIRONMENTS, "environments"
-        )  # §15.3 req. 18
+            environments_path(), envfile.ENVIRONMENTS, "environment"
+        )
+        app.state.computes = environments.Store(COMPUTES.path(), COMPUTES, "compute")
+        app.state.profiles = environments.Store(PROFILES.path(), PROFILES, "execution-profile")
+        app.state.migrated = False
         app.state.catalog = environments.Store(catalog_path(), CATALOG, "catalog")  # api §5.6
         app.state.cluster = Facts(settings)  # #401
         routers = (
@@ -215,7 +221,7 @@ def create_app(
             results,
             workdir,
             cancel,
-            environments,
+            computes,
             catalog,
             cluster,
             targets,

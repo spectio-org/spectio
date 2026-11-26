@@ -43,6 +43,8 @@ LOCAL = {
     "local": None,
     "software": ["conda", "apptainer"],
     "apptainer_args": "",
+    "compute": "local",
+    "execution_profile": "local",
     "state": "recorded",
 }
 SLURM = {
@@ -60,6 +62,8 @@ SLURM = {
     "local": None,
     "software": ["conda", "apptainer"],
     "apptainer_args": "",
+    "compute": "slurm",
+    "execution_profile": "slurm",
     "state": "recorded",
 }
 
@@ -282,8 +286,9 @@ def test_req18_snapshot_migration_backfills(settings: Settings) -> None:
         assert not new
         with engine.connect() as conn:
             (environment,) = conn.execute(select(runs.c.environment)).scalars()
-            # migration 0011 predates `software` and `apptainer_args` (inbox #161)
-            later = ("software", "apptainer_args")
+            # migration 0011 predates `software` and `apptainer_args` (inbox #161), and the
+            # compute and profile names (#408)
+            later = ("software", "apptainer_args", "compute", "execution_profile")
             assert environment == {k: v for k, v in envs.run_column(None).items() if k not in later}
             assert conn.execute(select(environments.c.name)).scalar_one() == "slurm"
     finally:

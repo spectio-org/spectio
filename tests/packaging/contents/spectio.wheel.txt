@@ -17,6 +17,7 @@ spectio/cli/login.py
 spectio/cli/main.py
 spectio/cli/open.py
 spectio/cli/serve.py
+spectio/computes.py
 spectio/config.py
 spectio/envfile.py
 spectio/environments.py

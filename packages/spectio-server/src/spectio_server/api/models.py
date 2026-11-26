@@ -98,15 +98,19 @@ class RunEnvironment(BaseModel):
     local: EnvironmentLocal | None
     software: list[Literal["conda", "apptainer"]] | None  # null unless `recorded` (inbox #161)
     apptainer_args: str | None
+    compute: str | None  # #408: the compute and profile it was built from; null before
+    execution_profile: str | None
     state: Literal["recorded", "not_recorded", "not_readable"]
 
     @model_validator(mode="before")
     @classmethod
     def _recorded_before_software(cls, data: Any) -> Any:
-        """A run recorded before inbox #161 has neither key in its column: null, as a field the
-        snapshot did not record (CR-01). The schema keeps both required: always present."""
+        """A run recorded before inbox #161 has neither software key in its column, one before
+        #408 neither name: null, as a field the snapshot did not record (CR-01). The schema keeps
+        them required: always present."""
         if isinstance(data, dict):
-            return {"software": None, "apptainer_args": None, **data}
+            nulls = dict.fromkeys(("software", "apptainer_args", "compute", "execution_profile"))
+            return {**nulls, **data}
         return data
 
 
@@ -138,22 +142,48 @@ class EnvironmentProfiles(BaseModel):
     snakemake: str | None
 
 
-class EnvironmentItem(BaseModel):
-    """One environment of `GET /environments` (FU-P3-86d, api §5.4): a built-in or one of the
-    file's; `usable: false` with its reason, such as a SLURM one on a local server."""
+class ComputeSlurm(BaseModel):
+    account: str | None
+
+
+class ComputeItem(BaseModel):
+    """One compute of `GET /computes` (#408, api §5.13): a built-in or one of the file's;
+    `usable: false` with its reason, such as a SLURM one on a local server."""
 
     name: str
     label: str | None
     executor: Literal["local", "slurm"]
+    slurm: ComputeSlurm | None
+    local: EnvironmentLocal | None
+    software: list[Literal["conda", "apptainer"]]  # the methods available on this backend
+    apptainer_args: str
     builtin: bool
-    default: bool
     usable: bool
     unusable_reason: str | None
-    slurm: EnvironmentSlurm | None
-    local: EnvironmentLocal | None
-    software: list[Literal["conda", "apptainer"]]  # the software a Snakemake launch deploys with
-    apptainer_args: str  # (inbox #161); a Nextflow environment keeps them: its profiles decide
-    profiles: EnvironmentProfiles
+    etag: str
+
+
+class ProfileResources(BaseModel):
+    partition: str | None
+    constraint: str | None
+    gres: str | None
+    time_min: int | None
+    mem_mib: int | None
+    cpus: int | None
+
+
+class ExecutionProfileItem(BaseModel):
+    """One execution profile of `GET /execution-profiles` (#408, api §5.13): the resources one
+    run asks of one compute."""
+
+    name: str
+    label: str | None
+    compute: str
+    resources: ProfileResources
+    software: list[Literal["conda", "apptainer"]]  # a subset of the compute's
+    engine_profiles: EnvironmentProfiles  # the default profile of each engine
+    builtin: bool
+    default: bool
     etag: str
 
 
@@ -163,8 +193,13 @@ class EnvironmentsFile(BaseModel):
     detail: str | None
 
 
-class EnvironmentList(BaseModel):
-    items: list[EnvironmentItem]
+class ComputeList(BaseModel):
+    items: list[ComputeItem]
+    file: EnvironmentsFile
+
+
+class ExecutionProfileList(BaseModel):
+    items: list[ExecutionProfileItem]
     default: str
     file: EnvironmentsFile
 
@@ -180,6 +215,8 @@ class CatalogItem(BaseModel):
     revision: str | None
     profile: str | None
     params_file: str | None
+    profiles: list[str] | None  # the execution profiles it offers (#408); null: all
+    default_profile: str | None
     etag: str
 
 
@@ -335,6 +372,7 @@ class LaunchTemplate(BaseModel):
     non_default: list[str]
     code_loading: list[CodeLoading]
     environment: str  # the run's, preselected by name, or the default when it is gone (§5.4)
+    execution_profile: str  # the same name (#408, §5.13)
     environment_notice: str | None  # why the default is preselected instead
     target: dict[str, JsonValue] | None  # the launch's `target` (api §5.10)
     default_resources: dict[str, int | None] | None  # as sent (api §5.7)

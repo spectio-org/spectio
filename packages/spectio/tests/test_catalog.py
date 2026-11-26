@@ -22,6 +22,7 @@ params_file = "assets/params.yaml"
 engine = "snakemake"
 location = "/srv/pipelines/mine"
 """
+LOCAL = "[pipelines.x]\nengine = 'nextflow'\nlocation = '/srv/x'\n"
 GIT = "[pipelines.x]\nengine = 'nextflow'\nlocation = 'nf-core/x'\n"
 
 
@@ -115,3 +116,25 @@ def test_req18_catalog_file_write_round_trip(path: Path) -> None:
     assert envfile.read_kind(catalog.KIND, path, ()).entries == tuple(entries[:1])
     assert [p.name for p in path.parent.iterdir()] == ["catalog.toml"]
     assert os.stat(path).st_mode & 0o777 == 0o600
+
+
+def test_entry_profiles_round_trip_and_are_checked(path: Path) -> None:
+    """#408: `profiles` and `default_profile` are written, read back, and refused when the
+    default is not offered, a name is repeated or the list is empty; the file is then `invalid`."""
+    text = LOCAL.replace(
+        "[pipelines.x]\n", '[pipelines.x]\nprofiles = ["a", "b"]\ndefault_profile = "b"\n'
+    )
+    (entry,) = read(path, text).entries
+    assert (entry.profiles, entry.default_profile) == (["a", "b"], "b")
+    out = envfile.render(None, [entry], "pipelines").decode()
+    assert 'profiles = ["a", "b"]' in out and 'default_profile = "b"' in out
+    for bad in (
+        'profiles = ["a"]\ndefault_profile = "b"\n',
+        'profiles = ["a", "a"]\n',
+        "profiles = []\n",
+        'profiles = ["A b"]\n',
+    ):
+        found = read(path, LOCAL.replace("[pipelines.x]\n", f"[pipelines.x]\n{bad}"))
+        assert found.state == "invalid", bad
+    (bare,) = read(path, LOCAL).entries
+    assert (bare.profiles, bare.default_profile) == (None, None)

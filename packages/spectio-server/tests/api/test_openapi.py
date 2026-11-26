@@ -45,10 +45,14 @@ MODELS = {
     ("/api/v1/runs", "get", "200"): "RunList",
     ("/api/v1/runs/{run_id}", "get", "200"): "RunDetail",
     ("/api/v1/runs/{run_id}:cancel", "post", "202"): "RunDetail",
-    ("/api/v1/environments", "get", "200"): "EnvironmentList",  # FU-P3-86d
-    ("/api/v1/environments/{name}", "get", "200"): "EnvironmentItem",
-    ("/api/v1/environments", "post", "201"): "EnvironmentItem",
-    ("/api/v1/environments/{name}", "put", "200"): "EnvironmentItem",
+    ("/api/v1/computes", "get", "200"): "ComputeList",  # #408
+    ("/api/v1/computes/{name}", "get", "200"): "ComputeItem",
+    ("/api/v1/computes", "post", "201"): "ComputeItem",
+    ("/api/v1/computes/{name}", "put", "200"): "ComputeItem",
+    ("/api/v1/execution-profiles", "get", "200"): "ExecutionProfileList",
+    ("/api/v1/execution-profiles/{name}", "get", "200"): "ExecutionProfileItem",
+    ("/api/v1/execution-profiles", "post", "201"): "ExecutionProfileItem",
+    ("/api/v1/execution-profiles/{name}", "put", "200"): "ExecutionProfileItem",
     ("/api/v1/catalog", "get", "200"): "CatalogList",  # FU-P3-87b
     ("/api/v1/catalog/{name}", "get", "200"): "CatalogItem",
     ("/api/v1/catalog", "post", "201"): "CatalogItem",

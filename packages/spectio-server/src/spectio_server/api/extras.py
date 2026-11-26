@@ -26,7 +26,7 @@ from fastapi import Request
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, ValidationError
 
 from spectio import locations
-from spectio.environments import DefaultResources, Environment
+from spectio.environments import DefaultResources, Snapshot
 from spectio.locations import refuse_control
 from spectio.runner.rundir import private_dir
 from spectio_server.api.environments import offline
@@ -83,7 +83,7 @@ def column(model: type[BaseModel], raw: object) -> dict[str, Any] | None:
 
 
 def check_resources(
-    resources: DefaultResources, engine: str, profiles: list[str], env: Environment
+    resources: DefaultResources, engine: str, profiles: list[str], env: Snapshot
 ) -> None:
     """The refusals of api §5.7 for values that could not apply."""
     if engine == "snakemake" and resources.cpus is not None:

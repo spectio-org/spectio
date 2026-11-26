@@ -19,7 +19,7 @@ from spectio_server.api import workflows as wf
 from spectio_server.store.writer import Writer
 
 from .conftest import client_for
-from .test_environments import problem
+from .test_execution_profiles import problem
 from .test_launch import INSPECT, FakeGit
 
 API = "/api/v1"
@@ -33,7 +33,18 @@ RNASEQ = {
     "profile": "test",
     "params_file": "conf/test.yaml",
 }
-ITEM_KEYS = {"name", "label", "engine", "location", "revision", "profile", "params_file", "etag"}
+ITEM_KEYS = {
+    "name",
+    "label",
+    "engine",
+    "location",
+    "revision",
+    "profile",
+    "params_file",
+    "profiles",
+    "default_profile",
+    "etag",
+}
 
 
 def path() -> Path:

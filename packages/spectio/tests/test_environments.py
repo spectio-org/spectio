@@ -231,6 +231,8 @@ def test_req18_snapshot_column_states() -> None:
         "local": None,
         "software": ["conda", "apptainer"],
         "apptainer_args": "",
+        "compute": None,  # #408: null for a snapshot not built from a compute and a profile
+        "execution_profile": None,
         "state": "recorded",
     }
     assert envs.run_column(None)["state"] == "not_recorded"
