@@ -28,7 +28,7 @@ function app(path = "/") {
 beforeEach(() => {
   window.localStorage.clear();
   viewport(1440);
-  // VERSION for GET /version only: any other path (/launch reads /environments) is a 404 problem
+  // VERSION for GET /version only: any other path (/launch reads /execution-profiles) is a 404 problem
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) =>
@@ -70,7 +70,7 @@ test("sidebar folds with a button[aria-expanded]", async () => {
   expect(fold).toHaveAccessibleName("Unfold the sidebar");
   expect(within(sidebar).queryByText("Workspace")).toBeNull();
   // Folded to the rail, every link keeps its name.
-  for (const name of ["Home", "Runs", "Launch", "Environments"]) {
+  for (const name of ["Home", "Runs", "Launch", "Compute", "Profiles"]) {
     expect(within(sidebar).getByRole("link", { name })).toBeInTheDocument();
   }
   // The server's node from GET /version stays in the sidebar's foot.

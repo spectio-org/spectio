@@ -64,7 +64,7 @@ test("the form opens prefilled, with the banner naming exactly the values that d
   ).toBeInTheDocument();
   expect(fetched(mock)).toContain(`${URL_}:launch-template`);
   expect(screen.getByRole("textbox", { name: /^Pipeline/ })).toHaveValue("/g/demo-lab/pipelines/rnaseq");
-  expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveValue("test");
+  expect(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ })).toHaveValue("test");
   expect(screen.getByRole("textbox", { name: "input (required)" })).toHaveValue("samplesheet.csv");
   expect(screen.getByRole("textbox", { name: "depth (optional)" })).toHaveValue("3");
   expect(screen.getByRole("checkbox", { name: "skip_qc (optional)" })).toBeChecked();
@@ -205,7 +205,7 @@ test("a copy of a module run sends no extra config file (api §5.10), and the pr
   app(`/launch?from=${ID}`);
   await screen.findByText("Runs module nf-core/fastqc 0.0.0-6d1763b, from the registry");
   // the copied profile is not one a registry module lists, yet Launch sends it: the select shows it (SEC-161W-R2-02)
-  expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveDisplayValue("docker (not in this pipeline)");
+  expect(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ })).toHaveDisplayValue("docker (not in this pipeline)");
   await userEvent.click(screen.getAllByRole("button", { name: "Launch module" }).at(-1)!);
   await waitFor(() => expect(mock.mock.calls.some(([u, i]) => String(u).endsWith("/api/v1/runs") && i?.method === "POST")).toBe(true));
   const [, init] = mock.mock.calls.find(([u, i]) => String(u).endsWith("/api/v1/runs") && i?.method === "POST")!;

@@ -50,7 +50,7 @@ function launchWith(catalog: unknown, more: Record<string, unknown> = {}) {
   const posted: unknown[] = [];
   const mock = serve({
     "/api/v1/version": SLURM,
-    "/api/v1/environments": () => json(500, { title: "x" }),
+    "/api/v1/execution-profiles": () => json(500, { title: "x" }),
     [API]: catalog,
     "/api/v1/workflows:inspect": INSPECTED,
     "/api/v1/runs?": { items: [], next: null },
@@ -84,7 +84,7 @@ test("choosing an entry only fills the form; Load inspects with its params file;
   expect(inspects(mock)).toEqual(["/api/v1/workflows:inspect?location=nf-core/rnaseq&revision=3.27.0&params_file=conf/test.yaml"]);
   // the engine stays the entry's, though the files allow both
   expect(screen.getByRole("button", { name: "Nextflow" })).toHaveAttribute("aria-pressed", "true");
-  expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveValue("test");
+  expect(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ })).toHaveValue("test");
   expect(screen.getByRole("textbox", { name: /^depth/ })).toHaveValue("5");
   expect(screen.getByText("3 values of conf/test.yaml fill the form and read changed. 2 values of conf/test.yaml have no field in this form, and are not sent: foo, bar")).toBeInTheDocument();
   expect(within(before()).getByText("Warning, not a blocker: conf/test.yaml sets custom_config_base: /g/lab/conf")).toBeInTheDocument();
@@ -181,22 +181,27 @@ test("a params file that cannot be read is a line, and the pipeline loads with i
   expect(screen.getByRole("textbox", { name: /^depth/ })).toHaveValue("");
 });
 
-test("the entry's profile not in the pipeline: its line, and the environment's rule", async () => {
+test("the entry's profile not in the pipeline: its line, and the execution profile's rule", async () => {
   launchWith(list([entry("rnaseq-test", { profile: "embl" })]));
   await userEvent.selectOptions(await picker(), "rnaseq-test");
   await userEvent.click(loadButton());
   expect(await screen.findByText("The catalog's profile embl is not in this pipeline: none selected")).toBeInTheDocument();
-  expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveValue("");
+  expect(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ })).toHaveValue("");
 });
 
-test("the entry's profile not in the pipeline, the environment's is: the line says it was selected instead (CR-P3FU87E-05)", async () => {
-  const env = { name: "slurm", label: null, executor: "slurm", builtin: true, default: true, usable: true, unusable_reason: null, slurm: { partition: "htc", account: null, time_min: null, mem_mib: null }, local: null, profiles: { nextflow: "docker", snakemake: null }, etag: '"slurm"' };
-  const environments = { items: [env], default: "slurm", file: { path: "/home/amartin/.spectio/environments.toml", state: "ok", detail: null } };
-  launchWith(list([entry("rnaseq-test", { profile: "embl" })]), { "/api/v1/environments": environments });
+test("the entry's profile not in the pipeline, the execution profile's is: the line says it was selected instead (CR-P3FU87E-05)", async () => {
+  const none = { partition: null, constraint: null, gres: null, time_min: null, mem_mib: null, cpus: null };
+  const p = { name: "slurm", label: null, compute: "slurm", resources: none, software: ["conda"], engine_profiles: { nextflow: "docker", snakemake: null }, builtin: true, etag: '"slurm"' };
+  const c = { name: "slurm", label: null, executor: "slurm", slurm: { account: null }, local: null, software: ["conda"], apptainer_args: "", builtin: true, usable: true, unusable_reason: null, etag: '"c"' };
+  const file = { path: "/home/amartin/.spectio/x.toml", state: "ok", detail: null };
+  launchWith(list([entry("rnaseq-test", { profile: "embl" })]), {
+    "/api/v1/execution-profiles": { items: [p], default: "slurm", file },
+    "/api/v1/computes": { items: [c], file },
+  });
   await userEvent.selectOptions(await picker(), "rnaseq-test");
   await userEvent.click(loadButton());
-  expect(await screen.findByText("The catalog's profile embl is not in this pipeline: the environment's profile docker is selected")).toBeInTheDocument();
-  expect(screen.getByRole("combobox", { name: /^Profile/ })).toHaveValue("docker");
+  expect(await screen.findByText("The catalog's profile embl is not in this pipeline: the execution profile's default docker is selected")).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ })).toHaveValue("docker");
 });
 
 test("an entry whose pipeline is gone: the error names the entry, and the picker keeps it", async () => {

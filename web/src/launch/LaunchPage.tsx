@@ -18,8 +18,8 @@ import {
   type CatalogList,
   ENGINE_FILES,
   type Engine,
-  type EnvironmentItem,
-  type EnvironmentList,
+  type Compute,
+  type ExecutionProfileList,
   type FieldError,
   type Inspected,
   type LaunchTemplate,
@@ -33,9 +33,10 @@ import {
   inspectTarget,
   launch,
   listCatalog,
-  listEnvironments,
+  listComputes,
+  listExecutionProfiles,
 } from "../api";
-import { label as envLabel } from "../environments/fields";
+import { type Resolved, label as envLabel, resolve, summary as envSummary } from "../environments/fields";
 import { Icon, groupIcon } from "../icons";
 import { runName } from "../runs/RunState";
 import { engineName, executorLabel, plural, shortId } from "../runs/stateWord";
@@ -47,7 +48,7 @@ import "./launch.css";
 import { usePhone } from "../shell/layout";
 import { CatalogPicker, SaveToCatalog } from "./CatalogPicker";
 import { EngineButtons } from "./EngineButtons";
-import { EnvironmentRow } from "./EnvironmentRow";
+import { ProfileRow } from "./ProfileRow";
 import { entryFiles, guessEngine, hasEntry } from "./guessEngine";
 import { ConfigFileRow, type Draft, NO_DRAFT, RESOURCE_LABELS, ResourcesRow, draftFrom, keptAs, readResources, summaryLine } from "./RunExtras";
 import { TryPipelines } from "./TryPipelines";
@@ -122,7 +123,8 @@ function formKey(field: string, keys: string[]): string {
   const bare = field.replace(/^workflow\./, "");
   if (bare === "target.version") return "version";
   if (bare === "target.name" || bare === "rule") return "rule";
-  if (["location", "revision", "engine", "main_script", "name", "environment", "config_file"].includes(bare)) return bare;
+  if (["location", "revision", "engine", "main_script", "name", "config_file"].includes(bare)) return bare;
+  if (bare === "execution_profile" || bare === "environment") return "environment"; // the form key of the Profile row
   // api §5.7: default_resources.cpus, .mem_mib, .time_min, or the whole (a Snakemake profile)
   if (bare.startsWith("default_resources")) {
     return { "default_resources.cpus": "resources.cpus", "default_resources.mem_mib": "resources.mem", "default_resources.time_min": "resources.time" }[bare] ?? "resources";
@@ -228,9 +230,11 @@ export function LaunchPage({
   const [launchedWarnings, setLaunchedWarnings] = useState<FieldError[]>([]);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [prefillError, setPrefillError] = useState<string | null>(null);
-  const [envs, setEnvs] = useState<EnvironmentList | null>(null);
-  const [envsFailed, setEnvsFailed] = useState(false);
-  const [envName, setEnvName] = useState<string | null>(null);
+  // The execution profiles and their computes (#408): the profile chosen is the one Launch sends
+  const [profiles, setProfiles] = useState<ExecutionProfileList | null>(null);
+  const [computes, setComputes] = useState<Compute[]>([]);
+  const [profilesFailed, setProfilesFailed] = useState(false);
+  const [profileName, setProfileName] = useState<string | null>(null);
   // The catalog (ui-spec §4.7.1): the entry chosen in the picker, and the one the loaded pipeline came from
   const [catalog, setCatalog] = useState<CatalogList | null>(null);
   const [catalogFailed, setCatalogFailed] = useState(false);
@@ -273,10 +277,10 @@ export function LaunchPage({
   const planFlight = useRef<AbortController | null>(null);
   const revisionField = useRef<HTMLInputElement>(null);
 
-  const loadEnvs = () =>
-    listEnvironments().then(
-      (list) => (setEnvs(list), setEnvsFailed(false)),
-      () => setEnvsFailed(true),
+  const loadProfiles = () =>
+    Promise.all([listExecutionProfiles(), listComputes()]).then(
+      ([list, backends]) => (setProfiles(list), setComputes(backends.items), setProfilesFailed(false)),
+      () => setProfilesFailed(true),
     );
   const loadCatalog = () =>
     listCatalog().then(
@@ -285,17 +289,26 @@ export function LaunchPage({
     );
   useEffect(() => {
     document.title = "Launch a workflow · Spectio";
-    void loadEnvs();
+    void loadProfiles();
     void loadCatalog();
     return () => inFlight.current?.abort();
   }, []);
-  // The chosen environment: the user's or Copy's, else the default (ui-spec §4.8.1)
-  const offered = envs?.items.filter((e) => e.usable) ?? [];
-  const chosen: EnvironmentItem | null =
-    offered.find((e) => e.name === envName) ?? offered.find((e) => e.name === envs?.default) ?? offered[0] ?? null;
   const entry = catalog?.items.find((e) => e.name === entryName) ?? null;
   const fromEntry = catalog?.items.find((e) => e.name === fromName) ?? null;
-  // Profile: the entry's, then the environment's, each when the pipeline has it (§4.7.1, §4.8.1)
+  // The chosen profile: the user's or Copy's, else the entry's default, else the server's (ui-spec
+  // §4.8.1). A pipeline's entry lists the profiles it runs with; a profile whose compute is not
+  // usable is not offered.
+  const usable = (profiles?.items ?? []).flatMap((p) => {
+    const compute = computes.find((c) => c.name === p.compute);
+    return compute?.usable ? [resolve(p, compute)] : [];
+  });
+  const listed = usable.filter((r) => fromEntry?.profiles?.includes(r.name));
+  const offered = listed.length ? listed : usable;
+  const chosen: Resolved | null =
+    [profileName, fromEntry?.default_profile, profiles?.default ?? server?.executor].map((n) => offered.find((r) => r.name === n)).find(Boolean) ??
+    offered[0] ??
+    null;
+  // Engine profile: the entry's, then the execution profile's, each when the pipeline has it (§4.7.1, §4.8.1)
   const wanted = chosen && engine ? chosen.profiles[engine] : null;
   const inPipeline = !!wanted && !!loaded?.profiles.includes(wanted);
   const fromCatalog = fromEntry?.profile ?? null;
@@ -305,11 +318,11 @@ export function LaunchPage({
     picked !== null || !loaded || catalogIn
       ? null
       : fromCatalog && wanted && !inPipeline
-        ? `The catalog's profile ${fromCatalog} and the environment's profile ${wanted} are not in this pipeline: none selected`
+        ? `The catalog's profile ${fromCatalog} and the execution profile's default ${wanted} are not in this pipeline: none selected`
         : fromCatalog
-          ? `The catalog's profile ${fromCatalog} is not in this pipeline: ${inPipeline ? `the environment's profile ${wanted} is selected` : "none selected"}`
+          ? `The catalog's profile ${fromCatalog} is not in this pipeline: ${inPipeline ? `the execution profile's default ${wanted} is selected` : "none selected"}`
           : wanted && !inPipeline
-            ? `The environment's profile ${wanted} is not in this pipeline: none selected`
+            ? `The execution profile's default ${wanted} is not in this pipeline: none selected`
             : null;
 
   const targeting = single;
@@ -383,10 +396,10 @@ export function LaunchPage({
     dropUnmounted();
   }
 
-  /** An environment chosen: the refusal named the old environment's Apptainer options, so it is
+  /** A profile chosen: the refusal named the old compute's Apptainer options, so it is
    * dropped with its confirmation (CR-01). */
-  function chooseEnv(name: string) {
-    setEnvName(name);
+  function chooseProfile(name: string) {
+    setProfileName(name);
     dropUnmounted();
   }
 
@@ -528,7 +541,7 @@ export function LaunchPage({
         setEngine(was);
         setMainScript(copy.template.workflow.main_script ?? null); // the copied run's entry script (#351)
         setPicked(copy.template.profiles[0] ?? ""); // the copied run's profile wins
-        setEnvName(copy.template.environment);
+        setProfileName(copy.template.environment); // a run's environment keeps the name of its profile (#408)
         setValues(filled);
         setRows(shape.length ? [] : Object.entries(params).map(([key, v]) => ({ key, value: typeof v === "string" ? v : JSON.stringify(v) })));
         setResources(draftFrom(copy.template.default_resources));
@@ -653,7 +666,7 @@ export function LaunchPage({
     }
     const found: Reason[] = [];
     if (!engine) found.push({ text: "Choose the engine", to: "engine" });
-    if (!chosen && !envsFailed) found.push({ text: "Choose where it runs", to: "environment" });
+    if (!chosen && !profilesFailed) found.push({ text: "Choose where it runs", to: "environment" });
     if (engine && !hasEntry(engine, entryFiles(loaded))) {
       const other = engineName(engine === "nextflow" ? "snakemake" : "nextflow");
       const files = ENGINE_FILES[engine].join(" or ");
@@ -721,7 +734,7 @@ export function LaunchPage({
         workflow: { location: loaded.location, revision: loaded.revision, engine, ...(sentScript ? { main_script: sentScript } : {}) },
         ...(name.trim() ? { name: name.trim() } : {}),
         profiles: profile ? [profile] : [],
-        ...(chosen ? { environment: chosen.name } : {}),
+        ...(chosen ? { execution_profile: chosen.name } : {}),
         params,
         ...(target ? { target } : {}),
         ...(Object.keys(res.sent).length ? { default_resources: res.sent } : {}),
@@ -845,14 +858,14 @@ export function LaunchPage({
   const local = server?.executor === "local";
   const headLine = server ? (local ? `a process on ${server.node}` : `a tmux session on ${server.node}`) : "…";
   const runDirectory = server ? `${server.runs_root}/<run ID>` : "…";
-  /** The Tasks row reads the chosen environment, never `GET /version` (ui-spec §4.8.1). */
+  /** The Tasks row reads the chosen profile, never `GET /version` (ui-spec §4.8.1). */
   const tasksLine = () => {
     const by = engine ? engineName(engine) : "the engine";
-    if (!chosen) return envsFailed ? `by ${by}, in the server's default environment` : "…";
+    if (!chosen) return profilesFailed ? `by ${by}, in the server's default profile` : "…";
     const fromProfile = engine === "snakemake" && profile;
     if (chosen.executor === "slurm") {
       const how = fromProfile
-        ? `resources and partition from the profile ${profile} (this environment's are not passed)`
+        ? `resources and partition from the profile ${profile} (this profile's are not passed)`
         : chosen.slurm?.partition && `partition ${chosen.slurm.partition}`;
       const placement = fromProfile ? [] : [chosen.slurm?.constraint && `constraint ${chosen.slurm.constraint}`, chosen.slurm?.gres && `GRES ${chosen.slurm.gres}`];
       return [`sent to SLURM by ${by}`, how, ...placement].filter(Boolean).join(" · ");
@@ -1112,7 +1125,7 @@ export function LaunchPage({
                   failed={catalogFailed}
                   entry={fromEntry}
                   pipeline={loaded.name}
-                  draft={{ engine: engine ?? "nextflow", location: loaded.location, revision: loaded.revision ?? "", profile, params_file: "" }}
+                  draft={{ engine: engine ?? "nextflow", location: loaded.location, revision: loaded.revision ?? "", profile, params_file: "", profiles: fromEntry?.profiles ?? [], default_profile: fromEntry?.default_profile ?? "" }}
                   onSaved={(item) => void loadCatalog().then(() => (setEntryName(item.name), setFromName(item.name)))}
                 />}
               </Paper>
@@ -1223,7 +1236,7 @@ export function LaunchPage({
               )}
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
                 <NativeSelect
-                  label="Profile"
+                  label={engine ? `${engineName(engine)} profile${engine === "nextflow" ? " (-profile)" : ""}` : "Engine profile"}
                   inputWrapperOrder={["label", "input", "description", "error"]}
                   value={profile}
                   onChange={(e) => {
@@ -1275,13 +1288,14 @@ export function LaunchPage({
             card
             reveal={goTo === "environment" || goTo === "config_file" || !!goTo?.startsWith("resources")}
           >
-            <EnvironmentRow
-              list={envs}
-              failed={envsFailed}
+            <ProfileRow
+              offered={offered}
+              loaded={profiles !== null}
+              failed={profilesFailed}
               chosen={chosen}
-              onChoose={chooseEnv}
-              onRetry={loadEnvs}
-              onCreated={(item) => void loadEnvs().then(() => chooseEnv(item.name))}
+              fromEntry={listed.length > 0 ? (fromEntry?.label ?? fromEntry?.name ?? null) : null}
+              onChoose={chooseProfile}
+              onRetry={loadProfiles}
               error={errors.environment}
             />
             <ResourcesRow
@@ -1420,8 +1434,16 @@ export function LaunchPage({
               )}
               <dt>Engine</dt>
               <dd>{engine ? `${engineName(engine)} ${loaded?.engine_versions[engine] ?? "(version not found)"}` : "Not chosen yet"}</dd>
-              <dt>Environment</dt>
-              <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
+              <dt>Profile</dt>
+              <dd>
+                {chosen
+                  ? `${envLabel(chosen)} · compute ${chosen.compute} (${executorLabel(chosen.executor)}) · ${envSummary(chosen, server?.node ?? "the server", server?.executor ?? "slurm", true)}`
+                  : profilesFailed
+                    ? "the server's default"
+                    : profiles === null
+                      ? "…"
+                      : "Not chosen yet"}
+              </dd>
               <dt>Run resources</dt>
               <dd>{summaryLine(res.sent, extras)}</dd>
               {!oneModule && (

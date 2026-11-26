@@ -1,4 +1,4 @@
-/* The Environments pages (ui-spec §4.8.1; boards LiteEnvironments, LiteEnvironmentEdit). */
+/* The Compute and Profiles pages (ui-spec §4.8.1; boards LiteEnvironments, LiteEnvironmentEdit). */
 .sp-envs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));

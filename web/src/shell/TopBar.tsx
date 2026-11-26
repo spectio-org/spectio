@@ -7,7 +7,7 @@ import type { PageCrumb } from "./crumb";
 import { NotificationsBell } from "./NotificationsBell";
 import { SearchDialog } from "./SearchDialog";
 
-type To = "/" | "/runs" | "/launch" | "/environments" | "/catalog";
+type To = "/" | "/runs" | "/launch" | "/compute" | "/profiles" | "/catalog";
 interface Crumb {
   label: string;
   to?: To;
@@ -16,7 +16,8 @@ interface Crumb {
 const SECTIONS: Record<string, { label: string; to: To }> = {
   runs: { label: "Runs", to: "/runs" },
   launch: { label: "Launch", to: "/launch" },
-  environments: { label: "Environments", to: "/environments" },
+  compute: { label: "Compute", to: "/compute" },
+  profiles: { label: "Profiles", to: "/profiles" },
 };
 
 /** The Catalog pages are Launch's, without a `NAV` item (ui-spec §4.7.1): Home › Launch › Catalog. */

@@ -1,6 +1,6 @@
-import { Button, Radio, TextInput } from "@mantine/core";
-import { useState } from "react";
-import { ApiError, type CatalogBody, type CatalogItem, createCatalogEntry, replaceCatalogEntry } from "../api";
+import { Button, Checkbox, NativeSelect, Radio, TextInput } from "@mantine/core";
+import { useEffect, useState } from "react";
+import { ApiError, type CatalogBody, type CatalogItem, createCatalogEntry, listExecutionProfiles, replaceCatalogEntry } from "../api";
 import { EngineMark } from "../shell/EngineMark";
 
 // The one catalog entry form (ui-spec §4.7.1; board LiteCatalogEntry): the pages' new and edit,
@@ -17,18 +17,23 @@ export interface Draft {
   revision: string;
   profile: string;
   params_file: string;
+  /** The execution profiles the pipeline runs with, and the one Launch preselects (#408). */
+  profiles: string[];
+  default_profile: string;
 }
-export const EMPTY: Draft = { name: "", label: "", engine: "nextflow", location: "", revision: "", profile: "", params_file: "" };
+export const EMPTY: Draft = { name: "", label: "", engine: "nextflow", location: "", revision: "", profile: "", params_file: "", profiles: [], default_profile: "" };
 export const fromItem = (e: CatalogItem): Draft => ({
   ...{ name: e.name, label: e.label ?? "", engine: e.engine, location: e.location },
   ...{ revision: e.revision ?? "", profile: e.profile ?? "", params_file: e.params_file ?? "" },
+  ...{ profiles: e.profiles ?? [], default_profile: e.default_profile ?? "" },
 });
 
 type Field = keyof Draft;
+type TextField = Exclude<Field, "profiles">;
 type Errors = Partial<Record<string, string>>;
 const NAMES: Record<Field, string> = {
   ...{ name: "Name", label: "Label", engine: "Engine", location: "Pipeline", revision: "Revision" },
-  ...{ profile: "Default profile", params_file: "Params file" },
+  ...{ profile: "Engine profile", params_file: "Params file", profiles: "Profiles", default_profile: "Default profile" },
 };
 const NAME = /^[a-z][a-z0-9-]{0,31}$/;
 const PROFILE = /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$/;
@@ -47,13 +52,16 @@ export function toBody(d: Draft): { body: CatalogBody | null; errors: Errors } {
   if (isRepo(location) && revision === "") errors.revision = "Required for a repository";
   const profile = d.profile.trim();
   if (profile && !PROFILE.test(profile)) errors.profile = "One profile name: letters, digits, '_', '.' and '-'";
+  if (d.default_profile && !d.profiles.includes(d.default_profile)) errors.default_profile = "Choose one of the profiles above";
   const params = d.params_file.trim();
   const parts = params.split("/");
   if (params && (parts.length > 8 || !parts.every((p) => PART.test(p)))) errors.params_file = "A path inside the pipeline: no '..' and no leading '/'";
   else if (params && !/\.(json|ya?ml)$/.test(params)) errors.params_file = "A .json, .yaml or .yml file";
   if (Object.keys(errors).length) return { body: null, errors };
   return {
-    body: { name, label: d.label.trim() || null, engine: d.engine, location, revision: revision || null, profile: profile || null, params_file: params || null },
+    body: { name, label: d.label.trim() || null, engine: d.engine, location, revision: revision || null, profile: profile || null, params_file: params || null,
+      // sent when set only, so an older server never sees them
+      ...(d.profiles.length && { profiles: d.profiles }), ...(d.default_profile && { default_profile: d.default_profile }) },
     errors,
   };
 }
@@ -84,11 +92,22 @@ export function CatalogForm({ initial, etag, onSaved, onCancel, onReload }: Prop
   const first = Object.keys(errors)[0] as Field | undefined;
   const why = first ? `Fix ${NAMES[first]} first` : null;
 
-  const set = (key: Field) => (value: string) => {
-    setDraft({ ...draft, [key]: value });
+  const change = (patch: Partial<Draft>, key: Field) => {
+    setDraft({ ...draft, ...patch });
     setTouched(new Set(touched).add(key));
     setServer422(({ [key]: _, ...rest }) => rest);
   };
+  const set = (key: TextField) => (value: string) => change({ [key]: value }, key);
+  // The profiles the form can offer: the server's, and any the entry lists that it no longer has
+  const [known, setKnown] = useState<string[] | null>(null);
+  useEffect(() => {
+    const stop = new AbortController();
+    listExecutionProfiles(stop.signal).then((l) => setKnown(l.items.map((p) => p.name)), () => setKnown(null));
+    return () => stop.abort();
+  }, []);
+  const offered = [...new Set([...(known ?? []), ...draft.profiles])];
+  // Unchecking the default profile clears it: the default is always one of the profiles
+  const setProfiles = (profiles: string[]) => change({ profiles, ...(profiles.includes(draft.default_profile) ? {} : { default_profile: "" }) }, "profiles");
   const save = () => {
     if (!body) return setTouched(new Set(Object.keys(NAMES)));
     setSending(true);
@@ -108,7 +127,7 @@ export function CatalogForm({ initial, etag, onSaved, onCancel, onReload }: Prop
       })
       .finally(() => setSending(false));
   };
-  const text = (key: Field, label: string, hint: string | undefined, more: object = {}) => (
+  const text = (key: TextField, label: string, hint: string | undefined, more: object = {}) => (
     <TextInput
       label={label}
       description={hint}
@@ -146,7 +165,33 @@ export function CatalogForm({ initial, etag, onSaved, onCancel, onReload }: Prop
       {text("location", "Pipeline", "An absolute path your account can read, a GitHub or nf-core name such as nf-core/rnaseq, or an https:// or ssh URL.")}
       {isRepo(draft.location) &&
         text("revision", "Revision", "Required for a repository. A tag or a commit: a branch is fetched once and not updated.", { withAsterisk: true })}
-      {text("profile", "Default profile (optional)", "Selected at Launch when the pipeline has it; you can change it there.")}
+      {text("profile", "Engine profile (optional)", "The pipeline's own Nextflow -profile or Snakemake profile, selected at Launch when the pipeline has it; you can change it there.")}
+      <fieldset>
+        <legend>Profiles (optional)</legend>
+        <p className="sp-env-hint">
+          The execution profiles this pipeline runs with, from Profiles. Launch offers only these; with none ticked, it offers them all.
+        </p>
+        {offered.length === 0 ? (
+          <p className="sp-env-hint">{known === null ? "The profiles could not be read." : "No execution profile yet."}</p>
+        ) : (
+          <Checkbox.Group value={draft.profiles} onChange={setProfiles} error={shown.profiles}>
+            {offered.map((name) => (
+              <Checkbox key={name} value={name} label={name} mt={6} />
+            ))}
+          </Checkbox.Group>
+        )}
+        <NativeSelect
+          label="Default profile"
+          description="Preselected at Launch; one of the profiles above."
+          inputWrapperOrder={["label", "input", "description", "error"]}
+          data={[{ value: "", label: "None: the server's default" }, ...draft.profiles.map((p) => ({ value: p, label: p }))]}
+          value={draft.default_profile}
+          onChange={(e) => set("default_profile")(e.currentTarget.value)}
+          error={shown.default_profile}
+          disabled={draft.profiles.length === 0}
+          mt="sm"
+        />
+      </fieldset>
       {text(
         "params_file",
         "Params file (optional)",

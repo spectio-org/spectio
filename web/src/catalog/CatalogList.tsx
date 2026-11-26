@@ -1,4 +1,4 @@
-import "../environments/environments.css";
+import "../compute/compute.css";
 import "./catalog.css";
 import { Button, Drawer, Modal } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
@@ -114,7 +114,10 @@ export function CatalogList({ data, onChanged, onReload, onEdit }: Props) {
       {why && <p id={WAITS_ID} className="sp-env-hint">Add pipeline: {why.toLowerCase()}</p>}
       <div className="sp-envs">
         {items.map((entry) => {
-          const extras = [entry.profile && `profile ${entry.profile}`, entry.params_file && `parameters from ${entry.params_file}`].filter(Boolean);
+          const runsWith = entry.profiles?.length
+            ? `runs with ${entry.profiles.join(", ")}${entry.default_profile ? ` (default ${entry.default_profile})` : ""}`
+            : null;
+          const extras = [entry.profile && `profile ${entry.profile}`, runsWith, entry.params_file && `parameters from ${entry.params_file}`].filter(Boolean);
           return (
             <article key={entry.name} className="sp-card sp-env">
               <div className="sp-env-top">

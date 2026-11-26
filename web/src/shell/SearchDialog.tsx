@@ -38,7 +38,7 @@ interface Hit {
 
 const GROUPS: Group[] = ["Runs", "Pipelines", "Pages"];
 const KIND: Record<Group, string> = { Runs: "Run", Pipelines: "Pipeline", Pages: "Page" };
-const page = (label: string, to: "/" | "/runs" | "/launch" | "/catalog" | "/environments" | "/profile"): Hit => ({
+const page = (label: string, to: "/" | "/runs" | "/launch" | "/catalog" | "/compute" | "/profiles" | "/profile"): Hit => ({
   key: to,
   group: "Pages",
   label,
@@ -51,7 +51,8 @@ const PAGES = [
   page("Runs", "/runs"),
   page("Launch", "/launch"),
   page("Pipelines (catalog)", "/catalog"),
-  page("Environments", "/environments"),
+  page("Compute", "/compute"),
+  page("Profiles", "/profiles"),
   page("Profile", "/profile"),
 ];
 

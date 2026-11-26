@@ -31,13 +31,13 @@ function json(status: number, body: unknown): Response {
 }
 
 const fetchMock = vi.fn<typeof fetch>();
-// The Environment row and the catalog picker read their lists on their own (LaunchEnvironment and
-// LaunchCatalog tests): they fail here, so the form sends no environment and the calls below are
+// The Profile row and the catalog picker read their lists on their own (LaunchProfile and
+// LaunchCatalog tests): they fail here, so the form sends no execution profile and the calls below are
 // the form's own.
 // /features too: the Workflow map (graph/features.ts) reads it on its own.
 beforeEach(() =>
   vi.stubGlobal("fetch", (url: RequestInfo | URL, init?: RequestInit) =>
-    ["/api/v1/environments", "/api/v1/catalog", "/api/v1/features"].includes(String(url)) ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
+    ["/api/v1/execution-profiles", "/api/v1/computes", "/api/v1/catalog", "/api/v1/features"].includes(String(url)) ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
   ),
 );
 afterEach(() => {
@@ -98,7 +98,7 @@ test("Load inspects; the guess is pressed; Launch waits for the required field, 
   expect(fetchMock).toHaveBeenCalledTimes(1);
 
   await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/samples.csv");
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ }), "docker");
   expect(launch()).not.toHaveAttribute("aria-disabled");
   fetchMock.mockResolvedValueOnce(json(201, { id: "run_1", name: "rnaseq-x", state: "queued" }));
   await userEvent.click(launch());
@@ -341,7 +341,7 @@ test("UX-PAR-34: on the phone the pinned bar says why Launch waits, then what it
   expect(launch()).toHaveAccessibleDescription("Load a pipeline first");
   await load({ ...NF_CORE, profiles: ["docker"] });
   await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ }), "docker");
   expect(launch()).not.toHaveAttribute("aria-disabled");
   expect(launch()).toHaveAccessibleDescription("Nothing is missing. nf-core/rnaseq 3.27.0 · Nextflow · docker · 1 value changed");
 });
@@ -588,18 +588,18 @@ test("FU-P3-86h: Load a pipeline first links the Pipeline field; nothing missing
 test("FU-P3-86h: the aside has the summary, then Before Launch, the preview folded (Launch is in the head, UI-13)", async () => {
   page();
   await load();
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ }), "docker");
   const aside = screen.getByRole("complementary", { name: "Launch" });
   const summary = within(aside).getByRole("region", { name: "Summary" });
   const facts = [...summary.querySelectorAll("dt")].map((dt) => [dt.textContent, dt.nextElementSibling?.textContent]);
   expect(facts).toEqual([
     ["Pipeline", "rnaseq 3.27.0 · profile docker"],
     ["Engine", "Nextflow 26.10.4"],
-    ["Environment", "the server's default"],
-    ["Run resources", "from the environment"], // FU-P3-110d, ui-spec §4.6
+    ["Profile", "the server's default"],
+    ["Run resources", "from the execution profile"], // FU-P3-110d, ui-spec §4.6
     ["Extra config", "none"],
     ["Engine head", "…"],
-    ["Tasks", "by Nextflow, in the server's default environment"],
+    ["Tasks", "by Nextflow, in the server's default profile"],
     ["Run directory", "…"],
   ]);
   const preview = within(aside).getByRole("button", { name: /^params.json preview/ });
@@ -693,7 +693,7 @@ test("§5.12: choosing another profile asks inspect again, and its defaults fill
       defaults_complete: true,
     }),
   );
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ }), "docker");
   const input = await screen.findByRole("textbox", { name: /^input/ });
   await waitFor(() => expect(input).toHaveValue("/data/samples.csv"));
   expect(fetchMock.mock.calls[1][0]).toBe("/api/v1/workflows:inspect?location=%2Fdata%2Frnaseq&profiles=docker");
@@ -710,7 +710,7 @@ test("§5.12: a failed re-ask after a profile change says so; the form keeps the
   page();
   await load(EFFECTIVE);
   fetchMock.mockResolvedValueOnce(json(500, { title: "x" })); // the re-ask fails
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ }), "docker");
   // the re-ask names the chosen profile (CR-07)
   expect(fetchMock.mock.calls[1][0]).toBe("/api/v1/workflows:inspect?location=%2Fdata%2Frnaseq&profiles=docker");
   expect(
@@ -721,7 +721,7 @@ test("§5.12: a failed re-ask after a profile change says so; the form keeps the
   expect(depth.closest(".launch-param")).toHaveTextContent("from the pipeline's config");
   // a later answer clears the note (CR-06)
   fetchMock.mockResolvedValueOnce(json(200, EFFECTIVE));
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "test");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^(Engine|Nextflow|Snakemake) profile/ }), "test");
   await waitFor(() =>
     expect(screen.queryByText("Could not read the profile's values: the form shows the previous ones")).toBeNull(),
   );

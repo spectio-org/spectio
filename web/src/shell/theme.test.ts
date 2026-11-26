@@ -106,7 +106,7 @@ test("one global focus ring, which reaches the portals", () => {
 const SWEPT = [
   "src/app.css",
   "src/shell/shell.css",
-  "src/environments/environments.css",
+  "src/compute/compute.css",
   "src/home/home.css",
   "src/profile/profile.css",
   "src/launch/launch.css",
