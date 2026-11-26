@@ -2440,7 +2440,7 @@
 .sp-scope-text {
   color: var(--sp-text-muted);
 }
-/* The Workflow cell is one native button (the tooltip's focus target), drawn as plain text. */
+/* The Workflow cell's content, its tooltip's anchor: the pipeline, then the target line. */
 .sp-what-ran {
   display: flex;
   flex-direction: column;
@@ -2448,13 +2448,6 @@
   gap: var(--mantine-spacing-xs);
   max-width: 100%;
   min-width: 0;
-  padding: 0;
-  border: 0;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  background: none;
-  cursor: pointer;
 }
 .sp-what-ran-tail {
   display: flex;

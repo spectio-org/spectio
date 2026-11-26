@@ -237,7 +237,7 @@ test("UX-PAR-18: the footer counts the rows shown against the filter's total", a
   expect(screen.getByRole("searchbox", { name: "Filter by run name" })).toBeInTheDocument();
 });
 
-test("UX-G3a-05: below 1100 px the grid drops Started, so it fits at 1024 px", async () => {
+test("UX-G3a-05: below 1100 px the grid drops Started", async () => {
   viewport(1024);
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: null } });
   app("/runs");
@@ -804,7 +804,7 @@ test("CR-01 (#385): a checkpoint run's progress reads in full in its cell, in a 
   expect(parseInt(started.style.width, 10)).toBeGreaterThanOrEqual(170);
 });
 
-test("#353: the Workflow cell is one native button, the target and the changed checksum shown in it and said in its tooltip on focus", async () => {
+test("#353: the arrow keys to a Workflow or a Run cell open its tooltip; the cell's name says it whole, the chip stays in it", async () => {
   const changed = run({
     name: "fastqc-two",
     target: { ...MODULE_TARGET, kind: "rule", name: "qc_report", version: null, source: null, flag: "target", checksum_changed: true },
@@ -813,16 +813,18 @@ test("#353: the Workflow cell is one native button, the target and the changed c
   app("/runs");
   const table = await screen.findByRole("grid", { name: "Runs" });
   const text = "nf-core/rnaseq 3.27.0 · → rule qc_report · checksum changed";
-  // the accessible name keeps the whole of it, and the warning stays visible in the cell
-  const what = within(table).getByRole("button", { name: `Copy workflow ${text}` });
-  expect(what.tagName).toBe("BUTTON");
-  expect(within(what).getByText("checksum changed")).toHaveClass("sp-chip");
-  try {
-    keyboardFocus(what);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(text);
-  } finally {
-    vi.restoreAllMocks();
-  }
+  const cell = (col: string) => table.querySelector(`.ag-row [col-id="${col}"]`) as HTMLElement;
+  // the clamp is CSS only: the cell's text holds all of it, and the warning stays visible in the cell
+  for (const part of ["nf-core/rnaseq", "3.27.0", "qc_report", "checksum changed"]) expect(cell("workflow")).toHaveTextContent(part);
+  expect(within(cell("workflow")).getAllByText("checksum changed").some((el) => el.classList.contains("sp-chip"))).toBe(true);
+  // from the State cell, as a user: the arrow keys (AG Grid never focuses a cell's own link or text)
+  await userEvent.click(cell("state"));
+  await userEvent.keyboard("{ArrowRight}{ArrowRight}");
+  expect(document.activeElement).toBe(cell("workflow"));
+  expect(await screen.findByRole("tooltip")).toHaveTextContent(text);
+  await userEvent.keyboard("{ArrowLeft}{ArrowLeft}{ArrowLeft}");
+  expect(document.activeElement).toBe(cell("name"));
+  await waitFor(() => expect(screen.getByRole("tooltip")).toHaveTextContent("fastqc-two"));
 });
 
 test("#353: every row has the one height, sized for the worst cell as runs.css lays it out", async () => {
@@ -832,14 +834,16 @@ test("#353: every row has the one height, sized for the worst cell as runs.css l
   for (const row of within(table).getAllByRole("row").filter((r) => r.classList.contains("ag-row"))) {
     expect(row.style.height).toBe(`${ROW_HEIGHT}px`);
   }
-  const css = readFileSync("src/runs/runs.css", "utf8") + readFileSync("src/app.css", "utf8");
-  // two clamped name lines, the Run link's and the pipeline's; 1.45 is the cell's line height
-  for (const selector of [".sp-run-name .sp-run-link", ".sp-grid-runs .sp-pipeline > span:last-child"]) {
+  const rule = (file: string, selector: string) => {
+    const css = readFileSync(new URL(file, import.meta.url), "utf8");
     const at = css.indexOf(`${selector} {`);
-    expect(at, selector).toBeGreaterThanOrEqual(0);
-    expect(css.slice(at, css.indexOf("}", at)), selector).toContain("-webkit-line-clamp: 2;");
-  }
-  expect(css).toContain("line-height: 1.45;");
+    expect(at, `${selector} in ${file}`).toBeGreaterThanOrEqual(0);
+    return css.slice(at, css.indexOf("}", at));
+  };
+  // two clamped name lines, the Run link's and the pipeline's, at the cell's 1.45 line height
+  expect(rule("./runs.css", ".sp-run-name .sp-run-link")).toContain("-webkit-line-clamp: 2;");
+  expect(rule("./runs.css", ".sp-grid-runs .sp-pipeline > span:last-child")).toContain("-webkit-line-clamp: 2;");
+  expect(rule("../app.css", ".sp-grid-runs .ag-cell")).toContain("line-height: 1.45;");
   // a name (2 x 14 px lines), a chip (12 px line + 2 px), a line of 13 px, the gaps (xs = 4 px twice), the
   // cell's padding (md = 12 px twice) and 3 px of borders
   const lines = 2 * 14 * 1.45 + (12 * 1.45 + 2) + 13 * 1.45;

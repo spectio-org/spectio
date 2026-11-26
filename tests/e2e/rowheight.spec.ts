@@ -1,6 +1,4 @@
 import { expect, test, type Page } from '@playwright/test';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
 import { resolveTarget } from './base-url';
 
 // #353: the runs list keeps one row height whatever the names, and no cell clips its content.
@@ -39,7 +37,6 @@ const RUNS = [
 
 async function open(page: Page, width: number) {
   await page.setViewportSize({ width, height: 900 });
-  await page.route('**/api/v1/**', (r) => r.fulfill(json({})));
   await page.route('**/api/v1/version', (r) => r.fulfill(json({ version: '0.0.1', node: 'login1', runs_root: '/runs', account: 'me', executor: 'tmux', features: { single_target: true } })));
   await page.route('**/api/v1/me/notifications*', (r) => r.fulfill(json({ items: [], unread: 0, read_up_to: null })));
   await page.route('**/api/v1/runs:summary*', (r) => r.fulfill(json({ groups: [{ key: 'running', count: 3 }, { key: 'failed', count: 1 }] })));
@@ -49,49 +46,58 @@ async function open(page: Page, width: number) {
   await expect(page.locator('.ag-row')).toHaveCount(RUNS.length);
 }
 
-for (const width of [1440, 1280]) {
-  test(`one row height and no clipped cell at ${width} px`, async ({ page }, info) => {
+// every column fits from about 1410 px; below, the grid scrolls sideways and still cuts nothing
+for (const width of [1100, 1200, 1250, 1280, 1440, 1920]) {
+  test(`one row height and no clipped cell at ${width} px`, async ({ page }) => {
     await open(page, width);
     const m = await page.evaluate(() => {
       const rows = [...document.querySelectorAll<HTMLElement>('.ag-row')];
-      const rects = (el: HTMLElement) => el.getBoundingClientRect();
       return {
+        page: document.documentElement.scrollWidth,
         rows: rows.map((r) => r.getBoundingClientRect().height),
         cells: rows.flatMap((r, i) =>
           [...r.querySelectorAll<HTMLElement>('.ag-cell')].map((c) => {
-            const box = rects(c);
+            const box = c.getBoundingClientRect();
             const escaped = [...c.querySelectorAll<HTMLElement>('.sp-chip, .sp-id, .sp-pin, .sp-target-to')].filter((e) => {
-              const b = rects(e);
+              const b = e.getBoundingClientRect();
               return b.bottom > box.bottom + 0.5 || b.right > box.right + 0.5 || b.top < box.top - 0.5;
             }).length;
-            const kids = [...c.children].map((k) => k.getBoundingClientRect());
-            const content = kids.length ? Math.max(...kids.map((k) => k.bottom)) - Math.min(...kids.map((k) => k.top)) : 0;
-            return { row: i, col: c.getAttribute('col-id'), text: c.innerText.slice(0, 30), content: Math.round(content * 10) / 10, sh: c.scrollHeight, ch: c.clientHeight, sw: c.scrollWidth, cw: c.clientWidth, escaped };
+            return { row: i, col: c.getAttribute('col-id'), sh: c.scrollHeight, ch: c.clientHeight, sw: c.scrollWidth, cw: c.clientWidth, escaped };
           }),
         ),
       };
     });
-    console.log(JSON.stringify({ width, rows: m.rows, tallest: m.cells.reduce((a, c) => (c.content > a.content ? c : a)), cells: m.cells.filter((c) => c.col === 'name' || c.col === 'workflow').map((c) => `${c.row}:${c.col}:${c.content}/${c.ch}`) }));
-    const shot = process.env.SPECTIO_ROWH_SHOT;
-    if (shot) {
-      mkdirSync(dirname(shot), { recursive: true });
-      await page.screenshot({ path: shot.replace('.png', `-${width}.png`) });
-    }
+    expect(m.page, 'the page itself does not scroll sideways').toBeLessThanOrEqual(width);
     expect(new Set(m.rows).size, `row heights ${m.rows}`).toBe(1);
     for (const c of m.cells) {
-      expect(c.sh, `${JSON.stringify(c)}`).toBeLessThanOrEqual(c.ch);
-      expect(c.sw, `${JSON.stringify(c)}`).toBeLessThanOrEqual(c.cw);
-      expect(c.escaped, `${JSON.stringify(c)}`).toBe(0);
+      expect(c.sh, JSON.stringify(c)).toBeLessThanOrEqual(c.ch);
+      expect(c.sw, JSON.stringify(c)).toBeLessThanOrEqual(c.cw);
+      expect(c.escaped, JSON.stringify(c)).toBe(0);
     }
-    info.annotations.push({ type: 'row-height', description: String(m.rows[0]) });
   });
 }
 
-test('a clamped workflow name shows its full text, with the warning, on keyboard focus', async ({ page }) => {
+/** From the State cell of row `row`, the arrow keys to the cell of column `col`. */
+async function arrowTo(page: Page, row: number, col: string) {
+  await page.locator(`.ag-row[row-index="${row}"] [col-id="state"]`).click();
+  for (let i = 0; i < 8 && (await page.evaluate(() => document.activeElement?.getAttribute('col-id'))) !== col; i++) {
+    await page.keyboard.press(col === 'name' ? 'ArrowLeft' : 'ArrowRight');
+  }
+  expect(await page.evaluate(() => document.activeElement?.getAttribute('col-id'))).toBe(col);
+}
+
+test('the arrow keys to a Workflow cell open its tooltip: the full text, the warning included', async ({ page }) => {
   await open(page, 1440);
-  const button = page.getByRole('button', { name: /^Copy workflow .*checksum changed/ }).first();
-  await button.focus();
+  await arrowTo(page, 2, 'workflow');
   const tip = page.getByRole('tooltip');
+  await expect(tip).toContainText('→ rule a_rule_with_a_name_that_is_much_too_long');
   await expect(tip).toContainText('checksum changed');
-  await expect(tip).toContainText('→ rule');
+  await page.keyboard.press('ArrowLeft');
+  await expect(tip).toBeHidden();
+});
+
+test('the arrow keys to a Run cell open its tooltip: the whole name', async ({ page }) => {
+  await open(page, 1440);
+  await arrowTo(page, 1, 'name');
+  await expect(page.getByRole('tooltip')).toContainText(LONG);
 });

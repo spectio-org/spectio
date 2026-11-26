@@ -8,14 +8,13 @@ import { type IconName, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { Scope, ScopeText, TargetTail, targetText } from "./target";
-import { useCopyStatus } from "./CopyMenu";
 import { usePhone } from "../shell/layout";
 import { Ago } from "../shell/Ago";
 import { PageHead } from "../shell/PageHead";
 import { Toolbar, ToolbarSearch } from "../shell/Toolbar";
 import { DeleteRuns } from "./DeleteRuns";
 import { LazyGrid } from "./LazyGrid";
-import { NameTip, Pipeline, Progress, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
+import { Pipeline, Progress, RunLink, StateWord, runName, stateContext, tasksText } from "./RunState";
 import { ACTIVE, duration, isTerminal, plural, shortId, tone, words } from "./stateWord";
 
 /** A run's start as ui-spec §12.8 dates it ("2 h ago", then "2026-10-28 07:01"). */
@@ -168,12 +167,34 @@ function TasksCell({ run }: { run: Run }) {
     </>
   );
 }
-/** The run's link, clamped to two lines (runs.css), its full name in a tooltip on hover and on
- * focus (ui-spec §12.8). */
+/** Whether the grid's cell around `ref` is the focused element: AG Grid moves focus from cell to
+ * cell (arrow keys, Tab) and never into a cell's own link, so a cell's tooltip opens on the cell's
+ * focus (#353). Outside the grid (the phone's card) it stays false. */
+function useCellFocus() {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    const cell = ref.current?.closest<HTMLElement>(".ag-cell");
+    if (!cell) return;
+    const on = (e: FocusEvent) => setFocused(e.target === cell);
+    const off = () => setFocused(false);
+    cell.addEventListener("focusin", on);
+    cell.addEventListener("focusout", off);
+    return () => {
+      cell.removeEventListener("focusin", on);
+      cell.removeEventListener("focusout", off);
+    };
+  }, []);
+  return [ref, focused] as const;
+}
+
+/** The run's link, clamped to two lines (runs.css), its full name in a tooltip on hover, on the
+ * link's focus and on its grid cell's focus (ui-spec §12.8). */
 function RunName({ run }: { run: Run }) {
+  const [ref, cellFocused] = useCellFocus();
   return (
-    <Tooltip label={runName(run)} events={{ hover: true, focus: true, touch: false }} multiline maw={360}>
-      <span className="sp-run-name">
+    <Tooltip label={runName(run)} opened={cellFocused || undefined} events={{ hover: true, focus: true, touch: false }} multiline maw={360}>
+      <span ref={ref} className="sp-run-name">
         <RunLink run={run} />
       </span>
     </Tooltip>
@@ -191,28 +212,22 @@ function whatRan(run: Run): string {
 }
 
 /** The Workflow cell: the pipeline's name clamped to two lines and the target to one (runs.css),
- * the changed-checksum chip never clamped. A button, so the keyboard reaches the full text in the
- * tooltip; it copies the pipeline's name and version (#353, ui-spec §12.8). */
+ * the changed-checksum chip never clamped. `whatRan` is its tooltip, on hover and on the cell's
+ * focus; the clamp is CSS only, so the cell's accessible name already holds all of it (#353,
+ * ui-spec §12.8). */
 function WorkflowCell({ run }: { run: Run }) {
-  const [said, copy] = useCopyStatus();
-  const w = run.workflow;
-  const name = [w.name ?? w.location, w.version].filter(Boolean).join(" ");
+  const [ref, cellFocused] = useCellFocus();
   return (
-    <>
-      <NameTip label={whatRan(run)}>
-        <button type="button" className="sp-what-ran" aria-label={`Copy workflow ${whatRan(run)}`} onClick={() => copy({ label: "Copy", what: "the workflow", text: name })}>
-          <Pipeline run={run} />
-          {run.target && (
-            <span className="sp-what-ran-tail">
-              <TargetTail target={run.target} />
-            </span>
-          )}
-        </button>
-      </NameTip>
-      <span role="status" className="sp-sr">
-        {said}
+    <Tooltip label={whatRan(run)} opened={cellFocused || undefined} events={{ hover: true, focus: true, touch: false }} multiline maw={360}>
+      <span ref={ref} className="sp-what-ran">
+        <Pipeline run={run} />
+        {run.target && (
+          <span className="sp-what-ran-tail">
+            <TargetTail target={run.target} />
+          </span>
+        )}
       </span>
-    </>
+    </Tooltip>
   );
 }
 
@@ -264,6 +279,11 @@ export function RunCard({ run, select, pin }: { run: Run; select?: ReactNode; pi
  * on the server (`colId` is the `sort=` key): the grid keeps the API's order (`comparator` 0) and
  * filters nothing on its own. The state rail is the row's left edge, in its tone. */
 const keep = () => 0;
+/** The Run and Workflow columns' minimum width (#353): the widest chip they hold, "checksum
+ * changed" (12 px semibold, 122.2 px measured; "From a terminal" with its icon is 119.4), and the
+ * cell's side padding, 2 x 12 px: 146.2, so 150. Below the width where every column fits, the grid
+ * scrolls sideways and nothing is cut. */
+const MIN_CHIP_COLUMN = 150;
 const COLUMNS: ColDef<Run>[] = [
   {
     colId: "select",
@@ -278,6 +298,7 @@ const COLUMNS: ColDef<Run>[] = [
     headerName: "Run",
     colId: "name",
     flex: 1.6,
+    minWidth: MIN_CHIP_COLUMN,
     cellRenderer: ({ data: run }: { data: Run }) => (
       <>
         <span className="sp-run-cell">
@@ -309,6 +330,7 @@ const COLUMNS: ColDef<Run>[] = [
     headerName: "Workflow",
     colId: "workflow",
     flex: 1.4,
+    minWidth: MIN_CHIP_COLUMN,
     cellRenderer: ({ data: run }: { data: Run }) => <WorkflowCell run={run} />,
   },
   // numbers and durations right-aligned, in tabular figures; words and dates left (ui-spec §12.8)
@@ -412,11 +434,8 @@ export function RunsPage() {
   };
   const server = useServer();
   const phone = usePhone();
-  // UX-G3a-05: Started drops below 1100 px, so the grid fits at 1024 px without a sideways scroll.
+  // UX-G3a-05: Started drops below 1100 px. Below the columns' minimum widths (#353) the grid scrolls sideways.
   const narrow = useMediaQuery("(max-width: 1099.98px)") ?? false;
-  // #353: below 1400 px the Scope column goes too (the Workflow cell names the target), so the Run and
-  // Workflow columns keep the width their chips need and a row keeps its one height.
-  const compact = useMediaQuery("(max-width: 1399.98px)") ?? false;
   const [typed, setTyped] = useState(q);
   // The q this page last wrote: a q from elsewhere (a link that drops it) re-seeds the box, while
   // the page's own write never trims what the user is still typing (CR-P3PARA-09).
@@ -567,7 +586,7 @@ export function RunsPage() {
   // The Scope column and buttons once single targets can exist here: the flag, or a run that has one
   // (a terminal run is captured whatever the flag says; api §5.10).
   const scoped = !!server?.features?.single_target || target !== undefined || !!list?.rows.some((r) => r.target);
-  const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started") && (scoped && !compact ? true : c.colId !== "scope")).map(
+  const columns = COLUMNS.filter((c) => !(narrow && c.headerName === "Started") && (scoped || c.colId !== "scope")).map(
     (c): ColDef<Run> =>
       c.colId && SORTABLE.has(c.colId)
         ? { ...c, sortable: true, unSortIcon: true, comparator: keep, sortingOrder: ["asc", "desc", null], sort: sort === c.colId ? "asc" : sort === `-${c.colId}` ? "desc" : null }
