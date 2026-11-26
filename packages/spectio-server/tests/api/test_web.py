@@ -108,6 +108,15 @@ def test_environments_pages_are_screens(web: TestClient) -> None:
         assert r.text == INDEX
 
 
+def test_compute_and_profile_pages_are_screens(web: TestClient) -> None:
+    """The Compute and Profiles pages of #408 answer the screens."""
+    paths = ("/compute", "/compute/new", "/compute/embl-slurm", "/profiles", "/profiles/new")
+    for path in (*paths, "/profiles/gpu-h100"):
+        r = web.get(path)
+        assert r.status_code == 200, path
+        assert r.text == INDEX
+
+
 def test_catalog_pages_are_screens(web: TestClient) -> None:
     """The Catalog list and form answer the screens (ui-spec §4.7.1, FU-P3-87d)."""
     for path in ("/catalog", "/catalog/new", "/catalog/rnaseq-test"):

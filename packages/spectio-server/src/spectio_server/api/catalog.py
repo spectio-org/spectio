@@ -1,12 +1,13 @@
 """The pipeline catalog's routes (FU-P3-87b; api §5.6; dev-env §15.3 req. 18).
 
-`catalog.toml` is read and written by the environments' `Store` (`spectio.envfile`: the same
+`catalog.toml` is read and written by the definitions' `Store` (`spectio.envfile`: the same
 pool, timeout, five states, identity check, lock and rename), with the `catalog-file-*`
 problems. The routes (`GET`, `POST /catalog`, `GET`, `PUT`, `DELETE /catalog/{name}`) are
 mounted in `create_app`'s conditional set, as the environments'. Saving checks how the fields
 are written (`spectio.catalog.Entry`), never what they name: no directory is read and no remote
-contacted. `PUT` and `DELETE` need `If-Match` with the item's ETag (`*` is refused). Each write
-logs its route, the name and the old and new values.
+contacted, except that the execution profiles an entry names must exist (#408). `PUT` and
+`DELETE` need `If-Match` with the item's ETag (`*` is refused). Each write logs its route, the
+name and the old and new values.
 """
 
 import logging
@@ -18,6 +19,7 @@ from fastapi import APIRouter, Request, Response
 from spectio import envfile
 from spectio.catalog import MAX_ENTRIES, Entry
 from spectio_server.api import models
+from spectio_server.api.computes import profiles_view
 from spectio_server.api.environments import Store, etag, if_match, offline
 from spectio_server.api.problems import Invalid, Problem
 from spectio_server.files.pool import Stalled
@@ -43,6 +45,16 @@ def _not_found(found: CatalogFile) -> Problem:
         return offline(Stalled(found.detail or "the catalog file is unreachable"))
     why = "" if found.state in ("missing", "ok") else f" (the catalog file is {found.state})"
     return Problem(404, "not-found", "Not found", f"No such catalog entry{why}.")
+
+
+def _check_profiles(request: Request, body: Entry) -> None:
+    """Each execution profile the entry names must exist (#408): the built-ins and the file's."""
+    known = {p.name for p, _ in profiles_view(request)[1]}
+    for i, name in enumerate(body.profiles or []):
+        if name not in known:
+            raise Invalid(f"profiles.{i}", f"there is no execution profile {name}")
+    if body.default_profile is not None and body.default_profile not in known:
+        raise Invalid("default_profile", f"there is no execution profile {body.default_profile}")
 
 
 def _get(found: CatalogFile, name: str) -> Entry:
@@ -96,6 +108,7 @@ def get_entry(request: Request, response: Response, name: str) -> dict[str, Any]
 def create_entry(body: Entry, request: Request, response: Response) -> dict[str, Any]:
     if body.name == "new":  # the screen route `/catalog/new`
         raise Invalid("name", "new is a reserved name")
+    _check_profiles(request, body)
 
     def change(current: CatalogFile) -> list[Entry]:
         if any(e.name == body.name for e in current.entries):
@@ -116,6 +129,7 @@ def replace_entry(name: str, body: Entry, request: Request, response: Response) 
     tags = if_match(request, "catalog entry")
     if body.name != name:
         raise Invalid("name", "a name cannot change: add the entry again, then delete this one")
+    _check_profiles(request, body)
 
     def change(current: CatalogFile) -> list[Entry]:
         _find(current, name, tags)

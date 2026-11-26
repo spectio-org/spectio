@@ -44,7 +44,7 @@ from spectio.runner.rundir import (
 )
 from spectio_sdk.targets import RunTarget
 from spectio_server.api import models
-from spectio_server.api.environments import view
+from spectio_server.api.computes import profiles_view
 from spectio_server.api.extras import read_kept
 from spectio_server.api.problems import Invalid, Problem, not_found
 from spectio_server.api.runs_read import context, read, run_detail, run_row
@@ -421,6 +421,7 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         "profiles": _profiles(settings.runs_root, run_id, payload) or [],
         "params": params,
         "environment": name,
+        "execution_profile": name,
         "environment_notice": notice,
         "target": None if target is None else _target_in(target),
         "default_resources": _recorded(row.default_resources),
@@ -493,14 +494,17 @@ def _target_in(target: RunTarget) -> dict[str, Any] | None:
 def _template_environment(
     request: Request, column: dict[str, Any] | None
 ) -> tuple[str, str | None]:
-    """The run's environment by name, with its current values, or the default with a notice
-    when that name is gone or the file cannot be used now (api §5.4, A run keeps what it ran
-    with)."""
-    found, entries, default = view(request)
+    """The run's execution profile by name (its `environment`'s name, which a migration keeps),
+    or the default with a notice when that name is gone or the file cannot be used now (api
+    §5.4, A run keeps what it ran with; §5.13)."""
+    found, entries, default = profiles_view(request)
     name = None if column is None or column.get("state") != "recorded" else column.get("name")
-    if name is None or any(env.name == name for env, *_ in entries):
+    if name is None or any(p.name == name for p, _ in entries):
         return name or default, None
     if found.state not in ("ok", "missing"):  # only the built-ins are listed (CR-P3FU86BCD-03)
-        why = f"cannot be read: the environments file is {found.state}"
-        return default, f"The environment {name} of this run {why}; {default} is chosen."
-    return default, f"The environment {name} of this run no longer exists: {default} is chosen."
+        why = f"cannot be read: the execution profiles file is {found.state}"
+        return default, f"The execution profile {name} of this run {why}; {default} is chosen."
+    return (
+        default,
+        f"The execution profile {name} of this run no longer exists: {default} is chosen.",
+    )

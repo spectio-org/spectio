@@ -25,10 +25,10 @@ from referencing import Registry
 from referencing.exceptions import Unresolvable
 from sqlalchemy import Connection, insert
 
-from spectio.environments import PROFILE, DefaultResources, Environment, Name, snapshot
+from spectio.environments import PROFILE, DefaultResources, Name, Snapshot, snapshot
 from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
 from spectio_sdk.targets import RunTarget
-from spectio_server.api.environments import choose
+from spectio_server.api.computes import Chosen, choose
 from spectio_server.api.extras import check_resources, checked_config_file
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import (
@@ -83,7 +83,8 @@ class LaunchIn(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     profiles: list[str] = Field(default_factory=list, max_length=20)
     params: dict[str, JsonValue] = Field(default_factory=dict)
-    environment: Name | None = None  # by name; the default when absent (FU-P3-86c, api §5.4)
+    execution_profile: Name | None = None  # by name; the default when absent (#408, api §5.13)
+    environment: Name | None = None  # deprecated alias of `execution_profile`, one release
     target: TargetIn | None = None  # one module or one rule (api §5.10), behind a flag
     default_resources: DefaultResources | None = None  # api §5.7 (FU-P3-110a)
     config_file: str | None = None  # an absolute path, api §5.7
@@ -107,6 +108,15 @@ def _check(body: LaunchIn) -> None:
             raise Invalid(f"profiles.{i}", "a profile name: letters, digits, '.', '_' and '-'")
     if body.workflow.engine == "snakemake" and len(body.profiles) > 1:
         raise Invalid("profiles", "a Snakemake launch takes one profile")
+    if body.environment is not None and body.execution_profile is not None:
+        raise Invalid("environment", "send execution_profile only: environment is its old name")
+
+
+def _choose(request: Request, body: LaunchIn) -> Chosen:
+    """The execution profile of the launch, by `execution_profile` or its old name."""
+    if body.environment is not None:
+        return choose(request, body.environment, "environment")
+    return choose(request, body.execution_profile)
 
 
 def _check_params(
@@ -204,9 +214,9 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         merged = {name: given["value"] for name, given in defaults.items()} | body.params
         param_warnings = _check_params(found, merged, complete)
     # the values as resolved now: the run keeps them whatever the file says later (req. 18)
-    chosen = choose(request, body.environment)
-    environment = snapshot(chosen)
-    _check_mounts(request, body, chosen, resolved.directory)
+    chosen = _choose(request, body)
+    environment = snapshot(chosen.env)
+    _check_mounts(request, body, chosen.env, resolved.directory)
     resources = _resources(body, chosen)
     config_file, config_bytes = _config_file(request, body, resolved)
 
@@ -266,8 +276,8 @@ def _launch_module(
     )
     t = module.target
     found = Found([], "nextflow", t.name, t.version, [], None, "none")
-    chosen = choose(request, body.environment)
-    environment = snapshot(chosen)
+    chosen = _choose(request, body)
+    environment = snapshot(chosen.env)
     extras = (_resources(body, chosen), None, None)
     workflow = Workflow(location=module.location, revision=None, engine="nextflow")
     source = module_source(t)
@@ -352,7 +362,7 @@ def _create(
     return answer
 
 
-def _check_mounts(request: Request, body: LaunchIn, env: Environment, pipeline: Path) -> None:
+def _check_mounts(request: Request, body: LaunchIn, env: Snapshot, pipeline: Path) -> None:
     """The paths of `params` the containers would not see (built 2026-11-25, api §5.2), for a
     Snakemake launch with Apptainer deployed by Spectio and no profile (the profile owns its
     software). Read configuration only: no container, no stat, and a path a Snakefile builds
@@ -386,7 +396,7 @@ def _check_mounts(request: Request, body: LaunchIn, env: Environment, pipeline: 
         named = f"{named}, and {more} more"
     binds = ",".join(suggested_binds(safe))
     how = (
-        f" Add -B {binds} to the Apptainer options of environment {env.name},"
+        f" Add -B {binds} to the Apptainer options of compute {env.compute or env.name},"
         " or confirm to launch anyway."
         if binds
         else " Confirm to launch anyway."
@@ -394,13 +404,19 @@ def _check_mounts(request: Request, body: LaunchIn, env: Environment, pipeline: 
     raise Invalid("allow_unmounted", f"May not be visible in the containers: {named}.{how}")
 
 
-def _resources(body: LaunchIn, env: Environment) -> dict[str, Any] | None:
+def _resources(body: LaunchIn, chosen: Chosen) -> dict[str, Any] | None:
     """`default_resources` as sent, checked against the engine, the profile and the
-    environment's caps (api §5.7); None when absent or `{}`, which changes nothing."""
+    environment's caps (api §5.7); None when absent or `{}`, which changes nothing. The
+    profile's CPUs on SLURM, which the snapshot has no place for, are the default of a Nextflow
+    run that sends none (api §5.13)."""
     found = body.default_resources
+    cpus = chosen.profile.resources.cpus
+    if cpus is not None and chosen.env.executor == "slurm" and body.workflow.engine == "nextflow":
+        if found is None or found.cpus is None:
+            found = (found or DefaultResources()).model_copy(update={"cpus": cpus})
     if found is None or found == DefaultResources():
         return None
-    check_resources(found, body.workflow.engine, body.profiles, env)
+    check_resources(found, body.workflow.engine, body.profiles, chosen.env)
     return found.model_dump(mode="json")
 
 

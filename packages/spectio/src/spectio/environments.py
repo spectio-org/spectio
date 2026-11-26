@@ -6,9 +6,9 @@ of a closed character set, matched in full, or an integer in bounds, with strict
 `slurm` on a server set up with SLURM.
 
 A run keeps its own snapshot, `{name, label, executor, slurm, local, software,
-apptainer_args}`, in its manifest and in `runs.environment` with a `state`; every per-run
-decision reads that column, never `settings.executor` or an `environments` row
-(SEC-PRE-FU86-R1-01).
+apptainer_args, compute, execution_profile}` (the last two from #408: `spectio.computes`), in its
+manifest and in `runs.environment` with a `state`; every per-run decision reads that column,
+never `settings.executor` or an `environments` row (SEC-PRE-FU86-R1-01).
 """
 
 import re
@@ -147,6 +147,10 @@ class Snapshot(_Strict):
     local: LocalValues | None = None
     software: Software = ["conda", "apptainer"]
     apptainer_args: ApptainerArgs = ""
+    # the compute and execution profile it was built from (#408); null before, and for a run
+    # started from an environment of the old file
+    compute: Name | None = None
+    execution_profile: Name | None = None
 
     @model_validator(mode="after")
     def _one_executor(self) -> "Snapshot":
@@ -205,7 +209,17 @@ def snapshot(env: Snapshot) -> dict[str, Any]:
 
 
 _UNKNOWN = dict.fromkeys(
-    ("name", "label", "executor", "slurm", "local", "software", "apptainer_args")
+    (
+        "name",
+        "label",
+        "executor",
+        "slurm",
+        "local",
+        "software",
+        "apptainer_args",
+        "compute",
+        "execution_profile",
+    )
 )
 
 

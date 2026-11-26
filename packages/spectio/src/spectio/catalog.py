@@ -12,13 +12,22 @@ or contacts a remote.
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from spectio import envfile, locations
 from spectio.environments import Label, Name, ProfileName
 
 FILE = "catalog.toml"
 MAX_ENTRIES = 100
+MAX_PROFILES = 20
 
 Location = Annotated[str, AfterValidator(locations.check_location)]
 ParamsFile = Annotated[str, AfterValidator(locations.check_params_file)]
@@ -35,6 +44,18 @@ class Entry(BaseModel):
     revision: str | None = Field(None, validate_default=True)
     profile: ProfileName | None = None
     params_file: ParamsFile | None = None
+    # the execution profiles this pipeline offers and the one Launch selects (#408); saving
+    # checks that each exists (`spectio_server.api.catalog`)
+    profiles: Annotated[list[Name], Field(min_length=1, max_length=MAX_PROFILES)] | None = None
+    default_profile: Name | None = None
+
+    @model_validator(mode="after")
+    def _profiles(self) -> "Entry":
+        if self.profiles is not None and len(set(self.profiles)) != len(self.profiles):
+            raise ValueError("profiles names a profile twice")
+        if self.profiles is not None and self.default_profile not in {*self.profiles, None}:
+            raise ValueError("default_profile is not one of profiles")
+        return self
 
     @field_validator("revision")
     @classmethod

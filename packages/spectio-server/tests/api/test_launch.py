@@ -257,7 +257,13 @@ def test_launch_creates_run_and_command(
 
     (leased,) = StoreSink(writer, settings.runs_root).lease_commands()  # what the runner gets
     assert leased.launch.engine == "nextflow"
-    local = {"name": "local", "label": "This machine", "executor": "local"}
+    local = {
+        "name": "local",
+        "label": "This machine",
+        "executor": "local",
+        "compute": "local",
+        "execution_profile": "local",
+    }
     assert LaunchPayload.model_validate(leased.payload) == LaunchPayload.model_validate(
         {"location": location, "profiles": ["local"], "params": {"chunks": 2}, "environment": local}
     )
@@ -359,7 +365,7 @@ def test_launch_snakemake_refuses_paths_the_containers_do_not_see(
     assert error["message"] == (
         "May not be visible in the containers: /shared/scratch/0.fastq, /shared/scratch/1.fastq,"
         " /shared/scratch/2.fastq, /shared/scratch/3.fastq, /shared/scratch/4.fastq,"
-        " and 2 more. Add -B /shared to the Apptainer options of environment local,"
+        " and 2 more. Add -B /shared to the Apptainer options of compute local,"
         " or confirm to launch anyway."
     )
 
@@ -376,7 +382,7 @@ def test_launch_snakemake_refusal_echoes_only_plain_paths(
     (error,) = response.json()["errors"]
     assert error["message"] == (
         "May not be visible in the containers: /shared/scratch/0.fastq, and 1 more."
-        " Add -B /shared to the Apptainer options of environment local,"
+        " Add -B /shared to the Apptainer options of compute local,"
         " or confirm to launch anyway."
     )
 
@@ -431,21 +437,26 @@ def test_launch_nextflow_is_not_checked(
     assert response.status_code == 201, response.text
 
 
+def mylab(client: TestClient, compute: dict[str, Any]) -> None:
+    """A local compute `mylab` with `compute`'s fields, and the profile of the same name."""
+    body = {"name": "mylab", "label": "My lab", "executor": "local", **compute}
+    assert client.post("/api/v1/computes", json=body).status_code == 201
+    profile = {"name": "mylab", "compute": "mylab", "software": compute.get("software")}
+    profile = {k: v for k, v in profile.items() if v is not None}
+    assert client.post("/api/v1/execution-profiles", json=profile).status_code == 201
+
+
 def test_launch_snakemake_without_apptainer_is_not_checked(
     authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     without_site_binds(monkeypatch)
-    created = authed_client.post(
-        "/api/v1/environments",
-        json={"name": "mylab", "label": "My lab", "executor": "local", "software": ["conda"]},
-    )
-    assert created.status_code == 201, created.text
+    mylab(authed_client, {"software": ["conda"]})
     response = launch(
         authed_client,
         str(synthetic / "snakemake"),
         "snakemake",
         params={"reads0": "/shared/scratch/0.fastq"},
-        environment="mylab",
+        execution_profile="mylab",
     )
     assert response.status_code == 201, response.text
 
@@ -454,22 +465,13 @@ def test_launch_snakemake_sees_the_environment_binds(
     authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     without_site_binds(monkeypatch)
-    created = authed_client.post(
-        "/api/v1/environments",
-        json={
-            "name": "mylab",
-            "label": "My lab",
-            "executor": "local",
-            "apptainer_args": "--bind=/shared/scratch",
-        },
-    )
-    assert created.status_code == 201, created.text
+    mylab(authed_client, {"apptainer_args": "--bind=/shared/scratch"})
     response = launch(
         authed_client,
         str(synthetic / "snakemake"),
         "snakemake",
         params={"reads0": "/shared/scratch/0.fastq"},
-        environment="mylab",
+        execution_profile="mylab",
     )
     assert response.status_code == 201, response.text
 

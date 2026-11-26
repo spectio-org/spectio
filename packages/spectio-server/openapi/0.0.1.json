@@ -16,6 +16,17 @@
       "CatalogItem": {
         "description": "One entry of `GET /catalog` (FU-P3-87b, api \u00a75.6): a named pipeline location with its\nlaunch defaults.",
         "properties": {
+          "default_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Profile"
+          },
           "engine": {
             "enum": [
               "nextflow",
@@ -69,6 +80,20 @@
             ],
             "title": "Profile"
           },
+          "profiles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profiles"
+          },
           "revision": {
             "anyOf": [
               {
@@ -89,6 +114,8 @@
           "revision",
           "profile",
           "params_file",
+          "profiles",
+          "default_profile",
           "etag"
         ],
         "title": "CatalogItem",
@@ -251,6 +278,239 @@
           "text"
         ],
         "title": "Command",
+        "type": "object"
+      },
+      "Compute": {
+        "additionalProperties": false,
+        "properties": {
+          "apptainer_args": {
+            "default": "",
+            "title": "Apptainer Args",
+            "type": "string"
+          },
+          "executor": {
+            "enum": [
+              "local",
+              "slurm"
+            ],
+            "title": "Executor",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "local": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalValues"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slurm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComputeSlurm-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "software": {
+            "default": [
+              "conda",
+              "apptainer"
+            ],
+            "items": {
+              "enum": [
+                "conda",
+                "apptainer"
+              ],
+              "type": "string"
+            },
+            "title": "Software",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "executor"
+        ],
+        "title": "Compute",
+        "type": "object"
+      },
+      "ComputeItem": {
+        "description": "One compute of `GET /computes` (#408, api \u00a75.13): a built-in or one of the file's;\n`usable: false` with its reason, such as a SLURM one on a local server.",
+        "properties": {
+          "apptainer_args": {
+            "title": "Apptainer Args",
+            "type": "string"
+          },
+          "builtin": {
+            "title": "Builtin",
+            "type": "boolean"
+          },
+          "etag": {
+            "title": "Etag",
+            "type": "string"
+          },
+          "executor": {
+            "enum": [
+              "local",
+              "slurm"
+            ],
+            "title": "Executor",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "local": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentLocal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slurm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComputeSlurm-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "software": {
+            "items": {
+              "enum": [
+                "conda",
+                "apptainer"
+              ],
+              "type": "string"
+            },
+            "title": "Software",
+            "type": "array"
+          },
+          "unusable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unusable Reason"
+          },
+          "usable": {
+            "title": "Usable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "executor",
+          "slurm",
+          "local",
+          "software",
+          "apptainer_args",
+          "builtin",
+          "usable",
+          "unusable_reason",
+          "etag"
+        ],
+        "title": "ComputeItem",
+        "type": "object"
+      },
+      "ComputeList": {
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/EnvironmentsFile"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ComputeItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "file"
+        ],
+        "title": "ComputeList",
+        "type": "object"
+      },
+      "ComputeSlurm-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          }
+        },
+        "title": "ComputeSlurm",
+        "type": "object"
+      },
+      "ComputeSlurm-Output": {
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          }
+        },
+        "required": [
+          "account"
+        ],
+        "title": "ComputeSlurm",
         "type": "object"
       },
       "DefaultResources": {
@@ -466,6 +726,17 @@
       "Entry": {
         "additionalProperties": false,
         "properties": {
+          "default_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Profile"
+          },
           "engine": {
             "enum": [
               "nextflow",
@@ -515,6 +786,22 @@
             ],
             "title": "Profile"
           },
+          "profiles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profiles"
+          },
           "revision": {
             "anyOf": [
               {
@@ -533,220 +820,6 @@
           "location"
         ],
         "title": "Entry",
-        "type": "object"
-      },
-      "Environment": {
-        "additionalProperties": false,
-        "description": "A definition: a snapshot's fields and the default profile of each engine.",
-        "properties": {
-          "apptainer_args": {
-            "default": "",
-            "title": "Apptainer Args",
-            "type": "string"
-          },
-          "executor": {
-            "enum": [
-              "local",
-              "slurm"
-            ],
-            "title": "Executor",
-            "type": "string"
-          },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label"
-          },
-          "local": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LocalValues"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "profiles": {
-            "$ref": "#/components/schemas/Profiles",
-            "default": {}
-          },
-          "slurm": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SlurmValues"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "software": {
-            "default": [
-              "conda",
-              "apptainer"
-            ],
-            "items": {
-              "enum": [
-                "conda",
-                "apptainer"
-              ],
-              "type": "string"
-            },
-            "title": "Software",
-            "type": "array"
-          }
-        },
-        "required": [
-          "name",
-          "executor"
-        ],
-        "title": "Environment",
-        "type": "object"
-      },
-      "EnvironmentItem": {
-        "description": "One environment of `GET /environments` (FU-P3-86d, api \u00a75.4): a built-in or one of the\nfile's; `usable: false` with its reason, such as a SLURM one on a local server.",
-        "properties": {
-          "apptainer_args": {
-            "title": "Apptainer Args",
-            "type": "string"
-          },
-          "builtin": {
-            "title": "Builtin",
-            "type": "boolean"
-          },
-          "default": {
-            "title": "Default",
-            "type": "boolean"
-          },
-          "etag": {
-            "title": "Etag",
-            "type": "string"
-          },
-          "executor": {
-            "enum": [
-              "local",
-              "slurm"
-            ],
-            "title": "Executor",
-            "type": "string"
-          },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label"
-          },
-          "local": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EnvironmentLocal"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "profiles": {
-            "$ref": "#/components/schemas/EnvironmentProfiles"
-          },
-          "slurm": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EnvironmentSlurm"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "software": {
-            "items": {
-              "enum": [
-                "conda",
-                "apptainer"
-              ],
-              "type": "string"
-            },
-            "title": "Software",
-            "type": "array"
-          },
-          "unusable_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Unusable Reason"
-          },
-          "usable": {
-            "title": "Usable",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "name",
-          "label",
-          "executor",
-          "builtin",
-          "default",
-          "usable",
-          "unusable_reason",
-          "slurm",
-          "local",
-          "software",
-          "apptainer_args",
-          "profiles",
-          "etag"
-        ],
-        "title": "EnvironmentItem",
-        "type": "object"
-      },
-      "EnvironmentList": {
-        "properties": {
-          "default": {
-            "title": "Default",
-            "type": "string"
-          },
-          "file": {
-            "$ref": "#/components/schemas/EnvironmentsFile"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/EnvironmentItem"
-            },
-            "title": "Items",
-            "type": "array"
-          }
-        },
-        "required": [
-          "items",
-          "default",
-          "file"
-        ],
-        "title": "EnvironmentList",
         "type": "object"
       },
       "EnvironmentLocal": {
@@ -941,6 +1014,150 @@
           "ticket"
         ],
         "title": "Exchange",
+        "type": "object"
+      },
+      "ExecutionProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "compute": {
+            "title": "Compute",
+            "type": "string"
+          },
+          "engine_profiles": {
+            "$ref": "#/components/schemas/Profiles",
+            "default": {}
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "resources": {
+            "$ref": "#/components/schemas/Resources-Input",
+            "default": {}
+          },
+          "software": {
+            "default": [
+              "conda",
+              "apptainer"
+            ],
+            "items": {
+              "enum": [
+                "conda",
+                "apptainer"
+              ],
+              "type": "string"
+            },
+            "title": "Software",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "compute"
+        ],
+        "title": "ExecutionProfile",
+        "type": "object"
+      },
+      "ExecutionProfileItem": {
+        "description": "One execution profile of `GET /execution-profiles` (#408, api \u00a75.13): the resources one\nrun asks of one compute.",
+        "properties": {
+          "builtin": {
+            "title": "Builtin",
+            "type": "boolean"
+          },
+          "compute": {
+            "title": "Compute",
+            "type": "string"
+          },
+          "default": {
+            "title": "Default",
+            "type": "boolean"
+          },
+          "engine_profiles": {
+            "$ref": "#/components/schemas/EnvironmentProfiles"
+          },
+          "etag": {
+            "title": "Etag",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "resources": {
+            "$ref": "#/components/schemas/ProfileResources"
+          },
+          "software": {
+            "items": {
+              "enum": [
+                "conda",
+                "apptainer"
+              ],
+              "type": "string"
+            },
+            "title": "Software",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "compute",
+          "resources",
+          "software",
+          "engine_profiles",
+          "builtin",
+          "default",
+          "etag"
+        ],
+        "title": "ExecutionProfileItem",
+        "type": "object"
+      },
+      "ExecutionProfileList": {
+        "properties": {
+          "default": {
+            "title": "Default",
+            "type": "string"
+          },
+          "file": {
+            "$ref": "#/components/schemas/EnvironmentsFile"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionProfileItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "default",
+          "file"
+        ],
+        "title": "ExecutionProfileList",
         "type": "object"
       },
       "Failure": {
@@ -1731,6 +1948,17 @@
             ],
             "title": "Environment"
           },
+          "execution_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Profile"
+          },
           "name": {
             "anyOf": [
               {
@@ -1836,6 +2064,10 @@
             ],
             "title": "Environment Notice"
           },
+          "execution_profile": {
+            "title": "Execution Profile",
+            "type": "string"
+          },
           "non_default": {
             "items": {
               "type": "string"
@@ -1882,6 +2114,7 @@
           "non_default",
           "code_loading",
           "environment",
+          "execution_profile",
           "environment_notice",
           "target",
           "default_resources",
@@ -2500,6 +2733,86 @@
         "title": "ProcessOutputs",
         "type": "object"
       },
+      "ProfileResources": {
+        "properties": {
+          "constraint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint"
+          },
+          "cpus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "gres": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gres"
+          },
+          "mem_mib": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Mib"
+          },
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition"
+          },
+          "time_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Min"
+          }
+        },
+        "required": [
+          "partition",
+          "constraint",
+          "gres",
+          "time_min",
+          "mem_mib",
+          "cpus"
+        ],
+        "title": "ProfileResources",
+        "type": "object"
+      },
       "Profiles": {
         "additionalProperties": false,
         "properties": {
@@ -2617,7 +2930,87 @@
         "title": "Requested",
         "type": "object"
       },
-      "Resources": {
+      "Resources-Input": {
+        "additionalProperties": false,
+        "description": "What a run asks for; null is the engine's or SLURM's default.",
+        "properties": {
+          "constraint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint"
+          },
+          "cpus": {
+            "anyOf": [
+              {
+                "maximum": 256.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "gres": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gres"
+          },
+          "mem_mib": {
+            "anyOf": [
+              {
+                "maximum": 4194304.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Mib"
+          },
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition"
+          },
+          "time_min": {
+            "anyOf": [
+              {
+                "maximum": 43200.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Min"
+          }
+        },
+        "title": "Resources",
+        "type": "object"
+      },
+      "Resources-Output": {
         "description": "Requested (`cpus`, `memory_bytes`, `time_s`) and measured values of the task's last\nattempt; `source` names where the measures come from (P1 Task 29). Unknown: null.",
         "properties": {
           "cpu_percent": {
@@ -3542,6 +3935,28 @@
             ],
             "title": "Apptainer Args"
           },
+          "compute": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compute"
+          },
+          "execution_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Profile"
+          },
           "executor": {
             "anyOf": [
               {
@@ -3635,6 +4050,8 @@
           "local",
           "software",
           "apptainer_args",
+          "compute",
+          "execution_profile",
           "state"
         ],
         "title": "RunEnvironment",
@@ -4322,83 +4739,6 @@
         "title": "SlurmRequest",
         "type": "object"
       },
-      "SlurmValues": {
-        "additionalProperties": false,
-        "properties": {
-          "account": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account"
-          },
-          "constraint": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Constraint"
-          },
-          "gres": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Gres"
-          },
-          "mem_mib": {
-            "anyOf": [
-              {
-                "maximum": 4194304.0,
-                "minimum": 1.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Mem Mib"
-          },
-          "partition": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Partition"
-          },
-          "time_min": {
-            "anyOf": [
-              {
-                "maximum": 43200.0,
-                "minimum": 1.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Time Min"
-          }
-        },
-        "title": "SlurmValues",
-        "type": "object"
-      },
       "SourceBlock": {
         "properties": {
           "code": {
@@ -4635,7 +4975,7 @@
             "type": "string"
           },
           "resources": {
-            "$ref": "#/components/schemas/Resources"
+            "$ref": "#/components/schemas/Resources-Output"
           },
           "slurm": {
             "anyOf": [
@@ -5496,30 +5836,30 @@
         ]
       }
     },
-    "/api/v1/environments": {
+    "/api/v1/computes": {
       "get": {
-        "operationId": "list_environments_api_v1_environments_get",
+        "operationId": "list_computes_api_v1_computes_get",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvironmentList"
+                  "$ref": "#/components/schemas/ComputeList"
                 }
               }
             },
             "description": "Successful Response"
           }
         },
-        "summary": "List Environments"
+        "summary": "List Computes"
       },
       "post": {
-        "operationId": "create_environment_api_v1_environments_post",
+        "operationId": "create_compute_api_v1_computes_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Environment"
+                "$ref": "#/components/schemas/Compute"
               }
             }
           },
@@ -5530,7 +5870,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvironmentItem"
+                  "$ref": "#/components/schemas/ComputeItem"
                 }
               }
             },
@@ -5547,12 +5887,12 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Create Environment"
+        "summary": "Create Compute"
       }
     },
-    "/api/v1/environments/{name}": {
+    "/api/v1/computes/{name}": {
       "delete": {
-        "operationId": "delete_environment_api_v1_environments__name__delete",
+        "operationId": "delete_compute_api_v1_computes__name__delete",
         "parameters": [
           {
             "in": "path",
@@ -5579,10 +5919,10 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Delete Environment"
+        "summary": "Delete Compute"
       },
       "get": {
-        "operationId": "get_environment_api_v1_environments__name__get",
+        "operationId": "get_compute_api_v1_computes__name__get",
         "parameters": [
           {
             "in": "path",
@@ -5599,7 +5939,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvironmentItem"
+                  "$ref": "#/components/schemas/ComputeItem"
                 }
               }
             },
@@ -5616,10 +5956,10 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Get Environment"
+        "summary": "Get Compute"
       },
       "put": {
-        "operationId": "replace_environment_api_v1_environments__name__put",
+        "operationId": "replace_compute_api_v1_computes__name__put",
         "parameters": [
           {
             "in": "path",
@@ -5635,7 +5975,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Environment"
+                "$ref": "#/components/schemas/Compute"
               }
             }
           },
@@ -5646,7 +5986,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvironmentItem"
+                  "$ref": "#/components/schemas/ComputeItem"
                 }
               }
             },
@@ -5663,39 +6003,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Replace Environment"
-      }
-    },
-    "/api/v1/environments/{name}:make-default": {
-      "post": {
-        "operationId": "make_default_api_v1_environments__name__make_default_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "title": "Name",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Make Default"
+        "summary": "Replace Compute"
       }
     },
     "/api/v1/events/stream": {
@@ -5707,6 +6015,176 @@
           }
         },
         "summary": "Events Stream"
+      }
+    },
+    "/api/v1/execution-profiles": {
+      "get": {
+        "operationId": "list_profiles_api_v1_execution_profiles_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionProfileList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Profiles"
+      },
+      "post": {
+        "operationId": "create_profile_api_v1_execution_profiles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecutionProfile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionProfileItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Profile"
+      }
+    },
+    "/api/v1/execution-profiles/{name}": {
+      "delete": {
+        "operationId": "delete_profile_api_v1_execution_profiles__name__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Profile"
+      },
+      "get": {
+        "operationId": "get_profile_api_v1_execution_profiles__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionProfileItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Profile"
+      },
+      "put": {
+        "operationId": "replace_profile_api_v1_execution_profiles__name__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecutionProfile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionProfileItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Profile"
       }
     },
     "/api/v1/features": {

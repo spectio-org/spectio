@@ -322,6 +322,8 @@ Body of `POST /runs` and `POST /runs:validate` (example above).
 | `idempotency_key` | header `Idempotency-Key` (§4.1) |
 | `notify` | `{webhook_ids: []}`; `422 not-in-this-version` when the server has no webhooks |
 
+*Built 2026-11-26 (#408):* `POST /runs` takes `execution_profile` by name, and `environment` stays one release as its old name; a body with both is `422`. The snapshot is built from the profile and its compute, §5.13.
+
 *0.0.1 (FU-P3-110, design, assumed — pending Thomas, inbox #151):* `POST /runs` also takes `default_resources` and `config_file`, specified in §5.7; the `resources` row above stays the per-process list of §5.1, which is 0.0.2.
 
 *Built 2026-11-25, container paths check:* before a launch whose engine is Snakemake, whose chosen environment deploys with Apptainer and that has no profile (a profile owns the software), the server walks `params` and collects every absolute path in it — every string value in the object and its nested dicts and lists, normalised, except the root `/` itself, which every container has and which a pipeline may hold as a separator setting (MosaiCatcher pipeline 2.5.1, `config/config.yaml:667`, `abs_path: "/"`, read 2026-11-25), reading at most 10,000 values and at most 32 levels of nesting; the dicts and lists between the values are walked but not counted, and the launch body's 1 MiB cap (the `413` of a write) bounds how many there can be. A URL is not a path. Each path must be visible inside the containers, which the check decides from configuration only: a path is visible when it is under (or is) the user's home, `/tmp`, the whole runs root — the check reads it as one root, and Apptainer mounts only the launch directory under it, so a path in another run's directory is not refused —, the pipeline's own directory (Snakemake binds it), one of the fixed system roots that are in the image or mounted by Apptainer itself (`/dev`, `/proc`, `/sys`, `/usr`, `/opt`, `/etc`, `/bin`, `/sbin`, `/lib`, `/lib64`), a root of a bind in the environment's Apptainer `-B`/`--bind` options, a root of a `bind path` of the site's `apptainer.conf` (the first readable regular file of `/etc/apptainer/apptainer.conf` and `/etc/singularity/singularity.conf`, read at most 256 KiB, its last line dropped when the cap cuts it; a compute node shares the login node's `apptainer.conf` **[to be validated]**), or a root of `APPTAINER_BIND` (`SINGULARITY_BIND` as the fallback). A bind's root is its destination when it names one (`src:dst[:opts]`, where a bare option such as `ro` is not a destination), else its source: a bind mounts `src` at `dst`, and the container sees the files at `dst`. Apptainer mounts the user's home, `/tmp` and the current working directory into its containers by default ([bind paths and mounts](https://apptainer.org/docs/user/latest/bind_paths_and_mounts.html), read 2026-11-25). An invisible path the launch uses is refused before anything is written: `422 validation-failed` on the new boolean field `allow_unmounted` (absent or `false`), saying "May not be visible in the containers", naming up to five paths and the suggested bind — the first path component of each — with the environment's name; only a path of the plain form `/[A-Za-z0-9._+@/-]+` is named or suggested, the others are counted only. `allow_unmounted: true` launches anyway. The check is advisory, not a security control: the user can confirm it away, and it reads `params` and the configuration, not the Snakefile, so a path a Snakefile builds inside itself is not seen.
@@ -408,6 +410,8 @@ The server stores the merged manifest of each launch as `run_inputs.kind = manif
 - *Built 2026-11-09, FU-P3-102b ([review record](../reviews/code/P3-fu102b.md)):* steps 0 and 9 of the table, the CSP of req. 19 and the session and cross-site tests on both `as` values, on the results and work-directory raw routes. **Step 0** is `refuse_script`, first on both routes; it refuses the four destinations the table names. **Step 9** is a `BoundedSemaphore(3)` in `app.state.imaging_slots`, taken without waiting before the pool; a read holds its slot until its answer ends, aborts or loses its client **and** every pool job it started has returned (`on_done` of `FilePool.run`), so reads stuck on a stalled mount keep their slots and cannot take every file reader (SEC-P3FU102B-R2-01); a client that goes away gives its slot back at once, with no garbage collection (CR-P3FU102B-01). The order of the table is kept for the answers but not for the slot (assumed, [inbox #138](../reviews/inbox.md#138-assumed-step-0-refuses-four-destinations-slot-order-and-refused-names-fu-p3-102b)): the slot is taken before steps 1, 7, 8 and 10, as the Caps line says, so while all three are busy a read that would be `404`, `413` or `422` is `503` (CR-P3FU102B-R2-02). The cap of step 1 and the imaging dispatch are one decision, steps 4 and 5 run before step 6's attachment, and two `Range` header fields are `422` on `Range` (closes SEC-P3FU102A-01 and -02, CR-P3FU102A-01). Known limits, none blocking: step 0 does not refuse `audioworklet`, `paintworklet` nor `json`, which the MIME types and `nosniff` already stop (assumed, inbox #138); a name that steps 4 and 5 will refuse still takes a slot and a 4-byte read when `as=tiff` carries a `Range` (SEC-P3FU102B-R3-04, inbox #138); an `on_done` that raised would end its pool thread, and `BoundedSemaphore` only raises on a double release, which no path makes today (CR-P3FU102B-R3-02, proposed for a server follow-up).
 
 ### 5.4 Environments (0.0.1)
+
+*Superseded by [§5.13](#513-computes-and-execution-profiles-408-2026-11-26) from #408: an environment is split into a compute and an execution profile, `environments.toml` is migrated and its routes ended; what this section says about files, states and writes still applies to them.*
 
 *User guide:* [Environments](../usage/environments.md), what each state looks like on a real server.
 
@@ -615,6 +619,8 @@ All four answer `{items: []}` or empty `groups` with `200` when nothing matches;
     - inspect with a params file that is missing, a symbolic link, a FIFO, a directory, a list, over 256 KiB, not UTF-8, a YAML alias, nested 33 levels, and 10,000 nested `[`: each gives `values: null` and its `error`;
     - `test_req18_catalog_params_hidden_key_listed`: a hidden field's key and a key with no field come back in `values` and are listed by the screen; `test_req18_catalog_params_code_loading_flagged`: `custom_config_base` in the file, and a group-writable params file of a local pipeline, appear in `code_loading` with `writable_by_others`;
     - the routes absent where `no_api_reason` holds; the OpenAPI snapshot gains the five routes and the inspect field.
+
+*Built 2026-11-26 (#408):* an entry takes `profiles` (the execution profiles it offers) and `default_profile`, checked against the existing profiles on `POST` and `PUT`, §5.13; deleting a profile that an entry names is `409`.
 
 *Built 2026-11-25, Nextflow entry scripts ([issue #351](https://github.com/spectio-org/spectio/issues/351), [inbox #161](../reviews/inbox.md) finding 17):* a Nextflow pipeline whose entry script is not `main.nf` (a repository with `main_cellpose.nf`, `main_eubibridge_single.nf`, … and no `main.nf`) launches with the script the user chooses.
 - **Inspect** answers `main_scripts`: `main.nf` first when it is a regular file, then, by name, each other `*.nf` regular file at the pipeline's root, reached through no symbolic link, whose text holds an unnamed `workflow {` block (a library of named workflows is not listed). At most 50 names are read, each up to 1 MiB; a larger or unreadable file is left out. A directory with no `main.nf` and at least one such script is a Nextflow pipeline: `engine` is `nextflow`, `engine_files` still lists only the files of the table above. So a Snakemake repository with a root `*.nf` file that holds an unnamed `workflow {` block is detected as both, and `engine` is `null`: the user chooses. The reads are bounded: at most 1,000 matching names are collected before sorting, and at most 8 MiB are read in all.
@@ -833,6 +839,59 @@ Not every pipeline sets every value: an nf-core pipeline leaves `outdir` and `in
 **Modules.** A module's inputs come from `nextflow module view -o json` or `meta.yml` (§5.10), which mark none as optional. `POST /runs` refuses a module run that leaves an input out, with `422 params.<input>: "the module needs input <input>; give [] to leave an optional one empty"`. Test inputs for a module (its `tests/main.nf.test`) are **not** read in 0.0.1.
 
 **Launch form.** It shows the effective defaults as each field's value, with the source under it ("from profile test", or "from the chosen profile" with several; "from the pipeline's config"; "schema default"; "from the params file"). Choosing other profiles asks inspect again. It sends only the values the user changed. A required field that no source fills is an error that disables Launch when `defaults_complete`; otherwise "Before Launch" lists it as a warning and Launch stays enabled. Owned by [ui-spec](ui-spec.md) for the look; this section owns the rules.
+
+### 5.13 Computes and execution profiles (#408, 2026-11-26)
+
+*Built 2026-11-26 ([issue #408](https://github.com/spectio-org/spectio/issues/408), server half; the screens follow in the web half).* It splits an environment (§5.4) in two, so that a pipeline of the catalog (§5.6) can offer several ways to run on one backend. This section owns the model, the files, the routes and the launch rule; §5.4 keeps what it says about reads, the five states, writes and the lock, which these files share (`spectio.envfile`).
+
+**A compute** is a backend; **an execution profile** is what one run asks of one compute.
+
+| Compute field | Rule |
+|---|---|
+| `name`, `label` | the rules of §5.4; `local`, `slurm` and `new` are reserved |
+| `executor` | `local` or `slurm`; `slurm` is accepted on a server set up with SLURM only (`422` on `executor`, as §5.4) |
+| `slurm` | with `executor = "slurm"` only: `{account}`, a SLURM name or null |
+| `local` | with `executor = "local"` only: `{cpus, mem_mib}`, the most the tasks may request at once (§5.4) |
+| `software` | the methods available on it, `conda` and `apptainer`, each at most once; default both |
+| `apptainer_args` | the rule of §5.4 |
+
+| Execution profile field | Rule |
+|---|---|
+| `name`, `label` | as above |
+| `compute` | the name of an existing compute: `422` on `compute` when there is none, or when it is a SLURM one on a server with no SLURM |
+| `resources` | every key optional, null is the engine's or SLURM's default: `partition`, `constraint`, `gres` (the rules of §5.4 and §5.7's `#401` values), `time_min`, `mem_mib`, `cpus` (the bounds of §5.4) |
+| `software` | a subset of the compute's `software`, default both: `422` on `software` otherwise |
+| `engine_profiles` | `{nextflow, snakemake}`, the default engine profile of each, as §5.4's `profiles` |
+
+- **On a local compute** `partition`, `constraint`, `gres` and `time_min` have no meaning and are refused (`422` on `resources.<key>`); `cpus` and `mem_mib` are refused above the compute's caps. *Decision of this lot:* `time_min` is refused on a local compute although the contract listed only the first three, as a local run has no time limit to set.
+- **Files**: `computes.toml` (`[computes.<name>]`, at most 32) and `execution-profiles.toml` (`[execution-profiles.<name>]`, at most 64, with a top-level `default`), next to `spectio.toml`, read and written by the code of §5.4 and §5.6. Strict, as those files: a bad value makes the file `invalid`.
+- **Built-ins**: one compute and one profile per built-in environment, of the same name: `slurm` (on a SLURM server) and `local`, read-only (`409 compute-builtin`, `execution-profile-builtin`). The built-in `slurm` profile carries the `[slurm] partition` of `spectio.toml` (the contract said "empty resources"; the partition has no other place), its compute the account.
+- **The default profile** is the `default` of `execution-profiles.toml` (carried over by the migration), else the built-in of the server's kind. No `:make-default` route is built: a deleted default falls back to the built-in, and the file is the only way to set one.
+
+**Routes** (all under `/api/v1`, with the session, Host, cross-site and write checks of req. 2 to 7, mounted in `create_app`'s conditional set; `PUT` and `DELETE` need `If-Match`, as §5.4):
+
+| Route | Answer |
+|---|---|
+| `GET /computes`, `GET /computes/{name}` | `{items, file}`, built-ins first; an item is the compute with `builtin`, `usable`, `unusable_reason` and `etag` |
+| `POST /computes`, `PUT /computes/{name}` | the compute; `409 compute-exists`, `compute-file-unusable`, `compute-file-changed` |
+| `DELETE /computes/{name}` | `204`; `409 compute-in-use` while a profile names it |
+| `GET /execution-profiles`, `GET /execution-profiles/{name}` | `{items, default, file}`; an item is the profile with `builtin`, `default` and `etag` |
+| `POST /execution-profiles`, `PUT /execution-profiles/{name}` | the profile; `409 execution-profile-exists`, `execution-profile-file-unusable`, `execution-profile-file-changed` |
+| `DELETE /execution-profiles/{name}` | `204`; `409 execution-profile-in-use` while a catalog entry names it in `profiles` or `default_profile` |
+
+The `/environments` routes, the `environments-*` problems and `:make-default` ended with this section: `environments.toml` is read once, to migrate it. A compute whose `software` later lacks what a profile asks is not refused on `PUT`; the launch refuses the pair.
+
+**A catalog entry** (§5.6) takes `profiles` (the profiles it offers, 1 to 20 distinct names, or null for all) and `default_profile` (null, or one of `profiles` when both are set). `POST` and `PUT /catalog` refuse a name that is no built-in or file profile (`422` on `profiles.<i>` or `default_profile`); the check runs on save only, so a profile deleted from its file by hand leaves the entry as it is.
+
+**Launch** (`POST /runs`, §5.2). The body takes `execution_profile`, a profile name, default the default profile. `environment` stays accepted for one release as its old name (a migration keeps the names); a body with both is `422` on `environment`. The launch reads the profile and its compute (`422` on `execution_profile`, or `environment` when that name was sent, when the profile or its compute is missing or not usable, or when `check` fails: the profile's software is not in the compute's, a SLURM-only value on a local compute, caps exceeded), and builds the snapshot of §5.4 from them:
+- `name` and `label` are the profile's (the label falling back to the compute's), `executor`, `apptainer_args` and the account come from the compute, `software` from the profile;
+- on SLURM, `slurm = {partition, account, time_min, mem_mib, constraint, gres}` from the profile and the compute (null when all are unset); on a local compute, `local = {cpus, mem_mib}` is the compute's caps with the profile's `cpus` and `mem_mib` over them;
+- the snapshot gains two names, `compute` and `execution_profile`, null in a run recorded before; `runs.environment`, the manifest, the launch command, `RunEnvironment` and the head script read the same shape as before, so no run changes;
+- the snapshot has no place for the profile's `cpus` on SLURM: for a Nextflow launch that sends no `default_resources.cpus` it becomes that default (§5.7), for a Snakemake one it is not applied (Snakemake takes CPUs from each rule's threads).
+
+**Migration**, on the first read of either file in a server process, for each file that does not exist yet and when `environments.toml` is `ok` (otherwise it migrates nothing and is tried again): each environment *E* becomes the compute *E* (executor, account, local caps, software, `apptainer_args`) and the profile *E* (compute *E*; partition, constraint, GRES, time and memory; software; the default engine profiles), and `default` goes to `execution-profiles.toml`. `environments.toml` is left as it is. It is idempotent: a file that exists is never rewritten, and a write that loses a race to another request keeps the winner's. `resolve` of the migrated pair is the snapshot the environment gave, plus the two names (`tests/api/test_computes.py`, `packages/spectio/tests/test_computes.py`).
+
+**Launch template** (`GET /runs/{id}:launch-template`) preselects the run's profile by name in `environment` and in the new `execution_profile`, or the default with a notice when it is gone.
 
 ## 6. Identity, tenancy and permissions
 
