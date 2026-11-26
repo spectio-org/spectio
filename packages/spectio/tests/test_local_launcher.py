@@ -553,8 +553,7 @@ def test_a_snakemake_failure_carries_its_own_last_lines(
     assert failure is not None and failure.class_ == "engine_fault"
     assert failure.message.startswith("Snakemake exited with code 1 before any job failed.")
     assert (
-        "Building DAG of jobs...\n"
-        "ApptainerError: image /shared/containers/align.sif not found"
+        "Building DAG of jobs...\nApptainerError: image /shared/containers/align.sif not found"
     ) in failure.message
     assert "\033" not in failure.message and "\a" not in failure.message
 

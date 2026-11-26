@@ -422,9 +422,7 @@ def _failure(p: Projection, exit_code: int, reported: str | None = None) -> dict
     ).one_or_none()
     if culprit is None:
         message = (
-            (payload or {}).get("msg")
-            or reported
-            or f"snakemake exited with code {exit_code}"
+            (payload or {}).get("msg") or reported or f"snakemake exited with code {exit_code}"
         )
         return failure_json("engine_fault", message)
     message = (payload or {}).get("msg") or f"snakemake exited with code {exit_code}"
