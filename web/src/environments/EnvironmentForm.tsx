@@ -1,7 +1,8 @@
 import { Button, Checkbox, Radio, Select, TextInput } from "@mantine/core";
-import { useState } from "react";
-import { ApiError, type EnvironmentItem, createEnvironment, replaceEnvironment } from "../api";
+import { useEffect, useState } from "react";
+import { ApiError, type ClusterFacts, type EnvironmentItem, createEnvironment, getClusterFacts, replaceEnvironment } from "../api";
 import { useServer } from "../server";
+import { PlacementPicker } from "./PlacementPicker";
 import { type Draft, type Errors, type Software, type Unit, toBody } from "./fields";
 
 // The one environment form (ui-spec §4.8.1): the pages' new and edit, and Launch's New environment
@@ -13,6 +14,8 @@ const NAMES: Record<string, string> = {
   label: "Label",
   "slurm.partition": "Partition",
   "slurm.account": "SLURM account",
+  "slurm.constraint": "Constraint",
+  "slurm.gres": "GRES",
   "slurm.time_min": "Time per job",
   "slurm.mem_mib": "Memory per job",
   "local.cpus": "CPUs at most",
@@ -22,7 +25,7 @@ const NAMES: Record<string, string> = {
   "apptainer_args": "Apptainer arguments",
 };
 const FIELD_OF: Partial<Record<keyof Draft, string>> = {
-  ...{ name: "name", label: "label", partition: "slurm.partition", account: "slurm.account", hours: "slurm.time_min" },
+  ...{ name: "name", label: "label", partition: "slurm.partition", account: "slurm.account", constraint: "slurm.constraint", gres: "slurm.gres", hours: "slurm.time_min" },
   ...{ minutes: "slurm.time_min", mem: "slurm.mem_mib", memUnit: "slurm.mem_mib", cpus: "local.cpus" },
   ...{ localMem: "local.mem_mib", localUnit: "local.mem_mib", nextflow: "profiles.nextflow", snakemake: "profiles.snakemake" },
   ...{ software: "software", apptainerArgs: "apptainer_args" },
@@ -60,6 +63,16 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
   const first = Object.keys(errors)[0];
   const why = first ? `Fix ${NAMES[first] ?? first} first` : null;
 
+  // What the cluster offers (#401): a failure or no SLURM leaves the plain fields, no picker.
+  const [facts, setFacts] = useState<ClusterFacts | null>(null);
+  useEffect(() => {
+    if (!onSlurm || readOnly) return;
+    const stop = new AbortController();
+    getClusterFacts(stop.signal).then(setFacts, () => setFacts(null));
+    return () => stop.abort();
+  }, [onSlurm, readOnly]);
+  const picker = facts?.scheduler === "slurm" && facts.partitions.length > 0 ? facts : null;
+
   const set = (key: keyof Draft) => (value: string) => {
     const next = { ...draft, [key]: value };
     if (key === "executor" && value === "local" && onSlurm && !draft.cpus && !draft.localMem) {
@@ -69,6 +82,12 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
     const field = FIELD_OF[key];
     if (field) setTouched(new Set(touched).add(field));
     setServer422(({ [field ?? ""]: _, ...rest }) => rest);
+  };
+  // The picker fills several fields at once; a field the choice leaves null keeps what was typed
+  const fill = (values: Partial<Pick<Draft, "partition" | "constraint" | "gres">>) => {
+    setDraft({ ...draft, ...values });
+    setTouched(new Set([...touched, ...Object.keys(values).map((k) => FIELD_OF[k as keyof Draft] ?? "")]));
+    setServer422(({ "slurm.partition": _p, "slurm.constraint": _c, "slurm.gres": _g, ...rest }) => rest);
   };
   // A Checkbox.Group hands its whole selection, not one key's string
   const setSoftware = (values: string[]) => {
@@ -141,8 +160,31 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
       {draft.executor === "slurm" ? (
         <fieldset>
           <legend>SLURM · each field is optional: leave it empty to use SLURM's default</legend>
+          {picker && (
+            <PlacementPicker
+              facts={picker}
+              partition={draft.partition}
+              onPick={(p) => fill({ partition: p.partition, ...(p.constraint !== null && { constraint: p.constraint }), ...(p.gres !== null && { gres: p.gres }) })}
+            />
+          )}
           {text("partition", "Partition", "Leave empty to use SLURM's default")}
-          {text("account", "SLURM account", "As in sbatch --account. Leave empty to use SLURM's default")}
+          {picker?.accounts.length ? (
+            <Select
+              label="SLURM account"
+              description="As in sbatch --account. Leave empty to use SLURM's default"
+              inputWrapperOrder={["label", "input", "description", "error"]}
+              data={[...new Set([...picker.accounts, ...(draft.account ? [draft.account] : [])])]}
+              value={draft.account || null}
+              onChange={(v) => set("account")(v ?? "")}
+              error={shown["slurm.account"]}
+              disabled={readOnly}
+              clearable
+            />
+          ) : (
+            text("account", "SLURM account", "As in sbatch --account. Leave empty to use SLURM's default")
+          )}
+          {text("constraint", "Constraint", "As in sbatch --constraint, e.g. avx512&zen4. Leave empty for none")}
+          {text("gres", "GRES", "As in sbatch --gres, e.g. gpu:H100:1. Leave empty for none")}
           <div className="sp-env-pair" role="group" aria-label="Time per job">
             {text("hours", "Hours", "Time per job: hours 0 to 720", { inputMode: "numeric", w: 140 })}
             {text("minutes", "Minutes", "minutes 0 to 59", { inputMode: "numeric", w: 140, error: shown["slurm.time_min"] ? true : undefined })}

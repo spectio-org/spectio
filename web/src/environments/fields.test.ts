@@ -104,6 +104,11 @@ test("an item's software reads back into the form and saves as sent (inbox #161)
   expect([old.software, old.apptainerArgs]).toEqual([["conda", "apptainer"], ""]);
 });
 
+test("the summary names the constraint and gres when set (#401)", () => {
+  const slurm = { partition: "gpu", account: null, time_min: null, mem_mib: null, constraint: "avx512&zen4", gres: "gpu:H100:1" };
+  expect(summary(item({ slurm }), "login1", "slurm")).toBe("partition gpu · constraint avx512&zen4 · GRES gpu:H100:1 · deploys with conda and apptainer");
+});
+
 test("the summary line, in words; an unset value is left out", () => {
   expect(summary(item(), "login1", "slurm")).toBe(
     "partition htc · SLURM account mylab · 2 h 30 min per job · 1536 MiB per job · deploys with conda and apptainer",
