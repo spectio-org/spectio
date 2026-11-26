@@ -406,13 +406,13 @@ def test_launch_error_with_an_exit_code_still_fails(engine: Engine, writer: Writ
 
 
 TAIL = (
-    "Snakemake exited with code 1 before any job failed. Its last lines:\n"
+    "Snakemake exited with code 1 before any job started. Its last lines:\n"
     "Building DAG of jobs...\nApptainerError: image /shared/containers/align.sif not found"
 )
 
 
 def test_a_failure_before_any_job_quotes_the_head_report(engine: Engine, writer: Writer) -> None:
-    """A Snakemake head that exits non-zero with no error record and no failed job (an
+    """A Snakemake head that exits non-zero with no error record and no job started (an
     Apptainer or config error at startup) fails `engine_fault` with the head report's own
     message — the end of its output, as Nextflow's (#352, #368): the run says why."""
     head(writer, replace(exited(1), failure=Failure("engine_fault", TAIL)))
@@ -428,7 +428,7 @@ def test_a_failed_job_keeps_its_message_with_a_head_report_tail(
     engine: Engine, writer: Writer
 ) -> None:
     """The run keeps blaming the launch's last failed job (#352): a head report's own lines are
-    quoted only when no job failed, so this one keeps today's message."""
+    quoted only when no job started, so this one keeps today's message."""
     ingest_events(
         writer,
         job_info(1, 7, sample="S1"),
@@ -446,8 +446,16 @@ def test_an_error_record_beats_the_head_report(engine: Engine, writer: Writer) -
     assert run_row(engine).failure["message"] == "WorkflowError:\nboom"
 
 
+def test_a_job_that_started_never_gets_a_head_tail(engine: Engine, writer: Writer) -> None:
+    """One running, never-failed attempt: the head's last lines can hold the raw commands `-p`
+    prints, so the run's failure is the exit code alone (SEC-SMKFAIL-04)."""
+    ingest_events(writer, job_info(1, 7, sample="S1"))
+    head(writer, replace(exited(1), failure=Failure("engine_fault", TAIL)))
+    assert run_row(engine).failure["message"] == "snakemake exited with code 1"
+
+
 def test_a_retried_job_gets_no_head_tail(engine: Engine, writer: Writer) -> None:
-    """A job that failed and was retried still failed: "before any job failed" would be untrue,
+    """A job that failed and was retried still failed: "before any job started" would be untrue,
     so the run's failure quotes no tail (CR-SMKFAIL-01)."""
     ingest_events(
         writer,
@@ -486,7 +494,7 @@ def test_own_message_strips_escapes_and_caps() -> None:
 def test_own_message_never_returns_the_command(engine: Engine, writer: Writer) -> None:
     """A runner that forgets to hide the commands cannot leak them (SEC-SMKFAIL-03)."""
     quoted = (
-        "Snakemake exited with code 1 before any job failed. Its last lines:\n"
+        "Snakemake exited with code 1 before any job started. Its last lines:\n"
         "CalledProcessError in file /x/Snakefile, line 3:\n"
         "Command 'export TOKEN=s3cret; tool --in a' returned non-zero exit status 1.\n"
         "Error in rule map:\n    shell:\n        export TOKEN=s3cret2\n    jobid: 2"

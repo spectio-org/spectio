@@ -178,14 +178,24 @@ def _hide_commands(lines: list[str]) -> list[str]:
     return kept
 
 
-def engine_output_tail(data: bytes, engine: str = "nextflow") -> str | None:
+# A Snakemake job's block, `Job N:` line or `jobid:` field: a job began (`-p` prints its raw
+# command with no marker of its own, so nothing after this can be quoted, SEC-SMKFAIL-04)
+JOB_BEGAN = re.compile(r"^(?:\s*(?:local)?rule \S+:|Job \d+:|\s+jobid: \d+)", re.MULTILINE)
+
+
+def engine_output_tail(
+    data: bytes, engine: str = "nextflow", truncated: bool = False
+) -> str | None:
     """The last non-blank lines of the engine's output: a line rewritten in place (`\\r`) as its
     last state, escape sequences, control and format characters removed (`strip_escapes`),
     commands hidden (`_hide_commands`, and for Snakemake `hide_snakemake_commands`), at most
-    TAIL_LINES lines and TAIL_CHARS characters; None when blank."""
+    TAIL_LINES lines and TAIL_CHARS characters; None when blank. For Snakemake, also None when
+    `truncated` (the output is longer than `data`) or a job began: its commands are not marked."""
     text = data.decode("utf-8", "replace").replace("\r\n", "\n")
     text = strip_escapes("\n".join(line.rsplit("\r", 1)[-1] for line in text.split("\n")))
     if engine == "snakemake":
+        if truncated or JOB_BEGAN.search(text):
+            return None
         text = hide_snakemake_commands(text)  # before the blank lines go: a block can hold some
     lines = [line.rstrip() for line in text.split("\n") if line.strip()]
     kept = _hide_commands(lines)[-TAIL_LINES:]
@@ -198,7 +208,7 @@ def ended_failure(engine: str, report: HeadReport, output: str | None = None) ->
     (Assumption 15): `head_lost` with no exit code; `engine_fault` for a Nextflow head, which
     ends on its own event, quoting the end of its `output` when there is one (#368). A
     Snakemake head's exit code ends its launch (Assumption 16): a non-zero one carries the end
-    of its `output`, which the server quotes only when no job failed and no `error` record came
+    of its `output`, which the server quotes only when no job started and no `error` record came
     (#352), and one of 0 reports no failure: the run ends on the exit code alone."""
     if report.exit_code is None:
         message = "The head ended with no exit code: it was killed, or the machine restarted."
@@ -206,7 +216,7 @@ def ended_failure(engine: str, report: HeadReport, output: str | None = None) ->
     if engine == "snakemake":
         if report.exit_code == 0:
             return report
-        message = f"Snakemake exited with code {report.exit_code} before any job failed."
+        message = f"Snakemake exited with code {report.exit_code} before any job started."
         if output:
             message += f" Its last lines:\n{output}"
         return replace(report, failure=Failure("engine_fault", message))
@@ -537,12 +547,13 @@ class RunnerLoop:
     def _head_output(self, ref: LaunchRef) -> str | None:
         """The end of the launch's `.spectio/head.out` (#368), None for a run started from a
         terminal or a file that cannot be read safely: a Nextflow head quotes it when the
-        engine sent no end event, a failed Snakemake head when no job failed (#352)."""
+        engine sent no end event, a failed Snakemake head when no job started (#352)."""
         if ref.terminal is not None:
             return None
         try:
             with private_dir(self.settings.runs_root, ref.run_id, "launch", ".spectio") as fd:
-                return engine_output_tail(_read_tail(fd, HEAD_OUT, TAIL_READ), ref.engine)
+                data = _read_tail(fd, HEAD_OUT, TAIL_READ + 1)  # one more: is there more?
+                return engine_output_tail(data[-TAIL_READ:], ref.engine, len(data) > TAIL_READ)
         except (OSError, ValueError):
             return None
 

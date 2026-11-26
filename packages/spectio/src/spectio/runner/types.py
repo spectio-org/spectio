@@ -54,7 +54,7 @@ class HeadReport:
     `engine_missing`, `engine_version`, `head_lost`, `engine_fault`). A Snakemake head never
     writes a terminal engine event: for a Snakemake launch the runner reports the exit code,
     setting `engine_fault` with the end of the head's output when it exited non-zero — the
-    projector quotes it only when no job failed (#352) — and `head_lost` when the exit code is
+    projector quotes it only when no job started (#352) — and `head_lost` when the exit code is
     unknown. The projector lets a known exit code win over `head_lost` / `engine_fault`
     (CR-P3T05-01).
     """

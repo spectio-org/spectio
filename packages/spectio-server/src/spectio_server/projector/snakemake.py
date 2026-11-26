@@ -15,8 +15,8 @@ after a failed one, since a retried job comes back with the same jobid and no at
 `job_started` is logged only. `job_finished` gives `succeeded`, `job_error` `failed`.
 
 No engine event ends a Snakemake launch: its head's exit code does (`head_exit`). On a non-zero
-exit the run's failure takes the text of the last `error` record, or, with none and no failed
-attempt, the end of the engine's output from the head report (#352, 2026-11-26), and blames the
+exit the run's failure takes the text of the last `error` record, or, with none and no attempt
+at all, the end of the engine's output from the head report (#352, 2026-11-26), and blames the
 launch's last failed job when no later attempt of its task ran. A run started from a terminal has
 no exit code: once the PID check sees its head gone, its spool ends it (`spool_end`, assumed:
 inbox #113).
@@ -131,7 +131,7 @@ def _end_time(p: Projection) -> None:
 def head_exit(p: Projection, exit_code: int, reported: str | None = None) -> None:
     """End the launch on the head's exit code: 0 succeeds, anything else fails. `reported` is
     the head report's own message, the end of the engine's output (#352): the run's failure
-    quotes it only when no `error` record came and no job failed."""
+    quotes it only when no `error` record came and no job started."""
     if p.state in TERMINAL:
         return
     _end_time(p)
@@ -407,7 +407,7 @@ def _last_attempt(p: Projection, task_id: str) -> Any:
 def _failure(p: Projection, exit_code: int, reported: str | None = None) -> dict[str, Any]:
     """`tool_error` when the launch's last failed job is its task's last attempt, else
     `engine_fault`; the message is the last `error` record's text (already hidden, §14.1), or,
-    with none and no attempt of the launch failed, the head report's own text — the end of the
+    with none and no attempt of the launch at all, the head report's own text — the end of the
     engine's output (#352, 2026-11-26) — else the exit code."""
     payload = p.conn.execute(
         select(events.c.payload)
@@ -424,17 +424,13 @@ def _failure(p: Projection, exit_code: int, reported: str | None = None) -> dict
         .where(launches.c.id == p.launch_id, tasks.c.state == "failed")
     ).one_or_none()
     if culprit is None:
-        any_failed = p.conn.execute(  # a job that failed and was retried still failed
+        started = p.conn.execute(  # a job began, in any state: its raw command can be in the tail
             select(attempts.c.id)
             .join(tasks, tasks.c.id == attempts.c.task_id)
-            .where(
-                tasks.c.run_id == p.run_id,
-                attempts.c.launch_n == p.launch_n,
-                attempts.c.state == "failed",
-            )
+            .where(tasks.c.run_id == p.run_id, attempts.c.launch_n == p.launch_n)
             .limit(1)
         ).first()
-        if not msg and reported and not any_failed:
+        if not msg and reported and not started:
             message = reported
         return failure_json("engine_fault", message)
     p.conn.execute(
